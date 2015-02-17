@@ -1,0 +1,1 @@
+("6.1.1" ("019fbd31530a4c5e8b193223081365f471618121" . "c487403a39172442b35c7cb69c9f9e1ed1a70630") (collects #"racket" #"main.rkt") (collects #"FSM" #"string.rkt") (collects #"FSM" #"rules.rkt") (collects #"racket" #"runtime-config.rkt") (collects #"FSM" #"misc.rkt") (collects #"FSM" #"constants.rkt"))
