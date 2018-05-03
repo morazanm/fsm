@@ -1,1 +1,0 @@
-("6.1.1" ("33dfd7691c00ac88033dfd5d6e72ad7e8cd7b9d6" . "bf2b9cf238b3d3b9935f2e45fc21a3b4b8c03306") (collects #"racket" #"main.rkt") (collects #"FSM" #"word.rkt") (collects #"racket" #"runtime-config.rkt") (collects #"FSM" #"misc.rkt") (collects #"FSM" #"constants.rkt") (collects #"wxme" #"read.rkt"))
