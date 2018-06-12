@@ -312,7 +312,7 @@
                     
                       (define start-err (start-in-list? delta first))
                     
-                      (define big-error (filter (lambda (x) (not (equal? true x))) (cons start-err (append initials (valid-delta-dfa? delta)))))]
+                      (define big-error (filter (lambda (x) (not (equal? true x))) (flatten (cons start-err (append initials (list (valid-delta-dfa? delta)))))))]
                 (cond [(empty? big-error) true]
                       [else big-error])
               
