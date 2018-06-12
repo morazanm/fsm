@@ -50,8 +50,7 @@
               (local [;check-first: symbol --> boolean/invalid-state
                       ;purpose: make sure the symbol starts with a letter
                       (define (check-first a-string)
-                        (if (and (char-alphabetic? (string-ref a-string 0))
-                             (char-upper-case? (string-ref a-string 0))) #t a-string))]
+                        (char-alphabetic? (string-ref a-string 0)))]
                 (cond [(or (not (symbol? a-state))
                            (symbol=? a-state BLANK)
                            (symbol=? a-state EMP)) a-state]
@@ -68,9 +67,9 @@
                       [(and (not (list? the-set))
                             (empty? invalid-states)) true]
                       [(and (list? the-set)
-                            (not (empty? invalid-states))) (format "~s are not valid uppercase alphabetic states and ~s are repeated values in the set ~s" invalid-states the-set state-set)]
+                            (not (empty? invalid-states))) (format "~s are not valid alphabetic states and ~s are repeated values in the set ~s" invalid-states the-set state-set)]
                       [(list? the-set) (format "~s are repeated in the given state set~s " the-set state-set)]
-                      [else (format "~s are not valid uppercase alphabetic states" invalid-states)])))
+                      [else (format "~s are not valid alphabetic states" invalid-states)])))
           
             ;VALID STARTING STATE
             ;valid-start?: state --> boolean/string
