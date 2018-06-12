@@ -50,8 +50,7 @@
               (local [;check-first: symbol --> boolean/invalid-state
                       ;purpose: make sure the symbol starts with a letter
                       (define (check-first a-string)
-                        (if (and (char-alphabetic? (string-ref a-string 0))
-                             (char-upper-case? (string-ref a-string 0))) #t a-string))]
+                        (char-alphabetic? (string-ref a-string 0)))]
                 (cond [(or (not (symbol? a-state))
                            (symbol=? a-state BLANK)
                            (symbol=? a-state EMP)) a-state]
@@ -68,9 +67,9 @@
                       [(and (not (list? the-set))
                             (empty? invalid-states)) true]
                       [(and (list? the-set)
-                            (not (empty? invalid-states))) (format "~s are not valid uppercase alphabetic states and ~s are repeated values in the set ~s" invalid-states the-set state-set)]
+                            (not (empty? invalid-states))) (format "~s are not valid states and ~s are repeated values in the set ~s" invalid-states the-set state-set)]
                       [(list? the-set) (format "~s are repeated in the given state set~s " the-set state-set)]
-                      [else (format "~s are not valid uppercase alphabetic states" invalid-states)])))
+                      [else (format "~s are not valid states" invalid-states)])))
           
             ;VALID STARTING STATE
             ;valid-start?: state --> boolean/string
@@ -97,7 +96,7 @@
                 (cond [(and (empty? invalid-finals)
                             (equal? true repeats)) true]
                       [(equal? true repeats) (format "~s cannot be in a final state because they are not in the initial list of states for the machine" invalid-finals)]
-                      [(empty? invalid-finals) (format "~s are repeats in the set of final states" repeats)]
+                      [(empty? invalid-finals) (format "~s are repeats in the set of final states and must be removed" repeats)]
                       [else (format "~s cannot be a final states because they are not in the initial list of states for the machine and ~s are repeats" invalid-finals repeats)])))
           
             ;VALID SIGMA
@@ -110,7 +109,6 @@
                         (local [(define repeats (no-repeats? sigma))
                                 (define (create-error)
                                   (local [(define invalid-sigmas (filter (lambda (x) (or (not (symbol? x))
-                                                                                         (not (char-lower-case? (string-ref (symbol->string x) 0)))
                                                                                          (or (equal? EMP x)
                                                                                              (equal? BLANK x)
                                                                                              (equal? LM x)
@@ -119,9 +117,9 @@
                                     (cond [(and (equal? repeats true)
                                                 (empty? invalid-sigmas)) true]
                                           [(and (not (equal? repeats true))
-                                                (not (empty? invalid-sigmas))) (format "~s are now valid lowercase alphabetic alphabet members and ~s are repeated values in the sigma" invalid-sigmas repeats)]
-                                          [(equal? repeats true) (format "~s are not valid lowercase alphabetic alphabet members" invalid-sigmas)]
-                                          [else (format "~s are repeated values in the sigma" repeats)])))]
+                                                (not (empty? invalid-sigmas))) (format "~s are invalid alphabet members and ~s are repeated values in the sigma, remove repeats" invalid-sigmas repeats)]
+                                          [(equal? repeats true) (format "~s are invalid alphabet members" invalid-sigmas)]
+                                          [else (format "~s are repeated values in the sigma, remove repeats" repeats)])))]
                         
                           (cond [(empty? sigma) #t]
                                 [(symbol? repeats) (format "the symbol ~s appears in the alphabet more than once" repeats)]
@@ -160,7 +158,7 @@
                       (define check2 (valid-finals? (sm-getfinals the-machine)))
                       (define check3 (valid-sigma? Σ))
                       (define check4 (valid-states? S))]
-                (filter (lambda (x) (not (equal? x true))) (list check4 check3 check1 check2))))
+                (filter (lambda (x) (not (equal? x true))) (list check1 check2 check3 check4))))
           
             (define initials (create-initials))
           
@@ -312,7 +310,7 @@
                     
                       (define start-err (start-in-list? delta first))
                     
-                      (define big-error (filter (lambda (x) (not (equal? true x))) (cons start-err (append initials (valid-delta-dfa? delta)))))]
+                      (define big-error (filter (lambda (x) (not (equal? true x))) (cons start-err (cons (valid-delta-dfa? delta) initials))))]
                 (cond [(empty? big-error) true]
                       [else big-error])
               

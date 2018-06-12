@@ -1,1 +1,1 @@
-("6.11" ("0ebc2b03afa9f49990056dc303110f3b0bef53ec" . "e4bb1b2ce4e9a8b1adc5d6a3ac77c42882c929ae") (collects #"errortrace" #"errortrace-key.rkt") (collects #"racket" #"main.rkt") (collects #"racket" #"runtime-config.rkt"))
+("6.12" ("0ebc2b03afa9f49990056dc303110f3b0bef53ec" . "993e6f5264ee26984152d1638fd723311934eb44") (collects #"errortrace" #"errortrace-key.rkt") (collects #"racket" #"main.rkt") (collects #"racket" #"runtime-config.rkt"))
