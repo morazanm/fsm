@@ -1,0 +1,1 @@
+("7.2" racket ("12eb0f06902ed16a72cb7335a9df8dbf88621e1a" . "328440dc7a05e3244014e0c26cc2df4139da2948") (collects #"fsm" #"constants.rkt") (collects #"fsm" #"misc.rkt") (collects #"fsm" #"string.rkt") (collects #"racket" #"main.rkt") (collects #"racket" #"runtime-config.rkt"))
