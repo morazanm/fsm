@@ -182,13 +182,8 @@
                                         
       end-message))
 
-  (define (check-machine machine)
-    (local [(define states (sm-getstates machine))
-            (define sigma (sm-getalphabet machine))
-            (define finals (sm-getfinals machine))
-            (define delta (sm-getrules machine))
-            (define start (sm-getstart machine))
-            (define type (sm-type machine))
+  (define (check-machine states sigma finals delta start type)
+    (local [
             ;;something for gamma
           
             ;check-delt: no input --> string or (list of broken rules)
@@ -315,12 +310,9 @@
                                                 (display rule-errors)))
                                           )))])))])))
 
-  (define (check-grammar grammar)
-    (local [(define nts (grammar-getnts grammar))
-            (define sigma (grammar-getalphabet grammar))
-            (define delta (grammar-getrules grammar))
-            (define start (grammar-getstart grammar))
-            (define type (grammar-gettype grammar))
+  ;; nts: none terminals
+  (define (check-grammar nts sigma delta start type)
+    (local [
             ;;remove errors about -->
             ;; is it composed of elements from the nts and sigma
           

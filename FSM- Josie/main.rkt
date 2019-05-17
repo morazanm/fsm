@@ -57,7 +57,7 @@
    EMP DEAD RIGHT LEFT LM BLANK BRANCH GOTO ARROW VAR
 
    ; transducers
-  make-dfst)
+   make-dfst)
   ; Primitive constructors imported from other modules
   
   ; (listof state) fsm --> fsm
@@ -295,49 +295,62 @@
 
   ; make-dfa: (listof state) alphabet state (listof state) (listof rule)) [symbol] --> dfa
   (define (make-dfa states sigma start finals deltas . adddead)
-    (check-machine (make-unchecked-dfa states
-                                       sigma
-                                       start
-                                       finals
-                                       deltas
-                                       adddead))
+    (cond [(equal true (check-machine states sigma finals deltas start 'dfa))
+           (make-unchecked-dfa states
+                               sigma
+                               start
+                               finals
+                               deltas
+                               adddead)]
+          [else (error "Machine inputs not valid")])
     )
 
   ; make-ndfa: (listof states) alphabet state (listof state) (listof rule)
   ;            --> ndfa
   (define (make-ndfa states sigma start finals deltas . adddead)
-    (check-machine (make-unchecked-ndfa states
-                                        sigma
-                                        start
-                                        finals
-                                        deltas
-                                        adddead))
+    (cond [(equal true (check-machine states sigma finals deltas start 'ndfa))
+           (make-unchecked-ndfa states
+                                sigma
+                                start
+                                finals
+                                deltas
+                                adddead)]
+          [else (error "Machine inputs not valid")])
     )
 
   ; make-ndpda: (listof states) alphabet alphabet state (listof states) (listof pdarules) --> ndpda
-  (define (make-ndpda K sigma gamma start finals pdarules . adddead)
-    (check-machine (make-unchecked-ndpda K
-                                         sigma
-                                         gamma
-                                         start
-                                         finals
-                                         pdarules))
+  (define (make-ndpda states sigma gamma start finals delta . adddead)
+    (cond [(check-machine (states sigma finals delta start 'pda gamma))
+           (make-unchecked-ndpda states
+                                 sigma
+                                 start
+                                 finals
+                                 deltas
+                                 adddead)]
+          [else (error "Machine inputs not valid")])
     )
   
   ;make-tm (listof state) (listof symbol) (listof (list state symbol) (list state symbol)) (listof state) state --> tm
-  (define (make-tm K SIGMA delta s H . accept)
-    (if (null? accept) (check-machine (make-unchecked-tm K
-                                                         SIGMA
-                                                         delta
-                                                         s
-                                                         H))
-        (check-machine (make-unchecked-tm K
-                                          SIGMA
-                                          delta
-                                          s
-                                          H
-                                          accept)))
-    )
+  (define (make-tm states sigma delta start finals . accept)
+    (cond [(equals? (check-machine states
+                                   sigma
+                                   finals
+                                   delta
+                                   start
+                                   'tm) #t) (if (null? accept) (make-unchecked-tm states
+                                                                                  sigma
+                                                                                  delta
+                                                                                  start
+                                                                                  finals)
+                                                (if (member accept finals) (make-unchecked-tm
+                                                                            states
+                                                                            sigma
+                                                                            delta
+                                                                            start
+                                                                            finals
+                                                                            accept)
+                                                    (error (format "accept state: ~s, not in final states" accept))))]
+          [else (error "Machine inputs not valid")])) 
 
 
   ;(make-cfg V sigma R S), where V and sigma are a (listof symbol), R
