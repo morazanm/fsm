@@ -295,7 +295,7 @@
 
   ; make-dfa: (listof state) alphabet state (listof state) (listof rule)) [symbol] --> dfa
   (define (make-dfa states sigma start finals deltas . adddead)
-    (cond [(equal true (check-machine states sigma finals deltas start 'dfa))
+    (cond [(equal? true (check-machine states sigma finals deltas start 'dfa))
            (make-unchecked-dfa states
                                sigma
                                start
@@ -308,7 +308,7 @@
   ; make-ndfa: (listof states) alphabet state (listof state) (listof rule)
   ;            --> ndfa
   (define (make-ndfa states sigma start finals deltas . adddead)
-    (cond [(equal true (check-machine states sigma finals deltas start 'ndfa))
+    (cond [(equal? true (check-machine states sigma finals deltas start 'ndfa))
            (make-unchecked-ndfa states
                                 sigma
                                 start
@@ -319,8 +319,8 @@
     )
 
   ; make-ndpda: (listof states) alphabet alphabet state (listof states) (listof pdarules) --> ndpda
-  (define (make-ndpda states sigma gamma start finals delta . adddead)
-    (cond [(check-machine (states sigma finals delta start 'pda gamma))
+  (define (make-ndpda states sigma gamma start finals deltas . adddead)
+    (cond [(check-machine (states sigma finals deltas start 'pda gamma))
            (make-unchecked-ndpda states
                                  sigma
                                  start
@@ -332,7 +332,7 @@
   
   ;make-tm (listof state) (listof symbol) (listof (list state symbol) (list state symbol)) (listof state) state --> tm
   (define (make-tm states sigma delta start finals . accept)
-    (cond [(equals? (check-machine states
+    (cond [(equal? (check-machine states
                                    sigma
                                    finals
                                    delta
