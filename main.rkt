@@ -302,7 +302,7 @@
                                finals
                                deltas
                                adddead)]
-          [else (error "Machine inputs not valid")])
+          [else (begin (newline) (error"Machine inputs not valid"))])
     )
 
   ; make-ndfa: (listof states) alphabet state (listof state) (listof rule)
@@ -315,7 +315,7 @@
                                 finals
                                 deltas
                                 adddead)]
-          [else (error "Machine inputs not valid")])
+          [else (begin (newline) (error"Machine inputs not valid"))])
     )
 
   ; make-ndpda: (listof states) alphabet alphabet state (listof states) (listof pdarules) --> ndpda
@@ -327,7 +327,7 @@
                                  finals
                                  deltas
                                  adddead)]
-          [else (error "Machine inputs not valid")])
+          [else (begin (newline) (error"Machine inputs not valid"))])
     )
   
   ;make-tm (listof state) (listof symbol) (listof (list state symbol) (list state symbol)) (listof state) state --> tm
@@ -349,22 +349,22 @@
                                                                             start
                                                                             finals
                                                                             accept)
-                                                    (error (format "accept state: ~s, not in final states" accept))))]
-          [else (error "Machine inputs not valid")])) 
+                                                    (begin (newline) (error (format "accept state: ~s, not in final states" accept)))))]
+          [else (begin (newline) (error"Machine inputs not valid"))])) 
 
 
   ;(make-cfg V sigma R S), where V and sigma are a (listof symbol), R
   ; is a (listof cfg-rule), and S is a symbol
   (define (make-cfg nts sigma delta state)
     (cond [(equal? true (check-grammar  nts sigma delta state 'cfg)) (make-unchecked-cfg nts sigma delta state)]
-          [else (error "Grammar is not valid")])
+          [else (begin (newline) (error"Grammar is not valid"))])
     )
 
   ;make-csg V sigma R S), where V and sigma are a (listof symbol), R
   ; is a (listof csg-rule), and S is a symbol
   (define (make-csg nts sigma delta state)
     (cond [(equal? true(check-grammar nts sigma delta state 'csg)) (make-unchecked-csg nts sigma delta state)]
-          [else (error "Grammar is not valid")])               
+          [else (begin (newline) (error"Grammar is not valid"))])               
     )
 
   ;(make-rg N A R S), such that
@@ -372,7 +372,7 @@
   ; alphabet), R is a (listof rrule), and S is a symbol (starting symbol)
   (define (make-rg nts sigma delta state)
     (cond [(equal? true (check-grammar nts sigma delta state 'rg)) (make-unchecked-rg nts sigma delta state)]
-          [else (error "Grammar is not valid")])
+          [else (begin (newline) (error"Grammar is not valid"))])
     )
 
 
