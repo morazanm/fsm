@@ -142,13 +142,14 @@
                     [else (cons (car a-list) (remove-repeats (cdr a-list)))]))
 
             (define start (member s v))
-            (define rules (remove-repeats (filter (lambda (x)
-                                                    (not (or (= (string-length (symbol->string x)) 1)
-                                                             (member x (append
-                                                                        (list EMP ARROW BLANK RIGHT LEFT GOTO
-                                                                              DEAD LM BRANCH VAR START)
-                                                                        v
-                                                                        a))))) (flatten d))))
+            (define rules (filter (lambda (y)
+                                    (not (member y
+                                                 (append
+                                                  (list EMP ARROW BLANK RIGHT LEFT GOTO DEAD LM BRANCH VAR START)
+                                                  v
+                                                  a))))
+                                  (filter (lambda (x) (= (string-length x) 1))
+                                          (remove-repeats (flatten d)))))
 
             (define start-message (if start (begin
                                               (newline)
