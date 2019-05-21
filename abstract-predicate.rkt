@@ -137,9 +137,13 @@
 
   (define (check-dependent v a s d t name . f)
     (local [(define (remove-repeats a-list)
+              (if (not (equal? t 'dfa)) (repeat-rule a-list)
+                  (repeat-rule (map (lambda (x) (cons (car x) (cadr x))) a-list))))
+
+            (define (repeat-rule a-list)
               (cond [(empty? a-list) empty]
-                    [(member (car a-list) (cdr a-list)) (remove-repeats (cdr a-list))]
-                    [else (cons (car a-list) (remove-repeats (cdr a-list)))]))
+                    [(member (car a-list) (cdr a-list)) (repeat-rule (cdr a-list))]
+                    [else (cons (car a-list) (repeat-rule (cdr a-list)))])) 
 
             (define start (member s v))
             (define rules (filter (lambda (y)
@@ -302,20 +306,20 @@
                                                                                 "state"
                                                                                 finals))]
                                       (begin (display dep-errors)
-                                          (local [;rule-errors
-                                                  (define rule-errors
-                                                    (cond [(equal? type 'dfa) (check-dfarule states sigma delta)]
-                                                          [(equal? type 'ndfa) (check-ndfarule states sigma delta)]
-                                                          [(equal? type 'pda) (check-pdarule states sigma delta)]
-                                                          [(equal? type 'tm) (check-tmrule states sigma delta)]
-                                                          [else (error "Machine type not implemented")]))
-                                                  ]
-                                            (if (and (equal? dep-errors "")
-                                                     (equal? rule-errors "")) (begin (newline)
-                                                                               (display "Rules look good!")
-                                                                               #t)
-                                                (display rule-errors)))
-                                          )))])))])))
+                                             (local [;rule-errors
+                                                     (define rule-errors
+                                                       (cond [(equal? type 'dfa) (check-dfarule states sigma delta)]
+                                                             [(equal? type 'ndfa) (check-ndfarule states sigma delta)]
+                                                             [(equal? type 'pda) (check-pdarule states sigma delta)]
+                                                             [(equal? type 'tm) (check-tmrule states sigma delta)]
+                                                             [else (error "Machine type not implemented")]))
+                                                     ]
+                                               (if (and (equal? dep-errors "")
+                                                        (equal? rule-errors "")) (begin (newline)
+                                                                                        (display "Rules look good!")
+                                                                                        #t)
+                                                                                 (display rule-errors)))
+                                             )))])))])))
 
   ;; nts: none terminals
   (define (check-grammar nts sigma delta start type)
@@ -378,18 +382,18 @@
                                                                                 type
                                                                                 "nonterminal"))]
                                       (begin (display dep-errors)
-                                          (local [;rule-errors
-                                                  (define rule-errors
-                                                    (cond [(equal? type 'rg) (check-rgrule nts sigma delta)]
-                                                          [(equal? type 'cfg) (check-cfgrule nts sigma delta)]
-                                                          [(equal? type 'csg) (check-csgrule nts sigma delta)]
-                                                          [else (error "Grammar type not implemented")]))
-                                                  ]
-                                            (if (and (equal? dep-errors "")
-                                                     (equal? rule-errors "")) (begin (newline)
-                                                                               (display "Rules look good!")
-                                                                               #t)
-                                                (display rule-errors))
-                                            ))))])))])))
+                                             (local [;rule-errors
+                                                     (define rule-errors
+                                                       (cond [(equal? type 'rg) (check-rgrule nts sigma delta)]
+                                                             [(equal? type 'cfg) (check-cfgrule nts sigma delta)]
+                                                             [(equal? type 'csg) (check-csgrule nts sigma delta)]
+                                                             [else (error "Grammar type not implemented")]))
+                                                     ]
+                                               (if (and (equal? dep-errors "")
+                                                        (equal? rule-errors "")) (begin (newline)
+                                                                                        (display "Rules look good!")
+                                                                                        #t)
+                                                                                 (display rule-errors))
+                                               ))))])))])))
 
   )
