@@ -148,7 +148,7 @@
                                                   (list EMP ARROW BLANK RIGHT LEFT GOTO DEAD LM BRANCH VAR START)
                                                   v
                                                   a))))
-                                  (filter (lambda (x) (= (string-length x) 1))
+                                  (filter (lambda (x) (= (string-length (symbol->string x)) 1))
                                           (remove-repeats (flatten d)))))
 
             (define start-message (if start (begin
