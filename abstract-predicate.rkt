@@ -142,7 +142,7 @@
   (define (check-dependent v a s d t name . f)
     (local [(define (remove-repeats a-list)
               (if (not (equal? t 'dfa)) (repeat-rule a-list)
-                  (repeat-rule (map (lambda (x) (cons (car x) (cadr x))) a-list))))
+                  (repeat-rule (map (lambda (x) (cons (car x) (list (cadr x)))) a-list))))
 
             (define (repeat-rule a-list)
               (cond [(empty? a-list) empty]
@@ -303,7 +303,7 @@
                                                                                  "STATE")
                                                              
                                                              "\n"
-                                                             (check-nondependent '(A) gamma "" ""))))]
+                                                             (check-nondependent '(A) (car gamma) "" ""))))]
                  ;if there are nondependent errors, keep looking, return them
                  (cond [(not (string=? non-dep-errors "")) (display non-dep-errors)]
                        ;otherwise, return that the state and sigma look good and keep checking
