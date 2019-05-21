@@ -148,7 +148,7 @@
                                                                         (list EMP ARROW BLANK RIGHT LEFT GOTO
                                                                               DEAD LM BRANCH VAR START)
                                                                         v
-                                                                        a)))) (flatten d)))))
+                                                                        a))))) (flatten d))))
 
             (define start-message (if start (begin
                                               (newline)
