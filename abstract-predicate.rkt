@@ -133,7 +133,7 @@
 
             ;;;;;;;;check for repeats in delta and finals
 
-            (define (repeat-rule a-list)
+            (define (repeat-rule a-list t)
               (if (not (equal? t 'dfa)) (repeat-rule a-list)
                   (repeat-dfa (repeat-rule a-list))))
 
