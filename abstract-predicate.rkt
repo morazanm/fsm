@@ -293,13 +293,17 @@
                (display "Structure of the machine looks good!")
                (newline)
                ;check for nondependent errors
-               (local [(define non-dep-errors (string-append (check-nondependent states
+               (local [(define non-dep-errors (if (null? gamma) (check-nondependent states
+                                                                                 sigma
+                                                                                 "list of states" 
+                                                                                 "STATE")
+                                                  (string-append (check-nondependent states
                                                                                  sigma
                                                                                  "list of states" 
                                                                                  "STATE")
                                                              
                                                              "\n"
-                                                             (check-nondependent '(A) gamma "" "")))]
+                                                             (check-nondependent '(A) gamma "" ""))))]
                  ;if there are nondependent errors, keep looking, return them
                  (cond [(not (string=? non-dep-errors "")) (display non-dep-errors)]
                        ;otherwise, return that the state and sigma look good and keep checking
