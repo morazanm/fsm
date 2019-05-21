@@ -406,17 +406,4 @@
                                                                                         (display "Rules look good!")
                                                                                         #t)
                                                                                  (display rule-errors))
-                                               ))))])))])))
-
-  (check-expect (check-machine '(A B C)
-                               '(a b c)
-                               '(B C)
-                               (list '(A b C)
-                                     '(A c B)
-                                     '(B a C))
-                               'A
-                               'dfa)
-                #t)
-  (test)
-
-  )
+                                               ))))])))]))))
