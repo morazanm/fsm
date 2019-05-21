@@ -119,7 +119,11 @@
             (define (check-sigma)
               (local [(define errors (check-list sigma
                                                  char-lower-case? 
-                                                 "alphabet"
+                                                 (if (equal? upper-name "NONTERMINAL")
+                                                     "terminals"
+                                                     (if (equal? upper-name "")
+                                                         "gamma"
+                                                         "alphabet"))
                                                  #t))]
                 (if (string=? errors "") ""
                     (string-append (format "\n ALPHABET ERRORS for: ~s" sigma) errors))                 
@@ -289,10 +293,13 @@
                (display "Structure of the machine looks good!")
                (newline)
                ;check for nondependent errors
-               (local [(define non-dep-errors (check-nondependent states
-                                                                  sigma
-                                                                  "list of states" 
-                                                                  "STATE"))]
+               (local [(define non-dep-errors (string-append (check-nondependent states
+                                                                                 sigma
+                                                                                 "list of states" 
+                                                                                 "STATE")
+                                                             
+                                                             "\n"
+                                                             (check-nondependent '(A) gamma "" "")))]
                  ;if there are nondependent errors, keep looking, return them
                  (cond [(not (string=? non-dep-errors "")) (display non-dep-errors)]
                        ;otherwise, return that the state and sigma look good and keep checking
@@ -366,10 +373,10 @@
                (display "Structure of the grammar looks good!")
                (newline)
                ;check for nondependent errors
-               (local [(define non-dep-errors (check-nondependent nts
-                                                                  sigma
-                                                                  "list of nonterminals" 
-                                                                  "NONTERMINAL"))]
+               (local [(define non-dep-errors  (check-nondependent nts
+                                                                   sigma
+                                                                   "list of nonterminals" 
+                                                                   "NONTERMINAL"))]
                  ;if there are nondependent errors, keep looking, return them
                  (cond [(not (string=? non-dep-errors "")) (display non-dep-errors)]
                        ;otherwise, return that the state and sigma look good and keep checking
@@ -384,7 +391,12 @@
                                       (begin (display dep-errors)
                                              (local [;rule-errors
                                                      (define rule-errors
-                                                       (cond [(equal? type 'rg) (check-rgrule nts sigma delta)]
+                                                       (cond [(equal? type 'rg) (check-rgrule nts sigma
+                                                                                              (filter
+                                                                                               (lambda (x) (and (equal? (car x) start)
+                                                                                                                (equal? (cadr x) ARROW)
+                                                                                                                (equal? (caddr x) EMP)))
+                                                                                               delta))]
                                                              [(equal? type 'cfg) (check-cfgrule nts sigma delta)]
                                                              [(equal? type 'csg) (check-csgrule nts sigma delta)]
                                                              [else (error "Grammar type not implemented")]))
@@ -395,5 +407,16 @@
                                                                                         #t)
                                                                                  (display rule-errors))
                                                ))))])))])))
+
+  (check-expect (check-machine '(A B C)
+                               '(a b c)
+                               '(B C)
+                               (list '(A b C)
+                                     '(A c B)
+                                     '(B a C))
+                               'A
+                               'dfa)
+                #t)
+  (test)
 
   )
