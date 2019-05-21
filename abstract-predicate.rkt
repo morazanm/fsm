@@ -128,6 +128,27 @@
                 (if (string=? errors "") ""
                     (string-append (format "\n ALPHABET ERRORS for: ~s" sigma) errors))                 
                 ))
+
+
+
+            ;;;;;;;;check for repeats in delta and finals
+
+            (define (repeat-rule a-list)
+              (if (not (equal? t 'dfa)) (repeat-rule a-list)
+                  (repeat-dfa (repeat-rule a-list))))
+
+            (define (repeat-dfa a-list)
+              (local [(define (inner los accum f-accum)
+                        (cond [(empty? los) f-accum]
+                              [(member (cons (car (car los)) (list (cadr (car los)))) accum) (inner (cdr los) accum f-accum)]
+                              [else (inner (cdr los)
+                                           (cons (list (car (car los)) (cadr (car los))) accum)
+                                           (cons (car los) f-accum))]))]
+                (inner a-list empty empty)))
+            
+
+
+            
             ]
       ;append the errors
       (string-append (local [(define upper-errors (check-upper))
@@ -140,16 +161,13 @@
     )
 
   (define (check-dependent v a s d t name . f)
-    (local [(define (remove-repeats a-list)
-              (if (not (equal? t 'dfa)) (repeat-rule a-list)
-                  (repeat-rule (map (lambda (x) (cons (car x) (list (cadr x)))) a-list))))
-
-            (define (repeat-rule a-list)
+    (local [
+            (define (remove-repeats a-list)
               (cond [(empty? a-list) empty]
-                    [(member (car a-list) (cdr a-list)) (repeat-rule (cdr a-list))]
-                    [else (cons (car a-list) (repeat-rule (cdr a-list)))])) 
+                    [(member (car a-list) (cdr a-list)) (remove-repeats (cdr a-list))]
+                    [else (cons (car a-list) (remove-repeats (cdr a-list)))])) 
 
-            (define start (member s v))
+            (define start (member s v)) 
             (define rules (filter (lambda (y)
                                     (not (member y
                                                  (append
@@ -308,7 +326,7 @@
                  (cond [(not (string=? non-dep-errors "")) (display non-dep-errors)]
                        ;otherwise, return that the state and sigma look good and keep checking
                        [else (begin (newline)
-                                    (display "List of States and Sigma look good")
+                                    (display "Nondependent componants look good!")
                                     (local [(define dep-errors (check-dependent states
                                                                                 sigma
                                                                                 start
@@ -385,7 +403,7 @@
                  (cond [(not (string=? non-dep-errors "")) (display non-dep-errors)]
                        ;otherwise, return that the state and sigma look good and keep checking
                        [else (begin (newline)
-                                    (display "List of nonterminals and Sigma look good")
+                                    (display "Nondependent componants look good!")
                                     (local [(define dep-errors (check-dependent nts
                                                                                 sigma
                                                                                 start
