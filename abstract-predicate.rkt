@@ -301,7 +301,7 @@
                                                                                 type
                                                                                 "state"
                                                                                 finals))]
-                                      (if (not (string=? dep-errors "")) (display dep-errors)
+                                      (begin (display dep-errors)
                                           (local [;rule-errors
                                                   (define rule-errors
                                                     (cond [(equal? type 'dfa) (check-dfarule states sigma delta)]
@@ -310,7 +310,8 @@
                                                           [(equal? type 'tm) (check-tmrule states sigma delta)]
                                                           [else (error "Machine type not implemented")]))
                                                   ]
-                                            (if (equal? rule-errors "") (begin (newline)
+                                            (if (and (equal? dep-errors "")
+                                                     (equal? rule-errors "")) (begin (newline)
                                                                                (display "Rules look good!")
                                                                                #t)
                                                 (display rule-errors)))
@@ -376,7 +377,7 @@
                                                                                 delta
                                                                                 type
                                                                                 "nonterminal"))]
-                                      (if (not (string=? dep-errors "")) (display dep-errors)
+                                      (begin (display dep-errors)
                                           (local [;rule-errors
                                                   (define rule-errors
                                                     (cond [(equal? type 'rg) (check-rgrule nts sigma delta)]
@@ -384,8 +385,11 @@
                                                           [(equal? type 'csg) (check-csgrule nts sigma delta)]
                                                           [else (error "Grammar type not implemented")]))
                                                   ]
-                                            (if (equal? rule-errors "") (begin (newline)
+                                            (if (and (equal? dep-errors "")
+                                                     (equal? rule-errors "")) (begin (newline)
                                                                                (display "Rules look good!")
                                                                                #t)
                                                 (display rule-errors))
-                                            ))))])))]))))
+                                            ))))])))])))
+
+  )
