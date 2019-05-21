@@ -355,32 +355,25 @@
 
   ;(make-cfg V sigma R S), where V and sigma are a (listof symbol), R
   ; is a (listof cfg-rule), and S is a symbol
-  (define (make-cfg V sigma R S)
-    (check-grammar (make-unchecked-cfg V
-                                       sigma
-                                       R
-                                       S))
+  (define (make-cfg nts sigma delta state)
+    (cond [(equal? true (check-grammar  nts sigma delta state 'cfg)) (make-unchecked-cfg nts sigma delta state)]
+          [else (error "Grammer is not valid")])
     )
 
   ;make-csg V sigma R S), where V and sigma are a (listof symbol), R
   ; is a (listof csg-rule), and S is a symbol
-  (define (make-csg V sigma R S)
-    (check-grammar (make-unchecked-csg V
-                                       sigma
-                                       R
-                                       S)) 
+  (define (make-csg nts sigma delta state)
+    (cond [(equal? true(check-grammar nts sigma delta state 'csg)) (make-unchecked-csg nts sigma delta state)]
+          [else (error "Grammer is not valid")])               
     )
 
   ;(make-rg N A R S), such that
   ; N is a (listof symbol) (the non-terminals), A is a (listof symbol) (the
   ; alphabet), R is a (listof rrule), and S is a symbol (starting symbol)
-  (define (make-rg V sigma R S)
-    (check-grammar (make-unchecked-rg V
-                                      sigma
-                                      R
-                                      S))
+  (define (make-rg nts sigma delta state)
+    (cond [(equal? true (check-grammar nts sigma delta state 'rg)) (make-unchecked-rg nts sigma delta state)]
+          [else (error "Grammer is not valid")])
     )
-
 
 
   (define (singleton-regexp a)
