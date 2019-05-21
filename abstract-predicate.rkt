@@ -143,11 +143,12 @@
 
             (define start (member s v))
             (define rules (remove-repeats (filter (lambda (x)
-                                                    (not (member x (append
-                                                                    (list EMP ARROW BLANK RIGHT LEFT GOTO
-                                                                          DEAD LM BRANCH VAR START)
-                                                                    v
-                                                                    a)))) (flatten d))))
+                                                    (not (or (= (string-length (symbol->string x)) 1)
+                                                             (member x (append
+                                                                        (list EMP ARROW BLANK RIGHT LEFT GOTO
+                                                                              DEAD LM BRANCH VAR START)
+                                                                        v
+                                                                        a)))) (flatten d)))))
 
             (define start-message (if start (begin
                                               (newline)
