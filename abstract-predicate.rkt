@@ -146,8 +146,8 @@
                                           (if (string=? sigma-errors "") upper-errors
                                               (string-append upper-errors "\n" sigma-errors)))))
                      (if (empty? delta-repeats) ""
-                         (string-append (format "\n These rules are repeated in your list of rules: \n"
-                                                (foldr (lambda (x y) (string-append (format "\n ~s" x) y)) "" delta-repeats))))
+                         (string-append "\n These rules are repeated in your list of rules: \n"
+                                       (foldr (lambda (x y) (string-append (format "\n ~s" x) y)) "" delta-repeats)))
                      )
       ))
 
@@ -184,8 +184,8 @@
                          ""
                          (local [(define dfa-repeats (repeat-dfa delta))]
                            (if (empty? dfa-repeats) ""
-                               (string-append (format "\n More than one of your rules begin with: \n"
-                                                      (foldr (lambda (x y) (string-append (format "\n ~s" x) y)) "" dfa-repeats)))))))))
+                               (string-append "\n More than one of your rules begin with: \n"
+                                              (foldr (lambda (x y) (string-append (format "\n ~s" x) y)) "" dfa-repeats))))))))
 
   (define (check-dependent v a s d t name . f)
     (local [
