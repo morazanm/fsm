@@ -338,17 +338,25 @@
                (display "Structure of the machine looks good!")
                (newline)
                ;check for nondependent errors
-               (local [(define non-dep-errors (if (null? gamma) (check-nondependent states
+               (local [(define non-dep-errors (if (null? gamma)
+                                                  (string-append (check-nondependent states
                                                                                     sigma
                                                                                     "list of states" 
                                                                                     "STATE"
                                                                                     delta)
+                                                                 "\n"
+                                                                 (check-nondepent-m delta
+                                                                                    finals
+                                                                                    type))
                                                   (string-append (check-nondependent states
                                                                                      sigma
                                                                                      "list of states" 
                                                                                      "STATE"
                                                                                      delta)
-                                                             
+                                                                 "\n"
+                                                                 (check-nondepent-m delta
+                                                                                    finals
+                                                                                    type) 
                                                                  "\n"
                                                                  (check-nondependent '(A) (car gamma) "" ""))))]
                  ;if there are nondependent errors, keep looking, return them
