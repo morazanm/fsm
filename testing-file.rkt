@@ -4,8 +4,7 @@
                        '(a b c)
                        'A
                        '(B C)
-                       (list '(A b C)
-                             '(A b C)
+                       (list '(A b C) 
                              '(A c B)
                              '(B b A))))
  

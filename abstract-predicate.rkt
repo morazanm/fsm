@@ -341,11 +341,13 @@
                (local [(define non-dep-errors (if (null? gamma) (check-nondependent states
                                                                                     sigma
                                                                                     "list of states" 
-                                                                                    "STATE")
+                                                                                    "STATE"
+                                                                                    delta)
                                                   (string-append (check-nondependent states
                                                                                      sigma
                                                                                      "list of states" 
-                                                                                     "STATE")
+                                                                                     "STATE"
+                                                                                     delta)
                                                              
                                                                  "\n"
                                                                  (check-nondependent '(A) (car gamma) "" ""))))]
@@ -425,7 +427,8 @@
                (local [(define non-dep-errors  (check-nondependent nts
                                                                    sigma
                                                                    "list of nonterminals" 
-                                                                   "NONTERMINAL"))]
+                                                                   "NONTERMINAL"
+                                                                   delta))]
                  ;if there are nondependent errors, keep looking, return them
                  (cond [(not (string=? non-dep-errors "")) (display non-dep-errors)]
                        ;otherwise, return that the state and sigma look good and keep checking
