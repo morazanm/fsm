@@ -45,21 +45,22 @@
       (list upper-bool sigma-bool start-bool delta-bool)
       ))
 
+  ;; get-repeats: list-of-strings -> list
+  ;; Purpose: Given list-of-strings will return a new list that contians all the elements in the origional list that have repeats
+  (define (get-repeats a-list)
+    (local [;; find-repeats: list-of-strings list -> list
+            ;; Purpose: Given list-of-strings will return a new list that contians all the elements in the origional list that have repeats
+            (define (find-repeats los accum)
+              (cond
+                [(empty? los) (remove-duplicates accum)]
+                [(member (car los) (cdr los)) (find-repeats (cdr los) (cons (car los) accum))]
+                [else (find-repeats (cdr los) accum)]))]
+      (find-repeats a-list '())))
+
   ;check-nondependent (listof something) (listof something) --> string
   ;purpose: to check the states and sigma for validity
-  (define (check-nondependent upper-list sigma lower-name upper-name)
-    (local [;repeats: (listof something) --> (listof something)
-            (define (repeats alist)
-              (local [;inner: (listof something) (listof something) --> (listof sometihng)
-                      ;purpose: to accumulate repeats
-                      (define (inner a-list accum)
-                        (cond [(empty? a-list) accum]
-                              [(member (car a-list) (cdr a-list)) (inner (cdr a-list)
-                                                                         (cons (car a-list) accum))]
-                              [else (inner (cdr a-list) accum)]))]
-                (inner alist '())))
-
-            ;wrong-case: (listof something) (x --> boolean) --> (listof something)
+  (define (check-nondependent upper-list sigma lower-name upper-name delta)
+    (local [ ;wrong-case: (listof something) (x --> boolean) --> (listof something)
             ;purpose: to accumulate all the non-symbols in the list
             (define (wrong-case a-list pred)
               (filter (lambda (x) (not (pred x))) a-list))
@@ -73,7 +74,7 @@
             ;purpose: to create the errors for the list
             (define (check-list a-list pred name single?)
               (local [;collect the repeats
-                      (define repeating (repeats a-list))
+                      (define repeating (get-repeats a-list))
                       ;to collect the items in the wrong case
                       (define case
                         (wrong-case a-list
@@ -99,7 +100,11 @@
                                (if (empty? repeating) ""
                                    (string-append "\n    These are repeated in your "
                                                   name
-                                                  (format ": ~s" repeating))) 
+                                                  (format ": ~s" repeating)))
+                               (if (empty? repeating) ""
+                                   (string-append "\n    These are repeated in your "
+                                                  name
+                                                  (format ": ~s" repeating)))
                                ))
               )                       
 
@@ -127,59 +132,60 @@
                                                  #t))]
                 (if (string=? errors "") ""
                     (string-append (format "\n ALPHABET ERRORS for: ~s" sigma) errors))                 
-                ))
+                )) 
+            
 
+            ;;;;;;;;check for repeats in delta and final
+            (define delta-repeats (get-repeats delta))
+            ]
+      ;append the errors
+      (string-append (string-append (local [(define upper-errors (check-upper))
+                                            (define sigma-errors (check-sigma))]
+                                      (if (string=? upper-errors "") (if (string=? sigma-errors "")
+                                                                         "" sigma-errors)
+                                          (if (string=? sigma-errors "") upper-errors
+                                              (string-append upper-errors "\n" sigma-errors)))))
+                     (if (empty? delta-repeats) ""
+                         (string-append (format "\n These rules are repeated in your list of rules: \n"
+                                                (foldr (lambda (x y) (string-append (format "\n ~s" x) y)) "" delta-repeats))))
+                     )
+      ))
 
+  ;;checks the nondependent aspects that are specific to machines
+  (define (check-nondependent-m delta finals type)
+    (local [;; get-repeats: list-of-strings -> list
+            ;; Purpose: Given list-of-strings will return a new list that contians all the elements in the origional list that have repeats
+            (define (get-repeats a-list)
+              (local [;; find-repeats: list-of-strings list -> list
+                      ;; Purpose: Given list-of-strings will return a new list that contians all the elements in the origional list that have repeats
+                      (define (find-repeats los accum)
+                        (cond
+                          [(empty? los) (remove-duplicates accum)]
+                          [(member (car los) (cdr los)) (find-repeats (cdr los) (cons (car los) accum))]
+                          [else (find-repeats (cdr los) accum)]))]
+                (find-repeats a-list '())))
+            
+            (define finals-repeats (get-repeats finals))  
 
-            ;;;;;;;;check for repeats in delta and finals
-
-            ;; finals-repeats: a-list-of-strings -> string
-            ;; Prupose: Checks for repeats in the finals, if there is a repeate, returns the repeacted string
-            (define (finals-repeats a-list)
-              (cond
-                [(member (car a-list) (cdr a-list)) (car a-list)]
-                [else empty]))
-
-            ;;delta-repeats: alist-of-string -> boolean
-            ;; Purpose: Checks for repeats in the deltas, returns true if none else returns false
-            (define (delta-repeats a-list)
-              (local[
-                     ;; repeats: lis-of-string list list -> list
-                     ;; Purpose: Finds repeats in a given list of strings
-                     (define (repeats los accum)
-                       (cond
-                         [(empty? los) accum]
-                         [(member (car los) (cdr los)) (repeats (cdr los) (cons (car los) accum))]
-                         [else (repeats (cdr los) accum)]))]
-                (repeats a-list empty)))
-                      
-              
-            (define (repeat-rule a-list t)
-              (if (not (equal? t 'dfa)) (repeat-rule a-list)
-                  (repeat-dfa (repeat-rule a-list))))
-
+            ;;removes the rules that would incur nondeterminism from the dfa
             (define (repeat-dfa a-list)
               (local [(define (inner los accum f-accum)
                         (cond [(empty? los) f-accum]
-                              [(member (cons (car (car los)) (list (cadr (car los)))) accum) (inner (cdr los) accum f-accum)]
+                              [(member (cons (car (car los)) (list (cadr (car los)))) accum)
+                               (inner (cdr los) accum (cons (cons (car los) (cadr los)) f-accum))]
                               [else (inner (cdr los)
                                            (cons (list (car (car los)) (cadr (car los))) accum)
-                                           (cons (car los) f-accum))]))]
+                                           f-accum)]))]
                 (inner a-list empty empty)))
-            
-
-
-            
             ]
-      ;append the errors
-      (string-append (local [(define upper-errors (check-upper))
-                             (define sigma-errors (check-sigma))]
-                       (if (string=? upper-errors "") (if (string=? sigma-errors "")
-                                                          "" sigma-errors)
-                           (if (string=? sigma-errors "") upper-errors
-                               (string-append upper-errors "\n" sigma-errors)))))
-      )
-    )
+      (string-append (if (empty? finals-repeats) ""
+                         (format "\n These states are repeated in your list of rules: \n ~s" finals-repeats))
+                     (if (not (equal? type 'dfa))
+                         ""
+                         (local [(define dfa-repeats (repeat-dfa delta))]
+                           (if (empty? dfa-repeats) ""
+                               (string-append (format "\n More than one of your rules begin with: \n"
+                                                      (foldr (lambda (x y) (string-append (format "\n ~s" x) y)) "" dfa-repeats)))))))))
 
   (define (check-dependent v a s d t name . f)
     (local [
