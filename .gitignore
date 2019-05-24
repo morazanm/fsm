@@ -43,6 +43,6 @@ Temporary Items
 .apdisk
 *.bak
 
-# Things that no one wants or cares about
+# Things that no one wants or cares about specifically as it relates to the inferior mac os
 *.zo
 *.dep
