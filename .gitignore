@@ -42,3 +42,7 @@ Network Trash Folder
 Temporary Items
 .apdisk
 *.bak
+
+# Things that no one wants or cares about
+*.zo
+*.dep
