@@ -359,7 +359,7 @@
                  (cond [(not (string=? non-dep-errors "")) (display non-dep-errors)]
                        ;otherwise, return that the state and sigma look good and keep checking
                        [else (begin (newline)
-                                    (display "Nondependent componants look good!")
+                                    (display "Nondependent components look good!")
                                     (local [(define dep-errors (check-dependent states
                                                                                 sigma
                                                                                 start
@@ -437,7 +437,7 @@
                  (cond [(not (string=? non-dep-errors "")) (display non-dep-errors)]
                        ;otherwise, return that the state and sigma look good and keep checking
                        [else (begin (newline)
-                                    (display "Nondependent componants look good!")
+                                    (display "Nondependent components look good!")
                                     (local [(define dep-errors (check-dependent nts
                                                                                 sigma
                                                                                 start
