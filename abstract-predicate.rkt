@@ -345,7 +345,7 @@
                                                                                     "STATE"
                                                                                     delta)
                                                                  "\n"
-                                                                 (check-nondepent-m delta
+                                                                 (check-nondependent-m delta
                                                                                     finals
                                                                                     type))
                                                   (string-append (check-nondependent states
@@ -354,7 +354,7 @@
                                                                                      "STATE"
                                                                                      delta)
                                                                  "\n"
-                                                                 (check-nondepent-m delta
+                                                                 (check-nondependent-m delta
                                                                                     finals
                                                                                     type) 
                                                                  "\n"
