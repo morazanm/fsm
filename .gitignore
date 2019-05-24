@@ -46,3 +46,13 @@ Temporary Items
 # Things that no one wants or cares about specifically as it relates to the inferior mac os
 *.zo
 *.dep
+# Racket compiled files
+compiled/
+
+# common backups, autosaves, lock files, OS meta-files
+*~
+\#*
+.#*
+.DS_Store
+*.bak
+TAGS
