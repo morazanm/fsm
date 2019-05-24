@@ -103,11 +103,7 @@
                                (if (empty? repeating) ""
                                    (string-append "\n    These are repeated in your "
                                                   name
-                                                  (format ": ~s" repeating)))
-                               (if (empty? repeating) ""
-                                   (string-append "\n    These are repeated in your "
-                                                  name
-                                                  (format ": ~s" repeating)))
+                                                  (format ": ~s" repeating))) 
                                ))
               )                       
 
@@ -149,7 +145,7 @@
                                           (if (string=? sigma-errors "") upper-errors
                                               (string-append upper-errors "\n" sigma-errors)))))
                      (if (empty? delta-repeats) ""
-                         (string-append "\n These rules are repeated in your list of rules: \n"
+                         (string-append "\n \n These rules are repeated in your list of rules: \n"
                                        (foldr (lambda (x y) (string-append (format "~s \n" x) y)) "" delta-repeats)))
                      )
       ))
@@ -346,8 +342,7 @@
                                                                                     sigma
                                                                                     "list of states" 
                                                                                     "STATE"
-                                                                                    delta)
-                                                                 "\n"
+                                                                                    delta) 
                                                                  (check-nondependent-m delta
                                                                                     finals
                                                                                     type))
@@ -355,12 +350,10 @@
                                                                                      sigma
                                                                                      "list of states" 
                                                                                      "STATE"
-                                                                                     delta)
-                                                                 "\n"
+                                                                                     delta) 
                                                                  (check-nondependent-m delta
                                                                                     finals
-                                                                                    type) 
-                                                                 "\n"
+                                                                                    type)  
                                                                  (check-nondependent '(A) (car gamma) "" ""))))]
                  ;if there are nondependent errors, keep looking, return them
                  (cond [(not (string=? non-dep-errors "")) (display non-dep-errors)]
