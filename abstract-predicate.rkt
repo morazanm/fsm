@@ -22,7 +22,10 @@
             (define sigma-bool (if (list? sigma) ""
                                    (format "The given alphabet is not a list: ~s" sigma)))          
             (define start-bool (if (symbol? start) ""
-                                   (format "The given starting nonterminal is not a symbol: ~s" start)))
+                                   (format "The given starting ~s is not a symbol: ~s" (if (equal? upper-name "list of states")
+                                                                                           'state
+                                                                                           'nonterminal)
+                                           start)))
                
             ;we need to check and make sure that the delta is in the right shape
             ; if it isnt, we cant actually check it for anything else
@@ -147,7 +150,7 @@
                                               (string-append upper-errors "\n" sigma-errors)))))
                      (if (empty? delta-repeats) ""
                          (string-append "\n These rules are repeated in your list of rules: \n"
-                                       (foldr (lambda (x y) (string-append (format "\n ~s" x) y)) "" delta-repeats)))
+                                       (foldr (lambda (x y) (string-append (format "~s \n" x) y)) "" delta-repeats)))
                      )
       ))
 
@@ -165,27 +168,27 @@
                           [else (find-repeats (cdr los) accum)]))]
                 (find-repeats a-list '())))
             
-            (define finals-repeats (get-repeats finals))  
+            (define finals-repeats (get-repeats finals)) 
 
             ;;removes the rules that would incur nondeterminism from the dfa
             (define (repeat-dfa a-list)
               (local [(define (inner los accum f-accum)
                         (cond [(empty? los) f-accum]
                               [(member (cons (car (car los)) (list (cadr (car los)))) accum)
-                               (inner (cdr los) accum (cons (cons (car los) (cadr los)) f-accum))]
+                               (inner (cdr los) accum (cons (cons (car (car los)) (cadr (car los))) f-accum))]
                               [else (inner (cdr los)
                                            (cons (list (car (car los)) (cadr (car los))) accum)
                                            f-accum)]))]
                 (inner a-list empty empty)))
             ]
       (string-append (if (empty? finals-repeats) ""
-                         (format "\n These states are repeated in your list of rules: \n ~s" finals-repeats))
+                         (format "\n These states are repeated in your list of final states \n ~s" finals-repeats))
                      (if (not (equal? type 'dfa))
                          ""
                          (local [(define dfa-repeats (repeat-dfa delta))]
                            (if (empty? dfa-repeats) ""
                                (string-append "\n More than one of your rules begin with: \n"
-                                              (foldr (lambda (x y) (string-append (format "\n ~s" x) y)) "" dfa-repeats))))))))
+                                              (foldr (lambda (x y) (string-append (format "~s \n" x) y)) "" dfa-repeats))))))))
 
   (define (check-dependent v a s d t name . f)
     (local [
