@@ -213,7 +213,7 @@
                                        (newline)
                                        (display "Rules contain viable symbols!")
                                        "")
-                                     (format "The following symbols are not defined in your list of ~ or alphabet: ~s \n" name rules)))
+                                     (format "The following symbols are not defined in your list of ~s or alphabet: ~s \n" name rules)))
 
             (define (final-check)
               (if (null? f) ""
