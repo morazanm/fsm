@@ -133,6 +133,27 @@
 
             ;;;;;;;;check for repeats in delta and finals
 
+            ;; finals-repeats: a-list-of-strings -> string
+            ;; Prupose: Checks for repeats in the finals, if there is a repeate, returns the repeacted string
+            (define (finals-repeats a-list)
+              (cond
+                [(member (car a-list) (cdr a-list)) (car a-list)]
+                [else empty]))
+
+            ;;delta-repeats: alist-of-string -> boolean
+            ;; Purpose: Checks for repeats in the deltas, returns true if none else returns false
+            (define (delta-repeats a-list)
+              (local[
+                     ;; repeats: lis-of-string list list -> list
+                     ;; Purpose: Finds repeats in a given list of strings
+                     (define (repeats los accum)
+                       (cond
+                         [(empty? los) accum]
+                         [(member (car los) (cdr los)) (repeats (cdr los) (cons (car los) accum))]
+                         [else (repeats (cdr los) accum)]))]
+                (repeats a-list empty)))
+                      
+              
             (define (repeat-rule a-list t)
               (if (not (equal? t 'dfa)) (repeat-rule a-list)
                   (repeat-dfa (repeat-rule a-list))))
@@ -312,16 +333,16 @@
                (newline)
                ;check for nondependent errors
                (local [(define non-dep-errors (if (null? gamma) (check-nondependent states
-                                                                                 sigma
-                                                                                 "list of states" 
-                                                                                 "STATE")
+                                                                                    sigma
+                                                                                    "list of states" 
+                                                                                    "STATE")
                                                   (string-append (check-nondependent states
-                                                                                 sigma
-                                                                                 "list of states" 
-                                                                                 "STATE")
+                                                                                     sigma
+                                                                                     "list of states" 
+                                                                                     "STATE")
                                                              
-                                                             "\n"
-                                                             (check-nondependent '(A) (car gamma) "" ""))))]
+                                                                 "\n"
+                                                                 (check-nondependent '(A) (car gamma) "" ""))))]
                  ;if there are nondependent errors, keep looking, return them
                  (cond [(not (string=? non-dep-errors "")) (display non-dep-errors)]
                        ;otherwise, return that the state and sigma look good and keep checking
