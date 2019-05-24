@@ -38,14 +38,12 @@ $RECYCLE.BIN/
 # Directories potentially created on remote AFP share
 .AppleDB
 .AppleDesktop
-Network Trash Folder
-Temporary Items
+# Network Trash Folder
+# Temporary Items
 .apdisk
 *.bak
 
-# Things that no one wants or cares about specifically as it relates to the inferior mac os
-*.zo
-*.dep
+
 # Racket compiled files
 compiled/
 
