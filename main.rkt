@@ -9,7 +9,8 @@
            "state.rkt" "sm-getters.rkt" "grammar-getters.rkt" 
            "regexp-predicate.rkt" "abstract-predicate.rkt")
   
-  (provide 
+  (provide
+   check-machine
    empties
 
    ; sm constructors
