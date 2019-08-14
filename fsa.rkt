@@ -9,7 +9,7 @@
            "string.rkt" "path.rkt" "constants.rkt" "misc.rkt" "regular-grammar.rkt"
            )
   
-  (provide make-unchecked-dfa make-unchecked-ndfa union-fsa concat-fsa kleenestar-fsa complement-fsa intersection-fsa
+  (provide M1 make-unchecked-dfa make-unchecked-ndfa union-fsa concat-fsa kleenestar-fsa complement-fsa intersection-fsa
            fsa->regexp regexp->fsa ndfa->dfa test-fsa test-equiv-fsa
            printable-rrules fsa->rg rg->fsa rename-states-fsa show-transitions-fsa fsa-getrules fsa-getstates
            fsa-getstart fsa-getfinals fsa-getalphabet apply-fsa)
@@ -209,46 +209,46 @@
                                     (append (nm1 null 'get-deltas) 
                                             (nm2 null 'get-deltas))))))
         (make-unchecked-ndfa new-states
-                   alphabet
-                   new-start
-                   new-finals
-                   new-rules))))
+                             alphabet
+                             new-start
+                             new-finals
+                             new-rules))))
   
   ; fsa fsa --> fsa
   (define (concat-fsa m1 m2)
     (let* ((nm1 (rename-states-fsa (fsa-getstates m2) m1))
            (nm2 m2))
       (make-unchecked-ndfa (union-states (fsa-getstates nm1) (fsa-getstates nm2)) ; nm1 & nm2 have no common state names
-                 (remove-duplicates (append (fsa-getalphabet nm1) (fsa-getalphabet nm2)))
-                 (fsa-getstart nm1)
-                 (fsa-getfinals nm2)
-                 (append (fsa-getrules nm1)
-                         (fsa-getrules nm2)
-                         (map (lambda (s) (mk-fsarule s EMP (fsa-getstart nm2))) 
-                              (fsa-getfinals nm1))))))
+                           (remove-duplicates (append (fsa-getalphabet nm1) (fsa-getalphabet nm2)))
+                           (fsa-getstart nm1)
+                           (fsa-getfinals nm2)
+                           (append (fsa-getrules nm1)
+                                   (fsa-getrules nm2)
+                                   (map (lambda (s) (mk-fsarule s EMP (fsa-getstart nm2))) 
+                                        (fsa-getfinals nm1))))))
   
   ; fsa --> fsa
   (define (kleenestar-fsa m1)
     (let ((START (generate-symbol 'S-0 (fsa-getstates m1))))
       (make-unchecked-ndfa (cons START (fsa-getstates m1))
-                 (fsa-getalphabet m1)
-                 START
-                 (cons START (fsa-getfinals m1))
-                 (cons (mk-fsarule START EMP (fsa-getstart m1))
-                       (append (fsa-getrules m1)
-                               (map (lambda (s) (mk-fsarule s EMP (fsa-getstart m1))) 
-                                    (fsa-getfinals m1)))))))
+                           (fsa-getalphabet m1)
+                           START
+                           (cons START (fsa-getfinals m1))
+                           (cons (mk-fsarule START EMP (fsa-getstart m1))
+                                 (append (fsa-getrules m1)
+                                         (map (lambda (s) (mk-fsarule s EMP (fsa-getstart m1))) 
+                                              (fsa-getfinals m1)))))))
   
   ; dfsa --> dfsa
   (define (complement-fsa m)
     ; rename-states-fsa is not needed, because no new states are introduced
     (let ((m1 (ndfa->dfa m 'nodead)))
       (make-unchecked-dfa (fsa-getstates m1)
-                (fsa-getalphabet m1)
-                (fsa-getstart m1)
-                (minus-set (fsa-getstates m1) (fsa-getfinals m1))
-                (fsa-getrules m1)
-                'nodead)))
+                          (fsa-getalphabet m1)
+                          (fsa-getstart m1)
+                          (minus-set (fsa-getstates m1) (fsa-getfinals m1))
+                          (fsa-getrules m1)
+                          'nodead)))
   
   ; fsa fsa --> fsa
   (define (intersection-fsa m1 m2)
@@ -280,7 +280,7 @@
         (let ((car-regexp (if (eq? (car l) EMP) (empty-regexp) (make-unchecked-singleton (symbol->string (car l))))))
           (cond [(null? (cdr l)) car-regexp]
                 [else (make-unchecked-union car-regexp
-                                    (make-lunion-regexp (cdr l)))])))
+                                            (make-lunion-regexp (cdr l)))])))
       
       
       ; natnum natnum natnum --> regexp
@@ -302,14 +302,14 @@
                            (R4 (R k j (- k 1)))
                            )
                       (make-unchecked-union R1
-                                    (make-unchecked-concat R2
-                                                   (make-unchecked-concat (make-unchecked-kleenestar R3) R4))))]))
+                                            (make-unchecked-concat R2
+                                                                   (make-unchecked-concat (make-unchecked-kleenestar R3) R4))))]))
       (cond [(null? finals) (null-regexp)]
             [(null? (cdr finals)) (let* ((current-final (car finals)))
                                     (R 1 (get-assoc current-final table) n))] 
             [else (let* ((current-final (car finals)))
                     (make-unchecked-union (R 1 (get-assoc current-final table) n)
-                                  (build-reg-exp table (cdr finals) rules n start)))]))
+                                          (build-reg-exp table (cdr finals) rules n start)))]))
     (let* ((sts (start-first (fsa-getstart m) (fsa-getstates m)))
            (state-table (build-list (length sts)
                                     (lambda (i) (list (+ i 1) (list-ref sts i)))))
@@ -457,5 +457,13 @@
     (let ((test-words (generate-words number-tests (fsa-getalphabet m) null))) ;(build-list number-tests (lambda (i) (generate-word (fsa-getalphabet m))))))
       (map (lambda (w) (list w (apply-fsa m w))) test-words)))
 
+  (define INIT-STATES '(A B C D))
+  (define INIT-START 'A)
+  (define INIT-FINALS '(C D))
+  (define INIT-RULES (list '(A a B) '(B b A) '(A c C) '(C b D)))
+  (define INIT-SIGMA '(a b c b))
+  (define INIT-CURRENT 'A)
+  (define INIT-ALPHA '(a b c))
+  (define M1 (make-unchecked-ndfa INIT-STATES INIT-ALPHA INIT-START INIT-FINALS INIT-RULES))
   
   )  ; closes module

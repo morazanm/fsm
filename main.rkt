@@ -297,12 +297,18 @@
   ; make-dfa: (listof state) alphabet state (listof state) (listof rule)) [symbol] --> dfa
   (define (make-dfa states sigma start finals deltas . adddead)
     (cond [(equal? true (check-machine states sigma finals deltas start 'dfa))
-           (make-unchecked-dfa states
-                               sigma
-                               start
-                               finals
-                               deltas
-                               adddead)]
+           (if (null? adddead)
+               (make-unchecked-dfa states
+                                   sigma
+                                   start
+                                   finals
+                                   deltas)
+               (make-unchecked-dfa states
+                                   sigma
+                                   start
+                                   finals
+                                   deltas
+                                   adddead))]
           [else (begin (newline) (error"Check above message for error"))])
     )
 
@@ -310,47 +316,60 @@
   ;            --> ndfa
   (define (make-ndfa states sigma start finals deltas . adddead)
     (cond [(equal? true (check-machine states sigma finals deltas start 'ndfa))
-           (make-unchecked-ndfa states
-                                sigma
-                                start
-                                finals
-                                deltas
-                                adddead)]
+           (if (null? adddead)
+               (make-unchecked-ndfa states
+                                    sigma
+                                    start
+                                    finals
+                                    deltas)
+               (make-unchecked-ndfa states
+                                    sigma
+                                    start
+                                    finals
+                                    deltas
+                                    adddead))]
           [else (begin (newline) (error"Check above message for error"))])
     )
 
   ; make-ndpda: (listof states) alphabet alphabet state (listof states) (listof pdarules) --> ndpda
   (define (make-ndpda states sigma gamma start finals deltas . adddead)
     (cond [(check-machine (states sigma finals deltas start 'pda gamma))
-           (make-unchecked-ndpda states
-                                 sigma
-                                 start
-                                 finals
-                                 deltas
-                                 adddead)]
+           (if (null? adddead)
+               (make-unchecked-ndpda states
+                                     sigma
+                                     start
+                                     finals
+                                     deltas)
+               (make-unchecked-ndpda states
+                                     sigma
+                                     start
+                                     finals
+                                     deltas
+                                     adddead))]
           [else (begin (newline) (error"Check above message for error"))])
     )
   
   ;make-tm (listof state) (listof symbol) (listof (list state symbol) (list state symbol)) (listof state) state --> tm
   (define (make-tm states sigma start finals delta . accept)
     (cond [(equal? (check-machine states
-                                   sigma
-                                   finals
-                                   delta
-                                   start
-                                   'tm) #t) (if (null? accept) (make-unchecked-tm states
-                                                                                  sigma
-                                                                                  delta
-                                                                                  start
-                                                                                  finals)
-                                                (if (member accept finals) (make-unchecked-tm
-                                                                            states
-                                                                            sigma
-                                                                            delta
-                                                                            start
-                                                                            finals
-                                                                            accept)
-                                                    (begin (newline) (error (format "accept state: ~s, not in final states" accept)))))]
+                                  sigma
+                                  finals
+                                  delta
+                                  start
+                                  'tm) #t)
+           (if (null? accept) (make-unchecked-tm states
+                                                 sigma
+                                                 delta
+                                                 start
+                                                 finals)
+               (if (member accept finals) (make-unchecked-tm
+                                           states
+                                           sigma
+                                           delta
+                                           start
+                                           finals
+                                           accept)
+                   (begin (newline) (error (format "accept state: ~s, not in final states" accept)))))]
           [else (begin (newline) (error"Check above message for error"))])) 
 
 
@@ -416,7 +435,7 @@
           tentative)
       )
     )
-  )
-; closes module
+  
+  ) ; closes module
 
 
