@@ -1,1 +1,1 @@
-("7.2" racket ("1e8cb2b2cee6ce5b7ce60e7b5ad61ca456facf27" . "df2f75c1e137689f291a5dc240289d2b18b29cb8") (collects #"racket" #"main.rkt") (collects #"racket" #"runtime-config.rkt") (collects #"scribble" #"manual" #"lang" #"reader.rkt") (collects #"scribble" #"manual" #"lang.rkt"))
+("7.0" ("e247453224fcca3a29d02f24e262dde580eae2ab" . "0a00a7cb21a5be3142729a905b096f5c3868126a") (collects #"racket" #"main.rkt") (collects #"racket" #"runtime-config.rkt") (collects #"scribble" #"manual" #"lang" #"reader.rkt") (collects #"scribble" #"manual" #"lang.rkt"))

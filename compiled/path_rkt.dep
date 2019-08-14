@@ -1,1 +1,1 @@
-("7.2" racket ("ee16614d61deecf6b177aaa17732ead427727254" . "dc98c91b7965212ce6b051c44432f38678485139") (collects #"fsm" #"configuration.rkt") (collects #"fsm" #"word.rkt") (collects #"racket" #"main.rkt") (collects #"racket" #"runtime-config.rkt"))
+("7.0" ("a8db517ba2886a37423d49d4d4956079bb7db1a5" . "d9ac1e650838babcc939528ea5d254bd64e0d430") (collects #"fsm" #"configuration.rkt") (collects #"fsm" #"word.rkt") (collects #"racket" #"main.rkt") (collects #"racket" #"runtime-config.rkt"))
