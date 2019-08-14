@@ -9,7 +9,7 @@
            "string.rkt" "path.rkt" "constants.rkt" "misc.rkt" "regular-grammar.rkt"
            )
   
-  (provide M1 make-unchecked-dfa make-unchecked-ndfa union-fsa concat-fsa kleenestar-fsa complement-fsa intersection-fsa
+  (provide make-unchecked-dfa make-unchecked-ndfa union-fsa concat-fsa kleenestar-fsa complement-fsa intersection-fsa
            fsa->regexp regexp->fsa ndfa->dfa test-fsa test-equiv-fsa
            printable-rrules fsa->rg rg->fsa rename-states-fsa show-transitions-fsa fsa-getrules fsa-getstates
            fsa-getstart fsa-getfinals fsa-getalphabet apply-fsa)
