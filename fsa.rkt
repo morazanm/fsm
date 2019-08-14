@@ -457,13 +457,4 @@
     (let ((test-words (generate-words number-tests (fsa-getalphabet m) null))) ;(build-list number-tests (lambda (i) (generate-word (fsa-getalphabet m))))))
       (map (lambda (w) (list w (apply-fsa m w))) test-words)))
 
-  (define INIT-STATES '(A B C D))
-  (define INIT-START 'A)
-  (define INIT-FINALS '(C D))
-  (define INIT-RULES (list '(A a B) '(B b A) '(A c C) '(C b D)))
-  (define INIT-SIGMA '(a b c b))
-  (define INIT-CURRENT 'A)
-  (define INIT-ALPHA '(a b c))
-  (define M1 (make-unchecked-ndfa INIT-STATES INIT-ALPHA INIT-START INIT-FINALS INIT-RULES))
-  
   )  ; closes module
