@@ -66,7 +66,7 @@
     (local [ ;wrong-case: (listof something) (x --> boolean) --> (listof something)
             ;purpose: to accumulate all the non-symbols in the list
             (define (wrong-case a-list pred)
-              (filter (lambda (x) (not (pred x))) a-list))
+              (filter (lambda (x) (and (not (pred x)) (not (eq? x DEAD)))) a-list))
 
             ;wrong-type: (listof something) --> (listof not symbols)
             ;purpose: to accumulte all the non-symbols in the list
