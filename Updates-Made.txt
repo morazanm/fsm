@@ -1,4 +1,0 @@
-Highlights of improvements:
-
-Fixed bug in ndfa->dfa 3/28/15
-

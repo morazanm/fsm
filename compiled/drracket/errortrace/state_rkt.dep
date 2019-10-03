@@ -1,1 +1,0 @@
-("7.0" ("e97a5aaeda6c6e12685f17a13e03f2cb57cab434" . "56d7a14d6a225010a4ca72ef1a045318a6cd14f9") (collects #"errortrace" #"errortrace-key.rkt") (collects #"fsm" #"constants.rkt") (collects #"fsm" #"misc.rkt") (collects #"fsm" #"rules.rkt") (collects #"fsm" #"string.rkt") (collects #"racket" #"main.rkt") (collects #"racket" #"runtime-config.rkt"))
