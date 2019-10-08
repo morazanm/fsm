@@ -430,11 +430,18 @@ Button onClick Functions
                         [(equal? #t (check-machine state-list (machine-alpha-list fsm-machine) (machine-final-state-list fsm-machine) (machine-rule-list fsm-machine) (machine-start-state fsm-machine) (machine-type fsm-machine)))
                          (letrec (
                                   ;; The passing machine
-                                  (m (make-dfa state-list
-                                               (machine-alpha-list (world-fsm-machine w))
-                                               (machine-start-state (world-fsm-machine w))
-                                               (machine-final-state-list (world-fsm-machine w))
-                                               (machine-rule-list (world-fsm-machine w))))
+                                  (m (case (machine-type fsm-machine)
+                                       ['dfa (make-unchecked-dfa state-list
+                                                       (machine-alpha-list (world-fsm-machine w))
+                                                       (machine-start-state (world-fsm-machine w))
+                                                       (machine-final-state-list (world-fsm-machine w))
+                                                       (machine-rule-list (world-fsm-machine w)))]
+                                       ['ndfa (make-unchecked-ndfa state-list
+                                                         (machine-alpha-list (world-fsm-machine w))
+                                                         (machine-start-state (world-fsm-machine w))
+                                                         (machine-final-state-list (world-fsm-machine w))
+                                                         (machine-rule-list (world-fsm-machine w)))]
+                                       [else println("TODO")]))
 
                                   ;; in-cur-state-list: symbol machine-state-list -> boolean/state-struct
                                   ;; Purpose: Returns a state-struct if its name is the same as the symbol, otherwise

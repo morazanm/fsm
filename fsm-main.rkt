@@ -19,6 +19,8 @@
  regexp->fsa ndfa->dfa fsa->regexp
  sm-rename-states 
  sm-union sm-concat sm-kleenestar sm-complement sm-intersection grammar->sm
+ make-unchecked-dfa
+ make-unchecked-ndfa
 
  ; sm observers
  sm-apply sm-showtransitions sm-type
