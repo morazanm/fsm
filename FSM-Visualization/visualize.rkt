@@ -432,15 +432,15 @@ Button onClick Functions
                                   ;; The passing machine
                                   (m (case (machine-type fsm-machine)
                                        ['dfa (make-unchecked-dfa state-list
-                                                       (machine-alpha-list (world-fsm-machine w))
-                                                       (machine-start-state (world-fsm-machine w))
-                                                       (machine-final-state-list (world-fsm-machine w))
-                                                       (machine-rule-list (world-fsm-machine w)))]
+                                                                 (machine-alpha-list (world-fsm-machine w))
+                                                                 (machine-start-state (world-fsm-machine w))
+                                                                 (machine-final-state-list (world-fsm-machine w))
+                                                                 (machine-rule-list (world-fsm-machine w)))]
                                        ['ndfa (make-unchecked-ndfa state-list
-                                                         (machine-alpha-list (world-fsm-machine w))
-                                                         (machine-start-state (world-fsm-machine w))
-                                                         (machine-final-state-list (world-fsm-machine w))
-                                                         (machine-rule-list (world-fsm-machine w)))]
+                                                                   (machine-alpha-list (world-fsm-machine w))
+                                                                   (machine-start-state (world-fsm-machine w))
+                                                                   (machine-final-state-list (world-fsm-machine w))
+                                                                   (machine-rule-list (world-fsm-machine w)))]
                                        [else println("TODO")]))
 
                                   ;; in-cur-state-list: symbol machine-state-list -> boolean/state-struct
@@ -469,9 +469,9 @@ Button onClick Functions
                                     (if (list? unprocessed-list) (list (car unprocessed-list)) '()) (if (list? unprocessed-list) (cdr unprocessed-list) '())
                                     (if (list? unprocessed-list)
                                         (msgWindow "The machine was sucessfuly Built. Press Next and Prev to show the machine's transitions" "Success"
-                                               (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)
+                                                   (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)
                                         (msgWindow "The Input was rejected" "Warning"
-                                               (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-CAUTION))
+                                                   (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-CAUTION))
                                     0)))]
                         [else
                          (redraw-world-with-msg w "The Machine failed to build. Please see the cmd for more info" "Error" MSG-ERROR)]))))
@@ -585,8 +585,14 @@ Button onClick Functions
 ;; getCurRule: processed-list -> rule
 ;; Purpose: get the rule that the machine just executed
 (define getCurRule (lambda (pl)
+                     
                      (cond
                        [(< (length pl) 2) (list 'empty 'empty 'empty)] ;; If the processed list doesn't have at least 2 items in it then no rule was followed...
+                       [(= (length (caar pl)) (length (caadr pl)))
+                        (list
+                         (cadadr pl)
+                         EMP
+                         (cadar pl))]
                        [else
                         (list
                          (cadadr pl)
@@ -624,18 +630,20 @@ Button onClick Functions
                         (let(
                              (nextState (car (world-unporcessed-config-list w)))
                              (transitions (cdr (world-unporcessed-config-list w))))
-                    
+                         
                           (cond
                             [(eq? nextState 'accept)
                              (redraw-world-with-msg w "The input is accepted." "Success" MSG-SUCCESS)]
                             [(eq? nextState 'reject)
                              (redraw-world-with-msg w "The input is rejected." "Notice" MSG-CAUTION)]
                             [else
-                             (set! TAPE-INDEX (+ 1 TAPE-INDEX))
-                             (world (world-fsm-machine w) (world-tape-position w) (getCurRule (append (list nextState) (world-processed-config-list w)))
-                                    (car (cdr nextState)) (world-button-list w) (world-input-list w)
-                                    (append (list nextState) (world-processed-config-list w)) transitions (world-error-msg w)
-                                    (getScrollBarPosition (reverse (machine-rule-list (world-fsm-machine w))) (getCurRule (append (list nextState) (world-processed-config-list w)))))]))])])))
+                             (let* ((cur-rule (getCurRule (append (list nextState) (world-processed-config-list w)))))
+                               (if (equal? EMP (cadr cur-rule)) TAPE-INDEX (set! TAPE-INDEX (+ 1 TAPE-INDEX)))
+                             
+                               (world (world-fsm-machine w) (world-tape-position w) (getCurRule (append (list nextState) (world-processed-config-list w)))
+                                      (car (cdr nextState)) (world-button-list w) (world-input-list w)
+                                      (append (list nextState) (world-processed-config-list w)) transitions (world-error-msg w)
+                                      (getScrollBarPosition (reverse (machine-rule-list (world-fsm-machine w))) cur-rule)))]))])])))
 
 ;; showPrev: world -> world
 ;; shows the previous state that the machine was in
@@ -644,13 +652,15 @@ Button onClick Functions
                      [(empty? (world-processed-config-list w)) (redraw-world-with-msg w "The tape is currently empty. Please add variables to the tape, then press 'Run'" "Notice" MSG-CAUTION)]
                      [(empty? (cdr (world-processed-config-list w))) (redraw-world-with-msg w "You have reached the beginning of the machine! There are no more previous states." "Notice" MSG-CAUTION)]
                      [else
-                      (let(
-                           (previousState (car (cdr (world-processed-config-list w)))))
-                        (set! TAPE-INDEX (- TAPE-INDEX 1))
+                      (let* (
+                             (previousState (car (cdr (world-processed-config-list w))))
+                             (cur-rule (getCurRule (cdr (world-processed-config-list w)))))
+                        (if (equal? EMP (cadr cur-rule)) (set! TAPE-INDEX TAPE-INDEX) (set! TAPE-INDEX (- TAPE-INDEX 1)))
+                        
                         (world (world-fsm-machine w) (world-tape-position w) (getCurRule (cdr (world-processed-config-list w)))
                                (car (cdr previousState)) (world-button-list w) (world-input-list w)
                                (cdr (world-processed-config-list w)) (cons (car (world-processed-config-list w)) (world-unporcessed-config-list w)) (world-error-msg w)
-                               (getScrollBarPosition (reverse (machine-rule-list (world-fsm-machine w))) (getCurRule (cdr (world-processed-config-list w))))))])))
+                               (getScrollBarPosition (reverse (machine-rule-list (world-fsm-machine w))) cur-rule)))])))
 
 ;; scrollbarRight: world -> world
 ;; Purpose: moves the scroll bar over 1 place to the right
@@ -968,7 +978,7 @@ Scene Rendering
                             
     ;; Check if the inner circle needs to be drawn
     (cond
-      [(null? (world-cur-state w))
+      [(or (null? (world-cur-state w)) (empty? (world-processed-config-list w)))
        (place-image CENTER-CIRCLE X0 Y0
                     (draw-states (machine-state-list (world-fsm-machine w)) 0 s))]
       [else
