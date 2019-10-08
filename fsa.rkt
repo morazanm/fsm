@@ -113,7 +113,7 @@
                                    (consume null (list (mk-path (mk-config 0 start) null)))))) ; else make transitions using BFS searching for an accepting path if it exists
                       (cond [(null? l) (if (empty-path? res) 'reject 'accept)]
                             [(eq? (car l) 'transitions) 
-                             (if (empty-path? res) 'reject (printable-path w res))]
+                             (if (empty-path? res) 'reject (append (printable-path w res) '(accept)))]
                             [(eq? (car l) 'get-deltas) deltas]
                             [(eq? (car l) 'get-states) states]
                             [(eq? (car l) 'get-sigma) sigma]
