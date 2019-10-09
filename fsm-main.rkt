@@ -336,15 +336,17 @@
 
 ; make-ndpda: (listof states) alphabet alphabet state (listof states) (listof pdarules) --> ndpda
 (define (make-ndpda states sigma gamma start finals deltas . adddead)
-  (cond [(check-machine (states sigma finals deltas start 'pda gamma))
+  (cond [(check-machine states sigma finals deltas start 'pda gamma)
          (if (null? adddead)
              (make-unchecked-ndpda states
                                    sigma
+                                   gamma
                                    start
                                    finals
                                    deltas)
              (make-unchecked-ndpda states
                                    sigma
+                                   gamma
                                    start
                                    finals
                                    deltas

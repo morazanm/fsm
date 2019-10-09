@@ -353,8 +353,8 @@
                                                                                      delta) 
                                                                  (check-nondependent-m delta
                                                                                     finals
-                                                                                    type)  
-                                                                 (check-nondependent '(A) (car gamma) "" ""))))]
+                                                                                    type))))]  
+                                                                 ;(check-nondependent '(A) (car gamma) "" ""))))]
                  ;if there are nondependent errors, keep looking, return them
                  (cond [(not (string=? non-dep-errors "")) (display non-dep-errors)]
                        ;otherwise, return that the state and sigma look good and keep checking
