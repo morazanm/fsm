@@ -313,7 +313,7 @@ Button onClick Functions
 
                      (cond
                        [(equal? input-value "") (redraw-world w)]
-                       [(equal? 17 (add1 (length (machine-alpha-list (world-fsm-machine w)))))
+                       [(equal? 14 (add1 (length (machine-alpha-list (world-fsm-machine w)))))
                         (redraw-world-with-msg w "You have reached the maximum amount of characters for the alphabet" "Error" MSG-CAUTION)]
                        [else
                         (begin
@@ -414,6 +414,26 @@ Button onClick Functions
                          (set! INIT-INDEX 0)
                          (set-machine-sigma-list! (world-fsm-machine w) '())
                          (create-new-world-input-empty w new-input-list)))))
+
+
+;; add gamm: world -> world
+;; Purpose: Adds a value to the machines gamma list (only needed for pda)
+(define addGamma (lambda (w)
+                         (let (
+                               (input-value (string-trim (textbox-text(list-ref (world-input-list w) 8))))
+                               (new-input-list (list-set (world-input-list w) 8 (remove-text (list-ref (world-input-list w) 8) 100))))
+                            (cond
+                       [(equal? input-value "") (redraw-world w)]
+                       [(equal? 14 (add1 (length (pda-machine-stack-alpha-list (world-fsm-machine w)))))
+                        (redraw-world-with-msg w "You have reached the maximum amount of characters allowed" "Warning" MSG-CAUTION)]
+                       [else
+                        (begin
+                          (set! TAPE-INDEX -1)
+                          (set! INIT-INDEX 0)
+                          (set-pda-machine-stack-alpha-list! (world-fsm-machine w) (sort (remove-duplicates (cons (string->symbol input-value) (pda-machine-stack-alpha-list (world-fsm-machine w)))) symbol<?))
+                          (create-new-world-input-empty w new-input-list))]))))
+                           
+                         
 
 
 ;; runProgram: world -> world
@@ -696,6 +716,12 @@ Button Declarations
 
 (define BTN-ADD-ALPHA (button 70 25 "Add" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 24 #f #f (posn (- WIDTH 150) (- (* 2 CONTROL-BOX-H) 25)) addAlpha))
 (define BTN-REMOVE-ALPHA (button 70 25 "Remove" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 24 #f #f (posn (- WIDTH 50) (- (* 2 CONTROL-BOX-H ) 25)) rmvAlpha))
+(define BTN-ADD-ALPHA-PDA (button 35 25 "Add" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 175) (- (* 2 CONTROL-BOX-H) 25)) addAlpha))
+(define BTN-REMOVE-ALPHA-PDA (button 35 25 "Rmv" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 125) (- (* 2 CONTROL-BOX-H ) 25)) rmvAlpha))
+
+(define BTN-ADD-GAMMA-PDA (button 35 25 "Add" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 75) (- (* 2 CONTROL-BOX-H) 25)) addGamma))
+(define BTN-REMOVE-GAMMA-PDA (button 35 25 "Rmv" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 25) (- (* 2 CONTROL-BOX-H ) 25)) NULL-FUNCTION))
+
 
 (define BTN-ADD-START (button 50 25 "Add" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 50) (- (* 3 CONTROL-BOX-H) 71)) addStart))
 (define BTN-REMOVE-START (button 50 25 "Replace" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 50) (- (* 3 CONTROL-BOX-H) 25)) replaceStart))
@@ -731,6 +757,17 @@ Button Declarations
                           BTN-RUN BTN-SCROLL-LEFT-RULES
                           BTN-SCROLL-RIGHT-RULES BTN-HELP))
 
+(define BUTTON-LIST-PDA (list BTN-ADD-STATE BTN-REMOVE-STATE
+                          BTN-ADD-ALPHA-PDA BTN-REMOVE-ALPHA-PDA
+                          BTN-ADD-GAMMA-PDA BTN-REMOVE-GAMMA-PDA
+                          BTN-ADD-START BTN-REMOVE-START
+                          BTN-ADD-END BTN-REMOVE-END
+                          BTN-ADD-RULES BTN-REMOVE-RULES
+                          BTN-GENCODE BTN-NEXT BTN-PREV
+                          BTN-SIGMA-ADD BTN-SIGMA-CLEAR
+                          BTN-RUN BTN-SCROLL-LEFT-RULES
+                          BTN-SCROLL-RIGHT-RULES BTN-HELP))
+
 
 #|
 -----------------------
@@ -747,9 +784,13 @@ Textbox Declarations
 (define IPF-RULE3 (textbox 40 25 INPUT-COLOR INPUT-COLOR "" 4 (posn (- WIDTH 50) (- (* 5 CONTROL-BOX-H) 70)) #f))
 (define IPF-SIGMA (textbox 90 25 INPUT-COLOR INPUT-COLOR "" 8 (posn (/ (/ WIDTH 11) 2) 40) #f))
 
+;;pda related inputs
+(define IPF-ALPHA-PDA (textbox 50 25 INPUT-COLOR INPUT-COLOR "" 1 (posn (- WIDTH 150) (- (* 2 CONTROL-BOX-H) 70)) #f))
+(define IPF-GAMMA-PDA (textbox 50 25 INPUT-COLOR INPUT-COLOR "" 1 (posn (- WIDTH 50) (- (* 2 CONTROL-BOX-H) 70)) #f))
+
 ;; INPUT-LIST: A list containing all input fields that are displayed on the scene.
 (define INPUT-LIST (list IPF-STATE IPF-ALPHA IPF-START IPF-END IPF-RULE1 IPF-RULE2 IPF-RULE3 IPF-SIGMA))
-
+(define INPUT-LIST-PDA (list IPF-STATE IPF-ALPHA-PDA IPF-START IPF-END IPF-RULE1 IPF-RULE2 IPF-RULE3 IPF-SIGMA IPF-GAMMA-PDA))
 
 
 #|
@@ -758,12 +799,26 @@ Initialize World
 -----------------------
 |# 
 
-;; create-init-world: machine msgWindow(optional) -> world
+;; create-init-world: machine type msgWindow(optional) -> world
 ;; Purpose: Creates the initail world with the given machine
-(define (create-init-world m . msg)
-  (cond
-    [(null? msg) (world m TAPE-POSITION CURRENT-RULE CURRENT-STATE BUTTON-LIST INPUT-LIST PROCESSED-CONFIG-LIST UNPROCESSED-CONFIG-LIST null INIT-INDEX)]
-    [else (world m TAPE-POSITION CURRENT-RULE CURRENT-STATE BUTTON-LIST INPUT-LIST PROCESSED-CONFIG-LIST UNPROCESSED-CONFIG-LIST (car msg) INIT-INDEX)]))
+(define (create-init-world m type . msg)
+  (letrec (
+           ;; determine-input-list: none -> list-of-input-fields
+           ;; Purpose: Determins which input list to use
+           (determine-input-list (lambda ()
+                                   (case type
+                                     [(pda) INPUT-LIST-PDA]
+                                     [else INPUT-LIST])))
+
+           ;; determine-button-list: none -> list-of-buttons
+           ;; Purpose: Determins which button list to use
+           (determine-button-list (lambda()
+                                    (case type
+                                      [(pda) BUTTON-LIST-PDA]
+                                      [else BUTTON-LIST]))))
+    (cond
+      [(null? msg) (world m TAPE-POSITION CURRENT-RULE CURRENT-STATE (determine-button-list) (determine-input-list) PROCESSED-CONFIG-LIST UNPROCESSED-CONFIG-LIST null INIT-INDEX)]
+      [else (world m TAPE-POSITION CURRENT-RULE CURRENT-STATE (determine-button-list) (determine-input-list) PROCESSED-CONFIG-LIST UNPROCESSED-CONFIG-LIST (car msg) INIT-INDEX)])))
 
 
 
@@ -791,9 +846,9 @@ Cmd Functions
     (cond
       [(symbol? fsm-machine) ;; Brand new machine
        (case fsm-machine
-         [(dfa) (run-program (create-init-world (machine '() null '() '() '() '() 'dfa )))]
-         [(ndfa) (run-program (create-init-world (machine '() null '() '() '() '() 'ndfa )))]
-         [(pda) (println "TODO ADD PDA")]
+         [(dfa) (run-program (create-init-world (machine '() null '() '() '() '() 'dfa ) 'dfa))]
+         [(ndfa) (run-program (create-init-world (machine '() null '() '() '() '() 'ndfa ) 'ndfa))]
+         [(pda) (run-program (create-init-world (pda-machine '() null '() '() '() '() 'pda) 'pda))]
          [(tm) (println "TODO ADD Turing Machine")]
          [else (error (format "~s is not a valid machine type" fsm-machine))])]
       
@@ -801,10 +856,12 @@ Cmd Functions
        (case (sm-type fsm-machine) ;; Pre-made with no predicates
          [(dfa) (run-program (create-init-world (machine (map (lambda (x) (fsm-state x TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine)) (sm-getstart fsm-machine) (sm-getfinals fsm-machine)
                                                          (reverse (sm-getrules fsm-machine)) '() (sm-getalphabet fsm-machine) (sm-type fsm-machine))
+                                                (sm-type fsm-machine)
                                                 (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "dfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))]
          
          [(ndfa) (run-program (create-init-world (machine (map (lambda (x) (fsm-state x TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine)) (sm-getstart fsm-machine) (sm-getfinals fsm-machine)
                                                           (reverse (sm-getrules fsm-machine)) '() (sm-getalphabet fsm-machine) (sm-type fsm-machine))
+                                                 (sm-type fsm-machine)
                                                  (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "ndfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))]
          [(pda) (println "TODO ADD PDA")]
          [(dfst) (println "TODO ADD DFST")])]
@@ -827,6 +884,7 @@ Cmd Functions
                                                                 (fsm-state x (cadr temp) (posn 0 0))))) state-list)
                                                    (sm-getstart fsm-machine) (sm-getfinals fsm-machine)
                                                    (reverse (sm-getrules fsm-machine)) '() (sm-getalphabet fsm-machine) (sm-type fsm-machine))
+                                         (sm-type fsm-machine)
                                          (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "dfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS))))])))
 
 
@@ -996,6 +1054,8 @@ Scene Rendering
 ;; Purpose: draws the world every time on-draw is called
 (define (draw-world w)
   (letrec(
+
+          (machine (world-fsm-machine w))
           ;; draw-input-list: list-of-inputs sceen -> sceen
           ;; Purpose: draws every input structure from the list onto the given sceen
           (draw-input-list (lambda (loi scn)
@@ -1059,21 +1119,35 @@ Scene Rendering
          
     (if (not (null? (world-cur-state w)))
         (draw-error-msg (world-error-msg w)(draw-main-img w  
-                                                          (place-image (create-gui-left) (- WIDTH 100) (/ HEIGHT 2)
+                                                          (place-image (create-gui-right (machine-type machine)) (- WIDTH 100) (/ HEIGHT 2)
                                                                        (place-image (create-gui-top (machine-sigma-list (world-fsm-machine w)) (world-cur-rule w)) (/ WIDTH 2) (/ TOP 2)
                                                                                     (place-image (create-gui-bottom (machine-rule-list (world-fsm-machine w)) (world-cur-rule w) (world-scroll-bar-index w)) (/ WIDTH 2) (- HEIGHT (/ BOTTOM 2))
                                                                                                  (draw-button-list (world-button-list w)
                                                                                                                    (draw-input-list (world-input-list w)
-                                                                                                                                    (place-image (create-gui-alpha (machine-alpha-list (world-fsm-machine w))) (/ (/ WIDTH 11) 2) (/ (- HEIGHT BOTTOM) 2) MAIN-SCENE))))))))
+                                                                                                                                    (place-image (if (equal? (machine-type machine) 'pda)
+                                                                                                                                                     (create-gui-left
+                                                                                                                                                      (machine-alpha-list machine)
+                                                                                                                                                      (machine-type machine)
+                                                                                                                                                      (pda-machine-stack-alpha-list (world-fsm-machine w)))
+                                                                                                                                                     (create-gui-left
+                                                                                                                                                      (machine-alpha-list machine)
+                                                                                                                                                      (machine-type machine))) (/ (/ WIDTH 11) 2) (/ (- HEIGHT BOTTOM) 2) MAIN-SCENE))))))))
                                                                                                                               
         
         (draw-error-msg (world-error-msg w) (draw-main-img w  
-                                                           (place-image (create-gui-left) (- WIDTH 100) (/ HEIGHT 2)
+                                                           (place-image (create-gui-right (machine-type machine)) (- WIDTH 100) (/ HEIGHT 2)
                                                                         (place-image (create-gui-top (machine-sigma-list (world-fsm-machine w)) (world-cur-rule w)) (/ WIDTH 2) (/ TOP 2)
                                                                                      (place-image (create-gui-bottom (machine-rule-list (world-fsm-machine w)) (world-cur-rule w) (world-scroll-bar-index w)) (/ WIDTH 2) (- HEIGHT (/ BOTTOM 2))
                                                                                                   (draw-button-list (world-button-list w)
                                                                                                                     (draw-input-list (world-input-list w)
-                                                                                                                                     (place-image (create-gui-alpha (machine-alpha-list (world-fsm-machine w))) (/ (/ WIDTH 11) 2) (/ (- HEIGHT BOTTOM) 2) MAIN-SCENE)))))))))))
+                                                                                                                                     (place-image (if (equal? (machine-type machine) 'pda)
+                                                                                                                                                      (create-gui-left
+                                                                                                                                                       (machine-alpha-list machine)
+                                                                                                                                                       (machine-type machine)
+                                                                                                                                                       (pda-machine-stack-alpha-list (world-fsm-machine w)))
+                                                                                                                                                      (create-gui-left
+                                                                                                                                                       (machine-alpha-list machine)
+                                                                                                                                                       (machine-type machine))) (/ (/ WIDTH 11) 2) (/ (- HEIGHT BOTTOM) 2) MAIN-SCENE)))))))))))
 #|
 -----------------------
 TOP GUI RENDERING
@@ -1225,51 +1299,62 @@ LEFT GUI RENDERING
 -----------------------
 |# 
 
-;; create-gui-left: null -> image
-;; Purpose: creates the left conrol panel for the 
-(define (create-gui-left)
-  (overlay/align "left" "top"
-                 (above/align "left"
-                              (state-right-control)
-                              (alpha-right-control)
-                              (start-right-control)
-                              (end-right-control)
-                              (rule-right-control))
-                 (rectangle 200 HEIGHT "outline" "gray")))
 
-;; create-gui-alpha: list of alpha -> image
-(define (create-gui-alpha loa)
-  (overlay/align "left" "bottom"
-                 (rectangle (/ WIDTH 11) (- HEIGHT BOTTOM) "outline" "blue")
-                 (create-alpha-control loa)))
-
-;; create-alpha-control: list of alpha -> image
-(define (create-alpha-control loa)
-  (overlay/align "right" "top"
-                 (rectangle (/ WIDTH 11) (- (/ HEIGHT 2) 30) "outline" "blue")
-                 (above
-                  (control-header2 "Alpha List")
-                  (draw-alpha loa 14) 
-                  )))
-                
-
-;; draw-alpha: list-of-alpha string int -> image
-;; Purpose: draws the alphabet image with every letter on another line
-(define (draw-alpha loa fnt-size)
+;; create-gui-left: list of alpha type list-of-gamma(optional) -> image
+;; Purpose: Creates the img for the left hand side of the gui
+(define (create-gui-left loa type . log)
   (letrec (
-           ;; t-box: string int -> image
-           ;; Purpose: Creates a box for the sting to be placed in
-           (t-box (lambda (a-string fnt-size)
-                    (overlay
-                     (text (symbol->string a-string) fnt-size "Black")
-                     (rectangle (/ WIDTH 11) fnt-size "outline" "transparent")))))
+           ;; create-alpha-control: list of alpha -> image
+           (create-alpha-control (lambda (loa)
+                                   (letrec (
+                                            (title1-width (/ WIDTH 11)) ;; The width of the title for all machines besides pda's
+                                            (title2-width (/ (/ WIDTH 11) 2)) ;; The title width for pdas
+                                            
+                                            ;; draw-verticle: list-of-alpha/gamma int int -> image
+                                            ;; Purpose: draws the alphabet or gamma image with every letter on another line
+                                            (draw-verticle (lambda (loa fnt-size width)
+                                                             (letrec (
+                                                                      ;; t-box: string int -> image
+                                                                      ;; Purpose: Creates a box for the sting to be placed in
+                                                                      (t-box (lambda (a-string fnt-size)
+                                                                               (overlay
+                                                                                (text (symbol->string a-string) fnt-size "Black")
+                                                                                (rectangle width fnt-size "outline" "transparent")))))
+                                                               (cond
+                                                                 [(empty? loa) (rectangle 10 10 "outline" "transparent")]
+                                                                 [(<= (length loa) 1) (t-box (car loa) fnt-size)]
+                                                                 [else (above
+                                                                        (t-box (car loa) fnt-size)
+                                                                        (draw-verticle (cdr loa) fnt-size width))])))))
+                                     
+
+                                     ;; Determine if the gamma needs to be drawin or not.
+                                     (cond
+                                       [(empty? log)
+                                        (overlay/align "right" "top"
+                                                       (rectangle (/ WIDTH 11) (- (/ HEIGHT 2) 30) "outline" "blue")
+                                                       (above
+                                                        (control-header2 "Σ" title1-width 18)
+                                                        (draw-verticle loa 14 title1-width)))]
+                                       [else
+                                        (overlay/align "right" "top"
+                                                       (rectangle (/ WIDTH 11) (- (/ HEIGHT 2) 30) "outline" "blue")
+                                                       (beside/align "top"
+                                                        (above
+                                                         (control-header2 "Σ" title2-width 18)
+                                                         (draw-verticle loa 14 title2-width))
+                                                        (above
+                                                         (control-header2 "Γ" title2-width 18)
+                                                         (draw-verticle (car log) 14 title2-width))))])))))
     
-    (cond
-      [(empty? loa) (rectangle 10 10 "outline" "transparent")]
-      [(<= (length loa) 1) (t-box (car loa) fnt-size)]
-      [else (above
-             (t-box (car loa) fnt-size)
-             (draw-alpha (cdr loa) fnt-size))])))
+    (overlay/align "left" "bottom"
+                   (rectangle (/ WIDTH 11) (- HEIGHT BOTTOM) "outline" "blue")
+                   (create-alpha-control loa))))
+
+
+
+
+
 
 
 #|
@@ -1277,45 +1362,79 @@ LEFT GUI RENDERING
 RIGHT GUI RENDERING
 -----------------------
 |# 
-  
 
-;; state-right-control: null -> image
-;; Purpose: Creates the state control panel
-(define (state-right-control)
-  (overlay/align "left" "top"
-                 (control-header "State Options")
-                 (rectangle 200 CONTROL-BOX-H "outline" "blue")))
+;; create-gui-right: null -> image
+;; Purpose: creates the left conrol panel for the 
+(define (create-gui-right type)
+  (letrec (
+           ;; state-right-control: null -> image
+           ;; Purpose: Creates the state control panel
+           (state-right-control (lambda ()
+                                  (overlay/align "left" "top"
+                                                 (control-header "State Options")
+                                                 (rectangle 200 CONTROL-BOX-H "outline" "blue"))))
 
                  
-;; alpha-right-control: null -> image
-;; Purpose: Creates the alpha control panel
-(define (alpha-right-control)
-  (overlay/align "left" "top"
-                 (rectangle 200 CONTROL-BOX-H "outline" "blue")
-                 (control-header "Alpha Options")))
+           ;; sigma-right-control: none -> image
+           ;; Purpose: Creates the alpha control panel
+           (sigma-right-control (lambda ()
+                                  ;; render the proper display
+                                  (cond
+                                    [(equal? type 'pda)
+                                     (letrec (
+                                              ;; draw-left: none -> img
+                                              ;; Purpose: Draws the alpha add option
+                                              (draw-left (lambda ()
+                                                           (overlay/align "left" "top"
+                                                                          (rectangle 100 CONTROL-BOX-H "outline" "transparent")
+                                                                          (control-header4 "Alpha"))))
+                                              ;; draw-right: none -> img
+                                              ;; Purpose: Draws the Gamma add options
+                                              (draw-right (lambda ()
+                                                            (overlay/align "left" "top"
+                                                                           (rectangle 100 CONTROL-BOX-H "outline" "blue")
+                                                                           (control-header4 "Gamma")))))
+                                       (overlay
+                                        (beside
+                                         (draw-left)
+                                         (draw-right))
+                                        (rectangle 200 CONTROL-BOX-H "outline" "blue")))]
+                                    [else
+                                     (overlay/align "left" "top"
+                                                    (rectangle 200 CONTROL-BOX-H "outline" "blue")
+                                                    (control-header "Alpha Options"))])))
 
 
-;; start-right-control: null -> image
-;; Purpose: Creates the start control panel
-(define (start-right-control)
-  (overlay/align "left" "top"
-                 (rectangle 200 CONTROL-BOX-H "outline" "blue")
-                 (control-header "Start State")))
+           ;; start-right-control: none -> image
+           ;; Purpose: Creates the start control panel
+           (start-right-control (lambda ()
+                                  (overlay/align "left" "top"
+                                                 (rectangle 200 CONTROL-BOX-H "outline" "blue")
+                                                 (control-header "Start State"))))
 
 
-;; end-right-control: null -> image
-;; Purpose: Creates the end control panel
-(define (end-right-control)
-  (overlay/align "left" "top"
-                 (rectangle 200 CONTROL-BOX-H "outline" "blue")
-                 (control-header "End State")))
+           ;; end-right-control: none -> image
+           ;; Purpose: Creates the end control panel
+           (end-right-control (lambda ()
+                                (overlay/align "left" "top"
+                                               (rectangle 200 CONTROL-BOX-H "outline" "blue")
+                                               (control-header "End State"))))
 
-;; rule-right-control: null -> image
-;; Purpose: Creates the rule control panel
-(define (rule-right-control)
-  (overlay/align "left" "top"
-                 (rectangle 200 CONTROL-BOX-H "outline" "blue")
-                 (control-header "Add Rules")))
+           ;; rule-right-control: none -> image
+           ;; Purpose: Creates the rule control panel
+           (rule-right-control (lambda ()
+                                 (overlay/align "left" "top"
+                                                (rectangle 200 CONTROL-BOX-H "outline" "blue")
+                                                (control-header "Add Rules")))))
+  
+    (overlay/align "left" "top"
+                   (above/align "left"
+                                (state-right-control)
+                                (sigma-right-control)
+                                (start-right-control)
+                                (end-right-control)
+                                (rule-right-control))
+                   (rectangle 200 HEIGHT "outline" "gray"))))
 
 #|
 -----------------------------
@@ -1331,20 +1450,23 @@ ADDITIONAL DRAW FUNCTIONS
    (rectangle 200 25 "outline" "transparent")))
 
 
-;; control-header2: string -> image
-;; Purpose: Creates a header label for right control panel
-(define (control-header2 msg)
+;; control-header2: string int int -> image
+;; Purpose: Creates a header label that is for the left gui panel
+(define (control-header2 msg width ftn-size)
   (overlay
-   (text/font (string-upcase msg) 14 "Black"
-              #f 'default 'normal 'normal #t)
-   ;;(text (string-upcase msg) 14 "Black")
-   (rectangle (/ WIDTH 11) 40 "outline" "transparent")))
+   (text (string-upcase msg) ftn-size "Black")
+   (rectangle width 40 "outline" "transparent")))
 
 
 (define (control-header3 msg)
   (overlay
    (text (string-upcase msg) 14 "Black")
    (rectangle (/ WIDTH 11) 25 "outline" "transparent")))
+
+(define (control-header4 msg)
+  (overlay
+   (text (string-upcase msg) 14 "Black")
+   (rectangle 100 25 "outline" "transparent")))
 
 
 ;; scale-text-to-image image image integer (between 0 and 1) -> image
