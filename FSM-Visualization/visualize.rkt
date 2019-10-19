@@ -345,6 +345,7 @@ Button onClick Functions
                           (set-machine-alpha-list! (world-fsm-machine w) (sort (remove (string->symbol input-value) (machine-alpha-list (world-fsm-machine w))) symbol<?))
                           (set-machine-rule-list! (world-fsm-machine w) (remove-all (machine-rule-list (world-fsm-machine w)) input-value))
                           (create-new-world-input-empty w new-input-list))]))))
+                   
 
 ;; addSigma: world -> world
 ;; Purpose: adds a letter or group of letters to the sigma list
@@ -416,7 +417,7 @@ Button onClick Functions
                          (create-new-world-input-empty w new-input-list)))))
 
 
-;; add gamm: world -> world
+;; addGamma: world -> world
 ;; Purpose: Adds a value to the machines gamma list (only needed for pda)
 (define addGamma (lambda (w)
                          (let (
@@ -432,6 +433,32 @@ Button onClick Functions
                           (set! INIT-INDEX 0)
                           (set-pda-machine-stack-alpha-list! (world-fsm-machine w) (sort (remove-duplicates (cons (string->symbol input-value) (pda-machine-stack-alpha-list (world-fsm-machine w)))) symbol<?))
                           (create-new-world-input-empty w new-input-list))]))))
+
+
+;; rmvGamma world -> world
+;; Purpose: Removes a value from the machines gamma list (only needed for pda)
+(define rmvGamma (lambda (w)
+                   (let ((input-value (string-trim (textbox-text(list-ref (world-input-list w) 8))))
+                         (new-input-list (list-set (world-input-list w) 8 (remove-text (list-ref (world-input-list w) 8) 100)))
+
+                         ;; remove-all: list-of-rules symbol -> list-of-rules
+                         ;; Purpose: Removes all rules that are associated with the alpha that is being removed.
+                         (remove-all (lambda (lor alpha)
+                                       (filter (lambda (x) (cond
+                                                             [(equal? (symbol->string (cadr x)) alpha) #f]
+                                                             [else #t]))
+                                               lor))))
+                     
+                     (cond
+                       [(equal? input-value "") (redraw-world w)]
+                       [else
+                        (begin
+                          (set! TAPE-INDEX -1)
+                          (set! INIT-INDEX 0)
+                          (set-pda-machine-stack-alpha-list! (world-fsm-machine w) (sort (remove (string->symbol input-value) (pda-machine-stack-alpha-list (world-fsm-machine w))) symbol<?))
+                          ;;(set-machine-rule-list! (world-fsm-machine w) (remove-all (machine-rule-list (world-fsm-machine w)) input-value))
+                          (create-new-world-input-empty w new-input-list))]))))
+
                            
                          
 
@@ -720,7 +747,7 @@ Button Declarations
 (define BTN-REMOVE-ALPHA-PDA (button 35 25 "Rmv" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 125) (- (* 2 CONTROL-BOX-H ) 25)) rmvAlpha))
 
 (define BTN-ADD-GAMMA-PDA (button 35 25 "Add" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 75) (- (* 2 CONTROL-BOX-H) 25)) addGamma))
-(define BTN-REMOVE-GAMMA-PDA (button 35 25 "Rmv" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 25) (- (* 2 CONTROL-BOX-H ) 25)) NULL-FUNCTION))
+(define BTN-REMOVE-GAMMA-PDA (button 35 25 "Rmv" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 25) (- (* 2 CONTROL-BOX-H ) 25)) rmvGamma))
 
 
 (define BTN-ADD-START (button 50 25 "Add" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 50) (- (* 3 CONTROL-BOX-H) 71)) addStart))
