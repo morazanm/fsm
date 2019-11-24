@@ -8,7 +8,7 @@
 (require 2htdp/image 2htdp/universe net/sendurl racket/date
          readline "../fsm-main.rkt" "button.rkt"
          "posn.rkt" "state.rkt"
-         "input.rkt"
+         "input.rkt" "inputFactory.rkt"
          "msgWindow.rkt" "machine.rkt")
 
 (provide visualize)
@@ -59,6 +59,27 @@
 (define UNPROCESSED-CONFIG-LIST '()) ;; TODO
 (define ALPHA-LIST '()) ;; TODO
 (define INIT-INDEX 0) ;; The initail index of the scrollbar
+(define MACHINE-TYPE null)
+
+(define M2 (make-dfa '(A B C)
+                     '(a b c)
+                     'A
+                     '(B C)
+                     (list '(A b C)
+                           '(A a B)
+                           '(B c A))))
+
+(define M4 (make-ndpda '(S M F)
+                       '(a b)
+                       '(a b)
+                       'S
+                       '(F)
+                       `(((S ,EMP ,EMP) (M ,EMP))
+                         ((M ,EMP ,EMP) (F ,EMP))
+                         ((M a ,EMP) (M (a)))
+                         ((M b ,EMP) (M (b)))
+                         ((M a (b)) (M ,EMP))
+                         ((M b (a)) (M ,EMP)))))
 
 
 
@@ -155,11 +176,8 @@ Button onClick Functions
                        (case s
                          [(DEAD) 'ds]
                          [(EMP) 'e]
-                         [(BLANK) '_]
-                         [(LEFT) 'L]
-                         [(LM) '@]
-                         [(RIGHT) 'R]
                          [else s])))
+
 
 ;; addRule: world -> world
 ;; Purpose: Addes a rule to the world rule list
@@ -168,32 +186,94 @@ Button onClick Functions
                            (r1 (string->symbol (string-trim (textbox-text (list-ref (world-input-list w) 4)))))
                            (r2 (string->symbol (string-trim (textbox-text (list-ref (world-input-list w) 5)))))
                            (r3 (string->symbol (string-trim (textbox-text (list-ref (world-input-list w) 6)))))
-                           (new-input-list (list-set (list-set (list-set (world-input-list w) 6 (remove-text (list-ref (world-input-list w) 6) 100)) 5 (remove-text (list-ref (world-input-list w) 5) 100)) 4 (remove-text (list-ref (world-input-list w) 4) 100))))
+
+                           ;; add-pda: NONE -> world
+                           ;; Addds a pda rule to the world if all imputs are valid
+                           (add-pda (lambda ()
+                                      (let ((r4 (string->symbol (string-trim (textbox-text (list-ref (world-input-list w) 9)))))
+                                            (r5 (string->symbol (string-trim (textbox-text (list-ref (world-input-list w) 10)))))
+                                            (new-input-list (list-set
+                                                             (list-set
+                                                              (list-set
+                                                               (list-set
+                                                                (list-set (world-input-list w) 10 (remove-text (list-ref (world-input-list w) 10) 100))
+                                                                9 (remove-text (list-ref (world-input-list w) 9) 100))
+                                                               6 (remove-text (list-ref (world-input-list w) 6) 100))
+                                                              5 (remove-text (list-ref (world-input-list w) 5) 100))
+                                                             4 (remove-text (list-ref (world-input-list w) 4) 100))))
+                                        
+                                        (cond
+                                          [(or (equal? r1 '||) (equal? r2 '||) (equal? r3 '||) (equal? r4 '||) (equal? r5 '||)) (redraw-world w)]
+                                          [else
+                                           (begin
+                                             (set! TAPE-INDEX -1)
+                                             (set! INIT-INDEX 0)
+                                             (set-machine-rule-list! (world-fsm-machine w) (cons (list (list r1 (format-input r2) r3) (list r4 r5)) (machine-rule-list (world-fsm-machine w))))
+                                             (create-new-world-input-empty w new-input-list))]))))
+
+                           ;; add-dfa: NONE -> world
+                           ;; Adds a dfa/ndfa rule to the world if all the inputs are valid
+                           (add-dfa (lambda ()
+                                      (let ((new-input-list (list-set (list-set (list-set (world-input-list w) 6 (remove-text (list-ref (world-input-list w) 6) 100)) 5 (remove-text (list-ref (world-input-list w) 5) 100)) 4 (remove-text (list-ref (world-input-list w) 4) 100))))
+                                        (cond
+                                          [(or (equal? r1 '||) (equal? r2 '||) (equal? r3 '||)) (redraw-world w)]
+                                          [else
+                                           (begin
+                                             (set! TAPE-INDEX -1)
+                                             (set! INIT-INDEX 0)
+                                             (set-machine-rule-list! (world-fsm-machine w) (cons (list  r1 (format-input r2) r3) (machine-rule-list (world-fsm-machine w))))
+                                             (create-new-world-input-empty w new-input-list))])))))                           
                     (cond
-                      [(or (equal? r1 '||) (equal? r2 '||) (equal? r3 '||)) (redraw-world w)]
-                      [else
-                       (begin
-                         (set! TAPE-INDEX -1)
-                         (set! INIT-INDEX 0)
-                         (set-machine-rule-list! (world-fsm-machine w) (cons (list (format-input r1) r2 (format-input r3)) (machine-rule-list (world-fsm-machine w))))
-                         (create-new-world-input-empty w new-input-list))]))))
+                      [(equal? MACHINE-TYPE 'pda) (add-pda)]
+                      [else (add-dfa)]))))
+                     
 
 ;; removeRule: world -> world
 ;; Purpose: Removes a world from the world list
 (define removeRule (lambda (w)
-                     (let ((input-list (world-input-list w))
-                           (r1 (string->symbol (string-trim (textbox-text (list-ref (world-input-list w) 4)))))
-                           (r2 (string->symbol (string-trim (textbox-text (list-ref (world-input-list w) 5)))))
-                           (r3 (string->symbol (string-trim (textbox-text (list-ref (world-input-list w) 6)))))
-                           (new-input-list (list-set (list-set (list-set (world-input-list w) 6 (remove-text (list-ref (world-input-list w) 6) 100)) 5 (remove-text (list-ref (world-input-list w) 5) 100)) 4 (remove-text (list-ref (world-input-list w) 4) 100))))
+                     (letrec ((input-list (world-input-list w))
+                              (r1 (string->symbol (string-trim (textbox-text (list-ref (world-input-list w) 4)))))
+                              (r2 (string->symbol (string-trim (textbox-text (list-ref (world-input-list w) 5)))))
+                              (r3 (string->symbol (string-trim (textbox-text (list-ref (world-input-list w) 6)))))
+
+                              ;; rmv-dfa: NONE -> world
+                              ;; Purpose: Removes a dfa/ndfa rule from the world as long as all input fields are filled in
+                              (rmv-dfa (lambda ()
+                                         (let ((new-input-list (list-set (list-set (list-set (world-input-list w) 6 (remove-text (list-ref (world-input-list w) 6) 100)) 5 (remove-text (list-ref (world-input-list w) 5) 100)) 4 (remove-text (list-ref (world-input-list w) 4) 100))))
+                                           (cond
+                                             [(or (equal? r1 '||) (equal? r2 '||) (equal? r3 '||)) (redraw-world w)]
+                                             [else
+                                              (begin
+                                                (set! TAPE-INDEX -1)
+                                                (set! INIT-INDEX 0)
+                                                (set-machine-rule-list! (world-fsm-machine w) (remove (list r1 (format-input r2) r3) (machine-rule-list (world-fsm-machine w))))
+                                                (create-new-world-input-empty w new-input-list))]))))
+
+                              ;; rmv-pda: NONE -> world
+                              ;; Purpose: Removes a pda rule from the world as long as all input fields are filled in
+                              (rmv-pda (lambda ()
+                                         (let ((r4 (string->symbol (string-trim (textbox-text (list-ref (world-input-list w) 9)))))
+                                               (r5 (string->symbol (string-trim (textbox-text (list-ref (world-input-list w) 10)))))
+                                               (new-input-list (list-set
+                                                                (list-set
+                                                                 (list-set
+                                                                  (list-set
+                                                                   (list-set (world-input-list w) 10 (remove-text (list-ref (world-input-list w) 10) 100))
+                                                                   9 (remove-text (list-ref (world-input-list w) 9) 100))
+                                                                  6 (remove-text (list-ref (world-input-list w) 6) 100))
+                                                                 5 (remove-text (list-ref (world-input-list w) 5) 100))
+                                                                4 (remove-text (list-ref (world-input-list w) 4) 100))))
+                                           (cond
+                                             [(or (equal? r1 '||) (equal? r2 '||) (equal? r3 '||) (equal? r4 '||) (equal? r5 '||)) (redraw-world w)]
+                                             [else
+                                              (begin
+                                                (set! TAPE-INDEX -1)
+                                                (set! INIT-INDEX 0)
+                                                (set-machine-rule-list! (world-fsm-machine w) (remove (list (list r1 (format-input r2) r3) (list r4 r5)) (machine-rule-list (world-fsm-machine w))))
+                                                (create-new-world-input-empty w new-input-list))])))))
                        (cond
-                         [(or (equal? r1 '||) (equal? r2 '||) (equal? r3 '||)) (redraw-world w)]
-                         [else
-                          (begin
-                            (set! TAPE-INDEX -1)
-                            (set! INIT-INDEX 0)
-                            (set-machine-rule-list! (world-fsm-machine w) (remove (list (format-input r1) r2 (format-input r3)) (machine-rule-list (world-fsm-machine w))))
-                            (create-new-world-input-empty w new-input-list))]))))
+                         [(equal? MACHINE-TYPE 'pda) (rmv-pda)]
+                         [else (rmv-dfa)]))))
 
 ;; addState: world -> world
 ;; Purpose: Adds a start state to the world
@@ -420,10 +500,10 @@ Button onClick Functions
 ;; addGamma: world -> world
 ;; Purpose: Adds a value to the machines gamma list (only needed for pda)
 (define addGamma (lambda (w)
-                         (let (
-                               (input-value (string-trim (textbox-text(list-ref (world-input-list w) 8))))
-                               (new-input-list (list-set (world-input-list w) 8 (remove-text (list-ref (world-input-list w) 8) 100))))
-                            (cond
+                   (let (
+                         (input-value (string-trim (textbox-text(list-ref (world-input-list w) 8))))
+                         (new-input-list (list-set (world-input-list w) 8 (remove-text (list-ref (world-input-list w) 8) 100))))
+                     (cond
                        [(equal? input-value "") (redraw-world w)]
                        [(equal? 14 (add1 (length (pda-machine-stack-alpha-list (world-fsm-machine w)))))
                         (redraw-world-with-msg w "You have reached the maximum amount of characters allowed" "Warning" MSG-CAUTION)]
@@ -758,6 +838,10 @@ Button Declarations
 
 (define BTN-ADD-RULES (button 70 25 "Add" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 24 #f #f (posn (- WIDTH 150) (- (* 5 CONTROL-BOX-H) 25)) addRule))
 (define BTN-REMOVE-RULES (button 70 25 "Remove" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 24 #f #f (posn (- WIDTH 50) (- (* 5 CONTROL-BOX-H) 25)) removeRule))
+(define BTN-ADD-RULES-PDA (button 70 25 "Add" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 24 #f #f (posn (- WIDTH 150) (- (* 5 CONTROL-BOX-H) 20)) addRule))
+(define BTN-REMOVE-RULES-PDA (button 70 25 "Remove" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 24 #f #f (posn (- WIDTH 50) (- (* 5 CONTROL-BOX-H) 20)) removeRule))
+
+
 (define BTN-SCROLL-LEFT-RULES (button 30 BOTTOM "<" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 36 #f #f (posn 125 (- HEIGHT 37)) scrollbarLeft))
 (define BTN-SCROLL-RIGHT-RULES (button 30 BOTTOM ">" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 36 #f #f (posn (- WIDTH 215) (- HEIGHT 37)) scrollbarRight))
 
@@ -785,15 +869,15 @@ Button Declarations
                           BTN-SCROLL-RIGHT-RULES BTN-HELP))
 
 (define BUTTON-LIST-PDA (list BTN-ADD-STATE BTN-REMOVE-STATE
-                          BTN-ADD-ALPHA-PDA BTN-REMOVE-ALPHA-PDA
-                          BTN-ADD-GAMMA-PDA BTN-REMOVE-GAMMA-PDA
-                          BTN-ADD-START BTN-REMOVE-START
-                          BTN-ADD-END BTN-REMOVE-END
-                          BTN-ADD-RULES BTN-REMOVE-RULES
-                          BTN-GENCODE BTN-NEXT BTN-PREV
-                          BTN-SIGMA-ADD BTN-SIGMA-CLEAR
-                          BTN-RUN BTN-SCROLL-LEFT-RULES
-                          BTN-SCROLL-RIGHT-RULES BTN-HELP))
+                              BTN-ADD-ALPHA-PDA BTN-REMOVE-ALPHA-PDA
+                              BTN-ADD-GAMMA-PDA BTN-REMOVE-GAMMA-PDA
+                              BTN-ADD-START BTN-REMOVE-START
+                              BTN-ADD-END BTN-REMOVE-END
+                              BTN-ADD-RULES-PDA BTN-REMOVE-RULES-PDA
+                              BTN-GENCODE BTN-NEXT BTN-PREV
+                              BTN-SIGMA-ADD BTN-SIGMA-CLEAR
+                              BTN-RUN BTN-SCROLL-LEFT-RULES
+                              BTN-SCROLL-RIGHT-RULES BTN-HELP))
 
 
 #|
@@ -809,6 +893,15 @@ Textbox Declarations
 (define IPF-RULE1 (textbox 40 25 INPUT-COLOR INPUT-COLOR "" 4 (posn (- WIDTH 150) (- (* 5 CONTROL-BOX-H) 70)) #f))
 (define IPF-RULE2 (textbox 40 25 INPUT-COLOR INPUT-COLOR "" 4 (posn (- WIDTH 100) (- (* 5 CONTROL-BOX-H) 70)) #f))
 (define IPF-RULE3 (textbox 40 25 INPUT-COLOR INPUT-COLOR "" 4 (posn (- WIDTH 50) (- (* 5 CONTROL-BOX-H) 70)) #f))
+
+
+(define IPF-RULE1-PDA (textbox 40 25 INPUT-COLOR INPUT-COLOR "" 4 (posn (- WIDTH 150) (- (* 5 CONTROL-BOX-H) 80)) #f))
+(define IPF-RULE2-PDA (textbox 40 25 INPUT-COLOR INPUT-COLOR "" 4 (posn (- WIDTH 100) (- (* 5 CONTROL-BOX-H) 80)) #f))
+(define IPF-RULE3-PDA (textbox 40 25 INPUT-COLOR INPUT-COLOR "" 4 (posn (- WIDTH 50) (- (* 5 CONTROL-BOX-H) 80)) #f))
+(define IPF-RULE4-PDA (textbox 40 25 INPUT-COLOR INPUT-COLOR "" 4 (posn (- WIDTH 75) (- (* 5 CONTROL-BOX-H) 52)) #f))
+(define IPF-RULE5-PDA (textbox 40 25 INPUT-COLOR INPUT-COLOR "" 4 (posn (- WIDTH 125) (- (* 5 CONTROL-BOX-H) 52)) #f))
+
+
 (define IPF-SIGMA (textbox 90 25 INPUT-COLOR INPUT-COLOR "" 8 (posn (/ (/ WIDTH 11) 2) 40) #f))
 
 ;;pda related inputs
@@ -817,7 +910,7 @@ Textbox Declarations
 
 ;; INPUT-LIST: A list containing all input fields that are displayed on the scene.
 (define INPUT-LIST (list IPF-STATE IPF-ALPHA IPF-START IPF-END IPF-RULE1 IPF-RULE2 IPF-RULE3 IPF-SIGMA))
-(define INPUT-LIST-PDA (list IPF-STATE IPF-ALPHA-PDA IPF-START IPF-END IPF-RULE1 IPF-RULE2 IPF-RULE3 IPF-SIGMA IPF-GAMMA-PDA))
+(define INPUT-LIST-PDA (list IPF-STATE IPF-ALPHA-PDA IPF-START IPF-END IPF-RULE1-PDA IPF-RULE2-PDA IPF-RULE3-PDA IPF-SIGMA IPF-GAMMA-PDA IPF-RULE4-PDA IPF-RULE5-PDA))
 
 
 #|
@@ -873,25 +966,40 @@ Cmd Functions
     (cond
       [(symbol? fsm-machine) ;; Brand new machine
        (case fsm-machine
-         [(dfa) (run-program (create-init-world (machine '() null '() '() '() '() 'dfa ) 'dfa))]
-         [(ndfa) (run-program (create-init-world (machine '() null '() '() '() '() 'ndfa ) 'ndfa))]
-         [(pda) (run-program (create-init-world (pda-machine '() null '() '() '() '() 'pda) 'pda))]
+         [(dfa) (begin
+                  (set! MACHINE-TYPE 'dfa)
+                  (run-program (create-init-world (machine '() null '() '() '() '() 'dfa ) 'dfa)))]
+         [(ndfa) (begin
+                   (set! MACHINE-TYPE 'ndfa)
+                   (run-program (create-init-world (machine '() null '() '() '() '() 'ndfa ) 'ndfa)))]
+         [(pda) (begin
+                  (set! MACHINE-TYPE 'pda)
+                  (run-program (create-init-world (pda-machine '() null '() '() '() '() 'pda '()) 'pda)))]
          [(tm) (println "TODO ADD Turing Machine")]
          [else (error (format "~s is not a valid machine type" fsm-machine))])]
       
       [(empty? args)
        (case (sm-type fsm-machine) ;; Pre-made with no predicates
-         [(dfa) (run-program (create-init-world (machine (map (lambda (x) (fsm-state x TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine)) (sm-getstart fsm-machine) (sm-getfinals fsm-machine)
-                                                         (reverse (sm-getrules fsm-machine)) '() (sm-getalphabet fsm-machine) (sm-type fsm-machine))
-                                                (sm-type fsm-machine)
-                                                (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "dfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))]
+         [(dfa) (begin
+                  (set! MACHINE-TYPE 'dfa)
+                  (run-program (create-init-world (machine (map (lambda (x) (fsm-state x TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine)) (sm-getstart fsm-machine) (sm-getfinals fsm-machine)
+                                                           (reverse (sm-getrules fsm-machine)) '() (sm-getalphabet fsm-machine) (sm-type fsm-machine))
+                                                  (sm-type fsm-machine)
+                                                  (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "dfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS))))]
          
-         [(ndfa) (run-program (create-init-world (machine (map (lambda (x) (fsm-state x TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine)) (sm-getstart fsm-machine) (sm-getfinals fsm-machine)
-                                                          (reverse (sm-getrules fsm-machine)) '() (sm-getalphabet fsm-machine) (sm-type fsm-machine))
-                                                 (sm-type fsm-machine)
-                                                 (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "ndfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))]
-         [(pda) (println "TODO ADD PDA")]
-         [(dfst) (println "TODO ADD DFST")])]
+         [(ndfa) (begin
+                   (set! MACHINE-TYPE 'ndfa)
+                   (run-program (create-init-world (machine (map (lambda (x) (fsm-state x TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine)) (sm-getstart fsm-machine) (sm-getfinals fsm-machine)
+                                                            (reverse (sm-getrules fsm-machine)) '() (sm-getalphabet fsm-machine) (sm-type fsm-machine))
+                                                   (sm-type fsm-machine)
+                                                   (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "ndfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS))))]
+         [(pda) (begin
+                  (set! MACHINE-TYPE 'pda)
+                  (run-program (create-init-world (pda-machine (map (lambda (x) (fsm-state x TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine)) (sm-getstart fsm-machine) (sm-getfinals fsm-machine)
+                                                               (reverse (sm-getrules fsm-machine)) '() (sm-getalphabet fsm-machine) (sm-type fsm-machine) '())
+                                                  (sm-type fsm-machine)
+                                                  (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "pda" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS))))]  
+         [(tm) (println "TODO ADD tm")])]
       
       [else ;; Pre-made with predicates
        (letrec ((state-list (sm-getstates fsm-machine))
@@ -1277,45 +1385,11 @@ BOTTOM GUI RENDERING
 ;; lor-bottom-label: list-of-rules int rule int -> image
 ;; Purpose: The label for the list of rules
 (define (lor-bottom-label lor rectWidth cur-rule scroll-index)
-  (letrec (;; list-2-img: list-of-rules int int -> image
-           ;; Purpose: Converts the list of rules into image that overlays the rul in the center
-           (list-2-img (lambda (lor rectWidth accum)
-                         (cond
-                           [(>= accum 10) empty-image]
-                           [(empty? lor) null]
-                           [(equal? 1 (length lor)) (rule-box (inner-list-2-img (car lor) "") 18)]
-                           [(beside
-                             (rule-box (inner-list-2-img (car lor) "") 18)
-                             (list-2-img (cdr lor) rectWidth (add1 accum)))])))
-
-           ;; inner-list-2-img: rule (tuple) string -> image
-           ;; Purpose: Converts a rule into an image were the rule is overlayed on an image
-           (inner-list-2-img (lambda (tup accum)
-                               (cond
-                                 [(empty? tup) (string-append "(" (string-append (substring accum 1 (string-length accum)) ")"))]
-                                 [else (inner-list-2-img (cdr tup) (string-append accum " " (symbol->string (car tup))))])))
-           
-
-           ;; rule-box: string -> image
-           ;; Purpose: given a string, will overlay the text onto a image
-           (rule-box (lambda (a-string fnt-size)
-                       (cond
-                         [(equal? (inner-list-2-img cur-rule "") a-string)
-                          (overlay
-                           (text a-string fnt-size "red")
-                           (rectangle rectWidth BOTTOM "outline" "grey"))]
-                         [else
-                          (overlay
-                           (text a-string fnt-size "Black")
-                           (rectangle rectWidth BOTTOM "outline" "grey"))]))))
-    (cond
-      ;; We will only render 10 rules at a time. Make sure this happens!!!!
-      [(>= (length lor) 10) (overlay
-                             (rectangle (- (- WIDTH (/ WIDTH 11)) 200) BOTTOM "outline" "blue")
-                             (list-2-img (list-tail (reverse lor) scroll-index) rectWidth 0))]
-      [else (overlay
-             (rectangle (- (- WIDTH (/ WIDTH 11)) 200) BOTTOM "outline" "blue")
-             (list-2-img (reverse lor) rectWidth 0))])))
+  (overlay
+   (rectangle (- (- WIDTH (/ WIDTH 11)) 200) BOTTOM "outline" "blue")
+   (overlay
+    (rectangle (- (- (- WIDTH (/ WIDTH 11)) 200) 60) BOTTOM "outline" "transparent")
+    (ruleFactory (list-tail (reverse lor) scroll-index) MACHINE-TYPE scroll-index cur-rule))))
 
 
 
@@ -1367,12 +1441,12 @@ LEFT GUI RENDERING
                                         (overlay/align "right" "top"
                                                        (rectangle (/ WIDTH 11) (- (/ HEIGHT 2) 30) "outline" "blue")
                                                        (beside/align "top"
-                                                        (above
-                                                         (control-header2 "Σ" title2-width 18)
-                                                         (draw-verticle loa 14 title2-width))
-                                                        (above
-                                                         (control-header2 "Γ" title2-width 18)
-                                                         (draw-verticle (car log) 14 title2-width))))])))))
+                                                                     (above
+                                                                      (control-header2 "Σ" title2-width 18)
+                                                                      (draw-verticle loa 14 title2-width))
+                                                                     (above
+                                                                      (control-header2 "Γ" title2-width 18)
+                                                                      (draw-verticle (car log) 14 title2-width))))])))))
     
     (overlay/align "left" "bottom"
                    (rectangle (/ WIDTH 11) (- HEIGHT BOTTOM) "outline" "blue")

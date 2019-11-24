@@ -24,6 +24,8 @@
                            '(B c A))))
 
 ;; PDA
+;; (sm-showtransitions M4 '(a a a b b b))
+;;(state '(input) '(stack)) (
 (define M4 (make-ndpda '(S M F)
                                   '(a b)
                                   '(a b)

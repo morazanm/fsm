@@ -23,6 +23,4 @@
 
 ;; pda-machine: A structure that is a subtype of machine
 ;; - stack-alpha-list { list-of-symbols }: TODO: discription
-(struct pda-machine machine ([stack-alpha-list #:auto #:mutable])
-  #:transparent
-  #:auto-value '())
+(struct pda-machine machine ([stack-alpha-list #:mutable]))
