@@ -21,6 +21,8 @@
  sm-union sm-concat sm-kleenestar sm-complement sm-intersection grammar->sm
  make-unchecked-dfa
  make-unchecked-ndfa
+ make-unchecked-tm
+ make-unchecked-ndpda
 
  ; sm observers
  sm-apply sm-showtransitions sm-type

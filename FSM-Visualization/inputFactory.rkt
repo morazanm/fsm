@@ -1,5 +1,5 @@
 #lang racket
-(require 2htdp/image)
+(require 2htdp/image "globals.rkt")
 #|
   This module handles the creation of the rule display at the bottom of the GUI
    To add another machine please add a case to the function create-text and a function to format the
@@ -11,6 +11,7 @@
  create-pda-rule
  create-dfa-ndfa-rule
  ruleFactory)
+
 
 (define DISPLAY-HEIGHT 75)
 (define DISPLAY-WIDTH 830)
@@ -32,7 +33,7 @@
            ;; List-2-image: list-of-rules image -> image
            ;; Purpose: converts the list or rules to an image that contains as many rules that can fit
            (list-2-img (lambda (lor img)
-                         (letrec ((rule-number (get-count lor empty-image 0)) ;; The number of rules that can fit on the screen
+                         (letrec ((rule-number (get-num)) ;; The number of rules that can fit on the screen
 
                                   ;; convert-2-img: list-or-rules image int -> image
                                   ;; Purpose: a helper function that only renders the max rules that can fit on the screen
@@ -43,6 +44,13 @@
                                                      [(equal? accum 0) img]
                                                      [else (convert-2-img (cdr lor) (fit-img lor rule-number img) (sub1 accum))]))))
                            (convert-2-img lor img rule-number))))
+
+           ;; get-num: Gets the number of rules that can be displayed on the screen
+           (get-num (lambda ()
+                      (case type
+                        [(pda) PDA_NUMBER]
+                        [(tm) (println "TODO")]
+                        [else DFA-NDFA_NUMBER])))
            
            ;; get-count list-of-rules int int -> int
            ;; Purpose: Determins the number of rules that can be added
@@ -68,7 +76,7 @@
                         (cond
                           [(equal? 0 img) img]
                           [else (beside
-                                  img
+                                 img
                                  (create-rule-image (car lor) box-width #t))]))))
                                  
 
@@ -110,8 +118,7 @@
                                   (overlay
                                    (scale-txt txt 1)
                                    (rectangle (get-width) BOX-HEIGHT "outline" RULE-BOX-COLOR))))))
-         (list-2-img aList empty-image)))
-
+    (list-2-img aList empty-image)))
 
 
 ;; create-dfa-ndfa-rule: rule (tuple) -> string

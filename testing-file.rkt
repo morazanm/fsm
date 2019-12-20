@@ -23,6 +23,14 @@
                            '(A a B)
                            '(B c A))))
 
+(define M3 (make-dfa '(A B C D F)
+                     '(a b)
+                     'A
+                     '(F)
+                     '((A a A) (A b B) (B a C) (B b B) (F a F)
+                               (C a A) (C b D) (D a F) (D b B)
+                               (F b F))))
+
 ;; PDA
 ;; (sm-showtransitions M4 '(a a a b b b))
 ;;(state '(input) '(stack)) (
