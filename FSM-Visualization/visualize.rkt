@@ -697,16 +697,40 @@ RIGHT GUI RENDERING
            (rule-right-control (lambda ()
                                  (overlay/align "left" "top"
                                                 (rectangle 200 CONTROL-BOX-H "outline" "blue")
-                                                (control-header "Add Rules")))))
-  
-    (overlay/align "left" "top"
-                   (above/align "left"
-                                (state-right-control)
-                                (sigma-right-control)
-                                (start-right-control)
-                                (end-right-control)
-                                (rule-right-control))
-                   (rectangle 200 HEIGHT "outline" "gray"))))
+                                                (control-header "Add Rules"))))
+
+           ;; pda-stack: none -> image
+           ;; Purpose: creates the control stack image for pdas
+           (pda-stack (lambda ()
+                        (overlay/align "left" "top"
+                                       (above/align "left"
+                                                    (rectangle STACK-WIDTH TOP "outline" "transparent") ;; The top 
+                                                    (rectangle STACK-WIDTH (- HEIGHT (+ BOTTOM TOP)) "outline" "blue") ;;  the middle
+                                                    (rectangle STACK-WIDTH BOTTOM "outline" "transparent")) ;; the bottom
+                        (rectangle STACK-WIDTH HEIGHT "outline" "transparent"))))
+
+           ;; construct-image: none -> image
+           ;;; Purpose: Builds the propper image based on the machine type
+           (construct-image (lambda ()
+                              (let ((full-width (+ 300 STACK-WIDTH)) ;; the width of the combined images
+                                    ;; The right control block that deals with machine minipulation
+                                    (control (overlay/align "left" "top"
+                                                            (above/align "left"
+                                                                         (state-right-control)
+                                                                         (sigma-right-control)
+                                                                         (start-right-control)
+                                                                         (end-right-control)
+                                                                         (rule-right-control))
+                                                            (rectangle 200 HEIGHT "outline" "gray"))))
+                                (case MACHINE-TYPE
+                                  [(pda) (overlay/align "left" "top"
+                                                        (beside/align "top"
+                                                                      (pda-stack)
+                                                                      control)
+                                                        (rectangle full-width HEIGHT "outline" "transparent"))]
+                                  [else control])))))
+
+    (construct-image)))
 
 #|
 -----------------------------
