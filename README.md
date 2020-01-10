@@ -7,20 +7,24 @@ One Paragraph of project description goes here
 ## Installation
 There are two ways to install fsm onto your machine.
 
-#### Using Raco
+### Using Raco
 
 ```bash
 raco pkg install https://github.com/morazanm/fsm.git
 ```
 
-#### Using Racket's Package Manager
+### Using Racket's Package Manager
+![Racket Package Manager Install](install.gif)
+
 
 
 ## Usage
-
+Once fsm is installed all thats left to do is require the moddule. 
 ```racket
 (require fsm)
 ```
+
+
 
 #### Building a DFA
 ```racket
