@@ -30,9 +30,9 @@ Once fsm is installed just require the module.
 ```racket
 (define a* (make-dfa '(S F)     ;; the states
                      '(a b)     ;; the input alphabet
-                     'S         ;; the set of final states
-                     '(F)       ;; the transition functions
-                     '((S a F)
+                     'S         ;; the staring state
+                     '(F)       ;; the set of final states
+                     '((S a F)  ;; the transition functions
                        (F a F)
                        (F b F))))
 ```
