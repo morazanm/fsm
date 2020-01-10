@@ -564,6 +564,23 @@ BOTTOM GUI RENDERING
 
 
 
+;; draw-verticle list int int -> image
+;; Purpose: draws a list vertically, where every element in the list is rendered below each other
+(define (draw-verticle loa fnt-size width)
+  (letrec (
+           ;; t-box: string int -> image
+           ;; Purpose: Creates a box for the sting to be placed in
+           (t-box (lambda (a-string fnt-size)
+                    (overlay
+                     (text (symbol->string a-string) fnt-size "Black")
+                     (rectangle width fnt-size "outline" "transparent")))))
+    (cond
+      [(empty? loa) (rectangle 10 10 "outline" "transparent")]
+      [(<= (length loa) 1) (t-box (car loa) fnt-size)]
+      [else (above
+             (t-box (car loa) fnt-size)
+             (draw-verticle (cdr loa) fnt-size width))])))
+
 
 #|
 -----------------------
@@ -580,26 +597,8 @@ LEFT GUI RENDERING
            (create-alpha-control (lambda (loa)
                                    (letrec (
                                             (title1-width (/ WIDTH 11)) ;; The width of the title for all machines besides pda's
-                                            (title2-width (/ (/ WIDTH 11) 2)) ;; The title width for pdas
-                                            
-                                            ;; draw-verticle: list-of-alpha/gamma int int -> image
-                                            ;; Purpose: draws the alphabet or gamma image with every letter on another line
-                                            (draw-verticle (lambda (loa fnt-size width)
-                                                             (letrec (
-                                                                      ;; t-box: string int -> image
-                                                                      ;; Purpose: Creates a box for the sting to be placed in
-                                                                      (t-box (lambda (a-string fnt-size)
-                                                                               (overlay
-                                                                                (text (symbol->string a-string) fnt-size "Black")
-                                                                                (rectangle width fnt-size "outline" "transparent")))))
-                                                               (cond
-                                                                 [(empty? loa) (rectangle 10 10 "outline" "transparent")]
-                                                                 [(<= (length loa) 1) (t-box (car loa) fnt-size)]
-                                                                 [else (above
-                                                                        (t-box (car loa) fnt-size)
-                                                                        (draw-verticle (cdr loa) fnt-size width))])))))
+                                            (title2-width (/ (/ WIDTH 11) 2))) ;; The title width for pdas
                                      
-
                                      ;; Determine if the gamma needs to be drawin or not.
                                      (cond
                                        [(empty? log)
@@ -635,9 +634,9 @@ RIGHT GUI RENDERING
 -----------------------
 |# 
 
-;; create-gui-right: null -> image
+;; create-gui-right: world-stack -> image
 ;; Purpose: creates the left conrol panel for the 
-(define (create-gui-right type)
+(define (create-gui-right stack)
   (letrec (
            ;; state-right-control: null -> image
            ;; Purpose: Creates the state control panel
@@ -652,7 +651,7 @@ RIGHT GUI RENDERING
            (sigma-right-control (lambda ()
                                   ;; render the proper display
                                   (cond
-                                    [(equal? type 'pda)
+                                    [(equal? MACHINE-TYPE 'pda)
                                      (letrec (
                                               ;; draw-left: none -> img
                                               ;; Purpose: Draws the alpha add option
@@ -699,15 +698,23 @@ RIGHT GUI RENDERING
                                                 (rectangle 200 CONTROL-BOX-H "outline" "blue")
                                                 (control-header "Add Rules"))))
 
+           (test-list '(a b c d e f))
            ;; pda-stack: none -> image
            ;; Purpose: creates the control stack image for pdas
            (pda-stack (lambda ()
                         (overlay/align "left" "top"
                                        (above/align "left"
                                                     (rectangle STACK-WIDTH TOP "outline" "transparent") ;; The top 
-                                                    (rectangle STACK-WIDTH (- HEIGHT (+ BOTTOM TOP)) "outline" "blue") ;;  the middle
+                                                    ;;(rectangle STACK-WIDTH (- HEIGHT (+ BOTTOM TOP)) "outline" "blue") ;;  the middle
+                                                    (pda-populate-stack test-list)
                                                     (rectangle STACK-WIDTH BOTTOM "outline" "transparent")) ;; the bottom
-                        (rectangle STACK-WIDTH HEIGHT "outline" "transparent"))))
+                                       (rectangle STACK-WIDTH HEIGHT "outline" "transparent"))))
+
+           (pda-populate-stack (lambda (list)
+                                 (overlay/align "middle" "top"
+                                  (draw-verticle list 18 100)
+                                  (rectangle STACK-WIDTH (- HEIGHT (+ BOTTOM TOP)) "outline" "blue") ;;  the middle
+                                  )))
 
            ;; construct-image: none -> image
            ;;; Purpose: Builds the propper image based on the machine type
@@ -737,7 +744,8 @@ RIGHT GUI RENDERING
 ADDITIONAL DRAW FUNCTIONS
 -----------------------------
 |# 
-  
+
+
 ;; control-header: string -> image
 ;; Purpose: Creates a header label for right control panel
 (define (control-header msg)

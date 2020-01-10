@@ -292,7 +292,7 @@ Created by Joshua Schappel on 12/19/19
                          ;; Purpose: Removes all rules that are associated with the alpha that is being removed.
                          (remove-all (lambda (lor alpha)
                                        (filter (lambda (x) (cond
-                                                             [(equal? (symbol->string (cadr x)) alpha) #f]
+                                                             [(equal? (symbol->string (caadr x)) alpha) #f]
                                                              [else #t]))
                                                lor))))
                      
