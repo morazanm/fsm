@@ -19,7 +19,7 @@ raco pkg install https://github.com/morazanm/fsm.git
 
 
 ## Usage
-Once fsm is installed all thats left to do is require the moddule. 
+Once fsm is installed just require the moddule. 
 ```racket
 (require fsm)
 ```
@@ -39,7 +39,7 @@ Once fsm is installed all thats left to do is require the moddule.
 
 
 #### Visualizing a Machine 
-
+TODO
 
 
 A Library for the Automata Theory Classroom
