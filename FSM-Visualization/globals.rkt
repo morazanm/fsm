@@ -16,6 +16,7 @@ Created by Joshua Schappel on 12/19/19
 (define HEIGHT 600) ;; The height of the scene
 (define CONTROL-BOX-H (/ HEIGHT 5)) ;; The height of each left side conrol box
 (define BOTTOM(/ HEIGHT 8))
+(define STACK-WIDTH 100) ;; the width of the control stack image for pdas
 
 
 ;; -- GUI COLORS --
