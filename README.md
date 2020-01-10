@@ -19,7 +19,7 @@ raco pkg install https://github.com/morazanm/fsm.git
 
 
 ## Usage
-Once fsm is installed just require the moddule. 
+Once fsm is installed just require the module. 
 ```racket
 (require fsm)
 ```
