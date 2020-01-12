@@ -27,7 +27,7 @@ Once fsm is installed just require the module.
 
 
 ## Basic Usage
-Below are some basic examples of how to use fsm. for a more in-depth guide please visit the fsm documentation.
+Below are some basic examples of how to use fsm. for a more in-depth guide please visit the [fsm documentation]: https://htmlpreview.github.io/?https://github.com/morazanm/fsm/blob/master/doc/fsm/index.html
 
 #### Building a DFA
 ```racket
