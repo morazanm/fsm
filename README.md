@@ -73,17 +73,17 @@ Below are some basic examples of how to use fsm. for a more in-depth guide pleas
 #### Visualizing a Machine 
 To visualize a pda, ndfa, or pda create a new file and require fsm. Then run the file and type one of the following three options in the racket cmd.
 
-1) sm-visualize <machine-type> To visualize a machine from scratch.
+1) sm-visualize &lt;machine-type&gt; To visualize a machine from scratch.
 ```racket
 (sm-visualize 'pda) ;; Where the machine type is a symbol
 ```
 
-2) sm-visualize <pre-built-machine> To visualize a pre-built machine.
+2) sm-visualize &lt;pre-built-machine&gt; To visualize a pre-built machine.
 ```racket
 (sm-visualize a*)
 ```
 
-3) sm-visualize <pre-built-machine '(state invariant-function)> To visualize a pre-built machine with associates state invariants.
+3) sm-visualize &lt;pre-built-machine '(state invariant-function)&gt; To visualize a pre-built machine with associates state invariants.
 ```racket
 ;; dummy invariant functions
 (define INV1 (lambda (v) true))
