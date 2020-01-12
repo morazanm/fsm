@@ -17,8 +17,6 @@ raco pkg install https://github.com/morazanm/fsm.git
 ![Racket Package Manager Install](install.gif)
 
 
-
-## Usage
 Once fsm is installed just require the module. 
 ```racket
 (require fsm)
@@ -26,8 +24,13 @@ Once fsm is installed just require the module.
 
 
 
+## Basic usage Usage
+Below are some basic examples of how to use fsm. for a more in-depth guide please visit the fsm documentation.
+
 #### Building a DFA
 ```racket
+(require fsm)
+
 (define a* (make-dfa '(S F)     ;; the states
                      '(a b)     ;; the input alphabet
                      'S         ;; the set of final states
@@ -37,10 +40,57 @@ Once fsm is installed just require the module.
                        (F b F))))
 ```
 
+#### Building a NDFA
+```racket
+(require fsm)
+
+(define a* (make-ndfa '(S F)     ;; the states
+                      '(a b)     ;; the input alphabet
+                      'S         ;; the set of final states
+                      '(F)       ;; the transition functions
+                      '((S a F)
+                        (F a F)
+                        (F b F))))
+```
+#### Building a PDA
+```racket
+(require fsm)
+
+(define M4 (make-ndpda '(S M F)
+                        '(a b)
+                        '(a b)
+                        'S
+                        '(F)
+                        `(((S ,EMP ,EMP) (M ,EMP))
+                          ((M ,EMP ,EMP) (F ,EMP))
+                          ((M a ,EMP) (M (a)))
+                          ((M b ,EMP) (M (b)))
+                          ((M a (b)) (M ,EMP))
+                          ((M b (a)) (M ,EMP)))))
+```
+
 
 #### Visualizing a Machine 
-TODO
+To visualize a pda, ndfa, or pda create a new file and require fsm. Then run the file and type one of the following three options in the racket cmd.
 
+1) sm-visualize <machine-type> To visualize a machine from scratch.
+```racket
+(sm-visualize 'pda) ;; Where the machine type is a symbol
+```
+
+2) sm-visualize <pre-built-machine> To visualize a pre-built machine.
+```racket
+(sm-visualize a*)
+```
+
+3) sm-visualize <pre-built-machine '(state invariant-function)> To visualize a pre-built machine with associates state invariants.
+```racket
+;; dummy invariant functions
+(define INV1 (lambda (v) true))
+(define INV2 (lambda (v) false))
+
+;; Visualize the machine 
+(sm-visualize a* () (list 'S INV1) (list 'F INV2))
 
 A Library for the Automata Theory Classroom
 
