@@ -1,6 +1,8 @@
 # FSM
+##### FSM Library Version 1.0
+A Library for the Automata Theory Classroom
 
-One Paragraph of project description goes here
+
 
 
 
@@ -24,7 +26,7 @@ Once fsm is installed just require the module.
 
 
 
-## Basic usage Usage
+## Basic Usage
 Below are some basic examples of how to use fsm. for a more in-depth guide please visit the fsm documentation.
 
 #### Building a DFA
@@ -92,10 +94,9 @@ To visualize a pda, ndfa, or pda create a new file and require fsm. Then run the
 ;; Visualize the machine 
 (sm-visualize a* () (list 'S INV1) (list 'F INV2))
 ```
-A Library for the Automata Theory Classroom
 
-FSM Library Version 1.0
-
-Copyright (C) 2015 by Marco T. Morazan and Rosario Antunez
-
+## Authors
 Written by: Marco T. Morazan and Rosario Antunez, 2015
+
+## License
+Copyright (C) 2015 by Marco T. Morazan and Rosario Antunez
