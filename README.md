@@ -91,7 +91,7 @@ To visualize a pda, ndfa, or pda create a new file and require fsm. Then run the
 
 ;; Visualize the machine 
 (sm-visualize a* () (list 'S INV1) (list 'F INV2))
-
+```
 A Library for the Automata Theory Classroom
 
 FSM Library Version 1.0
