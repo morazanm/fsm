@@ -94,7 +94,8 @@ To visualize a pda, ndfa, or pda create a new file and require fsm. Then run the
 ;; Visualize the machine 
 (sm-visualize a* () (list 'S INV1) (list 'F INV2))
 ```
-
+## Acknowledgements
+TODO: Add acknowledgements here
 ## Authors
 Written by: Marco T. Morazan and Rosario Antunez, 2015
 
