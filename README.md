@@ -33,9 +33,9 @@ Below are some basic examples of how to use fsm. for a more in-depth guide pleas
 
 (define a* (make-dfa '(S F)     ;; the states
                      '(a b)     ;; the input alphabet
-                     'S         ;; the set of final states
-                     '(F)       ;; the transition functions
-                     '((S a F)
+                     'S         ;; the staring state
+                     '(F)       ;; the set of final states
+                     '((S a F)  ;; the transition functions
                        (F a F)
                        (F b F))))
 ```
