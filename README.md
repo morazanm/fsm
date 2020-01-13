@@ -92,7 +92,7 @@ To visualize a dfa, ndfa, or pda create a new file and require fsm. Then type th
 (define INV2 (lambda (v) false))
 
 ;; Visualize the machine 
-(sm-visualize a* () (list 'S INV1) (list 'F INV2))
+(sm-visualize a* (list 'S INV1) (list 'F INV2))
 ```
 
 ## Future Additions
