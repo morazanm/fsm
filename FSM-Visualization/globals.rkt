@@ -30,7 +30,8 @@ Created by Joshua Schappel on 12/19/19
 ;; -- OTHER --
 (define TRUE-FUNCTION (lambda (v) '())) ;; The default function for a state variable
 (define MACHINE-TYPE null) ;; The type of machine (pda, ndfa, ..)
-
+(define STACK-LIST '(a a a b a)) ;; The stack list for a pda
+(define STACK-NUM 0) ;; The number of new items that arrived on the stack
 
 ;; -- MUTATORS --
 (define CURRENT-RULE '(null null null)) ;; The current rule that the machine is following

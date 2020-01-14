@@ -90,10 +90,14 @@ Initialize World
 -----------------------
 |# 
 
-;; create-init-world: machine type msgWindow(optional) -> world
+;; build-world: machine type msgWindow(optional) -> world
 ;; Purpose: Creates the initail world with the given machine
-(define (create-init-world m type . msg)
+(define (build-world m type . msg)
   (letrec (
+           (messageWin (if (null? msg) ;; Determine if a message should be rendered duing on create
+                           null
+                           (car msg)))
+           
            ;; determine-input-list: none -> list-of-input-fields
            ;; Purpose: Determins which input list to use
            (determine-input-list (lambda ()
@@ -107,9 +111,8 @@ Initialize World
                                     (case type
                                       [(pda) BUTTON-LIST-PDA]
                                       [else BUTTON-LIST]))))
-    (cond
-      [(null? msg) (world m TAPE-POSITION CURRENT-RULE CURRENT-STATE (determine-button-list) (determine-input-list) PROCESSED-CONFIG-LIST UNPROCESSED-CONFIG-LIST null INIT-INDEX-BOTTOM)]
-      [else (world m TAPE-POSITION CURRENT-RULE CURRENT-STATE (determine-button-list) (determine-input-list) PROCESSED-CONFIG-LIST UNPROCESSED-CONFIG-LIST (car msg) INIT-INDEX-BOTTOM)])))
+
+    (initialize-world m messageWin (determine-button-list) (determine-input-list))))
 
 
 
@@ -139,13 +142,13 @@ Cmd Functions
        (case fsm-machine
          [(dfa) (begin
                   (set-machine-type 'dfa)
-                  (run-program (create-init-world (machine '() null '() '() '() '() 'dfa ) 'dfa)))]
+                  (run-program (build-world (machine '() null '() '() '() '() 'dfa ) 'dfa)))]
          [(ndfa) (begin
                    (set-machine-type 'ndfa)
-                   (run-program (create-init-world (machine '() null '() '() '() '() 'ndfa ) 'ndfa)))]
+                   (run-program (build-world (machine '() null '() '() '() '() 'ndfa ) 'ndfa)))]
          [(pda) (begin
                   (set-machine-type 'pda)
-                  (run-program (create-init-world (pda-machine '() null '() '() '() '() 'pda '()) 'pda)))]
+                  (run-program (build-world (pda-machine '() null '() '() '() '() 'pda '()) 'pda)))]
          [(tm) (println "TODO ADD Turing Machine")]
          [else (error (format "~s is not a valid machine type" fsm-machine))])]
       
@@ -153,23 +156,23 @@ Cmd Functions
        (case (sm-type fsm-machine) ;; Pre-made with no predicates
          [(dfa) (begin
                   (set-machine-type 'dfa)
-                  (run-program (create-init-world (machine (map (lambda (x) (fsm-state x TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine)) (sm-getstart fsm-machine) (sm-getfinals fsm-machine)
-                                                           (reverse (sm-getrules fsm-machine)) '() (sm-getalphabet fsm-machine) (sm-type fsm-machine))
-                                                  (sm-type fsm-machine)
-                                                  (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "dfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS))))]
+                  (run-program (build-world (machine (map (lambda (x) (fsm-state x TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine)) (sm-getstart fsm-machine) (sm-getfinals fsm-machine)
+                                                     (reverse (sm-getrules fsm-machine)) '() (sm-getalphabet fsm-machine) (sm-type fsm-machine))
+                                            (sm-type fsm-machine)
+                                            (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "dfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS))))]
          
          [(ndfa) (begin
                    (set-machine-type 'ndfa)
-                   (run-program (create-init-world (machine (map (lambda (x) (fsm-state x TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine)) (sm-getstart fsm-machine) (sm-getfinals fsm-machine)
-                                                            (reverse (sm-getrules fsm-machine)) '() (sm-getalphabet fsm-machine) (sm-type fsm-machine))
-                                                   (sm-type fsm-machine)
-                                                   (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "ndfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS))))]
+                   (run-program (build-world (machine (map (lambda (x) (fsm-state x TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine)) (sm-getstart fsm-machine) (sm-getfinals fsm-machine)
+                                                      (reverse (sm-getrules fsm-machine)) '() (sm-getalphabet fsm-machine) (sm-type fsm-machine))
+                                             (sm-type fsm-machine)
+                                             (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "ndfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS))))]
          [(pda) (begin
                   (set-machine-type 'pda)
-                  (run-program (create-init-world (pda-machine (map (lambda (x) (fsm-state x TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine)) (sm-getstart fsm-machine) (sm-getfinals fsm-machine)
-                                                               (reverse (sm-getrules fsm-machine)) '() (sm-getalphabet fsm-machine) (sm-type fsm-machine) (sm-getstackalphabet fsm-machine))
-                                                  (sm-type fsm-machine)
-                                                  (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "pda" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS))))]  
+                  (run-program (build-world (pda-machine (map (lambda (x) (fsm-state x TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine)) (sm-getstart fsm-machine) (sm-getfinals fsm-machine)
+                                                         (reverse (sm-getrules fsm-machine)) '() (sm-getalphabet fsm-machine) (sm-type fsm-machine) (sm-getstackalphabet fsm-machine))
+                                            (sm-type fsm-machine)
+                                            (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "pda" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS))))]  
          [(tm) (println "TODO ADD tm")])]
       
       [else ;; Pre-made with predicates
@@ -183,15 +186,15 @@ Cmd Functions
                                 [(equal? (caar los) s) (car los)]
                                 [else (get-member s (cdr los))]))))
          
-         (run-program (create-init-world (machine  (map (lambda (x)
-                                                          (let ((temp (get-member x args)))
-                                                            (if (empty? temp)
-                                                                (fsm-state x TRUE-FUNCTION (posn 0 0))
-                                                                (fsm-state x (cadr temp) (posn 0 0))))) state-list)
-                                                   (sm-getstart fsm-machine) (sm-getfinals fsm-machine)
-                                                   (reverse (sm-getrules fsm-machine)) '() (sm-getalphabet fsm-machine) (sm-type fsm-machine))
-                                         (sm-type fsm-machine)
-                                         (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "dfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS))))])))
+         (run-program (build-world (machine  (map (lambda (x)
+                                                    (let ((temp (get-member x args)))
+                                                      (if (empty? temp)
+                                                          (fsm-state x TRUE-FUNCTION (posn 0 0))
+                                                          (fsm-state x (cadr temp) (posn 0 0))))) state-list)
+                                             (sm-getstart fsm-machine) (sm-getfinals fsm-machine)
+                                             (reverse (sm-getrules fsm-machine)) '() (sm-getalphabet fsm-machine) (sm-type fsm-machine))
+                                   (sm-type fsm-machine)
+                                   (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "dfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS))))])))
 
 
 
@@ -422,10 +425,11 @@ Scene Rendering
                                                    (posn-x (fsm-state-posn  (car l)))
                                                    (posn-y (fsm-state-posn (car l)))
                                                    (draw-states (cdr l) (add1 i) s))])))))
+          
          
     (if (not (null? (world-cur-state w)))
         (draw-error-msg (world-error-msg w)(draw-main-img w  
-                                                          (place-image (create-gui-right (machine-type machine)) (- WIDTH 100) (/ HEIGHT 2)
+                                                          (place-image (create-gui-right) (- WIDTH 100) (/ HEIGHT 2)
                                                                        (place-image (create-gui-top (machine-sigma-list (world-fsm-machine w)) (world-cur-rule w)) (/ WIDTH 2) (/ TOP 2)
                                                                                     (place-image (create-gui-bottom (machine-rule-list (world-fsm-machine w)) (world-cur-rule w) (world-scroll-bar-index w)) (/ WIDTH 2) (- HEIGHT (/ BOTTOM 2))
                                                                                                  (draw-button-list (world-button-list w)
@@ -441,7 +445,7 @@ Scene Rendering
                                                                                                                               
         
         (draw-error-msg (world-error-msg w) (draw-main-img w  
-                                                           (place-image (create-gui-right (machine-type machine)) (- WIDTH 100) (/ HEIGHT 2)
+                                                           (place-image (create-gui-right) (- WIDTH 100) (/ HEIGHT 2)
                                                                         (place-image (create-gui-top (machine-sigma-list (world-fsm-machine w)) (world-cur-rule w)) (/ WIDTH 2) (/ TOP 2)
                                                                                      (place-image (create-gui-bottom (machine-rule-list (world-fsm-machine w)) (world-cur-rule w) (world-scroll-bar-index w)) (/ WIDTH 2) (- HEIGHT (/ BOTTOM 2))
                                                                                                   (draw-button-list (world-button-list w)
@@ -634,9 +638,9 @@ RIGHT GUI RENDERING
 -----------------------
 |# 
 
-;; create-gui-right: world-stack -> image
+;; create-gui-right: none -> image
 ;; Purpose: creates the left conrol panel for the 
-(define (create-gui-right stack)
+(define (create-gui-right)
   (letrec (
            ;; state-right-control: null -> image
            ;; Purpose: Creates the state control panel
@@ -699,22 +703,21 @@ RIGHT GUI RENDERING
                                                 (control-header "Add Rules"))))
 
            (test-list '(a b c d e f))
-           ;; pda-stack: none -> image
+           ;; pda-stack: stack-list -> image
            ;; Purpose: creates the control stack image for pdas
-           (pda-stack (lambda ()
+           (pda-stack (lambda (stack-list)
                         (overlay/align "left" "top"
                                        (above/align "left"
                                                     (rectangle STACK-WIDTH TOP "outline" "transparent") ;; The top 
-                                                    ;;(rectangle STACK-WIDTH (- HEIGHT (+ BOTTOM TOP)) "outline" "blue") ;;  the middle
-                                                    (pda-populate-stack test-list)
+                                                    (pda-populate-stack stack-list)
                                                     (rectangle STACK-WIDTH BOTTOM "outline" "transparent")) ;; the bottom
                                        (rectangle STACK-WIDTH HEIGHT "outline" "transparent"))))
 
            (pda-populate-stack (lambda (list)
                                  (overlay/align "middle" "top"
-                                  (draw-verticle list 18 100)
-                                  (rectangle STACK-WIDTH (- HEIGHT (+ BOTTOM TOP)) "outline" "blue") ;;  the middle
-                                  )))
+                                                (draw-verticle list 18 100)
+                                                (rectangle STACK-WIDTH (- HEIGHT (+ BOTTOM TOP)) "outline" "blue") ;;  the middle
+                                                )))
 
            ;; construct-image: none -> image
            ;;; Purpose: Builds the propper image based on the machine type
@@ -732,7 +735,7 @@ RIGHT GUI RENDERING
                                 (case MACHINE-TYPE
                                   [(pda) (overlay/align "left" "top"
                                                         (beside/align "top"
-                                                                      (pda-stack)
+                                                                      (pda-stack STACK-LIST)
                                                                       control)
                                                         (rectangle full-width HEIGHT "outline" "transparent"))]
                                   [else control])))))
