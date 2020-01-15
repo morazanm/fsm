@@ -65,7 +65,7 @@
                          ((M a (b)) (M ,EMP))
                          ((M b (a)) (M ,EMP)))))
 |#
-(define P (make-ndpda '(S F)
+(define P (make-ndpda '(S)
                      '(a b)
                      '(c)
                      'S

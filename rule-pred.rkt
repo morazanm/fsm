@@ -42,7 +42,7 @@
                        (if (> (string-length str) 1)
                            (sub-member list1 str 1 2)
                            #t))])))
-#|
+  #|
   (check-expect (oneAndOne 'aB '(A) '(b)) #f)
   (check-expect (oneAndOne 'Ab '(A) '(b)) #f)
   (check-expect (oneAndOne 'A '(A) '(b)) #f)
@@ -163,8 +163,9 @@
                            (if (null? consumeerror)
                                frommsg
                                (format "The consumed input ~s is not in sigma for rule: ~s." (cadr triple) delta))
-                           (string-append frommsg
-                                          (format "\nThe consumed input ~s is not in sigma for rule: ~s." (cadr triple) delta))))
+                           (if (null? consumeerror) frommsg
+                               (string-append frommsg
+                                              (format "\nThe consumed input ~s is not in sigma for rule: ~s." (cadr triple) delta)))))
            (poperror (if (not (list? (caddr triple)))
                          (if (eq? EMP (caddr triple))
                              '()
@@ -199,7 +200,10 @@
                            (format "The push list ~s contains non-gamma elements for rule: ~s." (cadr double) delta)]
                           [else (string-append tomsg
                                                (format "\nThe push list ~s contains non-gamma elements for rule: ~s." (cadr double) delta))])))
-        pushmsg))
+      (begin
+        (println consumeerror)
+        (println (cadr triple)))
+      pushmsg))
 
   ;purpose: to make sure the rule is two lists
   ;      (state, sigma elem or empty or space)
