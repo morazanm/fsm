@@ -78,7 +78,7 @@
                                    '(B a A bye)
                                    )))
 
-
+#|
   (check-expect ((a-trans 'apply) '(a a)) 'reject)
   (check-expect ((a-trans 'apply) '(b b)) 'reject)
   (check-expect ((a-trans 'apply) '(a)) '(pie))
@@ -90,6 +90,7 @@
   (check-expect ((a-trans 'transitions) '(a)) '((()) ((pie) () B) accept))
   (check-expect ((a-trans 'transitions) '(a a a)) '((()) ((pie) (a a) B) ((bye pie) (a) A) ((pie bye pie) () B) accept))
   (check-expect ((a-trans 'transitions) '()) '((()) reject))
+|#
   ;(define test-6 (equal? (a-trans 'a) "error"))
 
   )
