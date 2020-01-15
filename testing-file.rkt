@@ -1,6 +1,6 @@
 #lang racket
 
-(require fsm)
+(require "main.rkt")
 
 ;; TEST MACHINES BELOW
 (define INIT-STATES '(A B C D))
