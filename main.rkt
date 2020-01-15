@@ -1,62 +1,63 @@
 
 
+
 (module fsm Racket
 
   (require "fsm-main.rkt" "./FSM-Visualization/visualize.rkt")
 
   (provide
- check-machine
- empties
+   check-machine
+   empties
 
- ; sm constructors
- make-dfa make-ndfa make-ndpda make-tm
- regexp->fsa ndfa->dfa fsa->regexp
- sm-rename-states 
- sm-union sm-concat sm-kleenestar sm-complement sm-intersection grammar->sm
+   ; sm constructors
+   make-dfa make-ndfa make-ndpda make-tm
+   regexp->fsa ndfa->dfa fsa->regexp
+   sm-rename-states 
+   sm-union sm-concat sm-kleenestar sm-complement sm-intersection grammar->sm
 
- ; sm observers
- sm-apply sm-showtransitions sm-type
- sm-getstates sm-getalphabet sm-getrules sm-getfinals sm-getstart sm-getstackalphabet
+   ; sm observers
+   sm-apply sm-showtransitions sm-type
+   sm-getstates sm-getalphabet sm-getrules sm-getfinals sm-getstart sm-getstackalphabet
 
- ; sm testers
- sm-sameresult? sm-testequiv? sm-test
+   ; sm testers
+   sm-sameresult? sm-testequiv? sm-test
 
- ; ctm constructor and observer
- combine-tms ctm-run
+   ; ctm constructor and observer
+   combine-tms ctm-run
 
- ; grammar constructors
- make-rg make-cfg make-csg 
- sm->grammar grammar-rename-nts 
- grammar-union grammar-concat
+   ; grammar constructors
+   make-rg make-cfg make-csg 
+   sm->grammar grammar-rename-nts 
+   grammar-union grammar-concat
    
- ; grammar observers
- grammar-derive grammar-gettype
- grammar-getnts grammar-getalphabet grammar-getrules grammar-getstart 
+   ; grammar observers
+   grammar-derive grammar-gettype
+   grammar-getnts grammar-getalphabet grammar-getrules grammar-getstart 
 
- ;grammar testers
- both-derive both-testequiv grammar-test
+   ;grammar testers
+   both-derive both-testequiv grammar-test
 
- ; regexp constructors
- empty-regexp singleton-regexp union-regexp concat-regexp kleenestar-regexp
+   ; regexp constructors
+   empty-regexp singleton-regexp union-regexp concat-regexp kleenestar-regexp
 
- ; regexp observers
- simplify-regexp printable-regexp
- regexp? singleton-regexp? concat-regexp? union-regexp? kleenestar-regexp? null-regexp? empty-regexp?
+   ; regexp observers
+   simplify-regexp printable-regexp
+   regexp? singleton-regexp? concat-regexp? union-regexp? kleenestar-regexp? null-regexp? empty-regexp?
 
- ; regexp transformers
- fsa->regexp
+   ; regexp transformers
+   fsa->regexp
 
- ; some helpful functions
- los->symbol symbol->list generate-symbol symbol->fsmlos symbol-upcase
+   ; some helpful functions
+   los->symbol symbol->list generate-symbol symbol->fsmlos symbol-upcase
 
- ; constants
- EMP DEAD RIGHT LEFT LM BLANK BRANCH GOTO ARROW VAR
+   ; constants
+   EMP DEAD RIGHT LEFT LM BLANK BRANCH GOTO ARROW VAR
 
- ; transducers
- make-dfst
+   ; transducers
+   make-dfst
 
- ; visualization
- sm-visualize)
+   ; visualization
+   sm-visualize)
 
   (define sm-visualize visualize)
 

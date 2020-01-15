@@ -204,14 +204,14 @@
                                           (remove-repeats (flatten d)))))
 
             (define start-message (if start (begin
-                                              (newline)
-                                              (display (format "Start ~s looks good!" name))
+                                              ;(newline)
+                                              ;(display (format "Start ~s looks good!" name))
                                               "")
                                       (format "Starting ~s ~s is not in the list of states ~s" name s v))) 
             (define rule-message (if (empty? rules)
                                      (begin
-                                       (newline)
-                                       (display "Rules contain viable symbols!")
+                                       ;(newline)
+                                       ;(display "Rules contain viable symbols!")
                                        "")
                                      (format "The following symbols are not defined in your list of ~s or alphabet: ~s \n" name rules)))
 
@@ -221,8 +221,8 @@
                                                    (not (member x v))) (car f)))]
                     (if (empty? f-list)
                         (begin
-                          (newline)
-                          (display "Final states look good!")
+                          ;(newline)
+                          ;(display "Final states look good!")
                           "")
                         (format "The final states ~s are not contained in the list of states ~s"
                                 f-list v)))))
@@ -332,10 +332,10 @@
             ;otherwise
             [else
              (begin
-               (newline)
+               ;(newline)
                ;display things are good with lenghts and 
-               (display "Structure of the machine looks good!")
-               (newline)
+               ;(display "Structure of the machine looks good!")
+               ;(newline)
                ;check for nondependent errors
                (local [(define non-dep-errors (if (null? gamma)
                                                   (string-append (check-nondependent states
@@ -358,8 +358,8 @@
                  ;if there are nondependent errors, keep looking, return them
                  (cond [(not (string=? non-dep-errors "")) (display non-dep-errors)]
                        ;otherwise, return that the state and sigma look good and keep checking
-                       [else (begin (newline)
-                                    (display "Nondependent components look good!")
+                       [else (begin ;(newline)
+                                    ;(display "Nondependent components look good!")
                                     (local [(define dep-errors (check-dependent states
                                                                                 sigma
                                                                                 start
@@ -372,13 +372,13 @@
                                                      (define rule-errors
                                                        (cond [(equal? type 'dfa) (check-dfarule states sigma delta)]
                                                              [(equal? type 'ndfa) (check-ndfarule states sigma delta)]
-                                                             [(equal? type 'pda) (check-pdarule states sigma delta)]
+                                                             [(equal? type 'pda) (check-pdarule states sigma gamma delta)]
                                                              [(equal? type 'tm) (check-tmrule states sigma delta)]
                                                              [else (error "Machine type not implemented")]))
                                                      ]
                                                (if (and (equal? dep-errors "")
-                                                        (equal? rule-errors "")) (begin (newline)
-                                                                                        (display "Rules look good!")
+                                                        (equal? rule-errors "")) (begin ;(newline)
+                                                                                        ;(display "Rules look good!")
                                                                                         #t)
                                                                                  (display rule-errors)))
                                              )))])))])))
@@ -423,10 +423,10 @@
             ;otherwise
             [else
              (begin
-               (newline)
+               ;(newline)
                ;display things are good with lenghts and 
-               (display "Structure of the grammar looks good!")
-               (newline)
+               ;(display "Structure of the grammar looks good!")
+               ;(newline)
                ;check for nondependent errors
                (local [(define non-dep-errors  (check-nondependent nts
                                                                    sigma
@@ -436,8 +436,8 @@
                  ;if there are nondependent errors, keep looking, return them
                  (cond [(not (string=? non-dep-errors "")) (display non-dep-errors)]
                        ;otherwise, return that the state and sigma look good and keep checking
-                       [else (begin (newline)
-                                    (display "Nondependent components look good!")
+                       [else (begin ;(newline)
+                                    ;(display "Nondependent components look good!")
                                     (local [(define dep-errors (check-dependent nts
                                                                                 sigma
                                                                                 start
@@ -458,8 +458,8 @@
                                                              [else (error "Grammar type not implemented")]))
                                                      ]
                                                (if (and (equal? dep-errors "")
-                                                        (equal? rule-errors "")) (begin (newline)
-                                                                                        (display "Rules look good!")
+                                                        (equal? rule-errors "")) (begin ;(newline)
+                                                                                        ;(display "Rules look good!")
                                                                                         #t)
                                                                                  (display rule-errors))
                                                ))))])))]))))

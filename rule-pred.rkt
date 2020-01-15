@@ -105,42 +105,93 @@
   ;          (NTs ARROW (Ts V NTs)*)
   (define (check-cfgrule nts sigma delta)
     (checkThrupples (lambda (x) (member x nts))
-                   (lambda (x) (equal? ARROW x))
-                   (lambda (x) (or (equal? EMP x)
-                                   (allBoth x nts sigma)))
-                   delta))
+                    (lambda (x) (equal? ARROW x))
+                    (lambda (x) (or (equal? EMP x)
+                                    (allBoth x nts sigma)))
+                    delta))
 
   ;purpose: to make sure the rule is
   ;         (((NTs V Ts)* && NTs && (NTs V Ts)*) ARROW (NTs V Ts)*)
   (define (check-csgrule nts sigma delta)
     (checkThrupples (lambda (x) (and (hasOne x nts)
+                                     (allBoth x nts sigma)))
+                    (lambda (x) (equal? ARROW x))
+                    (lambda (x) (or (equal? EMP x)
                                     (allBoth x nts sigma)))
-                   (lambda (x) (equal? ARROW x))
-                   (lambda (x) (or (equal? EMP x)
-                                   (allBoth x nts sigma)))
-                   delta))
+                    delta))
 
   ;purpose: to make sure the rule is a state, a sigma element, and a state
   (define (check-dfarule states sigma delta)
     (checkThrupples (lambda (x) (member x states))
-                   (lambda (x) (member x sigma))
-                   (lambda (x) (member x states))
-                   delta))
+                    (lambda (x) (member x sigma))
+                    (lambda (x) (member x states))
+                    delta))
 
   ;purpose: to make sure the rule is a state, a sigma element or empty, and a state
   (define (check-ndfarule states sigma delta)
     (checkThrupples (lambda (x) (member x states))
-                   (lambda (x) (or (equal? x EMP)
-                                   (member x sigma)))
-                   (lambda (x) (member x states))
-                   delta))
+                    (lambda (x) (or (equal? x EMP)
+                                    (member x sigma)))
+                    (lambda (x) (member x states))
+                    delta))
 
   ;purpose: to make sure the rule is two lists
   ;      (state, sigma element or empty, gamma element or empty)
   ;      (state, gamma element or empty)
-  (define (check-pdarule states sigma delta)
-    "TBA"
-    )
+  (define (check-pdarule states sigma gamma delta)
+    (let* ((triple (car delta))
+           (double (cadr delta))
+           (fromerror (if (not (member (car triple) states))
+                          (list (car triple))
+                          '()))
+           (frommsg (if (null? fromerror)
+                        ""
+                        (format "The from state ~s is not in the list of states for rule: ~s." (car triple) delta)))
+           (consumeerror (if (not (member (cadr triple) (cons EMP sigma)))
+                             (list (cadr triple))
+                             '()))
+           (consumemsg (if (null? fromerror)
+                           (if (null? consumeerror)
+                               frommsg
+                               (format "The consumed input ~s is not in sigma for rule: ~s." (cadr triple) delta))
+                           (string-append frommsg
+                                          (format "\nThe consumed input ~s is not in sigma for rule: ~s." (cadr triple) delta))))
+           (poperror (if (not (list? (caddr triple)))
+                         (if (eq? EMP (caddr triple))
+                             '()
+                             (list (caddr triple)))
+                         (foldl (lambda (s a)
+                                  (if (not (member s gamma)) (cons s a) a))
+                                empty
+                                (caddr triple))))
+           (popmsg (cond [(null? poperror) consumemsg]
+                         [(equal? "" consumemsg) 
+                          (format "The pop list ~s contains non-gamma elements for rule: ~s." (caddr triple) delta)]
+                         [else (string-append consumemsg
+                                              (format "\nThe pop list ~s contains non-gamma elements for rule: ~s." (caddr triple) delta))]))
+           (toerror (if (not (member (car double) states))
+                        (list (car double))
+                        '()))
+           (tomsg (cond [(null? toerror) popmsg]
+                        [(equal? "" popmsg)
+                         (format "The to state ~s is not in the list of states for rule: ~s." (car double) delta)]
+                        [else (string-append popmsg
+                                             (format "\nThe to state ~s is not in the list of states for rule: ~s." (car double) delta))]))
+           (pusherror (if (not (list? (cadr double)))
+                          (if (equal? EMP (cadr double))
+                              '()
+                              (list (cadr double)))
+                          (foldl (lambda (s a)
+                                   (if (not (member s gamma)) (cons s a) a))
+                                 empty
+                                 (cadr double))))
+           (pushmsg (cond [(null? pusherror) tomsg]
+                          [(equal? "" tomsg)
+                           (format "The push list ~s contains non-gamma elements for rule: ~s." (cadr double) delta)]
+                          [else (string-append tomsg
+                                               (format "\nThe push list ~s contains non-gamma elements for rule: ~s." (cadr double) delta))])))
+      pushmsg
+      ))
 
   ;purpose: to make sure the rule is two lists
   ;      (state, sigma elem or empty or space)
