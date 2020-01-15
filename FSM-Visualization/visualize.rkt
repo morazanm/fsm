@@ -44,7 +44,7 @@
 (define UNPROCESSED-CONFIG-LIST '()) ;; TODO
 (define ALPHA-LIST '()) ;; TODO
 
-
+#|
 (define M3 (make-dfa '(A B C D F)
                      '(a b)
                      'A
@@ -64,6 +64,15 @@
                          ((M b ,EMP) (M (b)))
                          ((M a (b)) (M ,EMP))
                          ((M b (a)) (M ,EMP)))))
+|#
+(define P (make-ndpda '(S F)
+                     '(a b)
+                     '(c)
+                     'S
+                     '(F)
+                     `(((S ,EMP ,EMP) (F ,EMP))
+                       ((F a ,EMP) (F (c)))
+                       ((F b (c)) (F ,EMP)))))
 
 
 ;; getCurRule: processed-list -> rule

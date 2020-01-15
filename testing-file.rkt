@@ -31,7 +31,7 @@
                                (C a A) (C b D) (D a F) (D b B)
                                (F b F))))
 
-
+#|
 ;; PDA
 ;; (sm-showtransitions M4 '(a a a b b b))
 ;;(state '(input) '(stack)) '(final rule))
@@ -46,7 +46,7 @@
                                     ((M b ,EMP) (M (b)))
                                     ((M a (b)) (M ,EMP))
                                     ((M b (a)) (M ,EMP)))))
-
+|#
 (define P (make-ndpda '(S F)
                      '(a b)
                      '(c)

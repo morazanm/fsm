@@ -372,7 +372,7 @@
                                                      (define rule-errors
                                                        (cond [(equal? type 'dfa) (check-dfarule states sigma delta)]
                                                              [(equal? type 'ndfa) (check-ndfarule states sigma delta)]
-                                                             [(equal? type 'pda) (check-pdarule states sigma gamma delta)]
+                                                             [(equal? type 'pda) (check-pda-rules states sigma (car gamma) delta)]
                                                              [(equal? type 'tm) (check-tmrule states sigma delta)]
                                                              [else (error "Machine type not implemented")]))
                                                      ]

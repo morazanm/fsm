@@ -2,7 +2,7 @@
   (require "constants.rkt")
   (require test-engine/racket-tests)
   (provide  check-rgrule check-cfgrule check-csgrule
-            check-dfarule check-ndfarule check-pdarule check-tmrule
+            check-dfarule check-ndfarule check-pda-rules check-tmrule
             ;check-pdarule check-tmrule
             )
 
@@ -135,11 +135,20 @@
                     (lambda (x) (member x states))
                     delta))
 
+
+  (define (check-pda-rules  states sigma gamma delta)
+    (cond
+      [(empty? delta) ""]
+      [else
+       (string-append (check-pdarule states sigma gamma (car delta)) (check-pda-rules  states sigma gamma (cdr delta)))]))
+  
+
   ;purpose: to make sure the rule is two lists
   ;      (state, sigma element or empty, gamma element or empty)
   ;      (state, gamma element or empty)
   (define (check-pdarule states sigma gamma delta)
     (let* ((triple (car delta))
+           
            (double (cadr delta))
            (fromerror (if (not (member (car triple) states))
                           (list (car triple))
@@ -190,8 +199,7 @@
                            (format "The push list ~s contains non-gamma elements for rule: ~s." (cadr double) delta)]
                           [else (string-append tomsg
                                                (format "\nThe push list ~s contains non-gamma elements for rule: ~s." (cadr double) delta))])))
-      pushmsg
-      ))
+        pushmsg))
 
   ;purpose: to make sure the rule is two lists
   ;      (state, sigma elem or empty or space)
