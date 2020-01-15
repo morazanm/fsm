@@ -3,7 +3,8 @@
 A Library for the Automata Theory Classroom
 
 
-
+## Documentation
+The documemtation can be found  [here](https://htmlpreview.github.io/?https://github.com/morazanm/fsm/blob/master/doc/fsm/index.html).
 
 
 ## Installation
