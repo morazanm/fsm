@@ -58,5 +58,6 @@
   (F () ())
   accept)
 
-;; state input stack
+
+;; '(state symbol pop) '(state push)
 '(((S e e) (M e)) ((M e e) (F e)) ((M a e) (M (a))) ((M b e) (M (b))) ((M a (b)) (M e)) ((M b (a)) (M e)))
