@@ -64,7 +64,7 @@
                          ((M b ,EMP) (M (b)))
                          ((M a (b)) (M ,EMP))
                          ((M b (a)) (M ,EMP)))))
-|#
+
 (define P (make-ndpda '(S)
                      '(a b)
                      '(c)
@@ -73,7 +73,7 @@
                      `(((S ,EMP ,EMP) (F ,EMP))
                        ((F a ,EMP) (F (c)))
                        ((F b (d)) (F ,EMP)))))
-
+|#
 
 ;; getCurRule: processed-list -> rule
 ;; Purpose: get the rule that the machine just executed

@@ -243,9 +243,19 @@
                                         
       end-message))
 
+  (define (los->string l)
+  (cond [(empty? l) ""]
+        [else (string-append (symbol->string (car l)) (los->string (cdr l)))]))
+
   (define (check-machine states sigma finals delta start type . gamma)
     (local [
             ;;something for gamma
+            (define (check-gamma g)
+              (let [(problems (filter (lambda (s) (not (symbol? s))) g))]
+                (if (null? problems)
+                    ""
+                    (format "The following are not valid for gamma: ~s" problems))))
+              
           
             ;check-delt: no input --> string or (list of broken rules)
             ;purpose: to determine if the delta is of the correct lengths
@@ -356,7 +366,8 @@
                                                                                      delta) 
                                                                  (check-nondependent-m delta
                                                                                        finals
-                                                                                       type))))]  
+                                                                                       type)
+                                                                 (check-gamma (car gamma)))))]  
                  ;(check-nondependent '(A) (car gamma) "" ""))))]
                  ;if there are nondependent errors, keep looking, return them
                  (cond [(not (string=? non-dep-errors "")) (display non-dep-errors)]

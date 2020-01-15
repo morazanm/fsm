@@ -200,9 +200,6 @@
                            (format "The push list ~s contains non-gamma elements for rule: ~s." (cadr double) delta)]
                           [else (string-append tomsg
                                                (format "\nThe push list ~s contains non-gamma elements for rule: ~s." (cadr double) delta))])))
-      (begin
-        (println consumeerror)
-        (println (cadr triple)))
       pushmsg))
 
   ;purpose: to make sure the rule is two lists
