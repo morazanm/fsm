@@ -8,7 +8,7 @@ Created by Joshua Schappel on 12/19/19
 
 
 (require net/sendurl "../structs/input.rkt" "../structs/world.rkt" "../structs/state.rkt"
-         "../structs/machine.rkt" "../structs/posn.rkt" "../globals.rkt"
+         "../structs/machine.rkt" "../structs/posn.rkt" "../globals.rkt" "stateTransitions.rkt"
          "../structs/msgWindow.rkt" "../structs/world.rkt" "../../fsm-main.rkt")
 
 (provide addState removeState addRule removeRule addStart replaceStart
@@ -61,7 +61,7 @@ Created by Joshua Schappel on 12/19/19
                             (begin
                               (set-machine-state-list! (world-fsm-machine w) (filter(lambda(x) (not(equal? (fsm-state-name x) (string->symbol state)))) (machine-state-list (world-fsm-machine w))))
                               (set-machine-rule-list! (world-fsm-machine w) (remove-all (machine-rule-list (world-fsm-machine w))))
-                             (reset-bottom-indices)
+                              (reset-bottom-indices)
                               (world (world-fsm-machine w)(world-tape-position w) (world-cur-rule w)
                                      null (world-button-list w) new-input-list
                                      '() '() (world-error-msg w) (world-scroll-bar-index w)))
@@ -192,13 +192,12 @@ Created by Joshua Schappel on 12/19/19
                                   '() '() (world-error-msg w) (world-scroll-bar-index w)))]
                        [ (ormap (lambda (x) (equal? start-state (symbol->string (fsm-state-name x)))) (machine-state-list (world-fsm-machine w)))
                          (begin
-                          (reset-bottom-indices)
+                           (reset-bottom-indices)
                            (set-machine-start-state! (world-fsm-machine w) (string->symbol start-state))
                            (world (world-fsm-machine w)(world-tape-position w) (world-cur-rule w)
                                   null (world-button-list w) new-input-list
                                   '() '() (world-error-msg w) (world-scroll-bar-index w)))]
                        [else w]))))
-
 
 ;; replaceStart: world -> world
 ;; Purpose: Replaces the start state in the world
@@ -293,7 +292,7 @@ Created by Joshua Schappel on 12/19/19
                          ;; Purpose: Removes all rules that are associated with the alpha that is being removed.
                          (remove-all (lambda (lor alpha)
                                        (filter (lambda (x) (cond
-                                                             [(equal? (symbol->string (cadr x)) alpha) #f]
+                                                             [(equal? (symbol->string (caadr x)) alpha) #f]
                                                              [else #t]))
                                                lor))))
                      
@@ -440,27 +439,57 @@ Created by Joshua Schappel on 12/19/19
                   (cond
                     [(empty? (machine-sigma-list (world-fsm-machine w))) (redraw-world-with-msg w "Your Tape is currently empty! Please add variables to the Tap to continue." "Notice" MSG-CAUTION)]
                     [else
-                     ;; Check if the unprocessed list is empty. If so then gencode was not yet pressed
+                     ;; Check if the unprocessed list is empty. If so then run was not yet pressed
                      (cond
                        [(empty? (world-unporcessed-config-list w)) (redraw-world-with-msg w "You must build your machine before you can continue. Please press 'Run' to proceed." "Error" MSG-CAUTION)]
                        [else
-                        (let(
-                             (nextState (car (world-unporcessed-config-list w)))
-                             (transitions (cdr (world-unporcessed-config-list w))))
-                         
-                          (cond
-                            [(eq? nextState 'accept)
-                             (redraw-world-with-msg w "The input is accepted." "Success" MSG-SUCCESS)]
-                            [(eq? nextState 'reject)
-                             (redraw-world-with-msg w "The input is rejected." "Notice" MSG-CAUTION)]
-                            [else
-                             (let* ((cur-rule (getCurRule (append (list nextState) (world-processed-config-list w)))))
-                               (if (equal? EMP (cadr cur-rule)) TAPE-INDEX-BOTTOM (set-tape-index-bottom (+ 1 TAPE-INDEX-BOTTOM)))
+                        (letrec(
+                                (nextState (car (world-unporcessed-config-list w))) ;; The next state the machine transitions to
+                                ;; Determins the the next transition based on machine type
+                                (determine-next-steps (lambda ()
+                                                        (cond
+                                                          [(eq? nextState 'accept)
+                                                           (redraw-world-with-msg w "The input is accepted." "Success" MSG-SUCCESS)]
+                                                          [(eq? nextState 'reject)
+                                                           (redraw-world-with-msg w "The input is rejected." "Notice" MSG-CAUTION)]
+                                                          [else
+                                                           (case MACHINE-TYPE
+                                                             [(pda) (println "TODO")]
+                                                             [(tm) (println "TODO")]
+                                                             [else
+                                                              (go-next-dfa-ndfa nextState w)])])))
+                                
+                                ;; update-Machine: None -> world
+                                ;; Updates the world based on the given machine
+                                (update-world (lambda ()
+                                                (case MACHINE-TYPE
+                                                  [(pda) (println "TODO")]
+                                                  [(tm) (println "TODO")]
+                                                  [else
+                                                   (go-next-dfa-ndfa nextState w)])))
+                                )
+                          (determine-next-steps))])])))
+
+
+
+                          
+;; go-next-dfa-ndfa: symbol world -> world
+;; Determins the next state that the machine needs to be in an then updates the world accordingly
+(define (go-next-dfa-ndfa nextState w)
+  (let ((transitions (cdr (world-unporcessed-config-list w)))) ;; The list-of-transitons
+    (cond
+      [(eq? nextState 'accept)
+       (redraw-world-with-msg w "The input is accepted." "Success" MSG-SUCCESS)]
+      [(eq? nextState 'reject)
+       (redraw-world-with-msg w "The input is rejected." "Notice" MSG-CAUTION)]
+      [else
+       (let* ((cur-rule (getCurRule (append (list nextState) (world-processed-config-list w)))))
+         (if (equal? EMP (cadr cur-rule)) TAPE-INDEX-BOTTOM (set-tape-index-bottom (+ 1 TAPE-INDEX-BOTTOM)))
                              
-                               (world (world-fsm-machine w) (world-tape-position w) (getCurRule (append (list nextState) (world-processed-config-list w)))
-                                      (car (cdr nextState)) (world-button-list w) (world-input-list w)
-                                      (append (list nextState) (world-processed-config-list w)) transitions (world-error-msg w)
-                                      (getScrollBarPosition (reverse (machine-rule-list (world-fsm-machine w))) cur-rule)))]))])])))
+         (world (world-fsm-machine w) (world-tape-position w) (getCurRule (append (list nextState) (world-processed-config-list w)))
+                (car (cdr nextState)) (world-button-list w) (world-input-list w)
+                (append (list nextState) (world-processed-config-list w)) transitions (world-error-msg w)
+                (getScrollBarPosition (reverse (machine-rule-list (world-fsm-machine w))) cur-rule)))])))
 
 
 ;; showPrev: world -> world
@@ -527,7 +556,7 @@ Created by Joshua Schappel on 12/19/19
     [else DFA-NDFA_NUMBER]))
 
 
-
+#|
 ;; getCurRule: processed-list -> rule
 ;; Purpose: get the rule that the machine just executed
 (define getCurRule (lambda (pl)
@@ -544,6 +573,7 @@ Created by Joshua Schappel on 12/19/19
                          (cadadr pl)
                          (caaadr pl)
                          (cadar pl))])))
+|#
 
 ;; format-input: symbol -> symbol
 ;; Purpose: This is a helper function for addRule and removeRule that formats certine symbols into valid fsm symbols

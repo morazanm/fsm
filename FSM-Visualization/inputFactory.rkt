@@ -140,23 +140,27 @@
       "((" (symbol->string from) " " (symbol->string tape)
       " " (list->string pop) ") ("
       (symbol->string to) " "  (list->string push) "))")]
+    
     [(list (list from tape pop) (list to push))
      #:when (list? pop) ;; case: just pop is a list
      (string-append
       "((" (symbol->string from) " " (symbol->string tape)
       " " (list->string pop) ") ("
       (symbol->string to) " "  (symbol->string push) "))")]
+    
     [(list (list from tape pop) (list to push))
      #:when (list? push) ;; case: just push is a list
      (string-append
       "((" (symbol->string from) " " (symbol->string tape)
       " " (symbol->string pop) ") ("
       (symbol->string to) " "  (list->string push) "))")]
+    
     [(list (list from tape pop) (list to push)) ;; case: pop and push are not lists
      (string-append
       "((" (symbol->string from) " " (symbol->string tape)
       " " (symbol->string pop) ") ("
       (symbol->string to) " "  (symbol->string push) "))")]
+    
     ;; Otherwise throw an error
     [else
      (error "Invalid pda pattern match")]))

@@ -90,10 +90,14 @@ Initialize World
 -----------------------
 |# 
 
-;; create-init-world: machine type msgWindow(optional) -> world
+;; build-world: machine type msgWindow(optional) -> world
 ;; Purpose: Creates the initail world with the given machine
-(define (create-init-world m type . msg)
+(define (build-world m type . msg)
   (letrec (
+           (messageWin (if (null? msg) ;; Determine if a message should be rendered duing on create
+                           null
+                           (car msg)))
+           
            ;; determine-input-list: none -> list-of-input-fields
            ;; Purpose: Determins which input list to use
            (determine-input-list (lambda ()
@@ -107,9 +111,8 @@ Initialize World
                                     (case type
                                       [(pda) BUTTON-LIST-PDA]
                                       [else BUTTON-LIST]))))
-    (cond
-      [(null? msg) (world m TAPE-POSITION CURRENT-RULE CURRENT-STATE (determine-button-list) (determine-input-list) PROCESSED-CONFIG-LIST UNPROCESSED-CONFIG-LIST null INIT-INDEX-BOTTOM)]
-      [else (world m TAPE-POSITION CURRENT-RULE CURRENT-STATE (determine-button-list) (determine-input-list) PROCESSED-CONFIG-LIST UNPROCESSED-CONFIG-LIST (car msg) INIT-INDEX-BOTTOM)])))
+
+    (initialize-world m messageWin (determine-button-list) (determine-input-list))))
 
 
 
@@ -139,13 +142,13 @@ Cmd Functions
        (case fsm-machine
          [(dfa) (begin
                   (set-machine-type 'dfa)
-                  (run-program (create-init-world (machine '() null '() '() '() '() 'dfa ) 'dfa)))]
+                  (run-program (build-world (machine '() null '() '() '() '() 'dfa ) 'dfa)))]
          [(ndfa) (begin
                    (set-machine-type 'ndfa)
-                   (run-program (create-init-world (machine '() null '() '() '() '() 'ndfa ) 'ndfa)))]
+                   (run-program (build-world (machine '() null '() '() '() '() 'ndfa ) 'ndfa)))]
          [(pda) (begin
                   (set-machine-type 'pda)
-                  (run-program (create-init-world (pda-machine '() null '() '() '() '() 'pda '()) 'pda)))]
+                  (run-program (build-world (pda-machine '() null '() '() '() '() 'pda '()) 'pda)))]
          [(tm) (println "TODO ADD Turing Machine")]
          [else (error (format "~s is not a valid machine type" fsm-machine))])]
       
@@ -153,23 +156,23 @@ Cmd Functions
        (case (sm-type fsm-machine) ;; Pre-made with no predicates
          [(dfa) (begin
                   (set-machine-type 'dfa)
-                  (run-program (create-init-world (machine (map (lambda (x) (fsm-state x TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine)) (sm-getstart fsm-machine) (sm-getfinals fsm-machine)
-                                                           (reverse (sm-getrules fsm-machine)) '() (sm-getalphabet fsm-machine) (sm-type fsm-machine))
-                                                  (sm-type fsm-machine)
-                                                  (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "dfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS))))]
+                  (run-program (build-world (machine (map (lambda (x) (fsm-state x TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine)) (sm-getstart fsm-machine) (sm-getfinals fsm-machine)
+                                                     (reverse (sm-getrules fsm-machine)) '() (sm-getalphabet fsm-machine) (sm-type fsm-machine))
+                                            (sm-type fsm-machine)
+                                            (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "dfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS))))]
          
          [(ndfa) (begin
                    (set-machine-type 'ndfa)
-                   (run-program (create-init-world (machine (map (lambda (x) (fsm-state x TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine)) (sm-getstart fsm-machine) (sm-getfinals fsm-machine)
-                                                            (reverse (sm-getrules fsm-machine)) '() (sm-getalphabet fsm-machine) (sm-type fsm-machine))
-                                                   (sm-type fsm-machine)
-                                                   (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "ndfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS))))]
+                   (run-program (build-world (machine (map (lambda (x) (fsm-state x TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine)) (sm-getstart fsm-machine) (sm-getfinals fsm-machine)
+                                                      (reverse (sm-getrules fsm-machine)) '() (sm-getalphabet fsm-machine) (sm-type fsm-machine))
+                                             (sm-type fsm-machine)
+                                             (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "ndfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS))))]
          [(pda) (begin
                   (set-machine-type 'pda)
-                  (run-program (create-init-world (pda-machine (map (lambda (x) (fsm-state x TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine)) (sm-getstart fsm-machine) (sm-getfinals fsm-machine)
-                                                               (reverse (sm-getrules fsm-machine)) '() (sm-getalphabet fsm-machine) (sm-type fsm-machine) (sm-getstackalphabet fsm-machine))
-                                                  (sm-type fsm-machine)
-                                                  (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "pda" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS))))]  
+                  (run-program (build-world (pda-machine (map (lambda (x) (fsm-state x TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine)) (sm-getstart fsm-machine) (sm-getfinals fsm-machine)
+                                                         (reverse (sm-getrules fsm-machine)) '() (sm-getalphabet fsm-machine) (sm-type fsm-machine) (sm-getstackalphabet fsm-machine))
+                                            (sm-type fsm-machine)
+                                            (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "pda" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS))))]  
          [(tm) (println "TODO ADD tm")])]
       
       [else ;; Pre-made with predicates
@@ -183,15 +186,15 @@ Cmd Functions
                                 [(equal? (caar los) s) (car los)]
                                 [else (get-member s (cdr los))]))))
          
-         (run-program (create-init-world (machine  (map (lambda (x)
-                                                          (let ((temp (get-member x args)))
-                                                            (if (empty? temp)
-                                                                (fsm-state x TRUE-FUNCTION (posn 0 0))
-                                                                (fsm-state x (cadr temp) (posn 0 0))))) state-list)
-                                                   (sm-getstart fsm-machine) (sm-getfinals fsm-machine)
-                                                   (reverse (sm-getrules fsm-machine)) '() (sm-getalphabet fsm-machine) (sm-type fsm-machine))
-                                         (sm-type fsm-machine)
-                                         (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "dfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS))))])))
+         (run-program (build-world (machine  (map (lambda (x)
+                                                    (let ((temp (get-member x args)))
+                                                      (if (empty? temp)
+                                                          (fsm-state x TRUE-FUNCTION (posn 0 0))
+                                                          (fsm-state x (cadr temp) (posn 0 0))))) state-list)
+                                             (sm-getstart fsm-machine) (sm-getfinals fsm-machine)
+                                             (reverse (sm-getrules fsm-machine)) '() (sm-getalphabet fsm-machine) (sm-type fsm-machine))
+                                   (sm-type fsm-machine)
+                                   (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "dfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS))))])))
 
 
 
@@ -422,10 +425,11 @@ Scene Rendering
                                                    (posn-x (fsm-state-posn  (car l)))
                                                    (posn-y (fsm-state-posn (car l)))
                                                    (draw-states (cdr l) (add1 i) s))])))))
+          
          
     (if (not (null? (world-cur-state w)))
         (draw-error-msg (world-error-msg w)(draw-main-img w  
-                                                          (place-image (create-gui-right (machine-type machine)) (- WIDTH 100) (/ HEIGHT 2)
+                                                          (place-image (create-gui-right) (- WIDTH 100) (/ HEIGHT 2)
                                                                        (place-image (create-gui-top (machine-sigma-list (world-fsm-machine w)) (world-cur-rule w)) (/ WIDTH 2) (/ TOP 2)
                                                                                     (place-image (create-gui-bottom (machine-rule-list (world-fsm-machine w)) (world-cur-rule w) (world-scroll-bar-index w)) (/ WIDTH 2) (- HEIGHT (/ BOTTOM 2))
                                                                                                  (draw-button-list (world-button-list w)
@@ -441,7 +445,7 @@ Scene Rendering
                                                                                                                               
         
         (draw-error-msg (world-error-msg w) (draw-main-img w  
-                                                           (place-image (create-gui-right (machine-type machine)) (- WIDTH 100) (/ HEIGHT 2)
+                                                           (place-image (create-gui-right) (- WIDTH 100) (/ HEIGHT 2)
                                                                         (place-image (create-gui-top (machine-sigma-list (world-fsm-machine w)) (world-cur-rule w)) (/ WIDTH 2) (/ TOP 2)
                                                                                      (place-image (create-gui-bottom (machine-rule-list (world-fsm-machine w)) (world-cur-rule w) (world-scroll-bar-index w)) (/ WIDTH 2) (- HEIGHT (/ BOTTOM 2))
                                                                                                   (draw-button-list (world-button-list w)
@@ -564,6 +568,23 @@ BOTTOM GUI RENDERING
 
 
 
+;; draw-verticle list int int -> image
+;; Purpose: draws a list vertically, where every element in the list is rendered below each other
+(define (draw-verticle loa fnt-size width)
+  (letrec (
+           ;; t-box: string int -> image
+           ;; Purpose: Creates a box for the sting to be placed in
+           (t-box (lambda (a-string fnt-size)
+                    (overlay
+                     (text (symbol->string a-string) fnt-size "Black")
+                     (rectangle width fnt-size "outline" "transparent")))))
+    (cond
+      [(empty? loa) (rectangle 10 10 "outline" "transparent")]
+      [(<= (length loa) 1) (t-box (car loa) fnt-size)]
+      [else (above
+             (t-box (car loa) fnt-size)
+             (draw-verticle (cdr loa) fnt-size width))])))
+
 
 #|
 -----------------------
@@ -580,26 +601,8 @@ LEFT GUI RENDERING
            (create-alpha-control (lambda (loa)
                                    (letrec (
                                             (title1-width (/ WIDTH 11)) ;; The width of the title for all machines besides pda's
-                                            (title2-width (/ (/ WIDTH 11) 2)) ;; The title width for pdas
-                                            
-                                            ;; draw-verticle: list-of-alpha/gamma int int -> image
-                                            ;; Purpose: draws the alphabet or gamma image with every letter on another line
-                                            (draw-verticle (lambda (loa fnt-size width)
-                                                             (letrec (
-                                                                      ;; t-box: string int -> image
-                                                                      ;; Purpose: Creates a box for the sting to be placed in
-                                                                      (t-box (lambda (a-string fnt-size)
-                                                                               (overlay
-                                                                                (text (symbol->string a-string) fnt-size "Black")
-                                                                                (rectangle width fnt-size "outline" "transparent")))))
-                                                               (cond
-                                                                 [(empty? loa) (rectangle 10 10 "outline" "transparent")]
-                                                                 [(<= (length loa) 1) (t-box (car loa) fnt-size)]
-                                                                 [else (above
-                                                                        (t-box (car loa) fnt-size)
-                                                                        (draw-verticle (cdr loa) fnt-size width))])))))
+                                            (title2-width (/ (/ WIDTH 11) 2))) ;; The title width for pdas
                                      
-
                                      ;; Determine if the gamma needs to be drawin or not.
                                      (cond
                                        [(empty? log)
@@ -635,9 +638,9 @@ RIGHT GUI RENDERING
 -----------------------
 |# 
 
-;; create-gui-right: null -> image
+;; create-gui-right: none -> image
 ;; Purpose: creates the left conrol panel for the 
-(define (create-gui-right type)
+(define (create-gui-right)
   (letrec (
            ;; state-right-control: null -> image
            ;; Purpose: Creates the state control panel
@@ -652,7 +655,7 @@ RIGHT GUI RENDERING
            (sigma-right-control (lambda ()
                                   ;; render the proper display
                                   (cond
-                                    [(equal? type 'pda)
+                                    [(equal? MACHINE-TYPE 'pda)
                                      (letrec (
                                               ;; draw-left: none -> img
                                               ;; Purpose: Draws the alpha add option
@@ -697,23 +700,55 @@ RIGHT GUI RENDERING
            (rule-right-control (lambda ()
                                  (overlay/align "left" "top"
                                                 (rectangle 200 CONTROL-BOX-H "outline" "blue")
-                                                (control-header "Add Rules")))))
-  
-    (overlay/align "left" "top"
-                   (above/align "left"
-                                (state-right-control)
-                                (sigma-right-control)
-                                (start-right-control)
-                                (end-right-control)
-                                (rule-right-control))
-                   (rectangle 200 HEIGHT "outline" "gray"))))
+                                                (control-header "Add Rules"))))
+
+           (test-list '(a b c d e f))
+           ;; pda-stack: stack-list -> image
+           ;; Purpose: creates the control stack image for pdas
+           (pda-stack (lambda (stack-list)
+                        (overlay/align "left" "top"
+                                       (above/align "left"
+                                                    (rectangle STACK-WIDTH TOP "outline" "transparent") ;; The top 
+                                                    (pda-populate-stack stack-list)
+                                                    (rectangle STACK-WIDTH BOTTOM "outline" "transparent")) ;; the bottom
+                                       (rectangle STACK-WIDTH HEIGHT "outline" "transparent"))))
+
+           (pda-populate-stack (lambda (list)
+                                 (overlay/align "middle" "top"
+                                                (draw-verticle list 18 100)
+                                                (rectangle STACK-WIDTH (- HEIGHT (+ BOTTOM TOP)) "outline" "blue") ;;  the middle
+                                                )))
+
+           ;; construct-image: none -> image
+           ;;; Purpose: Builds the propper image based on the machine type
+           (construct-image (lambda ()
+                              (let ((full-width (+ 300 STACK-WIDTH)) ;; the width of the combined images
+                                    ;; The right control block that deals with machine minipulation
+                                    (control (overlay/align "left" "top"
+                                                            (above/align "left"
+                                                                         (state-right-control)
+                                                                         (sigma-right-control)
+                                                                         (start-right-control)
+                                                                         (end-right-control)
+                                                                         (rule-right-control))
+                                                            (rectangle 200 HEIGHT "outline" "gray"))))
+                                (case MACHINE-TYPE
+                                  [(pda) (overlay/align "left" "top"
+                                                        (beside/align "top"
+                                                                      (pda-stack STACK-LIST)
+                                                                      control)
+                                                        (rectangle full-width HEIGHT "outline" "transparent"))]
+                                  [else control])))))
+
+    (construct-image)))
 
 #|
 -----------------------------
 ADDITIONAL DRAW FUNCTIONS
 -----------------------------
 |# 
-  
+
+
 ;; control-header: string -> image
 ;; Purpose: Creates a header label for right control panel
 (define (control-header msg)

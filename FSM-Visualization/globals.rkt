@@ -16,6 +16,7 @@ Created by Joshua Schappel on 12/19/19
 (define HEIGHT 600) ;; The height of the scene
 (define CONTROL-BOX-H (/ HEIGHT 5)) ;; The height of each left side conrol box
 (define BOTTOM(/ HEIGHT 8))
+(define STACK-WIDTH 100) ;; the width of the control stack image for pdas
 
 
 ;; -- GUI COLORS --
@@ -29,7 +30,8 @@ Created by Joshua Schappel on 12/19/19
 ;; -- OTHER --
 (define TRUE-FUNCTION (lambda (v) '())) ;; The default function for a state variable
 (define MACHINE-TYPE null) ;; The type of machine (pda, ndfa, ..)
-
+(define STACK-LIST '(a a a b a)) ;; The stack list for a pda
+(define STACK-NUM 0) ;; The number of new items that arrived on the stack
 
 ;; -- MUTATORS --
 (define CURRENT-RULE '(null null null)) ;; The current rule that the machine is following
