@@ -72,7 +72,7 @@
                      '(F)
                      `(((S ,EMP ,EMP) (F ,EMP))
                        ((F a ,EMP) (F (c)))
-                       ((F b (c)) (F ,EMP)))))
+                       ((F b (d)) (F ,EMP)))))
 
 
 ;; getCurRule: processed-list -> rule

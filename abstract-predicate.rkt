@@ -146,7 +146,7 @@
                                               (string-append upper-errors "\n" sigma-errors)))))
                      (if (empty? delta-repeats) ""
                          (string-append "\n \n These rules are repeated in your list of rules: \n"
-                                       (foldr (lambda (x y) (string-append (format "~s \n" x) y)) "" delta-repeats)))
+                                        (foldr (lambda (x y) (string-append (format "~s \n" x) y)) "" delta-repeats)))
                      )
       ))
 
@@ -186,14 +186,14 @@
                                (string-append "\n More than one of your rules begin with: \n"
                                               (foldr (lambda (x y) (string-append (format "~s \n" x) y)) "" dfa-repeats))))))))
 
+  ;; check-dependent: states alpha start delta type (type?...) (f?)
   (define (check-dependent v a s d t name . f)
     (local [
             (define (remove-repeats a-list)
               (cond [(empty? a-list) empty]
                     [(member (car a-list) (cdr a-list)) (remove-repeats (cdr a-list))]
-                    [else (cons (car a-list) (remove-repeats (cdr a-list)))])) 
-
-            (define start (member s v)) 
+                    [else (cons (car a-list) (remove-repeats (cdr a-list)))]))
+            (define start (member s v))
             (define rules (filter (lambda (y)
                                     (not (member y
                                                  (append
@@ -207,13 +207,16 @@
                                               ;(newline)
                                               ;(display (format "Start ~s looks good!" name))
                                               "")
-                                      (format "Starting ~s ~s is not in the list of states ~s" name s v))) 
+                                      (format "Starting ~a ~s is not in the list of states ~s" name s v))) 
             (define rule-message (if (empty? rules)
                                      (begin
                                        ;(newline)
                                        ;(display "Rules contain viable symbols!")
                                        "")
-                                     (format "The following symbols are not defined in your list of ~s or alphabet: ~s \n" name rules)))
+                                     (case t
+                                       [(pda) (format "The following symbols are not defined in your list of ~a, alphabet, or gamma: ~s.\n" name rules)]
+                                       [else
+                                        (format "The following symbols are not defined in your list of ~a or alphabet: ~s.\n" name rules)])))
 
             (define (final-check)
               (if (null? f) ""
@@ -232,11 +235,11 @@
             (define end-message
               (string-append
                (if (string=? start-message "") ""
-                   (string-append (format "\n STARTING ~s CONTENT ERROR: \n" name) start-message))
+                   (string-append (format "\n-STARTING ~a CONTENT ERROR: \n" name) start-message))
                (if (string=? final-message "") ""
-                   (string-append (format "\n FINAL STATES CONTENT ERRORS: \n") final-message))
+                   (string-append (format "\n-FINAL STATES CONTENT ERRORS: \n") final-message))
                (if (string=? rule-message "") ""
-                   (string-append (format "\n RULE CONTENT ERRORS: \n") rule-message))))]
+                   (string-append (format "\n-RULE CONTENT ERRORS: \n") rule-message))))]
                                         
       end-message))
 
@@ -339,49 +342,51 @@
                ;check for nondependent errors
                (local [(define non-dep-errors (if (null? gamma)
                                                   (string-append (check-nondependent states
-                                                                                    sigma
-                                                                                    "list of states" 
-                                                                                    "STATE"
-                                                                                    delta) 
+                                                                                     sigma
+                                                                                     "list of states" 
+                                                                                     "STATE"
+                                                                                     delta) 
                                                                  (check-nondependent-m delta
-                                                                                    finals
-                                                                                    type))
+                                                                                       finals
+                                                                                       type))
                                                   (string-append (check-nondependent states
                                                                                      sigma
                                                                                      "list of states" 
                                                                                      "STATE"
                                                                                      delta) 
                                                                  (check-nondependent-m delta
-                                                                                    finals
-                                                                                    type))))]  
-                                                                 ;(check-nondependent '(A) (car gamma) "" ""))))]
+                                                                                       finals
+                                                                                       type))))]  
+                 ;(check-nondependent '(A) (car gamma) "" ""))))]
                  ;if there are nondependent errors, keep looking, return them
                  (cond [(not (string=? non-dep-errors "")) (display non-dep-errors)]
                        ;otherwise, return that the state and sigma look good and keep checking
                        [else (begin ;(newline)
-                                    ;(display "Nondependent components look good!")
-                                    (local [(define dep-errors (check-dependent states
-                                                                                sigma
-                                                                                start
-                                                                                delta
-                                                                                type
-                                                                                "state"
-                                                                                finals))]
-                                      (begin (display dep-errors)
-                                             (local [;rule-errors
-                                                     (define rule-errors
-                                                       (cond [(equal? type 'dfa) (check-dfarule states sigma delta)]
-                                                             [(equal? type 'ndfa) (check-ndfarule states sigma delta)]
-                                                             [(equal? type 'pda) (check-pda-rules states sigma (car gamma) delta)]
-                                                             [(equal? type 'tm) (check-tmrule states sigma delta)]
-                                                             [else (error "Machine type not implemented")]))
-                                                     ]
-                                               (if (and (equal? dep-errors "")
-                                                        (equal? rule-errors "")) (begin ;(newline)
-                                                                                        ;(display "Rules look good!")
-                                                                                        #t)
-                                                                                 (display rule-errors)))
-                                             )))])))])))
+                               ;(display "Nondependent components look good!")
+                               (local [(define dep-errors (check-dependent states
+                                                                           (if(eq? type 'pda) (append sigma (car gamma))
+                                                                              sigma)
+                                                                           ;;sigma ;; if pda append sigma + gamma else sigma
+                                                                           start
+                                                                           delta
+                                                                           type
+                                                                           "states"
+                                                                           finals))]
+                                 (begin (display dep-errors)
+                                        (local [;rule-errors
+                                                (define rule-errors
+                                                  (cond [(equal? type 'dfa) (check-dfarule states sigma delta)]
+                                                        [(equal? type 'ndfa) (check-ndfarule states sigma delta)]
+                                                        [(equal? type 'pda) (check-pda-rules states sigma (car gamma) delta)]
+                                                        [(equal? type 'tm) (check-tmrule states sigma delta)]
+                                                        [else (error "Machine type not implemented")]))
+                                                ]
+                                          (if (and (equal? dep-errors "")
+                                                   (equal? rule-errors "")) (begin ;(newline)
+                                                                              ;(display "Rules look good!")
+                                                                              #t)
+                                                                            (display rule-errors)))
+                                        )))])))])))
 
   ;; nts: none terminals
   (define (check-grammar nts sigma delta start type)
@@ -437,29 +442,29 @@
                  (cond [(not (string=? non-dep-errors "")) (display non-dep-errors)]
                        ;otherwise, return that the state and sigma look good and keep checking
                        [else (begin ;(newline)
-                                    ;(display "Nondependent components look good!")
-                                    (local [(define dep-errors (check-dependent nts
-                                                                                sigma
-                                                                                start
-                                                                                delta
-                                                                                type
-                                                                                "nonterminal"))]
-                                      (begin (display dep-errors)
-                                             (local [;rule-errors
-                                                     (define rule-errors
-                                                       (cond [(equal? type 'rg) (check-rgrule nts sigma
-                                                                                              (filter
-                                                                                               (lambda (x) (and (equal? (car x) start)
-                                                                                                                (equal? (cadr x) ARROW)
-                                                                                                                (equal? (caddr x) EMP)))
-                                                                                               delta))]
-                                                             [(equal? type 'cfg) (check-cfgrule nts sigma delta)]
-                                                             [(equal? type 'csg) (check-csgrule nts sigma delta)]
-                                                             [else (error "Grammar type not implemented")]))
-                                                     ]
-                                               (if (and (equal? dep-errors "")
-                                                        (equal? rule-errors "")) (begin ;(newline)
-                                                                                        ;(display "Rules look good!")
-                                                                                        #t)
-                                                                                 (display rule-errors))
-                                               ))))])))]))))
+                               ;(display "Nondependent components look good!")
+                               (local [(define dep-errors (check-dependent nts
+                                                                           sigma
+                                                                           start
+                                                                           delta
+                                                                           type
+                                                                           "nonterminal"))]
+                                 (begin (display dep-errors)
+                                        (local [;rule-errors
+                                                (define rule-errors
+                                                  (cond [(equal? type 'rg) (check-rgrule nts sigma
+                                                                                         (filter
+                                                                                          (lambda (x) (and (equal? (car x) start)
+                                                                                                           (equal? (cadr x) ARROW)
+                                                                                                           (equal? (caddr x) EMP)))
+                                                                                          delta))]
+                                                        [(equal? type 'cfg) (check-cfgrule nts sigma delta)]
+                                                        [(equal? type 'csg) (check-csgrule nts sigma delta)]
+                                                        [else (error "Grammar type not implemented")]))
+                                                ]
+                                          (if (and (equal? dep-errors "")
+                                                   (equal? rule-errors "")) (begin ;(newline)
+                                                                              ;(display "Rules look good!")
+                                                                              #t)
+                                                                            (display rule-errors))
+                                          ))))])))]))))
