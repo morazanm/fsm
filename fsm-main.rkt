@@ -357,7 +357,7 @@
   )
   
 ;make-tm (listof state) (listof symbol) (listof (list state symbol) (list state symbol)) (listof state) state --> tm
-(define (make-tm states sigma start finals delta . accept)
+(define (make-tm states sigma delta start finals . accept)
   (cond [(equal? (check-machine states
                                 sigma
                                 finals
@@ -369,7 +369,7 @@
                                                delta
                                                start
                                                finals)
-             (if (member accept finals) (make-unchecked-tm
+             (if (member (car accept) finals) (make-unchecked-tm
                                          states
                                          sigma
                                          delta

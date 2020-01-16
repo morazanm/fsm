@@ -2,7 +2,7 @@
   (require "constants.rkt")
   (require test-engine/racket-tests)
   (provide  check-rgrule check-cfgrule check-csgrule
-            check-dfarule check-ndfarule check-pda-rules check-tmrule
+            check-dfarule check-ndfarule check-pda-rules check-tmrules
             ;check-pdarule check-tmrule
             )
 
@@ -205,9 +205,40 @@
   ;purpose: to make sure the rule is two lists
   ;      (state, sigma elem or empty or space)
   ;      (state, sigma elem or empty or space)
-  (define (check-tmrule states sigma delta)
-    "TBA"
-    )
+  (define (check-tmrules states sigma deltas)
+    (define (check-tmrule sts alpha rule)
+      (let* ((from (caar rule))
+             (consume (cadar rule))
+             (to (caadr rule))
+             (action (cadadr rule))
+             (fromerror (if (member from states)
+                            ""
+                            (format "The from state ~s is not in the list of state for rule: ~s" from rule)))
+             (consumeerror (if (member consume (cons BLANK (cons LM alpha)))
+                               ""
+                               (format "The consumed item ~s is not in sigma for rule: ~s" consume rule)))
+             (consumemsg (cond [(eq? consumeerror "") fromerror]
+                               [(eq? fromerror "") consumeerror]
+                               [else (string-append fromerror
+                                                    (format "\n~a" consumeerror))]))                              
+             (toerror (if (member to states)
+                          ""
+                          (format "The to state ~s is not in the list of state for rule: ~s" to rule)))
+             (tomsg (cond [(eq? toerror "") consumemsg]
+                          [(eq? consumemsg "") consumeerror]
+                          [else (string-append consumemsg
+                                               (format "\n~a" toerror))]))
+             (actionerror (if (member action (append (list RIGHT LEFT BLANK) alpha))
+                              ""
+                              (format "The action ~s is not is not valid for rule: ~s" action rule)))
+             (actionmsg (cond [(eq? actionerror "") tomsg]
+                              [(eq? tomsg "") actionerror]
+                              [else (string-append tomsg
+                                                   (format "\n~a" actionerror))])))
+        actionmsg))
+  (if (null? deltas)
+      ""
+      (let ((problem (check-tmrule states sigma (car deltas))))
+        (string-append problem (check-tmrules states sigma (cdr deltas))))))
 
-  (test)
-  )
+)

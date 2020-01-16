@@ -31,7 +31,7 @@
             ; if it isnt, we cant actually check it for anything else
             (define delta-bool
               ;if the rules are empty, give an error
-              (if (empty? delta) (format "The given list of rules is empty ~s: " delta)
+              ;(if (empty? delta) (format "The given list of rules is empty ~s: " delta)
                   (if (list? delta)
                       ;otherwise check the rules for correct lengths
                       (local [(define invalid-rules (check-delta))]
@@ -43,7 +43,7 @@
                                                                                          (format "~s " x)
                                                                                          "\n"))
                                                                         invalid-rules)))))
-                      (format "The delta ~s is not a list" delta))))
+                      (format "The delta ~s is not a list" delta)));)
             ]
       (list upper-bool sigma-bool start-bool delta-bool)
       ))
@@ -71,7 +71,7 @@
             ;wrong-type: (listof something) --> (listof not symbols)
             ;purpose: to accumulte all the non-symbols in the list
             (define (wrong-type a-list)
-              (filter (lambda (x) (not (symbol? x))) a-list))
+              (filter (lambda (x) (not (or (number? x) (symbol? x)))) a-list))
 
             ;check-list: (listof something) (x --> boolean) string --> string
             ;purpose: to create the errors for the list
@@ -83,7 +83,8 @@
                         (wrong-case a-list
                                     (lambda (x)
                                       (if (symbol? x)
-                                          (and (char-alphabetic? (string-ref (symbol->string x) 0))
+                                          (and (or (char-alphabetic? (string-ref (symbol->string x) 0))
+                                                   (number? (string-ref (symbol->string x) 0)))
                                                (pred (string-ref (symbol->string x) 0))
                                                (if single? (= (string-length (symbol->string x)) 1)
                                                    #t))
@@ -121,8 +122,8 @@
             ;check-sigma no input --> string
             ;the abstract function for checking a list that is a list of sigma
             (define (check-sigma)
-              (local [(define errors (check-list sigma
-                                                 char-lower-case? 
+              (local [(define errors (check-list (filter (lambda (s) (not (eq? s LM))) sigma)
+                                                 (lambda (a) (or (char-lower-case? a) (number? a)))
                                                  (if (equal? upper-name "NONTERMINAL")
                                                      "terminals"
                                                      (if (equal? upper-name "")
@@ -200,7 +201,9 @@
                                                   (list EMP ARROW BLANK RIGHT LEFT GOTO DEAD LM BRANCH VAR START)
                                                   v
                                                   a))))
-                                  (filter (lambda (x) (= (string-length (symbol->string x)) 1))
+                                  (filter (lambda (x) (if (symbol? x)
+                                                             (= (string-length (symbol->string x)) 1)
+                                                             (<= 0 x 9)))
                                           (remove-repeats (flatten d)))))
 
             (define start-message (if start (begin
@@ -265,10 +268,12 @@
                       (define (check-lengths del islist how-many how-long)
                         ;so we begin to accumulate rules that look wrong
                         (local [(define (inner delt accum)
+                                  (displayln delt)
                                   (local [ ;check-length: something --> boolean
                                           ;purpose: checks an individual rule for if it looks good
                                           (define (check-length rule how-many how-long)
                                             ;if everything is at base case, all parts of rule were fine
+                                            (displayln delt)
                                             (cond [(and (empty? rule)
                                                         (zero? how-many)) #t]
                                                   ;but if only one is at base case, than its broken
@@ -389,7 +394,7 @@
                                                   (cond [(equal? type 'dfa) (check-dfarule states sigma delta)]
                                                         [(equal? type 'ndfa) (check-ndfarule states sigma delta)]
                                                         [(equal? type 'pda) (check-pda-rules states sigma (car gamma) delta)]
-                                                        [(equal? type 'tm) (check-tmrule states sigma delta)]
+                                                        [(equal? type 'tm) (check-tmrules states sigma delta)]
                                                         [else (error "Machine type not implemented")]))
                                                 ]
                                           (if (and (equal? dep-errors "")
@@ -465,9 +470,9 @@
                                                 (define rule-errors
                                                   (cond [(equal? type 'rg) (check-rgrule nts sigma
                                                                                          (filter
-                                                                                          (lambda (x) (and (equal? (car x) start)
+                                                                                          (lambda (x) (not (and (equal? (car x) start)
                                                                                                            (equal? (cadr x) ARROW)
-                                                                                                           (equal? (caddr x) EMP)))
+                                                                                                           (equal? (caddr x) EMP))))
                                                                                           delta))]
                                                         [(equal? type 'cfg) (check-cfgrule nts sigma delta)]
                                                         [(equal? type 'csg) (check-csgrule nts sigma delta)]
@@ -478,4 +483,5 @@
                                                                               ;(display "Rules look good!")
                                                                               #t)
                                                                             (display rule-errors))
-                                          ))))])))]))))
+                                          ))))])))])))
+  )
