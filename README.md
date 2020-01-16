@@ -50,8 +50,8 @@ Below are some basic examples of how to use fsm. For a more in-depth guide pleas
 (define a* (make-ndfa '(S F)     ;; the states
                       '(a b)     ;; the input alphabet
                       'S         ;; the set of final states
-                      '(F)       ;; the transition functions
-                      '((S a F)
+                      '(F)       ;; the set of final states
+                      '((S a F)  ;; the transition functions
                         (F a F)
                         (F b F))))
 ```
