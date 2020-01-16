@@ -34,26 +34,30 @@ Below are some basic examples of how to use fsm. For a more in-depth guide pleas
 ```racket
 (require fsm)
 
-(define a* (make-dfa '(S F)     ;; the states
-                     '(a b)     ;; the input alphabet
-                     'S         ;; the staring state
-                     '(F)       ;; the set of final states
-                     '((S a F)  ;; the transition functions
-                       (F a F)
-                       (F b F))))
+(define a*a (make-dfa '(S F A)       ;the states
+                      '(a b)         ;the alphabet
+                      'S             ;the starting state
+                      '(F)           ;final states
+                      '((S a F)      ;the transition function
+                        (F a F)
+                        (F b A)
+                        (A a F)
+                        (A b A))))
 ```
 
 #### Building a NDFA
 ```racket
 (require fsm)
 
-(define a* (make-ndfa '(S F)     ;; the states
-                      '(a b)     ;; the input alphabet
-                      'S         ;; the set of final states
-                      '(F)       ;; the set of final states
-                      '((S a F)  ;; the transition functions
+(define a*a (make-ndfa '(S F A)       ;the states
+                      '(a b)         ;the alphabet
+                      'S             ;the starting state
+                      '(F)           ;final states
+                      '((S a F)      ;the transition function
                         (F a F)
-                        (F b F))))
+                        (F b A)
+                        (A a F)
+                        (A b A))))
 ```
 #### Building a PDA
 ```racket
