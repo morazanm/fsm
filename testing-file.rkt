@@ -15,13 +15,13 @@
 (define M1 (make-ndfa INIT-STATES INIT-ALPHA INIT-START INIT-FINALS INIT-RULES))
 
 ;; DFA
-(define M2 (make-dfa '(A B C)
-                     '(a b c)
-                     'A
-                     '(B C)
-                     (list '(A b C)
-                           '(A a B)
-                           '(B c A))))
+(define a* (make-dfa '(S F)     ;; the states
+                     '(a b)     ;; the input alphabet
+                     'S         ;; the staring state
+                     '(F)       ;; the set of final states
+                     '((S a F)  ;; the transition functions
+                       (F a F)
+                       (F b F))))
 
 (define M3 (make-dfa '(A B C D F)
                      '(a b)
@@ -53,5 +53,5 @@
                      'S
                      '(F)
                      `(((S ,EMP ,EMP) (F ,EMP))
-                       ((F a ,EMP) (F c))
-                       ((F b c) (F ,EMP)))))
+                       ((F a ,EMP) (F (c)))
+                       ((F b (c)) (F ,EMP)))))

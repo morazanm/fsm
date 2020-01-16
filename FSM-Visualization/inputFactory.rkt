@@ -93,14 +93,14 @@
                                                                  (determin-color (lambda ()
                                                                                    (cond
                                                                                      [(equal? current-rule rule) HIGHTLIGHT-RULE]
-                                                                                     [else DEFAULT-RULE]))))
-                                                          (case type
+                                                                                     [else DEFAULT-RULE])))
+                                                                 )
+                                                          (case MACHINE-TYPE
                                                             [(pda) (text (create-pda-rule rule) FONT-SIZE (determin-color))]
                                                             [(dfa) (text (create-dfa-ndfa-rule rule) FONT-SIZE (determin-color))]
                                                             [(ndfa) (text (create-dfa-ndfa-rule rule) FONT-SIZE (determin-color))]))))
                                          
                                          (txt (create-text rule)) ;; The textbox
-
                                          ;; get-width: none -> int
                                          ;; Purpose: determines how to calulate the width of the rule box based on wether
                                          ;;  the size is known
@@ -118,6 +118,7 @@
                                   (overlay
                                    (scale-txt txt 1)
                                    (rectangle (get-width) BOX-HEIGHT "outline" RULE-BOX-COLOR))))))
+    
     (list-2-img aList empty-image)))
 
 
