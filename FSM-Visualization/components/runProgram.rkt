@@ -14,12 +14,14 @@ Created by Joshua Schappel on 12/19/19
 ;; runProgram: world -> world
 ;; Purpose: Calles sm-showtransitons on the world machine. If it is valid then the next and prev buttons will work and the user can use the program
 (define runProgram(lambda (w)
-                    (let (
-                          ;; The world fsm-machine
-                          (fsm-machine (world-fsm-machine w))
-                          ;; A condensed list of just the state-name symbols
-                          (state-list (map (lambda (x) (fsm-state-name x)) (machine-state-list (world-fsm-machine w)))))
+                    (let* (
+                           ;; The world fsm-machine
+                           (fsm-machine (world-fsm-machine w))
+                           ;; A condensed list of just the state-name symbols
+                           (state-list (map (lambda (x) (fsm-state-name x)) (machine-state-list (world-fsm-machine w))))
+                           (dummy (println (isValidMachine? state-list fsm-machine))))
 
+                   
                   
                       (cond
                         [(isValidMachine? state-list fsm-machine)
@@ -74,25 +76,29 @@ Created by Joshua Schappel on 12/19/19
 
 ;; isValidMachine?: list-of-states machine -> boolean
 ;; Purpose: Determins if the given input is a valid machine
+;;     The machine is valid if check-machine returns a boolean 
 (define (isValidMachine? state-list fsm-machine)
   (case MACHINE-TYPE
-    [(pda) (check-machine
-            state-list
-            (machine-alpha-list fsm-machine)
-            (machine-final-state-list fsm-machine)
-            (machine-rule-list fsm-machine)
-            (machine-start-state fsm-machine)
-            (machine-type fsm-machine)
-            (pda-machine-stack-alpha-list fsm-machine))]
+    [(pda) (boolean?
+            (check-machine
+             state-list
+             (machine-alpha-list fsm-machine)
+             (machine-final-state-list fsm-machine)
+             (machine-rule-list fsm-machine)
+             (machine-start-state fsm-machine)
+             (machine-type fsm-machine)
+             (pda-machine-stack-alpha-list fsm-machine)))]
     [(tm) (println "TODO")]
     [else
-     (check-machine
-      state-list
-      (machine-alpha-list fsm-machine)
-      (machine-final-state-list fsm-machine)
-      (machine-rule-list fsm-machine)
-      (machine-start-state fsm-machine)
-      (machine-type fsm-machine))]))
+     (boolean?
+      (check-machine
+       state-list
+       (machine-alpha-list fsm-machine)
+       (machine-final-state-list fsm-machine)
+       (machine-rule-list fsm-machine)
+       (machine-start-state fsm-machine)
+       (machine-type fsm-machine)))]))
+
 
 
 ;; constructworldMachine: list-of-states sigma-list machine -> machine/pda-machine
@@ -121,28 +127,27 @@ Created by Joshua Schappel on 12/19/19
       (sm-type newMachine))]))
       
 
-    ;; addTrueFunctions: list-of-states -> list-of-states
-    ;; Adds the default true function to every state in the list if it doesnt have a function
-    (define (addTrueFunctions los m)
-      (letrec (
-               ;; in-cur-state-list: symbol machine-state-list -> boolean/state-struct
-               ;; Purpose: Returns a state-struct if its name is the same as the symbol, otherwise
-               ;;   it returns false.
-               (in-cur-state-list (lambda (s msl)
-                                    (cond
-                                      [(empty? msl) #f]
-                                      [(equal? s (fsm-state-name (car msl))) (car msl)]
-                                      [else (in-cur-state-list s (cdr msl))]))))
-        (map (lambda (x)
-               (let (
-                     (state (in-cur-state-list x (machine-state-list m))))
-                 (cond
-                   [(not (equal? #f state)) state]
-                   [else
-                    (fsm-state x TRUE-FUNCTION (posn 0 0))])))
-             los)))
+;; addTrueFunctions: list-of-states -> list-of-states
+;; Adds the default true function to every state in the list if it doesnt have a function
+(define (addTrueFunctions los m)
+  (letrec (
+           ;; in-cur-state-list: symbol machine-state-list -> boolean/state-struct
+           ;; Purpose: Returns a state-struct if its name is the same as the symbol, otherwise
+           ;;   it returns false.
+           (in-cur-state-list (lambda (s msl)
+                                (cond
+                                  [(empty? msl) #f]
+                                  [(equal? s (fsm-state-name (car msl))) (car msl)]
+                                  [else (in-cur-state-list s (cdr msl))]))))
+    (map (lambda (x)
+           (let (
+                 (state (in-cur-state-list x (machine-state-list m))))
+             (cond
+               [(not (equal? #f state)) state]
+               [else
+                (fsm-state x TRUE-FUNCTION (posn 0 0))])))
+         los)))
   
 
 
 
-    

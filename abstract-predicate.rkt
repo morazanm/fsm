@@ -250,6 +250,8 @@
   (cond [(empty? l) ""]
         [else (string-append (symbol->string (car l)) (los->string (cdr l)))]))
 
+  ;; check-machine states alphabet final-states rules start-state machine-type [stack-alpha (optional)] -> True or Void
+  ;;    Retunrs true if the machine passes. Otherwise returns void if the machine fails.
   (define (check-machine states sigma finals delta start type . gamma)
     (local [
             ;;something for gamma
