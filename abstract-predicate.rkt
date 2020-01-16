@@ -268,12 +268,12 @@
                       (define (check-lengths del islist how-many how-long)
                         ;so we begin to accumulate rules that look wrong
                         (local [(define (inner delt accum)
-                                  (displayln delt)
+                                  ;(displayln delt)
                                   (local [ ;check-length: something --> boolean
                                           ;purpose: checks an individual rule for if it looks good
                                           (define (check-length rule how-many how-long)
                                             ;if everything is at base case, all parts of rule were fine
-                                            (displayln delt)
+                                            ;(displayln delt)
                                             (cond [(and (empty? rule)
                                                         (zero? how-many)) #t]
                                                   ;but if only one is at base case, than its broken
