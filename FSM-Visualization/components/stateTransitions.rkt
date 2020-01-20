@@ -4,9 +4,9 @@
 (provide getCurRule)
 
 (define getCurRule (lambda (processed-list)
-                     (println processed-list)
+                     ;;(println processed-list)
                      (case MACHINE-TYPE
-                       [(pda) (println "TODO")]
+                       [(pda) (println "TODO fo pda")]
                        [(tm) (println "TODO")]
                        [else (get-dfa-ndfa-rule processed-list)])))
 
@@ -47,8 +47,8 @@
 
 '(((a a a b a) A) ((a a b a) A) ((a b a) A) ((b a) A) ((a) B) (() C) reject)
 
-'((S (a a a b b b) ())
-  (M (a a a b b b) ())
+'((S (a a a b b b) ())  ; (S e e) (M e))
+  (M (a a a b b b) ())  ; (M a e) (M (a))
   (M (a a b b b) (a))
   (M (a b b b) (a a))
   (M (b b b) (a a a))

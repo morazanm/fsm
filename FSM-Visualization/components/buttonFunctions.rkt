@@ -422,11 +422,15 @@ Created by Joshua Schappel on 12/19/19
 (define getScrollBarPosition (lambda (lor rule)
                                (let ((ruleIndex (index-of lor rule))
                                      (rule-num (determine-rule-number MACHINE-TYPE)))
+                                 
                                  (cond
                                    ;; See if there is no current rule. If so return the starting index of the scrollbar
                                    [(equal? rule '(empty empty empty)) 0]
                                    ;; If true then we set the scroll index to max
-                                   [(> (+ ruleIndex rule-num) (- (length lor) 1)) (- (length lor) rule-num)]
+                                   [(> (+ ruleIndex rule-num) (- (length lor) 1))
+                                    (let* ((i (- (length lor) rule-num)))
+                                      (if (< i 0) 0
+                                          i))]
                                    ;; Otherwise return the rule index
                                    [else ruleIndex]))))
 
@@ -484,8 +488,7 @@ Created by Joshua Schappel on 12/19/19
        (redraw-world-with-msg w "The input is rejected." "Notice" MSG-CAUTION)]
       [else
        (let* ((cur-rule (getCurRule (append (list nextState) (world-processed-config-list w)))))
-         (if (equal? EMP (cadr cur-rule)) TAPE-INDEX-BOTTOM (set-tape-index-bottom (+ 1 TAPE-INDEX-BOTTOM)))
-                             
+         (if (equal? EMP (cadr cur-rule)) TAPE-INDEX-BOTTOM (set-tape-index-bottom (+ 1 TAPE-INDEX-BOTTOM)))                  
          (world (world-fsm-machine w) (world-tape-position w) (getCurRule (append (list nextState) (world-processed-config-list w)))
                 (car (cdr nextState)) (world-button-list w) (world-input-list w)
                 (append (list nextState) (world-processed-config-list w)) transitions (world-error-msg w)
@@ -517,7 +520,6 @@ Created by Joshua Schappel on 12/19/19
 (define scrollbarRight (lambda (w)
                          (let ((index (world-scroll-bar-index w))
                                (rule-num (determine-rule-number MACHINE-TYPE)))
-                           (println rule-num)
                            (cond
                              [(< (length (machine-rule-list (world-fsm-machine w))) rule-num) (redraw-world w)]
                              [(< (length (list-tail (machine-rule-list (world-fsm-machine w)) (add1 index))) rule-num) (redraw-world w)]
