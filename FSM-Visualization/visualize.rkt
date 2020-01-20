@@ -9,7 +9,7 @@
          "./structs/button.rkt" "./structs/posn.rkt" "./structs/state.rkt"
          "./structs/input.rkt" "./structs/machine.rkt" "./structs/world.rkt"
          "./structs/world.rkt" "./components/inputFields.rkt" "globals.rkt"
-         "./components/buttons.rkt")
+         "./components/buttons.rkt" "./components/stateTransitions.rkt")
 
 (provide visualize)
 
@@ -44,53 +44,6 @@
 (define UNPROCESSED-CONFIG-LIST '()) ;; TODO
 (define ALPHA-LIST '()) ;; TODO
 
-#|
-(define M3 (make-dfa '(A B C D F)
-                     '(a b)
-                     'A
-                     '(F)
-                     '((A a A) (A b B) (B a C) (B b B) (F a F)
-                               (C a A) (C b D) (D a F) (D b B)
-                               (F b F))))
-
-(define M4 (make-ndpda '(S M F)
-                       '(a b)
-                       '(a b)
-                       'S
-                       '(F)
-                       `(((S ,EMP ,EMP) (M ,EMP))
-                         ((M ,EMP ,EMP) (F ,EMP))
-                         ((M a ,EMP) (M (a)))
-                         ((M b ,EMP) (M (b)))
-                         ((M a (b)) (M ,EMP))
-                         ((M b (a)) (M ,EMP)))))
-
-(define P (make-ndpda '(S)
-                     '(a b)
-                     '(c)
-                     'S
-                     '(F)
-                     `(((S ,EMP ,EMP) (F ,EMP))
-                       ((F a ,EMP) (F (c)))
-                       ((F b (d)) (F ,EMP)))))
-|#
-
-;; getCurRule: processed-list -> rule
-;; Purpose: get the rule that the machine just executed
-(define getCurRule (lambda (pl)
-                     
-                     (cond
-                       [(< (length pl) 2) (list 'empty 'empty 'empty)] ;; If the processed list doesn't have at least 2 items in it then no rule was followed...
-                       [(= (length (caar pl)) (length (caadr pl)))
-                        (list
-                         (cadadr pl)
-                         EMP
-                         (cadar pl))]
-                       [else
-                        (list
-                         (cadadr pl)
-                         (caaadr pl)
-                         (cadar pl))])))
 
 
 #|
@@ -196,17 +149,17 @@ Cmd Functions
                                 [else (get-member s (cdr los))]))))
 
          (case (sm-type fsm-machine)
-             [(dfa)
-              (set-machine-type 'dfa)
-              (run-program (build-world (machine  (map (lambda (x)
-                                                         (let ((temp (get-member x args)))
-                                                           (if (empty? temp)
-                                                               (fsm-state x TRUE-FUNCTION (posn 0 0))
-                                                               (fsm-state x (cadr temp) (posn 0 0))))) state-list)
-                                                  (sm-getstart fsm-machine) (sm-getfinals fsm-machine)
-                                                  (reverse (sm-getrules fsm-machine)) '() (sm-getalphabet fsm-machine) (sm-type fsm-machine))
-                                        (sm-type fsm-machine)
-                                        (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "dfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))]
+           [(dfa)
+            (set-machine-type 'dfa)
+            (run-program (build-world (machine  (map (lambda (x)
+                                                       (let ((temp (get-member x args)))
+                                                         (if (empty? temp)
+                                                             (fsm-state x TRUE-FUNCTION (posn 0 0))
+                                                             (fsm-state x (cadr temp) (posn 0 0))))) state-list)
+                                                (sm-getstart fsm-machine) (sm-getfinals fsm-machine)
+                                                (reverse (sm-getrules fsm-machine)) '() (sm-getalphabet fsm-machine) (sm-type fsm-machine))
+                                      (sm-type fsm-machine)
+                                      (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "dfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))]
            [(pda) (println "TODO")]
            [(tm) (println "TODO")]
            [(ndfa) (println "TODO")]))])))
@@ -273,32 +226,58 @@ Scene Rendering
                                                 (posn-y (fsm-state-posn (car l)))
                                                 (draw-states (cdr l) (add1 i) s))]))))
 
+       (determin-input-symbol (lambda (cur-rule)
+                                (case MACHINE-TYPE
+                                  [(pda)
+                                   (let((rule (world-cur-rule w)))
+                                     (cond
+                                       [(or (equal? rule '((empty empty empty) (empty empty)))
+                                            (equal? rule '(null null null)))'||]
+                                       [else
+                                        (cadar rule)]))]
+                                  [(tm) (println "TODO")]
+                                  [else
+                                   (if (or (equal? 'null cur-rule) (equal? 'empty cur-rule))
+                                       '||
+                                       (cadr (world-cur-rule w)))])))
+
        ;; draw-inner-with-prev: none -> image
        ;; Purpose: Creates the inner circle that contains the arrows and the prevous state pointer
        (draw-inner-with-prev (lambda()
                                (letrec ((index (get-state-index state-list (world-cur-state w) 0)))
                                  (overlay
                                   CENTER-CIRCLE
-                                  (inner-circle1 (- 360 (* (get-state-index state-list (world-cur-state w) 0) deg-shift)) (if (or (equal? 'null (cadr (world-cur-rule w))) (equal? 'empty (cadr (world-cur-rule w))))
-                                                                                                                              '||
-                                                                                                                              (cadr (world-cur-rule w))) index)
-                                  (inner-circle2 (- 360 (* (get-state-index state-list (car (getCurRule (world-processed-config-list w))) 0) deg-shift)))
+                                  (inner-circle1 (- 360 (* (get-state-index state-list (world-cur-state w) 0) deg-shift))
+                                                 (determin-input-symbol (cadr (world-cur-rule w))) index)
+                                  (inner-circle2 (- 360 (* (get-state-index
+                                                            state-list
+                                                            (car (getCurRule (world-processed-config-list w))) 0)
+                                                           deg-shift)))
                                   (circle inner-R "outline" "transparent")))))
 
        ;; draw-inner-with-prev: none -> image
        ;; Purpose: Creates the inner circle that contains the arrows
        (draw-inner-no-prev (lambda()
-                             (letrec ((index (get-state-index state-list (world-cur-state w) 0)))
+                             (letrec ((index (get-state-index state-list (world-cur-state w) 0))
+
+                                      (get-symbol (lambda (cur-rule)
+                                                    (case MACHINE-TYPE
+                                                      [(pda) (println "TODO")]
+                                                      [(tm) (println "TODO")]
+                                                      [else (println "TODO")])))
+                                      )
+                               
                                (overlay
                                 CENTER-CIRCLE
-                                (inner-circle1 (- 360 (* index deg-shift)) (if (or (equal? 'null (cadr (world-cur-rule w))) (equal? 'empty (cadr (world-cur-rule w))))
-                                                                               '||
-                                                                               (cadr (world-cur-rule w))) index)
+                                (inner-circle1 (- 360 (* index deg-shift))
+                                               (determin-input-symbol (cadr (world-cur-rule w)))
+                                               index)
                                 (circle inner-R "outline" "transparent")))))
        
        ;; inner-circle1: num symbol num -> image
        ;; Purpose: draws an arrow with the given symbol above it and then rotates it by the given degreese
        (inner-circle1 (lambda(deg sym index)
+                        ;;(println sym)
                         (letrec
                             (
                              (state-color (determin-inv

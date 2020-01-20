@@ -4,8 +4,9 @@
 (provide getCurRule)
 
 (define getCurRule (lambda (processed-list)
+                     ;;(println processed-list)
                      (case MACHINE-TYPE
-                       [(pda) (get-pda-rule (reverse processed-list))]
+                       [(pda) (get-pda-rule processed-list)]
                        [(tm) (println "TODO")]
                        [else (get-dfa-ndfa-rule processed-list)])))
 
@@ -28,20 +29,24 @@
       (cadar processed-list))]))
 
 
+;; get-pda-rule: processed-list -> pda-rule
+;; Purpose: Determins if the rule to be made should be empty or a real rule
 (define (get-pda-rule processed-list)
   (cond
     [(< (length processed-list) 2)  '((empty empty empty) (empty empty))]
-    [else (get-pda-parts processed-list)]))
+    [else (construct-pda-rule processed-list)]))
 
-(define (get-pda-parts pl)
+;; construct-pda-rule: processed-list -> pda-rule
+;; Purpose: Constructes a pda rule from the given processed list
+(define (construct-pda-rule pl)
   (letrec (
-           (init-state (caar pl)) ;; The initial state that the machine is in
-           (next-state (caadr pl)) ;; The state that the machien ends in
-           (init-input (cadar pl)) ;; The initial state's input
-           (next-input (cadadr pl)) ;; The state that the machien ends in input
-           (init-stack (caddar pl)) ;; The elemetns that are on the init stack
+           (next-state (caar pl)) ;; The initial state that the machine is in
+           (init-state (caadr pl)) ;; The state that the machien ends in
+           (next-input (cadar pl)) ;; The initial state's input
+           (init-input (cadadr pl)) ;; The state that the machien ends in input
+           (next-stack (caddar pl)) ;; The elemetns that are on the init stack
            (sec (cadr pl))  ;; The second list in the stack
-           (next-stack (caddr sec)) ;; The elements that are on the next stack
+           (init-stack (caddr sec)) ;; The elements that are on the next stack
 
            ;; take*: Integer List -> List or symbol
            ;; Purpose: functions the same as Racket's take function except if the list
@@ -69,10 +74,10 @@
            (determin-poped (lambda ()
                              (let ((num (- (length init-stack) (length next-stack))))
                                (if (< num 0) 0 num)))))
-    
+
     (cond
       ;; If there is less then 2 elements then we are at the ed so return the default
-      [(< (length pl) 2) (list (list 'empty empty) (list 'empty 'empty))]
+      [(< (length pl) 2) '((empty empty empty) (empty empty))]
       [else
        (list
         (list init-state (determin-consumed) (take* (determin-poped) init-stack))
@@ -87,8 +92,8 @@
   (F (a b b b) (c c))    ;; (F a e) (F (c))
   (F (b b b) (c c c))    ;; (F b (c)) (F e))
   (F (b b) (c c))        ;; (F b (c)) (F e))
-  (F (b) (c))
-  (F () ())
+  (F (b) (c))            ;; (F b (c)  (F e)
+  (F () ())              ;; WTF IS THIS
   accept)
 
 

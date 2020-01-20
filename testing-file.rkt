@@ -47,6 +47,7 @@
                                     ((M a (b)) (M ,EMP))
                                     ((M b (a)) (M ,EMP)))))
 |#
+;; WORKS 
 (define P (make-ndpda '(S F)
                      '(a b)
                      '(c)
@@ -55,3 +56,31 @@
                      `(((S ,EMP ,EMP) (F ,EMP))
                        ((F a ,EMP) (F (c)))
                        ((F b (c)) (F ,EMP)))))
+
+;; TODO TEST
+(define pda-numa=numb (make-ndpda '(S M F)
+                                  '(a b)
+                                  '(a b)
+                                  'S
+                                  '(F)
+                                  `(((S ,EMP ,EMP) (M ,EMP))
+                                    ((M ,EMP ,EMP) (F ,EMP))
+                                    ((M a ,EMP) (M (a)))
+                                    ((M b ,EMP) (M (b)))
+                                    ((M a (b)) (M ,EMP))
+                                    ((M b (a)) (M ,EMP)))))
+;; TODO TEST
+(define pda-wcw^r (make-ndpda '(S M N F)
+                              '(a b c)
+                              '(a b)
+                              'S
+                              '(F)
+                              `(((S ,EMP ,EMP) (M ,EMP))
+                                ((M a ,EMP) (M (a)))
+                                ((M b ,EMP) (M (b)))
+                                ((M c ,EMP) (N ,EMP))
+                                ((N a (a)) (N ,EMP))
+                                ((N b (b)) (N ,EMP))
+                                ((N ,EMP ,EMP) (F ,EMP)))))
+
+
