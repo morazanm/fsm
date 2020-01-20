@@ -454,29 +454,38 @@ Created by Joshua Schappel on 12/19/19
                                                            (redraw-world-with-msg w "The input is rejected." "Notice" MSG-CAUTION)]
                                                           [else
                                                            (case MACHINE-TYPE
-                                                             [(pda) (println "TODO")]
+                                                             [(pda) (go-next nextState w)]
                                                              [(tm) (println "TODO")]
                                                              [else
-                                                              (go-next-dfa-ndfa nextState w)])])))
+                                                              (go-next nextState w)])])))
                                 
                                 ;; update-Machine: None -> world
                                 ;; Updates the world based on the given machine
                                 (update-world (lambda ()
                                                 (case MACHINE-TYPE
-                                                  [(pda) (println "TODO")]
+                                                  [(pda) (go-next nextState w)]
                                                   [(tm) (println "TODO")]
                                                   [else
-                                                   (go-next-dfa-ndfa nextState w)])))
+                                                   (go-next nextState w)])))
                                 )
                           (determine-next-steps))])])))
 
 
 
                           
-;; go-next-dfa-ndfa: symbol world -> world
+;; go-next: symbol world -> world
 ;; Determins the next state that the machine needs to be in an then updates the world accordingly
-(define (go-next-dfa-ndfa nextState w)
-  (let ((transitions (cdr (world-unporcessed-config-list w)))) ;; The list-of-transitons
+(define (go-next nextState w)
+  (println (format "The nextState is ~s" (car nextState)))
+  (letrec ((transitions (cdr (world-unporcessed-config-list w))) ;; The list-of-transitons
+
+           (determin-cur-state (lambda ()
+                                 (case MACHINE-TYPE
+                                                  [(pda) (car nextState)]
+                                                  [(tm) (println "TODO")]
+                                                  [else (car (cdr nextState))])))
+
+           )
     (cond
       [(eq? nextState 'accept)
        (redraw-world-with-msg w "The input is accepted." "Success" MSG-SUCCESS)]
@@ -487,7 +496,7 @@ Created by Joshua Schappel on 12/19/19
          (if (equal? EMP (cadr cur-rule)) TAPE-INDEX-BOTTOM (set-tape-index-bottom (+ 1 TAPE-INDEX-BOTTOM)))
                              
          (world (world-fsm-machine w) (world-tape-position w) (getCurRule (append (list nextState) (world-processed-config-list w)))
-                (car (cdr nextState)) (world-button-list w) (world-input-list w)
+                (determin-cur-state) (world-button-list w) (world-input-list w)
                 (append (list nextState) (world-processed-config-list w)) transitions (world-error-msg w)
                 (getScrollBarPosition (reverse (machine-rule-list (world-fsm-machine w))) cur-rule)))])))
 
