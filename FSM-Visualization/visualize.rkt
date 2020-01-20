@@ -254,6 +254,15 @@ Scene Rendering
                       (begin
                         (find-state-pos (machine-state-list (world-fsm-machine w)) 0)
                         (cond[(empty? l) s]
+                              [(and (equal? (fsm-state-name (car l)) (machine-start-state (world-fsm-machine w))) (ormap (lambda(x) (equal? (fsm-state-name (car l)) x)) (machine-final-state-list (world-fsm-machine w))))
+                              (place-image(overlay (text (symbol->string (fsm-state-name (car l))) 25 "black")
+                                                   (circle 21 "outline" START-STATE-COLOR)
+                                                   (circle 25 "outline" END-STATE-COLOR)
+                                                   (circle 30 "outline" END-STATE-COLOR))
+                                          (posn-x (fsm-state-posn (car l)))
+                                          (posn-y (fsm-state-posn (car l)))
+                                          (draw-states(cdr l) (add1 i) s))]
+                             
                              [(equal? (fsm-state-name (car l)) (machine-start-state (world-fsm-machine w)))
                               (place-image(overlay (text (symbol->string (fsm-state-name (car l))) 25 "black")
                                                    (circle 25 "outline" START-STATE-COLOR))
