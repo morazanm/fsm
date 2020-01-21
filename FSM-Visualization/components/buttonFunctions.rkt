@@ -522,9 +522,13 @@ Created by Joshua Schappel on 12/19/19
                                     (begin
                                       (push-stack push-list))])))))
          ;; Determine if the tape input should increase
+         (println (get-input cur-rule))
+         
          (if (equal? EMP (get-input cur-rule))
              TAPE-INDEX-BOTTOM
              (set-tape-index-bottom (+ 1 TAPE-INDEX-BOTTOM)))
+
+         (println TAPE-INDEX-BOTTOM)
 
          ;; If the machine is a pda we need to push or pop!
          ;; pops are handled first
@@ -533,7 +537,7 @@ Created by Joshua Schappel on 12/19/19
                (handle-pop)
                (handle-push))
              void)
-         (println nextState)
+         ;;(println nextState)
          (world (world-fsm-machine w) (world-tape-position w) (getCurRule (append (list nextState) (world-processed-config-list w)))
                 (determin-cur-state) (world-button-list w) (world-input-list w)
                 (append (list nextState) (world-processed-config-list w)) transitions (world-error-msg w)
@@ -559,6 +563,16 @@ Created by Joshua Schappel on 12/19/19
                                              [(tm) (println "TODO")]
                                              [else (cadr cur-rule)])))
 
+                              (input-consumed? (lambda ()
+                                                 (case MACHINE-TYPE
+                                                   [(pda) (if(equal?
+                                                              (length (cadr previousState))
+                                                              (cadr (car (world-processed-config-list w))))
+                                                             EMP
+                                                             #t)]
+                                                   [(tm) (println "TODO HANDLE PREV")]
+                                                   [else(cadr cur-rule)])))
+                                                    
                               ;; determin-cur-state: none -> symbol
                               ;; Determins the current state that the machine is in
                               (determin-prev-state (lambda ()
@@ -584,24 +598,27 @@ Created by Joshua Schappel on 12/19/19
                                                     (push-stack push-list))])))))
                         
                         ;;(println (get-input cur-rule))
-                        (println previousState)
+                        (println "**********************")
+                        (println (equal? EMP (input-consumed?)))
                         
-                        ;; Determine if the tape input sould decrease
-                        (if (equal? EMP (get-input cur-rule))
-                            (set-tape-index-bottom TAPE-INDEX-BOTTOM)
-                            (set-tape-index-bottom (- TAPE-INDEX-BOTTOM 1)))
+                        
+                        ;; Determine if the tape input should decrease
+                        (if (equal? EMP (input-consumed?))
+                            TAPE-INDEX-BOTTOM
+                            (if (equal? -1 TAPE-INDEX-BOTTOM) ;; tape index can never go below -1
+                                (void)
+                                (set-tape-index-bottom (- TAPE-INDEX-BOTTOM 1))))
+                        (println TAPE-INDEX-BOTTOM)
 
                         ;; If the machine is a pda we need to push or pop!
                         ;; pops are handled first
                         #|
                         (if (equal? MACHINE-TYPE 'pda)
                             (begin
- (handle-push)
-                              (handle-pop)
-                             
-                              )
+                              (handle-push)
+                              (handle-pop))
                             void)
-                        |#
+                     |#
                         (world (world-fsm-machine w) (world-tape-position w) cur-rule
                                (determin-prev-state) (world-button-list w) (world-input-list w)
                                (cdr (world-processed-config-list w)) (cons (car (world-processed-config-list w)) (world-unporcessed-config-list w)) (world-error-msg w)
