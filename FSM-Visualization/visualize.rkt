@@ -84,7 +84,7 @@ Cmd Functions
 -----------------------
 |# 
 
-;; visualize: fsm-machine -> world
+;; visualize: fsm-machine -> void
 ;; Purpose: allows a user to pre-load a machine
 (define (visualize fsm-machine . args)
   (letrec ((run-program (lambda (w)
@@ -104,13 +104,16 @@ Cmd Functions
        (case fsm-machine
          [(dfa) (begin
                   (set-machine-type 'dfa)
-                  (run-program (build-world (machine '() null '() '() '() '() 'dfa ) 'dfa)))]
+                  (run-program (build-world (machine '() null '() '() '() '() 'dfa ) 'dfa))
+                  (void))]
          [(ndfa) (begin
                    (set-machine-type 'ndfa)
-                   (run-program (build-world (machine '() null '() '() '() '() 'ndfa ) 'ndfa)))]
+                   (run-program (build-world (machine '() null '() '() '() '() 'ndfa ) 'ndfa))
+                   (void))]
          [(pda) (begin
                   (set-machine-type 'pda)
-                  (run-program (build-world (pda-machine '() null '() '() '() '() 'pda '()) 'pda)))]
+                  (run-program (build-world (pda-machine '() null '() '() '() '() 'pda '()) 'pda))
+                  (void))]
          [(tm) (println "TODO ADD Turing Machine")]
          [else (error (format "~s is not a valid machine type" fsm-machine))])]
       
@@ -121,20 +124,23 @@ Cmd Functions
                   (run-program (build-world (machine (map (lambda (x) (fsm-state x TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine)) (sm-getstart fsm-machine) (sm-getfinals fsm-machine)
                                                      (reverse (sm-getrules fsm-machine)) '() (sm-getalphabet fsm-machine) (sm-type fsm-machine))
                                             (sm-type fsm-machine)
-                                            (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "dfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS))))]
+                                            (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "dfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
+                  (void))]
          
          [(ndfa) (begin
                    (set-machine-type 'ndfa)
                    (run-program (build-world (machine (map (lambda (x) (fsm-state x TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine)) (sm-getstart fsm-machine) (sm-getfinals fsm-machine)
                                                       (reverse (sm-getrules fsm-machine)) '() (sm-getalphabet fsm-machine) (sm-type fsm-machine))
                                              (sm-type fsm-machine)
-                                             (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "ndfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS))))]
+                                             (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "ndfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
+                   (void))]
          [(pda) (begin
                   (set-machine-type 'pda)
                   (run-program (build-world (pda-machine (map (lambda (x) (fsm-state x TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine)) (sm-getstart fsm-machine) (sm-getfinals fsm-machine)
                                                          (reverse (sm-getrules fsm-machine)) '() (sm-getalphabet fsm-machine) (sm-type fsm-machine) (sm-getstackalphabet fsm-machine))
                                             (sm-type fsm-machine)
-                                            (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "pda" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS))))]  
+                                            (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "pda" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
+                  (void))]  
          [(tm) (println "TODO ADD tm")])]
       
       [else ;; Pre-made with predicates
@@ -159,7 +165,8 @@ Cmd Functions
                                                 (sm-getstart fsm-machine) (sm-getfinals fsm-machine)
                                                 (reverse (sm-getrules fsm-machine)) '() (sm-getalphabet fsm-machine) (sm-type fsm-machine))
                                       (sm-type fsm-machine)
-                                      (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "dfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))]
+                                      (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "dfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
+            (void)]
            [(pda) (println "TODO")]
            [(tm) (println "TODO")]
            [(ndfa) (println "TODO")]))])))

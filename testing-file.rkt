@@ -84,3 +84,4 @@
                                 ((N ,EMP ,EMP) (F ,EMP)))))
 
 
+(sm-visualize M3)

@@ -19,7 +19,7 @@ Created by Joshua Schappel on 12/19/19
                            (fsm-machine (world-fsm-machine w))
                            ;; A condensed list of just the state-name symbols
                            (state-list (map (lambda (x) (fsm-state-name x)) (machine-state-list (world-fsm-machine w))))
-                           (dummy (println (isValidMachine? state-list fsm-machine))))
+                           )
 
                    
                   

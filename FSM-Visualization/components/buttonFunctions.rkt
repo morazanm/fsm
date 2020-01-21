@@ -480,7 +480,6 @@ Created by Joshua Schappel on 12/19/19
 ;; go-next: symbol world -> world
 ;; Determins the next state that the machine needs to be in an then updates the world accordingly
 (define (go-next nextState w)
-  ;;(println (format "The nextState is ~s" (car nextState)))
   (letrec ((transitions (cdr (world-unporcessed-config-list w))) ;; The list-of-transitons
 
            (determin-cur-state (lambda ()
@@ -490,7 +489,6 @@ Created by Joshua Schappel on 12/19/19
                                                   [else (car (cdr nextState))])))
 
            )
-    (println nextState)
     (cond
       [(eq? nextState 'accept)
        (redraw-world-with-msg w "The input is accepted." "Success" MSG-SUCCESS)]
