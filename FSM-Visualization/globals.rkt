@@ -30,8 +30,7 @@ Created by Joshua Schappel on 12/19/19
 ;; -- OTHER --
 (define TRUE-FUNCTION (lambda (v) '())) ;; The default function for a state variable
 (define MACHINE-TYPE null) ;; The type of machine (pda, ndfa, ..)
-(define STACK-LIST '(a a a b a)) ;; The stack list for a pda
-(define STACK-NUM 0) ;; The number of new items that arrived on the stack
+
 
 ;; -- MUTATORS --
 (define CURRENT-RULE '(null null null)) ;; The current rule that the machine is following
@@ -53,6 +52,30 @@ Created by Joshua Schappel on 12/19/19
 ;; -- INPUT FACTORY --
 (define DFA-NDFA_NUMBER 8) ;; The number of dfa's/ndfa's to render on the screen
 (define PDA_NUMBER 4) ;; The number if pda's to render on screen
+
+;; -- PDA STACK --
+(define STACK-LIST '()) ;; The stack list for a pda
+(define STACK-NUM 0) ;; The number of new items that arrived on the stack
+
+
+;; Pops n elements off the stack
+(define (pop-stack num)
+  (cond
+    [(zero? num) '()]
+    [(empty? STACK-LIST) (error "There are not any more elements to pop")]
+    [else
+     (begin
+       (set! STACK-LIST (cdr STACK-LIST))
+       (pop-stack (sub1 num)))]))
+
+;; Pushes elents onto the stack and returns true when complete
+(define (push-stack aList)
+  (cond
+    [(empty? aList)#t]
+    [else
+     (begin
+      (set! STACK-LIST (cons (car aList) STACK-LIST))
+      (push-stack (cdr aList)))]))
 
 
 ;; -- SETTERS --

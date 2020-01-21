@@ -425,7 +425,9 @@ Created by Joshua Schappel on 12/19/19
                                  
                                  (cond
                                    ;; See if there is no current rule. If so return the starting index of the scrollbar
-                                   [(equal? rule '(empty empty empty)) 0]
+                                   [(or (equal? rule '(empty empty empty))
+                                        (equal? rule '((empty empty empty) (empty empty))))
+                                    0]
                                    ;; If true then we set the scroll index to max
                                    [(> (+ ruleIndex rule-num) (- (length lor) 1))
                                     (let* ((i (- (length lor) rule-num)))
@@ -480,25 +482,58 @@ Created by Joshua Schappel on 12/19/19
 ;; go-next: symbol world -> world
 ;; Determins the next state that the machine needs to be in an then updates the world accordingly
 (define (go-next nextState w)
-  ;;(println (format "The nextState is ~s" (car nextState)))
   (letrec ((transitions (cdr (world-unporcessed-config-list w))) ;; The list-of-transitons
 
+           ;; determin-cur-state: none -> symbol
+           ;; Determins the current state that the machine is in
            (determin-cur-state (lambda ()
                                  (case MACHINE-TYPE
-                                                  [(pda) (car nextState)]
-                                                  [(tm) (println "TODO")]
-                                                  [else (car (cdr nextState))])))
-
-           )
-    (println nextState)
+                                   [(pda) (car nextState)]
+                                   [(tm) (println "TODO")]
+                                   [else (car (cdr nextState))])))
+           ;; get-input: Rule -> symbol
+           ;; Purpose: determins the input from the given rule
+           (get-input (lambda (cur-rule)
+                        (case MACHINE-TYPE
+                          [(pda)(cadar cur-rule)]
+                          [(tm) (println "TODO")]
+                          [else (cadr cur-rule)]))))
     (cond
       [(eq? nextState 'accept)
        (redraw-world-with-msg w "The input is accepted." "Success" MSG-SUCCESS)]
       [(eq? nextState 'reject)
        (redraw-world-with-msg w "The input is rejected." "Notice" MSG-CAUTION)]
       [else
-       (let* ((cur-rule (getCurRule (append (list nextState) (world-processed-config-list w)))))
-         (if (equal? EMP (cadr cur-rule)) TAPE-INDEX-BOTTOM (set-tape-index-bottom (+ 1 TAPE-INDEX-BOTTOM)))                  
+       (letrec ((cur-rule (getCurRule (append (list nextState) (world-processed-config-list w))))
+
+                (handle-pop (lambda ()
+                              (let ((pop-list (caddar cur-rule)))
+                                (cond
+                                  [(symbol? pop-list) void] ;; e is the element so nothing to pop
+                                  [else
+                                   (begin
+                                     (pop-stack (length pop-list)))]))))
+
+                (handle-push (lambda ()
+                               (let ((push-list (cadadr cur-rule)))
+                                 (cond
+                                   [(symbol? push-list) void] ;; e is the element so nothing to push
+                                   [else
+                                    (begin
+                                      (push-stack push-list))])))))
+         ;; Determine if the tape input should increase
+         (if (equal? EMP (get-input cur-rule))
+             TAPE-INDEX-BOTTOM
+             (set-tape-index-bottom (+ 1 TAPE-INDEX-BOTTOM)))
+
+         ;; If the machine is a pda we need to push or pop!
+         ;; pops are handled first
+         (if (equal? MACHINE-TYPE 'pda)
+             (begin
+               (handle-pop)
+               (handle-push))
+             void)
+         (println nextState)
          (world (world-fsm-machine w) (world-tape-position w) (getCurRule (append (list nextState) (world-processed-config-list w)))
                 (determin-cur-state) (world-button-list w) (world-input-list w)
                 (append (list nextState) (world-processed-config-list w)) transitions (world-error-msg w)
@@ -512,15 +547,63 @@ Created by Joshua Schappel on 12/19/19
                      [(empty? (world-processed-config-list w)) (redraw-world-with-msg w "The tape is currently empty. Please add variables to the tape, then press 'Run'" "Notice" MSG-CAUTION)]
                      [(empty? (cdr (world-processed-config-list w))) (redraw-world-with-msg w "You have reached the beginning of the machine! There are no more previous states." "Notice" MSG-CAUTION)]
                      [else
-                      (let* (
-                             (previousState (car (cdr (world-processed-config-list w))))
-                             (cur-rule (getCurRule (cdr (world-processed-config-list w)))))
-                        (if (equal? EMP (cadr cur-rule))
+                      (letrec(
+                              (previousState (car (cdr (world-processed-config-list w))))
+                              (cur-rule (getCurRule (cdr (world-processed-config-list w))))
+
+                              ;; get-input: Rule -> symbol
+                              ;; Purpose: determins the input from the given rule
+                              (get-input (lambda (cur-rule)
+                                           (case MACHINE-TYPE
+                                             [(pda)(cadar cur-rule)]
+                                             [(tm) (println "TODO")]
+                                             [else (cadr cur-rule)])))
+
+                              ;; determin-cur-state: none -> symbol
+                              ;; Determins the current state that the machine is in
+                              (determin-prev-state (lambda ()
+                                                     (case MACHINE-TYPE
+                                                       [(pda) (car previousState)]
+                                                       [(tm) (println "TODO")]
+                                                       [else (car (cdr previousState))])))
+
+                              (handle-pop (lambda ()
+                                            (let ((pop-list (cadadr cur-rule)))
+                                              (cond
+                                                [(symbol? pop-list) void] ;; e is the element so nothing to pop
+                                                [else
+                                                 (begin
+                                                   (pop-stack (length pop-list)))]))))
+
+                              (handle-push (lambda ()
+                                             (let ((push-list (caddar cur-rule)))
+                                               (cond
+                                                 [(symbol? push-list) void] ;; e is the element so nothing to push
+                                                 [else
+                                                  (begin
+                                                    (push-stack push-list))])))))
+                        
+                        ;;(println (get-input cur-rule))
+                        (println previousState)
+                        
+                        ;; Determine if the tape input sould decrease
+                        (if (equal? EMP (get-input cur-rule))
                             (set-tape-index-bottom TAPE-INDEX-BOTTOM)
                             (set-tape-index-bottom (- TAPE-INDEX-BOTTOM 1)))
-                        
-                        (world (world-fsm-machine w) (world-tape-position w) (getCurRule (cdr (world-processed-config-list w)))
-                               (car (cdr previousState)) (world-button-list w) (world-input-list w)
+
+                        ;; If the machine is a pda we need to push or pop!
+                        ;; pops are handled first
+                        #|
+                        (if (equal? MACHINE-TYPE 'pda)
+                            (begin
+ (handle-push)
+                              (handle-pop)
+                             
+                              )
+                            void)
+                        |#
+                        (world (world-fsm-machine w) (world-tape-position w) cur-rule
+                               (determin-prev-state) (world-button-list w) (world-input-list w)
                                (cdr (world-processed-config-list w)) (cons (car (world-processed-config-list w)) (world-unporcessed-config-list w)) (world-error-msg w)
                                (getScrollBarPosition (reverse (machine-rule-list (world-fsm-machine w))) cur-rule)))])))
 

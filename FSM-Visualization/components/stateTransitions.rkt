@@ -4,7 +4,6 @@
 (provide getCurRule)
 
 (define getCurRule (lambda (processed-list)
-                     ;;(println processed-list)
                      (case MACHINE-TYPE
                        [(pda) (get-pda-rule processed-list)]
                        [(tm) (println "TODO")]
