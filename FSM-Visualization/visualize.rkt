@@ -167,9 +167,21 @@ Cmd Functions
                                       (sm-type fsm-machine)
                                       (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "dfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
             (void)]
-           [(pda) (println "TODO")]
-           [(tm) (println "TODO")]
-           [(ndfa) (println "TODO")]))])))
+           [(ndfa)
+            (set-machine-type 'ndfa)
+            (run-program (build-world (machine  (map (lambda (x)
+                                                       (let ((temp (get-member x args)))
+                                                         (if (empty? temp)
+                                                             (fsm-state x TRUE-FUNCTION (posn 0 0))
+                                                             (fsm-state x (cadr temp) (posn 0 0))))) state-list)
+                                                (sm-getstart fsm-machine) (sm-getfinals fsm-machine)
+                                                (reverse (sm-getrules fsm-machine)) '() (sm-getalphabet fsm-machine) (sm-type fsm-machine))
+                                      (sm-type fsm-machine)
+                                      (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "ndfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
+            (void)]
+           [(pda) (println "TODO add pda with inv")]
+           [(tm) (println "TODO add tm with inv")]
+           [else (println "Invalid Machine Type")]))])))
 
 
 

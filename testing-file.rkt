@@ -84,4 +84,4 @@
                                 ((N ,EMP ,EMP) (F ,EMP)))))
 
 
-(sm-visualize M3)
+(sm-visualize pda-wcw^r (list 'S (lambda (v) true)) (list 'F (lambda (v) false)))
