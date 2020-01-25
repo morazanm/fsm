@@ -160,9 +160,29 @@ Cmd Functions
                                                 (reverse (sm-getrules fsm-machine)) '() (sm-getalphabet fsm-machine) (sm-type fsm-machine))
                                       (sm-type fsm-machine)
                                       (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "dfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))]
-           [(pda) (println "TODO")]
+           [(pda)
+            (set-machine-type 'pda)
+            (run-program (build-world (pda-machine (map (lambda (x)
+                                                       (let ((temp (get-member x args)))
+                                                         (if (empty? temp)
+                                                             (fsm-state x TRUE-FUNCTION (posn 0 0))
+                                                             (fsm-state x (cadr temp) (posn 0 0))))) state-list)
+                                                (sm-getstart fsm-machine) (sm-getfinals fsm-machine)
+                                                (reverse (sm-getrules fsm-machine)) '() (sm-getalphabet fsm-machine) (sm-type fsm-machine) (sm-getstackalphabet fsm-machine))
+                                      (sm-type fsm-machine)
+                                      (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "dfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))]
            [(tm) (println "TODO")]
-           [(ndfa) (println "TODO")]))])))
+           [(ndfa)
+            (set-machine-type 'ndfa)
+            (run-program (build-world (machine  (map (lambda (x)
+                                                       (let ((temp (get-member x args)))
+                                                         (if (empty? temp)
+                                                             (fsm-state x TRUE-FUNCTION (posn 0 0))
+                                                             (fsm-state x (cadr temp) (posn 0 0))))) state-list)
+                                                (sm-getstart fsm-machine) (sm-getfinals fsm-machine)
+                                                (reverse (sm-getrules fsm-machine)) '() (sm-getalphabet fsm-machine) (sm-type fsm-machine))
+                                      (sm-type fsm-machine)
+                                      (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "dfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))]))])))
 
 
 
