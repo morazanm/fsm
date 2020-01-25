@@ -717,7 +717,7 @@ RIGHT GUI RENDERING
                                        (rectangle STACK-WIDTH HEIGHT "outline" "transparent"))))
 
            (pda-populate-stack (lambda (list)
-                                 (overlay/align "middle" "top"
+                                 (overlay/align "middle" "bottom"
                                                 (draw-verticle list 18 100)
                                                 (rectangle STACK-WIDTH (- HEIGHT (+ BOTTOM TOP)) "outline" "blue") ;;  the middle
                                                 )))

@@ -47,7 +47,7 @@
                                     ((M a (b)) (M ,EMP))
                                     ((M b (a)) (M ,EMP)))))
 |#
-;; WORKS 
+;; valid input: aaabbb 
 (define P (make-ndpda '(S F)
                      '(a b)
                      '(c)
@@ -69,7 +69,7 @@
                                     ((M b ,EMP) (M (b)))
                                     ((M a (b)) (M ,EMP))
                                     ((M b (a)) (M ,EMP)))))
-;; TODO TEST
+;; valid input: aabcbaa 
 (define pda-wcw^r (make-ndpda '(S M N F)
                               '(a b c)
                               '(a b)
@@ -84,4 +84,4 @@
                                 ((N ,EMP ,EMP) (F ,EMP)))))
 
 
-(sm-visualize P)
+(sm-visualize pda-wcw^r)
