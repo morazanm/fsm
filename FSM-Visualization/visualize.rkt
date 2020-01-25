@@ -196,10 +196,18 @@ Scene Rendering
        ;; determin-inv: procedure processed-list -> color
        ;; Purpose: Determins the color of the state based on the invarent
        (determin-inv (lambda (f p-list)
-                       (cond
-                         [(equal? #t (f p-list)) TRUE-INV]
-                         [(equal? #f (f p-list)) FALSE-INV]
-                         [else "black"])))
+                       (case MACHINE-TYPE
+                         [(pda)
+                          (cond
+                            [(equal? #t (f p-list STACK-LIST)) TRUE-INV]
+                            [(equal? #f (f p-list STACK-LIST)) FALSE-INV]
+                            [else "black"])]
+                         [(tm) (println "TODO: Add invariant checker")]
+                         [else
+                          (cond
+                            [(equal? #t (f p-list)) TRUE-INV]
+                            [(equal? #f (f p-list)) FALSE-INV]
+                            [else "black"])])))
           
        ;;draw-states: list-of-states index scene -> scene
        ;; Purpose: Draws the states onto the GUI
@@ -207,7 +215,7 @@ Scene Rendering
                       (begin
                         (find-state-pos (machine-state-list (world-fsm-machine w)) 0)
                         (cond[(empty? l) s]
-                              [(and (equal? (fsm-state-name (car l)) (machine-start-state (world-fsm-machine w))) (ormap (lambda(x) (equal? (fsm-state-name (car l)) x)) (machine-final-state-list (world-fsm-machine w))))
+                             [(and (equal? (fsm-state-name (car l)) (machine-start-state (world-fsm-machine w))) (ormap (lambda(x) (equal? (fsm-state-name (car l)) x)) (machine-final-state-list (world-fsm-machine w))))
                               (place-image(overlay (text (symbol->string (fsm-state-name (car l))) 25 "black")
                                                    (circle 21 "outline" START-STATE-COLOR)
                                                    (circle 25 "outline" END-STATE-COLOR)

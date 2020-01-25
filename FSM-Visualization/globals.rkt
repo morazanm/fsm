@@ -55,8 +55,6 @@ Created by Joshua Schappel on 12/19/19
 
 ;; -- PDA STACK --
 (define STACK-LIST '()) ;; The stack list for a pda
-(define STACK-NUM 0) ;; The number of new items that arrived on the stack
-
 
 ;; Pops n elements off the stack
 (define (pop-stack num)
