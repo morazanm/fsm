@@ -127,8 +127,12 @@
                     sigma
                     start
                     finals
-                    (append deltas (if (null? adddead) (new-dead-rules (cons DEAD states) sigma deltas) null))))
-  ;;; ndfsa->dfsa
+                    deltas))
+                    ;(append deltas (if (null? adddead) (new-dead-rules (cons DEAD states) sigma deltas) null)))) dead state not added to an ndfa, because missing transitions in the transition relation may violate state INVs.
+
+
+  ;;; ndfsa->dfsa 
+  
   
   ; fsm --> fsm
   (define (ndfa->dfa m . L)
