@@ -65,7 +65,7 @@ Created by Joshua Schappel on 12/19/19
                                   '())
                                     
                               (if (list? unprocessed-list)
-                                  (msgWindow "The machine was sucessfuly Built. Press Next and Prev to show the machine's transitions" "Success"
+                                  (msgWindow "The machine was sucessfully built. Press Next and Prev to show the machine's transitions" "Success"
                                              (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)
                                   (msgWindow "The Input was rejected" "Warning"
                                              (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-CAUTION))
