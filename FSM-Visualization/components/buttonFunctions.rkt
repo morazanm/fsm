@@ -25,7 +25,11 @@ Created by Joshua Schappel on 12/19/19
 ;; Purpose: Adds a state to the world
 (define addState (lambda (w)
                    (let ((state (string-trim (textbox-text (car (world-input-list w)))))
-                         (new-input-list (list-set (world-input-list w) 0 (remove-text (car (world-input-list w)) 100))))
+                         (new-input-list (list-set (world-input-list w) 0 (remove-text (car (world-input-list w)) 100)))
+                         (f (lambda ()
+                              (case MACHINE-TYPE
+                                [(pda) PDA-TRUE-FUNCTION]
+                                [else TRUE-FUNCTION]))))
                      (cond[(equal? "" state) w]
                           [(ormap (lambda (x) (equal? (format-input state) (symbol->string (fsm-state-name x))))
                                   (machine-state-list (world-fsm-machine w)))
@@ -33,7 +37,7 @@ Created by Joshua Schappel on 12/19/19
                           [else
                            (begin
                              (set-machine-state-list! (world-fsm-machine w) (cons (fsm-state (format-input (string->symbol state))
-                                                                                             TRUE-FUNCTION
+                                                                                             f
                                                                                              (posn 0 0))
                                                                                   (machine-state-list (world-fsm-machine w))))
                              (reset-bottom-indices)

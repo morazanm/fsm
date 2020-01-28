@@ -138,7 +138,7 @@ Cmd Functions
                   (set-machine-type 'pda)
                   (run-program
                    (build-world
-                    (pda-machine (map (lambda (x) (fsm-state x TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine))
+                    (pda-machine (map (lambda (x) (fsm-state x PDA-TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine))
                                  (sm-getstart fsm-machine)
                                  (sm-getfinals fsm-machine)
                                  (reverse (sm-getrules fsm-machine))
@@ -193,7 +193,7 @@ Cmd Functions
                 (pda-machine (map (lambda (x)
                                     (let ((temp (get-member x args)))
                                       (if (empty? temp)
-                                          (fsm-state x TRUE-FUNCTION (posn 0 0))
+                                          (fsm-state x PDA-TRUE-FUNCTION (posn 0 0))
                                           (fsm-state x (cadr temp) (posn 0 0))))) state-list)
                              (sm-getstart fsm-machine)
                              (sm-getfinals fsm-machine)
@@ -242,13 +242,23 @@ Scene Rendering
 (define (draw-main-img w s)
   (letrec
       (          
-       (deg-shift (if (empty? (machine-state-list (world-fsm-machine w))) 0 (/ 360 (length (machine-state-list (world-fsm-machine w))))))
+       (deg-shift (if (empty? (machine-state-list (world-fsm-machine w)))
+                      0
+                      (/ 360 (length (machine-state-list (world-fsm-machine w))))))
+       
        (state-list (machine-state-list (world-fsm-machine w))) ;; The list of states in the world
+       
        (get-x (lambda (theta rad) (truncate (+ (* rad (cos (degrees->radians theta))) X0))))
                 
        (get-y(lambda (theta rad)
                (truncate (+ (* rad (sin (degrees->radians theta))) Y0))))
-       (current-index (if (null? (world-cur-state w)) 0 (index-of (map (lambda (x) (fsm-state-name x)) (machine-state-list (world-fsm-machine w))) (world-cur-state w))))
+       
+       (current-index (if (null? (world-cur-state w))
+                          0
+                          (index-of (map (lambda (x)
+                                           (fsm-state-name x)) (machine-state-list (world-fsm-machine w)))
+                                    (world-cur-state w))))
+       
        (tip-x (get-x (* deg-shift current-index) inner-R))
        (tip-y (get-y (* deg-shift current-index) inner-R))
        (the-arrow(rotate 180 (triangle 15 "solid" "tan")))
@@ -279,8 +289,12 @@ Scene Rendering
        (draw-states (lambda (l i s)
                       (begin
                         (find-state-pos (machine-state-list (world-fsm-machine w)) 0)
+                        
                         (cond[(empty? l) s]
-                             [(and (equal? (fsm-state-name (car l)) (machine-start-state (world-fsm-machine w))) (ormap (lambda(x) (equal? (fsm-state-name (car l)) x)) (machine-final-state-list (world-fsm-machine w))))
+                             [(and (equal? (fsm-state-name (car l)) (machine-start-state (world-fsm-machine w)))
+                                   (ormap (lambda(x) (equal? (fsm-state-name (car l)) x))
+                                          (machine-final-state-list (world-fsm-machine w))))
+                              
                               (place-image(overlay (text (symbol->string (fsm-state-name (car l))) 25 "black")
                                                    (circle 21 "outline" START-STATE-COLOR)
                                                    (circle 25 "outline" END-STATE-COLOR)

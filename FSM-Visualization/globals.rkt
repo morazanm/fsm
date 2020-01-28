@@ -29,6 +29,7 @@ Created by Joshua Schappel on 12/19/19
 
 ;; -- OTHER --
 (define TRUE-FUNCTION (lambda (v) '())) ;; The default function for a state variable
+(define PDA-TRUE-FUNCTION (lambda (v c) '())) ;; The default function for a state variable
 (define MACHINE-TYPE null) ;; The type of machine (pda, ndfa, ..)
 
 
