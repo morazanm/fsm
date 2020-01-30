@@ -642,6 +642,8 @@ Created by Joshua Schappel on 12/19/19
                              (world (world-fsm-machine w) (world-tape-position w) (world-cur-rule w) (world-cur-state w) (world-button-list w)
                                     (world-input-list w) (world-processed-config-list w)(world-unporcessed-config-list w) (world-error-msg w) (sub1 index))]))))
 
+
+
 ;; oppenHelp; world -> world
 ;; Purpose: opens the help link in an external browser window
 (define openHelp (lambda (w)

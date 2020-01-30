@@ -8,7 +8,7 @@ Created by Joshua Schappel on 12/19/19
 (provide (all-defined-out))
 
 ;; -- VERSION --
-(define VERSION "BETA 1.1")
+(define VERSION "BETA 2.0")
 
 
 ;; -- DIMENTIONS --
@@ -40,6 +40,7 @@ Created by Joshua Schappel on 12/19/19
 ;; -- Scrollbars --
 (define TAPE-INDEX-BOTTOM -1) ;; The current tape input that is being used
 (define INIT-INDEX-BOTTOM 0) ;; The initail index of the scrollbar
+(define STACK-INDEX 0) ;; The index of the stack scroll bar. The index is the fist item to be rendered
 
 
 ;; -- INPUTS --
@@ -55,7 +56,7 @@ Created by Joshua Schappel on 12/19/19
 (define PDA_NUMBER 4) ;; The number if pda's to render on screen
 
 ;; -- PDA STACK --
-(define STACK-LIST '()) ;; The stack list for a pda
+(define STACK-LIST '(a b c d e f g h i j k l m n)) ;; The stack list for a pda
 
 ;; Pops n elements off the stack
 (define (pop-stack num)
@@ -67,7 +68,7 @@ Created by Joshua Schappel on 12/19/19
        (set! STACK-LIST (cdr STACK-LIST))
        (pop-stack (sub1 num)))]))
 
-;; Pushes elents onto the stack and returns true when complete
+;; Pushes elements onto the stack and returns true when complete
 (define (push-stack aList)
   (cond
     [(empty? aList)#t]
@@ -86,3 +87,6 @@ Created by Joshua Schappel on 12/19/19
 
 (define (set-machine-type type)
   (set! MACHINE-TYPE type))
+
+(define (set-stack-index num)
+  (set! STACK-INDEX num))
