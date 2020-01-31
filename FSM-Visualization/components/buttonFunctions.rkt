@@ -11,10 +11,12 @@ Created by Joshua Schappel on 12/19/19
          "../structs/machine.rkt" "../structs/posn.rkt" "../globals.rkt" "stateTransitions.rkt"
          "../structs/msgWindow.rkt" "../structs/world.rkt" "../../fsm-main.rkt")
 
-(provide addState removeState addRule removeRule addStart replaceStart
-         addEnd rmvEnd addAlpha rmvAlpha addSigma clearSigma addGamma
-         rmvGamma getScrollBarPosition showNext showPrev scrollbarRight
-         scrollbarLeft NULL-FUNCTION openHelp send-url)
+(provide
+ addState removeState addRule removeRule addStart replaceStart
+ addEnd rmvEnd addAlpha rmvAlpha addSigma clearSigma addGamma
+ rmvGamma getScrollBarPosition showNext showPrev scrollbarRight
+ scrollbarLeft NULL-FUNCTION openHelp send-url stackScrollUp
+ stackScrollDown)
 
 
 
@@ -356,12 +358,12 @@ Created by Joshua Schappel on 12/19/19
                           [(empty? (and (world-unporcessed-config-list w) (world-processed-config-list w)))
                            (begin
                              (reset-bottom-indices)
-                             (set-machine-sigma-list! (world-fsm-machine w) (append sigma-list (machine-sigma-list (world-fsm-machine w))))
+                             (set-machine-sigma-list! (world-fsm-machine w) (append (machine-sigma-list (world-fsm-machine w)) sigma-list))
                              (create-new-world-input-empty w new-input-list))]
                           [else
                            (begin
                              (reset-bottom-indices)
-                             (set-machine-sigma-list! (world-fsm-machine w) (append sigma-list (machine-sigma-list (world-fsm-machine w))))
+                             (set-machine-sigma-list! (world-fsm-machine w) (append (machine-sigma-list (world-fsm-machine w)) sigma-list))
                              (create-new-world-input-empty w new-input-list))])]
                        [else (redraw-world w)]))))
 
@@ -537,7 +539,6 @@ Created by Joshua Schappel on 12/19/19
                (handle-pop)
                (handle-push))
              void)
-         ;;(println nextState)
          (world (world-fsm-machine w) (world-tape-position w) (getCurRule (append (list nextState) (world-processed-config-list w)))
                 (determin-cur-state) (world-button-list w) (world-input-list w)
                 (append (list nextState) (world-processed-config-list w)) transitions (world-error-msg w)
@@ -642,7 +643,28 @@ Created by Joshua Schappel on 12/19/19
                              (world (world-fsm-machine w) (world-tape-position w) (world-cur-rule w) (world-cur-state w) (world-button-list w)
                                     (world-input-list w) (world-processed-config-list w)(world-unporcessed-config-list w) (world-error-msg w) (sub1 index))]))))
 
+;; stackScrollDown: world -> world
+;; Purpose: Handles scrolling on the pda stack
+(define stackScrollDown (lambda (w)
+                          (cond
+                            [(equal? 0 STACK-INDEX) w] ;; if the stack index is at 0 do nothing
+                            [else
+                             (begin
+                               (set-stack-index (- STACK-INDEX 1))
+                               w)])))
 
+;; stackScrollUp: world -> world
+;; Purpose: Handles scrolling on the pda stack
+(define stackScrollUp (lambda (w)
+                        (let ((newStackIndex (+ 1 STACK-INDEX)))
+                          (cond
+                            ;; if the newStackIndex + the amount allowed to be rendered is greater than
+                            ;;   the length, then do nothing.
+                            [(> (+ STACK-LIMIT newStackIndex) (length STACK-LIST)) w]
+                            [else
+                             (begin
+                               (set-stack-index (+ 1 STACK-INDEX))
+                               w)]))))
 
 ;; oppenHelp; world -> world
 ;; Purpose: opens the help link in an external browser window
@@ -659,7 +681,7 @@ Created by Joshua Schappel on 12/19/19
 (define (determine-rule-number type)
   (case type
     [(pda) PDA_NUMBER]
-    [(tm) (println "TODO")]
+    [(tm) (println "TODO tm determin rule number")]
     [else DFA-NDFA_NUMBER]))
 
 

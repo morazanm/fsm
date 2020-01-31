@@ -56,7 +56,8 @@ Created by Joshua Schappel on 12/19/19
 (define PDA_NUMBER 4) ;; The number if pda's to render on screen
 
 ;; -- PDA STACK --
-(define STACK-LIST '(a b c d e f g h i j k l m n)) ;; The stack list for a pda
+(define STACK-LIST '()) ;; The stack list for a pda
+(define STACK-LIMIT 14) ;; The number of elements from the stack that is allowed rendered on the screen at a time
 
 ;; Pops n elements off the stack
 (define (pop-stack num)
