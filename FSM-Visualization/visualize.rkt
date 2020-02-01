@@ -50,6 +50,7 @@ Initialize World
            (determine-input-list (lambda ()
                                    (case type
                                      [(pda) INPUT-LIST-PDA]
+                                     [(tm) INPUT-LIST-TM]
                                      [else INPUT-LIST])))
 
            ;; determine-button-list: none -> list-of-buttons
@@ -57,6 +58,7 @@ Initialize World
            (determine-button-list (lambda()
                                     (case type
                                       [(pda) BUTTON-LIST-PDA]
+                                      [(tm) BUTTON-LIST-TM]
                                       [else BUTTON-LIST]))))
 
     (initialize-world m messageWin (determine-button-list) (determine-input-list))))
@@ -100,7 +102,9 @@ Cmd Functions
                   (run-program (build-world (pda-machine '() null '() '() '() '() 'pda '()) 'pda))
                   (void))]
          [(tm) (begin
-                 (println "TODO ADD Turing Machine"))]
+                 (set-machine-type 'tm)
+                 (run-program (build-world (machine '() null '() '() '() '() 'tm ) 'tm))
+                 (void))]
          [else (error (format "~s is not a valid machine type" fsm-machine))])]
 
       ;; --- Pre-made with no predicates ---

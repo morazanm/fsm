@@ -10,7 +10,8 @@ Created by Joshua Schappel on 12/19/19
 
 (provide
  BUTTON-LIST
- BUTTON-LIST-PDA)
+ BUTTON-LIST-PDA
+ BUTTON-LIST-TM)
 
 
 
@@ -89,3 +90,14 @@ Button Declarations
                               BTN-RUN BTN-SCROLL-LEFT-RULES
                               BTN-SCROLL-RIGHT-RULES BTN-HELP
                               BTN-STACK-UP BTN-STACK-DOWN))
+                              BTN-SCROLL-RIGHT-RULES BTN-HELP))
+
+(define BUTTON-LIST-TM (list BTN-ADD-STATE BTN-REMOVE-STATE
+                          BTN-ADD-ALPHA BTN-REMOVE-ALPHA
+                          BTN-ADD-START BTN-REMOVE-START
+                          BTN-ADD-END BTN-REMOVE-END
+                          BTN-ADD-RULES-PDA BTN-REMOVE-RULES-PDA
+                          BTN-GENCODE BTN-NEXT BTN-PREV
+                          BTN-SIGMA-ADD BTN-SIGMA-CLEAR
+                          BTN-RUN BTN-SCROLL-LEFT-RULES
+                          BTN-SCROLL-RIGHT-RULES BTN-HELP))
