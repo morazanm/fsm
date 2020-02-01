@@ -89,7 +89,7 @@ Button Declarations
                               BTN-SIGMA-ADD BTN-SIGMA-CLEAR
                               BTN-RUN BTN-SCROLL-LEFT-RULES
                               BTN-SCROLL-RIGHT-RULES BTN-HELP
-                              BTN-STACK-UP BTN-STACK-DOWN))
+                              BTN-STACK-UP BTN-STACK-DOWN
                               BTN-SCROLL-RIGHT-RULES BTN-HELP))
 
 (define BUTTON-LIST-TM (list BTN-ADD-STATE BTN-REMOVE-STATE
