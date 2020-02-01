@@ -84,4 +84,5 @@
                                 ((N ,EMP ,EMP) (F ,EMP)))))
 
 
-(sm-visualize pda-wcw^r)
+;;(sm-visualize pda-wcw^r)
+(sm-visualize 'tm)
