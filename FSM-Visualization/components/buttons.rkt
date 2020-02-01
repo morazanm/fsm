@@ -44,6 +44,9 @@ Button Declarations
 (define BTN-ADD-RULES-PDA (button 70 25 "Add" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 24 #f #f (posn (- WIDTH 150) (- (* 5 CONTROL-BOX-H) 20)) addRule))
 (define BTN-REMOVE-RULES-PDA (button 70 25 "Remove" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 24 #f #f (posn (- WIDTH 50) (- (* 5 CONTROL-BOX-H) 20)) removeRule))
 
+(define BTN-TAPE-SCROLL-LEFT (button 30 TOP "🠈" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 35 #f #f (posn 125 30) tapeScrollLeft))
+(define BTN-TAPE-SCROLL-RIGHT (button 30 TOP "🠊" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 35 #f #f (posn (- WIDTH 215) 30) tapeScrollRight))
+
 
 (define BTN-SCROLL-LEFT-RULES (button 30 BOTTOM "🠈" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 35 #f #f (posn 125 (- HEIGHT 37)) scrollbarLeft))
 (define BTN-SCROLL-RIGHT-RULES (button 30 BOTTOM "🠊" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 35 #f #f (posn (- WIDTH 215) (- HEIGHT 37)) scrollbarRight))
@@ -77,7 +80,8 @@ Button Declarations
                           BTN-GENCODE BTN-NEXT BTN-PREV
                           BTN-SIGMA-ADD BTN-SIGMA-CLEAR
                           BTN-RUN BTN-SCROLL-LEFT-RULES
-                          BTN-SCROLL-RIGHT-RULES BTN-HELP))
+                          BTN-SCROLL-RIGHT-RULES BTN-HELP
+                          BTN-TAPE-SCROLL-LEFT BTN-TAPE-SCROLL-RIGHT))
 
 (define BUTTON-LIST-PDA (list BTN-ADD-STATE BTN-REMOVE-STATE
                               BTN-ADD-ALPHA-PDA BTN-REMOVE-ALPHA-PDA
@@ -90,7 +94,8 @@ Button Declarations
                               BTN-RUN BTN-SCROLL-LEFT-RULES
                               BTN-SCROLL-RIGHT-RULES BTN-HELP
                               BTN-STACK-UP BTN-STACK-DOWN
-                              BTN-SCROLL-RIGHT-RULES BTN-HELP))
+                              BTN-SCROLL-RIGHT-RULES BTN-HELP
+                              BTN-TAPE-SCROLL-LEFT BTN-TAPE-SCROLL-RIGHT))
 
 (define BUTTON-LIST-TM (list BTN-ADD-STATE BTN-REMOVE-STATE
                           BTN-ADD-ALPHA BTN-REMOVE-ALPHA
@@ -100,4 +105,5 @@ Button Declarations
                           BTN-GENCODE BTN-NEXT BTN-PREV
                           BTN-SIGMA-ADD BTN-SIGMA-CLEAR
                           BTN-RUN BTN-SCROLL-LEFT-RULES
-                          BTN-SCROLL-RIGHT-RULES BTN-HELP))
+                          BTN-SCROLL-RIGHT-RULES BTN-HELP
+                          BTN-TAPE-SCROLL-LEFT BTN-TAPE-SCROLL-RIGHT))

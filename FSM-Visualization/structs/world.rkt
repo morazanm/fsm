@@ -9,7 +9,6 @@ This file was created by Joshua Schappel on 12/19/19
 
 (provide
  (struct-out world)
- (struct-out pda-world)
  initialize-world
  create-new-world-input
  create-new-world-input-empty
@@ -32,11 +31,6 @@ This file was created by Joshua Schappel on 12/19/19
 (struct world (fsm-machine tape-position cur-rule cur-state button-list input-list processed-config-list
                            unporcessed-config-list error-msg scroll-bar-index) #:transparent)
 
-
-
-;; pda-world: a world structure that contains all the necessary fields for pda's
-;; - stack-list: The list of the stack that is in use
-(struct pda-world world ([stack-list #:mutable]))
 
 
 #|

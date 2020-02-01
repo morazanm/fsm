@@ -31,22 +31,6 @@
                                (C a A) (C b D) (D a F) (D b B)
                                (F b F))))
 
-#|
-;; PDA
-;; (sm-showtransitions M4 '(a a a b b b))
-;;(state '(input) '(stack)) '(final rule))
-(define M4 (make-ndpda '(S M F)
-                                  '(a b)
-                                  '(a b)
-                                  'S
-                                  '(F)
-                                  `(((S ,EMP ,EMP) (M ,EMP))
-                                    ((M ,EMP ,EMP) (F ,EMP))
-                                    ((M a ,EMP) (M (a)))
-                                    ((M b ,EMP) (M (b)))
-                                    ((M a (b)) (M ,EMP))
-                                    ((M b (a)) (M ,EMP)))))
-|#
 ;; valid input: aaabbb 
 (define P (make-ndpda '(S F)
                      '(a b)
@@ -85,4 +69,4 @@
 
 
 ;;(sm-visualize pda-wcw^r)
-(sm-visualize 'tm)
+(sm-visualize a*)

@@ -15,8 +15,9 @@ Created by Joshua Schappel on 12/19/19
 (define WIDTH 1200) ;; The width of the scene
 (define HEIGHT 600) ;; The height of the scene
 (define CONTROL-BOX-H (/ HEIGHT 5)) ;; The height of each left side conrol box
-(define BOTTOM(/ HEIGHT 8))
-(define STACK-WIDTH 100) ;; the width of the control stack image for pdas
+(define BOTTOM(/ HEIGHT 8)) ;; The height of the rule display box
+(define STACK-WIDTH 100) ;; The width of the control stack image for pdas
+(define TOP (/ HEIGHT 10)) ;; The height of the top input display box
 
 
 ;; -- GUI COLORS --
@@ -40,8 +41,9 @@ Created by Joshua Schappel on 12/19/19
 ;; -- Scrollbars --
 (define TAPE-INDEX-BOTTOM -1) ;; The current tape input that is being used
 (define INIT-INDEX-BOTTOM 0) ;; The initail index of the scrollbar
-(define STACK-INDEX 0) ;; The index of the stack scroll bar. The index is the fist item to be rendered
-
+(define STACK-INDEX 0) ;; The index of the stack scroll bar. The index is the first item to be rendered
+(define TAPE-INDEX 0) ;; The index of the input scroll bar. The index is the first item to be rendered
+(define TAPE-RENDER-LIMIT 26) ;; The maximum amount of tape input that can be rendered at a time
 
 ;; -- INPUTS --
 (define INPUT-COLOR (make-color 186 190 191)) ;; The color of an input field
@@ -91,3 +93,6 @@ Created by Joshua Schappel on 12/19/19
 
 (define (set-stack-index num)
   (set! STACK-INDEX num))
+
+(define (set-tape-index value)
+  (set! TAPE-INDEX value))

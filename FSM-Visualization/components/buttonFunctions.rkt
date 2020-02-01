@@ -16,7 +16,7 @@ Created by Joshua Schappel on 12/19/19
  addEnd rmvEnd addAlpha rmvAlpha addSigma clearSigma addGamma
  rmvGamma getScrollBarPosition showNext showPrev scrollbarRight
  scrollbarLeft NULL-FUNCTION openHelp send-url stackScrollUp
- stackScrollDown)
+ stackScrollDown tapeScrollRight tapeScrollLeft)
 
 
 
@@ -666,10 +666,33 @@ Created by Joshua Schappel on 12/19/19
                                (set-stack-index (+ 1 STACK-INDEX))
                                w)]))))
 
+;; tapeScrollRight: world -> world
+;; Purpose: Handles scrolling for the tape
+(define tapeScrollRight (lambda (w)
+                          (let ((newTapeIndex (+ 1 TAPE-INDEX)))
+                            (cond
+                              [(> (+ TAPE-RENDER-LIMIT newTapeIndex) (length (machine-sigma-list (world-fsm-machine w))))
+                               w]
+                              [else
+                               (begin
+                                 (set-tape-index (+ 1 TAPE-INDEX))
+                                 w)]))))
+
+
+;; tapeScrollLeft: world -> world
+;; Purpose: Handles scrolling for the tape
+(define tapeScrollLeft (lambda (w)
+                         (cond
+                           [(equal? 0 TAPE-INDEX) w] ;; if the tape index is at 0 do nothing
+                           [else
+                            (begin
+                              (set-tape-index (- TAPE-INDEX 1))
+                              w)])))
+
 ;; oppenHelp; world -> world
 ;; Purpose: opens the help link in an external browser window
 (define openHelp (lambda (w)
-                   (send-url "https://github.com/jschappel/FSM-Visualization/blob/master/help.md" #t)
+                   (send-url "https://htmlpreview.github.io/?https://github.com/morazanm/fsm/blob/master/doc/fsm/index.html" #t)
                    (redraw-world w)))
 
 
@@ -685,24 +708,6 @@ Created by Joshua Schappel on 12/19/19
     [else DFA-NDFA_NUMBER]))
 
 
-#|
-;; getCurRule: processed-list -> rule
-;; Purpose: get the rule that the machine just executed
-(define getCurRule (lambda (pl)
-                     
-                     (cond
-                       [(< (length pl) 2) (list 'empty 'empty 'empty)] ;; If the processed list doesn't have at least 2 items in it then no rule was followed...
-                       [(= (length (caar pl)) (length (caadr pl)))
-                        (list
-                         (cadadr pl)
-                         EMP
-                         (cadar pl))]
-                       [else
-                        (list
-                         (cadadr pl)
-                         (caaadr pl)
-                         (cadar pl))])))
-|#
 
 ;; format-input: symbol -> symbol
 ;; Purpose: This is a helper function for addRule and removeRule that formats certine symbols into valid fsm symbols
@@ -718,6 +723,7 @@ Created by Joshua Schappel on 12/19/19
 ;; Purpose: Resest the bottom indicies to there origional value
 (define (reset-bottom-indices)
   (set-tape-index-bottom -1)
+  (set-tape-index 0)
   (set-init-index-bottom 0))
 
 

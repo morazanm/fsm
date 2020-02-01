@@ -13,11 +13,7 @@
 
 (provide visualize)
 
-;; GLOBAL VALIRABLES
-
-
-(define TOP (/ HEIGHT 10))
-(define BOTTOM(/ HEIGHT 8))
+;; GLOBAL VALIRABLES FOR FILE
 (define MAIN-SCENE (empty-scene WIDTH HEIGHT "white")) ;; Create the initial scene
 
 
@@ -570,6 +566,18 @@ TOP GUI RENDERING
 ;; Purpose: Creates the top list of sigmas lable
 (define (los-top-label los cur-rule rectWidth)
   (letrec (
+
+           ;; Gets the tape inptu that needs to be rendered on the screen
+           (input-to-render
+            (cond
+              [(> (length los) TAPE-RENDER-LIMIT)
+               (let ((c (drop los TAPE-INDEX)))
+                 (take c TAPE-RENDER-LIMIT))]
+              [else
+               los]))
+
+           
+           
            ;; list-2-img: list-of-sigma (tape input) int -> image
            ;; Purpose: Converts the tape input into image that overlays the tape in the center
            (list-2-img (lambda (los accum)
@@ -598,8 +606,10 @@ TOP GUI RENDERING
                            (rectangle rectWidth TOP "outline" "transparent"))]))))
 
     (overlay
-     (rectangle (- (- WIDTH (/ WIDTH 11)) 200) TOP "outline" "blue")
-     (list-2-img los 0))))
+     (overlay
+      (rectangle (- (- WIDTH (/ WIDTH 11)) 260) TOP "outline" "transparent") ;; this rectangle includes the width of the scroll bars
+      (list-2-img input-to-render TAPE-INDEX))
+     (rectangle (- (- WIDTH (/ WIDTH 11)) 200) TOP "outline" "blue"))))
 
 
 ;; create-gui-top: list-of-sigma rule -> image
@@ -608,7 +618,7 @@ TOP GUI RENDERING
   (overlay/align "left" "middle"
                  (beside
                   (top-input-label)
-                  (los-top-label los cur-rule 30))
+                  (los-top-label los cur-rule 31))
                  (rectangle WIDTH TOP "outline" "transparent")))
 
 
