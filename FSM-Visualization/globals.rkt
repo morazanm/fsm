@@ -51,7 +51,7 @@ Created by Joshua Schappel on 12/19/19
 
 ;; -- BUTTONS --
 (define CONTROLLER-BUTTON-COLOR (make-color 33 93 222)) ;; Color of button and center dot
-
+(define STACK-SCROLL-BUTTON-COLOR (make-color 135 204 222)) ;; Color of the stack buttons for pda's
 
 ;; -- INPUT FACTORY --
 (define DFA-NDFA_NUMBER 8) ;; The number of dfa's/ndfa's to render on the screen

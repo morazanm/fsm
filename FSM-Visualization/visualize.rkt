@@ -821,7 +821,7 @@ RIGHT GUI RENDERING
                                        (above/align "left"
                                                     (rectangle STACK-WIDTH TOP "outline" "transparent") ;; The top
                                                     (overlay ;; This overlays the stack inside the scroll bar buttons
-                                                     (rectangle STACK-WIDTH (- HEIGHT (+ BOTTOM TOP)) "outline" "transparent")
+                                                     (rectangle STACK-WIDTH (- HEIGHT (+ BOTTOM TOP)) "outline" "blue")
                                                      (pda-populate-stack))
                                                     (rectangle STACK-WIDTH BOTTOM "outline" "transparent")) ;; the bottom
                                        (rectangle STACK-WIDTH HEIGHT "outline" "transparent"))))

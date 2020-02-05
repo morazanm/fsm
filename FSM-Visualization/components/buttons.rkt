@@ -61,8 +61,8 @@ Button Declarations
 (define BTN-GENCODE (button 95 50 "GEN CODE" "solid" (make-color 240 79 77) (make-color 240 79 77) 30 #f #f (posn 55 220) genCode))
 
 ;; pda stack scroll btn's
-(define BTN-STACK-UP (button STACK-WIDTH 25 "🠉" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 33 #f #f (posn (- WIDTH 250) 73) stackScrollUp))
-(define BTN-STACK-DOWN (button STACK-WIDTH 25 "🠋" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 33 #f #f (posn (- WIDTH 250) (- HEIGHT 87)) stackScrollDown))
+(define BTN-STACK-UP (button STACK-WIDTH 25 "🠉" "solid" STACK-SCROLL-BUTTON-COLOR STACK-SCROLL-BUTTON-COLOR 33 #f #f (posn (- WIDTH 250) 73) stackScrollUp))
+(define BTN-STACK-DOWN (button STACK-WIDTH 25 "🠋" "solid" STACK-SCROLL-BUTTON-COLOR STACK-SCROLL-BUTTON-COLOR 33 #f #f (posn (- WIDTH 250) (- HEIGHT 87)) stackScrollDown))
 
 
 (define BTN-SIGMA-ADD (button 40 25 "ADD" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 20 #f #f (posn 30 70) addSigma))
