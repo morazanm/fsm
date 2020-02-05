@@ -19,8 +19,6 @@
 
 
 ;; CIRCLE VARIABLES
-(define X0  (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2))
-(define Y0 (/ (+ TOP (- HEIGHT BOTTOM)) 2))
 (define R 175)
 (define inner-R (- R 50))
 (define CENTER-CIRCLE (circle 5 "solid" CONTROLLER-BUTTON-COLOR))
@@ -241,7 +239,12 @@ Scene Rendering
 ;; Purpose: Draws the main GUI image
 (define (draw-main-img w s)
   (letrec
-      (          
+      (
+       (X0  (if (equal? MACHINE-TYPE 'pda)
+                (/ (+ (/ WIDTH 11) (- WIDTH 300)) 2)
+                (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2)))
+       (Y0 (/ (+ TOP (- HEIGHT BOTTOM)) 2))
+       
        (deg-shift (if (empty? (machine-state-list (world-fsm-machine w)))
                       0
                       (/ 360 (length (machine-state-list (world-fsm-machine w))))))
@@ -339,11 +342,11 @@ Scene Rendering
 
        (determim-prev-rule (lambda (rule)
                              (let ((c-rule (getCurRule rule)))
-                             (case MACHINE-TYPE
-                               [(pda) (caar c-rule)]
-                               [(tm) (println "DETERMINE PREV RULE")]
-                               [else
-                                (car c-rule)]))))
+                               (case MACHINE-TYPE
+                                 [(pda) (caar c-rule)]
+                                 [(tm) (println "DETERMINE PREV RULE")]
+                                 [else
+                                  (car c-rule)]))))
 
        ;; draw-inner-with-prev: none -> image
        ;; Purpose: Creates the inner circle that contains the arrows and the prevous state pointer
@@ -482,47 +485,8 @@ Scene Rendering
           (draw-error-msg (lambda (window scn)
                             (cond
                               [(null? window) scn]
-                              [else (draw-window window scn WIDTH HEIGHT)])))
-          
-          (deg-shift (if (empty? (machine-state-list (world-fsm-machine w))) 0 (/ 360 (length (machine-state-list (world-fsm-machine w))))))
-          (get-x (lambda (theta rad) (truncate (+ (* rad (cos (degrees->radians theta))) X0))))
-                
-          (get-y(lambda (theta rad)
-                  (truncate (+ (* rad (sin (degrees->radians theta))) Y0))))
-          (current-index (if (null? (world-cur-state w)) 0 (index-of (map (lambda (x) (fsm-state-name x)) (machine-state-list (world-fsm-machine w))) (world-cur-state w))))
-          (tip-x (get-x (* deg-shift current-index) inner-R))
-          (tip-y (get-y (* deg-shift current-index) inner-R))
-          (the-arrow(rotate 180 (triangle 15 "solid" "tan")))
-          (find-state-pos
-           (λ(l i) (if (empty? l) (void)
-                       (begin
-                         (set-fsm-state-posn! (car l) (posn (get-x (* deg-shift i) R) (get-y (* deg-shift i) R)))
-                         (find-state-pos (cdr l) (add1 i))))))
-          
-          ;;draw-states: list-of-states index scene -> scene
-          ;; Purpose: Draws the states onto the GUI
-          (draw-states (lambda (l i s)
-                         (begin
-                           (find-state-pos (machine-state-list (world-fsm-machine w)) 0)
-                           (cond[(empty? l) s]
-                                [(equal? (fsm-state-name (car l)) (machine-start-state (world-fsm-machine w)))
-                                 (place-image(overlay (text (symbol->string (fsm-state-name (car l))) 25 START-STATE-COLOR)
-                                                      (circle 25 "outline" START-STATE-COLOR))
-                                             (posn-x (fsm-state-posn (car l)))
-                                             (posn-y (fsm-state-posn (car l)))
-                                             (draw-states(cdr l) (add1 i) s))]
-                                [(ormap (lambda(x) (equal? (fsm-state-name (car l)) x)) (machine-final-state-list (world-fsm-machine w)))
-                                 (place-image (overlay (text (symbol->string (fsm-state-name (car l))) 20 "red")
-                                                       (overlay
-                                                        (circle 20 "outline" END-STATE-COLOR)
-                                                        (circle 25 "outline" END-STATE-COLOR)))
-                                              (posn-x (fsm-state-posn (car l)))
-                                              (posn-y (fsm-state-posn (car l)))
-                                              (draw-states (cdr l) (add1 i) s))]
-                                [else (place-image (text  (symbol->string (fsm-state-name (car l))) 25 "black")
-                                                   (posn-x (fsm-state-posn  (car l)))
-                                                   (posn-y (fsm-state-posn (car l)))
-                                                   (draw-states (cdr l) (add1 i) s))])))))
+                              [else (draw-window window scn WIDTH HEIGHT)]))))
+        
           
          
     (if (not (null? (world-cur-state w)))
@@ -833,14 +797,14 @@ RIGHT GUI RENDERING
                                         (rev-stack (reverse STACK-LIST))
                                         (len (length STACK-LIST)) ;; Then length of the stack list
 
-                                       (curList ;; the list starting with the STACK-INDEX
-                                        (if (> len STACK-LIMIT)
-                                                    (let ((c (drop-right rev-stack STACK-INDEX)))
-                                                      (take-right c STACK-LIMIT))
-                                                    rev-stack)))                      
-                                 (overlay/align "left" "bottom"
-                                  (draw-verticle curList 14 100 29)
-                                  (rectangle STACK-WIDTH (- (- HEIGHT (+ BOTTOM TOP)) 50) "outline" "blue")))))
+                                        (curList ;; the list starting with the STACK-INDEX
+                                         (if (> len STACK-LIMIT)
+                                             (let ((c (drop-right rev-stack STACK-INDEX)))
+                                               (take-right c STACK-LIMIT))
+                                             rev-stack)))                      
+                                   (overlay/align "left" "bottom"
+                                                  (draw-verticle curList 14 100 29)
+                                                  (rectangle STACK-WIDTH (- (- HEIGHT (+ BOTTOM TOP)) 50) "outline" "blue")))))
 
            ;; construct-image: none -> image
            ;;; Purpose: Builds the propper image based on the machine type
