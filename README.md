@@ -10,13 +10,13 @@ The documemtation can be found  [here](https://htmlpreview.github.io/?https://gi
 ## Installation
 There are two ways to install fsm onto your machine.
 
-### Using Raco
+#### Using Raco
 
 ```bash
 raco pkg install https://github.com/morazanm/fsm.git
 ```
 
-### Using Racket's Package Manager
+#### Using Racket's Package Manager
 ![Racket Package Manager Install](install.gif)
 
 
