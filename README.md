@@ -110,7 +110,7 @@ To visualize a dfa or ndfa create a new file and require fsm. Then provide one o
 (sm-visualize a*) ;; See "Building a DFA" for the implementation of a*
 ```
 
-3) sm-visualize &lt;pre-built-machine '(state invariant-function)&gt; To visualize a pre-built fsm machine with associated state invariants. Note that *'(state invariant-function)* is a abitrary list of tuples.
+3) sm-visualize &lt;pre-built-machine (state invariant-function)*&gt; To visualize a pre-built fsm machine with associated state invariants. Note that *(state invariant-function)* is a abitrary number of tuples.
 ```racket
 ;; Invariant functions
 (define INV1 (lambda (v) true))
@@ -125,10 +125,9 @@ To visualize a dfa or ndfa create a new file and require fsm. Then provide one o
 - Extend the visualization tool to work for turing machines
 - Extend the visualization tool to give the user the option to view the graph represention of a machine
 
-## Recognition
-
-## Acknowledgements
-TODO: Add acknowledgements here
+## Publications
+- [Functional Automata - Formal Languages for Computer Science Students](https://arxiv.org/abs/1412.4878)
+- [FSM Error Messages](https://arxiv.org/abs/1906.11421v1)
 
 ## Authors
 Written by: Marco T. Morazan and Rosario Antunez, 2015
