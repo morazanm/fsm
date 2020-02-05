@@ -89,7 +89,7 @@ To visualize a dfa, ndfa, or pda create a new file and require fsm. Then type th
 (sm-visualize a*) ;; See "Building a DFA" for the implementation of a*
 ```
 
-3) sm-visualize &lt;pre-built-machine '(state invariant-function)&gt; To visualize a pre-built machine with associated state invariants.
+3) sm-visualize &lt;pre-built-machine '(state invariant-function)&gt; To visualize a pre-built machine with associated state invariants. Note that *'(state invariant-function)* is a abitrary list of tuples.
 ```racket
 ;; Invariant functions
 (define INV1 (lambda (v) true))
