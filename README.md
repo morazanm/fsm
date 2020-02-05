@@ -129,8 +129,12 @@ To visualize a dfa or ndfa create a new file and require fsm. Then provide one o
 - [Functional Automata - Formal Languages for Computer Science Students](https://arxiv.org/abs/1412.4878)
 - [FSM Error Messages](https://arxiv.org/abs/1906.11421v1)
 
-## Authors
-Written by: Marco T. Morazan and Rosario Antunez, 2015
+## Contributers
+- Marco T. Morazán
+- Rosario Antunez
+- Josephine A. Des Rosiers
+- Joshua Schappel
+- Sachin Mahashabde
 
 ## License
-Copyright (C) 2015 by Marco T. Morazan and Rosario Antunez
+Copyright (c) 2020 by Marco T. Morazan and Rosario Antunez
