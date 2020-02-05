@@ -22,8 +22,10 @@
 (define R 175)
 (define inner-R (- R 50))
 (define CENTER-CIRCLE (circle 5 "solid" CONTROLLER-BUTTON-COLOR))
-(define TRUE-INV (make-color 0 171 3)) ;; Color for passed invarient
-(define FALSE-INV (make-color 245 35 20)) ;; Color for failed invarient
+(define TRUE-INV (make-color 0 171 3)) ;; Color for passed invariant (green)
+(define FALSE-INV (make-color 245 35 20)) ;; Color for failed invariant (red)
+(define TRUE-INV-CB (make-color 1 133 113)) ;; Color for passed invarant for color blind mode
+(define FALSE-INV-CB (make-color 123 50 148)) ;; Color for failed invariant for color blind mode
 
 #|
 -----------------------
@@ -277,14 +279,22 @@ Scene Rendering
                        (case MACHINE-TYPE
                          [(pda)
                           (cond
-                            [(equal? #t (f p-list STACK-LIST)) TRUE-INV]
-                            [(equal? #f (f p-list STACK-LIST)) FALSE-INV]
+                            [(equal? #t (f p-list STACK-LIST)) (if COLOR-BLIND-MODE
+                                                                   TRUE-INV-CB
+                                                                   TRUE-INV)]
+                            [(equal? #f (f p-list STACK-LIST)) (if COLOR-BLIND-MODE
+                                                                   FALSE-INV-CB
+                                                                   FALSE-INV)]
                             [else "black"])]
                          [(tm) (println "TODO: Add invariant checker")]
                          [else
                           (cond
-                            [(equal? #t (f p-list)) TRUE-INV]
-                            [(equal? #f (f p-list)) FALSE-INV]
+                            [(equal? #t (f p-list))(if COLOR-BLIND-MODE
+                                                                   TRUE-INV-CB
+                                                                   TRUE-INV)]
+                            [(equal? #f (f p-list)) (if COLOR-BLIND-MODE
+                                                                   FALSE-INV-CB
+                                                                   FALSE-INV)]
                             [else "black"])])))
           
        ;;draw-states: list-of-states index scene -> scene

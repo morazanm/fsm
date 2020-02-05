@@ -55,6 +55,8 @@ Button Declarations
 
 (define BTN-RUN (button 95 30 "Run" "solid" (make-color 29 153 68) (make-color 29 153 68) 25 #f #f (posn 55 105) runProgram))
 (define BTN-HELP (button 25 25 "?" "solid" (make-color 39 168 242) (make-color 39 168 242) 15 #t #f (posn 130 80) openHelp))
+(define BTN-COLOR-BLIND (button 25 25 "CB" "solid" (make-color 252 186 3) (make-color 252 186 3) 15 #t #f (posn 130 120) toogleColorBlindMode))
+
 
 (define BTN-NEXT (button 95 30 "NEXT 🠊" "solid" (make-color 116 156 188) (make-color 116 156 188) 25 #f #f (posn 55 140) showNext))
 (define BTN-PREV (button 95 30 "🠈 PREV" "solid" (make-color 116 156 188) (make-color 116 156 188) 25 #f #f (posn 55 175) showPrev))
@@ -81,7 +83,8 @@ Button Declarations
                           BTN-SIGMA-ADD BTN-SIGMA-CLEAR
                           BTN-RUN BTN-SCROLL-LEFT-RULES
                           BTN-SCROLL-RIGHT-RULES BTN-HELP
-                          BTN-TAPE-SCROLL-LEFT BTN-TAPE-SCROLL-RIGHT))
+                          BTN-TAPE-SCROLL-LEFT BTN-TAPE-SCROLL-RIGHT
+                          BTN-COLOR-BLIND))
 
 (define BUTTON-LIST-PDA (list BTN-ADD-STATE BTN-REMOVE-STATE
                               BTN-ADD-ALPHA-PDA BTN-REMOVE-ALPHA-PDA
@@ -95,7 +98,8 @@ Button Declarations
                               BTN-SCROLL-RIGHT-RULES BTN-HELP
                               BTN-STACK-UP BTN-STACK-DOWN
                               BTN-SCROLL-RIGHT-RULES BTN-HELP
-                              BTN-TAPE-SCROLL-LEFT BTN-TAPE-SCROLL-RIGHT))
+                              BTN-TAPE-SCROLL-LEFT BTN-TAPE-SCROLL-RIGHT
+                              BTN-COLOR-BLIND))
 
 (define BUTTON-LIST-TM (list BTN-ADD-STATE BTN-REMOVE-STATE
                           BTN-ADD-ALPHA BTN-REMOVE-ALPHA
@@ -106,4 +110,5 @@ Button Declarations
                           BTN-SIGMA-ADD BTN-SIGMA-CLEAR
                           BTN-RUN BTN-SCROLL-LEFT-RULES
                           BTN-SCROLL-RIGHT-RULES BTN-HELP
-                          BTN-TAPE-SCROLL-LEFT BTN-TAPE-SCROLL-RIGHT))
+                          BTN-TAPE-SCROLL-LEFT BTN-TAPE-SCROLL-RIGHT
+                          BTN-COLOR-BLIND))

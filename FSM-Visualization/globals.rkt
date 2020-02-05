@@ -21,6 +21,7 @@ Created by Joshua Schappel on 12/19/19
 
 
 ;; -- GUI COLORS --
+(define COLOR-BLIND-MODE false)
 (define START-STATE-COLOR (make-color 6 142 60)) ;; Color of circle that surrounds start state
 (define END-STATE-COLOR (make-color 219 9 9)) ;; Color of circle that surrounds an end state
 (define MSG-ERROR (make-color 255 0 0)) ;; Color of an error message
@@ -96,3 +97,6 @@ Created by Joshua Schappel on 12/19/19
 
 (define (set-tape-index value)
   (set! TAPE-INDEX value))
+
+(define (toggle-color-blind-mode)
+  (set! COLOR-BLIND-MODE (not COLOR-BLIND-MODE)))

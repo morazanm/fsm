@@ -16,7 +16,7 @@ Created by Joshua Schappel on 12/19/19
  addEnd rmvEnd addAlpha rmvAlpha addSigma clearSigma addGamma
  rmvGamma getScrollBarPosition showNext showPrev scrollbarRight
  scrollbarLeft NULL-FUNCTION openHelp send-url stackScrollUp
- stackScrollDown tapeScrollRight tapeScrollLeft)
+ stackScrollDown tapeScrollRight tapeScrollLeft toogleColorBlindMode)
 
 
 
@@ -694,6 +694,14 @@ Created by Joshua Schappel on 12/19/19
 (define openHelp (lambda (w)
                    (send-url "https://htmlpreview.github.io/?https://github.com/morazanm/fsm/blob/master/doc/fsm/index.html" #t)
                    (redraw-world w)))
+
+
+;; toogleColorBlindMode -> world
+;; Purpose: toggles color blind mode
+(define toogleColorBlindMode (lambda (w)
+                               (begin
+                                 (toggle-color-blind-mode)
+                                 w)))
 
 
 
