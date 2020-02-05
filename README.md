@@ -49,7 +49,7 @@ Below are some basic examples of how to use fsm. For a more in-depth guide pleas
 ```racket
 (require fsm)
 
-(define a*a (make-ndfa '(S F A)       ;the states
+(define a*a (make-ndfa '(S F A)      ;the states
                       '(a b)         ;the alphabet
                       'S             ;the starting state
                       '(F)           ;final states
@@ -63,12 +63,11 @@ Below are some basic examples of how to use fsm. For a more in-depth guide pleas
 ```racket
 (require fsm)
 
-(define M4 (make-ndpda '(S M F)
-                        '(a b)
-                        '(a b)
-                        'S
-                        '(F)
-                        `(((S ,EMP ,EMP) (M ,EMP))
+(define M4 (make-ndpda '(S M F)                     ;the states
+                        '(a b)                      ;the alphabet
+                        'S                          ;the starting state
+                        '(F)                        ;the final states
+                        `(((S ,EMP ,EMP) (M ,EMP))  ;the transition function
                           ((M ,EMP ,EMP) (F ,EMP))
                           ((M a ,EMP) (M (a)))
                           ((M b ,EMP) (M (b)))
@@ -92,7 +91,7 @@ To visualize a dfa, ndfa, or pda create a new file and require fsm. Then type th
 
 3) sm-visualize &lt;pre-built-machine '(state invariant-function)&gt; To visualize a pre-built machine with associated state invariants.
 ```racket
-;; dummy invariant functions
+;; Invariant functions
 (define INV1 (lambda (v) true))
 (define INV2 (lambda (v) false))
 
@@ -101,7 +100,11 @@ To visualize a dfa, ndfa, or pda create a new file and require fsm. Then type th
 ```
 
 ## Future Additions
+- Extend the visualization tool to work for pda's
 - Extend the visualization tool to work for turing machines
+- Extend the visualization tool to give the user the option to view the graph represention of a machine
+
+## Recognition
 
 ## Acknowledgements
 TODO: Add acknowledgements here
