@@ -337,6 +337,14 @@ Scene Rendering
                                        '||
                                        (cadr (world-cur-rule w)))])))
 
+       (determim-prev-rule (lambda (rule)
+                             (let ((c-rule (getCurRule rule)))
+                             (case MACHINE-TYPE
+                               [(pda) (caar c-rule)]
+                               [(tm) (println "DETERMINE PREV RULE")]
+                               [else
+                                (car c-rule)]))))
+
        ;; draw-inner-with-prev: none -> image
        ;; Purpose: Creates the inner circle that contains the arrows and the prevous state pointer
        (draw-inner-with-prev (lambda()
@@ -347,7 +355,7 @@ Scene Rendering
                                                  (determin-input-symbol (cadr (world-cur-rule w))) index)
                                   (inner-circle2 (- 360 (* (get-state-index
                                                             state-list
-                                                            (car (getCurRule (world-processed-config-list w))) 0)
+                                                            (determim-prev-rule (world-processed-config-list w)) 0)
                                                            deg-shift)))
                                   (circle inner-R "outline" "transparent")))))
 
