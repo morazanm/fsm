@@ -137,4 +137,4 @@ To visualize a dfa or ndfa create a new file and require fsm. Then provide one o
 - Sachin Mahashabde
 
 ## License
-Copyright (c) 2020 by Marco T. Morazan and Rosario Antunez
+Copyright (c) 2020 by Marco T. Morazan
