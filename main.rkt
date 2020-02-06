@@ -57,8 +57,10 @@
    make-dfst
 
    ; visualization
-   sm-visualize)
+   sm-visualize
+   sm-marco)
 
   (define sm-visualize visualize)
+  (define sm-marco marco)
 
   ) ; close module

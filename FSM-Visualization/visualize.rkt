@@ -11,7 +11,7 @@
          "./structs/world.rkt" "./components/inputFields.rkt" "globals.rkt"
          "./components/buttons.rkt" "./components/stateTransitions.rkt")
 
-(provide visualize)
+(provide visualize marco)
 
 ;; GLOBAL VALIRABLES FOR FILE
 (define MAIN-SCENE (empty-scene WIDTH HEIGHT "white")) ;; Create the initial scene
@@ -150,6 +150,7 @@ Cmd Functions
                   (void))]
          
          [(tm) (begin
+                 (set-machine-type 'tm)
                  (println "TODO ADD tm"))])]
 
       ;; --- Pre-made with predicates (invariants) ---
@@ -290,11 +291,11 @@ Scene Rendering
                          [else
                           (cond
                             [(equal? #t (f p-list))(if COLOR-BLIND-MODE
-                                                                   TRUE-INV-CB
-                                                                   TRUE-INV)]
+                                                       TRUE-INV-CB
+                                                       TRUE-INV)]
                             [(equal? #f (f p-list)) (if COLOR-BLIND-MODE
-                                                                   FALSE-INV-CB
-                                                                   FALSE-INV)]
+                                                        FALSE-INV-CB
+                                                        FALSE-INV)]
                             [else "black"])])))
           
        ;;draw-states: list-of-states index scene -> scene
@@ -650,11 +651,18 @@ BOTTOM GUI RENDERING
 ;; Purpose: draws a list vertically, where every element in the list is rendered below each other
 (define (draw-verticle loa fnt-size width height)
   (letrec (
+           ;; determin-letter-render: symbol -> string
+           ;; Purpose: some characters can also be part of the alphabet so we render there symbol
+           (determin-letter-render (lambda (letter)
+                                     (cond
+                                       [(equal? 'LM letter) (symbol->string '@)]
+                                       [else (symbol->string letter)])))
+           
            ;; t-box: string int -> image
            ;; Purpose: Creates a box for the sting to be placed in
            (t-box (lambda (a-string fnt-size)
                     (overlay
-                     (text (symbol->string a-string) fnt-size "Black")
+                     (text (determin-letter-render a-string) fnt-size "Black")
                      (rectangle width height "outline" "transparent")))))
     (cond
       [(empty? loa) (rectangle 10 10 "outline" "transparent")]
@@ -978,5 +986,11 @@ EVENT HANDLERS
 
 ;; SHHHH you found the easteregg
 (define (marco)
-  (println "Just a functional guy living in an imperative world"))
+  (begin
+    (println "♫♪♫")
+    (println "Just a functional guy...")
+    (println "♫♪♫ BUM BUM BUM BUM ♫♪♫")
+    (println "living in an imperative world!!!")
+    (println "He choose to use the #lang Racket, for the functional power..")
+    (println "♫♪♫")))
 

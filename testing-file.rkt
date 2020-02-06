@@ -67,6 +67,15 @@
                                 ((N b (b)) (N ,EMP))
                                 ((N ,EMP ,EMP) (F ,EMP)))))
 
+; write "a" on tape
+(define Ma (make-tm '(S H)                  ;the states
+                    `(a b ,LM)              ;the alphabet
+                    `(((S ,LM) (S ,RIGHT))  ;the transition relation
+                      ((S a) (H a))
+                      ((S b) (H a))
+                      ((S ,BLANK) (H a)))
+                    'S                      ;the starting state
+                    '(H)))                  ;the halting states
 
-;;(sm-visualize pda-wcw^r)
-(sm-visualize 'dfa)
+
+(sm-visualize 'tm)
