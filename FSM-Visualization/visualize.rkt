@@ -375,15 +375,7 @@ Scene Rendering
        ;; draw-inner-with-prev: none -> image
        ;; Purpose: Creates the inner circle that contains the arrows
        (draw-inner-no-prev (lambda()
-                             (letrec ((index (get-state-index state-list (world-cur-state w) 0))
-
-                                      (get-symbol (lambda (cur-rule)
-                                                    (case MACHINE-TYPE
-                                                      [(pda) (println "TODO")]
-                                                      [(tm) (println "TODO")]
-                                                      [else (println "TODO")])))
-                                      )
-                               
+                             (letrec ((index (get-state-index state-list (world-cur-state w) 0)))
                                (overlay
                                 CENTER-CIRCLE
                                 (inner-circle1 (- 360 (* index deg-shift))
