@@ -49,7 +49,7 @@
            (get-num (lambda ()
                       (case type
                         [(pda) PDA_NUMBER]
-                        [(tm) (println "TODO")]
+                        [(tm) TM_NUMBER]
                         [else DFA-NDFA_NUMBER])))
            
            ;; get-count list-of-rules int int -> int
@@ -97,6 +97,7 @@
                                                                  )
                                                           (case MACHINE-TYPE
                                                             [(pda) (text (create-pda-rule rule) FONT-SIZE (determin-color))]
+                                                            [(tm) (text (create-tm-rule rule)  FONT-SIZE (determin-color))]
                                                             [(dfa) (text (create-dfa-ndfa-rule rule) FONT-SIZE (determin-color))]
                                                             [(ndfa) (text (create-dfa-ndfa-rule rule) FONT-SIZE (determin-color))]))))
                                          
@@ -167,6 +168,18 @@
      (error "Invalid pda pattern match")]))
 
 
+;; create-tm-rule rule -> string
+;; Purpose: Converts the rule to a string
+(define (create-tm-rule rule)
+  (match rule
+    [(list (list state1 alpha1) (list state2 alpha2))
+    (string-append
+     "((" (symbol->string state1) " " (symbol->string (format-tm-input alpha1)) ")"
+     " (" (symbol->string state2) " " (symbol->string (format-tm-input alpha2)) "))")]
+    [else
+     (error "Invalid pattern match")]))
+
+
 ;; list->string: list-of-symbols -> String
 ;; Purpose: Creates a string containing every element in the list
 (define (list->string los)
@@ -180,3 +193,11 @@
       0
       (- (string-length string) 1))
      ")")))
+
+(define (format-tm-input input)
+  (case input
+    [(RIGHT) 'R]
+    [(LM) '@]
+    [(BLANK) '_]
+    [else input]))
+    

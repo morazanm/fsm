@@ -151,7 +151,17 @@ Cmd Functions
          
          [(tm) (begin
                  (set-machine-type 'tm)
-                 (println "TODO ADD tm"))])]
+                  (run-program
+                   (build-world
+                    (machine (map (lambda (x) (fsm-state x TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine))
+                             (sm-getstart fsm-machine)
+                             (sm-getfinals fsm-machine)
+                             (reverse (sm-getrules fsm-machine))
+                             '() (sm-getalphabet fsm-machine)
+                             (sm-type fsm-machine))
+                    (sm-type fsm-machine)
+                    (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "tm" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
+                  (void))])]
 
       ;; --- Pre-made with predicates (invariants) ---
       [else

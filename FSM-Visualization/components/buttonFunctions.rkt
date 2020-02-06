@@ -729,7 +729,7 @@ Created by Joshua Schappel on 12/19/19
 (define (determine-rule-number type)
   (case type
     [(pda) PDA_NUMBER]
-    [(tm) (println "TODO tm determin rule number")]
+    [(tm) TM_NUMBER]
     [else DFA-NDFA_NUMBER]))
 
 

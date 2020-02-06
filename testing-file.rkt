@@ -78,4 +78,4 @@
                     '(H)))                  ;the halting states
 
 
-(sm-visualize 'tm)
+(sm-visualize Ma)
