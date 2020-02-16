@@ -69,4 +69,4 @@
 
 
 ;;(sm-visualize pda-wcw^r)
-(sm-visualize 'dfa)
+;;(sm-visualize 'dfa)
