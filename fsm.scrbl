@@ -476,9 +476,9 @@ A LABEL is a natnum.
                  given regular expression.}
 
 
-@defproc[(ndfa->regexp [m ndfa])
+@defproc[(fsa->regexp [m ndfa])
          reg-exp]{Returns a regular expression for the language of
-                  the given ndfa.}
+                  the given ndfa. Warning: be careful with this function, as it can quickly cause DrRacket to run out of memory.}
 
 
 @section{Regular Expression Observers}
