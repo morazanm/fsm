@@ -11,7 +11,7 @@
          "./structs/world.rkt" "./components/inputFields.rkt" "globals.rkt"
          "./components/buttons.rkt" "./components/stateTransitions.rkt")
 
-(provide visualize)
+(provide visualize marco)
 
 ;; GLOBAL VALIRABLES FOR FILE
 (define MAIN-SCENE (empty-scene WIDTH HEIGHT "white")) ;; Create the initial scene
@@ -150,7 +150,18 @@ Cmd Functions
                   (void))]
          
          [(tm) (begin
-                 (println "TODO ADD tm"))])]
+                 (set-machine-type 'tm)
+                  (run-program
+                   (build-world
+                    (machine (map (lambda (x) (fsm-state x TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine))
+                             (sm-getstart fsm-machine)
+                             (sm-getfinals fsm-machine)
+                             (reverse (sm-getrules fsm-machine))
+                             '() (sm-getalphabet fsm-machine)
+                             (sm-type fsm-machine))
+                    (sm-type fsm-machine)
+                    (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "tm" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
+                  (void))])]
 
       ;; --- Pre-made with predicates (invariants) ---
       [else
@@ -290,11 +301,11 @@ Scene Rendering
                          [else
                           (cond
                             [(equal? #t (f p-list))(if COLOR-BLIND-MODE
-                                                                   TRUE-INV-CB
-                                                                   TRUE-INV)]
+                                                       TRUE-INV-CB
+                                                       TRUE-INV)]
                             [(equal? #f (f p-list)) (if COLOR-BLIND-MODE
-                                                                   FALSE-INV-CB
-                                                                   FALSE-INV)]
+                                                        FALSE-INV-CB
+                                                        FALSE-INV)]
                             [else "black"])])))
           
        ;;draw-states: list-of-states index scene -> scene
@@ -375,15 +386,7 @@ Scene Rendering
        ;; draw-inner-with-prev: none -> image
        ;; Purpose: Creates the inner circle that contains the arrows
        (draw-inner-no-prev (lambda()
-                             (letrec ((index (get-state-index state-list (world-cur-state w) 0))
-
-                                      (get-symbol (lambda (cur-rule)
-                                                    (case MACHINE-TYPE
-                                                      [(pda) (println "TODO")]
-                                                      [(tm) (println "TODO")]
-                                                      [else (println "TODO")])))
-                                      )
-                               
+                             (letrec ((index (get-state-index state-list (world-cur-state w) 0)))
                                (overlay
                                 CENTER-CIRCLE
                                 (inner-circle1 (- 360 (* index deg-shift))
@@ -658,11 +661,18 @@ BOTTOM GUI RENDERING
 ;; Purpose: draws a list vertically, where every element in the list is rendered below each other
 (define (draw-verticle loa fnt-size width height)
   (letrec (
+           ;; determin-letter-render: symbol -> string
+           ;; Purpose: some characters can also be part of the alphabet so we render there symbol
+           (determin-letter-render (lambda (letter)
+                                     (cond
+                                       [(equal? 'LM letter) (symbol->string '@)]
+                                       [else (symbol->string letter)])))
+           
            ;; t-box: string int -> image
            ;; Purpose: Creates a box for the sting to be placed in
            (t-box (lambda (a-string fnt-size)
                     (overlay
-                     (text (symbol->string a-string) fnt-size "Black")
+                     (text (determin-letter-render a-string) fnt-size "Black")
                      (rectangle width height "outline" "transparent")))))
     (cond
       [(empty? loa) (rectangle 10 10 "outline" "transparent")]
@@ -986,5 +996,11 @@ EVENT HANDLERS
 
 ;; SHHHH you found the easteregg
 (define (marco)
-  (println "Just a functional guy living in an imperative world"))
+  (begin
+    (println "♫♪♫")
+    (println "Just a functional guy...")
+    (println "♫♪♫ BUM BUM BUM BUM ♫♪♫")
+    (println "living in an imperative world!!!")
+    (println "He choose to use the #lang Racket, for the functional power..")
+    (println "♫♪♫")))
 

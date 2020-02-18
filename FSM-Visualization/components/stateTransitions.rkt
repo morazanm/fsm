@@ -81,23 +81,3 @@
        (list
         (list init-state (determin-consumed) (take* (determin-poped) init-stack))
         (list next-state (take* (determin-pushed) next-stack)))])))
-
-#|
-
-(sm-showtransitions P '(a a a b b b))
-'((S (a a a b b b) ())   ;; (S e e) (F e)
-  (F (a a a b b b) ())   ;; (F a e) (F (c))
-  (F (a a b b b) (c))    ;; (F a e) (F (c))
-  (F (a b b b) (c c))    ;; (F a e) (F (c))
-  (F (b b b) (c c c))    ;; (F b (c)) (F e))
-  (F (b b) (c c))        ;; (F b (c)) (F e))
-  (F (b) (c))            ;; (F b (c)  (F e)
-  (F () ())              ;; WTF IS THIS
-  accept)
-
-
-;; '(state symbol pop) '(state push)
-'(((S e e) (F e))
- ((F a e) (F (c)))
- ((F b (c)) (F e)))
-|#

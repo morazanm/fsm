@@ -55,8 +55,9 @@ Created by Joshua Schappel on 12/19/19
 (define STACK-SCROLL-BUTTON-COLOR (make-color 135 204 222)) ;; Color of the stack buttons for pda's
 
 ;; -- INPUT FACTORY --
-(define DFA-NDFA_NUMBER 8) ;; The number of dfa's/ndfa's to render on the screen
-(define PDA_NUMBER 4) ;; The number if pda's to render on screen
+(define DFA-NDFA_NUMBER 8) ;; The number of dfa's/ndfa's to render in the rule box
+(define PDA_NUMBER 4) ;; The number of pda's to render in the rule box
+(define TM_NUMBER 5) ;; The number of tm's to render in the rule box
 
 ;; -- PDA STACK --
 (define STACK-LIST '()) ;; The stack list for a pda

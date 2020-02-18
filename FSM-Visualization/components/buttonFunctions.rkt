@@ -33,15 +33,17 @@ Created by Joshua Schappel on 12/19/19
                                 [(pda) PDA-TRUE-FUNCTION]
                                 [else TRUE-FUNCTION]))))
                      (cond[(equal? "" state) w]
-                          [(ormap (lambda (x) (equal? (format-input state) (symbol->string (fsm-state-name x))))
+                          [(ormap (lambda (x) (equal? (format-states state) (symbol->string (fsm-state-name x))))
                                   (machine-state-list (world-fsm-machine w)))
                            w]
                           [else
                            (begin
-                             (set-machine-state-list! (world-fsm-machine w) (cons (fsm-state (format-input (string->symbol state))
-                                                                                             f
-                                                                                             (posn 0 0))
-                                                                                  (machine-state-list (world-fsm-machine w))))
+                             (set-machine-state-list!
+                              (world-fsm-machine w)
+                              (cons (fsm-state (format-states (string->symbol state))
+                                               f
+                                               (posn 0 0))
+                                    (machine-state-list (world-fsm-machine w))))
                              (reset-bottom-indices)
                              (world (world-fsm-machine w) (world-tape-position w) (world-cur-rule w)
                                     null (world-button-list w) new-input-list '()
@@ -51,17 +53,32 @@ Created by Joshua Schappel on 12/19/19
 ;; removeState: world -> world
 ;; Purpose: Removes a state from the world
 (define removeState (lambda(w)
-                      (letrec ((state (string-trim (textbox-text (car (world-input-list w)))))
+                      (letrec ((state (symbol->string (format-states (string->symbol (string-trim (textbox-text (car (world-input-list w))))))))
                                (new-input-list (list-set (world-input-list w) 0 (remove-text (car (world-input-list w)) 100)))
 
                                ;; remove-all: list-of-rules -> list-of-rules
                                ;; Purpose: Removes all rules from the machine that contain the current rule being removed
                                (remove-all (lambda (lor)
-                                             (filter (lambda (x) (cond
-                                                                   [(equal? (symbol->string (car x)) state) #f]
-                                                                   [(equal?  (symbol->string (caddr x)) state) #f]
-                                                                   [else #t]))
-                                                     lor))))
+                                             (filter (lambda (x) (remove-all-type x))
+                                                     lor)))
+
+                               ;; remove-all-type: rule -> boolean
+                               ;; Purpose: helper function for remove-all that determins if a given rule contains the
+                               ;;   state. If so then returns false
+                               (remove-all-type (lambda (rule)
+                                                  (case MACHINE-TYPE
+                                                    [(pda)
+                                                     (cond
+                                                       [(equal? (symbol->string (caar rule)) state) #f]
+                                                       [(equal?  (symbol->string (caadr rule)) state) #f]
+                                                       [else #t])]
+                                                    [(tm) (println "TODO REMOVE STATE")]
+                                                    [else
+                                                     (cond
+                                                       [(equal? (symbol->string (car rule)) state) #f]
+                                                       [(equal?  (symbol->string (caddr rule)) state) #f]
+                                                       [else #t])]))))
+                        (println state)
                         
                         (if (equal? (string->symbol state) (world-cur-state w))
                             (begin
@@ -107,7 +124,7 @@ Created by Joshua Schappel on 12/19/19
                                           [else
                                            (begin
                                              (reset-bottom-indices)
-                                             (set-machine-rule-list! (world-fsm-machine w) (cons (list (list r1 (format-input r2) r3) (list r4 r5)) (machine-rule-list (world-fsm-machine w))))
+                                             (set-machine-rule-list! (world-fsm-machine w) (cons (list (list (format-states r1) (format-alpha r2) (format-states r3)) (list r4 r5)) (machine-rule-list (world-fsm-machine w))))
                                              (create-new-world-input-empty w new-input-list))]))))
 
                            ;; add-dfa: NONE -> world
@@ -119,7 +136,7 @@ Created by Joshua Schappel on 12/19/19
                                           [else
                                            (begin
                                              (reset-bottom-indices)
-                                             (set-machine-rule-list! (world-fsm-machine w) (cons (list  r1 (format-input r2) r3) (machine-rule-list (world-fsm-machine w))))
+                                             (set-machine-rule-list! (world-fsm-machine w) (cons (list  (format-states r1) (format-alpha r2) (format-states r3)) (machine-rule-list (world-fsm-machine w))))
                                              (create-new-world-input-empty w new-input-list))])))))                           
                     (cond
                       [(equal? MACHINE-TYPE 'pda) (add-pda)]
@@ -143,7 +160,7 @@ Created by Joshua Schappel on 12/19/19
                                              [else
                                               (begin
                                                 (reset-bottom-indices)
-                                                (set-machine-rule-list! (world-fsm-machine w) (remove (list r1 (format-input r2) r3) (machine-rule-list (world-fsm-machine w))))
+                                                (set-machine-rule-list! (world-fsm-machine w) (remove (list (format-states r1) (format-alpha r2) (format-states r3)) (machine-rule-list (world-fsm-machine w))))
                                                 (create-new-world-input-empty w new-input-list))]))))
 
                               ;; rmv-pda: NONE -> world
@@ -165,7 +182,7 @@ Created by Joshua Schappel on 12/19/19
                                              [else
                                               (begin
                                                 (reset-bottom-indices)
-                                                (set-machine-rule-list! (world-fsm-machine w) (remove (list (list r1 (format-input r2) r3) (list r4 r5)) (machine-rule-list (world-fsm-machine w))))
+                                                (set-machine-rule-list! (world-fsm-machine w) (remove (list (list (format-states r1) (format-alpha r2) (format-states r3)) (list r4 r5)) (machine-rule-list (world-fsm-machine w))))
                                                 (create-new-world-input-empty w new-input-list))])))))
                        (cond
                          [(equal? MACHINE-TYPE 'pda) (rmv-pda)]
@@ -712,19 +729,29 @@ Created by Joshua Schappel on 12/19/19
 (define (determine-rule-number type)
   (case type
     [(pda) PDA_NUMBER]
-    [(tm) (println "TODO tm determin rule number")]
+    [(tm) TM_NUMBER]
     [else DFA-NDFA_NUMBER]))
 
 
 
 ;; format-input: symbol -> symbol
-;; Purpose: This is a helper function for addRule and removeRule that formats certine symbols into valid fsm symbols
+;; Purpose: This is a helper function formats special alphabet so they can properly be rendered on the screen
 ;; EX: 'DEAD will become 'ds
-(define format-input (lambda (s)
+(define format-alpha (lambda (s)
                        (case s
-                         [(DEAD) 'ds]
                          [(EMP) 'e]
                          [else s])))
+
+;; format-input: symbol -> symbol
+;; Purpose: This is a helper function that formats special states so they can properly be rendered on the screen
+;; EX: 'DEAD will become 'ds
+(define format-states (lambda (s)
+                        (case s
+                          [(DEAD) 'ds]
+                          [(LM) '@]
+                          [(RIGHT) 'R]
+                          [(BLANK) '_]
+                          [else s])))
 
 
 ;; reset-bottom-indices: none -> none
