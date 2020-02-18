@@ -67,6 +67,9 @@
                                 ((N b (b)) (N ,EMP))
                                 ((N ,EMP ,EMP) (F ,EMP)))))
 
+
+;; machine input tape-pos (optional)
+;; (sm-showtransitions Ma `(,LM b b b b) 2)
 ; write "a" on tape
 (define Ma (make-tm '(S H)                  ;the states
                     `(a b ,LM)              ;the alphabet
