@@ -151,17 +151,18 @@ Cmd Functions
          
          [(tm) (begin
                  (set-machine-type 'tm)
-                  (run-program
-                   (build-world
-                    (machine (map (lambda (x) (fsm-state x TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine))
-                             (sm-getstart fsm-machine)
-                             (sm-getfinals fsm-machine)
-                             (reverse (sm-getrules fsm-machine))
-                             '() (sm-getalphabet fsm-machine)
-                             (sm-type fsm-machine))
-                    (sm-type fsm-machine)
-                    (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "tm" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
-                  (void))])]
+                 (run-program
+                  (build-world
+                   (tm-machine (map (lambda (x) (fsm-state x TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine))
+                               (sm-getstart fsm-machine)
+                               (sm-getfinals fsm-machine)
+                               (reverse (sm-getrules fsm-machine))
+                               '() (sm-getalphabet fsm-machine)
+                               (sm-type fsm-machine)
+                               0)
+                   (sm-type fsm-machine)
+                   (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "tm" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
+                 (void))])]
 
       ;; --- Pre-made with predicates (invariants) ---
       [else
@@ -498,13 +499,21 @@ Scene Rendering
           (draw-error-msg (lambda (window scn)
                             (cond
                               [(null? window) scn]
-                              [else (draw-window window scn WIDTH HEIGHT)]))))
+                              [else (draw-window window scn WIDTH HEIGHT)])))
+
+          ;; determin-gui-draw: none -> image
+          ;; purpose: determins if the tm input position should be passed to the create-gui-right function.
+          ;;  This is only true if we are dealing with a tm, Otherwise we pass nothing.
+          (determin-gui-draw (lambda ()
+                               (case MACHINE-TYPE
+                                 [(tm) (create-gui-right (tm-machine-tape-posn machine))]
+                                 [else (create-gui-right)]))))
         
           
          
     (if (not (null? (world-cur-state w)))
         (draw-error-msg (world-error-msg w)(draw-main-img w  
-                                                          (place-image (create-gui-right) (- WIDTH 100) (/ HEIGHT 2)
+                                                          (place-image (determin-gui-draw) (- WIDTH 100) (/ HEIGHT 2)
                                                                        (place-image (create-gui-top (machine-sigma-list (world-fsm-machine w)) (world-cur-rule w)) (/ WIDTH 2) (/ TOP 2)
                                                                                     (place-image (create-gui-bottom (machine-rule-list (world-fsm-machine w)) (world-cur-rule w) (world-scroll-bar-index w)) (/ WIDTH 2) (- HEIGHT (/ BOTTOM 2))
                                                                                                  (draw-button-list (world-button-list w)
@@ -520,7 +529,7 @@ Scene Rendering
                                                                                                                               
         
         (draw-error-msg (world-error-msg w) (draw-main-img w  
-                                                           (place-image (create-gui-right) (- WIDTH 100) (/ HEIGHT 2)
+                                                           (place-image (determin-gui-draw) (- WIDTH 100) (/ HEIGHT 2)
                                                                         (place-image (create-gui-top (machine-sigma-list (world-fsm-machine w)) (world-cur-rule w)) (/ WIDTH 2) (/ TOP 2)
                                                                                      (place-image (create-gui-bottom (machine-rule-list (world-fsm-machine w)) (world-cur-rule w) (world-scroll-bar-index w)) (/ WIDTH 2) (- HEIGHT (/ BOTTOM 2))
                                                                                                   (draw-button-list (world-button-list w)
@@ -734,9 +743,9 @@ RIGHT GUI RENDERING
 -----------------------
 |# 
 
-;; create-gui-right: none -> image
+;; create-gui-right: tm-tape-positon (oprional) -> image
 ;; Purpose: creates the left conrol panel for the 
-(define (create-gui-right)
+(define (create-gui-right . args)
   (letrec (
            ;; state-right-control: null -> image
            ;; Purpose: Creates the state control panel
@@ -787,9 +796,42 @@ RIGHT GUI RENDERING
            ;; end-right-control: none -> image
            ;; Purpose: Creates the end control panel
            (end-right-control (lambda ()
-                                (overlay/align "left" "top"
-                                               (rectangle 200 CONTROL-BOX-H "outline" "blue")
-                                               (control-header "End State"))))
+                                ;; render the proper display
+                                (cond
+                                  [(equal? MACHINE-TYPE 'tm)
+                                   (letrec (
+                                            ;; draw-left: none -> img
+                                            ;; Purpose: draws the message that telles the user the current position
+                                            (draw-tape-index (lambda ()
+                                                               (let ([msg (string-append "Current posn:"
+                                                                                         (number->string (car args)))])                                                                 (overlay
+                                                                  (text msg 11 (make-color 94 36 23))
+                                                                  (rectangle 100 25 "outline" "transparent")))))
+                                            
+                                            ;; draw-left: none -> img
+                                            ;; Purpose: Draws the end add/remove option
+                                            (draw-left (lambda ()
+                                                         (overlay/align "left" "top"
+                                                                        (rectangle 100 CONTROL-BOX-H "outline" "transparent")
+                                                                        (control-header4 "End State"))))
+                                            ;; draw-right: none -> img
+                                            ;; Purpose: Draws the tape index option
+                                            (draw-right (lambda ()
+                                                          (overlay/align "left" "top"
+                                                                         (rectangle 100 CONTROL-BOX-H "outline" "blue")
+                                                                         (above
+                                                                                        (control-header4 "Tape Posn")
+                                                                                        (draw-tape-index))))))
+                                     (overlay
+                                      (beside
+                                       (draw-left)
+                                       (draw-right))
+                                      (rectangle 200 CONTROL-BOX-H "outline" "blue")))]
+                                  [else
+                                   (overlay/align "left" "top"
+                                                  (rectangle 200 CONTROL-BOX-H "outline" "blue")
+                                                  (control-header "End State"))])))
+
 
            ;; rule-right-control: none -> image
            ;; Purpose: Creates the rule control panel
@@ -989,7 +1031,7 @@ EVENT HANDLERS
                              [else (cons (remove-text (car loi) 1) (check-and-add (cdr loi) action))])]
                           [else (cons (car loi) (check-and-add (cdr loi) action))]))))
     (cond
-      [(and (equal? 1 (string-length k)) (or (or (key=? k "-") (key=? k " "))(string<=? "a" (string-downcase k) "z") (string<=? "1" (string-downcase k) "9")))
+      [(and (equal? 1 (string-length k)) (or (or (key=? k "-") (key=? k " "))(string<=? "a" (string-downcase k) "z") (string<=? "0" (string-downcase k) "9")))
        (create-new-world-input w (check-and-add (world-input-list w) #t))]
       [(key=? k "\b") (create-new-world-input w (check-and-add (world-input-list w) #f))]
       [else w])))

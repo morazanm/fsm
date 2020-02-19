@@ -80,7 +80,9 @@
                     'S                      ;the starting state
                     '(H)))                  ;the halting states
 
+
+(sm-showtransitions Ma `(,LM b b b b) 2)
 ;;(sm-visualize pda-wcw^r)
 ;;(sm-visualize 'dfa)
 
-(sm-visualize Ma)
+;;(sm-visualize Ma)

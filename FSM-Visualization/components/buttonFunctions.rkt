@@ -16,7 +16,8 @@ Created by Joshua Schappel on 12/19/19
  addEnd rmvEnd addAlpha rmvAlpha addSigma clearSigma addGamma
  rmvGamma getScrollBarPosition showNext showPrev scrollbarRight
  scrollbarLeft NULL-FUNCTION openHelp send-url stackScrollUp
- stackScrollDown tapeScrollRight tapeScrollLeft toogleColorBlindMode)
+ stackScrollDown tapeScrollRight tapeScrollLeft toogleColorBlindMode
+ setTapePosn)
 
 
 
@@ -31,6 +32,7 @@ Created by Joshua Schappel on 12/19/19
                          (f (lambda ()
                               (case MACHINE-TYPE
                                 [(pda) PDA-TRUE-FUNCTION]
+                                [(tm) (println "TODO addState")]
                                 [else TRUE-FUNCTION]))))
                      (cond[(equal? "" state) w]
                           [(ormap (lambda (x) (equal? (format-states state) (symbol->string (fsm-state-name x))))
@@ -634,6 +636,21 @@ Created by Joshua Schappel on 12/19/19
                                (determin-prev-state) (world-button-list w) (world-input-list w)
                                (cdr (world-processed-config-list w)) (cons (car (world-processed-config-list w)) (world-unporcessed-config-list w)) (world-error-msg w)
                                (getScrollBarPosition (reverse (machine-rule-list (world-fsm-machine w))) cur-rule)))])))
+
+;; setTapePosn world -> world
+;; Purpose: Sets the tape-input for a turing machine
+(define setTapePosn (lambda (w)
+                      (let( (input-value (string-trim (textbox-text(list-ref (world-input-list w) 9))))
+                            (new-input-list (list-set (world-input-list w) 9 (remove-text (list-ref (world-input-list w) 9) 100))))
+
+                        (cond
+                          [(equal? "" input-value) w]
+                          [else
+                           (begin
+                             (reset-bottom-indices)
+                             (set-tm-machine-tape-posn! (world-fsm-machine w) (string->number input-value))
+                             (create-new-world-input-empty w new-input-list))]))))
+                  
 
 
 ;; scrollbarRight: world -> world

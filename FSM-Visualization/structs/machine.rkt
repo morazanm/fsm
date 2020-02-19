@@ -7,7 +7,8 @@
 ;; export necessary files
 (provide
  (struct-out machine)
- (struct-out pda-machine))
+ (struct-out pda-machine)
+ (struct-out tm-machine))
 
 ;; machine A structure that represents a fsm machine. This structure can represent any type of machine
 ;; - state-list { list-of-states }: A list of state structs that the machine can be in
@@ -24,3 +25,8 @@
 ;; pda-machine: A structure that is a subtype of machine
 ;; - stack-alpha-list { list-of-symbols }: TODO: discription
 (struct pda-machine machine ([stack-alpha-list #:mutable]))
+
+
+;; tm-machine: A structure that is a subtype of machine
+;; - tape-posn { Number } the current location on the tape
+(struct tm-machine machine ([tape-posn #:mutable]))
