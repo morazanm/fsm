@@ -44,7 +44,7 @@
  grammar-getnts grammar-getalphabet grammar-getrules grammar-getstart 
 
  ;grammar testers
- both-derive both-testequiv grammar-test
+ grammar-both-derive grammar-testequiv grammar-test
 
  ; regexp constructors
  empty-regexp singleton-regexp union-regexp concat-regexp kleenestar-regexp
@@ -257,11 +257,11 @@
         [else (error (format "Unknown grammar type"))]))
   
 ; grammar grammar word --> boolean
-(define (both-derive g1 g2 w)
+(define (grammar-both-derive g1 g2 w)
   (let ((r1 (grammar-derive g1 w))
         (r2 (grammar-derive g2 w)))
     (or (and (string? r1) (string? r2))
-        (and (symbol? r1) (symbol? r2)))))
+        (and (list? r1) (list? r2)))))
   
 ; grammar word -> derivation or "Not a member"
 (define (grammar-test g . l)
@@ -273,7 +273,7 @@
   
   
 ; grammar word -> (or true (listof word))
-(define (both-testequiv g1 g2 . l)
+(define (grammar-testequiv g1 g2 . l)
   (let* ((numtests (if (null? l) NUM-TESTS (car l)))
          (sigma1 (cond [(rg? g1) (rg-getalphabet g1)]
                        [(cfg? g1) (cfg-get-alphabet g1)]

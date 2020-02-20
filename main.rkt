@@ -35,7 +35,7 @@
    grammar-getnts grammar-getalphabet grammar-getrules grammar-getstart 
 
    ;grammar testers
-   both-derive both-testequiv grammar-test
+   grammar-both-derive grammar-testequiv grammar-test
 
    ; regexp constructors
    empty-regexp singleton-regexp union-regexp concat-regexp kleenestar-regexp

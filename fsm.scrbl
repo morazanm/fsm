@@ -1,12 +1,11 @@
 ; FSM Library Version 1.0
-; Copyright (C) 2015 by Marco T. Morazan and Rosario Antunez
-; Written by: Marco T. Morazan and Rosario Antunez, 2015
+; Copyright (C) 202- by Marco T. Morazan 
 
 #lang scribble/manual
 
 @(require (for-label racket))
 
-@title{FSM: A Library for the Automata Theory Classroom}
+@title{FSM: A DSL for the Automata Theory Classroom}
 
 @;Welcome to my documentation: @racket[(list 'testing 1 2 3)]
 
@@ -419,12 +418,12 @@ A LABEL is a natnum.
 
 @section{Grammar Testers}
 
-@defproc[(both-derive [g1 grammar] [g2 grammar] [w word])
+@defproc[(grammar-both-derive [g1 grammar] [g2 grammar] [w word])
          boolean]{Tests if both of the given grammars obtain
                   the same result when trying to derive the given
                   word.}
 
-@defproc[(both-testequiv [g1 grammar] [g2 grammar] [natnum n])
+@defproc[(grammar-testequiv [g1 grammar] [g2 grammar] [natnum n])
          (or true (listof word))]{Tests in the given grammars obtain
                                   the same results when deriving 100
                                   (or the given optional numner)
