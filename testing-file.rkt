@@ -85,4 +85,4 @@
 ;;(sm-visualize pda-wcw^r)
 ;;(sm-visualize 'dfa)
 
-;;(sm-visualize Ma)
+(sm-visualize Ma)

@@ -365,6 +365,7 @@ Created by Joshua Schappel on 12/19/19
                                                [else (check-lists loa los)]))))
                             (new-input-list (list-set (world-input-list w) 7 (remove-text (list-ref (world-input-list w) 7) 100))) 
                             (sigma-list (reverse (real-string->list input-value))))
+                     
                      (cond
                        [(equal? (check-alpha (machine-alpha-list (world-fsm-machine w)) sigma-list) #f) (redraw-world w)]
                        [(equal? input-value "") (redraw-world w)]

@@ -99,7 +99,7 @@ Cmd Functions
                   (void))]
          [(tm) (begin
                  (set-machine-type 'tm)
-                 (run-program (build-world (machine '() null '() '() '() '() 'tm ) 'tm))
+                 (run-program (build-world (tm-machine '() null '() '() '() '() 'tm 0 ) 'tm))
                  (void))]
          [else (error (format "~s is not a valid machine type" fsm-machine))])]
 
@@ -514,7 +514,7 @@ Scene Rendering
     (if (not (null? (world-cur-state w)))
         (draw-error-msg (world-error-msg w)(draw-main-img w  
                                                           (place-image (determin-gui-draw) (- WIDTH 100) (/ HEIGHT 2)
-                                                                       (place-image (create-gui-top (machine-sigma-list (world-fsm-machine w)) (world-cur-rule w)) (/ WIDTH 2) (/ TOP 2)
+                                                                       (place-image (create-gui-top (world-fsm-machine w) (world-cur-rule w)) (/ WIDTH 2) (/ TOP 2)
                                                                                     (place-image (create-gui-bottom (machine-rule-list (world-fsm-machine w)) (world-cur-rule w) (world-scroll-bar-index w)) (/ WIDTH 2) (- HEIGHT (/ BOTTOM 2))
                                                                                                  (draw-button-list (world-button-list w)
                                                                                                                    (draw-input-list (world-input-list w)
@@ -530,7 +530,7 @@ Scene Rendering
         
         (draw-error-msg (world-error-msg w) (draw-main-img w  
                                                            (place-image (determin-gui-draw) (- WIDTH 100) (/ HEIGHT 2)
-                                                                        (place-image (create-gui-top (machine-sigma-list (world-fsm-machine w)) (world-cur-rule w)) (/ WIDTH 2) (/ TOP 2)
+                                                                        (place-image (create-gui-top (world-fsm-machine w) (world-cur-rule w)) (/ WIDTH 2) (/ TOP 2)
                                                                                      (place-image (create-gui-bottom (machine-rule-list (world-fsm-machine w)) (world-cur-rule w) (world-scroll-bar-index w)) (/ WIDTH 2) (- HEIGHT (/ BOTTOM 2))
                                                                                                   (draw-button-list (world-button-list w)
                                                                                                                     (draw-input-list (world-input-list w)
@@ -606,14 +606,90 @@ TOP GUI RENDERING
      (rectangle (- (- WIDTH (/ WIDTH 11)) 200) TOP "outline" "blue"))))
 
 
-;; create-gui-top: list-of-sigma rule -> image
+;; tm-los-top input-list current-rule tm-tape-index
+(define (tm-los-top los cur-rule tape-index rectWidth)
+  (letrec (
+           ;; Gets the tape inptu that needs to be rendered on the screen
+           (input-to-render
+            (cond
+              [(> (length los) TAPE-RENDER-LIMIT)
+               (let ((c (drop los TAPE-INDEX)))
+                 (take c TAPE-RENDER-LIMIT))]
+              [else
+               los]))
+
+           ;; list-2-img: list-of-sigma (tape input) int -> image
+           ;; Purpose: Converts the tape input into image that overlays the tape in the center
+           (list-2-img (lambda (los accum)
+                         (cond
+                           [(empty? los) empty-image]
+                           [(equal? 1 (length los)) (tape-box (car los) 24 accum)]
+                           [else
+                            (beside
+                             (tape-box (car los) 24 accum)
+                             (list-2-img (cdr los) (add1 accum)))])))
+
+
+           (input-box (lambda (input highlight? fnt-size)
+                        (let ((color (if highlight? "red" "black")))
+                          (overlay
+                           (text (symbol->string input) fnt-size color)
+                           (rectangle rectWidth (* TOP .75) "outline" "blue")))))
+
+           (index-box (lambda (index)
+                        (overlay
+                         (text (number->string index) 10 "black")
+                         (rectangle rectWidth (* TOP .25) "outline" "blue"))))
+                       
+                       
+                        
+
+           ;; tape-box: string int int -> image
+           ;; Purpose: given a string, will overlay the text onto a image
+           (tape-box (lambda (sigma fnt-size index)
+                       (cond
+                         ;; Check if the input is the current hightlighed one
+                         [(equal? index tape-index)
+                          (overlay
+                           (above
+                            (input-box sigma #t fnt-size)
+                            (index-box index))
+                           (rectangle rectWidth TOP "outline" "transparent"))]
+                         [else
+                          (overlay
+                           (above
+                            (input-box sigma #f fnt-size)
+                            (index-box index))
+                           (rectangle rectWidth TOP "outline" "transparent"))]))))
+    (overlay
+     (overlay/align "left" "middle"
+      (rectangle (- (- WIDTH (/ WIDTH 11)) 260) TOP "outline" "transparent") ;; this rectangle includes the width of the scroll bars
+      (list-2-img input-to-render TAPE-INDEX))
+     (rectangle (- (- WIDTH (/ WIDTH 11)) 200) TOP "outline" "blue"))))
+
+           
+
+           
+
+
+
+
+;; create-gui-top: machine rule cur-tm-index (optional) -> image
 ;; Creates the top of the gui layout
-(define (create-gui-top los cur-rule)
-  (overlay/align "left" "middle"
-                 (beside
-                  (top-input-label)
-                  (los-top-label los cur-rule 31))
-                 (rectangle WIDTH TOP "outline" "transparent")))
+(define (create-gui-top m cur-rule)
+  (let ((input-list (machine-sigma-list m)))
+    (case MACHINE-TYPE
+      [(tm) (overlay/align "left" "middle"
+                           (beside
+                            (top-input-label)
+                            (tm-los-top input-list cur-rule (tm-machine-tape-posn m) 32))
+                           (rectangle WIDTH TOP "outline" "transparent"))]
+      [else
+       (overlay/align "left" "middle"
+                      (beside
+                       (top-input-label)
+                       (los-top-label input-list cur-rule 31))
+                      (rectangle WIDTH TOP "outline" "transparent"))])))
 
 
 
@@ -805,8 +881,8 @@ RIGHT GUI RENDERING
                                             (draw-tape-index (lambda ()
                                                                (let ([msg (string-append "Current posn:"
                                                                                          (number->string (car args)))])                                                                 (overlay
-                                                                  (text msg 11 (make-color 94 36 23))
-                                                                  (rectangle 100 25 "outline" "transparent")))))
+                                                                                                                                                                                         (text msg 11 (make-color 94 36 23))
+                                                                                                                                                                                         (rectangle 100 25 "outline" "transparent")))))
                                             
                                             ;; draw-left: none -> img
                                             ;; Purpose: Draws the end add/remove option
@@ -820,8 +896,8 @@ RIGHT GUI RENDERING
                                                           (overlay/align "left" "top"
                                                                          (rectangle 100 CONTROL-BOX-H "outline" "blue")
                                                                          (above
-                                                                                        (control-header4 "Tape Posn")
-                                                                                        (draw-tape-index))))))
+                                                                          (control-header4 "Tape Posn")
+                                                                          (draw-tape-index))))))
                                      (overlay
                                       (beside
                                        (draw-left)
