@@ -219,8 +219,11 @@ A LABEL is a natnum.
                      [delta (listof ndfa-rule)]
                      (accept state))
          tm]{Builds a nondeterministic Turing machine. 
-                @italic{delta} is a transition relation. If the
-                optional accept argument is given then the resulting
+                @italic{delta} is a transition relation.
+                @italic{LM} is automatically added to the machine's alphabet.
+                Rules for moving off the @italic{LM} are automatically added
+                to the machine's rules.
+                If the optional accept argument is given then the resulting
                 Turing machine is as a language recognizer.}
 
 @defproc[(ndfa->dfa [m ndfa])
