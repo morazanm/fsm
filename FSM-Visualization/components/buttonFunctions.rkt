@@ -9,7 +9,7 @@ Created by Joshua Schappel on 12/19/19
 
 (require net/sendurl "../structs/input.rkt" "../structs/world.rkt" "../structs/state.rkt"
          "../structs/machine.rkt" "../structs/posn.rkt" "../globals.rkt" "stateTransitions.rkt"
-         "../structs/msgWindow.rkt" "../structs/world.rkt" "../../fsm-main.rkt")
+         "../structs/world.rkt" "../../fsm-main.rkt")
 
 (provide
  addState removeState addRule removeRule addStart replaceStart
@@ -336,18 +336,25 @@ Created by Joshua Schappel on 12/19/19
 (define addSigma (lambda (w)
                    (letrec ((input-value (string-trim (textbox-text(list-ref (world-input-list w) 7))))
 
-                            ;; real-string->list: string -> list-of-symbols
-                            ;; Purpose: converts a string to a list. Unlike Racket's string->list, this function converts every element of the
-                            ;; list to a string as opposed to a char.
-                            (real-string->list (lambda (str)
-                                                 (letrec (;; convert-to-list: string list -> list-of-symbols
-                                                          ;; Purpose: this function uses an accumulator to accumulate all elements of the string converted to a list  
-                                                          (convert-to-list (lambda (str accum) 
+                            ;; string->input-list: string -> list-of-symbols
+                            ;; Purpose: Converts the string input into tape input.
+                            (string->input-list (lambda (str)
+                                                  (letrec (
+                                                           (split-string (string-split str)) ;; Split the string by space
+                                                           ;; convert-list: list-of-string list -> list-of-symbols
+                                                           ;; Purpose: converts the list of string to a list of symbols
+                                                           (convert-list (lambda (los accum) 
                                                                              (cond
-                                                                               [(< (string-length str) 1) accum]
-                                                                               [(equal? (substring str 0 1) " ") (convert-to-list (substring str 1) accum)]
-                                                                               [else (convert-to-list (substring str 1) (cons (string->symbol (substring str 0 1)) accum))]))))
-                                                   (convert-to-list str '()))))
+                                                                               [(empty? los) accum]
+                                                                               [else (convert-list
+                                                                                      (cdr los)
+                                                                                      (cons (format-states
+                                                                                             (string->symbol (car los)))
+                                                                                            accum))]))))
+                                                    (convert-list split-string '()))))
+                                                           
+
+                            
 
                             ;; check-alpha: list-of-alpha list-of-sigma -> boolean
                             ;; Purpose: Determins if all elements of sigma are in alpha. If they are then returns true, otherwise retunrs false
@@ -364,10 +371,11 @@ Created by Joshua Schappel on 12/19/19
                                                [(empty? los) #f]
                                                [else (check-lists loa los)]))))
                             (new-input-list (list-set (world-input-list w) 7 (remove-text (list-ref (world-input-list w) 7) 100))) 
-                            (sigma-list (reverse (real-string->list input-value))))
+                            (sigma-list (reverse (string->input-list input-value))))
                      
                      (cond
-                       [(equal? (check-alpha (machine-alpha-list (world-fsm-machine w)) sigma-list) #f) (redraw-world w)]
+                       [(equal? (check-alpha (machine-alpha-list (world-fsm-machine w)) sigma-list) #f)
+                        (redraw-world-with-msg w "Some of the input is not in the alphabet. Please make sure there is a space between each letter. " "Error" MSG-ERROR)]
                        [(equal? input-value "") (redraw-world w)]
                        [(> (string-length input-value) 0)
 
@@ -641,11 +649,18 @@ Created by Joshua Schappel on 12/19/19
 ;; setTapePosn world -> world
 ;; Purpose: Sets the tape-input for a turing machine
 (define setTapePosn (lambda (w)
-                      (let( (input-value (string-trim (textbox-text(list-ref (world-input-list w) 9))))
+                      (let*((input-value (string-trim (textbox-text(list-ref (world-input-list w) 9))))
                             (new-input-list (list-set (world-input-list w) 9 (remove-text (list-ref (world-input-list w) 9) 100))))
 
+                        
                         (cond
                           [(equal? "" input-value) w]
+                          [(< (length (machine-sigma-list (world-fsm-machine w)))
+                              (string->number input-value))
+                           (redraw-world-with-msg w
+                                                  "Invalid tape index position. Make sure your tape position is less then or equal to the tape input"
+                                                  "Error"
+                                                  MSG-CAUTION)]
                           [else
                            (begin
                              (reset-bottom-indices)

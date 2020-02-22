@@ -39,7 +39,7 @@ Textbox Declarations
 (define IPF-RULE4-TM (textbox 50 25 INPUT-COLOR INPUT-COLOR "" 5 (posn (- WIDTH 65) (- (* 5 CONTROL-BOX-H) 52)) #f))
 
 
-(define IPF-SIGMA (textbox 90 25 INPUT-COLOR INPUT-COLOR "" 8 (posn (/ (/ WIDTH 11) 2) 40) #f))
+(define IPF-SIGMA (textbox 100 25 INPUT-COLOR INPUT-COLOR "" 14 (posn (/ (/ WIDTH 11) 2) 40) #f))
 
 ;;pda related inputs
 (define IPF-ALPHA-PDA (textbox 50 25 INPUT-COLOR INPUT-COLOR "" 3 (posn (- WIDTH 150) (- (* 2 CONTROL-BOX-H) 70)) #f))

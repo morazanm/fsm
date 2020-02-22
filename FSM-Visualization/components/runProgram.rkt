@@ -21,12 +21,10 @@ Created by Joshua Schappel on 12/19/19
                            (state-list (map (lambda (x) (fsm-state-name x)) (machine-state-list (world-fsm-machine w))))
                            )
 
-                   
-                  
                       (cond
                         [(isValidMachine? state-list fsm-machine)
                          (letrec (
-                                  ;; The passing machine
+                                  ;; Build a passing machine
                                   (m (case (machine-type fsm-machine)
                                        ['dfa (make-unchecked-dfa state-list
                                                                  (machine-alpha-list (world-fsm-machine w))
@@ -44,9 +42,23 @@ Created by Joshua Schappel on 12/19/19
                                                                    (machine-start-state (world-fsm-machine w))
                                                                    (machine-final-state-list (world-fsm-machine w))
                                                                    (machine-rule-list (world-fsm-machine w)))]
-                                       [else println("TODO")])))
+                                       [else (make-unchecked-tm state-list
+                                                                (machine-alpha-list (world-fsm-machine w))
+                                                                (machine-rule-list (world-fsm-machine w))
+                                                                (machine-final-state-list (world-fsm-machine w))
+                                                                (machine-start-state (world-fsm-machine w)))]))
+
+                                  ;; Unprocessed transitions
+                                  (unprocessed-list (if (equal? MACHINE-TYPE 'tm)
+                                                        (sm-showtransitions m
+                                                                            (machine-sigma-list (world-fsm-machine w))    ;; tm
+                                                                            (tm-machine-tape-posn (world-fsm-machine w))) 
+                                                        (sm-showtransitions m
+                                                                            (machine-sigma-list (world-fsm-machine w))))) ;; dfa, ndfa, pda
+
+                                  )
+                           ;; Set up the world to have all the valid machine components below
                            (begin
-                             (define unprocessed-list (sm-showtransitions m (machine-sigma-list (world-fsm-machine w)))) ;; Unprocessed transitions
                              (define new-list (remove-duplicates (append (sm-getstates m) state-list))) ;; new-list: checks for any fsm state add-ons (ie. 'ds)
                              (world
                               (constructWorldMachine new-list fsm-machine m)
@@ -88,7 +100,14 @@ Created by Joshua Schappel on 12/19/19
              (machine-start-state fsm-machine)
              (machine-type fsm-machine)
              (pda-machine-stack-alpha-list fsm-machine)))]
-    [(tm) (println "TODO")]
+    [(tm) (boolean?
+           (check-machine
+            state-list
+            (machine-alpha-list fsm-machine)
+            (machine-final-state-list fsm-machine)
+            (machine-rule-list fsm-machine)
+            (machine-start-state fsm-machine)
+            (machine-type fsm-machine)))]
     [else
      (boolean?
       (check-machine
@@ -115,7 +134,17 @@ Created by Joshua Schappel on 12/19/19
       (sm-getalphabet newMachine)
       (sm-type newMachine)
       (sm-getstackalphabet newMachine))]
-    [(tm) (println "TODO")]
+    [(tm)
+     (tm-machine
+      (addTrueFunctions state-list worldMachine)
+      (sm-getstart newMachine)
+      (sm-getfinals newMachine)
+      (sm-getrules newMachine)
+      (machine-sigma-list worldMachine)
+      (sm-getalphabet newMachine)
+      (sm-type newMachine)
+      (tm-machine-tape-posn worldMachine))]
+      
     [else
      (machine
       (addTrueFunctions state-list worldMachine)
