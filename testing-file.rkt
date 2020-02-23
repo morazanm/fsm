@@ -68,7 +68,6 @@
                                 ((N ,EMP ,EMP) (F ,EMP)))))
 
 
-<<<<<<< HEAD
 ;; machine input tape-pos (optional)
 ;; (sm-showtransitions Ma `(,LM b b b b) 2)
 ; write "a" on tape
@@ -87,6 +86,4 @@
 ;;(sm-visualize 'dfa)
 
 (sm-visualize Ma)
-=======
-(sm-visualize pda-wcw^r (list 'S (lambda (v) true)) (list 'F (lambda (v) false)))
->>>>>>> master
+
