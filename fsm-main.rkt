@@ -16,7 +16,7 @@
 
  ; sm constructors
  make-dfa make-ndfa make-ndpda make-tm
- regexp->ndfa ndfa->dfa fsa->regexp
+ regexp->fsa ndfa->dfa fsa->regexp
  sm-rename-states 
  sm-union sm-concat sm-kleenestar sm-complement sm-intersection grammar->sm
  make-unchecked-dfa

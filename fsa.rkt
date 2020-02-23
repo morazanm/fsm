@@ -10,7 +10,7 @@
            )
   
   (provide make-unchecked-dfa make-unchecked-ndfa union-fsa concat-fsa kleenestar-fsa complement-fsa intersection-fsa
-           fsa->regexp regexp->ndfa ndfa->dfa test-fsa test-equiv-fsa
+           fsa->regexp regexp->fsa ndfa->dfa test-fsa test-equiv-fsa
            printable-rrules fsa->rg rg->fsa rename-states-fsa show-transitions-fsa fsa-getrules fsa-getstates
            fsa-getstart fsa-getfinals fsa-getalphabet apply-fsa)
   
@@ -326,7 +326,7 @@
                                        (fsa-getstart m))))))
   
   ; regexp --> fsa
-  (define (regexp->ndfa r)
+  (define (regexp->fsa r)
     ; regexp --> alphabet
     (define (build-alphabet r)
       (cond [(empty-regexp? r) null]
