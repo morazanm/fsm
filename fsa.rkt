@@ -10,7 +10,7 @@
            )
   
   (provide make-unchecked-dfa make-unchecked-ndfa union-fsa concat-fsa kleenestar-fsa complement-fsa intersection-fsa
-           fsa->regexp regexp->fsa ndfa->dfa test-fsa test-equiv-fsa
+           fsa->regexp regexp->ndfa ndfa->dfa test-fsa test-equiv-fsa
            printable-rrules fsa->rg rg->fsa rename-states-fsa show-transitions-fsa fsa-getrules fsa-getstates
            fsa-getstart fsa-getfinals fsa-getalphabet apply-fsa)
   
@@ -127,8 +127,12 @@
                     sigma
                     start
                     finals
-                    (append deltas (if (null? adddead) (new-dead-rules (cons DEAD states) sigma deltas) null))))
-  ;;; ndfsa->dfsa
+                    deltas))
+                    ;(append deltas (if (null? adddead) (new-dead-rules (cons DEAD states) sigma deltas) null)))) dead state not added to an ndfa, because missing transitions in the transition relation may violate state INVs.
+
+
+  ;;; ndfsa->dfsa 
+  
   
   ; fsm --> fsm
   (define (ndfa->dfa m . L)
@@ -322,7 +326,7 @@
                                        (fsa-getstart m))))))
   
   ; regexp --> fsa
-  (define (regexp->fsa r)
+  (define (regexp->ndfa r)
     ; regexp --> alphabet
     (define (build-alphabet r)
       (cond [(empty-regexp? r) null]

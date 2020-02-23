@@ -67,7 +67,7 @@ Cmd Functions
 -----------------------
 |# 
 
-;; visualize: fsm-machine -> world
+;; visualize: fsm-machine -> void
 ;; Purpose: allows a user to pre-load a machine
 (define (visualize fsm-machine . args)
   (letrec ((run-program (lambda (w)

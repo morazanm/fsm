@@ -11,7 +11,7 @@
 
    ; sm constructors
    make-dfa make-ndfa make-ndpda make-tm
-   regexp->fsa ndfa->dfa fsa->regexp
+   regexp->ndfa ndfa->dfa fsa->regexp
    sm-rename-states 
    sm-union sm-concat sm-kleenestar sm-complement sm-intersection grammar->sm
 
@@ -35,7 +35,7 @@
    grammar-getnts grammar-getalphabet grammar-getrules grammar-getstart 
 
    ;grammar testers
-   both-derive both-testequiv grammar-test
+   grammar-both-derive grammar-testequiv grammar-test
 
    ; regexp constructors
    empty-regexp singleton-regexp union-regexp concat-regexp kleenestar-regexp
