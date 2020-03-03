@@ -27,6 +27,7 @@
  ; sm observers
  sm-apply sm-showtransitions sm-type
  sm-getstates sm-getalphabet sm-getrules sm-getfinals sm-getstart sm-getstackalphabet
+ sm-getaccept
 
  ; sm testers
  sm-sameresult? sm-testequiv? sm-test
