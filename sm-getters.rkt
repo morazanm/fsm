@@ -5,7 +5,14 @@
            sm-getfinals
            sm-getalphabet
            sm-type
-           sm-getstackalphabet)
+           sm-getstackalphabet
+           sm-getaccept)
+
+  (define (sm-getaccept M)
+    (if (eq? (sm-type M) 'tm-language-recognizer)
+        (car (M '() 0 'get-accept))
+        (error "Only language recognizers have a specialized accept state.")))
+        
   
   (define (sm-getrules M) 
     (let ((t1 (sm-type M)))
