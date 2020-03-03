@@ -28,8 +28,16 @@ This file was created by Joshua Schappel on 12/19/19
 ;; - unprocessed-config-list: All the transitions that still have to be processed by the machine
 ;; - error msg: A msgWindow structure that will be rendered on the screen if not null.
 ;; - scroll-bar-index: An integer that represents the first position in the rule list to be rendered on the screen.
-(struct world (fsm-machine tape-position cur-rule cur-state button-list input-list processed-config-list
-                           unporcessed-config-list error-msg scroll-bar-index) #:transparent)
+(struct world (fsm-machine
+               tape-position
+               cur-rule
+               cur-state
+               button-list
+               input-list
+               processed-config-list
+               unporcessed-config-list
+               error-msg
+               scroll-bar-index) #:transparent)
 
 
 

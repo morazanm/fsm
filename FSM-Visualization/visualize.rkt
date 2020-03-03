@@ -150,6 +150,7 @@ Cmd Functions
                   (void))]
          
          [(tm) (begin
+                 (println (sm-getalphabet fsm-machine))
                  (set-machine-type 'tm)
                  (run-program
                   (build-world
@@ -298,12 +299,20 @@ Scene Rendering
                                                                    FALSE-INV-CB
                                                                    FALSE-INV)]
                             [else "black"])]
-                         [(tm) (println "TODO: Add invariant checker")]
+                         [(tm)
+                          (cond
+                            [(equal? #t (f p-list)) (if COLOR-BLIND-MODE
+                                                        TRUE-INV-CB
+                                                        TRUE-INV)]
+                            [(equal? #f (f p-list)) (if COLOR-BLIND-MODE
+                                                        FALSE-INV-CB
+                                                        FALSE-INV)]
+                            [else "black"])]
                          [else
                           (cond
-                            [(equal? #t (f p-list))(if COLOR-BLIND-MODE
-                                                       TRUE-INV-CB
-                                                       TRUE-INV)]
+                            [(equal? #t (f p-list)) (if COLOR-BLIND-MODE
+                                                        TRUE-INV-CB
+                                                        TRUE-INV)]
                             [(equal? #f (f p-list)) (if COLOR-BLIND-MODE
                                                         FALSE-INV-CB
                                                         FALSE-INV)]
@@ -356,7 +365,13 @@ Scene Rendering
                                             (equal? rule '(null null null)))'||]
                                        [else
                                         (cadar rule)]))]
-                                  [(tm) (println "TODO")]
+                                  [(tm)
+                                   (if (or
+                                        (equal? cur-rule 'null)
+                                        (equal? cur-rule '((empty empty) (empty empty))))
+                                       '||
+                                       '||)]
+                                   
                                   [else
                                    (if (or (equal? 'null cur-rule) (equal? 'empty cur-rule))
                                        '||
@@ -366,7 +381,7 @@ Scene Rendering
                              (let ((c-rule (getCurRule rule)))
                                (case MACHINE-TYPE
                                  [(pda) (caar c-rule)]
-                                 [(tm) (println "DETERMINE PREV RULE")]
+                                 [(tm) (caar c-rule)]
                                  [else
                                   (car c-rule)]))))
 
@@ -663,8 +678,8 @@ TOP GUI RENDERING
                            (rectangle rectWidth TOP "outline" "transparent"))]))))
     (overlay
      (overlay/align "left" "middle"
-      (rectangle (- (- WIDTH (/ WIDTH 11)) 260) TOP "outline" "transparent") ;; this rectangle includes the width of the scroll bars
-      (list-2-img input-to-render TAPE-INDEX))
+                    (rectangle (- (- WIDTH (/ WIDTH 11)) 260) TOP "outline" "transparent") ;; this rectangle includes the width of the scroll bars
+                    (list-2-img input-to-render TAPE-INDEX))
      (rectangle (- (- WIDTH (/ WIDTH 11)) 200) TOP "outline" "blue"))))
 
            

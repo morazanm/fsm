@@ -3,12 +3,15 @@
 ;; ------- machine.rkt -------
 ;; This file contains the structure for a fsm machine (dfa, ndfa, pda, ...) 
 ;; Written by: Joshua Schappel 8/15/2019
+;; Last updated: 3/3/20 by Josh
+
 
 ;; export necessary files
 (provide
  (struct-out machine)
  (struct-out pda-machine)
- (struct-out tm-machine))
+ (struct-out tm-machine)
+ update-tm-machine)
 
 ;; machine A structure that represents a fsm machine. This structure can represent any type of machine
 ;; - state-list { list-of-states }: A list of state structs that the machine can be in
@@ -19,7 +22,13 @@
 ;; - sigma-list { list-of-symbols }: A list of sigmas that act as instructions for the machine
 ;; - alpha-list { lis-of-symbols }: A list comtaining the machines alphabet 
 ;; - type { Symbol }: Represents the type of machine ex: (dfa, ndfa, pda, ...)
-(struct machine ([state-list #:mutable] [start-state #:mutable] [final-state-list #:mutable] [rule-list #:mutable] [sigma-list #:mutable] [alpha-list #:mutable] type) #:transparent)
+(struct machine ([state-list #:mutable]
+                 [start-state #:mutable]
+                 [final-state-list #:mutable]
+                 [rule-list #:mutable]
+                 [sigma-list #:mutable]
+                 [alpha-list #:mutable]
+                 type) #:transparent)
 
 
 ;; pda-machine: A structure that is a subtype of machine
@@ -30,3 +39,16 @@
 ;; tm-machine: A structure that is a subtype of machine
 ;; - tape-posn { Number } the current location on the tape
 (struct tm-machine machine ([tape-posn #:mutable]))
+
+
+;; update-tm-machine-tape-posn: tm-machine int -> tm-machine
+;; Purpose: Builds a new tm machine with the updated tape posn
+(define (update-tm-machine m new-posn new-sigma)
+  (tm-machine (machine-state-list m)
+              (machine-start-state m)
+              (machine-final-state-list m)
+              (machine-rule-list m)
+              new-sigma
+              (machine-alpha-list m)
+              (machine-type m)
+              new-posn))

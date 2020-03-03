@@ -22,6 +22,9 @@ Created by Joshua Schappel on 12/19/19
                            )
 
                       (cond
+                        ;; If the input list if empty tell the user
+                        [(empty? (machine-sigma-list (world-fsm-machine w)))
+                         (redraw-world-with-msg w "You must first add input to the machine!" "Notice" MSG-CAUTION)]
                         [(isValidMachine? state-list fsm-machine)
                          (letrec (
                                   ;; Build a passing machine
@@ -42,11 +45,13 @@ Created by Joshua Schappel on 12/19/19
                                                                    (machine-start-state (world-fsm-machine w))
                                                                    (machine-final-state-list (world-fsm-machine w))
                                                                    (machine-rule-list (world-fsm-machine w)))]
-                                       [else (make-unchecked-tm state-list
-                                                                (machine-alpha-list (world-fsm-machine w))
-                                                                (machine-rule-list (world-fsm-machine w))
-                                                                (machine-final-state-list (world-fsm-machine w))
-                                                                (machine-start-state (world-fsm-machine w)))]))
+                                       [else
+                                        (println (machine-rule-list (world-fsm-machine w)))
+                                        (make-unchecked-tm state-list
+                                                           (machine-alpha-list (world-fsm-machine w))
+                                                           (machine-rule-list (world-fsm-machine w))
+                                                           (machine-start-state (world-fsm-machine w))
+                                                           (machine-final-state-list (world-fsm-machine w)))]))
 
                                   ;; Unprocessed transitions
                                   (unprocessed-list (if (equal? MACHINE-TYPE 'tm)
@@ -57,6 +62,7 @@ Created by Joshua Schappel on 12/19/19
                                                                             (machine-sigma-list (world-fsm-machine w))))) ;; dfa, ndfa, pda
 
                                   )
+                           (println (sm-getrules m))
                            ;; Set up the world to have all the valid machine components below
                            (begin
                              (define new-list (remove-duplicates (append (sm-getstates m) state-list))) ;; new-list: checks for any fsm state add-ons (ie. 'ds)
@@ -103,7 +109,7 @@ Created by Joshua Schappel on 12/19/19
     [(tm) (boolean?
            (check-machine
             state-list
-            (machine-alpha-list fsm-machine)
+            (remove-duplicates (machine-alpha-list fsm-machine))
             (machine-final-state-list fsm-machine)
             (machine-rule-list fsm-machine)
             (machine-start-state fsm-machine)

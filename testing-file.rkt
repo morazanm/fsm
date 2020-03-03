@@ -2,19 +2,7 @@
 
 (require "main.rkt")
 
-;; TEST MACHINES BELOW
-(define INIT-STATES '(A B C D))
-(define INIT-START 'A)
-(define INIT-FINALS '(C D))
-(define INIT-RULES (list `(A ,EMP B) '(B b A) '(A c C) '(C b D)))
-(define INIT-SIGMA '(a b c b))
-(define INIT-CURRENT 'A)
-(define INIT-ALPHA `(a b c))
-
-;; NDFA
-(define M1 (make-ndfa INIT-STATES INIT-ALPHA INIT-START INIT-FINALS INIT-RULES))
-
-;; DFA
+;;---- DFA ----
 (define a* (make-dfa '(S F)     ;; the states
                      '(a b)     ;; the input alphabet
                      'S         ;; the staring state
@@ -22,15 +10,7 @@
                      '((S a F)  ;; the transition functions
                        (F a F)
                        (F b F))))
-
-(define M3 (make-dfa '(A B C D F)
-                     '(a b)
-                     'A
-                     '(F)
-                     '((A a A) (A b B) (B a C) (B b B) (F a F)
-                               (C a A) (C b D) (D a F) (D b B)
-                               (F b F))))
-
+;;---- NDFA ----
 ;; valid input: aaabbb 
 (define P (make-ndpda '(S F)
                      '(a b)
@@ -41,7 +21,7 @@
                        ((F a ,EMP) (F (c)))
                        ((F b (c)) (F ,EMP)))))
 
-;; TODO TEST
+;;---- PDA ----
 (define pda-numa=numb (make-ndpda '(S M F)
                                   '(a b)
                                   '(a b)
@@ -67,25 +47,23 @@
                                 ((N b (b)) (N ,EMP))
                                 ((N ,EMP ,EMP) (F ,EMP)))))
 
+;;---- TM ----
 
 ;; machine input tape-pos (optional)
 ;; (sm-showtransitions Ma `(,LM b b b b) 2)
 ; write "a" on tape
-(define Ma (make-tm '(S H)                  ;the states
-                    `(a b ,LM)              ;the alphabet
-                    `(((S ,LM) (S ,RIGHT))  ;the transition relation
-                      ((S a) (H a))
+(define Ma (make-tm '(S H)                 ;the states
+                    `(a b)             ;the alphabet
+                    `(((S a) (H a))        ;the transition relation
                       ((S b) (H a))
                       ((S ,BLANK) (H a)))
-                    'S                      ;the starting state
-                    '(H)))                  ;the halting states
+                    'S                     ;the starting state
+                    '(H)))                 ;the halting states
 
 
-(sm-getrules Ma)
-
-;;(sm-showtransitions Ma `(,LM b b b b) 2)
+(sm-showtransitions Ma `(,LM b b b b) 2)
 ;;(sm-visualize pda-wcw^r)
 ;;(sm-visualize 'dfa)
 
-;;(sm-visualize Ma)
+(sm-visualize Ma)
 

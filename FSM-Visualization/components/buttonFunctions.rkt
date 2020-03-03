@@ -79,9 +79,7 @@ Created by Joshua Schappel on 12/19/19
                                                      (cond
                                                        [(equal? (symbol->string (car rule)) state) #f]
                                                        [(equal?  (symbol->string (caddr rule)) state) #f]
-                                                       [else #t])]))))
-                        (println state)
-                        
+                                                       [else #t])]))))                        
                         (if (equal? (string->symbol state) (world-cur-state w))
                             (begin
                               (set-machine-state-list! (world-fsm-machine w) (filter(lambda(x) (not(equal? (fsm-state-name x) (string->symbol state)))) (machine-state-list (world-fsm-machine w))))
@@ -344,13 +342,13 @@ Created by Joshua Schappel on 12/19/19
                                                            ;; convert-list: list-of-string list -> list-of-symbols
                                                            ;; Purpose: converts the list of string to a list of symbols
                                                            (convert-list (lambda (los accum) 
-                                                                             (cond
-                                                                               [(empty? los) accum]
-                                                                               [else (convert-list
-                                                                                      (cdr los)
-                                                                                      (cons (format-states
-                                                                                             (string->symbol (car los)))
-                                                                                            accum))]))))
+                                                                           (cond
+                                                                             [(empty? los) accum]
+                                                                             [else (convert-list
+                                                                                    (cdr los)
+                                                                                    (cons (format-states
+                                                                                           (string->symbol (car los)))
+                                                                                          accum))]))))
                                                     (convert-list split-string '()))))
                                                            
 
@@ -364,7 +362,9 @@ Created by Joshua Schappel on 12/19/19
                                                     (check-lists (lambda (list1 list2)
                                                                    (cond
                                                                      [(empty? list2) #t]
-                                                                     [(equal? (member (car list2) list1) #f) #f]
+                                                                     [(and
+                                                                       (not (eq? (car list2) BLANK))
+                                                                       (equal? (member (car list2) list1) #f)) #f]
                                                                      [else (check-lists list1 (cdr list2))]))))
                                              (cond
                                                [(empty? loa) #f]
@@ -481,7 +481,14 @@ Created by Joshua Schappel on 12/19/19
                     [else
                      ;; Check if the unprocessed list is empty. If so then run was not yet pressed
                      (cond
-                       [(empty? (world-unporcessed-config-list w)) (redraw-world-with-msg w "You must build your machine before you can continue. Please press 'Run' to proceed." "Error" MSG-CAUTION)]
+                       [(and
+                         (empty? (world-unporcessed-config-list w))
+                         (empty? (world-processed-config-list w)))
+                        (redraw-world-with-msg w "You must build your machine before you can continue. Please press 'Run' to proceed." "Error" MSG-CAUTION)]
+
+                       ;; the only time the unporcessed list is empty is for tm
+                       [(empty? (world-unporcessed-config-list w))
+                         (redraw-world-with-msg w "The machine has halted" "Notice" MSG-CAUTION)]
                        [else
                         (letrec(
                                 (nextState (car (world-unporcessed-config-list w))) ;; The next state the machine transitions to
@@ -493,21 +500,7 @@ Created by Joshua Schappel on 12/19/19
                                                           [(eq? nextState 'reject)
                                                            (redraw-world-with-msg w "The input is rejected." "Notice" MSG-CAUTION)]
                                                           [else
-                                                           (case MACHINE-TYPE
-                                                             [(pda) (go-next nextState w)]
-                                                             [(tm) (println "TODO")]
-                                                             [else
-                                                              (go-next nextState w)])])))
-                                
-                                ;; update-Machine: None -> world
-                                ;; Updates the world based on the given machine
-                                (update-world (lambda ()
-                                                (case MACHINE-TYPE
-                                                  [(pda) (go-next nextState w)]
-                                                  [(tm) (println "TODO")]
-                                                  [else
-                                                   (go-next nextState w)])))
-                                )
+                                                           (go-next nextState w)]))))
                           (determine-next-steps))])])))
 
 
@@ -523,14 +516,14 @@ Created by Joshua Schappel on 12/19/19
            (determin-cur-state (lambda ()
                                  (case MACHINE-TYPE
                                    [(pda) (car nextState)]
-                                   [(tm) (println "TODO")]
+                                   [(tm) (car nextState)]
                                    [else (car (cdr nextState))])))
            ;; get-input: Rule -> symbol
            ;; Purpose: determins the input from the given rule
            (get-input (lambda (cur-rule)
                         (case MACHINE-TYPE
                           [(pda)(cadar cur-rule)]
-                          [(tm) (println "TODO")]
+                          [(tm) (println "Should not reach this")]
                           [else (cadr cur-rule)]))))
     (cond
       [(eq? nextState 'accept)
@@ -554,23 +547,35 @@ Created by Joshua Schappel on 12/19/19
                                    [(symbol? push-list) void] ;; e is the element so nothing to push
                                    [else
                                     (begin
-                                      (push-stack push-list))])))))
-         ;; Determine if the tape input should increase   
-         (if (equal? EMP (get-input cur-rule))
-             TAPE-INDEX-BOTTOM
-             (set-tape-index-bottom (+ 1 TAPE-INDEX-BOTTOM)))
+                                      (push-stack push-list))]))))
 
-         ;; If the machine is a pda we need to push or pop!
-         ;; pops are handled first
-         (if (equal? MACHINE-TYPE 'pda)
-             (begin
-               (handle-pop)
-               (handle-push))
-             void)
-         (world (world-fsm-machine w) (world-tape-position w) (getCurRule (append (list nextState) (world-processed-config-list w)))
-                (determin-cur-state) (world-button-list w) (world-input-list w)
-                (append (list nextState) (world-processed-config-list w)) transitions (world-error-msg w)
-                (getScrollBarPosition (reverse (machine-rule-list (world-fsm-machine w))) cur-rule)))])))
+                ;; Updates the machine to have the approperate values. This function is only needed for tm, to
+                ;;   update the tape position on each transition.
+                (update-machine (lambda(m)
+                                  (case MACHINE-TYPE
+                                    [(tm) (update-tm-machine m (cadr nextState) (caddr nextState))]
+                                    [else m]))))
+         (begin
+           
+           ;; Determine if the tape input should increase.
+           ;; This does not need to be done for tm's
+           (if (and (not (equal? 'tm MACHINE-TYPE))
+                    (equal? EMP (get-input cur-rule)))
+               TAPE-INDEX-BOTTOM
+               (set-tape-index-bottom (+ 1 TAPE-INDEX-BOTTOM)))
+
+           ;; If the machine is a pda we need to push or pop!
+           ;; pops are handled first
+           (if (equal? MACHINE-TYPE 'pda)
+               (begin
+                 (handle-pop)
+                 (handle-push))
+               void)
+           
+           (world (update-machine (world-fsm-machine w)) (world-tape-position w) (getCurRule (append (list nextState) (world-processed-config-list w)))
+                  (determin-cur-state) (world-button-list w) (world-input-list w)
+                  (append (list nextState) (world-processed-config-list w)) transitions (world-error-msg w)
+                  (getScrollBarPosition (reverse (machine-rule-list (world-fsm-machine w))) cur-rule))))])))
 
 
 ;; showPrev: world -> world
@@ -590,7 +595,7 @@ Created by Joshua Schappel on 12/19/19
                               (get-input (lambda (cur-rule)
                                            (case MACHINE-TYPE
                                              [(pda)(cadar cur-rule)]
-                                             [(tm) (println "TODO")]
+                                             [(tm) (println "TODO PREV")]
                                              [else (cadr cur-rule)])))
 
                               (input-consumed? (lambda ()

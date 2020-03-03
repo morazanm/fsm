@@ -6,7 +6,7 @@
 (define getCurRule (lambda (processed-list)
                      (case MACHINE-TYPE
                        [(pda) (get-pda-rule processed-list)]
-                       [(tm) (println "TODO")]
+                       [(tm) (get-tm-rule processed-list)]
                        [else (get-dfa-ndfa-rule processed-list)])))
 
 
@@ -26,6 +26,31 @@
       (cadadr processed-list)
       (caaadr processed-list)
       (cadar processed-list))]))
+
+
+;; get-pda-rule: processed-list -> tm-rule
+;; Purpose: Determins if the rule to be made should be empty or a real rule
+(define (get-tm-rule processed-list)
+  (cond
+    [(< (length processed-list) 2) '((empty empty) (empty empty))]
+    [else (construct-tm-rule processed-list)]))
+
+
+;; construct-tm-rule: processed-list -> tm-rule
+;; Purpose: Constructs the current tm rule based on the processed list
+(define (construct-tm-rule pl)
+  (let* ( (cur-trans (cadr pl))  ;; The current transiton
+          (next-trans (car pl))  ;; The next transition
+          (cur-state (car cur-trans)) ;; The current state the machine is in
+          (cur-tape-index (cadr cur-trans)) ;; The tape index the machine is in 
+          (cur-tape (caddr cur-trans)) ;; The input the machine has
+          (next-state (car next-trans)) ;; The next state the machine goes to 
+          (next-tape-index (cadr next-trans)) ;; The new tape index the machine goes to
+          (next-tape (caddr next-trans)) ;; The new tape the machine has
+
+          (cur-tape-element (list-ref cur-tape cur-tape-index)) ;; The currently highlights element
+          (next-tape-element (list-ref next-tape next-tape-index))) ;; The next highlighted element
+    (list (list cur-state cur-tape-element) (list next-state next-tape-element))))
 
 
 ;; get-pda-rule: processed-list -> pda-rule
