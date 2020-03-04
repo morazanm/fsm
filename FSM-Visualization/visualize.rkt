@@ -47,6 +47,7 @@ Initialize World
                                    (case type
                                      [(pda) INPUT-LIST-PDA]
                                      [(tm) INPUT-LIST-TM]
+                                     [(tm-language-recognizer) INPUT-LIST-LANG-REC]
                                      [else INPUT-LIST])))
 
            ;; determine-button-list: none -> list-of-buttons
@@ -55,6 +56,7 @@ Initialize World
                                     (case type
                                       [(pda) BUTTON-LIST-PDA]
                                       [(tm) BUTTON-LIST-TM]
+                                      [(tm-language-recognizer) BUTTON-LIST-LANG-REC]
                                       [else BUTTON-LIST]))))
 
     (initialize-world m messageWin (determine-button-list) (determine-input-list))))
@@ -101,6 +103,10 @@ Cmd Functions
                  (set-machine-type 'tm)
                  (run-program (build-world (tm-machine '() null '() '() '() '() 'tm 0 ) 'tm))
                  (void))]
+         [(tm-language-recognizer) (begin
+                                     (set-machine-type 'tm-language-recognizer)
+                                     (run-program (build-world (lang-rec-machine '() null '() '() '() '() 'tm-language-recognizer 0 '||) 'tm-language-recognizer))
+                                     (void))]
          [else (error (format "~s is not a valid machine type" fsm-machine))])]
 
       ;; --- Pre-made with no predicates ---
@@ -323,11 +329,11 @@ Scene Rendering
                                 (tape (machine-sigma-list (world-fsm-machine w))))
                             (cond
                               [(equal? #t (f tape tape-posn)) (if COLOR-BLIND-MODE
-                                                                    TRUE-INV-CB
-                                                                    TRUE-INV)]
+                                                                  TRUE-INV-CB
+                                                                  TRUE-INV)]
                               [(equal? #f (f tape tape-posn)) (if COLOR-BLIND-MODE
-                                                                    FALSE-INV-CB
-                                                                    FALSE-INV)]
+                                                                  FALSE-INV-CB
+                                                                  FALSE-INV)]
                               [else "black"]))]
                          [else
                           (cond
@@ -543,6 +549,8 @@ Scene Rendering
           (determin-gui-draw (lambda ()
                                (case MACHINE-TYPE
                                  [(tm) (create-gui-right (tm-machine-tape-posn machine))]
+                                 [(tm-language-recognizer)
+                                  (create-gui-right (lang-rec-machine-tape-posn machine) (lang-rec-machine-accept-state machine))]
                                  [else (create-gui-right)]))))
         
           
@@ -900,9 +908,42 @@ RIGHT GUI RENDERING
            ;; start-right-control: none -> image
            ;; Purpose: Creates the start control panel
            (start-right-control (lambda ()
-                                  (overlay/align "left" "top"
-                                                 (rectangle 200 CONTROL-BOX-H "outline" "blue")
-                                                 (control-header "Start State"))))
+                                  (cond
+                                    [(equal? MACHINE-TYPE 'tm-language-recognizer)
+                                     (letrec (
+                                            ;; draw-left: none -> img
+                                            ;; Purpose: draws the message that telles the user the current position
+                                            (draw-tape-index (lambda ()
+                                                               (let ([state (symbol->string (cadr args))])
+                                                                 (overlay
+                                                                  (beside
+                                                                   (text "Current: " 11 (make-color 94 36 23))
+                                                                   (text state 14 (make-color 145 6 196)))
+                                                                  (rectangle 100 25 "outline" "transparent")))))
+                                            
+                                            ;; draw-left: none -> img
+                                            ;; Purpose: Draws the end add/remove option
+                                            (draw-left (lambda ()
+                                                         (overlay/align "left" "top"
+                                                                        (rectangle 100 CONTROL-BOX-H "outline" "transparent")
+                                                                        (control-header5 "Start State"))))
+                                            ;; draw-right: none -> img
+                                            ;; Purpose: Draws the tape index option
+                                            (draw-right (lambda ()
+                                                          (overlay/align "left" "top"
+                                                                         (rectangle 100 CONTROL-BOX-H "outline" "blue")
+                                                                         (above
+                                                                          (control-header5 "User-defined")
+                                                                          (draw-tape-index))))))
+                                     (overlay
+                                      (beside
+                                       (draw-left)
+                                       (draw-right))
+                                      (rectangle 200 CONTROL-BOX-H "outline" "blue")))]
+                                    [else
+                                     (overlay/align "left" "top"
+                                                    (rectangle 200 CONTROL-BOX-H "outline" "blue")
+                                                    (control-header "Start State"))])))
 
 
            ;; end-right-control: none -> image
@@ -910,15 +951,17 @@ RIGHT GUI RENDERING
            (end-right-control (lambda ()
                                 ;; render the proper display
                                 (cond
-                                  [(equal? MACHINE-TYPE 'tm)
+                                  [(or (equal? MACHINE-TYPE 'tm)
+                                       (equal? MACHINE-TYPE 'tm-language-recognizer))
                                    (letrec (
                                             ;; draw-left: none -> img
                                             ;; Purpose: draws the message that telles the user the current position
                                             (draw-tape-index (lambda ()
                                                                (let ([msg (string-append "Current posn:"
-                                                                                         (number->string (car args)))])                                                                 (overlay
-                                                                                                                                                                                         (text msg 11 (make-color 94 36 23))
-                                                                                                                                                                                         (rectangle 100 25 "outline" "transparent")))))
+                                                                                         (number->string (car args)))])
+                                                                 (overlay
+                                                                  (text msg 11 (make-color 94 36 23))
+                                                                  (rectangle 100 25 "outline" "transparent")))))
                                             
                                             ;; draw-left: none -> img
                                             ;; Purpose: Draws the end add/remove option
@@ -1034,6 +1077,11 @@ ADDITIONAL DRAW FUNCTIONS
 (define (control-header4 msg)
   (overlay
    (text (string-upcase msg) 14 "Black")
+   (rectangle 100 25 "outline" "transparent")))
+
+(define (control-header5 msg)
+  (overlay
+   (text (string-upcase msg) 12 "Black")
    (rectangle 100 25 "outline" "transparent")))
 
 

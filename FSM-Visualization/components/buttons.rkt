@@ -11,7 +11,8 @@ Created by Joshua Schappel on 12/19/19
 (provide
  BUTTON-LIST
  BUTTON-LIST-PDA
- BUTTON-LIST-TM)
+ BUTTON-LIST-TM
+ BUTTON-LIST-LANG-REC)
 
 
 
@@ -35,11 +36,18 @@ Button Declarations
 
 (define BTN-ADD-START (button 50 25 "Add" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 50) (- (* 3 CONTROL-BOX-H) 71)) addStart))
 (define BTN-REMOVE-START (button 50 25 "Replace" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 50) (- (* 3 CONTROL-BOX-H) 25)) replaceStart))
+(define BTN-ADD-START-LANG-REC (button 35 25 "Add" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 175) (- (* 3 CONTROL-BOX-H) 25)) addStart))
+(define BTN-REMOVE-START-LANG-REC (button 35 25 "Rmv" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 125) (- (* 3 CONTROL-BOX-H) 25)) replaceStart))
+
+
+
 
 (define BTN-ADD-END (button 50 25 "Add" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 50) (- (* 4 CONTROL-BOX-H) 71)) addEnd))
 (define BTN-REMOVE-END (button 50 25 "Remove" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 50) (- (* 4 CONTROL-BOX-H) 25)) rmvEnd))
 (define BTN-ADD-END-TM (button 35 25 "Add" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 175) (- (* 4 CONTROL-BOX-H) 25)) addEnd))
 (define BTN-REMOVE-END-TM (button 35 25 "Rmv" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 125) (- (* 4 CONTROL-BOX-H) 25)) rmvEnd))
+
+(define BTN-SET-END-LANG-REC (button 50 25 "Set" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 50) (- (* 3 CONTROL-BOX-H) 25)) NULL-FUNCTION))
 
 
 (define BTN-TAPE-INPUT-TM (button 50 25 "Set" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 50) (- (* 4 CONTROL-BOX-H) 25)) setTapePosn))
@@ -108,13 +116,26 @@ Button Declarations
                               BTN-COLOR-BLIND))
 
 (define BUTTON-LIST-TM (list BTN-ADD-STATE BTN-REMOVE-STATE
-                          BTN-ADD-ALPHA BTN-REMOVE-ALPHA
-                          BTN-ADD-START BTN-REMOVE-START
-                          BTN-ADD-END-TM BTN-REMOVE-END-TM
-                          BTN-ADD-RULES-PDA BTN-REMOVE-RULES-PDA
-                          BTN-GENCODE BTN-NEXT BTN-PREV
-                          BTN-SIGMA-ADD BTN-SIGMA-CLEAR
-                          BTN-RUN BTN-SCROLL-LEFT-RULES
-                          BTN-SCROLL-RIGHT-RULES BTN-HELP
-                          BTN-TAPE-SCROLL-LEFT BTN-TAPE-SCROLL-RIGHT
-                          BTN-COLOR-BLIND BTN-TAPE-INPUT-TM))
+                             BTN-ADD-ALPHA BTN-REMOVE-ALPHA
+                             BTN-ADD-START BTN-REMOVE-START
+                             BTN-ADD-END-TM BTN-REMOVE-END-TM
+                             BTN-ADD-RULES-PDA BTN-REMOVE-RULES-PDA
+                             BTN-GENCODE BTN-NEXT BTN-PREV
+                             BTN-SIGMA-ADD BTN-SIGMA-CLEAR
+                             BTN-RUN BTN-SCROLL-LEFT-RULES
+                             BTN-SCROLL-RIGHT-RULES BTN-HELP
+                             BTN-TAPE-SCROLL-LEFT BTN-TAPE-SCROLL-RIGHT
+                             BTN-COLOR-BLIND BTN-TAPE-INPUT-TM))
+
+(define BUTTON-LIST-LANG-REC (list BTN-ADD-STATE BTN-REMOVE-STATE
+                                   BTN-ADD-ALPHA BTN-REMOVE-ALPHA
+                                   BTN-ADD-START-LANG-REC BTN-REMOVE-START-LANG-REC
+                                   BTN-ADD-END-TM BTN-REMOVE-END-TM
+                                   BTN-ADD-RULES-PDA BTN-REMOVE-RULES-PDA
+                                   BTN-GENCODE BTN-NEXT BTN-PREV
+                                   BTN-SIGMA-ADD BTN-SIGMA-CLEAR
+                                   BTN-RUN BTN-SCROLL-LEFT-RULES
+                                   BTN-SCROLL-RIGHT-RULES BTN-HELP
+                                   BTN-TAPE-SCROLL-LEFT BTN-TAPE-SCROLL-RIGHT
+                                   BTN-COLOR-BLIND BTN-TAPE-INPUT-TM
+                                   BTN-SET-END-LANG-REC))

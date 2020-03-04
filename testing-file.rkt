@@ -72,5 +72,20 @@
 
 (define (S-INV tape pos) #true)
 (define (H-INV tape pos) (eq? 'a (list-ref tape pos)))
-(sm-visualize Ma (list 'S S-INV) (list 'H H-INV))
+;;(sm-visualize Ma (list 'S S-INV) (list 'H H-INV))
 
+
+
+;; ----- TM language recognizer -----
+
+;; input '(a a a a)
+(define Alla (make-tm '(S Y N)
+                      `(a b ,LM)
+                      `(((S a) (S ,RIGHT))
+                        ((S b) (N b))
+                        ((S ,BLANK) (Y ,BLANK)))
+                      'S
+                      '(Y N)
+                      'Y))
+
+(sm-visualize 'tm-language-recognizer)

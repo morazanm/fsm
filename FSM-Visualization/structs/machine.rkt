@@ -11,6 +11,7 @@
  (struct-out machine)
  (struct-out pda-machine)
  (struct-out tm-machine)
+ (struct-out lang-rec-machine)
  update-tm-machine)
 
 ;; machine A structure that represents a fsm machine. This structure can represent any type of machine
@@ -39,6 +40,13 @@
 ;; tm-machine: A structure that is a subtype of machine
 ;; - tape-posn { Number } the current location on the tape
 (struct tm-machine machine ([tape-posn #:mutable]))
+
+
+;; lang-rec-machine: A structure that is a subtype of machine
+;; - tape-posn { Number } the current location on the tape
+;; - accept-state { Symbol } The user-defined accepting state of the machine
+(struct lang-rec-machine machine ([tape-posn #:mutable]
+                                  [accept-state #:mutable]))
 
 
 ;; update-tm-machine-tape-posn: tm-machine int list-of-symbols -> tm-machine
