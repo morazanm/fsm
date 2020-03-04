@@ -225,17 +225,17 @@ Cmd Functions
                      (run-program
                       (build-world
                        (tm-machine (map (lambda (x)
-                                        (let ((temp (get-member x args)))
-                                          (if (empty? temp)
-                                              (fsm-state x TM-TRUE-FUNCTION (posn 0 0))
-                                              (fsm-state x (cadr temp) (posn 0 0))))) state-list)
-                                 (sm-getstart fsm-machine)
-                                 (sm-getfinals fsm-machine)
-                                 (reverse (sm-getrules fsm-machine))
-                                 '()
-                                 (sm-getalphabet fsm-machine)
-                                 (sm-type fsm-machine)
-                                 0)
+                                          (let ((temp (get-member x args)))
+                                            (if (empty? temp)
+                                                (fsm-state x TM-TRUE-FUNCTION (posn 0 0))
+                                                (fsm-state x (cadr temp) (posn 0 0))))) state-list)
+                                   (sm-getstart fsm-machine)
+                                   (sm-getfinals fsm-machine)
+                                   (reverse (sm-getrules fsm-machine))
+                                   '()
+                                   (sm-getalphabet fsm-machine)
+                                   (sm-type fsm-machine)
+                                   0)
                        (sm-type fsm-machine)
                        (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "dfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
                      (void))
@@ -319,14 +319,16 @@ Scene Rendering
                                                                    FALSE-INV)]
                             [else "black"])]
                          [(tm)
-                          (cond
-                            [(equal? #t (f p-list)) (if COLOR-BLIND-MODE
-                                                        TRUE-INV-CB
-                                                        TRUE-INV)]
-                            [(equal? #f (f p-list)) (if COLOR-BLIND-MODE
-                                                        FALSE-INV-CB
-                                                        FALSE-INV)]
-                            [else "black"])]
+                          (let ((tape-posn (tm-machine-tape-posn (world-fsm-machine w)))
+                                (tape (machine-sigma-list (world-fsm-machine w))))
+                            (cond
+                              [(equal? #t (f tape tape-posn)) (if COLOR-BLIND-MODE
+                                                                    TRUE-INV-CB
+                                                                    TRUE-INV)]
+                              [(equal? #f (f tape tape-posn)) (if COLOR-BLIND-MODE
+                                                                    FALSE-INV-CB
+                                                                    FALSE-INV)]
+                              [else "black"]))]
                          [else
                           (cond
                             [(equal? #t (f p-list)) (if COLOR-BLIND-MODE

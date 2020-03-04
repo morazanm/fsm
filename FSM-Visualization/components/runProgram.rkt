@@ -46,7 +46,6 @@ Created by Joshua Schappel on 12/19/19
                                                                    (machine-final-state-list (world-fsm-machine w))
                                                                    (machine-rule-list (world-fsm-machine w)))]
                                        [else
-                                        (println (machine-rule-list (world-fsm-machine w)))
                                         (make-unchecked-tm state-list
                                                            (machine-alpha-list (world-fsm-machine w))
                                                            (machine-rule-list (world-fsm-machine w))
@@ -67,8 +66,7 @@ Created by Joshua Schappel on 12/19/19
                                                       [else (sm-showtransitions m
                                                                                 (machine-sigma-list (world-fsm-machine w)))]))
 
-                                  )
-                           (println  unprocessed-list)
+                                  ) 
                            ;; Set up the world to have all the valid machine components below
                            (begin
                              (define new-list (remove-duplicates (append (sm-getstates m) state-list))) ;; new-list: checks for any fsm state add-ons (ie. 'ds)

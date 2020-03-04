@@ -52,7 +52,7 @@
 ;; machine input tape-pos (optional)
 ;; (sm-showtransitions Ma `(,LM b b b b) 2)
 ; write "a" on tape
-(define Ma (make-tm '(S H)                 ;the states
+(define Ma2 (make-tm '(S H)                 ;the states
                     `(a b)             ;the alphabet
                     `(((S a) (H a))        ;the transition relation
                       ((S b) (H a))
@@ -61,9 +61,16 @@
                     '(H)))                 ;the halting states
 
 
-(sm-showtransitions Ma `(,LM b b b b) 2)
-;;(sm-visualize pda-wcw^r)
-;;(sm-visualize 'dfa)
+; write "a" on tape
+(define Ma (make-tm '(S H)
+                    `(a b ,LM)
+                    `(((S a) (H a))
+                      ((S b) (H a))
+                      ((S ,BLANK) (H a)))
+                    'S
+                    '(H)))
 
-(sm-visualize Ma)
+(define (S-INV tape pos) #true)
+(define (H-INV tape pos) (eq? 'a (list-ref tape pos)))
+(sm-visualize Ma (list 'S S-INV) (list 'H H-INV))
 
