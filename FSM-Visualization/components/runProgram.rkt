@@ -54,15 +54,21 @@ Created by Joshua Schappel on 12/19/19
                                                            (machine-final-state-list (world-fsm-machine w)))]))
 
                                   ;; Unprocessed transitions
-                                  (unprocessed-list (if (equal? MACHINE-TYPE 'tm)
-                                                        (sm-showtransitions m
-                                                                            (machine-sigma-list (world-fsm-machine w))    ;; tm
-                                                                            (tm-machine-tape-posn (world-fsm-machine w))) 
-                                                        (sm-showtransitions m
-                                                                            (machine-sigma-list (world-fsm-machine w))))) ;; dfa, ndfa, pda
+                                  (unprocessed-list (case MACHINE-TYPE
+                                                      ;; tm
+                                                      [(tm)
+                                                       (append (sm-showtransitions m
+                                                                                   (machine-sigma-list (world-fsm-machine w))   
+                                                                                   (tm-machine-tape-posn (world-fsm-machine w)))
+                                                               '(halt))]
+                                                      [(tm2) (println "todo")]
+
+                                                      ;; dfa, ndfa, pda
+                                                      [else (sm-showtransitions m
+                                                                                (machine-sigma-list (world-fsm-machine w)))]))
 
                                   )
-                           (println (sm-getrules m))
+                           (println  unprocessed-list)
                            ;; Set up the world to have all the valid machine components below
                            (begin
                              (define new-list (remove-duplicates (append (sm-getstates m) state-list))) ;; new-list: checks for any fsm state add-ons (ie. 'ds)

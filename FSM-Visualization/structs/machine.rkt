@@ -41,7 +41,7 @@
 (struct tm-machine machine ([tape-posn #:mutable]))
 
 
-;; update-tm-machine-tape-posn: tm-machine int -> tm-machine
+;; update-tm-machine-tape-posn: tm-machine int list-of-symbols -> tm-machine
 ;; Purpose: Builds a new tm machine with the updated tape posn
 (define (update-tm-machine m new-posn new-sigma)
   (tm-machine (machine-state-list m)
