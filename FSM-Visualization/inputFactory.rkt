@@ -50,6 +50,7 @@
                       (case type
                         [(pda) PDA_NUMBER]
                         [(tm) TM_NUMBER]
+                        [(tm-language-recognizer) TM_NUMBER]
                         [else DFA-NDFA_NUMBER])))
            
            ;; get-count list-of-rules int int -> int
@@ -97,9 +98,11 @@
                                                                  )
                                                           (case MACHINE-TYPE
                                                             [(pda) (text (create-pda-rule rule) FONT-SIZE (determin-color))]
-                                                            [(tm) (text (create-tm-rule rule)  FONT-SIZE (determin-color))]
                                                             [(dfa) (text (create-dfa-ndfa-rule rule) FONT-SIZE (determin-color))]
-                                                            [(ndfa) (text (create-dfa-ndfa-rule rule) FONT-SIZE (determin-color))]))))
+                                                            [(ndfa) (text (create-dfa-ndfa-rule rule) FONT-SIZE (determin-color))]
+                                                            ;; tm and lang-rec
+                                                            [else (text (create-tm-rule rule) FONT-SIZE (determin-color))]
+                                                            ))))
                                          
                                          (txt (create-text rule)) ;; The textbox
                                          ;; get-width: none -> int
@@ -119,7 +122,6 @@
                                   (overlay
                                    (scale-txt txt 1)
                                    (rectangle (get-width) BOX-HEIGHT "outline" RULE-BOX-COLOR))))))
-    
     (list-2-img aList empty-image)))
 
 
@@ -173,9 +175,9 @@
 (define (create-tm-rule rule)
   (match rule
     [(list (list state1 alpha1) (list state2 alpha2))
-    (string-append
-     "((" (symbol->string state1) " " (symbol->string (format-tm-input alpha1)) ")"
-     " (" (symbol->string state2) " " (symbol->string (format-tm-input alpha2)) "))")]
+     (string-append
+      "((" (symbol->string state1) " " (symbol->string (format-tm-input alpha1)) ")"
+      " (" (symbol->string state2) " " (symbol->string (format-tm-input alpha2)) "))")]
     [else
      (error "Invalid pattern match")]))
 

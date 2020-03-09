@@ -12,7 +12,8 @@
  (struct-out pda-machine)
  (struct-out tm-machine)
  (struct-out lang-rec-machine)
- update-tm-machine)
+ update-tm-machine
+ update-lang-rec-accept-state)
 
 ;; machine A structure that represents a fsm machine. This structure can represent any type of machine
 ;; - state-list { list-of-states }: A list of state structs that the machine can be in
@@ -34,19 +35,18 @@
 
 ;; pda-machine: A structure that is a subtype of machine
 ;; - stack-alpha-list { list-of-symbols }: TODO: discription
-(struct pda-machine machine ([stack-alpha-list #:mutable]))
+(struct pda-machine machine ([stack-alpha-list #:mutable]) #:transparent)
 
 
 ;; tm-machine: A structure that is a subtype of machine
 ;; - tape-posn { Number } the current location on the tape
-(struct tm-machine machine ([tape-posn #:mutable]))
+(struct tm-machine machine ([tape-posn #:mutable]) #:transparent)
 
 
-;; lang-rec-machine: A structure that is a subtype of machine
-;; - tape-posn { Number } the current location on the tape
+;; lang-rec-machine: A structure that is a subtype of tm-machine. The one difference
+;;  is that it has an accept state
 ;; - accept-state { Symbol } The user-defined accepting state of the machine
-(struct lang-rec-machine machine ([tape-posn #:mutable]
-                                  [accept-state #:mutable]))
+(struct lang-rec-machine tm-machine ([accept-state #:mutable]) #:transparent)
 
 
 ;; update-tm-machine-tape-posn: tm-machine int list-of-symbols -> tm-machine
@@ -60,3 +60,18 @@
               (machine-alpha-list m)
               (machine-type m)
               new-posn))
+
+
+;; update-lang-rec-accept-state: lang-rec-machine: symbol -> lang-rec-machine
+;; Purpose: Builds an new machine identical to the previous, but with a new
+;;  accept state
+(define (update-lang-rec-accept-state m new-state)
+  (lang-rec-machine (machine-state-list m)
+                    (machine-start-state m)
+                    (machine-final-state-list m)
+                    (machine-rule-list m)
+                    (machine-sigma-list m)
+                    (machine-alpha-list m)
+                    (machine-type m)
+                    (tm-machine-tape-posn m)
+                    new-state))

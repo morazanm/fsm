@@ -12,12 +12,35 @@ Created by Joshua Schappel on 12/19/19
          "../structs/world.rkt" "../../fsm-main.rkt")
 
 (provide
- addState removeState addRule removeRule addStart replaceStart
- addEnd rmvEnd addAlpha rmvAlpha addSigma clearSigma addGamma
- rmvGamma getScrollBarPosition showNext showPrev scrollbarRight
- scrollbarLeft NULL-FUNCTION openHelp send-url stackScrollUp
- stackScrollDown tapeScrollRight tapeScrollLeft toogleColorBlindMode
- setTapePosn)
+ addState
+ removeState
+ addRule
+ removeRule
+ addStart
+ replaceStart
+ addEnd
+ rmvEnd
+ addAlpha
+ rmvAlpha
+ addSigma
+ clearSigma
+ addGamma
+ rmvGamma
+ getScrollBarPosition
+ showNext
+ showPrev
+ scrollbarRight
+ scrollbarLeft
+ NULL-FUNCTION ;; This function is Just a placeholder for biulding out the GUI
+ openHelp
+ send-url
+ stackScrollUp
+ stackScrollDown
+ tapeScrollRight
+ tapeScrollLeft
+ toogleColorBlindMode
+ setTapePosn
+ setAcceptState)
 
 
 
@@ -33,6 +56,7 @@ Created by Joshua Schappel on 12/19/19
                               (case MACHINE-TYPE
                                 [(pda) PDA-TRUE-FUNCTION]
                                 [(tm) TM-TRUE-FUNCTION]
+                                [(tm-language-recognizer) TM-TRUE-FUNCTION]
                                 [else TRUE-FUNCTION]))))
                      (cond[(equal? "" state) w]
                           [(ormap (lambda (x) (equal? (format-states state) (symbol->string (fsm-state-name x))))
@@ -74,6 +98,10 @@ Created by Joshua Schappel on 12/19/19
                                                              [(equal?  (symbol->string (caadr rule)) state) #f]
                                                              [else #t])]
                                                     [(tm) (cond
+                                                            [(equal? (symbol->string (caar rule)) state) #f]
+                                                            [(equal? (symbol->string (caadr rule)) state) #f]
+                                                            [else #t])]
+                                                    [(tm-language-recognizer) (cond
                                                             [(equal? (symbol->string (caar rule)) state) #f]
                                                             [(equal? (symbol->string (caadr rule)) state) #f]
                                                             [else #t])]
@@ -517,6 +545,7 @@ Created by Joshua Schappel on 12/19/19
                                  (case MACHINE-TYPE
                                    [(pda) (car nextState)]
                                    [(tm) (car nextState)]
+                                   [(tm-language-recognizer) (car nextState)]
                                    [else (car (cdr nextState))])))
            ;; get-input: Rule -> symbol
            ;; Purpose: determins the input from the given rule
@@ -524,6 +553,7 @@ Created by Joshua Schappel on 12/19/19
                         (case MACHINE-TYPE
                           [(pda)(cadar cur-rule)]
                           [(tm) (println "Should not reach this")]
+                          [(tm-language-recognizer) (println "Should not reach this")]
                           [else (cadr cur-rule)]))))
     (cond
       [(eq? nextState 'accept)
@@ -551,11 +581,12 @@ Created by Joshua Schappel on 12/19/19
                                     (begin
                                       (push-stack push-list))]))))
 
-                ;; Updates the machine to have the approperate values. This function is only needed for tm, to
-                ;;   update the tape position on each transition.
+                ;; Updates the machine to have the approperate values. This function is only needed for tm
+                ;;   and tm-language-recognizer to update the tape position on each transition.
                 (update-machine (lambda(m)
                                   (case MACHINE-TYPE
                                     [(tm) (update-tm-machine m (cadr nextState) (caddr nextState))]
+                                    [(tm-language-recognizer) (update-tm-machine m (cadr nextState) (caddr nextState))]
                                     [else m]))))
 
          ;; Based on the machien type certin things need to be updated:
@@ -606,6 +637,7 @@ Created by Joshua Schappel on 12/19/19
                                                              EMP
                                                              #t)]
                                                    [(tm) (println "Should not reach this")]
+                                                   [(update-tm-machine) (println "Should not reach this")]
                                                    [else(cadr cur-rule)])))
                               
                               ;; Updates the machine to have the approperate values. This function is only needed for tm, to
@@ -613,6 +645,7 @@ Created by Joshua Schappel on 12/19/19
                               (update-machine (lambda(m)
                                                 (case MACHINE-TYPE
                                                   [(tm) (update-tm-machine m (cadr previousState) (caddr previousState))]
+                                                  [(update-tm-machine) (update-tm-machine m (cadr previousState) (caddr previousState))]
                                                   [else m])))
                                                     
                               ;; determin-cur-state: none -> symbol
@@ -621,6 +654,7 @@ Created by Joshua Schappel on 12/19/19
                                                      (case MACHINE-TYPE
                                                        [(pda) (car previousState)]
                                                        [(tm) (car previousState)]
+                                                       [(update-tm-machine) (car previousState)]
                                                        [else (car (cdr previousState))])))
 
                               ;; hanlds the pda pops
@@ -669,15 +703,19 @@ Created by Joshua Schappel on 12/19/19
                                  (cons (car (world-processed-config-list w)) (world-unporcessed-config-list w)) (world-error-msg w)
                                  (getScrollBarPosition (reverse (machine-rule-list (world-fsm-machine w))) cur-rule))))])))
 
+
 ;; setTapePosn world -> world
 ;; Purpose: Sets the tape-input for a turing machine
 (define setTapePosn (lambda (w)
                       (let*((input-value (string-trim (textbox-text(list-ref (world-input-list w) 9))))
                             (new-input-list (list-set (world-input-list w) 9 (remove-text (list-ref (world-input-list w) 9) 100))))
-
-                        
                         (cond
                           [(equal? "" input-value) w]
+                          [(not (number? input-value))
+                           (redraw-world-with-msg w
+                                                  "Input must be a number."
+                                                  "Error"
+                                                  MSG-CAUTION)]
                           [(< (length (machine-sigma-list (world-fsm-machine w)))
                               (string->number input-value))
                            (redraw-world-with-msg w
@@ -689,7 +727,30 @@ Created by Joshua Schappel on 12/19/19
                              (reset-bottom-indices)
                              (set-tm-machine-tape-posn! (world-fsm-machine w) (string->number input-value))
                              (create-new-world-input-empty w new-input-list))]))))
-                  
+
+
+;; setAcceptState: world -> world
+;; Purpose: sets the lang-rec machines accept state
+(define setAcceptState (lambda (w)
+                         (letrec ((input-value (string-trim (textbox-text(list-ref (world-input-list w) 10))))
+                                  (new-input-list (list-set (world-input-list w) 10 (remove-text (list-ref (world-input-list w) 10) 100)))
+
+                                  (same-state? (filter (lambda (state) (equal? (fsm-state-name state) (string->symbol input-value)))
+                                                       (machine-state-list (world-fsm-machine w)))))
+                           (cond
+                             [(equal? "" input-value) w]
+                             [(empty? same-state?)
+                              (redraw-world-with-msg w
+                                                     "The currently choosen state is not in your list of states!"
+                                                     "Error"
+                                                     MSG-CAUTION)]
+                             [else
+                              (begin
+                                (reset-bottom-indices)
+                                (create-new-world-input-empty w
+                                                              new-input-list
+                                                              (update-lang-rec-accept-state (world-fsm-machine w)
+                                                                                            (string->symbol input-value))))]))))
 
 
 ;; scrollbarRight: world -> world
@@ -697,11 +758,11 @@ Created by Joshua Schappel on 12/19/19
 (define scrollbarRight (lambda (w)
                          (let ((index (world-scroll-bar-index w))
                                (rule-num (determine-rule-number MACHINE-TYPE)))
+                           
                            (cond
                              [(< (length (machine-rule-list (world-fsm-machine w))) rule-num) (redraw-world w)]
                              [(< (length (list-tail (machine-rule-list (world-fsm-machine w)) (add1 index))) rule-num) (redraw-world w)]
                              [else
-
                               (world (world-fsm-machine w) (world-tape-position w) (world-cur-rule w) (world-cur-state w) (world-button-list w)
                                      (world-input-list w) (world-processed-config-list w)(world-unporcessed-config-list w) (world-error-msg w) (add1 index))]))))
 
@@ -712,7 +773,6 @@ Created by Joshua Schappel on 12/19/19
                           (cond
                             [(< (- index 1) 0)(redraw-world w)]
                             [else
-
                              (world (world-fsm-machine w) (world-tape-position w) (world-cur-rule w) (world-cur-state w) (world-button-list w)
                                     (world-input-list w) (world-processed-config-list w)(world-unporcessed-config-list w) (world-error-msg w) (sub1 index))]))))
 
@@ -786,6 +846,7 @@ Created by Joshua Schappel on 12/19/19
   (case type
     [(pda) PDA_NUMBER]
     [(tm) TM_NUMBER]
+    [(tm-language-recognizer) TM_NUMBER]
     [else DFA-NDFA_NUMBER]))
 
 

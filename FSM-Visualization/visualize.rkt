@@ -123,7 +123,8 @@ Cmd Functions
                              '() (sm-getalphabet fsm-machine)
                              (sm-type fsm-machine))
                     (sm-type fsm-machine)
-                    (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "dfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
+                    (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation."
+                               "dfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
                   (void))]
          
          [(ndfa) (begin
@@ -137,7 +138,8 @@ Cmd Functions
                               '() (sm-getalphabet fsm-machine)
                               (sm-type fsm-machine))
                      (sm-type fsm-machine)
-                     (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "ndfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
+                     (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation."
+                                "ndfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
                    (void))]
          
          [(pda) (begin
@@ -152,15 +154,15 @@ Cmd Functions
                                  (sm-type fsm-machine)
                                  (sm-getstackalphabet fsm-machine))
                     (sm-type fsm-machine)
-                    (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "pda" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
+                    (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation."
+                               "pda" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
                   (void))]
          
          [(tm) (begin
-                 (println (sm-getalphabet fsm-machine))
                  (set-machine-type 'tm)
                  (run-program
                   (build-world
-                   (tm-machine (map (lambda (x) (fsm-state x TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine))
+                   (tm-machine (map (lambda (x) (fsm-state x TM-TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine))
                                (sm-getstart fsm-machine)
                                (sm-getfinals fsm-machine)
                                (reverse (sm-getrules fsm-machine))
@@ -168,8 +170,26 @@ Cmd Functions
                                (sm-type fsm-machine)
                                0)
                    (sm-type fsm-machine)
-                   (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "tm" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
-                 (void))])]
+                   (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation."
+                              "tm" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
+                 (void))]
+         
+         [(tm-language-recognizer) (begin
+                                     (set-machine-type 'tm-language-recognizer)
+                                     (run-program
+                                      (build-world
+                                       (lang-rec-machine (map (lambda (x) (fsm-state x TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine))
+                                                         (sm-getstart fsm-machine)
+                                                         (sm-getfinals fsm-machine)
+                                                         (reverse (sm-getrules fsm-machine))
+                                                         '() (sm-getalphabet fsm-machine)
+                                                         (sm-type fsm-machine)
+                                                         0
+                                                         '||)
+                                       (sm-type fsm-machine)
+                                       (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation."
+                                                  "tm-language-recognizer" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
+                                     (void))])]
 
       ;; --- Pre-made with predicates (invariants) ---
       [else
@@ -550,7 +570,7 @@ Scene Rendering
                                (case MACHINE-TYPE
                                  [(tm) (create-gui-right (tm-machine-tape-posn machine))]
                                  [(tm-language-recognizer)
-                                  (create-gui-right (lang-rec-machine-tape-posn machine) (lang-rec-machine-accept-state machine))]
+                                  (create-gui-right (tm-machine-tape-posn machine) (lang-rec-machine-accept-state machine))]
                                  [else (create-gui-right)]))))
         
           
@@ -911,35 +931,35 @@ RIGHT GUI RENDERING
                                   (cond
                                     [(equal? MACHINE-TYPE 'tm-language-recognizer)
                                      (letrec (
-                                            ;; draw-left: none -> img
-                                            ;; Purpose: draws the message that telles the user the current position
-                                            (draw-tape-index (lambda ()
-                                                               (let ([state (symbol->string (cadr args))])
-                                                                 (overlay
-                                                                  (beside
-                                                                   (text "Current: " 11 (make-color 94 36 23))
-                                                                   (text state 14 (make-color 145 6 196)))
-                                                                  (rectangle 100 25 "outline" "transparent")))))
+                                              ;; draw-left: none -> img
+                                              ;; Purpose: draws the message that telles the user the current position
+                                              (draw-tape-index (lambda ()
+                                                                 (let ([state (symbol->string (cadr args))])
+                                                                   (overlay
+                                                                    (beside
+                                                                     (text "Current: " 11 (make-color 94 36 23))
+                                                                     (text state 14 (make-color 227 153 43)))
+                                                                    (rectangle 100 25 "outline" "transparent")))))
                                             
-                                            ;; draw-left: none -> img
-                                            ;; Purpose: Draws the end add/remove option
-                                            (draw-left (lambda ()
-                                                         (overlay/align "left" "top"
-                                                                        (rectangle 100 CONTROL-BOX-H "outline" "transparent")
-                                                                        (control-header5 "Start State"))))
-                                            ;; draw-right: none -> img
-                                            ;; Purpose: Draws the tape index option
-                                            (draw-right (lambda ()
-                                                          (overlay/align "left" "top"
-                                                                         (rectangle 100 CONTROL-BOX-H "outline" "blue")
-                                                                         (above
-                                                                          (control-header5 "User-defined")
-                                                                          (draw-tape-index))))))
-                                     (overlay
-                                      (beside
-                                       (draw-left)
-                                       (draw-right))
-                                      (rectangle 200 CONTROL-BOX-H "outline" "blue")))]
+                                              ;; draw-left: none -> img
+                                              ;; Purpose: Draws the end add/remove option
+                                              (draw-left (lambda ()
+                                                           (overlay/align "left" "top"
+                                                                          (rectangle 100 CONTROL-BOX-H "outline" "transparent")
+                                                                          (control-header5 "Start State"))))
+                                              ;; draw-right: none -> img
+                                              ;; Purpose: Draws the tape index option
+                                              (draw-right (lambda ()
+                                                            (overlay/align "left" "top"
+                                                                           (rectangle 100 CONTROL-BOX-H "outline" "blue")
+                                                                           (above
+                                                                            (control-header5 "Accept State")
+                                                                            (draw-tape-index))))))
+                                       (overlay
+                                        (beside
+                                         (draw-left)
+                                         (draw-right))
+                                        (rectangle 200 CONTROL-BOX-H "outline" "blue")))]
                                     [else
                                      (overlay/align "left" "top"
                                                     (rectangle 200 CONTROL-BOX-H "outline" "blue")

@@ -1,6 +1,6 @@
 #lang racket
 
-(require 2htdp/image 2htdp/universe "posn.rkt")
+(require "posn.rkt")
 
 ;; ------- machine.rkt -------
 ;; This file contains the structure for fsm state

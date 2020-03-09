@@ -20,11 +20,12 @@ Created by Joshua Schappel on 12/19/19
                            ;; A condensed list of just the state-name symbols
                            (state-list (map (lambda (x) (fsm-state-name x)) (machine-state-list (world-fsm-machine w))))
                            )
-
                       (cond
                         ;; If the input list if empty tell the user
                         [(empty? (machine-sigma-list (world-fsm-machine w)))
                          (redraw-world-with-msg w "You must first add input to the machine!" "Notice" MSG-CAUTION)]
+                        [(equal? '|| (lang-rec-machine-accept-state fsm-machine))
+                         (redraw-world-with-msg w "You must specify an accept state" "Notice" MSG-CAUTION)]
                         [(isValidMachine? state-list fsm-machine)
                          (letrec (
                                   ;; Build a passing machine
@@ -45,30 +46,40 @@ Created by Joshua Schappel on 12/19/19
                                                                    (machine-start-state (world-fsm-machine w))
                                                                    (machine-final-state-list (world-fsm-machine w))
                                                                    (machine-rule-list (world-fsm-machine w)))]
-                                       [else
+                                       ['tm
                                         (make-unchecked-tm state-list
                                                            (machine-alpha-list (world-fsm-machine w))
                                                            (machine-rule-list (world-fsm-machine w))
                                                            (machine-start-state (world-fsm-machine w))
-                                                           (machine-final-state-list (world-fsm-machine w)))]))
+                                                           (machine-final-state-list (world-fsm-machine w)))]
+                                       [else (make-unchecked-tm state-list
+                                                                (machine-alpha-list (world-fsm-machine w))
+                                                                (machine-rule-list (world-fsm-machine w))
+                                                                (machine-start-state (world-fsm-machine w))
+                                                                (machine-final-state-list (world-fsm-machine w))
+                                                                (lang-rec-machine-accept-state (world-fsm-machine w)))]))
 
                                   ;; Unprocessed transitions
                                   (unprocessed-list (case MACHINE-TYPE
-                                                      ;; tm
                                                       [(tm)
                                                        (append (sm-showtransitions m
                                                                                    (machine-sigma-list (world-fsm-machine w))   
                                                                                    (tm-machine-tape-posn (world-fsm-machine w)))
                                                                '(halt))]
-                                                      [(tm2) (println "todo")]
+                                                      [(tm-language-recognizer) (sm-showtransitions m
+                                                                                                    (machine-sigma-list (world-fsm-machine w))   
+                                                                                                    (tm-machine-tape-posn (world-fsm-machine w)))]
 
                                                       ;; dfa, ndfa, pda
                                                       [else (sm-showtransitions m
                                                                                 (machine-sigma-list (world-fsm-machine w)))]))
 
-                                  ) 
+                                  )
+                           
                            ;; Set up the world to have all the valid machine components below
+                           
                            (begin
+                             
                              (define new-list (remove-duplicates (append (sm-getstates m) state-list))) ;; new-list: checks for any fsm state add-ons (ie. 'ds)
                              (world
                               (constructWorldMachine new-list fsm-machine m)
@@ -118,6 +129,15 @@ Created by Joshua Schappel on 12/19/19
             (machine-rule-list fsm-machine)
             (machine-start-state fsm-machine)
             (machine-type fsm-machine)))]
+    [(tm-language-recognizer)
+     (boolean? 
+      (check-machine
+       state-list
+       (remove-duplicates (machine-alpha-list fsm-machine))
+       (machine-final-state-list fsm-machine)
+       (machine-rule-list fsm-machine)
+       (machine-start-state fsm-machine)
+       'tm))]
     [else
      (boolean?
       (check-machine
@@ -154,7 +174,18 @@ Created by Joshua Schappel on 12/19/19
       (sm-getalphabet newMachine)
       (sm-type newMachine)
       (tm-machine-tape-posn worldMachine))]
-      
+    [(tm-language-recognizer)
+     (println worldMachine)
+     (lang-rec-machine
+      (addTrueFunctions state-list worldMachine)
+      (sm-getstart newMachine)
+      (sm-getfinals newMachine)
+      (sm-getrules newMachine)
+      (machine-sigma-list worldMachine)
+      (sm-getalphabet newMachine)
+      (sm-type newMachine)
+      (tm-machine-tape-posn worldMachine)
+      (sm-getaccept newMachine))]
     [else
      (machine
       (addTrueFunctions state-list worldMachine)
@@ -184,7 +215,11 @@ Created by Joshua Schappel on 12/19/19
              (cond
                [(not (equal? #f state)) state]
                [else
-                (fsm-state x TRUE-FUNCTION (posn 0 0))])))
+                (case MACHINE-TYPE
+                  [(pda) (fsm-state x PDA-TRUE-FUNCTION (posn 0 0))]
+                  [(tm) (fsm-state x TM-TRUE-FUNCTION (posn 0 0))]
+                  [(tm-language-recognizer) (fsm-state x TM-TRUE-FUNCTION (posn 0 0))]
+                  [else (fsm-state x TRUE-FUNCTION (posn 0 0))])])))
          los)))
   
 

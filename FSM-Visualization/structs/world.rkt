@@ -50,17 +50,17 @@ WORLD INITIALIZATION FUNCTIONS
 ;; initialize-world: fsm-machine string list-of-buttons list-of-inputs -> world
 ;; Purpose: returns the proper world structure based on the given inputs.
 (define (initialize-world machine window-msg btn-list input-list)
-     (world
-      machine
-      0
-      CURRENT-RULE
-      CURRENT-STATE
-      btn-list
-      input-list
-      '()
-      '()
-      window-msg
-      INIT-INDEX-BOTTOM))
+  (world
+   machine
+   0
+   CURRENT-RULE
+   CURRENT-STATE
+   btn-list
+   input-list
+   '()
+   '()
+   window-msg
+   INIT-INDEX-BOTTOM))
 
      
 
@@ -79,12 +79,16 @@ WORLD DRAWING FUNCTIONS
   (world (world-fsm-machine a-world) (world-tape-position a-world) (world-cur-rule a-world) (world-cur-state a-world) (world-button-list a-world)
          loi (world-processed-config-list a-world)(world-unporcessed-config-list a-world) (world-error-msg a-world) (world-scroll-bar-index a-world)))
 
-;; create-new-world-input: world list-of-input-fields -> world
+;; create-new-world-input: world list-of-input-fields machine (optional) -> world
 ;; Purpose: Creates a new world to handle the list-of-input-fields changes AND sets the processed and unprocesseed lists to empty
-(define (create-new-world-input-empty a-world loi)
-  (world (world-fsm-machine a-world) (world-tape-position a-world) (world-cur-rule a-world) null (world-button-list a-world)
-         loi '()'() (world-error-msg a-world) (world-scroll-bar-index a-world)))
-
+(define (create-new-world-input-empty a-world loi . args)
+  (cond
+    [(empty? args)
+     (world (world-fsm-machine a-world) (world-tape-position a-world) (world-cur-rule a-world) null (world-button-list a-world)
+            loi '()'() (world-error-msg a-world) (world-scroll-bar-index a-world))]
+    [else
+     (world (car args) (world-tape-position a-world) (world-cur-rule a-world) null (world-button-list a-world)
+            loi '()'() (world-error-msg a-world) (world-scroll-bar-index a-world))]))
 
 ;; create-new-world-button: world list-of-button-fields -> world
 ;; Purpose: Creates a new world to handle the list-of-button-fields changes

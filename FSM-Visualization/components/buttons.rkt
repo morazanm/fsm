@@ -47,7 +47,7 @@ Button Declarations
 (define BTN-ADD-END-TM (button 35 25 "Add" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 175) (- (* 4 CONTROL-BOX-H) 25)) addEnd))
 (define BTN-REMOVE-END-TM (button 35 25 "Rmv" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 125) (- (* 4 CONTROL-BOX-H) 25)) rmvEnd))
 
-(define BTN-SET-END-LANG-REC (button 50 25 "Set" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 50) (- (* 3 CONTROL-BOX-H) 25)) NULL-FUNCTION))
+(define BTN-SET-END-LANG-REC (button 50 25 "Set" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 50) (- (* 3 CONTROL-BOX-H) 25)) setAcceptState))
 
 
 (define BTN-TAPE-INPUT-TM (button 50 25 "Set" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 50) (- (* 4 CONTROL-BOX-H) 25)) setTapePosn))

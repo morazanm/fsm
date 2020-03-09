@@ -62,7 +62,7 @@
 
  ; constants
  EMP DEAD RIGHT LEFT LM BLANK BRANCH GOTO ARROW VAR
-
+ 
  ; transducers
  make-dfst)
 ; Primitive constructors imported from other modules

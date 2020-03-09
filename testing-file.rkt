@@ -13,13 +13,13 @@
 ;;---- NDFA ----
 ;; valid input: aaabbb 
 (define P (make-ndpda '(S F)
-                     '(a b)
-                     '(c)
-                     'S
-                     '(F)
-                     `(((S ,EMP ,EMP) (F ,EMP))
-                       ((F a ,EMP) (F (c)))
-                       ((F b (c)) (F ,EMP)))))
+                      '(a b)
+                      '(c)
+                      'S
+                      '(F)
+                      `(((S ,EMP ,EMP) (F ,EMP))
+                        ((F a ,EMP) (F (c)))
+                        ((F b (c)) (F ,EMP)))))
 
 ;;---- PDA ----
 (define pda-numa=numb (make-ndpda '(S M F)
@@ -53,12 +53,12 @@
 ;; (sm-showtransitions Ma `(,LM b b b b) 2)
 ; write "a" on tape
 (define Ma2 (make-tm '(S H)                 ;the states
-                    `(a b)             ;the alphabet
-                    `(((S a) (H a))        ;the transition relation
-                      ((S b) (H a))
-                      ((S ,BLANK) (H a)))
-                    'S                     ;the starting state
-                    '(H)))                 ;the halting states
+                     `(a b)             ;the alphabet
+                     `(((S a) (H a))        ;the transition relation
+                       ((S b) (H a))
+                       ((S ,BLANK) (H a)))
+                     'S                     ;the starting state
+                     '(H)))                 ;the halting states
 
 
 ; write "a" on tape
@@ -88,4 +88,7 @@
                       '(Y N)
                       'Y))
 
-(sm-visualize 'tm-language-recognizer)
+
+;;(sm-getrules Alla)
+(sm-visualize Alla)
+(sm-getaccept Alla)
