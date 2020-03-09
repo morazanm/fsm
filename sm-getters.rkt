@@ -10,7 +10,7 @@
 
   (define (sm-getaccept M)
     (if (eq? (sm-type M) 'tm-language-recognizer)
-        (car (M '() 0 'get-accept))
+        (M '() 0 'get-accept)
         (error "Only language recognizers have a specialized accept state.")))
         
   
