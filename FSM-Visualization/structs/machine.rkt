@@ -13,6 +13,7 @@
  (struct-out tm-machine)
  (struct-out lang-rec-machine)
  update-tm-machine
+ update-lang-rec-machine
  update-lang-rec-accept-state)
 
 ;; machine A structure that represents a fsm machine. This structure can represent any type of machine
@@ -60,6 +61,19 @@
               (machine-alpha-list m)
               (machine-type m)
               new-posn))
+
+;; update-lang-rec-machine: lang-rec-machine int list-of-symbols -> tm-machine
+;; Purpose: Builds a new tm machine with the updated tape posn
+(define (update-lang-rec-machine m new-posn new-sigma)
+  (lang-rec-machine (machine-state-list m)
+              (machine-start-state m)
+              (machine-final-state-list m)
+              (machine-rule-list m)
+              new-sigma
+              (machine-alpha-list m)
+              (machine-type m)
+              new-posn
+              (lang-rec-machine-accept-state m)))
 
 
 ;; update-lang-rec-accept-state: lang-rec-machine: symbol -> lang-rec-machine

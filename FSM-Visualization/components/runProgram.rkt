@@ -12,7 +12,7 @@ Created by Joshua Schappel on 12/19/19
 (provide runProgram)
 
 ;; runProgram: world -> world
-;; Purpose: Calles sm-showtransitons on the world machine. If it is valid then the next and prev buttons will work and the user can use the program
+;; Purpose: Determins if there are any unfilled in fields. If there are not any then the machine is constructed in fsm
 (define runProgram(lambda (w)
                     (let* (
                            ;; The world fsm-machine
@@ -24,87 +24,98 @@ Created by Joshua Schappel on 12/19/19
                         ;; If the input list if empty tell the user
                         [(empty? (machine-sigma-list (world-fsm-machine w)))
                          (redraw-world-with-msg w "You must first add input to the machine!" "Notice" MSG-CAUTION)]
-                        [(equal? '|| (lang-rec-machine-accept-state fsm-machine))
-                         (redraw-world-with-msg w "You must specify an accept state" "Notice" MSG-CAUTION)]
-                        [(isValidMachine? state-list fsm-machine)
-                         (letrec (
-                                  ;; Build a passing machine
-                                  (m (case (machine-type fsm-machine)
-                                       ['dfa (make-unchecked-dfa state-list
-                                                                 (machine-alpha-list (world-fsm-machine w))
-                                                                 (machine-start-state (world-fsm-machine w))
-                                                                 (machine-final-state-list (world-fsm-machine w))
-                                                                 (machine-rule-list (world-fsm-machine w)))]
-                                       ['ndfa (make-unchecked-ndfa state-list
-                                                                   (machine-alpha-list (world-fsm-machine w))
-                                                                   (machine-start-state (world-fsm-machine w))
-                                                                   (machine-final-state-list (world-fsm-machine w))
-                                                                   (machine-rule-list (world-fsm-machine w)))]
-                                       ['pda (make-unchecked-ndpda state-list
-                                                                   (machine-alpha-list (world-fsm-machine w))
-                                                                   (pda-machine-stack-alpha-list (world-fsm-machine w))
-                                                                   (machine-start-state (world-fsm-machine w))
-                                                                   (machine-final-state-list (world-fsm-machine w))
-                                                                   (machine-rule-list (world-fsm-machine w)))]
-                                       ['tm
-                                        (make-unchecked-tm state-list
-                                                           (machine-alpha-list (world-fsm-machine w))
-                                                           (machine-rule-list (world-fsm-machine w))
-                                                           (machine-start-state (world-fsm-machine w))
-                                                           (machine-final-state-list (world-fsm-machine w)))]
-                                       [else (make-unchecked-tm state-list
-                                                                (machine-alpha-list (world-fsm-machine w))
-                                                                (machine-rule-list (world-fsm-machine w))
-                                                                (machine-start-state (world-fsm-machine w))
-                                                                (machine-final-state-list (world-fsm-machine w))
-                                                                (lang-rec-machine-accept-state (world-fsm-machine w)))]))
-
-                                  ;; Unprocessed transitions
-                                  (unprocessed-list (case MACHINE-TYPE
-                                                      [(tm)
-                                                       (append (sm-showtransitions m
-                                                                                   (machine-sigma-list (world-fsm-machine w))   
-                                                                                   (tm-machine-tape-posn (world-fsm-machine w)))
-                                                               '(halt))]
-                                                      [(tm-language-recognizer) (sm-showtransitions m
-                                                                                                    (machine-sigma-list (world-fsm-machine w))   
-                                                                                                    (tm-machine-tape-posn (world-fsm-machine w)))]
-
-                                                      ;; dfa, ndfa, pda
-                                                      [else (sm-showtransitions m
-                                                                                (machine-sigma-list (world-fsm-machine w)))]))
-
-                                  )
-                           
-                           ;; Set up the world to have all the valid machine components below
-                           
-                           (begin
-                             
-                             (define new-list (remove-duplicates (append (sm-getstates m) state-list))) ;; new-list: checks for any fsm state add-ons (ie. 'ds)
-                             (world
-                              (constructWorldMachine new-list fsm-machine m)
-                              (world-tape-position w)
-                              CURRENT-RULE
-                              (machine-start-state (world-fsm-machine w))
-                              (world-button-list w)
-                              (world-input-list w)
-                                    
-                              (if (list? unprocessed-list)
-                                  (list (car unprocessed-list))
-                                  '())
-                                    
-                              (if (list? unprocessed-list)
-                                  (cdr unprocessed-list)
-                                  '())
-                                    
-                              (if (list? unprocessed-list)
-                                  (msgWindow "The machine was sucessfully built. Press Next and Prev to show the machine's transitions" "Success"
-                                             (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)
-                                  (msgWindow "The Input was rejected" "Warning"
-                                             (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-CAUTION))
-                              0)))]
+                        [(lang-rec-machine? fsm-machine)
+                         (if (equal? '|| (lang-rec-machine-accept-state fsm-machine))
+                             (redraw-world-with-msg w "You must specify an accept state" "Notice" MSG-CAUTION)
+                             (construct-world state-list fsm-machine w))]
                         [else
-                         (redraw-world-with-msg w "The Machine failed to build. Please see the cmd for more info" "Error" MSG-ERROR)]))))
+                         (construct-world state-list fsm-machine w)]))))
+                        
+
+
+;; construct-world: state-list machine world -> world
+;; Purpose: Determins if the machien is valid. If it is then it creates a new world with valid machines parts and transition rules
+(define (construct-world state-list fsm-machine w)
+  (cond
+    [(isValidMachine? state-list fsm-machine)
+     (letrec (
+              ;; Build a passing machine
+              (m (case (machine-type fsm-machine)
+                   ['dfa (make-unchecked-dfa state-list
+                                             (machine-alpha-list (world-fsm-machine w))
+                                             (machine-start-state (world-fsm-machine w))
+                                             (machine-final-state-list (world-fsm-machine w))
+                                             (machine-rule-list (world-fsm-machine w)))]
+                   ['ndfa (make-unchecked-ndfa state-list
+                                               (machine-alpha-list (world-fsm-machine w))
+                                               (machine-start-state (world-fsm-machine w))
+                                               (machine-final-state-list (world-fsm-machine w))
+                                               (machine-rule-list (world-fsm-machine w)))]
+                   ['pda (make-unchecked-ndpda state-list
+                                               (machine-alpha-list (world-fsm-machine w))
+                                               (pda-machine-stack-alpha-list (world-fsm-machine w))
+                                               (machine-start-state (world-fsm-machine w))
+                                               (machine-final-state-list (world-fsm-machine w))
+                                               (machine-rule-list (world-fsm-machine w)))]
+                   ['tm
+                    (make-unchecked-tm state-list
+                                       (machine-alpha-list (world-fsm-machine w))
+                                       (machine-rule-list (world-fsm-machine w))
+                                       (machine-start-state (world-fsm-machine w))
+                                       (machine-final-state-list (world-fsm-machine w)))]
+                   [else (make-unchecked-tm state-list
+                                            (machine-alpha-list (world-fsm-machine w))
+                                            (machine-rule-list (world-fsm-machine w))
+                                            (machine-start-state (world-fsm-machine w))
+                                            (machine-final-state-list (world-fsm-machine w))
+                                            (lang-rec-machine-accept-state (world-fsm-machine w)))]))
+
+              ;; Unprocessed transitions
+              (unprocessed-list (case MACHINE-TYPE
+                                  [(tm)
+                                   (append (sm-showtransitions m
+                                                               (machine-sigma-list (world-fsm-machine w))   
+                                                               (tm-machine-tape-posn (world-fsm-machine w)))
+                                           '(halt))]
+                                  [(tm-language-recognizer) (sm-showtransitions m
+                                                                                (machine-sigma-list (world-fsm-machine w))   
+                                                                                (tm-machine-tape-posn (world-fsm-machine w)))]
+
+                                  ;; dfa, ndfa, pda
+                                  [else (sm-showtransitions m
+                                                            (machine-sigma-list (world-fsm-machine w)))]))
+
+              )
+                           
+       ;; Set up the world to have all the valid machine components below                 
+       (begin                 
+         (define new-list (remove-duplicates (append (sm-getstates m) state-list))) ;; new-list: checks for any fsm state add-ons (ie. 'ds)
+         (world
+          (constructWorldMachine new-list fsm-machine m)
+          (world-tape-position w)
+          CURRENT-RULE
+          (machine-start-state (world-fsm-machine w))
+          (world-button-list w)
+          (world-input-list w)      
+          (if (list? unprocessed-list)
+              (list (car unprocessed-list))
+              '())
+                                    
+          (if (list? unprocessed-list)
+              (cdr unprocessed-list)
+              '())
+                                    
+          (if (list? unprocessed-list)
+              (msgWindow "The machine was sucessfully built. Press Next and Prev to show the machine's transitions" "Success"
+                         (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)
+              (msgWindow "The Input was rejected" "Warning"
+                         (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-CAUTION))
+          0)))]
+    [else
+     (redraw-world-with-msg w "The Machine failed to build. Please see the cmd for more info" "Error" MSG-ERROR)]))
+
+
+
 
 
 ;; isValidMachine?: list-of-states machine -> boolean
@@ -175,7 +186,6 @@ Created by Joshua Schappel on 12/19/19
       (sm-type newMachine)
       (tm-machine-tape-posn worldMachine))]
     [(tm-language-recognizer)
-     (println worldMachine)
      (lang-rec-machine
       (addTrueFunctions state-list worldMachine)
       (sm-getstart newMachine)

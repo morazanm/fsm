@@ -89,6 +89,7 @@
                       'Y))
 
 
-;;(sm-getrules Alla)
+(sm-getrules Alla)
+(sm-showtransitions Alla '(a a a a))
 (sm-visualize Alla)
 (sm-getaccept Alla)

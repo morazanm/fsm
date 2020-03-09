@@ -7,6 +7,7 @@
                      (case MACHINE-TYPE
                        [(pda) (get-pda-rule processed-list)]
                        [(tm) (get-tm-rule processed-list)]
+                       [(tm-language-recognizer) (get-tm-rule processed-list)]
                        [else (get-dfa-ndfa-rule processed-list)])))
 
 
@@ -50,7 +51,14 @@
 
           (cur-tape-element (list-ref cur-tape cur-tape-index)) ;; The currently highlights element
           (next-tape-element (list-ref next-tape next-tape-index))) ;; The next highlighted element
-    (list (list cur-state cur-tape-element) (list next-state next-tape-element))))
+
+    (cond
+      [(cur-tape-index . > . next-tape-index) ;; moved to left
+       (list (list cur-state cur-tape-element) (list next-state LEFT))]
+      [(cur-tape-index . < . next-tape-index) ;; moved to right
+       (list (list cur-state cur-tape-element) (list next-state RIGHT))]
+      [else                                   ;;statyed in same posn
+       (list (list cur-state cur-tape-element) (list next-state next-tape-element))])))
 
 
 ;; get-pda-rule: processed-list -> pda-rule

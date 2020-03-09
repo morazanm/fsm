@@ -102,9 +102,9 @@ Created by Joshua Schappel on 12/19/19
                                                             [(equal? (symbol->string (caadr rule)) state) #f]
                                                             [else #t])]
                                                     [(tm-language-recognizer) (cond
-                                                            [(equal? (symbol->string (caar rule)) state) #f]
-                                                            [(equal? (symbol->string (caadr rule)) state) #f]
-                                                            [else #t])]
+                                                                                [(equal? (symbol->string (caar rule)) state) #f]
+                                                                                [(equal? (symbol->string (caadr rule)) state) #f]
+                                                                                [else #t])]
                                                     [else (cond
                                                             [(equal? (symbol->string (car rule)) state) #f]
                                                             [(equal?  (symbol->string (caddr rule)) state) #f]
@@ -484,8 +484,7 @@ Created by Joshua Schappel on 12/19/19
 ;;      where the rule will be sceen by the user.
 (define getScrollBarPosition (lambda (lor rule)
                                (let ((ruleIndex (index-of lor rule))
-                                     (rule-num (determine-rule-number MACHINE-TYPE)))
-                                 
+                                     (rule-num (determine-rule-number MACHINE-TYPE)))                    
                                  (cond
                                    ;; See if there is no current rule. If so return the starting index of the scrollbar
                                    [(or (equal? rule '(empty empty empty))
@@ -518,15 +517,24 @@ Created by Joshua Schappel on 12/19/19
                        [else
                         (letrec(
                                 (nextState (car (world-unporcessed-config-list w))) ;; The next state the machine transitions to
-                                ;; Determins the the next transition based on machine type
+                                ;; Determins if the machien needs to go to the next transiton or if the machine is at the end
                                 (determine-next-steps (lambda ()
+                                                        (println (world-unporcessed-config-list w))
                                                         (cond
                                                           [(eq? nextState 'accept)
                                                            (redraw-world-with-msg w "The input is accepted." "Success" MSG-SUCCESS)]
                                                           [(eq? nextState 'reject)
                                                            (redraw-world-with-msg w "The input is rejected." "Notice" MSG-CAUTION)]
                                                           [(eq? nextState 'halt)
-                                                           (redraw-world-with-msg w "The machine has halted" "Notice" MSG-CAUTION)]
+                                                           (redraw-world-with-msg w "The machine has halted!!" "Notice" MSG-CAUTION)]
+
+                                                          ;; Lang recs have a seperate end conditon so we will check it here
+                                                          [(and (equal? 1 (length (world-unporcessed-config-list w)))
+                                                                (equal? MACHINE-TYPE 'tm-language-recognizer))
+                                                           (let ((sym (caar (world-unporcessed-config-list w))))
+                                                             (if (equal? sym (lang-rec-machine-accept-state (world-fsm-machine w)))
+                                                                 (redraw-world-with-msg w "The input is accepted." "Success" MSG-SUCCESS)
+                                                                 (redraw-world-with-msg w "The input is rejected." "Notice" MSG-CAUTION)))]
                                                           [else
                                                            (go-next nextState w)]))))
                           (determine-next-steps))])])))
@@ -586,7 +594,7 @@ Created by Joshua Schappel on 12/19/19
                 (update-machine (lambda(m)
                                   (case MACHINE-TYPE
                                     [(tm) (update-tm-machine m (cadr nextState) (caddr nextState))]
-                                    [(tm-language-recognizer) (update-tm-machine m (cadr nextState) (caddr nextState))]
+                                    [(tm-language-recognizer) (update-lang-rec-machine m (cadr nextState) (caddr nextState))]
                                     [else m]))))
 
          ;; Based on the machien type certin things need to be updated:
@@ -597,6 +605,7 @@ Created by Joshua Schappel on 12/19/19
            ;; Determine if the tape input should increase.
            ;; This does not need to be done for tm's or on an empty transition
            (if (and (not (equal? 'tm MACHINE-TYPE))
+                    (not (equal? 'tm-language-recognizer MACHINE-TYPE))
                     (equal? EMP (get-input cur-rule)))
                TAPE-INDEX-BOTTOM
                (set-tape-index-bottom (+ 1 TAPE-INDEX-BOTTOM)))
@@ -637,7 +646,7 @@ Created by Joshua Schappel on 12/19/19
                                                              EMP
                                                              #t)]
                                                    [(tm) (println "Should not reach this")]
-                                                   [(update-tm-machine) (println "Should not reach this")]
+                                                   [(tm-language-recognizer) (println "Should not reach this")]
                                                    [else(cadr cur-rule)])))
                               
                               ;; Updates the machine to have the approperate values. This function is only needed for tm, to
@@ -645,7 +654,7 @@ Created by Joshua Schappel on 12/19/19
                               (update-machine (lambda(m)
                                                 (case MACHINE-TYPE
                                                   [(tm) (update-tm-machine m (cadr previousState) (caddr previousState))]
-                                                  [(update-tm-machine) (update-tm-machine m (cadr previousState) (caddr previousState))]
+                                                  [(tm-language-recognizer) (update-lang-rec-machine m (cadr previousState) (caddr previousState))]
                                                   [else m])))
                                                     
                               ;; determin-cur-state: none -> symbol
@@ -654,7 +663,7 @@ Created by Joshua Schappel on 12/19/19
                                                      (case MACHINE-TYPE
                                                        [(pda) (car previousState)]
                                                        [(tm) (car previousState)]
-                                                       [(update-tm-machine) (car previousState)]
+                                                       [(tm-language-recognizer) (car previousState)]
                                                        [else (car (cdr previousState))])))
 
                               ;; hanlds the pda pops
@@ -684,6 +693,7 @@ Created by Joshua Schappel on 12/19/19
                           ;; Determine if the tape input should decrease. This does not happen
                           ;; with tm's and an empty
                           (if (and (not (equal? 'tm MACHINE-TYPE))
+                                   (not (equal? 'tm-language-recognizer MACHINE-TYPE))
                                    (equal? EMP (input-consumed?)))
                               TAPE-INDEX-BOTTOM
                               (set-tape-index-bottom (- TAPE-INDEX-BOTTOM 1)))
@@ -711,11 +721,6 @@ Created by Joshua Schappel on 12/19/19
                             (new-input-list (list-set (world-input-list w) 9 (remove-text (list-ref (world-input-list w) 9) 100))))
                         (cond
                           [(equal? "" input-value) w]
-                          [(not (number? input-value))
-                           (redraw-world-with-msg w
-                                                  "Input must be a number."
-                                                  "Error"
-                                                  MSG-CAUTION)]
                           [(< (length (machine-sigma-list (world-fsm-machine w)))
                               (string->number input-value))
                            (redraw-world-with-msg w

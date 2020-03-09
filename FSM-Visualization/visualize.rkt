@@ -242,7 +242,7 @@ Cmd Functions
                              (sm-type fsm-machine)
                              (sm-getstackalphabet fsm-machine))
                 (sm-type fsm-machine)
-                (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "dfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
+                (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "pda" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
               (void))]
            
            [(tm) (begin
@@ -263,9 +263,32 @@ Cmd Functions
                                    (sm-type fsm-machine)
                                    0)
                        (sm-type fsm-machine)
-                       (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "dfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
+                       (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "tm" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
                      (void))
                    )]
+
+           [(tm-language-recognizer) (begin
+                                       (begin
+                                         (set-machine-type 'tm-language-recognizer)
+                                         (run-program
+                                          (build-world
+                                           (lang-rec-machine (map (lambda (x)
+                                                                    (let ((temp (get-member x args)))
+                                                                      (if (empty? temp)
+                                                                          (fsm-state x TM-TRUE-FUNCTION (posn 0 0))
+                                                                          (fsm-state x (cadr temp) (posn 0 0))))) state-list)
+                                                             (sm-getstart fsm-machine)
+                                                             (sm-getfinals fsm-machine)
+                                                             (reverse (sm-getrules fsm-machine))
+                                                             '()
+                                                             (sm-getalphabet fsm-machine)
+                                                             (sm-type fsm-machine)
+                                                             0
+                                                             '||)
+                                           (sm-type fsm-machine)
+                                           (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "tm-language-recognizer" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
+                                         (void))
+                                       )]
            
            [(ndfa)
             (begin
@@ -284,7 +307,7 @@ Cmd Functions
                           (sm-getalphabet fsm-machine)
                           (sm-type fsm-machine))
                 (sm-type fsm-machine)
-                (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "dfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
+                (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "ndfa" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
               (void))]))])))
 
 
@@ -345,6 +368,17 @@ Scene Rendering
                                                                    FALSE-INV)]
                             [else "black"])]
                          [(tm)
+                          (let ((tape-posn (tm-machine-tape-posn (world-fsm-machine w)))
+                                (tape (machine-sigma-list (world-fsm-machine w))))
+                            (cond
+                              [(equal? #t (f tape tape-posn)) (if COLOR-BLIND-MODE
+                                                                  TRUE-INV-CB
+                                                                  TRUE-INV)]
+                              [(equal? #f (f tape tape-posn)) (if COLOR-BLIND-MODE
+                                                                  FALSE-INV-CB
+                                                                  FALSE-INV)]
+                              [else "black"]))]
+                         [(tm-language-recognizer)
                           (let ((tape-posn (tm-machine-tape-posn (world-fsm-machine w)))
                                 (tape (machine-sigma-list (world-fsm-machine w))))
                             (cond
@@ -418,6 +452,12 @@ Scene Rendering
                                         (equal? cur-rule '((empty empty) (empty empty))))
                                        '||
                                        '||)]
+                                  [(tm-language-recognizer)
+                                   (if (or
+                                        (equal? cur-rule 'null)
+                                        (equal? cur-rule '((empty empty) (empty empty))))
+                                       '||
+                                       '||)]
                                    
                                   [else
                                    (if (or (equal? 'null cur-rule) (equal? 'empty cur-rule))
@@ -429,6 +469,7 @@ Scene Rendering
                                (case MACHINE-TYPE
                                  [(pda) (caar c-rule)]
                                  [(tm) (caar c-rule)]
+                                 [(tm-language-recognizer) (caar c-rule)]
                                  [else
                                   (car c-rule)]))))
 
@@ -748,6 +789,11 @@ TOP GUI RENDERING
                             (top-input-label)
                             (tm-los-top input-list cur-rule (tm-machine-tape-posn m) 32))
                            (rectangle WIDTH TOP "outline" "transparent"))]
+      [(tm-language-recognizer) (overlay/align "left" "middle"
+                                               (beside
+                                                (top-input-label)
+                                                (tm-los-top input-list cur-rule (tm-machine-tape-posn m) 32))
+                                               (rectangle WIDTH TOP "outline" "transparent"))]
       [else
        (overlay/align "left" "middle"
                       (beside
