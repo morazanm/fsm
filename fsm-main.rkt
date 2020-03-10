@@ -376,7 +376,7 @@
                                          delta
                                          start
                                          finals
-                                         accept)
+                                         (car accept))
                  (begin (newline) (error (format "accept state: ~s, not in final states" accept)))))]
         [else (begin (newline) (error"Check above message for error"))])) 
 
