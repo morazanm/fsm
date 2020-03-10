@@ -14,7 +14,8 @@
  (struct-out lang-rec-machine)
  update-tm-machine
  update-lang-rec-machine
- update-lang-rec-accept-state)
+ update-lang-rec-accept-state
+ reset-tm-machine-tap-index)
 
 ;; machine A structure that represents a fsm machine. This structure can represent any type of machine
 ;; - state-list { list-of-states }: A list of state structs that the machine can be in
@@ -66,14 +67,14 @@
 ;; Purpose: Builds a new tm machine with the updated tape posn
 (define (update-lang-rec-machine m new-posn new-sigma)
   (lang-rec-machine (machine-state-list m)
-              (machine-start-state m)
-              (machine-final-state-list m)
-              (machine-rule-list m)
-              new-sigma
-              (machine-alpha-list m)
-              (machine-type m)
-              new-posn
-              (lang-rec-machine-accept-state m)))
+                    (machine-start-state m)
+                    (machine-final-state-list m)
+                    (machine-rule-list m)
+                    new-sigma
+                    (machine-alpha-list m)
+                    (machine-type m)
+                    new-posn
+                    (lang-rec-machine-accept-state m)))
 
 
 ;; update-lang-rec-accept-state: lang-rec-machine: symbol -> lang-rec-machine
@@ -89,3 +90,10 @@
                     (machine-type m)
                     (tm-machine-tape-posn m)
                     new-state))
+
+;; reset-tm-machine-tap-index: tm-machine -> none
+;; Purpose: sets the tm-machines tape index to 0
+;; WARNING: this function uses mutation
+(define (reset-tm-machine-tap-index tm)
+  (begin
+    (set-tm-machine-tape-posn! 0 tm)))

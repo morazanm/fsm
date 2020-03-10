@@ -429,10 +429,18 @@ Created by Joshua Schappel on 12/19/19
 ;; Purpose: Removes all elements of the sigma list
 (define clearSigma (lambda (w)
                      (let ((new-input-list (list-set (world-input-list w) 7 (remove-text (list-ref (world-input-list w) 7) 100))))
-                       (begin
-                         (reset-bottom-indices)
-                         (set-machine-sigma-list! (world-fsm-machine w) '())
-                         (create-new-world-input-empty w new-input-list)))))
+                       (cond
+                         [(or (equal? MACHINE-TYPE 'tm)
+                              (equal? MACHINE-TYPE 'tm-language-recognizer))
+                          (begin
+                            (reset-bottom-indices)
+                            (set-machine-sigma-list! (world-fsm-machine w) `(,LM))
+                            (create-new-world-input-empty w new-input-list))]
+                         [else
+                           (begin
+                            (reset-bottom-indices)
+                            (set-machine-sigma-list! (world-fsm-machine w) '())
+                            (create-new-world-input-empty w new-input-list))]))))
 
 
 ;; addGamma: world -> world
@@ -877,12 +885,21 @@ Created by Joshua Schappel on 12/19/19
                           [else s])))
 
 
-;; reset-bottom-indices: none -> none
+;; reset-bottom-indices: tm-machine (optional) -> none
 ;; Purpose: Resest the bottom indicies to there origional value
-(define (reset-bottom-indices)
-  (set-tape-index-bottom -1)
-  (set-tape-index 0)
-  (set-init-index-bottom 0))
+(define (reset-bottom-indices . args )
+  (cond
+    [(empty? args)
+     (begin
+       (set-tape-index-bottom -1)
+       (set-tape-index 0)
+       (set-init-index-bottom 0))]
+    [else
+     (begin
+       (reset-tm-machine-tap-index (car args))
+       (set-tape-index-bottom -1)
+       (set-tape-index 0)
+       (set-init-index-bottom 0))]))
 
 
 ;; THIS FUNCTION IS JUST A PLACEHOLDER

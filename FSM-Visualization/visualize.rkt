@@ -101,11 +101,11 @@ Cmd Functions
                   (void))]
          [(tm) (begin
                  (set-machine-type 'tm)
-                 (run-program (build-world (tm-machine '() null '() '() '() '() 'tm 0 ) 'tm))
+                 (run-program (build-world (tm-machine '() null '() '() `(,LM) '() 'tm 0 ) 'tm))
                  (void))]
          [(tm-language-recognizer) (begin
                                      (set-machine-type 'tm-language-recognizer)
-                                     (run-program (build-world (lang-rec-machine '() null '() '() '() '() 'tm-language-recognizer 0 '||) 'tm-language-recognizer))
+                                     (run-program (build-world (lang-rec-machine '() null '() '() `(,LM) '() 'tm-language-recognizer 0 '||) 'tm-language-recognizer))
                                      (void))]
          [else (error (format "~s is not a valid machine type" fsm-machine))])]
 
@@ -166,7 +166,7 @@ Cmd Functions
                                (sm-getstart fsm-machine)
                                (sm-getfinals fsm-machine)
                                (reverse (sm-getrules fsm-machine))
-                               '() (sm-getalphabet fsm-machine)
+                               `(,LM) (sm-getalphabet fsm-machine)
                                (sm-type fsm-machine)
                                0)
                    (sm-type fsm-machine)
@@ -178,11 +178,11 @@ Cmd Functions
                                      (set-machine-type 'tm-language-recognizer)
                                      (run-program
                                       (build-world
-                                       (lang-rec-machine (map (lambda (x) (fsm-state x TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine))
+                                       (lang-rec-machine (map (lambda (x) (fsm-state x TM-TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine))
                                                          (sm-getstart fsm-machine)
                                                          (sm-getfinals fsm-machine)
                                                          (reverse (sm-getrules fsm-machine))
-                                                         '() (sm-getalphabet fsm-machine)
+                                                         `(,LM) (sm-getalphabet fsm-machine)
                                                          (sm-type fsm-machine)
                                                          0
                                                          (sm-getaccept fsm-machine))
@@ -258,7 +258,7 @@ Cmd Functions
                                    (sm-getstart fsm-machine)
                                    (sm-getfinals fsm-machine)
                                    (reverse (sm-getrules fsm-machine))
-                                   '()
+                                   `(,LM)
                                    (sm-getalphabet fsm-machine)
                                    (sm-type fsm-machine)
                                    0)
@@ -280,7 +280,7 @@ Cmd Functions
                                                              (sm-getstart fsm-machine)
                                                              (sm-getfinals fsm-machine)
                                                              (reverse (sm-getrules fsm-machine))
-                                                             '()
+                                                             `(,LM)
                                                              (sm-getalphabet fsm-machine)
                                                              (sm-type fsm-machine)
                                                              0
