@@ -185,7 +185,7 @@ Cmd Functions
                                                          '() (sm-getalphabet fsm-machine)
                                                          (sm-type fsm-machine)
                                                          0
-                                                         '||)
+                                                         (sm-getaccept fsm-machine))
                                        (sm-type fsm-machine)
                                        (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation."
                                                   "tm-language-recognizer" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
@@ -284,7 +284,7 @@ Cmd Functions
                                                              (sm-getalphabet fsm-machine)
                                                              (sm-type fsm-machine)
                                                              0
-                                                             '||)
+                                                             (sm-getaccept fsm-machine))
                                            (sm-type fsm-machine)
                                            (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "tm-language-recognizer" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
                                          (void))
