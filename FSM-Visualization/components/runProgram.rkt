@@ -73,13 +73,20 @@ Created by Joshua Schappel on 12/19/19
               ;; Unprocessed transitions
               (unprocessed-list (case MACHINE-TYPE
                                   [(tm)
-                                   (append (sm-showtransitions m
-                                                               (machine-sigma-list (world-fsm-machine w))   
-                                                               (tm-machine-tape-posn (world-fsm-machine w)))
-                                           '(halt))]
-                                  [(tm-language-recognizer) (sm-showtransitions m
-                                                                                (machine-sigma-list (world-fsm-machine w))   
-                                                                                (tm-machine-tape-posn (world-fsm-machine w)))]
+                                   (let ((sig-list (machine-sigma-list (world-fsm-machine w))))
+                                     (append (sm-showtransitions m
+                                                                 (if (equal? LM (car sig-list))
+                                                                     (machine-sigma-list (world-fsm-machine w))
+                                                                     (cons LM (machine-sigma-list (world-fsm-machine w))))
+                                                                 (tm-machine-tape-posn (world-fsm-machine w)))
+                                             '(halt)))]
+                                  [(tm-language-recognizer)
+                                   (let ((sig-list (machine-sigma-list (world-fsm-machine w))))
+                                     (sm-showtransitions m
+                                                         (if (equal? LM (car sig-list))
+                                                             (machine-sigma-list (world-fsm-machine w))
+                                                             (cons LM (machine-sigma-list (world-fsm-machine w))))   
+                                                         (tm-machine-tape-posn (world-fsm-machine w))))]
 
                                   ;; dfa, ndfa, pda
                                   [else (sm-showtransitions m
@@ -96,7 +103,7 @@ Created by Joshua Schappel on 12/19/19
           CURRENT-RULE
           (machine-start-state (world-fsm-machine w))
           (world-button-list w)
-          (world-input-list w)      
+          (world-input-list w)    
           (if (list? unprocessed-list)
               (list (car unprocessed-list))
               '())
@@ -115,7 +122,15 @@ Created by Joshua Schappel on 12/19/19
      (redraw-world-with-msg w "The Machine failed to build. Please see the cmd for more info" "Error" MSG-ERROR)]))
 
 
-
+;; decide-world-input: list -> list
+;; Purpose: builds the new world list for tms and lang-recs
+(define (decide-machine-input list)
+  (cond
+    [(equal? (car list) LM)
+         list]
+    [else
+     (cons LM list)]))
+  
 
 
 ;; isValidMachine?: list-of-states machine -> boolean
@@ -181,18 +196,17 @@ Created by Joshua Schappel on 12/19/19
       (sm-getstart newMachine)
       (sm-getfinals newMachine)
       (sm-getrules newMachine)
-      (machine-sigma-list worldMachine)
+      (decide-machine-input (machine-sigma-list worldMachine))
       (sm-getalphabet newMachine)
       (sm-type newMachine)
       (tm-machine-tape-posn worldMachine))]
     [(tm-language-recognizer)
-     (println (sm-getaccept newMachine))
      (lang-rec-machine
       (addTrueFunctions state-list worldMachine)
       (sm-getstart newMachine)
       (sm-getfinals newMachine)
       (sm-getrules newMachine)
-      (machine-sigma-list worldMachine)
+      (decide-machine-input (machine-sigma-list worldMachine))
       (sm-getalphabet newMachine)
       (sm-type newMachine)
       (tm-machine-tape-posn worldMachine)
