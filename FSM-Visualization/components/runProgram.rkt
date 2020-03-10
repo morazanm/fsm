@@ -186,6 +186,7 @@ Created by Joshua Schappel on 12/19/19
       (sm-type newMachine)
       (tm-machine-tape-posn worldMachine))]
     [(tm-language-recognizer)
+     (println (sm-getaccept newMachine))
      (lang-rec-machine
       (addTrueFunctions state-list worldMachine)
       (sm-getstart newMachine)

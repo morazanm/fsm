@@ -514,27 +514,28 @@ Created by Joshua Schappel on 12/19/19
                          (empty? (world-unporcessed-config-list w))
                          (empty? (world-processed-config-list w)))
                         (redraw-world-with-msg w "You must build your machine before you can continue. Please press 'Run' to proceed." "Error" MSG-CAUTION)]
+
+                       ;; Lang recs have a seperate end conditon so we will check it here
+                       [(and (empty? (world-unporcessed-config-list w))
+                             (equal? MACHINE-TYPE 'tm-language-recognizer))
+                        (let ((sym (caar (world-processed-config-list w))))
+                          (if (equal? sym (lang-rec-machine-accept-state (world-fsm-machine w)))
+                              (redraw-world-with-msg w "The input is accepted." "Success" MSG-SUCCESS)
+                              (redraw-world-with-msg w "The input is rejected." "Notice" MSG-CAUTION)))]
+                        
+
                        [else
                         (letrec(
                                 (nextState (car (world-unporcessed-config-list w))) ;; The next state the machine transitions to
                                 ;; Determins if the machien needs to go to the next transiton or if the machine is at the end
                                 (determine-next-steps (lambda ()
-                                                        (println (world-unporcessed-config-list w))
                                                         (cond
                                                           [(eq? nextState 'accept)
                                                            (redraw-world-with-msg w "The input is accepted." "Success" MSG-SUCCESS)]
                                                           [(eq? nextState 'reject)
                                                            (redraw-world-with-msg w "The input is rejected." "Notice" MSG-CAUTION)]
                                                           [(eq? nextState 'halt)
-                                                           (redraw-world-with-msg w "The machine has halted!!" "Notice" MSG-CAUTION)]
-
-                                                          ;; Lang recs have a seperate end conditon so we will check it here
-                                                          [(and (equal? 1 (length (world-unporcessed-config-list w)))
-                                                                (equal? MACHINE-TYPE 'tm-language-recognizer))
-                                                           (let ((sym (caar (world-unporcessed-config-list w))))
-                                                             (if (equal? sym (lang-rec-machine-accept-state (world-fsm-machine w)))
-                                                                 (redraw-world-with-msg w "The input is accepted." "Success" MSG-SUCCESS)
-                                                                 (redraw-world-with-msg w "The input is rejected." "Notice" MSG-CAUTION)))]
+                                                           (redraw-world-with-msg w "The machine has halted!!" "Notice" MSG-CAUTION)]                                                         
                                                           [else
                                                            (go-next nextState w)]))))
                           (determine-next-steps))])])))
