@@ -70,7 +70,19 @@
                     'S
                     '(H)))
 
-;;(sm-visualize Ma (list 'S S-INV) (list 'H H-INV))
+(define S2-INV (lambda (x y) #t))
+(define H-INV (lambda (tape posn)
+                (eq? 'a (list-ref tape posn))))
+
+(sm-visualize Ma (list 'S S2-INV) (list 'H H-INV))
+
+
+
+
+
+
+
+
 
 
 
@@ -108,5 +120,5 @@
 
 
 ; (sm-visualize Alla (list 'S S-INV) (list 'Y Y-INV) (list 'N N-INV))
-(sm-visualize Alla (list 'S S-INV) (list 'Y Y-INV) (list 'N N-INV))
+;;(sm-visualize Alla (list 'S S-INV) (list 'Y Y-INV) (list 'N N-INV))
 ;;(sm-visualize Alla)

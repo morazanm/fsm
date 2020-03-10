@@ -156,6 +156,25 @@ Created by Joshua Schappel on 12/19/19
                                              (set-machine-rule-list! (world-fsm-machine w) (cons (list (list (format-states r1) (format-alpha r2) (format-states r3)) (list r4 r5)) (machine-rule-list (world-fsm-machine w))))
                                              (create-new-world-input-empty w new-input-list))]))))
 
+                           ;; add-tm: NONE -> world
+                           ;; Addds a tm rule to the world if all imputs are valid
+                           (add-tm (lambda ()
+                                     (let ((r4 (string->symbol (string-trim (textbox-text (list-ref (world-input-list w) 8)))))
+                                           (new-input-list (list-set
+                                                            (list-set
+                                                             (list-set
+                                                              (list-set (world-input-list w) 8 (remove-text (list-ref (world-input-list w) 8) 100))
+                                                              6 (remove-text (list-ref (world-input-list w) 6) 100))
+                                                             5 (remove-text (list-ref (world-input-list w) 5) 100))
+                                                            4 (remove-text (list-ref (world-input-list w) 4) 100))))
+                                       (cond
+                                         [(or (equal? r1 '||) (equal? r2 '||) (equal? r3 '||) (equal? r4 '||)) (redraw-world w)]
+                                         [else
+                                          (begin 
+                                            (reset-bottom-indices)
+                                            (set-machine-rule-list! (world-fsm-machine w) (cons (list (list (format-states r1) (format-alpha r2)) (list (format-states r3) (format-alpha r4))) (machine-rule-list (world-fsm-machine w))))
+                                            (create-new-world-input-empty w new-input-list))]))))
+
                            ;; add-dfa: NONE -> world
                            ;; Adds a dfa/ndfa rule to the world if all the inputs are valid
                            (add-dfa (lambda ()
@@ -166,9 +185,13 @@ Created by Joshua Schappel on 12/19/19
                                            (begin
                                              (reset-bottom-indices)
                                              (set-machine-rule-list! (world-fsm-machine w) (cons (list  (format-states r1) (format-alpha r2) (format-states r3)) (machine-rule-list (world-fsm-machine w))))
-                                             (create-new-world-input-empty w new-input-list))])))))                           
+                                             (create-new-world-input-empty w new-input-list))])))))
+                    
                     (cond
                       [(equal? MACHINE-TYPE 'pda) (add-pda)]
+                      [(or (equal? MACHINE-TYPE 'tm)
+                           (equal? MACHINE-TYPE 'tm-language-recognizer))
+                       (add-tm)]
                       [else (add-dfa)]))))
 
 
@@ -212,9 +235,31 @@ Created by Joshua Schappel on 12/19/19
                                               (begin
                                                 (reset-bottom-indices)
                                                 (set-machine-rule-list! (world-fsm-machine w) (remove (list (list (format-states r1) (format-alpha r2) (format-states r3)) (list r4 r5)) (machine-rule-list (world-fsm-machine w))))
-                                                (create-new-world-input-empty w new-input-list))])))))
+                                                (create-new-world-input-empty w new-input-list))]))))
+                              
+                              ;; rmv-tm: NONE -> world
+                              ;; Purpose: Removes a tm rule from the world as long as all input fields are filled in
+                              (rmv-tm (lambda ()
+                                        (let ((r4 (string->symbol (string-trim (textbox-text (list-ref (world-input-list w) 8)))))
+                                              (new-input-list (list-set
+                                                               (list-set
+                                                                (list-set
+                                                                  (list-set (world-input-list w) 8 (remove-text (list-ref (world-input-list w) 8) 100))
+                                                                 6 (remove-text (list-ref (world-input-list w) 6) 100))
+                                                                5 (remove-text (list-ref (world-input-list w) 5) 100))
+                                                               4 (remove-text (list-ref (world-input-list w) 4) 100))))
+                                          (cond
+                                            [(or (equal? r1 '||) (equal? r2 '||) (equal? r3 '||) (equal? r4 '||)) (redraw-world w)]
+                                            [else
+                                             (begin
+                                               (reset-bottom-indices)
+                                               (set-machine-rule-list! (world-fsm-machine w) (remove (list (list (format-states r1) (format-alpha r2)) (list (format-states r1) (format-alpha r2))) (machine-rule-list (world-fsm-machine w))))
+                                               (create-new-world-input-empty w new-input-list))])))))
                        (cond
                          [(equal? MACHINE-TYPE 'pda) (rmv-pda)]
+                         [(or (equal? MACHINE-TYPE 'tm)
+                              (equal? MACHINE-TYPE 'tm-language-recognizer))
+                          (rmv-tm)]
                          [else (rmv-dfa)]))))
 
 
@@ -437,7 +482,7 @@ Created by Joshua Schappel on 12/19/19
                             (set-machine-sigma-list! (world-fsm-machine w) `(,LM))
                             (create-new-world-input-empty w new-input-list))]
                          [else
-                           (begin
+                          (begin
                             (reset-bottom-indices)
                             (set-machine-sigma-list! (world-fsm-machine w) '())
                             (create-new-world-input-empty w new-input-list))]))))
@@ -730,7 +775,7 @@ Created by Joshua Schappel on 12/19/19
                             (new-input-list (list-set (world-input-list w) 9 (remove-text (list-ref (world-input-list w) 9) 100))))
                         (cond
                           [(equal? "" input-value) w]
-                          [(< (length (machine-sigma-list (world-fsm-machine w)))
+                          [(< (sub1 (length (machine-sigma-list (world-fsm-machine w))))
                               (string->number input-value))
                            (redraw-world-with-msg w
                                                   "Invalid tape index position. Make sure your tape position is less then or equal to the tape input"
