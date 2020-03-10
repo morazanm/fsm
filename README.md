@@ -130,11 +130,11 @@ To visualize a dfa or ndfa create a new file and require fsm. Then provide one o
 - [FSM Error Messages](https://arxiv.org/abs/1906.11421v1)
 
 ## Contributors
-- Marco T. Morazán
+- [Marco T. Morazán](https://github.com/morazanm)
 - Rosario Antunez
-- Josephine A. Des Rosiers
-- Joshua Schappel
-- Sachin Mahashabde
+- [Josephine A. Des Rosiers](https://github.com/josdes)
+- [Joshua Schappel](https://github.com/jschappel)
+- [Sachin Mahashabde](https://github.com/sachinmahashabde)
 
 ## License
 Copyright (c) 2020 by Marco T. Morazan
