@@ -244,7 +244,7 @@ Created by Joshua Schappel on 12/19/19
                                               (new-input-list (list-set
                                                                (list-set
                                                                 (list-set
-                                                                  (list-set (world-input-list w) 8 (remove-text (list-ref (world-input-list w) 8) 100))
+                                                                 (list-set (world-input-list w) 8 (remove-text (list-ref (world-input-list w) 8) 100))
                                                                  6 (remove-text (list-ref (world-input-list w) 6) 100))
                                                                 5 (remove-text (list-ref (world-input-list w) 5) 100))
                                                                4 (remove-text (list-ref (world-input-list w) 4) 100))))
@@ -480,6 +480,7 @@ Created by Joshua Schappel on 12/19/19
                           (begin
                             (reset-bottom-indices)
                             (set-machine-sigma-list! (world-fsm-machine w) `(,LM))
+                            (reset-tm-machine-tap-index (world-fsm-machine w))
                             (create-new-world-input-empty w new-input-list))]
                          [else
                           (begin
@@ -643,6 +644,18 @@ Created by Joshua Schappel on 12/19/19
                                     (begin
                                       (push-stack push-list))]))))
 
+                (tm-tape-move (lambda ()
+                                 (let ((move (cadadr cur-rule)))
+                                   (cond
+                                     [(equal? RIGHT move)
+                                      (set-tape-index-bottom (+ 1 TAPE-INDEX-BOTTOM))]
+                                     [(equal? LEFT move)
+                                      (set-tape-index-bottom (- 1 TAPE-INDEX-BOTTOM))]
+                                     [else
+                                      TAPE-INDEX-BOTTOM]))))
+                                   
+                                                 
+
                 ;; Updates the machine to have the approperate values. This function is only needed for tm
                 ;;   and tm-language-recognizer to update the tape position on each transition.
                 (update-machine (lambda(m)
@@ -658,11 +671,18 @@ Created by Joshua Schappel on 12/19/19
          (begin
            ;; Determine if the tape input should increase.
            ;; This does not need to be done for tm's or on an empty transition
-           (if (and (not (equal? 'tm MACHINE-TYPE))
-                    (not (equal? 'tm-language-recognizer MACHINE-TYPE))
-                    (equal? EMP (get-input cur-rule)))
-               TAPE-INDEX-BOTTOM
-               (set-tape-index-bottom (+ 1 TAPE-INDEX-BOTTOM)))
+           (cond
+             [(and (not (equal? 'tm MACHINE-TYPE))
+                   (not (equal? 'tm-language-recognizer MACHINE-TYPE))
+                   (equal? EMP (get-input cur-rule)))
+              TAPE-INDEX-BOTTOM]
+             #|
+             [(or (equal? 'tm MACHINE-TYPE)
+                  (equal? 'tm-language-recognizer MACHINE-TYPE))
+              (tm-tape-move)]
+             |#
+             [else
+              (set-tape-index-bottom (+ 1 TAPE-INDEX-BOTTOM))])
 
            ;; If the machine is a pda we need to push or pop!
            ;; pops are handled first

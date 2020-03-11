@@ -96,4 +96,4 @@
 ;; WARNING: this function uses mutation
 (define (reset-tm-machine-tap-index tm)
   (begin
-    (set-tm-machine-tape-posn! 0 tm)))
+    (set-tm-machine-tape-posn! tm 0)))

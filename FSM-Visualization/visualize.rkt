@@ -506,7 +506,9 @@ Scene Rendering
                             (
                              (state-color (determin-inv
                                            (fsm-state-function (list-ref (machine-state-list (world-fsm-machine w)) index))
-                                           (take (machine-sigma-list (world-fsm-machine w)) (if (< TAPE-INDEX-BOTTOM 0) 0 (add1 TAPE-INDEX-BOTTOM)))))
+                                           (if (or (equal? MACHINE-TYPE 'tm) (equal? MACHINE-TYPE 'tm-language-recognizer))
+                                               (take (machine-sigma-list (world-fsm-machine w)) (tm-machine-tape-posn (world-fsm-machine w)))
+                                               (take (machine-sigma-list (world-fsm-machine w)) (if (< TAPE-INDEX-BOTTOM 0) 0 (add1 TAPE-INDEX-BOTTOM))))))
                              ;; arrow: none -> image
                              ;; Purpose: draws a arrow
                              (arrow (lambda ()
