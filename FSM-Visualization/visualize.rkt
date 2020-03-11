@@ -409,11 +409,18 @@ Scene Rendering
                              [(and (equal? (fsm-state-name (car l)) (machine-start-state (world-fsm-machine w)))
                                    (ormap (lambda(x) (equal? (fsm-state-name (car l)) x))
                                           (machine-final-state-list (world-fsm-machine w))))
-                              
+
+                              ;; **
                               (place-image(overlay (text (symbol->string (fsm-state-name (car l))) 25 "black")
                                                    (circle 21 "outline" START-STATE-COLOR)
                                                    (circle 25 "outline" END-STATE-COLOR)
-                                                   (circle 30 "outline" END-STATE-COLOR))
+                                                   (circle 30 "outline" END-STATE-COLOR)
+                                                   (cond
+                                                     [(equal? MACHINE-TYPE 'tm-language-recognizer)
+                                                      (if (equal? (fsm-state-name (car l))
+                                                                  (lang-rec-machine-accept-state (world-fsm-machine w)))
+                                                          (circle 35 "outline" (make-color 123 80 217))
+                                                          empty-image)]))
                                           (posn-x (fsm-state-posn (car l)))
                                           (posn-y (fsm-state-posn (car l)))
                                           (draw-states(cdr l) (add1 i) s))]
@@ -424,11 +431,19 @@ Scene Rendering
                                           (posn-x (fsm-state-posn (car l)))
                                           (posn-y (fsm-state-posn (car l)))
                                           (draw-states(cdr l) (add1 i) s))]
+
+                             ;; **
                              [(ormap (lambda(x) (equal? (fsm-state-name (car l)) x)) (machine-final-state-list (world-fsm-machine w)))
                               (place-image (overlay (text (symbol->string (fsm-state-name (car l))) 20 "black")
                                                     (overlay
                                                      (circle 20 "outline" END-STATE-COLOR)
-                                                     (circle 25 "outline" END-STATE-COLOR)))
+                                                     (circle 25 "outline" END-STATE-COLOR)
+                                                     (cond
+                                                       [(equal? MACHINE-TYPE 'tm-language-recognizer)
+                                                        (if (equal? (fsm-state-name (car l))
+                                                                    (lang-rec-machine-accept-state (world-fsm-machine w)))
+                                                            (circle 30 "outline" (make-color 123 80 217))
+                                                            empty-image)])))
                                            (posn-x (fsm-state-posn (car l)))
                                            (posn-y (fsm-state-posn (car l)))
                                            (draw-states (cdr l) (add1 i) s))]

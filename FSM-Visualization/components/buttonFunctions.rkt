@@ -645,14 +645,14 @@ Created by Joshua Schappel on 12/19/19
                                       (push-stack push-list))]))))
 
                 (tm-tape-move (lambda ()
-                                 (let ((move (cadadr cur-rule)))
-                                   (cond
-                                     [(equal? RIGHT move)
-                                      (set-tape-index-bottom (+ 1 TAPE-INDEX-BOTTOM))]
-                                     [(equal? LEFT move)
-                                      (set-tape-index-bottom (- 1 TAPE-INDEX-BOTTOM))]
-                                     [else
-                                      TAPE-INDEX-BOTTOM]))))
+                                (let ((move (cadadr cur-rule)))
+                                  (cond
+                                    [(equal? RIGHT move)
+                                     (set-tape-index-bottom (+ 1 TAPE-INDEX-BOTTOM))]
+                                    [(equal? LEFT move)
+                                     (set-tape-index-bottom (- 1 TAPE-INDEX-BOTTOM))]
+                                    [else
+                                     TAPE-INDEX-BOTTOM]))))
                                    
                                                  
 
@@ -792,9 +792,20 @@ Created by Joshua Schappel on 12/19/19
 ;; Purpose: Sets the tape-input for a turing machine
 (define setTapePosn (lambda (w)
                       (let*((input-value (string-trim (textbox-text(list-ref (world-input-list w) 9))))
-                            (new-input-list (list-set (world-input-list w) 9 (remove-text (list-ref (world-input-list w) 9) 100))))
+                            (new-input-list (list-set (world-input-list w) 9 (remove-text (list-ref (world-input-list w) 9) 100)))
+                            (all-numbers? (ormap (lambda (letter)
+                                                   (let ((ascii-val (char->integer letter)))
+                                                     (and
+                                                      (>= ascii-val 48)    ;; 0
+                                                      (<= ascii-val 57)))) ;; 9 
+                                                 (string->list input-value))))
                         (cond
                           [(equal? "" input-value) w]
+                          [(not all-numbers?)
+                           (redraw-world-with-msg w
+                                                  "Please enter a number greater then -1"
+                                                  "Error"
+                                                  MSG-CAUTION)]
                           [(< (sub1 (length (machine-sigma-list (world-fsm-machine w))))
                               (string->number input-value))
                            (redraw-world-with-msg w
