@@ -420,7 +420,8 @@ Scene Rendering
                                                       (if (equal? (fsm-state-name (car l))
                                                                   (lang-rec-machine-accept-state (world-fsm-machine w)))
                                                           (circle 35 "outline" (make-color 123 80 217))
-                                                          empty-image)]))
+                                                          empty-image)]
+                                                     [else empty-image]))
                                           (posn-x (fsm-state-posn (car l)))
                                           (posn-y (fsm-state-posn (car l)))
                                           (draw-states(cdr l) (add1 i) s))]
@@ -443,7 +444,8 @@ Scene Rendering
                                                         (if (equal? (fsm-state-name (car l))
                                                                     (lang-rec-machine-accept-state (world-fsm-machine w)))
                                                             (circle 30 "outline" (make-color 123 80 217))
-                                                            empty-image)])))
+                                                            empty-image)]
+                                                       [else empty-image])))
                                            (posn-x (fsm-state-posn (car l)))
                                            (posn-y (fsm-state-posn (car l)))
                                            (draw-states (cdr l) (add1 i) s))]

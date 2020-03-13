@@ -186,7 +186,7 @@
                    (= num-z (sub1 (length tape)))
                    (= (modulo num-z 3) 0)))))
                   
-
+#|
 
 (sm-visualize  a^nb^nc^n
                (list 'S S-INV)
@@ -195,3 +195,6 @@
                (list 'D D-INV)
                (list 'N N-INV)
                (list 'Y Y-INV))
+|#
+
+(sm-visualize P)
