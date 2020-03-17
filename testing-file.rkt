@@ -197,4 +197,4 @@
                (list 'Y Y-INV))
 |#
 
-(sm-visualize P)
+(sm-visualize pda-wcw^r)
