@@ -142,9 +142,12 @@
 
 (define implies (lambda (a c)
                   (or (not a) c)))
-                  
+
+
+num zs before first a = num zs between last a and first b = num zs between last b and first c
 
 ;; The number of z's is divisiable by 3
+;; The number of z's before the first a is less or equal to the number of z's
 (define S-INV (lambda (tape posn)
                 (and (equal? 0 ((get-num-of-x tape 'z) . modulo . 3))
                      (or
@@ -160,15 +163,18 @@
                                (equal? tape `(,LM ,BLANK)))))))
                      
 
-;; The number of z's on the tape is greater then 1
+;; the number of z's before the first a is one more then the number of z's after the first a
 (define B-INV (lambda (tape posn)
                 (= (modulo (get-num-of-x tape 'z) 3) 1)))
 
+;; the number of z's before the first b is one more then the number of z's after the first b
 (define C-INV (lambda (tape posn)
                 (= (modulo (get-num-of-x tape 'z) 3) 2)))
 
+;; the number of z's before the first c is one more then the number of z's after the first c
 (define D-INV (lambda (tape posn)
                 (= (modulo (get-num-of-x tape 'z) 3) 0)))
+
 
 (define E-INV (lambda (tape posn)
                 (and
@@ -186,15 +192,13 @@
                    (= num-z (sub1 (length tape)))
                    (= (modulo num-z 3) 0)))))
                   
-#|
-
+;Lets work on the S invariant
 (sm-visualize  a^nb^nc^n
                (list 'S S-INV)
                (list 'B B-INV)
                (list 'C C-INV)
                (list 'D D-INV)
+               (list 'E E-INV)
                (list 'N N-INV)
                (list 'Y Y-INV))
-|#
-
-(sm-visualize P)
+;;(sm-visualize P)
