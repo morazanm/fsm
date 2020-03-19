@@ -33,7 +33,8 @@
                                     ((M b ,EMP) (M (b)))
                                     ((M a (b)) (M ,EMP))
                                     ((M b (a)) (M ,EMP)))))
-;; valid input: aabcbaa 
+;; valid input: aabcbaa
+#|
 (define pda-wcw^r (make-ndpda '(S M N F)
                               '(a b c)
                               '(a b)
@@ -46,7 +47,7 @@
                                 ((N a (a)) (N ,EMP))
                                 ((N b (b)) (N ,EMP))
                                 ((N ,EMP ,EMP) (F ,EMP)))))
-
+|#
 ;;---- TM ----
 
 ;; machine input tape-pos (optional)
@@ -144,8 +145,8 @@
                   (or (not a) c)))
 
 
-num zs before first a = num zs between last a and first b = num zs between last b and first c
-
+;;num zs before first a = num zs between last a and first b = num zs between last b and first c
+#|
 ;; The number of z's is divisiable by 3
 ;; The number of z's before the first a is less or equal to the number of z's
 (define S-INV (lambda (tape posn)
@@ -193,6 +194,7 @@ num zs before first a = num zs between last a and first b = num zs between last 
                    (= (modulo num-z 3) 0)))))
                   
 ;Lets work on the S invariant
+
 (sm-visualize  a^nb^nc^n
                (list 'S S-INV)
                (list 'B B-INV)
@@ -201,4 +203,76 @@ num zs before first a = num zs between last a and first b = num zs between last 
                (list 'E E-INV)
                (list 'N N-INV)
                (list 'Y Y-INV))
+|#
+
+
+
+
+
+
+
+
+(define pda-wcw^r 
+  (make-ndpda '(S M1 M2 F)
+              '(a b c)
+              '(a b)
+              'S
+              '(F)
+              `(((S ,EMP ,EMP) (M1 ,EMP))
+                ((M1 a ,EMP) (M1 (a)))
+                ((M1 b ,EMP) (M1 (b)))
+                ((M1 c ,EMP) (M2 ,EMP))
+                ((M2 a (a)) (M2 ,EMP))
+                ((M2 b (b)) (M2 ,EMP))
+                ((M2 ,EMP ,EMP) (F ,EMP)))))
+
+(define (S-INV ci s)
+  (and (empty? ci) (empty? s)))
+
+(define (M1-INV ci s)
+  (and (not (member 'c ci)) (equal? ci (reverse s))))
+
+(define (beforec lst)
+  (if (eq? (car lst) 'c)
+      '()
+      (cons (car lst) (beforec (cdr lst)))))
+
+(define (afterc lst)
+  (if (eq? (car lst) 'c)
+      (cdr lst)
+      (afterc (cdr lst))))
+
+(define (M2-INV ci s)
+    (and (member 'c ci)                            ; c in ci
+       (let [(bc (beforec ci))
+             (ac (afterc ci))
+             (rs (reverse s))]
+         (and (equal? (take bc (length rs)) rs)    ; n stack elements match first n ci elements
+              (= (length (append s ac))
+                 (length bc))
+              (equal? (reverse ac)                 ; popped elements (after c) match the end of ci
+                      (take-right bc (length ac)))))))
+
+
+(define (F-INV ci s)
+  (and (member 'c ci)
+       (and (equal? (beforec ci) (reverse (afterc ci))))))
+
+
+
+(sm-visualize pda-wcw^r
+              (list 'S S-INV)
+              (list 'M1 M1-INV)
+              (list 'F F-INV)
+              (list 'M2 M2-INV))
+
+
+
+
+
+
+
+
+
+
 ;;(sm-visualize P)
