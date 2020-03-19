@@ -83,6 +83,10 @@ Created by Joshua Schappel on 12/19/19
       (set! STACK-LIST (cons (car aList) STACK-LIST))
       (push-stack (cdr aList)))]))
 
+;; Resets the stack to be empty
+(define (reset-stack)
+  (set! STACK-LIST '()))
+
 
 ;; -- SETTERS --
 (define (set-tape-index-bottom value)

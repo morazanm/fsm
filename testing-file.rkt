@@ -32,7 +32,8 @@
                                     ((M a ,EMP) (M (a)))
                                     ((M b ,EMP) (M (b)))
                                     ((M a (b)) (M ,EMP))
-                                    ((M b (a)) (M ,EMP)))))
+                                   ((M b (a)) (M ,EMP)))))
+#|
 ;; valid input: aabcbaa 
 (define pda-wcw^r (make-ndpda '(S M N F)
                               '(a b c)
@@ -186,7 +187,7 @@
                    (= num-z (sub1 (length tape)))
                    (= (modulo num-z 3) 0)))))
                   
-#|
+
 
 (sm-visualize  a^nb^nc^n
                (list 'S S-INV)
@@ -197,4 +198,56 @@
                (list 'Y Y-INV))
 |#
 
-(sm-visualize P)
+(define pda-wcw^r 
+  (make-ndpda '(S M1 M2 F)
+              '(a b c)
+              '(a b)
+              'S
+              '(F)
+              `(((S ,EMP ,EMP) (M1 ,EMP))
+                ((M1 a ,EMP) (M1 (a)))
+                ((M1 b ,EMP) (M1 (b)))
+                ((M1 c ,EMP) (M2 ,EMP))
+                ((M2 a (a)) (M2 ,EMP))
+                ((M2 b (b)) (M2 ,EMP))
+                ((M2 ,EMP ,EMP) (F ,EMP)))))
+
+(define (S-INV ci s)
+  (and (empty? ci) (empty? s)))
+
+(define (M1-INV ci s)
+  (and (not (member 'c ci)) (equal? ci (reverse s))))
+
+(define (beforec lst)
+  (if (eq? (car lst) 'c)
+      '()
+      (cons (car lst) (beforec (cdr lst)))))
+
+(define (afterc lst)
+  (if (eq? (car lst) 'c)
+      (cdr lst)
+      (afterc (cdr lst))))
+
+(define (M2-INV ci s)
+    (and (member 'c ci)                            ; c in ci
+       (let [(bc (beforec ci))
+             (ac (afterc ci))
+             (rs (reverse s))]
+         (and (equal? (take bc (length rs)) rs)    ; n stack elements match first n ci elements
+              (= (length (append s ac))
+                 (length bc))
+              (equal? (reverse ac)                 ; popped elements (after c) match the end of ci
+                      (take-right bc (length ac)))))))
+
+
+(define (F-INV ci s)
+  (and (member 'c ci)
+       (and (equal? (beforec ci) (reverse (afterc ci))))))
+
+
+
+(sm-visualize pda-wcw^r
+              (list 'S S-INV)
+              (list 'M1 M1-INV)
+              (list 'F F-INV)
+              (list 'M2 M2-INV))

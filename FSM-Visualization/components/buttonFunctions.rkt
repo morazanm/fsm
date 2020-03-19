@@ -969,6 +969,8 @@ Created by Joshua Schappel on 12/19/19
      (begin
        (set-tape-index-bottom -1)
        (set-tape-index 0)
+       (reset-stack)
+       (set-stack-index 0)
        (set-init-index-bottom 0))]
     [else
      (begin

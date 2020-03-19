@@ -1096,14 +1096,14 @@ RIGHT GUI RENDERING
            ;; Purpose: Converts the pda stack into an image to be rendered on the screen
            (pda-populate-stack (lambda ()
                                  (let* (
-                                        (rev-stack (reverse STACK-LIST))
+                                        (rev-stack (reverse STACK-LIST)) ;; No longer in use!!
                                         (len (length STACK-LIST)) ;; Then length of the stack list
 
                                         (curList ;; the list starting with the STACK-INDEX
                                          (if (> len STACK-LIMIT)
-                                             (let ((c (drop-right rev-stack STACK-INDEX)))
+                                             (let ((c (drop-right STACK-LIST STACK-INDEX)))
                                                (take-right c STACK-LIMIT))
-                                             rev-stack)))                      
+                                             STACK-LIST)))                      
                                    (overlay/align "left" "bottom"
                                                   (draw-verticle curList 14 100 29)
                                                   (rectangle STACK-WIDTH (- (- HEIGHT (+ BOTTOM TOP)) 50) "outline" "blue")))))
