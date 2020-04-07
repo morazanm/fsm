@@ -270,7 +270,7 @@
                (let* ((res (consume '() (list (list (tmconfig s i w)))))) ; res = (listof tmconfig)
                  (cond [(null? res) "Failed computation: did not reach a halting state. Check your transition rules."]
                        [else (cond [(null? accept) (list 'Halt: (tmconfig-state (car res)))]
-                                   [(eq? (caar accept) (tmconfig-state (car res))) 'accept]
+                                   [(eq? (car accept) (tmconfig-state (car res))) 'accept]
                                    [else 'reject])]))]
               [(eq? (car L) 'transitions) 
                (let ((res (consume '() (list (list (tmconfig s i w))))))
@@ -323,7 +323,7 @@
                             (filter (lambda (w) (not (null? w))) (generate-words number-tests (tm-getalphabet m) null))))) 
       (map (lambda (w) (list w (tm-apply m w 0))) test-words)))
   
- #| 
+  #| 
    A combined TM description, ctm, is either:
   1. empty list
   2. (cons tm ctm)
@@ -410,5 +410,5 @@
       (if (null? inputctm)
           (tmconfig HALT i tape)
           (eval inputctm (label-pairs inputctm) START))))
-  
+
   ) ; closes module
