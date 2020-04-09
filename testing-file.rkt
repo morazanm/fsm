@@ -245,21 +245,23 @@
                                  (equal? tape `(,LM ,BLANK))))))))
                      
 
-;; the number of z's before the first a is one more then the number of z's after the first a
+;; the number of z's is one bigger then number of x's and number of y's
 (define B-INV (lambda (tape posn)
-                (= (modulo (get-num-of-x tape 'z) 3) 1)))
+                (let ((num-z (get-num-of-x tape 'z)))
+                  (and (> num-z (get-num-of-x tape 'x))
+                       (> num-z (get-num-of-x tape 'y))))))
 
 ;; the number of x's before the first b is one more then the number of x's after the first b
 (define C-INV (lambda (tape posn)
-                (= (modulo (get-num-of-x tape 'x) 3) 1)))
+                (let ((num-x (get-num-of-x tape 'x)))
+                  (and (= num-x (get-num-of-x tape 'z))
+                       (> num-x (get-num-of-x tape 'y))))))
 
 ;; the number of y's before the first c is one more then the number of y's after the first c
 (define D-INV (lambda (tape posn)
-                (let ((list-of-xyz (filter (lambda (input) (or (equal? input 'x)
-                                                               (equal? input 'y)
-                                                               (equal? input 'z)))
-                                           tape)))
-                  (= (modulo (length list-of-xyz) 3) 0))))
+                (let ((num-y (get-num-of-x tape 'y)))
+                  (and (= num-y (get-num-of-x tape 'z))
+                       (= num-y (get-num-of-x tape 'x))))))
 
 
 (define E-INV (lambda (tape posn)
@@ -284,7 +286,7 @@
                                                                (equal? input 'z)))
                                            tape)))
                   (and
-                   (= (length list-of-xyz) (sub1 (length tape)))
+                   (= (length list-of-xyz) (- (length tape) 2))
                    (= (modulo (length list-of-xyz) 3) 0)))))
                   
 
