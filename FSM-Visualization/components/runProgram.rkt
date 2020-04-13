@@ -73,21 +73,25 @@ Created by Joshua Schappel on 12/19/19
               ;; Unprocessed transitions
               (unprocessed-list (case MACHINE-TYPE
                                   [(tm)
-                                   (let ((sig-list (machine-sigma-list (world-fsm-machine w))))
-                                     (append (sm-showtransitions m
-                                                                 (if (equal? LM (car sig-list))
-                                                                     (machine-sigma-list (world-fsm-machine w))
-                                                                     (cons LM (machine-sigma-list (world-fsm-machine w))))
-                                                                 (tm-machine-tape-posn (world-fsm-machine w)))
-                                             '(halt)))]
+                                   (let* ((sig-list (machine-sigma-list (world-fsm-machine w)))
+                                          (trans (sm-showtransitions m
+                                                                     (if (equal? LM (car sig-list))
+                                                                         (machine-sigma-list (world-fsm-machine w))
+                                                                         (cons LM (machine-sigma-list (world-fsm-machine w))))
+                                                                     (tm-machine-tape-posn (world-fsm-machine w)))))
+                                     (if (string? trans)
+                                         (list trans)
+                                         (append trans '(halt))))]
                                   [(tm-language-recognizer)
-                                   (let ((sig-list (machine-sigma-list (world-fsm-machine w))))
-                                     (sm-showtransitions m
-                                                         (if (equal? LM (car sig-list))
-                                                             (machine-sigma-list (world-fsm-machine w))
-                                                             (cons LM (machine-sigma-list (world-fsm-machine w))))   
-                                                         (tm-machine-tape-posn (world-fsm-machine w))))]
-
+                                   (let* ((sig-list (machine-sigma-list (world-fsm-machine w)))
+                                          (trans (sm-showtransitions m
+                                                                     (if (equal? LM (car sig-list))
+                                                                         (machine-sigma-list (world-fsm-machine w))
+                                                                         (cons LM (machine-sigma-list (world-fsm-machine w))))   
+                                                                     (tm-machine-tape-posn (world-fsm-machine w)))))
+                                     (if (string? trans)
+                                         (list trans)
+                                         trans))]
                                   ;; dfa, ndfa, pda
                                   [else (sm-showtransitions m
                                                             (machine-sigma-list (world-fsm-machine w)))]))
@@ -127,7 +131,7 @@ Created by Joshua Schappel on 12/19/19
 (define (decide-machine-input list)
   (cond
     [(equal? (car list) LM)
-         list]
+     list]
     [else
      (cons LM list)]))
   

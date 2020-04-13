@@ -13,7 +13,6 @@
                        (F a F)
                        (F b F))))
 
-(sm-visualize a*)
 ;;---- NDFA ----
 ;; valid input: aaabbb 
 (define P (make-ndpda '(S F)
@@ -291,7 +290,7 @@
                    (= (length list-of-xyz) (- (length tape) 2))
                    (= (modulo (length list-of-xyz) 3) 0)))))
 
-#|
+
 (sm-visualize  a^nb^nc^n2
                (list 'S S-INV)
                (list 'B B-INV)
@@ -302,9 +301,17 @@
                (list 'Y Y-INV))
 
 
-|#
 
 
+(define LB (make-tm '(S H)
+                    `(a b)
+                    `(((S a) (S ,LEFT))
+                      ((S b) (S ,LEFT))
+                      ((S ,BLANK) (H ,BLANK)))
+                    'S
+                    '(H)))
+;;(sm-visualize LB)
+;;(sm-showtransitions LB `(,LM b b b) 3)
 
 
 
