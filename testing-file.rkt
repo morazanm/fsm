@@ -12,6 +12,8 @@
                      '((S a F)  ;; the transition functions
                        (F a F)
                        (F b F))))
+
+(sm-visualize a*)
 ;;---- NDFA ----
 ;; valid input: aaabbb 
 (define P (make-ndpda '(S F)
@@ -288,8 +290,8 @@
                   (and
                    (= (length list-of-xyz) (- (length tape) 2))
                    (= (modulo (length list-of-xyz) 3) 0)))))
-                  
 
+#|
 (sm-visualize  a^nb^nc^n2
                (list 'S S-INV)
                (list 'B B-INV)
@@ -300,7 +302,7 @@
                (list 'Y Y-INV))
 
 
-
+|#
 
 
 

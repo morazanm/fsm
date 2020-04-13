@@ -8,7 +8,7 @@ Created by Joshua Schappel on 12/19/19
 (provide (all-defined-out))
 
 ;; -- VERSION --
-(define VERSION "BETA 2.0")
+(define VERSION "VERSION 1.3")
 
 
 ;; -- DIMENTIONS --
