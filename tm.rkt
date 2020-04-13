@@ -329,7 +329,7 @@
   2. (cons tm ctm)
   3. (cons LABEL ctm)
   4. (cons symbol ctm)
-  5. (BR (listof (list symbol ctm)))
+  5. (cons (BR (listof (list symbol ctm))) ctm)
   6. (cons (goto LABEL) ctm)
   7. (cons ((var symbol) ctm) ctm)
   
@@ -409,6 +409,6 @@
       
       (if (null? inputctm)
           (tmconfig HALT i tape)
-          (eval inputctm (label-pairs inputctm) START))))
+          (eval inputctm (label-pairs inputctm) START))))  
 
   ) ; closes module
