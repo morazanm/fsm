@@ -559,6 +559,7 @@ Created by Joshua Schappel on 12/19/19
 ;; Purpose: shows the next state that the machine is in
 (define showNext(lambda(w)
                   ;; Check if sigma list is empty
+                  
                   (cond
                     [(empty? (machine-sigma-list (world-fsm-machine w))) (redraw-world-with-msg w "Your Tape is currently empty! Please add variables to the Tap to continue." "Notice" MSG-CAUTION)]
                     [else
@@ -569,6 +570,9 @@ Created by Joshua Schappel on 12/19/19
                          (empty? (world-processed-config-list w)))
                         (redraw-world-with-msg w "You must build your machine before you can continue. Please press 'Run' to proceed." "Error" MSG-CAUTION)]
 
+                       ;; sm-showtransitions for tm and lang rec can sometimes return a string, if they do we will render the message
+                       [(string? (car (world-processed-config-list w))) (redraw-world-with-msg w (car (world-processed-config-list w)) "Notice" MSG-CAUTION)] 
+                       
                        ;; Lang recs have a seperate end conditon so we will check it here
                        [(and (empty? (world-unporcessed-config-list w))
                              (equal? MACHINE-TYPE 'tm-language-recognizer))
