@@ -1,0 +1,7 @@
+digraph a*a {
+    rankdir="LR";
+    ds [label="ds", shape="circle", color="black"];
+    S [label="S", shape="circle", color="green"];
+    F [label="F", shape="doublecircle", color="black"];
+    A [label="A", shape="circle", color="black"];
+}

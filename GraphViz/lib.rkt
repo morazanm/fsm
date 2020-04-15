@@ -35,7 +35,7 @@ This file contains the fsm-graphviz library used to render the graph
 (struct node ([name]
               [value]
               [color]
-              [type]))
+              [type]) #:transparent)
 
 ; An edge is a structure that represents a transition from one node to another
 ; name is a symbol used to represent the name of the edge
@@ -89,14 +89,14 @@ This file contains the fsm-graphviz library used to render the graph
           (equal? 'final type)
           (equal? 'accept type)
           (equal? 'startfinal type))
-      (node name value color type)
+      (node (remove-dashes name) value color type)
       (error "Invalid node type. A node must be one of the following symbols:\n'start\n'startfinal\n'final\n'accept\n'none")))
 
 
 ;; create-edge symbol double(<=1) symbol symbol -> edge
 ;; Purpose: Creates an edge
 (define (create-edge val color start-node end-node)
-  (edge val color start-node end-node))
+  (edge val color (remove-dashes start-node) (remove-dashes end-node)))
 
 
 
@@ -121,7 +121,7 @@ This file contains the fsm-graphviz library used to render the graph
     [else
      (letrec ((node (car lon))
               ;; determin-shape: node -> symbol
-              ;; Purpose: determins the shape of the node
+              ;; Purpose: determines the shape of the node
               (determin-shape (lambda (node)
                                 (case (node-type node)
                                   [(final) 'doublecircle]
@@ -130,7 +130,7 @@ This file contains the fsm-graphviz library used to render the graph
                                   [else 'circle])))
 
               ;; determin-color: node -> symbol
-              ;; Purpose: determins the color of the node
+              ;; Purpose: determines the color of the node
               (determin-color (lambda (node)
                                 (case (node-type node)
                                   [(start) 'green]
@@ -161,7 +161,10 @@ This file contains the fsm-graphviz library used to render the graph
                     port)
          (render-edges (cdr loe) port)))]))
   
-
+; remove-dashes: symbol -> symbol
+; Purpose: Remove dashes
+(define (remove-dashes s)
+  (string->symbol (string-replace (symbol->string s) "-" ""))) 
 
 #|
 
