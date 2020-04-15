@@ -1,22 +1,48 @@
 #lang racket
-(require fsm)
+
 #| lib.rkt
-Written by: Joshua Schappel, Sena Kar, and Isabella Felix on 4/15/20
+Written by: Joshua Schappel, Sena Karsavran, and Isabella Felix on 4/15/20
 
 This file contains the fsm-graphviz library used to render the graph
-  repersentation onto the Visualization tool.
+  representation onto the Visualization tool.
 |#
 
+(provide (struct-out graph)
+         (struct-out node)
+         (struct-out edge)
+         create-graph
+         add-node
+         add-edge
+         create-node
+         create-edge
+         render-graph) 
+         
 
+; A graph is represented as a structure with three elements:
+; name is a symbol used to represent the name of the graph
+; node-list is a list of node structures
+; edge-list is a list of edge structures 
 (struct graph ([name]
                [node-list #:mutable]
                [edge-list #:mutable]))
-  
+
+; A node is a structure with four elements that represents a single state in FSA
+; name is a symbol used to represent the name of a graphviz node
+; value is symbol used to represent the name of a state
+; color is a symbol used to represent a graphviz color
+;   https://www.graphviz.org/doc/info/colors.html
+; type is a symbol used to represent if a state is a starting, final, or accepting state 
 (struct node ([name]
               [value]
               [color]
               [type]))
 
+; An edge is a structure that represents a transition from one node to another
+; name is a symbol used to represent the name of the edge
+; color is a symbol used to represent a graphviz color
+;   https://www.graphviz.org/doc/info/colors.html
+; start-node is a node-name (symbol)
+; end-node is a node-name (symbol) 
 (struct edge ([name]
               [color]
               [start-node #:mutable]
@@ -38,7 +64,7 @@ This file contains the fsm-graphviz library used to render the graph
 
 
 ;; add-edge: graph edge -> NONE
-;; Purpose: adds a edge to the graph
+;; Purpose: adds an edge to the graph
 ;; IMPORTANT: This function assumes that the node exists in the graph structure
 (define (add-edge graph edge)
   (set-graph-edge-list! graph
@@ -137,7 +163,7 @@ This file contains the fsm-graphviz library used to render the graph
   
 
 
-
+#|
 
 ; L(KLEENESTAR-abUaba) = (abUaba)*
 (define testGraph (create-graph 'test))
@@ -159,4 +185,4 @@ This file contains the fsm-graphviz library used to render the graph
 (add-edge testGraph (create-edge 'c 'black 'Q5 'Q4))
 
 
-(render-graph testGraph "testGraph.dot")
+(render-graph testGraph "testGraph.dot")|#
