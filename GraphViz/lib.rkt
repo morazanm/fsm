@@ -87,6 +87,7 @@ This file contains the fsm-graphviz library used to render the graph
                         (cond
                           [(empty? list) #f]
                           [(and (equal? start-node (edge-end-node (car list)))
+                                (equal? (edge-start-node (car list)) (edge-end-node (car list)))
                                 (equal? end-node (edge-end-node (car list))))accum]
                           [else (extractor (cdr list) (+ accum 1))])))
 
