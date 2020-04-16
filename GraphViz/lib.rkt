@@ -26,7 +26,7 @@ This file contains the fsm-graphviz library used to render the graph
 ; edge-list is a list of edge structures 
 (struct graph ([name]
                [node-list #:mutable]
-               [edge-list #:mutable]))
+               [edge-list #:mutable]) #:transparent)
 
 ; A node is a structure with four elements that represents a single state in FSA
 ; name is a symbol used to represent the name of a graphviz node
@@ -40,15 +40,17 @@ This file contains the fsm-graphviz library used to render the graph
               [type]) #:transparent)
 
 ; An edge is a structure that represents a transition from one node to another
-; name is a symbol used to represent the name of the edge
+; names is a listof symbols used to represent the names of the edge
 ; color is a symbol used to represent a graphviz color
 ;   https://www.graphviz.org/doc/info/colors.html
 ; start-node is a node-name (symbol)
 ; end-node is a node-name (symbol) 
-(struct edge ([name]
+(struct edge ([names #:mutable]
               [color]
               [start-node #:mutable]
               [end-node #:mutable]) #:transparent)
+
+
 
 
 
@@ -58,19 +60,47 @@ This file contains the fsm-graphviz library used to render the graph
   (graph name nodes edges))
 
 
-;; add-node: graph node -> NONE
+;; add-node: symbol symbol symbol symbol -> node
+;; Purpose: Creates a node
+;; Acceptable types:
+;;    start           => A start state
+;;    startfinal      => A start and final state
+;;    final           => A final state
+;;    accept          => An accepting state (lang recs)
+;;    none            => just a plain old state 
 ;; Purpose: adds a node to the given graph
-(define (add-node graph node)
+(define (add-node graph name value color type)
   (set-graph-node-list! graph
-                        (cons node (graph-node-list graph))))
+                        (cons (create-node name value color type)
+                              (graph-node-list graph))))
+
+
+
 
 
 ;; add-edge: graph edge -> NONE
 ;; Purpose: adds an edge to the graph
 ;; IMPORTANT: This function assumes that the node exists in the graph structure
-(define (add-edge graph edge)
-  (set-graph-edge-list! graph
-                        (cons edge (graph-edge-list graph))))
+(define (add-edge graph val color start-node end-node)
+  (letrec (
+           (extractor (lambda (list accum)
+                        (cond
+                          [(empty? list) #f]
+                          [(and (equal? start-node (edge-end-node (car list)))
+                                (equal? end-node (edge-end-node (car list))))accum]
+                          [else (extractor (cdr list) (+ accum 1))])))
+
+           (index (extractor (graph-edge-list graph) 0))
+           )
+    (cond
+      [(equal? #f index) (set-graph-edge-list! graph
+                                               (cons
+                                                (create-edge val color start-node end-node)
+                                                (graph-edge-list graph)))]
+      [else
+       (set-edge-names! (list-ref (graph-edge-list graph) index)
+                        (cons val (edge-names (list-ref (graph-edge-list graph) index))))])))
+       
 
 
 
@@ -85,7 +115,7 @@ This file contains the fsm-graphviz library used to render the graph
 ;;    final           => A final state
 ;;    accept          => An accepting state (lang recs)
 ;;    none (default)  => just a plain old state 
-(define (create-node name value color #:type [type 'none])
+(define (create-node name value color type)
   (if (or (equal? 'start type)
           (equal? 'none type)
           (equal? 'final type)
@@ -95,10 +125,12 @@ This file contains the fsm-graphviz library used to render the graph
       (error "Invalid node type. A node must be one of the following symbols:\n'start\n'startfinal\n'final\n'accept\n'none")))
 
 
-;; create-edge symbol symbol symbol symbol -> edge
+;; create-edge: symbol symbol symbol symbol -> edge
 ;; Purpose: Creates an edge
 (define (create-edge val color start-node end-node)
-  (edge val color (remove-dashes start-node) (remove-dashes end-node)))
+  (edge (list val) color (remove-dashes start-node) (remove-dashes end-node)))
+
+
 
 
 
@@ -148,6 +180,15 @@ This file contains the fsm-graphviz library used to render the graph
          (render-nodes (cdr lon) port)))]))
 
 
+;list->str: (listof symbols) -> string
+;Purpose: to convert the symbols in the list to a string
+(define (list->str los accum)
+  (cond [(empty? los) (string-trim accum)]
+        [else (list->str
+               (cdr los)
+               (string-append accum (symbol->string (car los)) " "))]))
+                             
+
 ;; render-edges list-of-edges write-buffer -> NONE
 (define (render-edges loe port)
   (cond
@@ -155,10 +196,10 @@ This file contains the fsm-graphviz library used to render the graph
     [else
      (let ((edge (car loe)))
        (begin
-         (displayln (format "    ~s -> ~s [label=\"~s\", color=\"~s\"];"
+         (displayln (format "    ~s -> ~s [label=~s, color=\"~s\"];"
                             (edge-start-node edge)
                             (edge-end-node edge)
-                            (edge-name edge)
+                            (list->str (edge-names edge) "")
                             (edge-color edge))
                     port)
          (render-edges (cdr loe) port)))]))
@@ -191,19 +232,25 @@ This file contains the fsm-graphviz library used to render the graph
 
 
 
-#|
+
 
 ; L(KLEENESTAR-abUaba) = (abUaba)*
-(define testGraph (create-graph 'test))
-(add-node testGraph (create-node 'Q0 'Q-0 'green #:type 'startfinal))
-(add-node testGraph (create-node 'Q1 'Q-1 'black))
-(add-node testGraph (create-node 'Q2 'Q-2 'black #:type 'accept))
-(add-node testGraph (create-node 'Q3 'Q-3 'black))
-(add-node testGraph (create-node 'Q4 'Q-4 'black))
-(add-node testGraph (create-node 'Q5 'Q-5 'black #:type 'final))
+;(define testGraph (create-graph 'test))
+;(add-node testGraph 'Q0 'Q-0 'green #:type 'startfinal)
+;(add-node testGraph (create-node 'Q1 'Q-1 'black))
+;(add-node testGraph (create-node 'Q2 'Q-2 'black #:type 'accept))
+;(add-node testGraph (create-node a'Q3 'Q-3 'black))
+;(add-node testGraph (create-node 'Q4 'Q-4 'black))
+;(
 
-(add-edge testGraph (create-edge 'a 'black 'Q0 'Q1))
-(add-edge testGraph (create-edge 'b 'red 'Q1 'Q2))
+;(testGraph (add-node 'Q5 'Q-5 'black #:type 'final))
+
+;(add-edge testGraph 'a 'black 'Q0 'Q0)
+;(add-edge testGraph 'b 'black 'Q0 'Q0)
+;(add-edge testGraph 'c 'black 'Q0 'Q1)
+;(add-edge testGraph 'd 'black 'Q1 'Q0)
+
+#|
 (add-edge testGraph (create-edge 'a 'black 'Q2 'Q3))
 (add-edge testGraph (create-edge EMP 'black 'Q3 'Q0))
 (add-edge testGraph (create-edge 'a 'black 'Q0 'Q4))

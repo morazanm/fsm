@@ -1,15 +1,12 @@
 digraph aStara {
     rankdir="LR";
-    ds [label="ds", shape="circle", color="black"];
-    S [label="S", shape="circle", color="forestgreen"];
-    F [label="F", shape="doublecircle", color="black"];
     A [label="A", shape="circle", color="black"];
-    S -> F [label="a", color="black"];
-    F -> F [label="a", color="black"];
-    F -> A [label="b", color="black"];
-    A -> F [label="a", color="black"];
-    A -> A [label="b", color="black"];
-    ds -> ds [label="a", color="black"];
-    ds -> ds [label="b", color="black"];
+    F [label="F", shape="doublecircle", color="black"];
+    S [label="S", shape="circle", color="forestgreen"];
+    ds [label="ds", shape="circle", color="black"];
     S -> ds [label="b", color="black"];
+    ds -> ds [label="b a", color="black"];
+    A -> F [label="a", color="black"];
+    F -> A [label="b b", color="black"];
+    S -> F [label="a a", color="black"];
 }
