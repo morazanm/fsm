@@ -1,5 +1,5 @@
 #lang racket
-
+(require 2htdp/image)
 #| lib.rkt
 Written by: Joshua Schappel, Sena Karsavran, and Isabella Felix on 4/15/20
 
@@ -15,7 +15,9 @@ This file contains the fsm-graphviz library used to render the graph
          add-edge
          create-node
          create-edge
-         render-graph) 
+         render-graph
+         dot->png
+         graph->bitmap) 
          
 
 ; A graph is represented as a structure with three elements:
@@ -46,7 +48,7 @@ This file contains the fsm-graphviz library used to render the graph
 (struct edge ([name]
               [color]
               [start-node #:mutable]
-              [end-node #:mutable]))
+              [end-node #:mutable]) #:transparent)
 
 
 
@@ -93,7 +95,7 @@ This file contains the fsm-graphviz library used to render the graph
       (error "Invalid node type. A node must be one of the following symbols:\n'start\n'startfinal\n'final\n'accept\n'none")))
 
 
-;; create-edge symbol double(<=1) symbol symbol -> edge
+;; create-edge symbol symbol symbol symbol -> edge
 ;; Purpose: Creates an edge
 (define (create-edge val color start-node end-node)
   (edge val color (remove-dashes start-node) (remove-dashes end-node)))
@@ -133,8 +135,8 @@ This file contains the fsm-graphviz library used to render the graph
               ;; Purpose: determines the color of the node
               (determin-color (lambda (node)
                                 (case (node-type node)
-                                  [(start) 'green]
-                                  [(startfinal) 'green]
+                                  [(start) 'forestgreen]
+                                  [(startfinal) 'forestgreen]
                                   [else 'black]))))                        
        (begin
          (displayln (format "    ~s [label=\"~s\", shape=\"~s\", color=\"~s\"];"
@@ -164,7 +166,30 @@ This file contains the fsm-graphviz library used to render the graph
 ; remove-dashes: symbol -> symbol
 ; Purpose: Remove dashes
 (define (remove-dashes s)
-  (string->symbol (string-replace (symbol->string s) "-" ""))) 
+  (string->symbol (string-replace (symbol->string s) "-" "")))
+
+
+;; dot->png: stirng string-> NONE
+;; Purpose: converts a dot file to a png. The png files is saved in
+;;   this directory
+(define (dot->png path png-name)
+  (if (system "dot -V")
+      (begin
+        (system (format "dot -Tpng ~s -o ~s.png" path png-name))
+        (void))
+      (error "\nError:\nPlease add graphviz as an enviroment variable. Instructions can be found at:\n   https://github.com/morazanm/fsm\n\n")))
+
+
+;; graph->bitmap: graph string string -> image
+;; Converts a graph to an image
+(define (graph->bitmap g path png-name)
+  (begin
+    (render-graph g path)
+    (dot->png path png-name)
+    (bitmap "test.png")))
+
+
+
 
 #|
 
