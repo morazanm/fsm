@@ -39,13 +39,15 @@
                     (node 'C 'C 'black 'final)))
 
 ;; a*a 
-(check-expect (rules->edges (sm-getrules a*a))
+(check-expect (rules->edges (sm-getrules dummy1))
               (list (edge 'a 'black 'A 'A)
                     (edge 'b 'black 'A 'B)
                     (edge 'a 'black 'B 'C)
                     (edge 'b 'black 'B 'A)
-                    (edge 'a 'black 'C 'C)
-                    (edge 'b 'black 'C 'C)))
+                    (edge 'a 'black 'C 'A)
+                    (edge 'b 'black 'C 'C)
+                    (edge 'a 'black 'ds 'ds)
+                    (edge 'b 'black 'ds 'ds)))
 
 
 
