@@ -228,7 +228,7 @@ This file contains the fsm-graphviz library used to render the graph
   (begin
     (render-graph g path)
     (dot->png path png-name)
-    (bitmap "test.png")))
+    (bitmap "graph.png")))
 
 
 

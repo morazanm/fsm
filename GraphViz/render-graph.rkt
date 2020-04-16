@@ -1,9 +1,15 @@
 #lang racket
-(require "lib.rkt" "../fsm-main.rkt"  test-engine/racket-tests 2htdp/image)
+(require "lib.rkt" "../fsm-main.rkt")
+#| render-graph.rkt
+Written by: Joshua Schappel, Sachin Mahashabde Sena Karsavran, and Isabella Felix on 4/15/20
+
+This file contains the sm-graph function
+|#
 
 (provide
  states->nodes
- rules->edges)
+ rules->edges
+ sm-graph)
 
 
 
@@ -11,52 +17,36 @@
 ; Purpose: Create a list of node structures given a list of state symbols
 (define (states->nodes los S lof G)
   (map (lambda (x) (add-node
-                      G
-                      x
-                      x
-                      'black
-                      (cond [(and (equal? x S)
-                                  (member x lof)) 'startfinal]
-                            [(equal? x S) 'start]
-                            [(member x lof) 'final]
-                            [else 'none]))) los))
+                    G
+                    x
+                    x
+                    'black
+                    (cond [(and (equal? x S)
+                                (member x lof)) 'startfinal]
+                          [(equal? x S) 'start]
+                          [(member x lof) 'final]
+                          [else 'none]))) los))
 
 
 ;; rules->edges: (listof rules) graph -> (listof edges)
 ;; Purpose: Creates a list of edges when given a list of rules
 (define (rules->edges lor G)
   (map (lambda (rule) (add-edge G
-                                  (cadr rule)
-                                  'black
-                                  (car rule)
-                                  (last rule))) lor))
+                                (cadr rule)
+                                'black
+                                (car rule)
+                                (last rule))) lor))
 
 
-
-
-
-
-
-
-
-
-; L(a*a) = {w | w starts and ends with an a}
-(define a*a (make-dfa '(S F A)       ;the states
-                      '(a b)         ;the alphabet
-                      'S             ;the starting state
-                      '(F)           ;final states
-                      '((S a F)      ;the transition function
-                        (F a F)
-                        (F b A)
-                        (A a F)
-                        (A b A))))
- 
-                    
-(define a*a-graph (create-graph 'aStara))
-(states->nodes (sm-getstates a*a) (sm-getstart a*a) (sm-getfinals a*a) a*a-graph)
-(rules->edges (sm-getrules a*a) a*a-graph)
-
-;;(render-graph a*a-graph "test.dot")
-;;(dot->png "test.dot" "test")
-;;(bitmap "test.png")
-(graph->bitmap a*a-graph "test.dot" "test")
+;; sm-graph: machine -> Image
+;; Purpose: draws the Graphviz graph of the geven machine
+(define (sm-graph machine)
+  (let ((g (create-graph 'G)))
+    (begin
+      (states->nodes (sm-getstates machine)
+                     (sm-getstart machine)
+                     (sm-getfinals machine)
+                     g)
+      (rules->edges (sm-getrules machine)
+                    g)
+      (graph->bitmap g "graph.dot" "graph"))))
