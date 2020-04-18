@@ -1,7 +1,14 @@
 # FSM
-##### FSM Library Version 1.0
+##### FSM Library Version 1.3
 A Library for the Automata Theory Classroom
 
+## Version History
+### 1.3:
+ - Added Turing Machine support to visualization tool
+ - Minor bug fixes with the visualization tool
+### 1.2:
+ - Added Pushdown Automata support to the visualization tool
+ - Added scroll bars to input field for visualization tool
 
 ## Documentation
 The documemtation can be found  [here](https://htmlpreview.github.io/?https://github.com/morazanm/fsm/blob/master/doc/fsm/index.html).
