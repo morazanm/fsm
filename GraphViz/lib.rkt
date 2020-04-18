@@ -13,53 +13,65 @@ This file contains the fsm-graphviz library used to render the graph
          create-graph
          add-node
          add-edge
-         create-node
-         create-edge
          render-graph
          dot->png
          graph->bitmap)
 
 
 ;; Constants 
-(define START-STATE-COLOR "forestgreen")
+(define START-STATE-COLOR-0 "forestgreen")
+(define START-STATE-COLOR-1 "#ede209") ;; Yellow
+(define START-STATE-COLOR-2 "#d48217");; Orange
+(define START-STATE-COLOR-3 "#002afc") ;; Blue
+
 (define DEFAULT-STATE-COLOR "black")
 (define FINAL-STATE-SHAPE "doublecircle")
-(define ACCEPT-STATE-SHAPE "doublehexagon")
+(define ACCEPT-STATE-SHAPE "doubleoctagon")
 (define GRAPH-WIDTH 600)
 (define GRAPH-HEIGHT 600)
 (define DEFAULT-EDGE (hash
                       'fontsize 10))
-
 (define DEFAULT-NODE (hash
                       'color "black"
                       'shape "circle"))
+
+
+#| ----IMPORTANT VALUES----
+
+*Color Blind States*
+0 -> default colors
+1 -> Deuteranopia (Red-Green colorblindness)
+2 -> Deuteranopia (alt colors)
+3 -> Blue-Red
                       
          
-
+|#
 ; A graph is represented as a structure with three elements:
 ; name is a symbol used to represent the name of the graph
 ; node-list is a list of node structures
-; edge-list is a list of edge structures 
+; edge-list is a list of edge structures
+; color-blind is a interger from 1-2 that represents the color bind state (see color-blind state above)
 (struct graph ([name]
                [node-list #:mutable]
-               [edge-list #:mutable]) #:transparent)
+               [edge-list #:mutable]
+               [color-blind #:mutable]) #:transparent)
 
 ; A node is a structure with four elements that represents a single state in FSA
-; name is a symbol used to represent the name of a graphviz node
-; value is symbol used to represent the name of a state
-; abt is a hashmap used to represent a graphviz node attributes
-;   https://www.graphviz.org/doc/info/colors.html
-; type is a symbol used to represent if a state is a starting, final, or accepting state 
+; - name is a symbol used to represent the name of a graphviz node
+; - value is symbol used to represent the name of a state
+; - abt is a hashmap used to represent a graphviz node attributes
+;      For all colors see: https://www.graphviz.org/doc/info/colors.html
+; - type is a symbol used to represent if a state is a starting, final, or accepting state 
 (struct node ([name]
               [value]
               [atb #:mutable]
               [type]) #:transparent)
 
 ; An edge is a structure that represents a transition from one node to another
-; abt is a hashmap used to represent a graphviz edge attributes
-;   https://www.graphviz.org/doc/info/colors.html
-; start-node is a node-name (symbol)
-; end-node is a node-name (symbol) 
+; - abt is a hashmap used to represent a graphviz edge attributes
+;      For all colors see: https://www.graphviz.org/doc/info/colors.html
+; - start-node is a node-name (symbol)
+; - end-node is a node-name (symbol) 
 (struct edge ([atb #:mutable]
               [start-node #:mutable]
               [end-node #:mutable]) #:transparent)
@@ -69,12 +81,16 @@ This file contains the fsm-graphviz library used to render the graph
 
 
 ;; create-graph: symbol -> graph
+;; name: The name of the graph
+;; color-blind: An unsignded integer value that represents the color-blind state
 ;; Purpose: Creates a Graph wiht the given name
-(define (create-graph name)
-  (graph name '() '()))
+(define (create-graph name #:color[color-blind 0])
+  (if (> color-blind 3)
+      (error "The color blind option must be one of the following:\n0 -> default\n1 -> Deuteranopia option1\n2 -> Deuteranopia option2\n3 -> Red-Blue color blindness")
+      (graph name '() '() color-blind)))
 
 
-;; add-node: symbol symbol symbol symbol -> node
+;; add-node: symbol symbol symbol hash-map -> node
 ;; Purpose: Creates a node
 ;; Acceptable types:
 ;;    start           => A start state
@@ -85,7 +101,7 @@ This file contains the fsm-graphviz library used to render the graph
 ;; Purpose: adds a node to the given graph
 (define (add-node graph name type  #:atb [atb DEFAULT-NODE])
   (set-graph-node-list! graph
-                        (cons (create-node name type #:atb atb)
+                        (cons (create-node name type (graph-color-blind graph) #:atb atb)
                               (graph-node-list graph))))
 
 
@@ -116,11 +132,6 @@ This file contains the fsm-graphviz library used to render the graph
        (let ((x (edge-atb (list-ref (graph-edge-list graph) index))))
          (set-edge-atb! (list-ref (graph-edge-list graph) index)
                         (hash-set x 'label (cons val (hash-ref x 'label)))))])))
-#|       
-       (set-edge-names! (list-ref (graph-edge-list graph) index)
-                        (cons val (edge-names (list-ref (graph-edge-list graph) index))))])))
-       
-|#
 
 
 
@@ -135,27 +146,32 @@ This file contains the fsm-graphviz library used to render the graph
 ;;    accept          => An accepting state (lang recs)
 ;;    startaccept     => A starting and accepting state
 ;;    none (default)  => just a plain old state 
-(define (create-node name type #:atb [atb DEFAULT-NODE])
+(define (create-node name type color-blind #:atb [atb DEFAULT-NODE])
   (if (or (equal? 'start type)
           (equal? 'none type)
           (equal? 'final type)
           (equal? 'accept type)
           (equal? 'startaccept type)
           (equal? 'startfinal type))
-      (node (remove-dashes name) name (set-node-color-shape type atb) type)
+      (node (remove-dashes name) name (set-node-color-shape type  color-blind atb) type)
       (error "Invalid node type. A node must be one of the following symbols:\n'start\n'startfinal\n'final\n'accept\n'startaccept\n'none")))
 
 
 ;; set-node-color-shape: type hash-map -> hash-map
-(define (set-node-color-shape type hash-map)
-  (case type
-    [(start) (hash-set hash-map 'color START-STATE-COLOR)]
-    [(startfinal)(hash-set (hash-set hash-map 'shape FINAL-STATE-SHAPE)
-                           'color START-STATE-COLOR)]
-    [(startaccept)(hash-set (hash-set hash-map 'shape ACCEPT-STATE-SHAPE)
-                            'color START-STATE-COLOR)]
-    [(final) (hash-set hash-map 'shape FINAL-STATE-SHAPE)]
-    [else hash-map]))
+(define (set-node-color-shape type color-blind hash-map)
+  (let ((color (case color-blind
+                 [(0) START-STATE-COLOR-0]
+                 [(1) START-STATE-COLOR-1]
+                 [(2) START-STATE-COLOR-2]
+                 [else START-STATE-COLOR-3])))
+    (case type
+      [(start) (hash-set hash-map 'color color)]
+      [(startfinal)(hash-set (hash-set hash-map 'shape FINAL-STATE-SHAPE)
+                             'color color)]
+      [(startaccept)(hash-set (hash-set hash-map 'shape ACCEPT-STATE-SHAPE)
+                              'color color)]
+      [(final) (hash-set hash-map 'shape FINAL-STATE-SHAPE)]
+      [else hash-map])))
 
 
 ;; create-edge: symbol symbol symbol symbol -> edge
@@ -239,7 +255,7 @@ This file contains the fsm-graphviz library used to render the graph
       (error "\nError:\nPlease add graphviz as an enviroment variable. Instructions can be found at:\n   https://github.com/morazanm/fsm\n\n")))
 
 
-;; graph->bitmap: graph string string -> image
+;; graph->bitmap: graph string string boolean -> image
 ;; Converts a graph to an image
 (define (graph->bitmap g path png-name #:scale [scale #f])
   (begin
