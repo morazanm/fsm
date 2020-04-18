@@ -136,6 +136,8 @@ To visualize a dfa or ndfa create a new file and require fsm. Then provide one o
 - [Josephine A. Des Rosiers](https://github.com/josdes)
 - [Joshua Schappel](https://github.com/jschappel)
 - [Sachin Mahashabde](https://github.com/sachinmahashabde)
+- [Sena Karsavran](https://github.com/senakar)
+- [Isabella Felix](https://github.com/felixisa)
 
 ## License
 Copyright (c) 2020 by Marco T. Morazan
