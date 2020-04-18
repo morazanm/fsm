@@ -17,7 +17,23 @@ This file contains the fsm-graphviz library used to render the graph
          create-edge
          render-graph
          dot->png
-         graph->bitmap) 
+         graph->bitmap)
+
+
+;; Constants 
+(define START-STATE-COLOR "forestgreen")
+(define DEFAULT-STATE-COLOR "black")
+(define FINAL-STATE-SHAPE "doublecircle")
+(define ACCEPT-STATE-SHAPE "doublehexagon")
+(define GRAPH-WIDTH 600)
+(define GRAPH-HEIGHT 600)
+(define DEFAULT-EDGE (hash
+                      'fontsize 10))
+
+(define DEFAULT-NODE (hash
+                      'color "black"
+                      'shape "circle"))
+                      
          
 
 ; A graph is represented as a structure with three elements:
@@ -31,22 +47,20 @@ This file contains the fsm-graphviz library used to render the graph
 ; A node is a structure with four elements that represents a single state in FSA
 ; name is a symbol used to represent the name of a graphviz node
 ; value is symbol used to represent the name of a state
-; color is a symbol used to represent a graphviz color
+; abt is a hashmap used to represent a graphviz node attributes
 ;   https://www.graphviz.org/doc/info/colors.html
 ; type is a symbol used to represent if a state is a starting, final, or accepting state 
 (struct node ([name]
               [value]
-              [color]
+              [atb #:mutable]
               [type]) #:transparent)
 
 ; An edge is a structure that represents a transition from one node to another
-; names is a listof symbols used to represent the names of the edge
-; color is a symbol used to represent a graphviz color
+; abt is a hashmap used to represent a graphviz edge attributes
 ;   https://www.graphviz.org/doc/info/colors.html
 ; start-node is a node-name (symbol)
 ; end-node is a node-name (symbol) 
-(struct edge ([names #:mutable]
-              [color]
+(struct edge ([atb #:mutable]
               [start-node #:mutable]
               [end-node #:mutable]) #:transparent)
 
@@ -54,10 +68,10 @@ This file contains the fsm-graphviz library used to render the graph
 
 
 
-;; create-graph: symbol list-of-node list-of-edge -> graph
-;; Purpose: Creates a Graph
-(define (create-graph name #:nodes [nodes '()] #:edges [edges '()])
-  (graph name nodes edges))
+;; create-graph: symbol -> graph
+;; Purpose: Creates a Graph wiht the given name
+(define (create-graph name)
+  (graph name '() '()))
 
 
 ;; add-node: symbol symbol symbol symbol -> node
@@ -69,19 +83,19 @@ This file contains the fsm-graphviz library used to render the graph
 ;;    accept          => An accepting state (lang recs)
 ;;    none            => just a plain old state 
 ;; Purpose: adds a node to the given graph
-(define (add-node graph name value color type)
+(define (add-node graph name type  #:atb [atb DEFAULT-NODE])
   (set-graph-node-list! graph
-                        (cons (create-node name value color type)
+                        (cons (create-node name type #:atb atb)
                               (graph-node-list graph))))
 
 
 
 
 
-;; add-edge: graph edge -> NONE
+;; add-edge: graph symbol symbol symbol hash-map
 ;; Purpose: adds an edge to the graph
 ;; IMPORTANT: This function assumes that the node exists in the graph structure
-(define (add-edge graph val color start-node end-node)
+(define (add-edge graph val start-node end-node #:atb [atb DEFAULT-EDGE])
   (letrec (
            (extractor (lambda (list accum)
                         (cond
@@ -96,40 +110,58 @@ This file contains the fsm-graphviz library used to render the graph
     (cond
       [(equal? #f index) (set-graph-edge-list! graph
                                                (cons
-                                                (create-edge val color start-node end-node)
+                                                (create-edge val start-node end-node #:atb atb)
                                                 (graph-edge-list graph)))]
       [else
+       (let ((x (edge-atb (list-ref (graph-edge-list graph) index))))
+         (set-edge-atb! (list-ref (graph-edge-list graph) index)
+                        (hash-set x 'label (cons val (hash-ref x 'label)))))])))
+#|       
        (set-edge-names! (list-ref (graph-edge-list graph) index)
                         (cons val (edge-names (list-ref (graph-edge-list graph) index))))])))
        
+|#
 
 
 
 
 
-
-;; create-node: symbol symbol symbol symbol -> node
+;; create-node: symbol symbol symbol hash-map -> node
 ;; Purpose: Creates a node
 ;; Acceptable types:
 ;;    start           => A start state
 ;;    startfinal      => A start and final state
 ;;    final           => A final state
 ;;    accept          => An accepting state (lang recs)
+;;    startaccept     => A starting and accepting state
 ;;    none (default)  => just a plain old state 
-(define (create-node name value color type)
+(define (create-node name type #:atb [atb DEFAULT-NODE])
   (if (or (equal? 'start type)
           (equal? 'none type)
           (equal? 'final type)
           (equal? 'accept type)
+          (equal? 'startaccept type)
           (equal? 'startfinal type))
-      (node (remove-dashes name) value color type)
-      (error "Invalid node type. A node must be one of the following symbols:\n'start\n'startfinal\n'final\n'accept\n'none")))
+      (node (remove-dashes name) name (set-node-color-shape type atb) type)
+      (error "Invalid node type. A node must be one of the following symbols:\n'start\n'startfinal\n'final\n'accept\n'startaccept\n'none")))
+
+
+;; set-node-color-shape: type hash-map -> hash-map
+(define (set-node-color-shape type hash-map)
+  (case type
+    [(start) (hash-set hash-map 'color START-STATE-COLOR)]
+    [(startfinal)(hash-set (hash-set hash-map 'shape FINAL-STATE-SHAPE)
+                           'color START-STATE-COLOR)]
+    [(startaccept)(hash-set (hash-set hash-map 'shape ACCEPT-STATE-SHAPE)
+                            'color START-STATE-COLOR)]
+    [(final) (hash-set hash-map 'shape FINAL-STATE-SHAPE)]
+    [else hash-map]))
 
 
 ;; create-edge: symbol symbol symbol symbol -> edge
 ;; Purpose: Creates an edge
-(define (create-edge val color start-node end-node)
-  (edge (list val) color (remove-dashes start-node) (remove-dashes end-node)))
+(define (create-edge val start-node end-node #:atb [atb DEFAULT-EDGE])
+  (edge (hash-set atb 'label (list val))  (remove-dashes start-node) (remove-dashes end-node)))
 
 
 
@@ -138,12 +170,15 @@ This file contains the fsm-graphviz library used to render the graph
 
 ;; render-graph: graph string -> NONE
 ;; Purpose: writes graph to the specified file
-(define (render-graph graph path)
+(define (render-graph graph path #:scale [scale #f])
   (call-with-output-file path
     #:exists 'replace
     (lambda (out)
       (displayln (format "digraph ~s {" (graph-name graph)) out)
       (displayln "    rankdir=\"LR\";" out)
+      (if scale
+          (displayln (format "    size=\"~s, ~s!\";" GRAPH-WIDTH GRAPH-HEIGHT) out)
+          (void))
       (render-nodes (graph-node-list graph) out)
       (render-edges (graph-edge-list graph) out)
       (displayln "}" out))))
@@ -154,29 +189,12 @@ This file contains the fsm-graphviz library used to render the graph
   (cond
     [(empty? lon) (void)]
     [else
-     (letrec ((node (car lon))
-              ;; determin-shape: node -> symbol
-              ;; Purpose: determines the shape of the node
-              (determin-shape (lambda (node)
-                                (case (node-type node)
-                                  [(final) 'doublecircle]
-                                  [(startfinal) 'doublecircle]
-                                  [(accept) 'doubleoctagon]
-                                  [else 'circle])))
-
-              ;; determin-color: node -> symbol
-              ;; Purpose: determines the color of the node
-              (determin-color (lambda (node)
-                                (case (node-type node)
-                                  [(start) 'forestgreen]
-                                  [(startfinal) 'forestgreen]
-                                  [else 'black]))))                        
+     (let ((node (car lon)))                    
        (begin
-         (displayln (format "    ~s [label=\"~s\", shape=\"~s\", color=\"~s\"];"
-                            (node-name node)
-                            (node-value node)
-                            (determin-shape node)
-                            (determin-color node))
+         (displayln (string-append (format "    ~s [label=\"~s\", "
+                                           (node-name node)
+                                           (node-value node))
+                                   (hash->graphvizString (node-atb node)) "];")
                     port)
          (render-nodes (cdr lon) port)))]))
 
@@ -197,11 +215,10 @@ This file contains the fsm-graphviz library used to render the graph
     [else
      (let ((edge (car loe)))
        (begin
-         (displayln (format "    ~s -> ~s [label=~s, color=\"~s\"];"
-                            (edge-start-node edge)
-                            (edge-end-node edge)
-                            (list->str (edge-names edge) "")
-                            (edge-color edge))
+         (displayln (string-append (format "    ~s -> ~s ["
+                                           (edge-start-node edge)
+                                           (edge-end-node edge))
+                                   (hash->graphvizString (edge-atb edge)) "];")
                     port)
          (render-edges (cdr loe) port)))]))
   
@@ -224,41 +241,70 @@ This file contains the fsm-graphviz library used to render the graph
 
 ;; graph->bitmap: graph string string -> image
 ;; Converts a graph to an image
-(define (graph->bitmap g path png-name)
+(define (graph->bitmap g path png-name #:scale [scale #f])
   (begin
-    (render-graph g path)
+    (render-graph g path #:scale scale)
     (dot->png path png-name)
     (bitmap "graph.png")))
 
+;; hash->graphvizString: hash-map -> string
+;; Purpose: conversts all elemts of the hashmap to a string that can
+;;  be used as a node or graph property
+(define (hash->graphvizString hash)
+  (letrec ((first-posn (hash-iterate-first hash))
+
+           (key-val->string (lambda (pair)
+                              (cond
+                                [(and (list? (cdr pair)) (equal? (car pair) 'label))
+                                 (format "~s=~s" (car pair) (convet-trans-to-string (cdr pair) "" ))]
+                                [else
+                                 (format "~s=~s" (car pair) (cdr pair))])))
+
+           (iterate-hash (lambda (posn accum)
+                           (cond
+                             [(eq? #f posn) (string-trim accum)]
+                                
+                             [else
+                              (iterate-hash (hash-iterate-next hash posn)
+                                            (string-append (key-val->string
+                                                            (hash-iterate-pair hash posn))
+                                                           (if (eq? "" accum)
+                                                               ""
+                                                               ", ")
+                                                           accum))]))))
+    (iterate-hash first-posn "")))
+
+
+;; convet-trans-to-string: (listOf transitions) string -> string
+;; Purpose: Converts a list of transitions into a graphviz string
+(define (convet-trans-to-string lot accum)
+  (cond
+    [(empty? lot) (string-trim accum)]
+    [else
+     (convet-trans-to-string (cdr lot)
+                             (string-append accum " " (determine-list-type (car lot))))]))
+
+
+;; determine-list-type: transition -> string
+;; Purpose: Converts the list to its string representation
+(define (determine-list-type aList)
+  (match aList
+    [val #:when (symbol? val) (symbol->string val)]
+    ;; dfa/ndfa
+    ;; pda
+    [(list
+      (list start push pop1)
+      (list end pop2))
+     (string-append "((" (symbol->string start)  " " (symbol->string push) " "
+                    (if (list? pop1) (list->str pop1 "") (symbol->string pop1)) ") "
+                    "(" (symbol->string end) " ("
+                    (if (list? pop2) (list->str pop2 "") (symbol->string pop2)) ")))"
+                    "\n")]
+    ;; tm and lang rec
+    [(list
+      (list a b)
+      (list c d)) (string-append "((" (symbol->string a) " " (symbol->string b) ") "
+                                 "(" (symbol->string c) " " (symbol->string d) "))\n")]))
 
 
 
-
-
-; L(KLEENESTAR-abUaba) = (abUaba)*
-;(define testGraph (create-graph 'test))
-;(add-node testGraph 'Q0 'Q-0 'green #:type 'startfinal)
-;(add-node testGraph (create-node 'Q1 'Q-1 'black))
-;(add-node testGraph (create-node 'Q2 'Q-2 'black #:type 'accept))
-;(add-node testGraph (create-node a'Q3 'Q-3 'black))
-;(add-node testGraph (create-node 'Q4 'Q-4 'black))
-;(
-
-;(testGraph (add-node 'Q5 'Q-5 'black #:type 'final))
-
-;(add-edge testGraph 'a 'black 'Q0 'Q0)
-;(add-edge testGraph 'b 'black 'Q0 'Q0)
-;(add-edge testGraph 'c 'black 'Q0 'Q1)
-;(add-edge testGraph 'd 'black 'Q1 'Q0)
-
-#|
-(add-edge testGraph (create-edge 'a 'black 'Q2 'Q3))
-(add-edge testGraph (create-edge EMP 'black 'Q3 'Q0))
-(add-edge testGraph (create-edge 'a 'black 'Q0 'Q4))
-(add-edge testGraph (create-edge 'b 'black 'Q4 'Q5))
-(add-edge testGraph (create-edge EMP 'black 'Q5 'Q0))
-(add-edge testGraph (create-edge 'b 'black 'Q5 'Q4))
-(add-edge testGraph (create-edge 'c 'black 'Q5 'Q4))
-
-
-(render-graph testGraph "testGraph.dot")|#

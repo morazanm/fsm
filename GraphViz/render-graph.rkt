@@ -19,8 +19,6 @@ This file contains the sm-graph function
   (map (lambda (x) (add-node
                     G
                     x
-                    x
-                    'black
                     (cond [(and (equal? x S)
                                 (member x lof)) 'startfinal]
                           [(equal? x S) 'start]
@@ -33,7 +31,6 @@ This file contains the sm-graph function
 (define (rules->edges lor G)
   (map (lambda (rule) (add-edge G
                                 (cadr rule)
-                                'black
                                 (car rule)
                                 (last rule))) lor))
 
