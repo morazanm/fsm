@@ -66,4 +66,4 @@ This file contains the sm-graph function
                      (sm-getfinals machine)
                      g)
       (rules->edges (sm-getrules machine) (sm-type machine) g)
-      (graph->bitmap g "graph.dot" "graph"))))
+      (graph->bitmap g))))

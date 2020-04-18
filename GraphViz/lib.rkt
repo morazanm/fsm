@@ -245,18 +245,21 @@ This file contains the fsm-graphviz library used to render the graph
 (define (dot->png path png-name)
   (if (system "dot -V")
       (begin
-        (system (format "dot -Tpng ~s -o ~s.png" path png-name))
+        (system (format "dot -Tpng ~s -o ~s" path png-name))
         (void))
       (error "\nError:\nPlease add graphviz as an enviroment variable. Instructions can be found at:\n   https://github.com/morazanm/fsm\n\n")))
 
 
 ;; graph->bitmap: graph string string boolean -> image
 ;; Converts a graph to an image
-(define (graph->bitmap g path png-name #:scale [scale #f])
-  (begin
-    (render-graph g path #:scale scale)
-    (dot->png path png-name)
-    (bitmap "graph.png")))
+(define (graph->bitmap g #:scale [scale #f])
+  (let ((rel-path (build-path (current-directory) "graph.png")))
+    (begin
+      (println rel-path)
+      (println (path-string? rel-path))
+      (render-graph g "graph.dot" #:scale scale)
+      (dot->png "graph.dot" "graph.png")
+      (bitmap/file rel-path))))
 
   
 
@@ -304,9 +307,9 @@ This file contains the fsm-graphviz library used to render the graph
   (letrec (;; convertEMP: symbol -> string
            ;; Purpose: converts 'e to ε
            (convertEMP (lambda (x)
-                     (if (equal? EMP x)
-                         "ε"
-                         (symbol->string x)))))
+                         (if (equal? EMP x)
+                             "ε"
+                             (symbol->string x)))))
     (match aList
       ;; dfa/ndfa legacy way
       [val #:when (symbol? val) (convertEMP val)]
