@@ -1,30 +1,15 @@
 #lang racket
-(require "lib.rkt" "../fsm-main.rkt")
+(require "lib.rkt" "../sm-getters.rkt")
 #| render-graph.rkt
 Written by: Joshua Schappel, Sachin Mahashabde Sena Karsavran, and Isabella Felix on 4/15/20
 
 This file contains the sm-graph function
 |#
 
-(provide
- states->nodes
- rules->edges
- sm-graph)
+(provide sm-graph)
 
 
-#|
-; states->nodes: (listof symbols) symbol (listof symbol) graph -> (listof nodes) 
-; Purpose: Create a list of node structures given a list of state symbols
-(define (states->nodes los S lof G)
-  (apply (lambda (x) (add-node
-                      G
-                      x
-                      (cond [(and (equal? x S)
-                                  (member x lof)) 'startfinal]
-                            [(equal? x S) 'start]
-                            [(member x lof) 'final]
-                            [else 'none]))) los))
-|#
+
 
 ; states->nodes: (listof symbols) symbol (listof symbol) graph -> NONE 
 ; Purpose: for every state in the los a node is add to the graph
@@ -47,11 +32,13 @@ This file contains the sm-graph function
   (letrec ((get-start (lambda (rule)
                         (case m-type
                           [(dfa) (car rule)]
+                          [(ndfa) (car rule)]
                           [else (caar rule)])))
                           
            (get-end (lambda (rule)
                       (case m-type
                         [(dfa) (last rule)]
+                        [(ndfa) (last rule)]
                         [else (caadr rule)]))))
                        
     (cond
@@ -60,7 +47,7 @@ This file contains the sm-graph function
        (let ((rule (car lor)))
          (begin
            (add-edge G
-                     (if (equal? m-type 'dfa)
+                     (if (or (equal? m-type 'dfa) (equal? m-type 'ndfa))
                          (cadr rule)
                          rule)
                      (get-start rule)

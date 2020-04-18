@@ -20,6 +20,9 @@
    sm-getstates sm-getalphabet sm-getrules sm-getfinals sm-getstart sm-getstackalphabet
    sm-getaccept
 
+   ;; sm graph
+   sm-graph
+   
    ; sm testers
    sm-sameresult? sm-testequiv? sm-test
 

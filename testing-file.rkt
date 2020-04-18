@@ -291,15 +291,6 @@
                    (= (modulo (length list-of-xyz) 3) 0)))))
 
 
-(sm-visualize  a^nb^nc^n2
-               (list 'S S-INV)
-               (list 'B B-INV)
-               (list 'C C-INV)
-               (list 'D D-INV)
-               (list 'E E-INV)
-               (list 'N N-INV)
-               (list 'Y Y-INV))
-
 
 
 
@@ -310,9 +301,12 @@
                       ((S ,BLANK) (H ,BLANK)))
                     'S
                     '(H)))
-;;(sm-visualize LB)
-;;(sm-showtransitions LB `(,LM b b b) 3)
 
 
 
-;;(sm-visualize P)
+
+
+
+
+
+

@@ -1,5 +1,5 @@
 #lang racket
-(require 2htdp/image)
+(require 2htdp/image "../constants.rkt")
 #| lib.rkt
 Written by: Joshua Schappel, Sena Karsavran, and Isabella Felix on 4/15/20
 
@@ -30,7 +30,7 @@ This file contains the fsm-graphviz library used to render the graph
 (define GRAPH-WIDTH 600)
 (define GRAPH-HEIGHT 600)
 (define DEFAULT-EDGE (hash
-                      'fontsize 10))
+                      'fontsize 15))
 (define DEFAULT-NODE (hash
                       'color "black"
                       'shape "circle"))
@@ -116,13 +116,12 @@ This file contains the fsm-graphviz library used to render the graph
            (extractor (lambda (list accum)
                         (cond
                           [(empty? list) #f]
-                          [(and (equal? start-node (edge-end-node (car list)))
-                                (equal? (edge-start-node (car list)) (edge-end-node (car list)))
-                                (equal? end-node (edge-end-node (car list))))accum]
-                          [else (extractor (cdr list) (+ accum 1))])))
+                          [(and (equal? start-node (edge-start-node (car list)))
+                                (equal? end-node (edge-end-node (car list)))) accum]
+                          [else
+                           (extractor (cdr list) (+ accum 1))])))
 
-           (index (extractor (graph-edge-list graph) 0))
-           )
+           (index (extractor (graph-edge-list graph) 0)))
     (cond
       [(equal? #f index) (set-graph-edge-list! graph
                                                (cons
@@ -180,10 +179,6 @@ This file contains the fsm-graphviz library used to render the graph
   (edge (hash-set atb 'label (list val))  (remove-dashes start-node) (remove-dashes end-node)))
 
 
-
-
-
-
 ;; render-graph: graph string -> NONE
 ;; Purpose: writes graph to the specified file
 (define (render-graph graph path #:scale [scale #f])
@@ -218,7 +213,7 @@ This file contains the fsm-graphviz library used to render the graph
 ;list->str: (listof symbols) -> string
 ;Purpose: to convert the symbols in the list to a string
 (define (list->str los accum)
-  (cond [(empty? los) (string-trim accum)]
+  (cond [(empty? los) (string-append (string-trim accum) ")")]
         [else (list->str
                (cdr los)
                (string-append accum (symbol->string (car los)) " "))]))
@@ -263,6 +258,8 @@ This file contains the fsm-graphviz library used to render the graph
     (dot->png path png-name)
     (bitmap "graph.png")))
 
+  
+
 ;; hash->graphvizString: hash-map -> string
 ;; Purpose: conversts all elemts of the hashmap to a string that can
 ;;  be used as a node or graph property
@@ -304,23 +301,34 @@ This file contains the fsm-graphviz library used to render the graph
 ;; determine-list-type: transition -> string
 ;; Purpose: Converts the list to its string representation
 (define (determine-list-type aList)
-  (match aList
-    [val #:when (symbol? val) (symbol->string val)]
-    ;; dfa/ndfa
-    ;; pda
-    [(list
-      (list start push pop1)
-      (list end pop2))
-     (string-append "((" (symbol->string start)  " " (symbol->string push) " "
-                    (if (list? pop1) (list->str pop1 "") (symbol->string pop1)) ") "
-                    "(" (symbol->string end) " ("
-                    (if (list? pop2) (list->str pop2 "") (symbol->string pop2)) ")))"
-                    "\n")]
-    ;; tm and lang rec
-    [(list
-      (list a b)
-      (list c d)) (string-append "((" (symbol->string a) " " (symbol->string b) ") "
-                                 "(" (symbol->string c) " " (symbol->string d) "))\n")]))
-
-
-
+  (letrec (;; convertEMP: symbol -> string
+           ;; Purpose: converts 'e to ε
+           (convertEMP (lambda (x)
+                     (if (equal? EMP x)
+                         "ε"
+                         (symbol->string x)))))
+    (match aList
+      ;; dfa/ndfa legacy way
+      [val #:when (symbol? val) (convertEMP val)]
+      ;; dfa/ndfa
+      [(list _ input _)(symbol->string input)]
+      ;; pda
+      [(list
+        (list _ read pop)
+        (list _ push))
+       (string-append "["
+                      (convertEMP read)
+                      " "
+                      (if (list? pop) (list->str pop "(") (convertEMP pop))
+                      " "
+                      (if (list? push) (list->str push "(") (convertEMP push))
+                      "]"
+                      "\n")]
+      ;; tm and lang rec
+      [(list
+        (list _ b)
+        (list _ d)) (string-append "["
+                                   (convertEMP b)
+                                   " "
+                                   (convertEMP d)
+                                   "]\n")])))
