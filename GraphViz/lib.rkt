@@ -247,7 +247,7 @@ This file contains the fsm-graphviz library used to render the graph
       (begin
         (system (format "dot -Tpng ~s -o ~s" path png-name))
         (void))
-      (error "\nError:\nPlease add graphviz as an enviroment variable. Instructions can be found at:\n   https://github.com/morazanm/fsm\n\n")))
+      (error "\nError:\nPlease add graphviz as an enviroment variable. Instructions can be found at:\n   https://github.com/morazanm/fsm/tree/master/GraphViz\n\n")))
 
 
 ;; graph->bitmap: graph string string boolean -> image
