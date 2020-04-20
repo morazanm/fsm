@@ -43,7 +43,6 @@ $RECYCLE.BIN/
 .apdisk
 *.bak
 
-
 # Racket compiled files
 compiled/
 
@@ -55,6 +54,11 @@ compiled/
 *.bak
 TAGS
 
-# auto-generated rkt file
+# auto-generated rkt files
 fsmGUIFunctions.rkt
-
+*.dot
+*.png
+*.1
+*.2
+*.3
+*.4

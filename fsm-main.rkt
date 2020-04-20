@@ -8,7 +8,7 @@
          "regular-grammar.rkt" "csg.rkt" "tm.rkt" "transducer.rkt"
          "regexp.rkt" "constants.rkt" "word.rkt" "misc.rkt"
          "state.rkt" "sm-getters.rkt" "grammar-getters.rkt" 
-         "regexp-predicate.rkt" "abstract-predicate.rkt")
+         "regexp-predicate.rkt" "abstract-predicate.rkt" "graphviz/render-graph.rkt")
   
 (provide
  check-machine
@@ -23,6 +23,9 @@
  make-unchecked-ndfa
  make-unchecked-tm
  make-unchecked-ndpda
+
+ ;; sm graphing
+ sm-graph
 
  ; sm observers
  sm-apply sm-showtransitions sm-type
