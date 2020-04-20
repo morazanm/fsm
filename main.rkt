@@ -3,7 +3,7 @@
 
 (module fsm Racket
 
-  (require "fsm-main.rkt" "./FSM-Visualization/visualize.rkt")
+  (require "fsm-main.rkt" "./FSM-Visualization/visualize.rkt" "./GraphViz/render-graph.rkt")
 
   (provide
    check-machine
