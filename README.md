@@ -17,13 +17,13 @@ The documemtation can be found  [here](https://htmlpreview.github.io/?https://gi
 ## Installation
 There are two ways to install fsm onto your machine.
 
-#### Using Raco
+### Using Raco
 
 ```bash
 raco pkg install https://github.com/morazanm/fsm.git
 ```
 
-#### Using Racket's Package Manager
+### Using DrRacket's Package Manager
 ![Racket Package Manager Install](install.gif)
 
 
@@ -32,7 +32,8 @@ Once fsm is installed just require the module.
 (require fsm)
 ```
 
-
+### GraphViz Installation 
+In order to install GraphViz onto your computer and as an environment variable, check out this [link.](https://github.com/morazanm/fsm/tree/master/GraphViz)
 
 ## Basic Usage
 Below are some basic examples of how to use fsm. For a more in-depth guide please visit the [fsm documentation](https://htmlpreview.github.io/?https://github.com/morazanm/fsm/blob/master/doc/fsm/index.html).
