@@ -1,8 +1,12 @@
 # FSM
-##### FSM Library Version 1.3
+##### FSM Library Version 1.4
 A Library for the Automata Theory Classroom
 
 ## Version History
+### 1.4: 
+ - Added sm-graph 
+ - Added colorblind mode to sm-graph 
+ - Minor graphical changes to the visualization tool (new color :blush:)
 ### 1.3:
  - Added Turing Machine support to visualization tool
  - Minor bug fixes with the visualization tool
