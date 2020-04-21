@@ -290,7 +290,8 @@
     (mk-tm K
            (remove-duplicates (cons LM SIGMA))
            (remove-duplicates
-            (parse-tm-rules (append (map (lambda (s) (list (list s LM) (list s RIGHT))) K)
+            (parse-tm-rules (append (map (lambda (s) (list (list s LM) (list s RIGHT)))
+                                         (remove* H K))
                                     delta)))
            s
            H))
