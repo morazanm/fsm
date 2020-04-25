@@ -200,7 +200,8 @@
                (eq? t1 'ndfa))
            (test-fsa M numtests)]
           [(eq? t1 'pda) (test-pda M numtests)]
-          [(eq? t1 'tm) (tm-test M numtests)]
+          [(eq? t1 'tm-language-recognizer) (tm-test M numtests)]
+          [(eq? t1 'tm) (error "Random testing of Turing Machines is not possible.")]
           [else (error "Incorrect input to test-fsm")])))
 
   
