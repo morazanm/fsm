@@ -44,12 +44,15 @@
                               sts))
            (new-states (map (lambda (s) (cadr (assoc s rename-table))) sts))
            (new-start (cadr (assoc (tm-getstart m) rename-table)))
-           (new-finals (map (lambda (s) (cadr (assoc s rename-table))) (tm-getfinals m)))
+           (new-finals (map (lambda (s) (cadr (assoc s rename-table)))
+                            (tm-getfinals m)))
            (new-rules (filter (lambda (rl) (not (eq? (cadar rl) LM))) 
                               (map (lambda (r) (list 
-                                                (list (cadr (assoc (tmrule-froms r) rename-table)) (tmrule-read r))
-                                                (list (cadr (assoc (tmrule-tos r) rename-table)) (tmrule-action r))))
-                                   (tm-getrules m)))))
+                                                (list (cadr (assoc (tmrule-froms r) rename-table))
+                                                      (tmrule-read r))
+                                                (list (cadr (assoc (tmrule-tos r) rename-table))
+                                                      (tmrule-action r))))
+                                   (tm-getdelta m)))))
       (make-unchecked-tm new-states (tm-getalphabet m) 
                          new-rules 
                          new-start 
@@ -280,6 +283,7 @@
                (let ((res (consume '() (list (list (tmconfig s i w)))))) ; res = (listof tmconfig)
                  (cond [(null? res) "Failed computation: did not reach a halting state. Check your transition rules."]
                        [else (car res)]))]
+              [(eq? (car L) 'get-delta) delta] ; parsed rules
               [(eq? (car L) 'get-rules) (unparse-tmrules delta)] ;;; NEED TO UNPARSE THE RULES!!!!
               [(eq? (car L) 'get-states) K]
               [(eq? (car L) 'get-alphabet) SIGMA]
@@ -301,8 +305,10 @@
   (define (tm-getstates m) (m '() 0 'get-states))
   
   (define (tm-getfinals m) (m '() 0 'get-finals))
+
+  (define (tm-getdelta m) (m '() 0 'get-delta)) ;;; parsed rules
   
-  (define (tm-getrules m) (m '() 0 'get-rules))
+  (define (tm-getrules m) (m '() 0 'get-rules))  ;;; unparsed rules
   
   (define (tm-getstart m) (m '() 0 'get-start))
   
