@@ -41,8 +41,9 @@
   (define (tm-rename-states sts m)
     (let* (
            (rename-table (map (lambda (s) (list s (generate-symbol s sts)))
-                              sts))
-           (new-states (map (lambda (s) (cadr (assoc s rename-table))) sts))
+                              (tm-getstates m)))
+           (new-states (map (lambda (s) (cadr (assoc s rename-table)))
+                            (tm-getstates m)))
            (new-start (cadr (assoc (tm-getstart m) rename-table)))
            (new-finals (map (lambda (s) (cadr (assoc s rename-table)))
                             (tm-getfinals m)))
