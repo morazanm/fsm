@@ -288,7 +288,9 @@
                                    [else 'reject])]))]
               [(eq? (car L) 'transitions) 
                (let ((res (consume '() (list (list (tmconfig s i w))))))
-                 (cond [(null? res) "Failed computation: did not reach a halting state. Check your transition rules."]
+                 (cond [(and (not (null? accept)) (null? res))
+                        'reject]
+                       [(null? res) "Failed computation: did not reach a halting state. Check your transition rules."]
                        [else (reverse (map unparse-tmconfig res))]))]
               [(eq? (car L) 'lastconfig)
                (let ((res (consume '() (list (list (tmconfig s i w)))))) ; res = (listof tmconfig)
