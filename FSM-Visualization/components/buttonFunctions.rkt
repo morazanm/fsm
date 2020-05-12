@@ -40,7 +40,8 @@ Created by Joshua Schappel on 12/19/19
  tapeScrollLeft
  toogleColorBlindMode
  setTapePosn
- setAcceptState)
+ setAcceptState
+ toggle-display)
 
 
 
@@ -929,6 +930,14 @@ Created by Joshua Schappel on 12/19/19
                                (begin
                                  (toggle-color-blind-mode)
                                  w)))
+
+
+;; toggle-display -> world
+;; Purpose: toggles the display between control and graph representation
+(define toggle-display (lambda (w)
+                        (begin
+                          (set-is-graph?)
+                          w)))
 
 
 

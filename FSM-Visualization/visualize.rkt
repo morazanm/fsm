@@ -9,12 +9,13 @@
          "./structs/button.rkt" "./structs/posn.rkt" "./structs/state.rkt"
          "./structs/input.rkt" "./structs/machine.rkt" "./structs/world.rkt"
          "./structs/world.rkt" "./components/inputFields.rkt" "globals.rkt"
-         "./components/buttons.rkt" "./components/stateTransitions.rkt")
+         "./components/buttons.rkt" "./components/stateTransitions.rkt" "./graphViz/main.rkt")
 
 (provide visualize marco)
 
 ;; GLOBAL VALIRABLES FOR FILE
 (define MAIN-SCENE (empty-scene WIDTH HEIGHT "white")) ;; Create the initial scene
+
 
 
 
@@ -327,7 +328,6 @@ Scene Rendering
                 (/ (+ (/ WIDTH 11) (- WIDTH 300)) 2)
                 (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2)))
        (Y0 (/ (+ TOP (- HEIGHT BOTTOM)) 2))
-       
        (deg-shift (if (empty? (machine-state-list (world-fsm-machine w)))
                       0
                       (/ 360 (length (machine-state-list (world-fsm-machine w))))))
@@ -601,6 +601,11 @@ Scene Rendering
 (define (draw-world w)
   (letrec(
 
+          (X0  (if (equal? MACHINE-TYPE 'pda)
+                   (/ (+ (/ WIDTH 11) (- WIDTH 300)) 2)
+                   (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2)))
+          (Y0 (/ (+ TOP (- HEIGHT BOTTOM)) 2))
+
           (machine (world-fsm-machine w))
           ;; draw-input-list: list-of-inputs sceen -> sceen
           ;; Purpose: draws every input structure from the list onto the given sceen
@@ -631,41 +636,46 @@ Scene Rendering
                                  [(tm) (create-gui-right (tm-machine-tape-posn machine))]
                                  [(tm-language-recognizer)
                                   (create-gui-right (tm-machine-tape-posn machine) (lang-rec-machine-accept-state machine))]
-                                 [else (create-gui-right)]))))
-        
-          
-         
-    (if (not (null? (world-cur-state w)))
-        (draw-error-msg (world-error-msg w)(draw-main-img w  
-                                                          (place-image (determin-gui-draw) (- WIDTH 100) (/ HEIGHT 2)
-                                                                       (place-image (create-gui-top (world-fsm-machine w) (world-cur-rule w)) (/ WIDTH 2) (/ TOP 2)
-                                                                                    (place-image (create-gui-bottom (machine-rule-list (world-fsm-machine w)) (world-cur-rule w) (world-scroll-bar-index w)) (/ WIDTH 2) (- HEIGHT (/ BOTTOM 2))
-                                                                                                 (draw-button-list (world-button-list w)
-                                                                                                                   (draw-input-list (world-input-list w)
-                                                                                                                                    (place-image (if (equal? (machine-type machine) 'pda)
-                                                                                                                                                     (create-gui-left
-                                                                                                                                                      (machine-alpha-list machine)
-                                                                                                                                                      (machine-type machine)
-                                                                                                                                                      (pda-machine-stack-alpha-list (world-fsm-machine w)))
-                                                                                                                                                     (create-gui-left
-                                                                                                                                                      (machine-alpha-list machine)
-                                                                                                                                                      (machine-type machine))) (/ (/ WIDTH 11) 2) (/ (- HEIGHT BOTTOM) 2) MAIN-SCENE))))))))
-                                                                                                                              
-        
-        (draw-error-msg (world-error-msg w) (draw-main-img w  
-                                                           (place-image (determin-gui-draw) (- WIDTH 100) (/ HEIGHT 2)
-                                                                        (place-image (create-gui-top (world-fsm-machine w) (world-cur-rule w)) (/ WIDTH 2) (/ TOP 2)
-                                                                                     (place-image (create-gui-bottom (machine-rule-list (world-fsm-machine w)) (world-cur-rule w) (world-scroll-bar-index w)) (/ WIDTH 2) (- HEIGHT (/ BOTTOM 2))
-                                                                                                  (draw-button-list (world-button-list w)
-                                                                                                                    (draw-input-list (world-input-list w)
-                                                                                                                                     (place-image (if (equal? (machine-type machine) 'pda)
-                                                                                                                                                      (create-gui-left
-                                                                                                                                                       (machine-alpha-list machine)
-                                                                                                                                                       (machine-type machine)
-                                                                                                                                                       (pda-machine-stack-alpha-list (world-fsm-machine w)))
-                                                                                                                                                      (create-gui-left
-                                                                                                                                                       (machine-alpha-list machine)
-                                                                                                                                                       (machine-type machine))) (/ (/ WIDTH 11) 2) (/ (- HEIGHT BOTTOM) 2) MAIN-SCENE)))))))))))
+                                 [else (create-gui-right)])))
+
+          ;;draws the images with an arrow
+          (with-arrow (place-image (determin-gui-draw) (- WIDTH 100) (/ HEIGHT 2)
+                                   (place-image (create-gui-top (world-fsm-machine w) (world-cur-rule w)) (/ WIDTH 2) (/ TOP 2)
+                                                (place-image (create-gui-bottom (machine-rule-list (world-fsm-machine w)) (world-cur-rule w) (world-scroll-bar-index w)) (/ WIDTH 2) (- HEIGHT (/ BOTTOM 2))
+                                                             (draw-button-list (world-button-list w)
+                                                                               (draw-input-list (world-input-list w)
+                                                                                                (place-image (if (equal? (machine-type machine) 'pda)
+                                                                                                                 (create-gui-left
+                                                                                                                  (machine-alpha-list machine)
+                                                                                                                  (machine-type machine)
+                                                                                                                  (pda-machine-stack-alpha-list (world-fsm-machine w)))
+                                                                                                                 (create-gui-left
+                                                                                                                  (machine-alpha-list machine)
+                                                                                                                  (machine-type machine))) (/ (/ WIDTH 11) 2) (/ (- HEIGHT BOTTOM) 2) MAIN-SCENE)))))))
+          ;;draws the images without an arrow
+          (no-arrow (place-image (determin-gui-draw) (- WIDTH 100) (/ HEIGHT 2)
+                                 (place-image (create-gui-top (world-fsm-machine w) (world-cur-rule w)) (/ WIDTH 2) (/ TOP 2)
+                                              (place-image (create-gui-bottom (machine-rule-list (world-fsm-machine w)) (world-cur-rule w) (world-scroll-bar-index w)) (/ WIDTH 2) (- HEIGHT (/ BOTTOM 2))
+                                                           (draw-button-list (world-button-list w)
+                                                                             (draw-input-list (world-input-list w)
+                                                                                              (place-image (if (equal? (machine-type machine) 'pda)
+                                                                                                               (create-gui-left
+                                                                                                                (machine-alpha-list machine)
+                                                                                                                (machine-type machine)
+                                                                                                                (pda-machine-stack-alpha-list (world-fsm-machine w)))
+                                                                                                               (create-gui-left
+                                                                                                                (machine-alpha-list machine)
+                                                                                                                (machine-type machine))) (/ (/ WIDTH 11) 2) (/ (- HEIGHT BOTTOM) 2) MAIN-SCENE))))))))
+    
+       
+    (cond [IS-GRAPH?   (draw-error-msg (world-error-msg w) (place-image (create-dfa-png
+                                                                         (machine-state-list machine)
+                                                                         (machine-start-state machine)
+                                                                         (machine-final-state-list machine)
+                                                                         (machine-rule-list machine)) X0 Y0  no-arrow))] ;;graphviz here  
+          [else (if (not (null? (world-cur-state w)))
+                    (draw-error-msg (world-error-msg w)(draw-main-img w no-arrow))                                                                                                                   
+                    (draw-error-msg (world-error-msg w) (draw-main-img w with-arrow)))])))
 #|
 -----------------------
 TOP GUI RENDERING

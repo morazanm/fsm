@@ -6,7 +6,9 @@ Written by: Joshua Schappel, Sachin Mahashabde Sena Karsavran, and Isabella Feli
 This file contains the sm-graph function
 |#
 
-(provide sm-graph)
+(provide sm-graph
+         states->nodes
+         rules->edges)
 
 
 

@@ -10,6 +10,8 @@ Created by Joshua Schappel on 12/19/19
 ;; -- VERSION --
 (define VERSION "VERSION 1.3")
 
+(define IS-GRAPH? #f) ;; Determines if the graph representation should be displayed
+
 
 ;; -- DIMENTIONS --
 (define WIDTH 1200) ;; The width of the scene
@@ -103,6 +105,9 @@ Created by Joshua Schappel on 12/19/19
 
 (define (set-tape-index value)
   (set! TAPE-INDEX value))
+
+(define (set-is-graph?)
+  (set! IS-GRAPH? (not IS-GRAPH?)))
 
 (define (toggle-color-blind-mode)
   (set! COLOR-BLIND-MODE (not COLOR-BLIND-MODE)))

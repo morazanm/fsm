@@ -12,7 +12,18 @@
                      '((S a F)  ;; the transition functions
                        (F a F)
                        (F b F))))
-
+(define pda-numa=numb (make-ndpda '(S M F)
+                                  '(a b)
+                                  '(a b)
+                                  'S
+                                  '(F)
+                                  `(((S ,EMP ,EMP) (M ,EMP))
+                                    ((M ,EMP ,EMP) (F ,EMP))
+                                    ((M a ,EMP) (M (a)))
+                                    ((M b ,EMP) (M (b)))
+                                    ((M a (b)) (M ,EMP))
+                                    ((M b (a)) (M ,EMP)))))
+#|
 ;;---- NDFA ----
 ;; valid input: aaabbb 
 (define P (make-ndpda '(S F)
@@ -137,7 +148,7 @@
                            'S
                            '(Y N)
                            'Y))
-
+|#
 ;; z => a is is read
 ;; x => b is read
 ;; z => y is read
@@ -189,7 +200,7 @@
 
 
 
-
+#|
 ;; gets the number of z's in the tape
 (define get-num-of-x (lambda (tape symbol)
                        (length (filter (lambda (ele)
@@ -302,7 +313,8 @@
                     'S
                     '(H)))
 
-
+|#
+(sm-visualize a*)
 
 
 

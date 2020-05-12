@@ -70,6 +70,7 @@ Button Declarations
 (define BTN-RUN (button 95 30 "Run" "solid" (make-color 29 153 68) (make-color 29 153 68) 25 #f #f (posn 55 105) runProgram))
 (define BTN-HELP (button 25 25 "?" "solid" (make-color 39 168 242) (make-color 39 168 242) 15 #t #f (posn 130 80) openHelp))
 (define BTN-COLOR-BLIND (button 25 25 "CB" "solid" (make-color 252 186 3) (make-color 252 186 3) 15 #t #f (posn 130 120) toogleColorBlindMode))
+(define BTN-DISPLAY (button 30 30 "DGr" "solid" (make-color 61 65 71) (make-color 61 65 71) 12 #t #f (posn 130 160) toggle-display))
 
 
 (define BTN-NEXT (button 95 30 "NEXT 🠊" "solid" (make-color 116 156 188) (make-color 116 156 188) 25 #f #f (posn 55 140) showNext))
@@ -98,7 +99,7 @@ Button Declarations
                           BTN-RUN BTN-SCROLL-LEFT-RULES
                           BTN-SCROLL-RIGHT-RULES BTN-HELP
                           BTN-TAPE-SCROLL-LEFT BTN-TAPE-SCROLL-RIGHT
-                          BTN-COLOR-BLIND))
+                          BTN-COLOR-BLIND BTN-DISPLAY))
 
 (define BUTTON-LIST-PDA (list BTN-ADD-STATE BTN-REMOVE-STATE
                               BTN-ADD-ALPHA-PDA BTN-REMOVE-ALPHA-PDA
@@ -113,7 +114,7 @@ Button Declarations
                               BTN-STACK-UP BTN-STACK-DOWN
                               BTN-SCROLL-RIGHT-RULES BTN-HELP
                               BTN-TAPE-SCROLL-LEFT BTN-TAPE-SCROLL-RIGHT
-                              BTN-COLOR-BLIND))
+                              BTN-COLOR-BLIND BTN-DISPLAY))
 
 (define BUTTON-LIST-TM (list BTN-ADD-STATE BTN-REMOVE-STATE
                              BTN-ADD-ALPHA BTN-REMOVE-ALPHA
@@ -125,7 +126,8 @@ Button Declarations
                              BTN-RUN BTN-SCROLL-LEFT-RULES
                              BTN-SCROLL-RIGHT-RULES BTN-HELP
                              BTN-TAPE-SCROLL-LEFT BTN-TAPE-SCROLL-RIGHT
-                             BTN-COLOR-BLIND BTN-TAPE-INPUT-TM))
+                             BTN-COLOR-BLIND BTN-TAPE-INPUT-TM
+                             BTN-DISPLAY))
 
 (define BUTTON-LIST-LANG-REC (list BTN-ADD-STATE BTN-REMOVE-STATE
                                    BTN-ADD-ALPHA BTN-REMOVE-ALPHA
@@ -138,4 +140,4 @@ Button Declarations
                                    BTN-SCROLL-RIGHT-RULES BTN-HELP
                                    BTN-TAPE-SCROLL-LEFT BTN-TAPE-SCROLL-RIGHT
                                    BTN-COLOR-BLIND BTN-TAPE-INPUT-TM
-                                   BTN-SET-END-LANG-REC))
+                                   BTN-SET-END-LANG-REC BTN-DISPLAY))

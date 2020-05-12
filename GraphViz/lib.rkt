@@ -15,7 +15,8 @@ This file contains the fsm-graphviz library used to render the graph
          add-edge
          render-graph
          dot->png
-         graph->bitmap)
+         graph->bitmap
+         graph->png)
 
 
 ;; Constants 
@@ -239,15 +240,19 @@ This file contains the fsm-graphviz library used to render the graph
   (string->symbol (string-replace (symbol->string s) "-" "")))
 
 
-;; dot->png: stirng string-> NONE
+;; dot->png: stirng string boolean-> NONE
 ;; Purpose: converts a dot file to a png. The png files is saved in
 ;;   this directory
-(define (dot->png path png-name)
-  (if (system "dot -V")
+(define (dot->png path png-name check)
+  (if check
+      (if (system "dot -V")
+          (begin
+            (system (format "dot -Tpng ~s -o ~s" path png-name))
+            (void))
+          (error "\nError:\nPlease add graphviz as an enviroment variable. Instructions can be found at:\n   https://github.com/morazanm/fsm/tree/master/GraphViz\n\n"))
       (begin
         (system (format "dot -Tpng ~s -o ~s" path png-name))
-        (void))
-      (error "\nError:\nPlease add graphviz as an enviroment variable. Instructions can be found at:\n   https://github.com/morazanm/fsm/tree/master/GraphViz\n\n")))
+        (void))))
 
 
 ;; graph->bitmap: graph string string boolean -> image
@@ -258,8 +263,16 @@ This file contains the fsm-graphviz library used to render the graph
       (println rel-path)
       (println (path-string? rel-path))
       (render-graph g "graph.dot" #:scale scale)
-      (dot->png "graph.dot" "graph.png")
+      (dot->png "graph.dot" "graph.png" #t)
       (bitmap/file rel-path))))
+
+;; graph->png: converts the graph to a png file -> NONE
+;; Converts a graph to a png file stored at the root directory of fsm
+(define (graph->png g #:scale [scale #f])
+  (let ((rel-path (build-path (current-directory) "vizTool.png")))
+    (begin
+      (render-graph g "vizTool.dot" #:scale scale)
+      (dot->png "vizTool.dot" "vizTool.png" #f))))
 
   
 
