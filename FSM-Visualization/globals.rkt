@@ -8,7 +8,7 @@ Created by Joshua Schappel on 12/19/19
 (provide (all-defined-out))
 
 ;; -- VERSION --
-(define VERSION "BETA 2.0")
+(define VERSION "VERSION 1.3")
 
 
 ;; -- DIMENTIONS --
@@ -28,6 +28,8 @@ Created by Joshua Schappel on 12/19/19
 (define MSG-SUCCESS (make-color 65 122 67)) ;; Color if a success message
 (define MSG-CAUTION (make-color 252 156 10)) ;; Color of a caution message
 
+;; -- INPUTS --
+(define INPUT-COLOR (make-color 141 144 145)) ;; The color of an input field
 
 ;; -- OTHER --
 (define TRUE-FUNCTION (lambda (v) '())) ;; The default function for a state variable
@@ -47,8 +49,6 @@ Created by Joshua Schappel on 12/19/19
 (define TAPE-INDEX 0) ;; The index of the input scroll bar. The index is the first item to be rendered
 (define TAPE-RENDER-LIMIT 26) ;; The maximum amount of tape input that can be rendered at a time
 
-;; -- INPUTS --
-(define INPUT-COLOR (make-color 186 190 191)) ;; The color of an input field
 
 
 ;; -- BUTTONS --
@@ -82,6 +82,10 @@ Created by Joshua Schappel on 12/19/19
      (begin
       (set! STACK-LIST (cons (car aList) STACK-LIST))
       (push-stack (cdr aList)))]))
+
+;; Resets the stack to be empty
+(define (reset-stack)
+  (set! STACK-LIST '()))
 
 
 ;; -- SETTERS --

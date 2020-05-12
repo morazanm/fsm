@@ -3,7 +3,7 @@
 
 (module fsm Racket
 
-  (require "fsm-main.rkt" "./FSM-Visualization/visualize.rkt")
+  (require "fsm-main.rkt" "./FSM-Visualization/visualize.rkt" "./GraphViz/render-graph.rkt")
 
   (provide
    check-machine
@@ -20,6 +20,9 @@
    sm-getstates sm-getalphabet sm-getrules sm-getfinals sm-getstart sm-getstackalphabet
    sm-getaccept
 
+   ;; sm graph
+   sm-graph
+   
    ; sm testers
    sm-sameresult? sm-testequiv? sm-test
 

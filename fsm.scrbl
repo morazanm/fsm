@@ -333,7 +333,12 @@ A LABEL is a natnum.
                                       and returns a list of words and
                                       the obtained result. If the given
                                       machine is a Turing machine, it
-                                      must be a language recognizer. The
+                                      must be a language recognizer. For
+                                      a Turing machine language recognizer,
+                                      the generated tests start with the
+                                      left-end marker followed by the input
+                                      word and the head on the first letter
+                                      of the input word. The
                                       optional natural number specifies
                                       the number of tests.}
 

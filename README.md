@@ -1,7 +1,18 @@
 # FSM
-##### FSM Library Version 1.0
+##### FSM Library Version 1.4
 A Library for the Automata Theory Classroom
 
+## Version History
+### 1.4: 
+ - Added sm-graph 
+ - Added colorblind mode to sm-graph 
+ - Minor graphical changes to the visualization tool (new color :blush:)
+### 1.3:
+ - Added Turing Machine support to visualization tool
+ - Minor bug fixes with the visualization tool
+### 1.2:
+ - Added Pushdown Automata support to the visualization tool
+ - Added scroll bars to input field for visualization tool
 
 ## Documentation
 The documemtation can be found  [here](https://htmlpreview.github.io/?https://github.com/morazanm/fsm/blob/master/doc/fsm/index.html).
@@ -10,13 +21,13 @@ The documemtation can be found  [here](https://htmlpreview.github.io/?https://gi
 ## Installation
 There are two ways to install fsm onto your machine.
 
-#### Using Raco
+### Using Raco
 
 ```bash
 raco pkg install https://github.com/morazanm/fsm.git
 ```
 
-#### Using Racket's Package Manager
+### Using DrRacket's Package Manager
 ![Racket Package Manager Install](install.gif)
 
 
@@ -25,7 +36,8 @@ Once fsm is installed just require the module.
 (require fsm)
 ```
 
-
+### GraphViz Installation 
+In order to install GraphViz onto your computer and as an environment variable, check out this [link.](https://github.com/morazanm/fsm/tree/master/GraphViz)
 
 ## Basic Usage
 Below are some basic examples of how to use fsm. For a more in-depth guide please visit the [fsm documentation](https://htmlpreview.github.io/?https://github.com/morazanm/fsm/blob/master/doc/fsm/index.html).
@@ -136,6 +148,8 @@ To visualize a dfa or ndfa create a new file and require fsm. Then provide one o
 - [Josephine A. Des Rosiers](https://github.com/josdes)
 - [Joshua Schappel](https://github.com/jschappel)
 - [Sachin Mahashabde](https://github.com/sachinmahashabde)
+- [Sena Karsavran](https://github.com/senakar)
+- [Isabella Felix](https://github.com/felixisa)
 
 ## License
 Copyright (c) 2020 by Marco T. Morazan

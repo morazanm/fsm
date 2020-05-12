@@ -1096,7 +1096,7 @@ RIGHT GUI RENDERING
            ;; Purpose: Converts the pda stack into an image to be rendered on the screen
            (pda-populate-stack (lambda ()
                                  (let* (
-                                        (rev-stack (reverse STACK-LIST)) ;; not currently in use!!!
+                                        (rev-stack (reverse STACK-LIST)) ;; No longer in use!!
                                         (len (length STACK-LIST)) ;; Then length of the stack list
 
                                         (curList ;; the list starting with the STACK-INDEX
