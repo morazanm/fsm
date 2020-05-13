@@ -12,7 +12,8 @@ Created by Joshua Schappel on 12/19/19
  BUTTON-LIST
  BUTTON-LIST-PDA
  BUTTON-LIST-TM
- BUTTON-LIST-LANG-REC)
+ BUTTON-LIST-LANG-REC
+ BTN-DISPLAY)
 
 
 
@@ -99,7 +100,7 @@ Button Declarations
                           BTN-RUN BTN-SCROLL-LEFT-RULES
                           BTN-SCROLL-RIGHT-RULES BTN-HELP
                           BTN-TAPE-SCROLL-LEFT BTN-TAPE-SCROLL-RIGHT
-                          BTN-COLOR-BLIND BTN-DISPLAY))
+                          BTN-COLOR-BLIND))
 
 (define BUTTON-LIST-PDA (list BTN-ADD-STATE BTN-REMOVE-STATE
                               BTN-ADD-ALPHA-PDA BTN-REMOVE-ALPHA-PDA
@@ -114,7 +115,7 @@ Button Declarations
                               BTN-STACK-UP BTN-STACK-DOWN
                               BTN-SCROLL-RIGHT-RULES BTN-HELP
                               BTN-TAPE-SCROLL-LEFT BTN-TAPE-SCROLL-RIGHT
-                              BTN-COLOR-BLIND BTN-DISPLAY))
+                              BTN-COLOR-BLIND))
 
 (define BUTTON-LIST-TM (list BTN-ADD-STATE BTN-REMOVE-STATE
                              BTN-ADD-ALPHA BTN-REMOVE-ALPHA
@@ -126,8 +127,7 @@ Button Declarations
                              BTN-RUN BTN-SCROLL-LEFT-RULES
                              BTN-SCROLL-RIGHT-RULES BTN-HELP
                              BTN-TAPE-SCROLL-LEFT BTN-TAPE-SCROLL-RIGHT
-                             BTN-COLOR-BLIND BTN-TAPE-INPUT-TM
-                             BTN-DISPLAY))
+                             BTN-COLOR-BLIND BTN-TAPE-INPUT-TM))
 
 (define BUTTON-LIST-LANG-REC (list BTN-ADD-STATE BTN-REMOVE-STATE
                                    BTN-ADD-ALPHA BTN-REMOVE-ALPHA
@@ -140,4 +140,4 @@ Button Declarations
                                    BTN-SCROLL-RIGHT-RULES BTN-HELP
                                    BTN-TAPE-SCROLL-LEFT BTN-TAPE-SCROLL-RIGHT
                                    BTN-COLOR-BLIND BTN-TAPE-INPUT-TM
-                                   BTN-SET-END-LANG-REC BTN-DISPLAY))
+                                   BTN-SET-END-LANG-REC))

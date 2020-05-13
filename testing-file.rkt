@@ -314,7 +314,7 @@
                     '(H)))
 
 |#
-(sm-visualize a*)
+(sm-visualize a^nb^nc^n2)
 
 
 

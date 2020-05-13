@@ -10,7 +10,9 @@ This file contains the sm-graph function
          states->nodes
          rules->edges)
 
-
+(define HIGHLIGHT-EDGE (hash
+                        'color "red"
+                        'fontsize 15))
 
 
 ; states->nodes: (listof symbols) symbol (listof symbol) graph -> NONE 
@@ -30,7 +32,7 @@ This file contains the sm-graph function
 
 ;; rules->edges: (listof rules) symbol graph -> (listof edges)
 ;; Purpose: Creates a list of edges when given a list of rules
-(define (rules->edges lor m-type G)
+(define (rules->edges lor m-type G cur-start cur-end)
   (letrec ((get-start (lambda (rule)
                         (case m-type
                           [(dfa) (car rule)]
@@ -41,20 +43,30 @@ This file contains the sm-graph function
                       (case m-type
                         [(dfa) (last rule)]
                         [(ndfa) (last rule)]
-                        [else (caadr rule)]))))
-                       
+                        [else (caadr rule)])))
+           ;; determins if a esge is highlighted or not
+           (make-edge (lambda (rule)
+                        (if (and (equal? (get-start rule) cur-start) (equal? (get-end rule) cur-end))
+                            (add-edge G
+                                      (if (or (equal? m-type 'dfa) (equal? m-type 'ndfa))
+                                          (cadr rule)
+                                          rule)
+                                      (get-start rule)
+                                      (get-end rule)
+                                      #:atb HIGHLIGHT-EDGE)
+                            (add-edge G
+                                      (if (or (equal? m-type 'dfa) (equal? m-type 'ndfa))
+                                          (cadr rule)
+                                          rule)
+                                      (get-start rule)
+                                      (get-end rule))))))                
     (cond
       [(empty? lor) (void)]
       [else
        (let ((rule (car lor)))
          (begin
-           (add-edge G
-                     (if (or (equal? m-type 'dfa) (equal? m-type 'ndfa))
-                         (cadr rule)
-                         rule)
-                     (get-start rule)
-                     (get-end rule))
-                     (rules->edges (cdr lor) m-type G)))])))
+           (make-edge rule)
+           (rules->edges (cdr lor) m-type G cur-start cur-end)))])))
 
 
 
@@ -67,5 +79,5 @@ This file contains the sm-graph function
                      (sm-getstart machine)
                      (sm-getfinals machine)
                      g)
-      (rules->edges (sm-getrules machine) (sm-type machine) g)
+      (rules->edges (sm-getrules machine) (sm-type machine) g "$NULL" "$NULL")
       (graph->bitmap g))))

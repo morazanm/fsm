@@ -182,11 +182,12 @@ This file contains the fsm-graphviz library used to render the graph
 
 ;; render-graph: graph string -> NONE
 ;; Purpose: writes graph to the specified file
-(define (render-graph graph path #:scale [scale #f])
+(define (render-graph graph path #:scale [scale #f] #:rule [rule #f])
   (call-with-output-file path
     #:exists 'replace
     (lambda (out)
       (displayln (format "digraph ~s {" (graph-name graph)) out)
+      (if rule (render-header rule out) (void))
       (displayln "    rankdir=\"LR\";" out)
       (if scale
           (displayln (format "    size=\"~s, ~s!\";" GRAPH-WIDTH GRAPH-HEIGHT) out)
@@ -194,6 +195,16 @@ This file contains the fsm-graphviz library used to render the graph
       (render-nodes (graph-node-list graph) out)
       (render-edges (graph-edge-list graph) out)
       (displayln "}" out))))
+
+
+;; render-header rule out-port
+;; Purpose: renders the current rule in the top right
+(define (render-header cur-rule stdout)
+  (displayln "labelloc=\"t\";" stdout)
+  (displayln "labeljust=\"r\";" stdout)
+  (displayln (format "label=\"Rule: ~s\";" cur-rule) stdout)
+  (displayln "fontcolor=\"blue\";" stdout))
+  
 
 
 ;; render-nodes list-of-nodes write-buffer -> NONE
@@ -266,12 +277,12 @@ This file contains the fsm-graphviz library used to render the graph
       (dot->png "graph.dot" "graph.png" #t)
       (bitmap/file rel-path))))
 
-;; graph->png: converts the graph to a png file -> NONE
+;; graph->png: graph number rule -> NONE
 ;; Converts a graph to a png file stored at the root directory of fsm
-(define (graph->png g #:scale [scale #f])
+(define (graph->png g #:scale [scale #f] #:rule [rule #f])
   (let ((rel-path (build-path (current-directory) "vizTool.png")))
     (begin
-      (render-graph g "vizTool.dot" #:scale scale)
+      (render-graph g "vizTool.dot" #:scale scale #:rule rule)
       (dot->png "vizTool.dot" "vizTool.png" #f))))
 
   

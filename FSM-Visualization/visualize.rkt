@@ -38,6 +38,7 @@ Initialize World
 ;; Purpose: Creates the initail world with the given machine
 (define (build-world m type . msg)
   (letrec (
+           (graphviz (system "dot -V"))
            (messageWin (if (null? msg) ;; Determine if a message should be rendered duing on create
                            null
                            (car msg)))
@@ -60,7 +61,12 @@ Initialize World
                                       [(tm-language-recognizer) BUTTON-LIST-LANG-REC]
                                       [else BUTTON-LIST]))))
 
-    (initialize-world m messageWin (determine-button-list) (determine-input-list))))
+    (initialize-world m
+                      messageWin
+                      (if graphviz
+                          (cons BTN-DISPLAY (determine-button-list))
+                          (determine-button-list))
+                      (determine-input-list))))
 
 
 
@@ -668,11 +674,12 @@ Scene Rendering
                                                                                                                 (machine-type machine))) (/ (/ WIDTH 11) 2) (/ (- HEIGHT BOTTOM) 2) MAIN-SCENE))))))))
     
        
-    (cond [IS-GRAPH?   (draw-error-msg (world-error-msg w) (place-image (create-dfa-png
+    (cond [IS-GRAPH?   (draw-error-msg (world-error-msg w) (place-image (create-png
                                                                          (machine-state-list machine)
                                                                          (machine-start-state machine)
                                                                          (machine-final-state-list machine)
-                                                                         (machine-rule-list machine)) X0 Y0  no-arrow))] ;;graphviz here  
+                                                                         (machine-rule-list machine)
+                                                                         (world-cur-rule w)) X0 Y0  no-arrow))] ;;graphviz here  
           [else (if (not (null? (world-cur-state w)))
                     (draw-error-msg (world-error-msg w)(draw-main-img w no-arrow))                                                                                                                   
                     (draw-error-msg (world-error-msg w) (draw-main-img w with-arrow)))])))
