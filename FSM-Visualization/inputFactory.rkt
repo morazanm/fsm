@@ -17,13 +17,6 @@
 (define DISPLAY-WIDTH 830)
 (define DISPLAY (rectangle DISPLAY-WIDTH DISPLAY-HEIGHT "outline" "blue"))
 
-;;(define BOX-WIDTH 1200) ;; TODO ADD PROPPER WIDTH
-(define BOX-HEIGHT 75) ;; The hight of the box around a rule
-(define BOX-PADDING 25) ;; The padding around the box (The left and right padding is hald the BOX-PADDING)
-(define FONT-SIZE 20) ;; The font size of a rule
-(define HIGHTLIGHT-RULE "red") ;; The color of a hightlighted rule
-(define DEFAULT-RULE "black") ;; Default color of a rule
-(define RULE-BOX-COLOR "gray") ;; The color of the box around a rule
 
 
 ;; ruleFactory: list symbol int rule -> image

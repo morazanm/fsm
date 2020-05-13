@@ -17,17 +17,6 @@
 (define MAIN-SCENE (empty-scene WIDTH HEIGHT "white")) ;; Create the initial scene
 
 
-
-
-;; CIRCLE VARIABLES
-(define R 175)
-(define inner-R (- R 50))
-(define CENTER-CIRCLE (circle 5 "solid" CONTROLLER-BUTTON-COLOR))
-(define TRUE-INV (make-color 0 171 3)) ;; Color for passed invariant (green)
-(define FALSE-INV (make-color 245 35 20)) ;; Color for failed invariant (red)
-(define TRUE-INV-CB (make-color 1 133 113)) ;; Color for passed invarant for color blind mode
-(define FALSE-INV-CB (make-color 123 50 148)) ;; Color for failed invariant for color blind mode
-
 #|
 -----------------------
 Initialize World
@@ -537,7 +526,7 @@ Scene Rendering
                              (arrow (lambda ()
                                      
                                       (overlay/offset 
-                                       (text (symbol->string sym) 18 "red")
+                                       (text (symbol->string sym) 18 ARROW-RULE-COLOR)
                                        15 15
                                        (beside/align "center"
                                                      (rectangle (- inner-R 15) 5 "solid" state-color)
@@ -547,7 +536,7 @@ Scene Rendering
                              ;; Purpose: creates an upside-down arrow
                              (down-arrow (lambda ()
                                            (overlay/offset 
-                                            (rotate 180 (text (symbol->string sym) 18 "red"))
+                                            (rotate 180 (text (symbol->string sym) 18 ARROW-RULE-COLOR))
                                             15 -15
                                             (beside/align "center"
                                                           (rectangle (- inner-R 15) 5 "solid" state-color)
@@ -744,7 +733,7 @@ TOP GUI RENDERING
      (overlay
       (rectangle (- (- WIDTH (/ WIDTH 11)) 260) TOP "outline" "transparent") ;; this rectangle includes the width of the scroll bars
       (list-2-img input-to-render TAPE-INDEX))
-     (rectangle (- (- WIDTH (/ WIDTH 11)) 200) TOP "outline" "blue"))))
+     (rectangle (- (- WIDTH (/ WIDTH 11)) 200) TOP "outline" OUTLINE-COLOR))))
 
 
 ;; tm-los-top input-list current-rule tm-tape-index
@@ -772,15 +761,15 @@ TOP GUI RENDERING
 
 
            (input-box (lambda (input highlight? fnt-size)
-                        (let ((color (if highlight? "red" "black")))
+                        (let ((color (if highlight? TAPE-HIGHLIGHT-COLOR "black")))
                           (overlay
                            (text (symbol->string input) fnt-size color)
-                           (rectangle rectWidth (* TOP .75) "outline" "blue")))))
+                           (rectangle rectWidth (* TOP .75) "outline" OUTLINE-COLOR)))))
 
            (index-box (lambda (index)
                         (overlay
                          (text (number->string index) 10 "black")
-                         (rectangle rectWidth (* TOP .25) "outline" "blue"))))
+                         (rectangle rectWidth (* TOP .25) "outline" OUTLINE-COLOR))))
                        
                        
                         
@@ -806,7 +795,7 @@ TOP GUI RENDERING
      (overlay/align "left" "middle"
                     (rectangle (- (- WIDTH (/ WIDTH 11)) 260) TOP "outline" "transparent") ;; this rectangle includes the width of the scroll bars
                     (list-2-img input-to-render TAPE-INDEX))
-     (rectangle (- (- WIDTH (/ WIDTH 11)) 200) TOP "outline" "blue"))))
+     (rectangle (- (- WIDTH (/ WIDTH 11)) 200) TOP "outline" OUTLINE-COLOR))))
 
            
 
@@ -852,7 +841,7 @@ BOTTOM GUI RENDERING
     [(empty? lor) (overlay/align "left" "middle"
                                  (align-items
                                   (rules-bottom-label)
-                                  (rectangle (- (- WIDTH (/ WIDTH 11)) 200) BOTTOM "outline" "blue"))
+                                  (rectangle (- (- WIDTH (/ WIDTH 11)) 200) BOTTOM "outline" OUTLINE-COLOR))
                                  (rectangle WIDTH BOTTOM "outline" "transparent"))]
     [else 
      (overlay/align "left" "middle"
@@ -867,7 +856,7 @@ BOTTOM GUI RENDERING
 (define (rules-bottom-label)
   (overlay
    (text (string-upcase "Rules:") 24 "Black")
-   (rectangle (/ WIDTH 11) BOTTOM "outline" "blue")))
+   (rectangle (/ WIDTH 11) BOTTOM "outline" OUTLINE-COLOR)))
 
 
 ;; align-items image image -> image
@@ -881,7 +870,7 @@ BOTTOM GUI RENDERING
 ;; Purpose: The label for the list of rules
 (define (lor-bottom-label lor rectWidth cur-rule scroll-index)
   (overlay
-   (rectangle (- (- WIDTH (/ WIDTH 11)) 200) BOTTOM "outline" "blue")
+   (rectangle (- (- WIDTH (/ WIDTH 11)) 200) BOTTOM "outline" OUTLINE-COLOR)
    (overlay
     (rectangle (- (- (- WIDTH (/ WIDTH 11)) 200) 60) BOTTOM "outline" "transparent")
     (ruleFactory (list-tail (reverse lor) scroll-index) MACHINE-TYPE scroll-index cur-rule))))
@@ -934,13 +923,13 @@ LEFT GUI RENDERING
                                      (cond
                                        [(empty? log)
                                         (overlay/align "right" "top"
-                                                       (rectangle (/ WIDTH 11) (- (/ HEIGHT 2) 30) "outline" "blue")
+                                                       (rectangle (/ WIDTH 11) (- (/ HEIGHT 2) 30) "outline" OUTLINE-COLOR)
                                                        (above
                                                         (control-header2 "Σ" title1-width 18)
                                                         (draw-verticle loa 14 title1-width 14)))]
                                        [else
                                         (overlay/align "right" "top"
-                                                       (rectangle (/ WIDTH 11) (- (/ HEIGHT 2) 30) "outline" "blue")
+                                                       (rectangle (/ WIDTH 11) (- (/ HEIGHT 2) 30) "outline" OUTLINE-COLOR)
                                                        (beside/align "top"
                                                                      (above
                                                                       (control-header2 "Σ" title2-width 18)
@@ -950,7 +939,7 @@ LEFT GUI RENDERING
                                                                       (draw-verticle (car log) 14 title2-width 14))))])))))
     
     (overlay/align "left" "bottom"
-                   (rectangle (/ WIDTH 11) (- HEIGHT BOTTOM) "outline" "blue")
+                   (rectangle (/ WIDTH 11) (- HEIGHT BOTTOM) "outline" OUTLINE-COLOR)
                    (create-alpha-control loa))))
 
 
@@ -974,7 +963,7 @@ RIGHT GUI RENDERING
            (state-right-control (lambda ()
                                   (overlay/align "left" "top"
                                                  (control-header "State Options")
-                                                 (rectangle 200 CONTROL-BOX-H "outline" "blue"))))
+                                                 (rectangle 200 CONTROL-BOX-H "outline" OUTLINE-COLOR))))
 
                  
            ;; sigma-right-control: none -> image
@@ -994,16 +983,16 @@ RIGHT GUI RENDERING
                                               ;; Purpose: Draws the Gamma add options
                                               (draw-right (lambda ()
                                                             (overlay/align "left" "top"
-                                                                           (rectangle 100 CONTROL-BOX-H "outline" "blue")
+                                                                           (rectangle 100 CONTROL-BOX-H "outline" OUTLINE-COLOR)
                                                                            (control-header4 "Gamma")))))
                                        (overlay
                                         (beside
                                          (draw-left)
                                          (draw-right))
-                                        (rectangle 200 CONTROL-BOX-H "outline" "blue")))]
+                                        (rectangle 200 CONTROL-BOX-H "outline" OUTLINE-COLOR)))]
                                     [else
                                      (overlay/align "left" "top"
-                                                    (rectangle 200 CONTROL-BOX-H "outline" "blue")
+                                                    (rectangle 200 CONTROL-BOX-H "outline" OUTLINE-COLOR)
                                                     (control-header "Alpha Options"))])))
 
 
@@ -1033,7 +1022,7 @@ RIGHT GUI RENDERING
                                               ;; Purpose: Draws the tape index option
                                               (draw-right (lambda ()
                                                             (overlay/align "left" "top"
-                                                                           (rectangle 100 CONTROL-BOX-H "outline" "blue")
+                                                                           (rectangle 100 CONTROL-BOX-H "outline" OUTLINE-COLOR)
                                                                            (above
                                                                             (control-header5 "Accept State")
                                                                             (draw-tape-index))))))
@@ -1041,10 +1030,10 @@ RIGHT GUI RENDERING
                                         (beside
                                          (draw-left)
                                          (draw-right))
-                                        (rectangle 200 CONTROL-BOX-H "outline" "blue")))]
+                                        (rectangle 200 CONTROL-BOX-H "outline" OUTLINE-COLOR)))]
                                     [else
                                      (overlay/align "left" "top"
-                                                    (rectangle 200 CONTROL-BOX-H "outline" "blue")
+                                                    (rectangle 200 CONTROL-BOX-H "outline" OUTLINE-COLOR)
                                                     (control-header "Start State"))])))
 
 
@@ -1075,7 +1064,7 @@ RIGHT GUI RENDERING
                                             ;; Purpose: Draws the tape index option
                                             (draw-right (lambda ()
                                                           (overlay/align "left" "top"
-                                                                         (rectangle 100 CONTROL-BOX-H "outline" "blue")
+                                                                         (rectangle 100 CONTROL-BOX-H "outline" OUTLINE-COLOR)
                                                                          (above
                                                                           (control-header4 "Tape Posn")
                                                                           (draw-tape-index))))))
@@ -1083,10 +1072,10 @@ RIGHT GUI RENDERING
                                       (beside
                                        (draw-left)
                                        (draw-right))
-                                      (rectangle 200 CONTROL-BOX-H "outline" "blue")))]
+                                      (rectangle 200 CONTROL-BOX-H "outline" OUTLINE-COLOR)))]
                                   [else
                                    (overlay/align "left" "top"
-                                                  (rectangle 200 CONTROL-BOX-H "outline" "blue")
+                                                  (rectangle 200 CONTROL-BOX-H "outline" OUTLINE-COLOR)
                                                   (control-header "End State"))])))
 
 
@@ -1094,7 +1083,7 @@ RIGHT GUI RENDERING
            ;; Purpose: Creates the rule control panel
            (rule-right-control (lambda ()
                                  (overlay/align "left" "top"
-                                                (rectangle 200 CONTROL-BOX-H "outline" "blue")
+                                                (rectangle 200 CONTROL-BOX-H "outline" OUTLINE-COLOR)
                                                 (control-header "Add Rules"))))
 
            ;; pda-stack: stack-list -> image
@@ -1104,7 +1093,7 @@ RIGHT GUI RENDERING
                                        (above/align "left"
                                                     (rectangle STACK-WIDTH TOP "outline" "transparent") ;; The top
                                                     (overlay ;; This overlays the stack inside the scroll bar buttons
-                                                     (rectangle STACK-WIDTH (- HEIGHT (+ BOTTOM TOP)) "outline" "blue")
+                                                     (rectangle STACK-WIDTH (- HEIGHT (+ BOTTOM TOP)) "outline" OUTLINE-COLOR)
                                                      (pda-populate-stack))
                                                     (rectangle STACK-WIDTH BOTTOM "outline" "transparent")) ;; the bottom
                                        (rectangle STACK-WIDTH HEIGHT "outline" "transparent"))))
@@ -1123,7 +1112,7 @@ RIGHT GUI RENDERING
                                              STACK-LIST)))                      
                                    (overlay/align "left" "bottom"
                                                   (draw-verticle curList 14 100 29)
-                                                  (rectangle STACK-WIDTH (- (- HEIGHT (+ BOTTOM TOP)) 50) "outline" "blue")))))
+                                                  (rectangle STACK-WIDTH (- (- HEIGHT (+ BOTTOM TOP)) 50) "outline" OUTLINE-COLOR)))))
 
            ;; construct-image: none -> image
            ;;; Purpose: Builds the propper image based on the machine type

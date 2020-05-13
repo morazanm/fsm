@@ -187,7 +187,6 @@ This file contains the fsm-graphviz library used to render the graph
     #:exists 'replace
     (lambda (out)
       (displayln (format "digraph ~s {" (graph-name graph)) out)
-      (if rule (render-header rule out) (void))
       (displayln "    rankdir=\"LR\";" out)
       (if scale
           (displayln (format "    size=\"~s, ~s!\";" GRAPH-WIDTH GRAPH-HEIGHT) out)
@@ -197,6 +196,7 @@ This file contains the fsm-graphviz library used to render the graph
       (displayln "}" out))))
 
 
+;; NO LONGER USED!!!
 ;; render-header rule out-port
 ;; Purpose: renders the current rule in the top right
 (define (render-header cur-rule stdout)

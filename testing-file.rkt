@@ -1,7 +1,7 @@
 #lang racket
 
 (require "main.rkt")
-(require racket/stream)
+(require 2htdp/image)
 
 
 ;;---- DFA ----
@@ -314,11 +314,82 @@
                     '(H)))
 
 |#
-(sm-visualize a^nb^nc^n2)
+
+;(sm-visualize a*)
+;;(sm-visualize a^nb^nc^n2)
 
 
 
 
+(define XX
+  (make-tm
+   '(Q0 Q1 Q2 Q3 Q4 Q5 Q6 Q7 Q8 Q9 Q10 Q11 Q12)
+   `(x y i c)
+   `(((Q0 i) (Q0 ,RIGHT)) ;WE ARE IN Q0, WE SEE AN I HEAD RIGHT AND RETURN TO Q0
+     ((Q0 c) (Q1 ,RIGHT)) ;THE CENTRAL MULTIPLICATION SYMBOL C HAS BEEN SEEN, HEAD TO Q1
+     
+     ((Q1 i) (Q1 ,RIGHT)) ; NOW IN Q1, CONTINUE RIGHT ON EVERY I
+     ((Q1 ,BLANK) (Q1 c)) ;ONCE WE HAVE ENCOUNTERED A BLANK, WE KNOW WE ARE AT THE END. OVERWRITE THE BLANK WITH A C
+     ((Q1 c) (Q2 ,LEFT)) ;NOW THAT THE C HAS BEEN WRITTEN IN, HEAD TO STATE Q2 AND PROGRESS LEFT ALONG THE TAPE
 
+ 
 
+     ((Q2 i) (Q2 ,LEFT)) ; WHEN WE ARE IN Q2, MOVE LEFT EVERY I
+     ((Q2 c) (Q3 ,RIGHT));IN THE EVENT THAT WE ONCE AGAIN ENCOUNTER A C, MOVE RIGHT ALONG THE TAPE
+
+ 
+
+     ((Q3 x) (Q3 ,RIGHT)); IF WE SEE AN X IN Q3, MOVE RIGHT ALONG THE TAPE
+     ((Q3 i) (Q4 x)) ; IF WE SEE AN I ON THE TAPE, HEAD TO Q4 AND OVERWRITE WITH X
+     ;((Q3 i) (Q4 ,LEFT))
+     ((Q3 c) (Q3 ,BLANK)) ;IF WE SEE C HEAD TO HALTING STATE Q12
+     ((Q3 ,BLANK) (Q12 ,RIGHT)) ;;;;
+     
+     ((Q4 x) (Q4 ,LEFT)) ;IF WE SEE AN X, MOVE LEFT ALONG THE TAPE
+     ((Q4 c) (Q5 ,LEFT)) ;IF WE SEE A C, MOVE RIGHT ALONG THE TAPE
+
+ 
+
+     ((Q5 y) (Q5 ,LEFT)) ;WHEN WE SEE A Y, MOVE LEFT ALONG THE TAPE
+     ((Q5 i) (Q6 y)) ;WHEN WE SEE AN I IN Q5, MOVE TO Q6
+     ;((Q5 i) (Q6 ,RIGHT))
+     ((Q5 ,LM) (Q11 ,RIGHT)) ;;;;
+     
+     ((Q6 y) (Q6 ,RIGHT)) ;WHEN WE SEE A Y IN Q6, HEAD TO Q6 AND RIGHT ON THE TAPE
+     ((Q6 c) (Q7 ,RIGHT))
+
+ 
+
+     ((Q7 i) (Q7 ,RIGHT)) ;SEE AN I, GO RIGHT AND BACK TO Q7
+     ((Q7 x) (Q7 ,RIGHT)) ;SEE AN X, GO RIGHT AND BACK TO Q7
+     ((Q7 c) (Q8 ,RIGHT)) ;SEE A C, HEAD TO Q8 AND RIGHT ON TAPE
+
+ 
+
+     ((Q8 i) (Q8 ,RIGHT)) ; SEE AN I, HEAD BACK TO Q8 AND RIGHT ON TAPE
+     ((Q8 ,BLANK) (Q9 i)) ;SEE A BLANK HEAD TO Q9
+     ;((Q8 ,BLANK) (Q9 ,LEFT))
+
+ 
+
+     ((Q9 i) (Q9 ,LEFT)) ;SEE AN I HEAD BACK TO Q9 AND LEFT ON TAPE
+     ((Q9 c) (Q10 ,LEFT))
+
+ 
+
+     ((Q10 i) (Q10 ,LEFT)) ;SEE AN I, HEAD BACK TO Q10 AND LEFT ON TAPE
+     ((Q10 x) (Q10 ,LEFT)) ;SEE AN X, HEAD BACK TO Q10 AND LEFT ON TAPE
+     ((Q10 c) (Q5 ,LEFT))
+
+ 
+
+     ((Q11 y) (Q11 i)) ;SEE A Y, HEAD BACK TO Q11 AND OVERWRITE WITH I
+     ((Q11 i) (Q11 ,RIGHT)) ;SEE AN I HEAD BACK TO Q11 AND RIGHT ALONG THE TAPE
+     ((Q11 c) (Q3 ,RIGHT))
+     
+     )
+   'Q0
+   '(Q12)))
+
+(define x(sm-graph XX))
 

@@ -1,5 +1,5 @@
 #lang racket
-(require "lib.rkt" "../sm-getters.rkt")
+(require "lib.rkt" "../sm-getters.rkt" "../FSM-Visualization/globals.rkt")
 #| render-graph.rkt
 Written by: Joshua Schappel, Sachin Mahashabde Sena Karsavran, and Isabella Felix on 4/15/20
 
@@ -10,9 +10,7 @@ This file contains the sm-graph function
          states->nodes
          rules->edges)
 
-(define HIGHLIGHT-EDGE (hash
-                        'color "red"
-                        'fontsize 15))
+
 
 
 ; states->nodes: (listof symbols) symbol (listof symbol) graph -> NONE 
