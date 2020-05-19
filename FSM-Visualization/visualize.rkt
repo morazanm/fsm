@@ -9,7 +9,8 @@
          "./structs/button.rkt" "./structs/posn.rkt" "./structs/state.rkt"
          "./structs/input.rkt" "./structs/machine.rkt" "./structs/world.rkt"
          "./structs/world.rkt" "./components/inputFields.rkt" "globals.rkt"
-         "./components/buttons.rkt" "./components/stateTransitions.rkt" "./graphViz/main.rkt")
+         "./components/buttons.rkt" "./components/stateTransitions.rkt" "./graphViz/main.rkt"
+         "inv.rkt")
 
 (provide visualize marco)
 
@@ -348,52 +349,7 @@ Scene Rendering
                     (begin
                       (set-fsm-state-posn! (car l) (posn (get-x (* deg-shift i) R) (get-y (* deg-shift i) R)))
                       (find-state-pos (cdr l) (add1 i))))))
-
-       ;; determin-inv: procedure processed-list -> color
-       ;; Purpose: Determins the color of the state based on the invarent
-       (determin-inv (lambda (f p-list)
-                       (case MACHINE-TYPE
-                         [(pda)
-                          (cond
-                            [(equal? #t (f p-list STACK-LIST)) (if COLOR-BLIND-MODE
-                                                                   TRUE-INV-CB
-                                                                   TRUE-INV)]
-                            [(equal? #f (f p-list STACK-LIST)) (if COLOR-BLIND-MODE
-                                                                   FALSE-INV-CB
-                                                                   FALSE-INV)]
-                            [else "black"])]
-                         [(tm)
-                          (let ((tape-posn (tm-machine-tape-posn (world-fsm-machine w)))
-                                (tape (machine-sigma-list (world-fsm-machine w))))
-                            (cond
-                              [(equal? #t (f tape tape-posn)) (if COLOR-BLIND-MODE
-                                                                  TRUE-INV-CB
-                                                                  TRUE-INV)]
-                              [(equal? #f (f tape tape-posn)) (if COLOR-BLIND-MODE
-                                                                  FALSE-INV-CB
-                                                                  FALSE-INV)]
-                              [else "black"]))]
-                         [(tm-language-recognizer)
-                          (let ((tape-posn (tm-machine-tape-posn (world-fsm-machine w)))
-                                (tape (machine-sigma-list (world-fsm-machine w))))
-                            (cond
-                              [(equal? #t (f tape tape-posn)) (if COLOR-BLIND-MODE
-                                                                  TRUE-INV-CB
-                                                                  TRUE-INV)]
-                              [(equal? #f (f tape tape-posn)) (if COLOR-BLIND-MODE
-                                                                  FALSE-INV-CB
-                                                                  FALSE-INV)]
-                              [else "black"]))]
-                         [else
-                          (cond
-                            [(equal? #t (f p-list)) (if COLOR-BLIND-MODE
-                                                        TRUE-INV-CB
-                                                        TRUE-INV)]
-                            [(equal? #f (f p-list)) (if COLOR-BLIND-MODE
-                                                        FALSE-INV-CB
-                                                        FALSE-INV)]
-                            [else "black"])])))
-          
+        
        ;;draw-states: list-of-states index scene -> scene
        ;; Purpose: Draws the states onto the GUI
        (draw-states (lambda (l i s)
@@ -517,10 +473,8 @@ Scene Rendering
                         (letrec
                             (
                              (state-color (determin-inv
-                                           (fsm-state-function (list-ref (machine-state-list (world-fsm-machine w)) index))
-                                           (if (or (equal? MACHINE-TYPE 'tm) (equal? MACHINE-TYPE 'tm-language-recognizer))
-                                               (take (machine-sigma-list (world-fsm-machine w)) (tm-machine-tape-posn (world-fsm-machine w)))
-                                               (take (machine-sigma-list (world-fsm-machine w)) (if (< TAPE-INDEX-BOTTOM 0) 0 (add1 TAPE-INDEX-BOTTOM))))))
+                                           (world-fsm-machine w)
+                                           (world-cur-state w)))
                              ;; arrow: none -> image
                              ;; Purpose: draws a arrow
                              (arrow (lambda ()
@@ -661,13 +615,10 @@ Scene Rendering
                                                                                                                (create-gui-left
                                                                                                                 (machine-alpha-list machine)
                                                                                                                 (machine-type machine))) (/ (/ WIDTH 11) 2) (/ (- HEIGHT BOTTOM) 2) MAIN-SCENE))))))))
-    
-       
     (cond [IS-GRAPH?   (draw-error-msg (world-error-msg w) (place-image (create-png
-                                                                         (machine-state-list machine)
-                                                                         (machine-start-state machine)
-                                                                         (machine-final-state-list machine)
-                                                                         (machine-rule-list machine)
+                                                                         machine
+                                                                         (not (empty? (world-processed-config-list w)))
+                                                                         (world-cur-state w)
                                                                          (world-cur-rule w)) X0 Y0  no-arrow))] ;;graphviz here  
           [else (if (not (null? (world-cur-state w)))
                     (draw-error-msg (world-error-msg w)(draw-main-img w no-arrow))                                                                                                                   

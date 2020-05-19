@@ -15,7 +15,7 @@ This file contains the sm-graph function
 
 ; states->nodes: (listof symbols) symbol (listof symbol) graph -> NONE 
 ; Purpose: for every state in the los a node is add to the graph
-(define (states->nodes los S lof G)
+(define (states->nodes los S lof G #:cur-state[cur-state #f] #:color[color #f])
   (let ((type (lambda (x)
                 (cond [(and (equal? x S)(member x lof))
                        'startfinal]
@@ -24,13 +24,15 @@ This file contains the sm-graph function
                       [else 'none]))))
     (cond
       [(empty? los) (void)]
-      [else (begin
-              (add-node G (car los) (type (car los)))
-              (states->nodes (cdr los) S lof G))])))
+      [else (begin 
+              (if (and color (equal? (car los) cur-state))
+                  (add-node G (car los) (type (car los)) #:atb color)
+                  (add-node G (car los) (type (car los))))
+              (states->nodes (cdr los) S lof G #:cur-state cur-state #:color color))])))
 
-;; rules->edges: (listof rules) symbol graph -> (listof edges)
+;; rules->edges: (listof rules) symbol graph symbol symbol string -> (listof edges)
 ;; Purpose: Creates a list of edges when given a list of rules
-(define (rules->edges lor m-type G cur-start cur-end)
+(define (rules->edges lor m-type G cur-start cur-end color)
   (letrec ((get-start (lambda (rule)
                         (case m-type
                           [(dfa) (car rule)]
@@ -64,7 +66,7 @@ This file contains the sm-graph function
        (let ((rule (car lor)))
          (begin
            (make-edge rule)
-           (rules->edges (cdr lor) m-type G cur-start cur-end)))])))
+           (rules->edges (cdr lor) m-type G cur-start cur-end color)))])))
 
 
 
@@ -77,5 +79,5 @@ This file contains the sm-graph function
                      (sm-getstart machine)
                      (sm-getfinals machine)
                      g)
-      (rules->edges (sm-getrules machine) (sm-type machine) g "$NULL" "$NULL")
+      (rules->edges (sm-getrules machine) (sm-type machine) g "$NULL" "$NULL" "black")
       (graph->bitmap g))))

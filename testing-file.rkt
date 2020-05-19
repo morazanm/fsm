@@ -12,6 +12,10 @@
                      '((S a F)  ;; the transition functions
                        (F a F)
                        (F b F))))
+
+(sm-visualize a* (list 'S (lambda (v) true))
+              (list 'F (lambda (v) false)))
+
 (define pda-numa=numb (make-ndpda '(S M F)
                                   '(a b)
                                   '(a b)
@@ -391,5 +395,13 @@
    'Q0
    '(Q12)))
 
-(define x(sm-graph XX))
+;;(define x(sm-graph XX))
 
+
+(define FSM (make-ndfa '(F S M)
+                       '(f s m)
+                       'F
+                       '(M)
+                       '((F f S)
+                         (S s M)
+                         (M m F)) 'nodead))

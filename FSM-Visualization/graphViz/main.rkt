@@ -1,6 +1,6 @@
 #lang racket
 (require 2htdp/image "../globals.rkt" "../../GraphViz/lib.rkt" "../../GraphViz/render-graph.rkt"
-         "../structs/state.rkt")
+         "../structs/state.rkt" "../structs/machine.rkt" "../inv.rkt")
 
 (provide scaled-graph create-png)
 
@@ -19,27 +19,35 @@
 
 
 
-(define (create-png states start finals rules cur-rule)
-  (let ((g (create-graph 'G #:color 0))
-        (rule-start (lambda () (case MACHINE-TYPE
-                                 [(dfa) (car cur-rule)]
-                                 [(ndfa) (car cur-rule)]
-                                 [else (caar cur-rule)])))
-        (rule-end (lambda () (case MACHINE-TYPE
-                               [(dfa) (last cur-rule)]
-                               [(ndfa) (last cur-rule)]
-                               [else (caadr cur-rule)])))
-        (new-states (map (lambda (s) (fsm-state-name s)) states)))
+(define (create-png machine hasRun? cur-state cur-rule)
+  (letrec ((g (create-graph 'G #:color 0))
+           (states (machine-state-list machine))
+           (start (machine-start-state machine))
+           (finals (machine-final-state-list machine))
+           (rules (machine-rule-list machine))
+           (color (if hasRun? (determin-inv machine cur-state #:graphViz true) #f))
+           (rule-start (lambda () (case MACHINE-TYPE
+                                    [(dfa) (car cur-rule)]
+                                    [(ndfa) (car cur-rule)]
+                                    [else (caar cur-rule)])))
+           (rule-end (lambda () (case MACHINE-TYPE
+                                  [(dfa) (last cur-rule)]
+                                  [(ndfa) (last cur-rule)]
+                                  [else (caadr cur-rule)])))
+           (new-states (map (lambda (s) (fsm-state-name s)) states)))
     (begin
       (states->nodes new-states
                      start
                      finals
-                     g)
+                     g
+                     #:cur-state cur-state
+                     #:color (HIGHLIGHT-NODE color))
       (rules->edges rules
                     MACHINE-TYPE
                     g
                     (if (or (member 'empty cur-rule) (member 'null cur-rule)) "$NULL" (rule-start))
-                    (if (or (member 'empty cur-rule) (member 'null cur-rule)) "$NULL" (rule-end)))
+                    (if (or (member 'empty cur-rule) (member 'null cur-rule)) "$NULL" (rule-end))
+                    "black")
       (if (or (member 'empty cur-rule) (member 'null cur-rule))
           (graph->png g)
           (graph->png g #:rule cur-rule))

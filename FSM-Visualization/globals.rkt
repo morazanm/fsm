@@ -32,22 +32,23 @@ Created by Joshua Schappel on 12/19/19
 (define OUTLINE-COLOR "blue") ;; The color of the box outlineing
 (define TAPE-HIGHLIGHT-COLOR "red") ;; The color of the failed inv.
 (define ARROW-RULE-COLOR "red") ;; the color of the rule rendered above the arrow
-
+(define DEFAULT-ARROW-COLOR "black") ;; the color of the arrow without invariants
 
 ;; -- INV-COLORS --
 (define TRUE-INV (make-color 0 171 3)) ;; Color for passed invariant (green)
-(define TRUE-INV-HEX "#00ab03")
+(define TRUE-INV-HEX "#00ab037F")
 (define TRUE-INV-CB (make-color 1 133 113)) ;; Color for passed invarant for color blind mode
-(define TRUE-INV-CB-HEX "#018571")
+(define TRUE-INV-CB-HEX "#0185717F")
 
 (define FALSE-INV (make-color 245 35 20)) ;; Color for failed invariant (red)
-(define FALSE-INV-HEX "#f52314")
+(define FALSE-INV-HEX "#f523147F")
 (define FALSE-INV-CB (make-color 123 50 148)) ;; Color for failed invariant for color blind mode
-(define FALSE-INV-CB-HEX "#7b3294")
+(define FALSE-INV-CB-HEX "#7b32947F")
 
 
 ;; -- BUTTONS COLORS --
 (define CONTROLLER-BUTTON-COLOR (make-color 33 93 222)) ;; Color of button and center dot
+(define CONTROLLER-BUTTON-COLOR-HEX "#215dde")
 (define STACK-SCROLL-BUTTON-COLOR (make-color 135 204 222)) ;; Color of the stack buttons for pda's
 
 
@@ -86,25 +87,27 @@ Created by Joshua Schappel on 12/19/19
 (define BOX-PADDING 25) ;; The padding around the box (The left and right padding is hald the BOX-PADDING)
 (define FONT-SIZE 20) ;; The font size of a rule
 (define HIGHTLIGHT-RULE CONTROLLER-BUTTON-COLOR) ;; The color of a hightlighted rule
+(define HIGHLIGHT-RULE-HEX CONTROLLER-BUTTON-COLOR-HEX) ;; The color of a hightlighted rule
 (define DEFAULT-RULE "black") ;; Default color of a rule
 (define RULE-BOX-COLOR "gray") ;; The color of the box around a rule
 
 
 ;; -- GRAPH-VIZ --
+;;HIGHLIGHT-EDGE string -> map
+;; Purpose: when given a color reutrns a hasmap for the edge with to color
 (define HIGHLIGHT-EDGE (hash
-                        'penwidth 2
-                        'color "#215dde"
+                        ;;'penwidth 2
+                        'color HIGHLIGHT-RULE-HEX
                         'fontsize 15))
 
-(define EDGE-TRUE-INV (hash
-                        'penwidth 2
-                        'color TRUE-INV-HEX
-                        'fontsize 15))
+;;HIGHLIGHT-EDGE string -> map
+;; Purpose: when given a color reutrns a hasmap for the node with to color
+(define HIGHLIGHT-NODE (lambda (color)
+                         (hash
+                          'style "filled"
+                          'fillcolor color
+                          'shape "circle")))
 
-(define EDGE-FALSE-INV (hash
-                        'penwidth 2
-                        'color FALSE-INV-HEX
-                        'fontsize 15))
 
 (define h 400)
 (define w 700)
@@ -139,8 +142,8 @@ Created by Joshua Schappel on 12/19/19
     [(empty? aList)#t]
     [else
      (begin
-      (set! STACK-LIST (cons (car aList) STACK-LIST))
-      (push-stack (cdr aList)))]))
+       (set! STACK-LIST (cons (car aList) STACK-LIST))
+       (push-stack (cdr aList)))]))
 
 ;; Resets the stack to be empty
 (define (reset-stack)
