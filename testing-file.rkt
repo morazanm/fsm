@@ -13,8 +13,8 @@
                        (F a F)
                        (F b F))))
 
-(sm-visualize a* (list 'S (lambda (v) true))
-              (list 'F (lambda (v) false)))
+;;(sm-visualize a* (list 'S (lambda (v) true))
+  ;;            (list 'F (lambda (v) false)))
 
 (define pda-numa=numb (make-ndpda '(S M F)
                                   '(a b)
@@ -204,7 +204,7 @@
 
 
 
-#|
+
 ;; gets the number of z's in the tape
 (define get-num-of-x (lambda (tape symbol)
                        (length (filter (lambda (ele)
@@ -259,7 +259,7 @@
                       
                         (implies (equal? (list-ref tape posn) BLANK)
                                  (equal? tape `(,LM ,BLANK))))))))
-                     
+
 
 ;; the number of z's is one bigger then number of x's and number of y's
 (define B-INV (lambda (tape posn)
@@ -306,7 +306,13 @@
                    (= (modulo (length list-of-xyz) 3) 0)))))
 
 
-
+ (sm-visualize a^nb^nc^n2 (list 'S S-INV)
+               (list 'B B-INV)
+               (list 'C C-INV)
+               (list 'D D-INV)
+               (list 'E E-INV)
+               (list 'N N-INV)
+               (list 'Y Y-INV))
 
 
 (define LB (make-tm '(S H)
@@ -316,6 +322,7 @@
                       ((S ,BLANK) (H ,BLANK)))
                     'S
                     '(H)))
+#|
 
 |#
 
@@ -396,7 +403,6 @@
    '(Q12)))
 
 ;;(define x(sm-graph XX))
-
 
 (define FSM (make-ndfa '(F S M)
                        '(f s m)
