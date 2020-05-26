@@ -1,8 +1,6 @@
 #lang racket
 
 (require "main.rkt")
-(require 2htdp/image)
-
 
 ;;---- DFA ----
 (define a* (make-dfa '(S F)     ;; the states
@@ -14,7 +12,7 @@
                        (F b F))))
 
 ;;(sm-visualize a* (list 'S (lambda (v) true))
-  ;;            (list 'F (lambda (v) false)))
+;;            (list 'F (lambda (v) false)))
 
 (define pda-numa=numb (make-ndpda '(S M F)
                                   '(a b)
@@ -152,10 +150,12 @@
                            'S
                            '(Y N)
                            'Y))
-|#
+
 ;; z => a is is read
 ;; x => b is read
 ;; z => y is read
+
+
 (define a^nb^nc^n2 (make-tm '(S B C D E Y N)
                             '(a b c z x y)
                             `(((S a) (B z))
@@ -201,7 +201,6 @@
                             'S
                             '(Y N)
                             'Y))
-
 
 
 
@@ -314,7 +313,7 @@
                (list 'N N-INV)
                (list 'Y Y-INV))
 
-
+|#
 (define LB (make-tm '(S H)
                     `(a b)
                     `(((S a) (S ,LEFT))
@@ -322,14 +321,13 @@
                       ((S ,BLANK) (H ,BLANK)))
                     'S
                     '(H)))
-#|
 
-|#
+
 
 ;(sm-visualize a*)
 ;;(sm-visualize a^nb^nc^n2)
 
-
+#|
 
 
 (define XX
@@ -408,6 +406,102 @@
                        '(f s m)
                        'F
                        '(M)
-                       '((F f S)
-                         (S s M)
-                         (M m F)) 'nodead))
+                       '((F s S)
+                         (S m M)
+                         (M f F)) 'nodead))
+
+
+(define (S-INV ci) (empty? ci))
+
+(define (A-INV ci) (empty? ci))
+
+(define (B-INV ci) (and (= (length ci) 1) (eq? (car ci) 'a)))
+
+(define (C-INV ci)
+  (and (>= (length ci) 1) (andmap (λ (s) (eq? s 'a)) ci)))
+
+(define (D-INV ci) (empty? ci))
+
+(define (E-INV ci)
+  (and (= (length ci) 1) (eq? (first ci) 'a)))
+
+(define (F-INV ci)
+  (and (>= (length ci) 1)
+       (eq? (first ci) 'a)
+       (andmap (λ (s) (eq? s 'b))
+               (rest ci))))
+
+
+(define M (make-ndfa '(S A B C D E F)
+                     '(a b)
+                     'S
+                     '(C F)
+                     `((S ,EMP A)
+                       (S ,EMP D)
+                       (A a B)
+                       (B ,EMP C)
+                       (C a C)
+                       (D a E)
+                       (E ,EMP F)
+                       (F b F))
+                     'no-dead
+                     ))
+
+(sm-visualize M (list 'S S-INV) (list 'A A-INV) (list 'B B-INV) (list 'D D-INV) (list 'E E-INV) (list 'F F-INV))
+
+|#
+
+
+(define C90 (make-dfa
+             (quote (D C B A))
+             (quote (a b))
+             (quote A)
+             (quote (B))
+             (quote ((A b C) (A a B)))))
+
+(define (S-INV ci) (empty? ci))
+
+(define (A-INV ci) (empty? ci))
+
+(define (B-INV ci) (and (= (length ci) 1) (eq? (car ci) 'a)))
+
+(define (C-INV ci)
+  (and (>= (length ci) 1) (andmap (λ (s) (eq? s 'a)) ci)))
+
+(define (D-INV ci) (empty? ci))
+
+(define (E-INV ci)
+  (and (= (length ci) 1) (eq? (first ci) 'a)))
+
+(define (F-INV ci)
+  (and (>= (length ci) 1)
+       (eq? (first ci) 'a)
+       (andmap (λ (s) (eq? s 'b))
+               (rest ci))))
+
+
+(define M (make-ndfa '(S A B C D E F)
+                     '(a b)
+                     'S
+                     '(C F)
+                     `((S ,EMP A)
+                       (S ,EMP D)
+                       (A a B)
+                       (B ,EMP C)
+                       (C a C)
+                       (D a E)
+                       (E ,EMP F)
+                       (F b F))
+                     'no-dead
+                     ))
+
+(sm-visualize M (list 'S S-INV)
+              (list 'A A-INV)
+              (list 'B B-INV)
+              (list 'C C-INV)
+              (list 'D D-INV)
+              (list 'E E-INV)
+              (list 'F F-INV))
+
+
+

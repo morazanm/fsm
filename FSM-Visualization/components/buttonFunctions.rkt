@@ -689,6 +689,7 @@ Created by Joshua Schappel on 12/19/19
              [else
               (set-tape-index-bottom (+ 1 TAPE-INDEX-BOTTOM))])
 
+
            ;; If the machine is a pda we need to push or pop!
            ;; pops are handled first
            (if (equal? MACHINE-TYPE 'pda)
@@ -715,6 +716,7 @@ Created by Joshua Schappel on 12/19/19
                       (letrec(
                               (previousState (car (cdr (world-processed-config-list w))))
                               (cur-rule (getCurRule (cdr (world-processed-config-list w)))) ;; The current rule that the machine is in after prev is pressed
+                              (rule (getCurRule (if (equal? MACHINE-TYPE 'ndfa) (world-processed-config-list w) (cdr (world-processed-config-list w)))))
                               (pda-cur-rule (getCurRule (world-processed-config-list w))) ;; The current rule that pda machine is in after prev is pressed. Only use this for PDA's
 
                               (input-consumed? (lambda ()
@@ -761,7 +763,17 @@ Created by Joshua Schappel on 12/19/19
                                                  [(symbol? push-list) void] ;; e is the element so nothing to push
                                                  [else
                                                   (begin
-                                                    (push-stack push-list))])))))
+                                                    (push-stack push-list))]))))
+
+                              (determin-tape (lambda (input)       
+                                               (cond
+                                                 [(or (equal? MACHINE-TYPE 'dfa)
+                                                           (equal? MACHINE-TYPE 'ndfa))
+                                                  (if (equal? EMP (cadr rule)) (void) (if (<= TAPE-INDEX-BOTTOM -1) (void) (set-tape-index-bottom (- TAPE-INDEX-BOTTOM 1))))]
+                                                 [(and (not (equal? 'tm MACHINE-TYPE))
+                                                       (not (equal? 'tm-language-recognizer MACHINE-TYPE))
+                                                       (equal? EMP input)) TAPE-INDEX-BOTTOM]
+                                                 [else (if (<= TAPE-INDEX-BOTTOM -1) (void) (set-tape-index-bottom (- TAPE-INDEX-BOTTOM 1)))]))))
 
                         ;; Based on the machien type certin things need to be updated:
                         ;; - pda: stack pushes and pops, world processed and unprocessed lists
@@ -771,12 +783,8 @@ Created by Joshua Schappel on 12/19/19
                           ;;(println (world-processed-config-list w))
                           ;; Determine if the tape input should decrease. This does not happen
                           ;; with tm's and an empty
-                          (if (and (not (equal? 'tm MACHINE-TYPE))
-                                   (not (equal? 'tm-language-recognizer MACHINE-TYPE))
-                                   (equal? EMP (input-consumed?)))
-                              TAPE-INDEX-BOTTOM
-                              (set-tape-index-bottom (- TAPE-INDEX-BOTTOM 1)))
-                        
+                          (determin-tape (input-consumed?))
+                          
 
                           ;; If the machine is a pda we need to push or pop!
                           ;; pops are handled first
@@ -935,9 +943,9 @@ Created by Joshua Schappel on 12/19/19
 ;; toggle-display -> world
 ;; Purpose: toggles the display between control and graph representation
 (define toggle-display (lambda (w)
-                        (begin
-                          (set-is-graph?)
-                          w)))
+                         (begin
+                           (set-is-graph?)
+                           w)))
 
 
 
