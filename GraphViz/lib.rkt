@@ -35,6 +35,7 @@ This file contains the fsm-graphviz library used to render the graph
 (define DEFAULT-NODE (hash
                       'color "black"
                       'shape "circle"))
+(define RULE-LIMIT 5)
 
 
 #| ----IMPORTANT VALUES----
@@ -329,15 +330,14 @@ This file contains the fsm-graphviz library used to render the graph
                         (empty? (cdr lot))) (string-append accum " " val)]
                    [else (string-append accum ", " val)])])
        ;(println val)
-       (println len)
        (cond
          [(string-contains? val "\n") (convet-trans-to-string (cdr lot)
                                                           (string-append accum " " val)
                                                           (+ len (string-length val)))]
-         [(> (string-length val) 9) (convet-trans-to-string (cdr lot)
+         [(> (string-length val) RULE-LIMIT) (convet-trans-to-string (cdr lot)
                                                             (string-append accum "\n" val "\n")
                                                             0)]
-         [(> len 9) (println "here") (convet-trans-to-string (cdr lot)
+         [(> len RULE-LIMIT) (convet-trans-to-string (cdr lot)
                                                              (string-append accum "," "\n" val)
                                                              (string-length (string-trim val)))]
          [(convet-trans-to-string (cdr lot)
