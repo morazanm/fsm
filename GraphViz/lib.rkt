@@ -296,7 +296,7 @@ This file contains the fsm-graphviz library used to render the graph
            (key-val->string (lambda (pair)
                               (cond
                                 [(and (list? (cdr pair)) (equal? (car pair) 'label))
-                                 (format "~s=~s" (car pair) (convet-trans-to-string (cdr pair) "" ))]
+                                 (format "~s=~s" (car pair) (convet-trans-to-string (cdr pair) "" 0))]
                                 [else
                                  (format "~s=~s" (car pair) (cdr pair))])))
 
@@ -315,14 +315,34 @@ This file contains the fsm-graphviz library used to render the graph
     (iterate-hash first-posn "")))
 
 
-;; convet-trans-to-string: (listOf transitions) string -> string
+;; convet-trans-to-string: (listOf transitions) string int -> string
 ;; Purpose: Converts a list of transitions into a graphviz string
-(define (convet-trans-to-string lot accum)
+(define (convet-trans-to-string lot accum len)
   (cond
     [(empty? lot) (string-trim accum)]
     [else
-     (convet-trans-to-string (cdr lot)
-                             (string-append accum " " (determine-list-type (car lot))))]))
+     (let* ([val (determine-list-type (car lot))]
+            [str (cond
+                   [(and (not (equal? "" accum))
+                         (empty? (cdr lot))) (string-append accum ", " val)]
+                   [(or (equal? "" accum)
+                        (empty? (cdr lot))) (string-append accum " " val)]
+                   [else (string-append accum ", " val)])])
+       ;(println val)
+       (println len)
+       (cond
+         [(string-contains? val "\n") (convet-trans-to-string (cdr lot)
+                                                          (string-append accum " " val)
+                                                          (+ len (string-length val)))]
+         [(> (string-length val) 9) (convet-trans-to-string (cdr lot)
+                                                            (string-append accum "\n" val "\n")
+                                                            0)]
+         [(> len 9) (println "here") (convet-trans-to-string (cdr lot)
+                                                             (string-append accum "," "\n" val)
+                                                             (string-length (string-trim val)))]
+         [(convet-trans-to-string (cdr lot)
+                                  str
+                                  (+ len (string-length val)))]))]))
 
 
 ;; determine-list-type: transition -> string
@@ -349,7 +369,7 @@ This file contains the fsm-graphviz library used to render the graph
                       (if (list? pop) (list->str pop "(") (convertEMP pop))
                       " "
                       (if (list? push) (list->str push "(") (convertEMP push))
-                      "]"
+                      "],"
                       "\n")]
       ;; tm and lang rec
       [(list
@@ -358,4 +378,4 @@ This file contains the fsm-graphviz library used to render the graph
                                    (convertEMP b)
                                    " "
                                    (convertEMP d)
-                                   "]\n")])))
+                                   "],\n")])))

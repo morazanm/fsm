@@ -154,7 +154,7 @@
 ;; z => a is is read
 ;; x => b is read
 ;; z => y is read
-
+|#
 
 (define a^nb^nc^n2 (make-tm '(S B C D E Y N)
                             '(a b c z x y)
@@ -202,7 +202,7 @@
                             '(Y N)
                             'Y))
 
-
+#|
 
 ;; gets the number of z's in the tape
 (define get-num-of-x (lambda (tape symbol)
@@ -494,7 +494,7 @@
                        (F b F))
                      'no-dead
                      ))
-
+#|
 (sm-visualize M (list 'S S-INV)
               (list 'A A-INV)
               (list 'B B-INV)
@@ -502,6 +502,47 @@
               (list 'D D-INV)
               (list 'E E-INV)
               (list 'F F-INV))
+
+|#
+(define M2 (make-ndfa
+           '(Q0 Q1 Q2 Q3 Q4 Q5 Q6 Q7)
+           '(a b c d e f g h i j k l m n o p q r s t u v w x y z)
+           'Q0
+           '(Q3 Q7)
+           `((Q0 a Q0)
+             (Q0 b Q0)
+             (Q0 c Q0)
+             (Q0 d Q0)
+             (Q0 e Q0)
+             (Q0 f Q0)
+             (Q0 g Q0)
+             (Q0 h Q0)
+             (Q0 i Q0)
+             (Q0 j Q0)
+             (Q0 k Q0)
+             (Q0 l Q0)
+             (Q0 m Q0)
+             (Q0 n Q0)
+             (Q0 o Q0)
+             (Q0 p Q0)
+             (Q0 q Q0)
+             (Q0 r Q0)
+             (Q0 s Q0)
+             (Q0 t Q0)
+             (Q0 u Q0)
+             (Q0 v Q0)
+             (Q0 w Q0)
+             (Q0 x Q0)
+             (Q0 y Q0)
+             (Q0 z Q0) 
+             (Q0 w Q1)
+             (Q1 f Q2)
+             (Q2 b Q3)
+             (Q0 f Q4)
+             (Q4 b Q5)
+             (Q5 a Q6)
+             (Q6 y Q7))
+           'no-dead))
 
 
 
