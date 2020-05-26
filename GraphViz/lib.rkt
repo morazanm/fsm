@@ -331,7 +331,7 @@ This file contains the fsm-graphviz library used to render the graph
   (letrec (;; convertEMP: symbol -> string
            ;; Purpose: converts 'e to ε
            (convertEMP (lambda (x)
-                         (if (equal? EMP x)
+                         (if (equal? "EMP" (symbol->string x))
                              "ε"
                              (symbol->string x)))))
     (match aList
