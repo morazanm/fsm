@@ -284,7 +284,8 @@ This file contains the fsm-graphviz library used to render the graph
   (let ((rel-path (build-path (current-directory) "vizTool.png")))
     (begin
       (render-graph g "vizTool.dot" #:scale scale #:rule rule)
-      (dot->png "vizTool.dot" "vizTool.png" #f))))
+      (dot->png "vizTool.dot" "vizTool.png" #f)
+      (bitmap/file rel-path))))
 
   
 

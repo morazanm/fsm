@@ -49,8 +49,8 @@
                     (if (or (member 'empty cur-rule) (member 'null cur-rule)) "$NULL" (rule-end))
                     "black")
       (if (or (member 'empty cur-rule) (member 'null cur-rule))
-          (graph->png g)
-          (graph->png g #:rule cur-rule))
-      (scaled-graph (bitmap "../../vizTool.png") MACHINE-TYPE))))
+          (scaled-graph (graph->png g) MACHINE-TYPE)
+          (scaled-graph (graph->png g #:rule cur-rule) MACHINE-TYPE)))))
+      ;(scaled-graph (bitmap/file (string-append (path->string (current-directory)) "vizTool.png")) MACHINE-TYPE))))
   
 
