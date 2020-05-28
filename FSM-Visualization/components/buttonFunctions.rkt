@@ -967,7 +967,7 @@ Created by Joshua Schappel on 12/19/19
 ;; EX: 'DEAD will become 'ds
 (define format-alpha (lambda (s)
                        (case s
-                         [(EMP) 'e]
+                         [(EMP) EMP]
                          [else s])))
 
 ;; format-input: symbol -> symbol

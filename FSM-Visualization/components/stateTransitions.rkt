@@ -85,14 +85,14 @@
            ;;   result of take is the empty list then 'e is returned instead
            (take* (lambda (num a-list)
                     (let ((t (take a-list num)))
-                      (if (empty? t) 'e t))))
+                      (if (empty? t) EMP t))))
 
            ;; determine-consumed: none -> symbol
            ;; Purpose: determins what the input is that is consumed
            (determin-consumed (lambda ()
                                 (cond
                                   ;; If both inputs are equal then nothing was consumed
-                                  [(equal? init-input next-input)'e]
+                                  [(equal? init-input next-input) EMP]
                                   [else (car init-input)])))
 
            ;; determin-pushed: none -> integer

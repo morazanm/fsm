@@ -536,13 +536,15 @@
              (Q0 y Q0)
              (Q0 z Q0) 
              (Q0 w Q1)
-             (Q1 f Q2)
+             (Q1 e Q2)
              (Q2 b Q3)
-             (Q0 f Q4)
+             (Q0 e Q4)
              (Q4 b Q5)
              (Q5 a Q6)
              (Q6 y Q7))
            'no-dead))
+
+(sm-visualize M2)
 
 
 
