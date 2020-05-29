@@ -6,7 +6,7 @@
 @(require (for-label racket))
 
 @title{FSM}
-@author[(author+email "Marco T. Morazán" "bob@racket-lang.org")]
+@author[(author+email "Marco T. Morazán" "marco.morazan@shu.edu")]
 A DSL for the Automata Theory Classroom
 
 
