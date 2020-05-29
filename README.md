@@ -143,7 +143,7 @@ To visualize a dfa or ndfa create a new file and require fsm. Then provide one o
 ## Future Additions
 - [X] Extend the visualization tool to work for pda's
 - [X] Extend the visualization tool to work for turing machines
-- [ ] Extend the visualization tool to give the user the option to view the graph represention of a machine
+- [X] Extend the visualization tool to give the user the option to view the graph represention of a machine
 - [ ] Upgrade the random testing extension
 
 ## Publications
