@@ -45,7 +45,7 @@ Once fsm is installed just require the module.
 In order to install GraphViz onto your computer and as an environment variable, check out this [link.](https://github.com/morazanm/fsm/tree/master/GraphViz)
 
 ## Basic Usage
-Below are some basic examples of how to use fsm. For a more in-depth guide please visit the [fsm documentation](https://htmlpreview.github.io/?https://github.com/morazanm/fsm/blob/master/doc/fsm/index.html).
+Below are some basic examples of how to use fsm. For a more in-depth guide please visit the [fsm documentation](https://htmlpreview.github.io/?https://github.com/morazanm/fsm/blob/master/doc/fsm.html).
 
 #### Building a DFA
 ```racket
