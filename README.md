@@ -20,7 +20,7 @@ A Library for the Automata Theory Classroom
  - Added scroll bars to input field for visualization tool
 
 ## Documentation
-The documentation can be found  [here](https://htmlpreview.github.io/?https://github.com/morazanm/fsm/blob/master/doc/fsm/index.html).
+The documentation can be found  [here](https://htmlpreview.github.io/?https://github.com/morazanm/fsm/blob/master/fsm.html).
 
 
 ## Installation
