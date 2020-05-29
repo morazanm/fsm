@@ -64,11 +64,11 @@ fsmGUIFunctions.rkt
 *.4
 
 #Racket Scrible Files
-./fsm.html
-./manual-fonts.css
-./manual-racket.css
-./manual-racket.js
-./manual-style.css
-./racket.css
-./scribble-common.js
-./scribble.css
+fsm.html
+manual-fonts.css
+manual-racket.css
+manual-racket.js
+manual-style.css
+racket.css
+scribble-common.js
+scribble.css
