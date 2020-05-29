@@ -615,11 +615,22 @@ Scene Rendering
                                                                                                                (create-gui-left
                                                                                                                 (machine-alpha-list machine)
                                                                                                                 (machine-type machine))) (/ (/ WIDTH 11) 2) (/ (- HEIGHT BOTTOM) 2) MAIN-SCENE))))))))
-    (cond [IS-GRAPH?   (draw-error-msg (world-error-msg w) (place-image (create-png
+    (cond [IS-GRAPH?   (begin
+                         ;;(rectangle 800 450 "solid" "green")
+                         #|
+
+(place-image (create-png
                                                                          machine
                                                                          (not (empty? (world-processed-config-list w)))
                                                                          (world-cur-state w)
-                                                                         (world-cur-rule w)) X0 Y0  no-arrow))] ;;graphviz here  
+                                                                         (world-cur-rule w)) X0 Y0  no-arrow)
+
+|#
+                         (draw-error-msg (world-error-msg w) (place-image (create-png
+                                                                         machine
+                                                                         (not (empty? (world-processed-config-list w)))
+                                                                         (world-cur-state w)
+                                                                         (world-cur-rule w)) X0 Y0  no-arrow)))] ;;graphviz here  
           [else (if (not (null? (world-cur-state w)))
                     (draw-error-msg (world-error-msg w)(draw-main-img w no-arrow))                                                                                                                   
                     (draw-error-msg (world-error-msg w) (draw-main-img w with-arrow)))])))

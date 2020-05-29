@@ -20,7 +20,11 @@ Created by Joshua Schappel on 12/19/19
 (define BOTTOM(/ HEIGHT 8)) ;; The height of the rule display box
 (define STACK-WIDTH 100) ;; The width of the control stack image for pdas
 (define TOP (/ HEIGHT 10)) ;; The height of the top input display box
-
+;; img scaling below
+(define h 450)
+(define w 800)
+(define h-pda 300)
+(define w-pda 600)
 
 ;; -- GUI COLORS --
 (define COLOR-BLIND-MODE false)
@@ -110,10 +114,7 @@ Created by Joshua Schappel on 12/19/19
                           'shape "circle")))
 
 
-(define h 400)
-(define w 700)
-(define h-pda 300)
-(define w-pda 600)
+
 
 
 
