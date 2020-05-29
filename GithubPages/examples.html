@@ -79,7 +79,7 @@
         <div class="row justify-content-center pb-5">
             <pre><code class="language-racket">(require fsm)
 
-; L(KLEENESTAR-abUaba) = (abUaba)*
+; L(KLEENESTAR-ab U aba) = (ab U aba)*
 (define KLEENESTAR-abUaba (make-ndfa '(Q-0 Q-1 Q-2 Q-3 Q-4 Q-5) ;the states
                                      '(a b)                     ;the alphabet
                                      'Q-0                       ;the starting state
@@ -156,12 +156,12 @@
 
 ;; 2)
 ;;    Use the visualization tool to view a pre-built machine
-(sm-visualize [machine])       
+(sm-visualize machine)       
 
 ;; 3)
 ;;    Use the visualization tool to view a pre-built machine, where states
 ;;     are associated with predicates
-(sm-visualize [machine] (list 'state [procedure])*)
+(sm-visualize machine [(list 'state procedure)*])
 </code></pre>
         </div>
         <div class="row justify-content-center">
@@ -180,7 +180,7 @@
 </div>
 <div class="row justify-content-center pb-5">
   <figure>
-  <img class="img-fluid ml-5" id="exampleImage" src="./Images/aStar.png"/>
+  <img class="img-fluid ml-5" id="exampleImage" src="./GithubPages/Images/aStar.png"/>
   <figcaption class=" text-muted text-center" id="caption" >Execution of a*a on the input: a b a b a</figcaption>
 </figure>
 </div>
@@ -208,7 +208,7 @@
                   (list 'ds DEAD-INV))</code></pre></div>
                   <div class="row justify-content-center pb-5">
                     <figure>
-                    <img class="img-fluid ml-5" id="exampleImage" src="./Images/aStarInv.png"/>
+                    <img class="img-fluid ml-5" id="exampleImage" src="./GithubPages/Images/aStarInv.png"/>
                     <figcaption class=" text-muted text-center" id="caption" >Execution of a*a on the input: a b a b a, with invariants visualized</figcaption>
                   </figure>
                   </div>
