@@ -2,6 +2,9 @@
 ##### FSM Library Version 1.4
 A Library for the Automata Theory Classroom
 
+
+## Checkout the [FSM Website](https://morazanm.github.io/fsm/)
+
 ## Version History
 ### 1.5
 - Fixed bug for show-transitions for Turing machines
@@ -20,7 +23,7 @@ A Library for the Automata Theory Classroom
  - Added scroll bars to input field for visualization tool
 
 ## Documentation
-The documentation can be found  [here](https://htmlpreview.github.io/?https://github.com/morazanm/fsm/blob/master/doc/fsm.html).
+The documentation can be found  [here](https://htmlpreview.github.io/?https://github.com/morazanm/fsm/blob/master/fsm.html).
 
 
 ## Installation
@@ -45,7 +48,7 @@ Once fsm is installed just require the module.
 In order to install GraphViz onto your computer and as an environment variable, check out this [link.](https://github.com/morazanm/fsm/tree/master/GraphViz)
 
 ## Basic Usage
-Below are some basic examples of how to use fsm. For a more in-depth guide please visit the [fsm documentation](https://htmlpreview.github.io/?https://github.com/morazanm/fsm/blob/master/doc/fsm.html).
+Below are some basic examples of how to use fsm. For a more in-depth guide please visit the [fsm documentation](https://htmlpreview.github.io/?https://github.com/morazanm/fsm/blob/master/fsm.html).
 
 #### Building a DFA
 ```racket
