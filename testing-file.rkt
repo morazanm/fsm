@@ -9,7 +9,8 @@
                      '(F)       ;; the set of final states
                      '((S a F)  ;; the transition functions
                        (F a F)
-                       (F b F))))
+                       (F b F))
+                     'nodead))
 
 ;;(sm-visualize a* (list 'S (lambda (v) true))
 ;;            (list 'F (lambda (v) false)))

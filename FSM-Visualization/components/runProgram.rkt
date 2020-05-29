@@ -43,11 +43,18 @@ Created by Joshua Schappel on 12/19/19
      (letrec (
               ;; Build a passing machine
               (m (case (machine-type fsm-machine)
-                   ['dfa (make-unchecked-dfa state-list
-                                             (machine-alpha-list (world-fsm-machine w))
-                                             (machine-start-state (world-fsm-machine w))
-                                             (machine-final-state-list (world-fsm-machine w))
-                                             (machine-rule-list (world-fsm-machine w)))]
+                   ['dfa (if (member 'ds state-list)
+                             (make-unchecked-dfa state-list
+                                                 (machine-alpha-list (world-fsm-machine w))
+                                                 (machine-start-state (world-fsm-machine w))
+                                                 (machine-final-state-list (world-fsm-machine w))
+                                                 (machine-rule-list (world-fsm-machine w)))
+                             (make-unchecked-dfa state-list
+                                                 (machine-alpha-list (world-fsm-machine w))
+                                                 (machine-start-state (world-fsm-machine w))
+                                                 (machine-final-state-list (world-fsm-machine w))
+                                                 (machine-rule-list (world-fsm-machine w))
+                                                 'nodead))]
                    ['ndfa (make-unchecked-ndfa state-list
                                                (machine-alpha-list (world-fsm-machine w))
                                                (machine-start-state (world-fsm-machine w))
