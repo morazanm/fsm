@@ -2,6 +2,9 @@
 ##### FSM Library Version 1.4
 A Library for the Automata Theory Classroom
 
+
+## Checkout the [FSM Website](https://morazanm.github.io/fsm/)
+
 ## Version History
 ### 1.5
 - Fixed bug for show-transitions for Turing machines
