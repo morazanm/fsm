@@ -1,0 +1,126 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>FSM</title>
+    <meta name="description" content="The FSM Library">
+    <meta name="author" content="SitePoint">
+    <link rel="shortcut icon" href="./favicon.ico" type="image/x-icon">
+    <link rel="icon" href="./favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="./prism.css" data-noprefix />
+    <script src="scripts/prefixfree.min.js"></script>
+    <link rel="stylesheet" href="./index.css">
+    <link rel="stylesheet" href="./font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-sm navbar-dark bg-dark">
+        <a class="navbar-brand">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Racket-logo.svg/1200px-Racket-logo.svg.png" width="30" height="30" alt="" loading="lazy">
+        </a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+          <div class="navbar-nav">
+            <a class="nav-item nav-link" href="../index.html">Home <i class="fa fa-home" aria-hidden="true"></i></a>
+            <a class="nav-item nav-link" href="./examples.html">Examples <i class="fa fa-code" aria-hidden="true"></i></a>
+            <a class="nav-item nav-link" href="https://htmlpreview.github.io/?https://github.com/morazanm/fsm/blob/master/doc/fsm/index.html">
+                Documentation <i class="fa fa-file-text-o" aria-hidden="true"></i></a>
+            <a class="nav-item nav-link active" href="./download.html">Download <i class="fa fa-download" aria-hidden="true"></i> <span class="sr-only">(current)</span></a>
+          </div>
+        </div>
+        <div class="collapse navbar-collapse">
+            <div class="navbar-nav ml-auto">
+              <a class="nav-item nav-link" href="https://github.com/morazanm/fsm/issues/new?assignees=morazanm%2C+jschappel%2C+sachinmahashabde&labels=bug&template=bug_report.md&title=%5BBUG%5D">
+                Report <i class="fa fa-bug" aria-hidden="true"></i></a>
+              <a class="nav-item nav-link" href="https://github.com/morazanm/fsm"><i class="fa fa-github" aria-hidden="true"></i></a>
+            </div>
+          </div>
+      </nav>
+
+    <div class="jumbotron jumbotron-fluid">
+        <div class="container">
+            <h1 class="display-4">How to Download</h1>
+            <p class="lead">Below you can find instructions on how to download.</p>
+        </div>
+    </div>
+        <nav class="nav justify-content-center">
+            <a class="nav-link active" href="#raco">Raco</a>
+            <a class="nav-link" href="#drracket">DrRacket</a>
+            <a class="nav-link" href="#graphviz">Graphviz</a>
+            <a class="nav-link" href="#path">Graphviz Path</a>
+        </nav>
+        <hr class="mb-4"/>
+    
+        <div class="container">
+        <div class="row ml-3">
+            <h5 id="raco">Using Raco</h5>
+        </div>
+        <div class="row ml-3">
+            <pre><code class="language-powershell">raco pkg install https://github.com/morazanm/fsm.git</code></pre>
+        </div>  
+        <div class="row mt-4 ml-3">
+            <h5 id="drracket">Using DrRacket Package Manager</h5>
+        </div>
+        <div class="row" id="image-size">
+            <img class="img-fluid ml-5" src="./install.gif" />
+        </div>
+
+        <div class="row mt-4 ml-3">
+            <h6>Instructions: </h6>
+        </div>
+        <div class="row mt-4 ml-3">
+            <ol>
+                <li>File->PackageManager</li>
+                <li>Under Package Source paste the following: https://github.com/morazanm/fsm.git</li>
+                <li>Click Install</li>
+                <li>Wait for installation</li>
+            </ol>
+        </div>
+
+        <div class="row mt-4 ml-3">
+            <h5 id="graphviz">Graphviz Installation</h5>
+        </div>
+        <div class="row mt-4 ml-3">
+            <ol>
+                <li>Download the appropriate <a href="https://graphviz.gitlab.io/download/">stable version.</a></li>
+                <li>Open the installer and follow the installation instructions</li>
+            </ol>
+        </div>
+
+        <div class="row mt-4 ml-3">
+            <h5 id="path">Adding Graphviz as an Environment Variable (Windows Only)</h5>
+        </div>
+        <div class="row mt-4 ml-3">
+            <ol>
+                <li>In the bottom left of the screen type environment in the search bar</li>
+                <li>Click on "Edit the system environment variables"</li>
+                <li>In the Advanced tab click the Environment Variables button</li>
+                <li>Click on PATH so that it is highlighted, then click Edit</li>
+                <li>Then click New and add the location to where you installed graphviz</li>
+                <ul>
+                    <li id="important">Make sure to highlight the /bin folder inside of the graphviz folder!</li>
+                </ul>
+                <li>Press OK</li>
+                <li>
+                    <pre><code class="language-powershell">C:\> dot -V</code></pre>
+                </li>
+            </ol>
+        </div>
+    </div>
+
+    <script src="prism.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js" integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI" crossorigin="anonymous"></script>
+    <script src="js/scripts.js"></script>
+</body>
+
+<footer>
+    <hr />
+      <p class="ml-2">Syntax highlighting courtesy of: <a href="http://www.prismjs.com">prismjs.com</a></p>
+</footer>
+</html>
