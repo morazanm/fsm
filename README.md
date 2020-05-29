@@ -3,6 +3,11 @@
 A Library for the Automata Theory Classroom
 
 ## Version History
+### 1.5
+- Fixed bug for show-transitions for Turing machines
+- Fixed bug in rename-states
+- Fixed bug in consume in tm.rkt for Language Recognizers
+- Fixed rename states for Turing machines and Language Recognizers 
 ### 1.4: 
  - Added sm-graph 
  - Added colorblind mode to sm-graph 
