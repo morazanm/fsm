@@ -469,7 +469,7 @@
 (define (C-INV ci)
   (and (>= (length ci) 1) (andmap (λ (s) (eq? s 'a)) ci)))
 
-(define (D-INV ci) (empty? ci))
+(define (D-INV ci) "Josh")
 
 (define (E-INV ci)
   (and (= (length ci) 1) (eq? (first ci) 'a)))
@@ -495,7 +495,7 @@
                        (F b F))
                      'no-dead
                      ))
-#|
+
 (sm-visualize M (list 'S S-INV)
               (list 'A A-INV)
               (list 'B B-INV)
@@ -504,7 +504,7 @@
               (list 'E E-INV)
               (list 'F F-INV))
 
-|#
+
 (define ONE-MISSING
   (make-dfa '(S A B C D E F)
             '(a b c)
@@ -529,7 +529,7 @@
               (F b F)
               (F c F))))
 
-(sm-visualize a^nb^nc^n2)
+;;(sm-visualize a* (list 'S (lambda(v) #t)) (list 'F (lambda(v) 5)))
 
 
 

@@ -43,6 +43,9 @@ Created by Joshua Schappel on 12/19/19
 (define TRUE-INV-HEX "#00ab037F")
 (define TRUE-INV-CB (make-color 1 133 113)) ;; Color for passed invarant for color blind mode
 (define TRUE-INV-CB-HEX "#0185717F")
+(define CAUTION-INV (make-color 255 234 3)) ;; Color for a invalid invariant return 
+(define CAUTION-INV-HEX "#ffea037F")
+
 
 (define FALSE-INV (make-color 245 35 20)) ;; Color for failed invariant (red)
 (define FALSE-INV-HEX "#f523147F")
@@ -67,12 +70,15 @@ Created by Joshua Schappel on 12/19/19
 
 
 ;; -- OTHER --
-(define TRUE-FUNCTION (lambda (v) '())) ;; The default function for a state variable
-(define PDA-TRUE-FUNCTION (lambda (v c) '())) ;; The default function for a state variable
-(define TM-TRUE-FUNCTION (lambda (v c) '()))  ;; The default function for a state variable
+(define PLACEHOLDER '$k$) ;; default return value for a inv function. 
+(define TRUE-FUNCTION (lambda (v) PLACEHOLDER)) ;; The default function for a state variable
+(define PDA-TRUE-FUNCTION (lambda (v c) PLACEHOLDER)) ;; The default function for a state variable
+(define TM-TRUE-FUNCTION (lambda (v c) PLACEHOLDER))  ;; The default function for a state variable
 (define MACHINE-TYPE null) ;; The type of machine (pda, ndfa, ..)
 (define TM-ORIGIONAL-TAPE '()) ;; set-tm-og-tape
 (define TM-ORIGIONAL-TAPE-POSN 0) ;; the initial tape position set by the user. Defualts to 0
+
+
 
 ;; -- MUTATORS --
 (define CURRENT-RULE '(null null null)) ;; The current rule that the machine is following
