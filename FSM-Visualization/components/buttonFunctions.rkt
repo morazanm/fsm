@@ -454,9 +454,13 @@ Created by Joshua Schappel on 12/19/19
                        [(equal? input-value "") (redraw-world w)]
                        [(> (string-length input-value) 0)
 
+                        ;; Turing machines can edit the tape. If the user presses the run button mid machine we want to rerun tha machine with the correct tape,
+                        ;;  so we will save the tape as a global that will only be assecced by runProgram.rkt of TM's
+                        (begin
+                          (set-tm-og-tape (append (machine-sigma-list (world-fsm-machine w)) sigma-list))
                         ;; Check if the unprocessed list and processed lists are empty... If they are we know run code was never pressed
                         ;; If they are not empty then run code was pressed. If run code was pressed then we know to update the gui to handle to new sigma
-                        ;; so we will call run code from here.
+                        ;; so we will reset the gui.
                         (cond
                           [(empty? (and (world-unporcessed-config-list w) (world-processed-config-list w)))
                            (begin
@@ -467,7 +471,7 @@ Created by Joshua Schappel on 12/19/19
                            (begin
                              (reset-bottom-indices)
                              (set-machine-sigma-list! (world-fsm-machine w) (append (machine-sigma-list (world-fsm-machine w)) sigma-list))
-                             (create-new-world-input-empty w new-input-list))])]
+                             (create-new-world-input-empty w new-input-list))]))]
                        [else (redraw-world w)]))))
 
 
@@ -828,6 +832,7 @@ Created by Joshua Schappel on 12/19/19
                           [else
                            (begin
                              (reset-bottom-indices)
+                             (set-tm-og-tape-posn (string->number input-value))
                              (set-tm-machine-tape-posn! (world-fsm-machine w) (string->number input-value))
                              (create-new-world-input-empty w new-input-list))]))))
 
@@ -928,7 +933,7 @@ Created by Joshua Schappel on 12/19/19
 ;; oppenHelp; world -> world
 ;; Purpose: opens the help link in an external browser window
 (define openHelp (lambda (w)
-                   (send-url "https://htmlpreview.github.io/?https://github.com/morazanm/fsm/blob/master/doc/fsm/index.html" #t)
+                   (send-url "https://morazanm.github.io/fsm/index.html" #t)
                    (redraw-world w)))
 
 

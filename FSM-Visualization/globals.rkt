@@ -67,7 +67,8 @@ Created by Joshua Schappel on 12/19/19
 (define PDA-TRUE-FUNCTION (lambda (v c) '())) ;; The default function for a state variable
 (define TM-TRUE-FUNCTION (lambda (v c) '()))  ;; The default function for a state variable
 (define MACHINE-TYPE null) ;; The type of machine (pda, ndfa, ..)
-
+(define TM-ORIGIONAL-TAPE '()) ;; set-tm-og-tape
+(define TM-ORIGIONAL-TAPE-POSN 0) ;; the initial tape position set by the user. Defualts to 0
 
 ;; -- MUTATORS --
 (define CURRENT-RULE '(null null null)) ;; The current rule that the machine is following
@@ -153,6 +154,13 @@ Created by Joshua Schappel on 12/19/19
 ;; -- SETTERS --
 (define (set-tape-index-bottom value)
   (set! TAPE-INDEX-BOTTOM value))
+
+(define (set-tm-og-tape tape)
+  (set! TM-ORIGIONAL-TAPE tape))
+
+(define (set-tm-og-tape-posn posn)
+  (println posn)
+  (set! TM-ORIGIONAL-TAPE-POSN posn))
 
 (define (set-init-index-bottom value)
   (set! INIT-INDEX-BOTTOM value))
