@@ -11,6 +11,9 @@
                       0
                       1)])
     (cond
+      [(and (< (image-width img) (if (eq? 'pda type) (/ w-pda 2)(/ w 2)))
+            (< (image-height img) (if (eq? 'pda type) (/ h-pda 2)(/ h 2))))
+       (scale 1.3 img)]
       [(eq? smallest 0)  (if (equal? type 'pda)
                              (scale (/ h-pda (image-height img)) img)
                              (scale (/ h (image-height img)) img))]
