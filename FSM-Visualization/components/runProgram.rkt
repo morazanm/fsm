@@ -1,7 +1,7 @@
 #lang racket
 #|
 Created by Joshua Schappel on 12/19/19
-  This fild contains the runPorgam function. That checks a given machine and determins if the program should run
+  This field contains the runPorgam function. That checks a given machine and determines if the program should run
 |#
 
 
@@ -12,7 +12,7 @@ Created by Joshua Schappel on 12/19/19
 (provide runProgram)
 
 ;; runProgram: world -> world
-;; Purpose: Determins if there are any unfilled in fields. If there are not any then the machine is constructed in fsm
+;; Purpose: Determines if there are any unfilled in fields. If there are not any then the machine is constructed in fsm
 (define runProgram(lambda (w)
                     (let* (
                            ;; The world fsm-machine
@@ -138,7 +138,7 @@ Created by Joshua Schappel on 12/19/19
 
 
 ;; isValidMachine?: list-of-states machine -> boolean
-;; Purpose: Determins if the given input is a valid machine
+;; Purpose: Determines if the given input is a valid machine
 ;;     The machine is valid if check-machine returns a boolean 
 (define (isValidMachine? state-list fsm-machine)
   (case MACHINE-TYPE
@@ -181,7 +181,7 @@ Created by Joshua Schappel on 12/19/19
 
 
 ;; constructworldMachine: list-of-states sigma-list machine -> machine/pda-machine
-;; Purpose: cunstructs the proper machine based on the type needed
+;; Purpose: constructs the proper machine based on the type needed
 (define (constructWorldMachine state-list worldMachine newMachine)
   (case MACHINE-TYPE
     [(pda)
