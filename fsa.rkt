@@ -123,7 +123,7 @@
                             [else (raise-arguments-error 'Unkown-request
                                                          "The machine does not understand"
                                                          "Request" (car l))]))])))
-    (concrete-ndfsa (if (null? adddead) (cons DEAD states) states)
+    (concrete-ndfsa states
                     sigma
                     start
                     finals

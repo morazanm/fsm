@@ -15,7 +15,8 @@ This file contains the fsm-graphviz library used to render the graph
          add-edge
          render-graph
          dot->png
-         graph->bitmap)
+         graph->bitmap
+         graph->png)
 
 
 ;; Constants 
@@ -34,6 +35,7 @@ This file contains the fsm-graphviz library used to render the graph
 (define DEFAULT-NODE (hash
                       'color "black"
                       'shape "circle"))
+(define RULE-LIMIT 5)
 
 
 #| ----IMPORTANT VALUES----
@@ -181,7 +183,7 @@ This file contains the fsm-graphviz library used to render the graph
 
 ;; render-graph: graph string -> NONE
 ;; Purpose: writes graph to the specified file
-(define (render-graph graph path #:scale [scale #f])
+(define (render-graph graph path #:scale [scale #f] #:rule [rule #f])
   (call-with-output-file path
     #:exists 'replace
     (lambda (out)
@@ -193,6 +195,17 @@ This file contains the fsm-graphviz library used to render the graph
       (render-nodes (graph-node-list graph) out)
       (render-edges (graph-edge-list graph) out)
       (displayln "}" out))))
+
+
+;; NO LONGER USED!!!
+;; render-header rule out-port
+;; Purpose: renders the current rule in the top right
+(define (render-header cur-rule stdout)
+  (displayln "labelloc=\"t\";" stdout)
+  (displayln "labeljust=\"r\";" stdout)
+  (displayln (format "label=\"Rule: ~s\";" cur-rule) stdout)
+  (displayln "fontcolor=\"blue\";" stdout))
+  
 
 
 ;; render-nodes list-of-nodes write-buffer -> NONE
@@ -239,15 +252,19 @@ This file contains the fsm-graphviz library used to render the graph
   (string->symbol (string-replace (symbol->string s) "-" "")))
 
 
-;; dot->png: stirng string-> NONE
+;; dot->png: stirng string boolean-> NONE
 ;; Purpose: converts a dot file to a png. The png files is saved in
 ;;   this directory
-(define (dot->png path png-name)
-  (if (system "dot -V")
+(define (dot->png path png-name check)
+  (if check
+      (if (system "dot -V")
+          (begin
+            (system (format "dot -Tpng ~s -o ~s" path png-name))
+            (void))
+          (error "\nError:\nPlease add graphviz as an enviroment variable. Instructions can be found at:\n   https://github.com/morazanm/fsm/tree/master/GraphViz\n\n"))
       (begin
         (system (format "dot -Tpng ~s -o ~s" path png-name))
-        (void))
-      (error "\nError:\nPlease add graphviz as an enviroment variable. Instructions can be found at:\n   https://github.com/morazanm/fsm/tree/master/GraphViz\n\n")))
+        (void))))
 
 
 ;; graph->bitmap: graph string string boolean -> image
@@ -258,7 +275,16 @@ This file contains the fsm-graphviz library used to render the graph
       (println rel-path)
       (println (path-string? rel-path))
       (render-graph g "graph.dot" #:scale scale)
-      (dot->png "graph.dot" "graph.png")
+      (dot->png "graph.dot" "graph.png" #t)
+      (bitmap/file rel-path))))
+
+;; graph->png: graph number rule -> NONE
+;; Converts a graph to a png file stored at the root directory of fsm
+(define (graph->png g #:scale [scale #f] #:rule [rule #f])
+  (let ((rel-path (build-path (current-directory) "vizTool.png")))
+    (begin
+      (render-graph g "vizTool.dot" #:scale scale #:rule rule)
+      (dot->png "vizTool.dot" "vizTool.png" #f)
       (bitmap/file rel-path))))
 
   
@@ -272,7 +298,7 @@ This file contains the fsm-graphviz library used to render the graph
            (key-val->string (lambda (pair)
                               (cond
                                 [(and (list? (cdr pair)) (equal? (car pair) 'label))
-                                 (format "~s=~s" (car pair) (convet-trans-to-string (cdr pair) "" ))]
+                                 (format "~s=~s" (car pair) (convet-trans-to-string (cdr pair) "" 0))]
                                 [else
                                  (format "~s=~s" (car pair) (cdr pair))])))
 
@@ -291,14 +317,33 @@ This file contains the fsm-graphviz library used to render the graph
     (iterate-hash first-posn "")))
 
 
-;; convet-trans-to-string: (listOf transitions) string -> string
+;; convet-trans-to-string: (listOf transitions) string int -> string
 ;; Purpose: Converts a list of transitions into a graphviz string
-(define (convet-trans-to-string lot accum)
+(define (convet-trans-to-string lot accum len)
   (cond
     [(empty? lot) (string-trim accum)]
     [else
-     (convet-trans-to-string (cdr lot)
-                             (string-append accum " " (determine-list-type (car lot))))]))
+     (let* ([val (determine-list-type (car lot))]
+            [str (cond
+                   [(and (not (equal? "" accum))
+                         (empty? (cdr lot))) (string-append accum ", " val)]
+                   [(or (equal? "" accum)
+                        (empty? (cdr lot))) (string-append accum " " val)]
+                   [else (string-append accum ", " val)])])
+       ;(println val)
+       (cond
+         [(string-contains? val "\n") (convet-trans-to-string (cdr lot)
+                                                          (string-append accum " " val)
+                                                          (+ len (string-length val)))]
+         [(> (string-length val) RULE-LIMIT) (convet-trans-to-string (cdr lot)
+                                                            (string-append accum "\n" val "\n")
+                                                            0)]
+         [(> len RULE-LIMIT) (convet-trans-to-string (cdr lot)
+                                                             (string-append accum "," "\n" val)
+                                                             (string-length (string-trim val)))]
+         [(convet-trans-to-string (cdr lot)
+                                  str
+                                  (+ len (string-length val)))]))]))
 
 
 ;; determine-list-type: transition -> string
@@ -327,7 +372,7 @@ This file contains the fsm-graphviz library used to render the graph
                       (if (list? pop) (list->str pop "(") (convertEMP pop))
                       " "
                       (if (list? push) (list->str push "(") (convertEMP push))
-                      "]"
+                      "],"
                       "\n")]
       ;; tm and lang rec
       [(list
@@ -336,4 +381,4 @@ This file contains the fsm-graphviz library used to render the graph
                                    (convertEMP b)
                                    " "
                                    (convertEMP d)
-                                   "]\n")])))
+                                   "],\n")])))

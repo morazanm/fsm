@@ -1,8 +1,20 @@
 # FSM
-##### FSM Library Version 1.3
+##### FSM Library Version 1.4
 A Library for the Automata Theory Classroom
 
+
+## Checkout the [FSM Website](https://morazanm.github.io/fsm/)
+
 ## Version History
+### 1.5
+- Fixed bug for show-transitions for Turing machines
+- Fixed bug in rename-states
+- Fixed bug in consume in tm.rkt for Language Recognizers
+- Fixed rename states for Turing machines and Language Recognizers 
+### 1.4: 
+ - Added sm-graph 
+ - Added colorblind mode to sm-graph 
+ - Minor graphical changes to the visualization tool (new color :blush:)
 ### 1.3:
  - Added Turing Machine support to visualization tool
  - Minor bug fixes with the visualization tool
@@ -11,7 +23,7 @@ A Library for the Automata Theory Classroom
  - Added scroll bars to input field for visualization tool
 
 ## Documentation
-The documemtation can be found  [here](https://htmlpreview.github.io/?https://github.com/morazanm/fsm/blob/master/doc/fsm/index.html).
+The documentation can be found  [here](https://htmlpreview.github.io/?https://github.com/morazanm/fsm/blob/master/fsm.html).
 
 
 ## Installation
@@ -36,7 +48,7 @@ Once fsm is installed just require the module.
 In order to install GraphViz onto your computer and as an environment variable, check out this [link.](https://github.com/morazanm/fsm/tree/master/GraphViz)
 
 ## Basic Usage
-Below are some basic examples of how to use fsm. For a more in-depth guide please visit the [fsm documentation](https://htmlpreview.github.io/?https://github.com/morazanm/fsm/blob/master/doc/fsm/index.html).
+Below are some basic examples of how to use fsm. For a more in-depth guide please visit the [fsm documentation](https://htmlpreview.github.io/?https://github.com/morazanm/fsm/blob/master/fsm.html).
 
 #### Building a DFA
 ```racket
@@ -131,7 +143,7 @@ To visualize a dfa or ndfa create a new file and require fsm. Then provide one o
 ## Future Additions
 - [X] Extend the visualization tool to work for pda's
 - [X] Extend the visualization tool to work for turing machines
-- [ ] Extend the visualization tool to give the user the option to view the graph represention of a machine
+- [X] Extend the visualization tool to give the user the option to view the graph represention of a machine
 - [ ] Upgrade the random testing extension
 
 ## Publications

@@ -41,15 +41,19 @@
   (define (tm-rename-states sts m)
     (let* (
            (rename-table (map (lambda (s) (list s (generate-symbol s sts)))
-                              sts))
-           (new-states (map (lambda (s) (cadr (assoc s rename-table))) sts))
+                              (tm-getstates m)))
+           (new-states (map (lambda (s) (cadr (assoc s rename-table)))
+                            (tm-getstates m)))
            (new-start (cadr (assoc (tm-getstart m) rename-table)))
-           (new-finals (map (lambda (s) (cadr (assoc s rename-table))) (tm-getfinals m)))
+           (new-finals (map (lambda (s) (cadr (assoc s rename-table)))
+                            (tm-getfinals m)))
            (new-rules (filter (lambda (rl) (not (eq? (cadar rl) LM))) 
                               (map (lambda (r) (list 
-                                                (list (cadr (assoc (tmrule-froms r) rename-table)) (tmrule-read r))
-                                                (list (cadr (assoc (tmrule-tos r) rename-table)) (tmrule-action r))))
-                                   (tm-getrules m)))))
+                                                (list (cadr (assoc (tmrule-froms r) rename-table))
+                                                      (tmrule-read r))
+                                                (list (cadr (assoc (tmrule-tos r) rename-table))
+                                                      (tmrule-action r))))
+                                   (tm-getdelta m)))))
       (make-unchecked-tm new-states (tm-getalphabet m) 
                          new-rules 
                          new-start 
@@ -223,7 +227,7 @@
       (map (lambda (r) (tmrule (caar r) (cadar r) (caadr r) (cadadr r))) rls))
     
     ; (listof state) (listof symbol) (listof tmrule) state (listof state) --> tm
-    (define (mk-tm K SIGMA delta s H)
+    (define (mk-tm K SIGMA delta s H . accept)
       
       ; tmconfig (listof tmrule) --> (listof tmconfig)
       (define (gen-newtm-configs c rls)
@@ -249,7 +253,15 @@
       ; (listof tmconfig) (list (listof tmconfig)) --> (listof tmconfig) 
       (define (consume visited tovisit)
         (cond [(null? tovisit) tovisit]
-              [(member (tmconfig-state (caar tovisit)) H) (car tovisit)]
+              [(and (not (null? accept)) ; the TM is a language recognizer & reached accept
+                    (eq? (car accept) (tmconfig-state (caar tovisit))))
+               (car tovisit)]
+              [(and (not (null? accept)) ; the TM is a language recognizer & reached reject
+                    (member (tmconfig-state (caar tovisit)) H))
+               (consume visited (cdr tovisit))]
+              [(and (null? accept)
+                    (member (tmconfig-state (caar tovisit)) H))
+               (car tovisit)]
               [else (let* ((path (car tovisit))
                            (config (car path))
                            (st (tmconfig-state config))
@@ -268,18 +280,23 @@
         (cond [(eq? w 'whatami) (if (null? accept) 'tm 'tm-language-recognizer)]
               [(empty? L) 
                (let* ((res (consume '() (list (list (tmconfig s i w)))))) ; res = (listof tmconfig)
-                 (cond [(null? res) "Failed computation: did not reach a halting state. Check your transition rules."]
+                 (cond [(and (not (null? accept)) (null? res))
+                        'reject]
+                       [(null? res) "Failed computation: did not reach a halting state. Check your transition rules."]
                        [else (cond [(null? accept) (list 'Halt: (tmconfig-state (car res)))]
                                    [(eq? (car accept) (tmconfig-state (car res))) 'accept]
                                    [else 'reject])]))]
               [(eq? (car L) 'transitions) 
                (let ((res (consume '() (list (list (tmconfig s i w))))))
-                 (cond [(null? res) "Failed computation: did not reach a halting state. Check your transition rules."]
+                 (cond [(and (not (null? accept)) (null? res))
+                        'reject]
+                       [(null? res) "Failed computation: did not reach a halting state. Check your transition rules."]
                        [else (reverse (map unparse-tmconfig res))]))]
               [(eq? (car L) 'lastconfig)
                (let ((res (consume '() (list (list (tmconfig s i w)))))) ; res = (listof tmconfig)
                  (cond [(null? res) "Failed computation: did not reach a halting state. Check your transition rules."]
                        [else (car res)]))]
+              [(eq? (car L) 'get-delta) delta] ; parsed rules
               [(eq? (car L) 'get-rules) (unparse-tmrules delta)] ;;; NEED TO UNPARSE THE RULES!!!!
               [(eq? (car L) 'get-states) K]
               [(eq? (car L) 'get-alphabet) SIGMA]
@@ -287,21 +304,34 @@
               [(eq? (car L) 'get-finals) H]
               [(eq? (car L) 'get-accept) (if (null? accept) null (car accept))]
               [else (error (format "Unknown request to tm: ~s" (car L)))])))
-    (mk-tm K
-           (remove-duplicates (cons LM SIGMA))
-           (remove-duplicates
-            (parse-tm-rules (append (map (lambda (s) (list (list s LM) (list s RIGHT))) K)
-                                    delta)))
-           s
-           H))
+    (if (null? accept)
+        (mk-tm K
+               (remove-duplicates (cons LM SIGMA))
+               (remove-duplicates
+                (parse-tm-rules (append (map (lambda (s) (list (list s LM) (list s RIGHT)))
+                                             (remove* H K))
+                                        delta)))
+               s
+               H)
+        (mk-tm K
+               (remove-duplicates (cons LM SIGMA))
+               (remove-duplicates
+                (parse-tm-rules (append (map (lambda (s) (list (list s LM) (list s RIGHT)))
+                                             (remove* H K))
+                                        delta)))
+               s
+               H
+               (car accept))))
   
   (define (tm-getalphabet m) (m '() 0 'get-alphabet)) 
   
   (define (tm-getstates m) (m '() 0 'get-states))
   
   (define (tm-getfinals m) (m '() 0 'get-finals))
+
+  (define (tm-getdelta m) (m '() 0 'get-delta)) ;;; parsed rules
   
-  (define (tm-getrules m) (m '() 0 'get-rules))
+  (define (tm-getrules m) (m '() 0 'get-rules))  ;;; unparsed rules
   
   (define (tm-getstart m) (m '() 0 'get-start))
   
@@ -319,9 +349,14 @@
   (define (tm-test m . l)
     (define number-tests (if (null? l) NUM-TESTS (car l)))
     
-    (let ((test-words (cons `(,BLANK) 
-                            (filter (lambda (w) (not (null? w))) (generate-words number-tests (tm-getalphabet m) null))))) 
-      (map (lambda (w) (list w (tm-apply m w 0))) test-words)))
+    (let ((test-words
+           (map (λ (w) (cons LM w))
+                (cons `(,BLANK) 
+                      (filter (lambda (w) (not (null? w)))
+                              (generate-words number-tests
+                                              (remove LM (tm-getalphabet m))
+                                              null))))))
+      (map (lambda (w) (list w (tm-apply m w 1))) test-words)))
   
   #| 
    A combined TM description, ctm, is either:

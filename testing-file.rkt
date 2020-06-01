@@ -1,8 +1,6 @@
 #lang racket
 
 (require "main.rkt")
-(require racket/stream)
-
 
 ;;---- DFA ----
 (define a* (make-dfa '(S F)     ;; the states
@@ -11,8 +9,24 @@
                      '(F)       ;; the set of final states
                      '((S a F)  ;; the transition functions
                        (F a F)
-                       (F b F))))
+                       (F b F))
+                     'nodead))
 
+;;(sm-visualize a* (list 'S (lambda (v) true))
+;;            (list 'F (lambda (v) false)))
+
+(define pda-numa=numb (make-ndpda '(S M F)
+                                  '(a b)
+                                  '(a b)
+                                  'S
+                                  '(F)
+                                  `(((S ,EMP ,EMP) (M ,EMP))
+                                    ((M ,EMP ,EMP) (F ,EMP))
+                                    ((M a ,EMP) (M (a)))
+                                    ((M b ,EMP) (M (b)))
+                                    ((M a (b)) (M ,EMP))
+                                    ((M b (a)) (M ,EMP)))))
+#|
 ;;---- NDFA ----
 ;; valid input: aaabbb 
 (define P (make-ndpda '(S F)
@@ -141,6 +155,8 @@
 ;; z => a is is read
 ;; x => b is read
 ;; z => y is read
+|#
+
 (define a^nb^nc^n2 (make-tm '(S B C D E Y N)
                             '(a b c z x y)
                             `(((S a) (B z))
@@ -187,8 +203,7 @@
                             '(Y N)
                             'Y))
 
-
-
+#|
 
 ;; gets the number of z's in the tape
 (define get-num-of-x (lambda (tape symbol)
@@ -244,7 +259,7 @@
                       
                         (implies (equal? (list-ref tape posn) BLANK)
                                  (equal? tape `(,LM ,BLANK))))))))
-                     
+
 
 ;; the number of z's is one bigger then number of x's and number of y's
 (define B-INV (lambda (tape posn)
@@ -291,9 +306,15 @@
                    (= (modulo (length list-of-xyz) 3) 0)))))
 
 
+ (sm-visualize a^nb^nc^n2 (list 'S S-INV)
+               (list 'B B-INV)
+               (list 'C C-INV)
+               (list 'D D-INV)
+               (list 'E E-INV)
+               (list 'N N-INV)
+               (list 'Y Y-INV))
 
-
-
+|#
 (define LB (make-tm '(S H)
                     `(a b)
                     `(((S a) (S ,LEFT))
@@ -304,9 +325,211 @@
 
 
 
+;(sm-visualize a*)
+;;(sm-visualize a^nb^nc^n2)
 
 
 
 
+(define XX
+  (make-tm
+   '(Q0 Q1 Q2 Q3 Q4 Q5 Q6 Q7 Q8 Q9 Q10 Q11 Q12)
+   `(x y i c)
+   `(((Q0 i) (Q0 ,RIGHT)) ;WE ARE IN Q0, WE SEE AN I HEAD RIGHT AND RETURN TO Q0
+     ((Q0 c) (Q1 ,RIGHT)) ;THE CENTRAL MULTIPLICATION SYMBOL C HAS BEEN SEEN, HEAD TO Q1
+     
+     ((Q1 i) (Q1 ,RIGHT)) ; NOW IN Q1, CONTINUE RIGHT ON EVERY I
+     ((Q1 ,BLANK) (Q1 c)) ;ONCE WE HAVE ENCOUNTERED A BLANK, WE KNOW WE ARE AT THE END. OVERWRITE THE BLANK WITH A C
+     ((Q1 c) (Q2 ,LEFT)) ;NOW THAT THE C HAS BEEN WRITTEN IN, HEAD TO STATE Q2 AND PROGRESS LEFT ALONG THE TAPE
 
+ 
+
+     ((Q2 i) (Q2 ,LEFT)) ; WHEN WE ARE IN Q2, MOVE LEFT EVERY I
+     ((Q2 c) (Q3 ,RIGHT));IN THE EVENT THAT WE ONCE AGAIN ENCOUNTER A C, MOVE RIGHT ALONG THE TAPE
+
+ 
+
+     ((Q3 x) (Q3 ,RIGHT)); IF WE SEE AN X IN Q3, MOVE RIGHT ALONG THE TAPE
+     ((Q3 i) (Q4 x)) ; IF WE SEE AN I ON THE TAPE, HEAD TO Q4 AND OVERWRITE WITH X
+     ;((Q3 i) (Q4 ,LEFT))
+     ((Q3 c) (Q3 ,BLANK)) ;IF WE SEE C HEAD TO HALTING STATE Q12
+     ((Q3 ,BLANK) (Q12 ,RIGHT)) ;;;;
+     
+     ((Q4 x) (Q4 ,LEFT)) ;IF WE SEE AN X, MOVE LEFT ALONG THE TAPE
+     ((Q4 c) (Q5 ,LEFT)) ;IF WE SEE A C, MOVE RIGHT ALONG THE TAPE
+
+ 
+
+     ((Q5 y) (Q5 ,LEFT)) ;WHEN WE SEE A Y, MOVE LEFT ALONG THE TAPE
+     ((Q5 i) (Q6 y)) ;WHEN WE SEE AN I IN Q5, MOVE TO Q6
+     ;((Q5 i) (Q6 ,RIGHT))
+     ((Q5 ,LM) (Q11 ,RIGHT)) ;;;;
+     
+     ((Q6 y) (Q6 ,RIGHT)) ;WHEN WE SEE A Y IN Q6, HEAD TO Q6 AND RIGHT ON THE TAPE
+     ((Q6 c) (Q7 ,RIGHT))
+
+ 
+
+     ((Q7 i) (Q7 ,RIGHT)) ;SEE AN I, GO RIGHT AND BACK TO Q7
+     ((Q7 x) (Q7 ,RIGHT)) ;SEE AN X, GO RIGHT AND BACK TO Q7
+     ((Q7 c) (Q8 ,RIGHT)) ;SEE A C, HEAD TO Q8 AND RIGHT ON TAPE
+
+ 
+
+     ((Q8 i) (Q8 ,RIGHT)) ; SEE AN I, HEAD BACK TO Q8 AND RIGHT ON TAPE
+     ((Q8 ,BLANK) (Q9 i)) ;SEE A BLANK HEAD TO Q9
+     ;((Q8 ,BLANK) (Q9 ,LEFT))
+
+ 
+
+     ((Q9 i) (Q9 ,LEFT)) ;SEE AN I HEAD BACK TO Q9 AND LEFT ON TAPE
+     ((Q9 c) (Q10 ,LEFT))
+
+ 
+
+     ((Q10 i) (Q10 ,LEFT)) ;SEE AN I, HEAD BACK TO Q10 AND LEFT ON TAPE
+     ((Q10 x) (Q10 ,LEFT)) ;SEE AN X, HEAD BACK TO Q10 AND LEFT ON TAPE
+     ((Q10 c) (Q5 ,LEFT))
+
+ 
+
+     ((Q11 y) (Q11 i)) ;SEE A Y, HEAD BACK TO Q11 AND OVERWRITE WITH I
+     ((Q11 i) (Q11 ,RIGHT)) ;SEE AN I HEAD BACK TO Q11 AND RIGHT ALONG THE TAPE
+     ((Q11 c) (Q3 ,RIGHT))
+     
+     )
+   'Q0
+   '(Q12)))
+
+;;(define x(sm-graph XX))
+#|
+(define FSM (make-ndfa '(F S M)
+                       '(f s m)
+                       'F
+                       '(M)
+                       '((F s S)
+                         (S m M)
+                         (M f F)) 'nodead))
+
+
+(define (S-INV ci) (empty? ci))
+
+(define (A-INV ci) (empty? ci))
+
+(define (B-INV ci) (and (= (length ci) 1) (eq? (car ci) 'a)))
+
+(define (C-INV ci)
+  (and (>= (length ci) 1) (andmap (λ (s) (eq? s 'a)) ci)))
+
+(define (D-INV ci) (empty? ci))
+
+(define (E-INV ci)
+  (and (= (length ci) 1) (eq? (first ci) 'a)))
+
+(define (F-INV ci)
+  (and (>= (length ci) 1)
+       (eq? (first ci) 'a)
+       (andmap (λ (s) (eq? s 'b))
+               (rest ci))))
+
+
+(define M (make-ndfa '(S A B C D E F)
+                     '(a b)
+                     'S
+                     '(C F)
+                     `((S ,EMP A)
+                       (S ,EMP D)
+                       (A a B)
+                       (B ,EMP C)
+                       (C a C)
+                       (D a E)
+                       (E ,EMP F)
+                       (F b F))
+                     'no-dead
+                     ))
+
+(sm-visualize M (list 'S S-INV) (list 'A A-INV) (list 'B B-INV) (list 'D D-INV) (list 'E E-INV) (list 'F F-INV))
+
+|#
+
+
+(define C90 (make-dfa
+             (quote (D C B A))
+             (quote (a b))
+             (quote A)
+             (quote (B))
+             (quote ((A b C) (A a B)))))
+
+(define (S-INV ci) (empty? ci))
+
+(define (A-INV ci) (empty? ci))
+
+(define (B-INV ci) (and (= (length ci) 1) (eq? (car ci) 'a)))
+
+(define (C-INV ci)
+  (and (>= (length ci) 1) (andmap (λ (s) (eq? s 'a)) ci)))
+
+(define (D-INV ci) "Josh")
+
+(define (E-INV ci)
+  (and (= (length ci) 1) (eq? (first ci) 'a)))
+
+(define (F-INV ci)
+  (and (>= (length ci) 1)
+       (eq? (first ci) 'a)
+       (andmap (λ (s) (eq? s 'b))
+               (rest ci))))
+
+
+(define M (make-ndfa '(S A B C D E F)
+                     '(a b)
+                     'S
+                     '(C F)
+                     `((S ,EMP A)
+                       (S ,EMP D)
+                       (A a B)
+                       (B ,EMP C)
+                       (C a C)
+                       (D a E)
+                       (E ,EMP F)
+                       (F b F))
+                     'no-dead
+                     ))
+
+(sm-visualize M (list 'S S-INV)
+              (list 'A A-INV)
+              (list 'B B-INV)
+              (list 'C C-INV)
+              (list 'D D-INV)
+              (list 'E E-INV)
+              (list 'F F-INV))
+
+
+(define ONE-MISSING
+  (make-dfa '(S A B C D E F)
+            '(a b c)
+            'S
+            '(S A B C D E F)
+            '((S a A)   
+              (S b B)
+              (S c C)
+              (A a A)
+              (A b D)
+              (A c E)
+              (B a D)
+              (B b B)
+              (B c F)
+              (C a E)
+              (C b F)
+              (C c C)
+              (D a D)
+              (D b D)
+              (E a E)
+              (E c E)
+              (F b F)
+              (F c F))))
+
+;;(sm-visualize a* (list 'S (lambda(v) #t)) (list 'F (lambda(v) 5)))
+
+;;(sm-visualize a*)
 

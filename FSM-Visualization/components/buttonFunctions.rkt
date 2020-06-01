@@ -40,7 +40,8 @@ Created by Joshua Schappel on 12/19/19
  tapeScrollLeft
  toogleColorBlindMode
  setTapePosn
- setAcceptState)
+ setAcceptState
+ toggle-display)
 
 
 
@@ -453,9 +454,13 @@ Created by Joshua Schappel on 12/19/19
                        [(equal? input-value "") (redraw-world w)]
                        [(> (string-length input-value) 0)
 
+                        ;; Turing machines can edit the tape. If the user presses the run button mid machine we want to rerun tha machine with the correct tape,
+                        ;;  so we will save the tape as a global that will only be assecced by runProgram.rkt of TM's
+                        (begin
+                          (set-tm-og-tape (append (machine-sigma-list (world-fsm-machine w)) sigma-list))
                         ;; Check if the unprocessed list and processed lists are empty... If they are we know run code was never pressed
                         ;; If they are not empty then run code was pressed. If run code was pressed then we know to update the gui to handle to new sigma
-                        ;; so we will call run code from here.
+                        ;; so we will reset the gui.
                         (cond
                           [(empty? (and (world-unporcessed-config-list w) (world-processed-config-list w)))
                            (begin
@@ -466,7 +471,7 @@ Created by Joshua Schappel on 12/19/19
                            (begin
                              (reset-bottom-indices)
                              (set-machine-sigma-list! (world-fsm-machine w) (append (machine-sigma-list (world-fsm-machine w)) sigma-list))
-                             (create-new-world-input-empty w new-input-list))])]
+                             (create-new-world-input-empty w new-input-list))]))]
                        [else (redraw-world w)]))))
 
 
@@ -688,6 +693,7 @@ Created by Joshua Schappel on 12/19/19
              [else
               (set-tape-index-bottom (+ 1 TAPE-INDEX-BOTTOM))])
 
+
            ;; If the machine is a pda we need to push or pop!
            ;; pops are handled first
            (if (equal? MACHINE-TYPE 'pda)
@@ -714,6 +720,7 @@ Created by Joshua Schappel on 12/19/19
                       (letrec(
                               (previousState (car (cdr (world-processed-config-list w))))
                               (cur-rule (getCurRule (cdr (world-processed-config-list w)))) ;; The current rule that the machine is in after prev is pressed
+                              (rule (getCurRule (if (equal? MACHINE-TYPE 'ndfa) (world-processed-config-list w) (cdr (world-processed-config-list w)))))
                               (pda-cur-rule (getCurRule (world-processed-config-list w))) ;; The current rule that pda machine is in after prev is pressed. Only use this for PDA's
 
                               (input-consumed? (lambda ()
@@ -760,7 +767,17 @@ Created by Joshua Schappel on 12/19/19
                                                  [(symbol? push-list) void] ;; e is the element so nothing to push
                                                  [else
                                                   (begin
-                                                    (push-stack push-list))])))))
+                                                    (push-stack push-list))]))))
+
+                              (determin-tape (lambda (input)       
+                                               (cond
+                                                 [(or (equal? MACHINE-TYPE 'dfa)
+                                                           (equal? MACHINE-TYPE 'ndfa))
+                                                  (if (equal? EMP (cadr rule)) (void) (if (<= TAPE-INDEX-BOTTOM -1) (void) (set-tape-index-bottom (- TAPE-INDEX-BOTTOM 1))))]
+                                                 [(and (not (equal? 'tm MACHINE-TYPE))
+                                                       (not (equal? 'tm-language-recognizer MACHINE-TYPE))
+                                                       (equal? EMP input)) TAPE-INDEX-BOTTOM]
+                                                 [else (if (<= TAPE-INDEX-BOTTOM -1) (void) (set-tape-index-bottom (- TAPE-INDEX-BOTTOM 1)))]))))
 
                         ;; Based on the machien type certin things need to be updated:
                         ;; - pda: stack pushes and pops, world processed and unprocessed lists
@@ -770,12 +787,8 @@ Created by Joshua Schappel on 12/19/19
                           ;;(println (world-processed-config-list w))
                           ;; Determine if the tape input should decrease. This does not happen
                           ;; with tm's and an empty
-                          (if (and (not (equal? 'tm MACHINE-TYPE))
-                                   (not (equal? 'tm-language-recognizer MACHINE-TYPE))
-                                   (equal? EMP (input-consumed?)))
-                              TAPE-INDEX-BOTTOM
-                              (set-tape-index-bottom (- TAPE-INDEX-BOTTOM 1)))
-                        
+                          (determin-tape (input-consumed?))
+                          
 
                           ;; If the machine is a pda we need to push or pop!
                           ;; pops are handled first
@@ -819,6 +832,7 @@ Created by Joshua Schappel on 12/19/19
                           [else
                            (begin
                              (reset-bottom-indices)
+                             (set-tm-og-tape-posn (string->number input-value))
                              (set-tm-machine-tape-posn! (world-fsm-machine w) (string->number input-value))
                              (create-new-world-input-empty w new-input-list))]))))
 
@@ -919,7 +933,7 @@ Created by Joshua Schappel on 12/19/19
 ;; oppenHelp; world -> world
 ;; Purpose: opens the help link in an external browser window
 (define openHelp (lambda (w)
-                   (send-url "https://htmlpreview.github.io/?https://github.com/morazanm/fsm/blob/master/doc/fsm/index.html" #t)
+                   (send-url "https://morazanm.github.io/fsm/index.html" #t)
                    (redraw-world w)))
 
 
@@ -929,6 +943,14 @@ Created by Joshua Schappel on 12/19/19
                                (begin
                                  (toggle-color-blind-mode)
                                  w)))
+
+
+;; toggle-display -> world
+;; Purpose: toggles the display between control and graph representation
+(define toggle-display (lambda (w)
+                         (begin
+                           (set-is-graph?)
+                           w)))
 
 
 
@@ -950,7 +972,7 @@ Created by Joshua Schappel on 12/19/19
 ;; EX: 'DEAD will become 'ds
 (define format-alpha (lambda (s)
                        (case s
-                         [(EMP) 'e]
+                         [(EMP) EMP]
                          [else s])))
 
 ;; format-input: symbol -> symbol

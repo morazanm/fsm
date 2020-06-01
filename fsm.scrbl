@@ -5,16 +5,23 @@
 
 @(require (for-label racket))
 
-@title{FSM: A DSL for the Automata Theory Classroom}
+@title{FSM}
+@author[(author+email "Marco T. Morazán" "marco.morazan@shu.edu")]
+@defmodule[fsm]
 
-@;Welcome to my documentation: @racket[(list 'testing 1 2 3)]
+
+A DSL for the Automata Theory Classroom
+
+FSM is a DSL designed to help ungraduate students understand Automata Theory by
+allowing them to construct and minipulate state machines and their grammars.
+For instructions on how to download the DSL, view the patch notes, or just browse the code, please see either the offical
+FSM readme on @(hyperlink "https://github.com/morazanm/fsm" "Github") or the
+new @(hyperlink "https://jschappel.github.io/FSM-Visualization/" "FSM website").
+
 
 @table-of-contents[]
 
-@defmodule[fsm]
-
 @section{Constants}
-
 @defidform[ARROW]
 The symbol used to separate the lefthand side from the righthand side
 of a grammar rule.
@@ -63,8 +70,8 @@ variable to abstract over the currently read symbol.
 
 @defidform[alphabet] A list of lowercase symbols not including EMP.
 
-@defidform[word] 
-A (listof symbol). Each symbol is a member of the same alphabet.
+@defidform[word]{
+ A @italic{(listof symbol)}. Each symbol is a member of the same alphabet.}
 
 @defidform[state]  
 An uppercase letter (e.g., A) or a symbol comprised of an uppercase 
@@ -75,30 +82,30 @@ A (list state symbol state) representing a transition in a
 deterministic finite-state automaton. The symbol must be in the 
 alphabet of the machine.
 
-@defidform[ndfa-rule] 
-A (list state symbol state) representing a transition in a 
-nondeterministic finite-state automaton. The symbol must either be 
-in the alphabet of the machine or be EMP.
+@defidform[ndfa-rule]{ 
+ A @italic{(list state symbol state)} representing a transition in a 
+ nondeterministic finite-state automaton. The symbol must either be 
+ in the alphabet of the machine or be EMP.}
 
-@defidform[pda-rule] 
-A (list (list state symbol pop) (list state push)) denoting a 
-transition in a pushdown automaton. The symbol must be in the 
-alphabet of the machine. The elements to remove from the 
-top of the stack are denoted by pop which is either EMP or
-a list of symbols where the leftmost is first element to pop. 
-The elements to place onto the top of the stack 
-are denoted by push which is either EMP or a list of symbols where 
-the leftmost symbol is the last element to push.
+@defidform[pda-rule]{ 
+ A @italic{(list (list state symbol pop) (list state push))} denoting a 
+ transition in a pushdown automaton. The symbol must be in the 
+ alphabet of the machine. The elements to remove from the 
+ top of the stack are denoted by pop which is either EMP or
+ a list of symbols where the leftmost is first element to pop. 
+ The elements to place onto the top of the stack 
+ are denoted by push which is either EMP or a list of symbols where 
+ the leftmost symbol is the last element to push.}
 
 @defidform[tm-action] 
 If an alphabet symbol, it denotes the symbol written to the tape of a Turing
 machine. Otherwise, it is the direction in which to move the head:
 RIGHT or LEFT.
 
-@defidform[tm-rule] 
-A (list (list state symbol) (list state tm-action)) representing a 
-transition in a nondeterministic Turing machine. The symbol must
-either be in the alphabet of the machine or be EMP.
+@defidform[tm-rule]{ 
+ A @italic{(list (list state symbol) (list state tm-action))} representing a 
+ transition in a nondeterministic Turing machine. The symbol must
+ either be in the alphabet of the machine or be EMP.}
 
 
 @defidform[dfa-configuration] 
@@ -124,10 +131,10 @@ up to the rightmost position reached, so far, by the machine.
 @defidform[regexp] A regular expression. That is, strings over an 
 alphabet, E, and {(, ), (), U, *} defined as follows:
 @itemlist[@item{() and each element of E is a reg-exp.}
-           @item{If A and B are reg-exp, so is (AB).}
-           @item{If A and B are reg-exp, so is (A U B).}
-           @item{If A is a reg-exp, so is (A*).}
-           @item{Nothing else is a reg-exp.}]
+          @item{If A and B are reg-exp, so is (AB).}
+          @item{If A and B are reg-exp, so is (A U B).}
+          @item{If A is a reg-exp, so is (A*).}
+          @item{Nothing else is a reg-exp.}]
 
 @defidform[terms] Lowercase letters.
 
@@ -138,24 +145,28 @@ letter, a dash, and a number (e.g., A-72431).
 @defidform[rrule] A regular grammar rule is a list of 
 the following form:
 @itemlist[@item{(S ARROW EMP)}
-           @item{(N ARROW a)}
-           @item{(N ARROW aB)}]
+          @item{(N ARROW a)}
+          @item{(N ARROW aB)}]
 S is the starting nonterminal, N and B are nonterminal symbols, and 
 a is a terminal symbol.
 
-@defidform[cfrule] A context-free grammar rule is a list of the
-form (A ARROW J), where A is a nonterminal symbol and J is either
-EMP or a an aggregate symbol of terminals and nonterminals.
+@defidform[cfrule]{ A context-free grammar rule is a list of the
+ form @italic{(A ARROW J)}, where A is a nonterminal symbol and J is either
+ EMP or a an aggregate symbol of terminals and nonterminals.}
 
-@defidform[csrule] A context-sensitive grammar rule is a list of the
-form (H ARROW K), where H is an aggregate symbol of terminals and
-at least one nonterminal and J is either
-EMP or a an aggregate symbol of terminals and nonterminals.
+@defidform[csrule]{A context-sensitive grammar rule is a list of the
+ form @italic{(H ARROW K)}, where H is an aggregate symbol of terminals and
+ at least one nonterminal and J is either
+ EMP or a an aggregate symbol of terminals and nonterminals.}
 
-@defidform[sm]  
-A state machine is either a deterministic finite-state automaton (dfa),
-a nondeterministic finite-state automaton (ndfa), a nondeterministic
-pushdown automaton (ndpda), or a nondeterministic Turing Machine (tm).
+@defidform[state-machine]  
+A representation of a statemachine in FSM. A state machine is one of the following:
+@itemlist[
+ @item{Deterministic Finite Automaton (dfa)}
+ @item{Nondeterministic Finite Automaton (ndfa)}
+ @item{Pushdown Automaton (pda)}
+ @item{Turing Machine (tm)}
+ @item{Language Recognizer (tm-langauge-recognizer)}]
 
 @defidform[smrule]  
 A state machine rule is either a dfa-rule, an ndfa-rule, a 
@@ -187,18 +198,18 @@ A LABEL is a natnum.
 
 
 @defproc[(make-dfa [sts (listof state)] 
-                    [sigma alphabet] 
-                    [start state] 
-                    [finals (listof state)] 
-                    [delta (listof dfa-rule)])
+                   [sigma alphabet] 
+                   [start state] 
+                   [finals (listof state)] 
+                   [delta (listof dfa-rule)])
          dfa]{Builds a deterministic finite-state automaton. @italic{delta} is a transition function.}
 
 
 @defproc[(make-ndfa [sts (listof state)] 
-                     [sigma alphabet] 
-                     [start state] 
-                     [finals (listof state)] 
-                     [delta (listof ndfa-rule)])
+                    [sigma alphabet] 
+                    [start state] 
+                    [finals (listof state)] 
+                    [delta (listof ndfa-rule)])
          ndfa]{Builds a nondeterministic finite-state automaton. @italic{delta} is a transition relation.}
 
 @defproc[(make-ndpda [sts (listof state)] 
@@ -208,148 +219,226 @@ A LABEL is a natnum.
                      [finals (listof state)] 
                      [delta (listof pda-rule)])
          ndpda]{Builds a nondeterministic pushdown automaton from the
-                given list of states, alphabet, list of stack symbols,
-                statr state, list of final states, and list of
-                pda-rule. @italic{delta} is a transition relation.}
+ given list of states, alphabet, list of stack symbols,
+ statr state, list of final states, and list of
+ pda-rule. @italic{delta} is a transition relation.}
 
-@defproc[(make-tm    [sts (listof state)] 
-                     [sigma alphabet] 
-                     [start state] 
-                     [finals (listof state)] 
-                     [delta (listof ndfa-rule)]
-                     (accept state))
-         tm]{Builds a nondeterministic Turing machine. 
-                @italic{delta} is a transition relation.
-                @italic{LM} is automatically added to the machine's alphabet.
-                Rules for moving off the @italic{LM} are automatically added
-                to the machine's rules.
-                If the optional accept argument is given then the resulting
-                Turing machine is as a language recognizer.}
+@defproc*[([(make-tm    [sts (listof state)] 
+                        [sigma alphabet]
+                        [delta (listof ndfa-rule)]
+                        [start state] 
+                        [finals (listof state)]) tm]
+           [(make-tm    [sts (listof state)] 
+                        [sigma alphabet]
+                        [delta (listof ndfa-rule)]
+                        [start state] 
+                        [finals (listof state)]
+                        (accept state)) tm])]{Builds a nondeterministic Turing machine. 
+ @italic{delta} is a transition relation.
+ @italic{LM} is automatically added to the machine's alphabet.
+ Rules for moving off the @italic{LM} are automatically added
+ to the machine's rules.
+ @italic{If the optional accept argument is given then the resulting
+  Turing machine is as a language recognizer.}}
 
 @defproc[(ndfa->dfa [m ndfa])
          dfa]{Builds a @italic{deterministic} finite-state 
-                       automaton equivalent to the given ndfa.}
+ automaton equivalent to the given ndfa.}
 
 @defproc[(regexp->ndfa [r regexp])
          ndfa]{Builds a ndfa for the language of the given
-                regular expression.}
+ regular expression.}
 
-@defproc[(sm-rename-states [sts (listof state)] [m1 sm])
-         sm]{Builds a state machine that is excatly the same as
-             the given machine except that its states are renamed
-             as to not have a name in common with the given list
-             of states.}
+@defproc[(sm-rename-states [sts (listof state)] [m1 state-machine])
+         state-machine]{Builds a state machine that is excatly the same as
+ the given machine except that its states are renamed
+ as to not have a name in common with the given list
+ of states.}
 
-@defproc[(sm-union [m1 sm] [m2 sm])
-         sm]{Builds a state machine for the language obtained
-             from the union of the languages of the two given
-             state machines. If the inputs are Turing machines then
-             they must be language recognizers. The given machines 
-             must have the same type.}
+@defproc[(sm-union [m1 state-machine] [m2 state-machine])
+         state-machine]{Builds a state machine for the language obtained
+ from the union of the languages of the two given
+ state machines. If the inputs are Turing machines then
+ they must be language recognizers. The given machines 
+ must have the same type.}
 
-@defproc[(sm-concat [m1 sm] [m2 sm])
-         sm]{Builds a state machine for the language obtained
-             from the concatenation of the languages of the two given
-             state machines. If the inputs are Turing machines then
-             they must be language recognizers. The given machines 
-             must have the same type.}
+@defproc[(sm-concat [m1 state-machine] [m2 state-machine])
+         state-machine]{Builds a state machine for the language obtained
+ from the concatenation of the languages of the two given
+ state machines. If the inputs are Turing machines then
+ they must be language recognizers. The given machines 
+ must have the same type.}
 
-@defproc[(sm-kleenestar [m1 sm])
-         sm]{Builds a state machine for the language obtained
-             from the Kleene star of the given machine's language.
-             If the input is a Turing machine then
-             it must be language recognizer.}
+@defproc[(sm-kleenestar [m1 state-machine])
+         state-machine]{Builds a state machine for the language obtained
+ from the Kleene star of the given machine's language.
+ If the input is a Turing machine then
+ it must be language recognizer.}
 
-@defproc[(sm-complement [m1 sm])
-         sm]{Builds a state machine for the language obtained
-             from the complement of the given machine's language.
-             The given machine can not be a ndpda. If the inputs are 
-             Turing machines then they must be language recognizers.}
+@defproc[(sm-complement [m1 state-machine])
+         state-machine]{Builds a state machine for the language obtained
+ from the complement of the given machine's language.
+ The given machine can not be a ndpda. If the inputs are 
+ Turing machines then they must be language recognizers.}
 
-@defproc[(sm-intersection [m1 sm] [m2 sm])
-         sm]{Builds a state machine for the language obtained
-             from the intersection of the languages of the two given
-             state machines. If the inputs are Turing machines then
-             they must be language recognizers. The given machines 
-             must have the same type.}
+@defproc[(sm-intersection [m1 state-machine] [m2 state-machine])
+         state-machine]{Builds a state machine for the language obtained
+ from the intersection of the languages of the two given
+ state machines. If the inputs are Turing machines then
+ they must be language recognizers. The given machines 
+ must have the same type.}
 
 @defproc[(grammar->sm [g grammar])
-         sm]{Builds a state machine for the language of the given
-             regular or context-free grammar.}
+         state-machine]{Builds a state machine for the language of the given
+ regular or context-free grammar.}
+
+
+@section{State Machine Visualization}
+@defproc[(sm-graph [m state-machine])
+         image]{Converts the given state machine to .png image.@(linebreak)}
+
+@larger{@bold{You must have GraphViz installed as an enviroment variable
+  for this to work. Please see
+  for more information how to set this up. @(hyperlink "https://github.com/morazanm/fsm/tree/master/GraphViz" "FSM GraphViz ReadMe")}}
+
+@defproc*[([(sm-visualize [sym symbol?]) void]
+           [(sm-visualize [m state-machine]) void]
+           [(sm-visualize [m state-machine]
+                          [inv-list (listof (listof symbol? procedure?))]) void])]{
+ When supplied with a symbol as the argument the visualiztion tool is started for the specified machine type.
+ Valid symbols are:@(racketblock 'dfa  'ndfa  'pda  'tm  'tm-language-recognizer)
+ When supplied with a state-machine as the argument the visualiztion tool is started with the state-machine built within the tool
+ When supplied with the third option the visualiztion tool is started with 
+}
+@(linebreak)@(linebreak)
+Examples: @(linebreak)@(linebreak)
+Empty Tool
+@(racketblock
+  #| --Empty Tool-- |#
+  ;; hello
+  (sm-visualize 'dfa)
+  (sm-visualize 'ndfa)
+  )
+@(linebreak)Prebuilt Machine
+@(racketblock
+  #| --Prebuilt Machine-- |#
+  (define a*a (make-dfa '(S F A)
+                        '(a b)
+                        'S   
+                        '(F)          
+                        '((S a F)   
+                          (F a F)
+                          (F b A)
+                          (A a F)
+                          (A b A))))
+  (sm-visualize a*a)
+  )
+@(image "./GithubPages/Images/aStar.png" "img1" #:scale .6)
+
+
+@(linebreak)Prebuilt Machine with Invariants
+@(racketblock
+  #| --Prebuilt Machine with Invariants-- |#
+  (define S-INV empty?)
+
+  (define (F-INV consumed-input)
+    (and (eq? (first consumed-input) 'a)
+         (eq? (last consumed-input) 'a)))
+
+  (define (A-INV consumed-input)
+    (and (eq? (first consumed-input) 'a)
+         (not (eq? (last consumed-input) 'a))))
+
+  (define (DEAD-INV consumed-input)
+    (not (eq? (first consumed-input) 'a)))
+
+
+  ;; visualize the machine
+  (sm-visualize a*a (list 'S S-INV) 
+                (list 'F F-INV)
+                (list 'A A-INV) 
+                (list 'ds DEAD-INV)))
+@(image "./GithubPages/Images/aStarInv.png" "img2" #:scale .6)
+
 
 @section{State Machine Observers}
 
-@defproc[(sm-getstates [m sm])
+@defproc[(sm-getstates [m state-machine])
          (listof state)]{Returns the states of the given state 
-                         machine.}
+ machine.}
 
-@defproc[(sm-getalphabet [m sm])
+@defproc[(sm-getalphabet [m state-machine])
          alphabet]{Returns the alphabet of the given state 
-                   machine.}
+ machine.}
 
-@defproc[(sm-getrules [m sm])
+@defproc[(sm-getrules [m state-machine])
          (listof smrule)]{Returns the rules of the given state 
-                          machine.}
+ machine.}
 
-@defproc[(sm-getstart [m sm])
+@defproc[(sm-getstart [m state-machine])
          state]{Returns the start state of the given state machine.}
 
-@defproc[(sm-getfinals [m sm])
+@defproc[(sm-getfinals [m state-machine])
          (listof state)]{Returns the final states of the given state 
-                         machine.}
+ machine.}
 
 @defproc[(sm-getstackalphabet [m ndpda])
          (listof symbol)]{Returns the stack alphabet of the given pushdown
-                          automaton.}
+ automaton.}
 
-@defproc[(sm-type [m sm])
+@defproc[(sm-type [m state-machine])
          symbol]{Returns a symbol indicating the type of the given
-                 machine: dfa, ndfa, ndpda, tm, or 
-                 tm-language-recognizer.}
+ machine: dfa, ndfa, ndpda, tm, or 
+ tm-language-recognizer.}
 
-@defproc[(sm-apply [m sm] [w word] [n natnum])
+@defproc[(sm-apply [m state-machine] [w word] [n natnum])
          symbol]{Applies the given state machine to the given word
-                 and returns either 'accept or 'reject for a dfa, a
-                 ndfa, a ndpa, or a Turing machine language 
-                 recognizer. If the given machine is a Turing machine,
-                 but not a language recognizer, a (list 'Halt: S) is
-                 returned where S is a state. The optional natural 
-                 number is only used for the initial position of a 
-                 Turing machine head (the default position is zero).}
+ and returns either 'accept or 'reject for a dfa, a
+ ndfa, a ndpa, or a Turing machine language 
+ recognizer. If the given machine is a Turing machine,
+ but not a language recognizer, a (list 'Halt: S) is
+ returned where S is a state. The optional natural 
+ number is only used for the initial position of a 
+ Turing machine head (the default position is zero).}
 
-@defproc[(sm-showtransitions [m sm] [w word] [n natnum])
+@defproc[(sm-showtransitions [m state-machine] [w word] [n natnum])
          (or (listof smconfig) 'reject)]{Applies the given state machine to the given word
-                                         and returns a list of configurations if the machine
-                                         reaches halting state and 'reject otherwise. The 
-                                         optional natural 
-                                         number is only used for the initial position of a 
-                                         Turing machine head (the default position is zero)}
+ and returns a list of configurations if the machine
+ reaches halting state and 'reject otherwise. The 
+ optional natural 
+ number is only used for the initial position of a 
+ Turing machine head (the default position is zero)}
 
 @section{State Machine Testers}
 
-@defproc[(sm-test [m1 sm] [n natnum])
+@defproc[(sm-test [m1 state-machine] [n natnum])
          (listof (list word symbol))]{Applies the given machine to
-                                      100 randomly generated words 
-                                      and returns a list of words and
-                                      the obtained result. If the given
-                                      machine is a Turing machine, it
-                                      must be a language recognizer. The
-                                      optional natural number specifies
-                                      the number of tests.}
+ 100 randomly generated words 
+ and returns a list of words and
+ the obtained result. If the given
+ machine is a Turing machine, it
+ must be a language recognizer. For
+ a Turing machine language recognizer,
+ the generated tests start with the
+ left-end marker followed by the input
+ word and the head on the first letter
+ of the input word. The
+ optional natural number specifies
+ the number of tests.}
 
-@defproc[(sm-sameresult? [m1 sm] [m2 sm] [w word])
+@defproc[(sm-sameresult? [m1 state-machine] [m2 state-machine] [w word])
          boolean]{Tests if the two given machines return the same
-                  result when applied to the given word.}
+ result when applied to the given word.}
 
-@defproc[(sm-testequiv? [m1 sm] [m2 sm] [n natnum])
+@defproc[(sm-testequiv? [m1 state-machine] [m2 state-machine] [n natnum])
          (or boolean (listof word))]{Tests if the two given machines 
-                                     return the same result when
-                                     applied to the same 100 randomly
-                                     generated words. Returns true
-                                     if all results are the same. 
-                                     Otherwise, a list of words for
-                                     which different results were
-                                     obtained is returned.}
+ return the same result when
+ applied to the same 100 randomly
+ generated words. Returns true
+ if all results are the same. 
+ Otherwise, a list of words for
+ which different results were
+ obtained is returned.}
 
 @section{Grammar Constructors}
 
@@ -374,18 +463,18 @@ A LABEL is a natnum.
 @defproc[(grammar-union  [g1 grammar] 
                          [g2 grammar])
          grammar]{Builds a grammar for the language obtained from
-                  the union of the languages of the given grammars.
-                  The given grammars must have the same type.}
+ the union of the languages of the given grammars.
+ The given grammars must have the same type.}
 
 @defproc[(grammar-concat [g1 grammar] 
                          [g2 grammar])
          grammar]{Builds a grammar for the language obtained from
-                  the concatenation of the languages of the given grammars.
-                  The given grammars must have the same type.}
+ the concatenation of the languages of the given grammars.
+ The given grammars must have the same type.}
 
-@defproc[(sm->grammar [m sm])
+@defproc[(sm->grammar [m state-machine])
          grammar]{Builds a grammar for the language of the given
-                  dfa, ndfa, or ndpda.}
+ dfa, ndfa, or ndpda.}
 
 @defproc[(grammar-rename-nts [g grammar])
          grammar]{Renames the nonterminals of the given grammar.}
@@ -395,66 +484,66 @@ A LABEL is a natnum.
 
 @defproc[(grammar-getnts [g grammar])
          (listof nts)]{Returns the nonterminals of the given 
-                       grammar.}
+ grammar.}
 
 @defproc[(grammar-getalphabet [g grammar])
          alphabet]{Returns the alphabet of the given 
-                       grammar.}
+ grammar.}
 
 @defproc[(grammar-getrules [g grammar])
          (listof grule)]{Returns the rules of the given 
-                       grammar.}
+ grammar.}
 
 @defproc[(grammar-getstart [g grammar])
          nts]{Returns the starting nonterminal of the given 
-                       grammar.}
+ grammar.}
 
 @defproc[(grammar-gettype [g grammar])
          symbol]{Returns a symbol for the type of the given 
-                       grammar: 'rg, 'cfg, or 'csg.}
+ grammar: 'rg, 'cfg, or 'csg.}
 
 @defproc[(grammar-derive [g grammar] [w word])
          (or Derivation string)]{If the given word is in the language of the
-                     given grammar, a derivation is for it is 
-                     returned. Otherwise, a string is returned
-                     indicating the word is not in the language.}
+ given grammar, a derivation is for it is 
+ returned. Otherwise, a string is returned
+ indicating the word is not in the language.}
 
 @section{Grammar Testers}
 
 @defproc[(grammar-both-derive [g1 grammar] [g2 grammar] [w word])
          boolean]{Tests if both of the given grammars obtain
-                  the same result when trying to derive the given
-                  word.}
+ the same result when trying to derive the given
+ word.}
 
 @defproc[(grammar-testequiv [g1 grammar] [g2 grammar] [natnum n])
          (or true (listof word))]{Tests in the given grammars obtain
-                                  the same results when deriving 100
-                                  (or the given optional numner)
-                                  randomly generated words. If all tests
-                                  give the same result true is returned.
-                                  Otherwise, a list or words that
-                                  produce different results is 
-                                  returned.}
+ the same results when deriving 100
+ (or the given optional numner)
+ randomly generated words. If all tests
+ give the same result true is returned.
+ Otherwise, a list or words that
+ produce different results is 
+ returned.}
 
 @defproc[(grammar-test [g1 grammar] [natnum n])
          (listof (cons word (Derivation or string)))]{Tests the given grammar with 100 (or the given 
-                  optional number) randomly generated words.
-                  A list of pairs containing a word and the result
-                  of attemting to derive the word are returned.}
+ optional number) randomly generated words.
+ A list of pairs containing a word and the result
+ of attemting to derive the word are returned.}
 
 
 @section{Combined Turing Machines}
 
 @defproc[(combine-tms [d ctmd] [sigma alphabet])
          ctm]{Builds a (combined) Turing machine from the given
-              ctmd and the given tape alphabet union {BLANK}.}
+ ctmd and the given tape alphabet union {BLANK}.}
 
 @defproc[(ctm-run [m ctm] [w tmtape] [i natnum])
          list]{Runs the given machine on the given tape with the
-               head starting at position i (which must be a valid)
-               index into w (without exceeding the length of w).
-               A list containing the state the machine halts in, the
-               position of the head, and the tape is returned.}
+ head starting at position i (which must be a valid)
+ index into w (without exceeding the length of w).
+ A list containing the state the machine halts in, the
+ position of the head, and the tape is returned.}
 
 @section{Regular Expression Constructors}
 
@@ -463,24 +552,24 @@ A LABEL is a natnum.
 
 @defproc[(singleton-regexp [a letter])
          regexp]{Builds the regular expression for a single
-                 letter string.}
+ letter string.}
 
 @defproc[(union-regexp [r1 regexp] [r2 regexp])
          regexp]{Builds a union regular expression from the given
-                 regular expressions.}
+ regular expressions.}
 
 @defproc[(concat-regexp [r1 regexp] [r2 regexp])
          regexp]{Builds a concatenation regular expression from the 
-                 given regular expressions.}
+ given regular expressions.}
 
 @defproc[(kleenestar-regexp [r regexp])
          regexp]{Builds a Kleene star regular expression from the 
-                 given regular expression.}
+ given regular expression.}
 
 
 @defproc[(fsa->regexp [m ndfa])
          reg-exp]{Returns a regular expression for the language of
-                  the given ndfa. Warning: be careful with this function, as it can quickly cause DrRacket to run out of memory.}
+ the given ndfa. Warning: be careful with this function, as it can quickly cause DrRacket to run out of memory.}
 
 
 @section{Regular Expression Observers}
@@ -492,29 +581,35 @@ A LABEL is a natnum.
 
 @defproc[(los->symbol [l (listof symbol)])
          symbol]{Converts a list of symbols into a symbol by
-                 concatenating the symbols in the list from
-                 left to right.}
+ concatenating the symbols in the list from
+ left to right.}
 
 @defproc[(symbol->list [s symbol])
          (listof symbol)]{Converts the given symbol into a list of 
-                 one-character symbols.}
+ one-character symbols.}
 
 @defproc[(symbol->fsmlos [s symbol])
          (listof symbol)]{Converts the given symbol into a list of 
-                 FSM symbols symbols. For example, 
-                 (symbol->fsmlos 'aS-1243b) returns '(a S-1243 b).}
+ FSM symbols symbols. For example, 
+ (symbol->fsmlos 'aS-1243b) returns '(a S-1243 b).}
 
 @defproc[(generate-symbol [seed symbol] [l (listof symbol)])
          symbol]{Generates a random symbol that starts with seed
-                 and that is not in the given list of symbols.}
+ and that is not in the given list of symbols.}
 
 @defproc[(symbol-upcase [s symbol])
          symbol]{Builds a symbol that is the same as the given symbol,
-                 but with all characters in uppercase.}
+ but with all characters in uppercase.}
 
-
-
-
+@section{Contributors}
+Names in no paticular order:
+@itemlist[@item{Marco T. Morazán}
+          @item{Rosario Antunez}
+          @item{Josephine A. Des Rosiers}
+          @item{Joshua Schappel}
+          @item{Sachin Mahashabde}
+          @item{Sena Karsavran}
+          @item{Isabella Felix}]
 
 
 

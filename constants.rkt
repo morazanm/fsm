@@ -6,7 +6,7 @@
 (module constants racket
   (provide EMP DEAD START NUM-TESTS ARROW RIGHT LEFT BLANK LM HALT BRANCH GOTO VAR)
   
-  (define EMP 'e) ; the symbol for the empty character, must not be in the alphabet.
+  (define EMP 'ε) ; the symbol for the empty character, must not be in the alphabet.
   
   (define DEAD 'ds) ; the symbol for the dead state.
   
