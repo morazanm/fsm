@@ -245,8 +245,8 @@ A LABEL is a natnum.
          dfa]{Builds a @italic{deterministic} finite-state 
  automaton equivalent to the given ndfa.}
 
-@defproc[(regexp->ndfa [r regexp])
-         ndfa]{Builds a ndfa for the language of the given
+@defproc[(regexp->fsa [r regexp])
+         ndfa]{Builds a fsm for the language of the given
  regular expression.}
 
 @defproc[(sm-rename-states [sts (listof state)] [m1 state-machine])

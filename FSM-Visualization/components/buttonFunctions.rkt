@@ -566,7 +566,7 @@ Created by Joshua Schappel on 12/19/19
                   ;; Check if sigma list is empty
                   
                   (cond
-                    [(empty? (machine-sigma-list (world-fsm-machine w))) (redraw-world-with-msg w "Your Tape is currently empty! Please add variables to the Tap to continue." "Notice" MSG-CAUTION)]
+                    ;;[(empty? (machine-sigma-list (world-fsm-machine w))) (redraw-world-with-msg w "Your Tape is currently empty! Please add variables to the Tap to continue." "Notice" MSG-CAUTION)]
                     [else
                      ;; Check if the unprocessed list is empty. If so then run was not yet pressed, so give a error msg
                      (cond

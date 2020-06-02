@@ -6,17 +6,15 @@
 
 
 (define (scaled-graph img type)
-  (let ([smallest (if (>= (- w (image-width img))
-                          (- h (image-height img)))
-                      0
-                      1)])
+  (let ([smallest (>= (- w (image-width img))
+                      (- h (image-height img)))])
     (cond
       [(and (< (image-width img) (if (eq? 'pda type) (/ w-pda 2)(/ w 2)))
             (< (image-height img) (if (eq? 'pda type) (/ h-pda 2)(/ h 2))))
-       (scale 1.3 img)]
-      [(eq? smallest 0)  (if (equal? type 'pda)
-                             (scale (/ h-pda (image-height img)) img)
-                             (scale (/ h (image-height img)) img))]
+       (scale SMALL-IMG-SCALE img)]
+      [smallest  (if (equal? type 'pda)
+                     (scale (/ h-pda (image-height img)) img)
+                     (scale (/ h (image-height img)) img))]
       [else (if (equal? type 'pda)
                 (scale (/ w-pda (image-width img)) img)
                 (scale (/ w (image-width img)) img))])))

@@ -25,6 +25,7 @@ Created by Joshua Schappel on 12/19/19
 (define w 800)
 (define h-pda 300)
 (define w-pda 600)
+(define SMALL-IMG-SCALE 1.3)
 
 ;; -- GUI COLORS --
 (define COLOR-BLIND-MODE false)

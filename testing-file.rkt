@@ -495,7 +495,7 @@
                        (F b F))
                      'no-dead
                      ))
-
+#|
 (sm-visualize M (list 'S S-INV)
               (list 'A A-INV)
               (list 'B B-INV)
@@ -503,7 +503,7 @@
               (list 'D D-INV)
               (list 'E E-INV)
               (list 'F F-INV))
-
+|#
 
 (define ONE-MISSING
   (make-dfa '(S A B C D E F)
@@ -531,5 +531,5 @@
 
 ;;(sm-visualize a* (list 'S (lambda(v) #t)) (list 'F (lambda(v) 5)))
 
-;;(sm-visualize a*)
+(sm-visualize a*)
 

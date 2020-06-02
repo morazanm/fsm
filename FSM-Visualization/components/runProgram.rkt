@@ -24,8 +24,8 @@ Created by Joshua Schappel on 12/19/19
                         (reset-bottom-indices MACHINE-TYPE w)
                         (cond
                           ;; If the input list if empty tell the user
-                          [(empty? (machine-sigma-list (world-fsm-machine w)))
-                           (redraw-world-with-msg w "You must first add input to the machine!" "Notice" MSG-CAUTION)]
+                          #|[(empty? (machine-sigma-list (world-fsm-machine w)))
+                           (redraw-world-with-msg w "You must first add input to the machine!" "Notice" MSG-CAUTION)]|#
                           [(lang-rec-machine? fsm-machine)
                            (if (equal? '|| (lang-rec-machine-accept-state fsm-machine))
                                (redraw-world-with-msg w "You must specify an accept state" "Notice" MSG-CAUTION)
@@ -83,20 +83,32 @@ Created by Joshua Schappel on 12/19/19
               (unprocessed-list (case MACHINE-TYPE
                                   [(tm)
                                    (let* ((sig-list TM-ORIGIONAL-TAPE)
+                                          (proper-list (cond
+                                                         [(empty? (sig-list)) #f]
+                                                         [(equal? LM (car sig-list))
+                                                          TM-ORIGIONAL-TAPE]
+                                                         [else
+                                                          (cons LM TM-ORIGIONAL-TAPE)]))
                                           (trans (sm-showtransitions m
-                                                                     (if (equal? LM (car sig-list))
-                                                                         TM-ORIGIONAL-TAPE
-                                                                         (cons LM TM-ORIGIONAL-TAPE))
+                                                                     (if proper-list
+                                                                         proper-list
+                                                                         '('()'()))
                                                                      (tm-machine-tape-posn (world-fsm-machine w)))))
                                      (if (string? trans)
                                          (list trans)
                                          (append trans '(halt))))]
                                   [(tm-language-recognizer)
                                    (let* ((sig-list TM-ORIGIONAL-TAPE)
+                                          (proper-list (cond
+                                                         [(empty? (sig-list)) #f]
+                                                         [(equal? LM (car sig-list))
+                                                          TM-ORIGIONAL-TAPE]
+                                                         [else
+                                                          (cons LM TM-ORIGIONAL-TAPE)]))
                                           (trans (sm-showtransitions m
-                                                                     (if (equal? LM (car sig-list))
-                                                                         TM-ORIGIONAL-TAPE
-                                                                         (cons LM TM-ORIGIONAL-TAPE))   
+                                                                     (if proper-list
+                                                                         proper-list
+                                                                         '('()'()))
                                                                      (tm-machine-tape-posn (world-fsm-machine w)))))
                                      (if (string? trans)
                                          (list trans)
