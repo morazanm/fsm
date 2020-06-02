@@ -1,5 +1,5 @@
 #lang racket
-(require 2htdp/image 2htdp/universe "posn.rkt")
+(require 2htdp/image 2htdp/universe "posn.rkt" "../globals.rkt")
 
 ;; ------- input.rkt -------
 ;; This file contains the functionality for an input field
@@ -13,7 +13,10 @@
  add-text
  remove-text
  set-active
- set-inactive)
+ set-inactive
+ call-proc
+ make-textbox
+ is-active?)
 
 (define TINT-FACTOR .5) ;; The number to change a color
 
@@ -27,7 +30,14 @@
 ;; - charLength: integer that represents the max amount of characters allowed in the textbox
 ;; - location: posn-struct, the position of the textbox on the scene
 ;; - active: boolean, ALWAYS SET TO FALSE.
-(struct textbox (width height color orColor text charLength location active))
+;; - func: procedure, a procedure associated with the textbox
+(struct textbox (width height color orColor text charLength location active func))
+
+
+;; default constructor for a textbox
+(define (make-textbox width height posn #:color[color DEFAULT-IMP-COLOR] #:limit[limit 10] #:func[func (void)])
+  (textbox width height color color "" limit posn #f func))
+
 
 ;; draw-button: textbox scene -> scene
 ;; Purpose: Draws a given textbox onto the scene
@@ -55,8 +65,11 @@
 (define (add-text tbox msg)
   (cond
     [(> (+ (string-length msg) (string-length (textbox-text tbox))) (textbox-charLength tbox))
-     (textbox (textbox-width tbox) (textbox-height tbox) (textbox-color tbox) (textbox-orColor tbox) (textbox-text tbox) (textbox-charLength tbox) (textbox-location tbox) (textbox-active tbox))]
-    [else (textbox (textbox-width tbox) (textbox-height tbox) (textbox-color tbox) (textbox-orColor tbox) (string-append (textbox-text tbox) msg) (textbox-charLength tbox) (textbox-location tbox) (textbox-active tbox))]))
+     (textbox (textbox-width tbox) (textbox-height tbox) (textbox-color tbox) (textbox-orColor tbox)
+              (textbox-text tbox) (textbox-charLength tbox) (textbox-location tbox) (textbox-active tbox) (textbox-func tbox))]
+    [else (textbox
+           (textbox-width tbox) (textbox-height tbox) (textbox-color tbox) (textbox-orColor tbox) (string-append (textbox-text tbox) msg)
+           (textbox-charLength tbox) (textbox-location tbox) (textbox-active tbox) (textbox-func tbox))]))
 
 ;; remove-text: textbox int -> textbox
 ;; Purpose: Removes a specified amount of text from a textbox 
@@ -68,17 +81,20 @@
                       (cond
                         [(>= (string-length text) num) (substring (textbox-text tbox) 0 (- (string-length (textbox-text tbox)) num))]
                         [else (substring (textbox-text tbox) 0 0)]))))
-    (textbox (textbox-width tbox) (textbox-height tbox) (textbox-color tbox) (textbox-orColor tbox) (rmv-text (textbox-text tbox) num) (textbox-charLength tbox) (textbox-location tbox) (textbox-active tbox))))
+    (textbox (textbox-width tbox) (textbox-height tbox) (textbox-color tbox) (textbox-orColor tbox) (rmv-text (textbox-text tbox) num)
+             (textbox-charLength tbox) (textbox-location tbox) (textbox-active tbox) (textbox-func tbox))))
 
 ;; set-active: textbox -> textbox
 ;; Purpose: Sets a textbox to active
 (define (set-active tbox)
-  (textbox (textbox-width tbox) (textbox-height tbox) (active-color (textbox-orColor tbox)) (textbox-orColor tbox) (textbox-text tbox) (textbox-charLength tbox) (textbox-location tbox) #t))
+  (textbox (textbox-width tbox) (textbox-height tbox) (active-color (textbox-orColor tbox)) (textbox-orColor tbox)
+           (textbox-text tbox) (textbox-charLength tbox) (textbox-location tbox) #t (textbox-func tbox)))
 
 ;; set-inactive: textbox -> textbox
 ;; Purpose: Sets a textbox to inactive
 (define (set-inactive tbox)
-  (textbox (textbox-width tbox) (textbox-height tbox) (textbox-orColor tbox) (textbox-orColor tbox) (textbox-text tbox) (textbox-charLength tbox) (textbox-location tbox) #f))
+  (textbox (textbox-width tbox) (textbox-height tbox) (textbox-orColor tbox)
+           (textbox-orColor tbox) (textbox-text tbox) (textbox-charLength tbox) (textbox-location tbox) #f (textbox-func tbox)))
 
 ;; active-color: color -> color
 ;; Purpose: given a color will shade the color so it becomes active
@@ -87,3 +103,13 @@
    (inexact->exact (truncate (+ (color-red c) (* (- 255 (color-red c)) TINT-FACTOR))))
    (inexact->exact (truncate (+ (color-green c) (* (- 255 (color-green c)) TINT-FACTOR))))
    (inexact->exact (truncate (+ (color-blue c) (* (- 255 (color-blue c)) TINT-FACTOR))))))
+
+;; call-proc: textbox world -> world
+;; calls the procedure associated with the textbox
+(define (call-proc tbox w)
+  (if (equal? (void) (textbox-func tbox))
+      w
+      ((textbox-func tbox) w)))
+
+(define (is-active? tbox)
+  (textbox-active tbox))

@@ -1246,6 +1246,10 @@ EVENT HANDLERS
     (cond
       [(and (equal? 1 (string-length k)) (or (or (key=? k "-") (key=? k " "))(string<=? "a" (string-downcase k) "z") (string<=? "0" (string-downcase k) "9")))
        (create-new-world-input w (check-and-add (world-input-list w) #t))]
+      [(key=? k "\r") (let ([active-textbox (filter (lambda (tbox) (is-active? tbox)) (world-input-list w))])
+                        (if (not (empty? active-textbox))
+                            (call-proc (car active-textbox) w)
+                            w))]
       [(key=? k "\b") (create-new-world-input w (check-and-add (world-input-list w) #f))]
       [else w])))
 

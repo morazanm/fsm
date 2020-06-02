@@ -389,9 +389,11 @@ Created by Joshua Schappel on 12/19/19
                          ;; remove-all: list-of-rules symbol -> list-of-rules
                          ;; Purpose: Removes all rules that are associated with the alpha that is being removed.
                          (remove-all (lambda (lor alpha)
-                                       (filter (lambda (x) (cond
-                                                             [(equal? (symbol->string (caadr x)) alpha) #f]
-                                                             [else #t]))
+                                       (filter (lambda (x) (case MACHINE-TYPE
+                                                             [(tm) #t]
+                                                             [(pda) (not (equal? (symbol->string (cadar x)) alpha))]
+                                                             [(tm-language-recognizer) #t]
+                                                             [else (not (equal? (symbol->string (cadr x)) alpha))]))
                                                lor))))
                      
                      (cond

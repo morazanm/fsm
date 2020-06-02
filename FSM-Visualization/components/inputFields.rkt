@@ -4,7 +4,7 @@ Created by Joshua Schappel on 12/19/19
   This file contaisn all the inputs that are rendered on the visualization tool
 |#
 
-(require "../structs/input.rkt" "../globals.rkt" "../structs/posn.rkt")
+(require "../structs/input.rkt" "../globals.rkt" "../structs/posn.rkt" "buttonFunctions.rkt")
 
 
 (provide
@@ -19,41 +19,55 @@ Created by Joshua Schappel on 12/19/19
 Textbox Declarations
 -----------------------
 |# 
+(define IPF-STATE (make-textbox 150 25 (posn (- WIDTH 100) (- CONTROL-BOX-H 70))
+                                #:limit 5
+                                #:func addState))
 
-(define IPF-STATE (textbox 150 25 INPUT-COLOR INPUT-COLOR "" 5 (posn (- WIDTH 100) (- CONTROL-BOX-H 70)) #f))
-(define IPF-ALPHA (textbox 150 25 INPUT-COLOR INPUT-COLOR "" 3 (posn (- WIDTH 100) (- (* 2 CONTROL-BOX-H) 70)) #f))
-(define IPF-START (textbox 75 25 INPUT-COLOR INPUT-COLOR "" 5 (posn (- WIDTH 150) (- (* 3 CONTROL-BOX-H) 50)) #f))
-(define IPF-START-LANG-REC (textbox 75 25 INPUT-COLOR INPUT-COLOR "" 5 (posn (- WIDTH 150) (- (* 3 CONTROL-BOX-H) 75)) #f))
+(define IPF-ALPHA (make-textbox 150 25 (posn (- WIDTH 100) (- (* 2 CONTROL-BOX-H) 70))
+                                #:limit 3
+                                #:func addAlpha))
 
-(define IPF-END (textbox 75 25 INPUT-COLOR INPUT-COLOR "" 5 (posn (- WIDTH 150) (- (* 4 CONTROL-BOX-H) 50)) #f))
-(define IPF-END-TM (textbox 75 25 INPUT-COLOR INPUT-COLOR "" 5 (posn (- WIDTH 150) (- (* 4 CONTROL-BOX-H) 75)) #f))
-(define IPF-RULE1 (textbox 40 25 INPUT-COLOR INPUT-COLOR "" 4 (posn (- WIDTH 150) (- (* 5 CONTROL-BOX-H) 70)) #f))
-(define IPF-RULE2 (textbox 40 25 INPUT-COLOR INPUT-COLOR "" 4 (posn (- WIDTH 100) (- (* 5 CONTROL-BOX-H) 70)) #f))
-(define IPF-RULE3 (textbox 40 25 INPUT-COLOR INPUT-COLOR "" 4 (posn (- WIDTH 50) (- (* 5 CONTROL-BOX-H) 70)) #f))
+(define IPF-START (make-textbox 75 27 (posn (- WIDTH 150) (- (* 3 CONTROL-BOX-H) 50))
+                                #:limit 5
+                                #:func addStart))
 
+                   
+;;(define IPF-START (textbox 75 25 INPUT-COLOR INPUT-COLOR "" 5 (posn (- WIDTH 150) (- (* 3 CONTROL-BOX-H) 50)) #f (void)))
+(define IPF-START-LANG-REC (textbox 75 25 INPUT-COLOR INPUT-COLOR "" 5 (posn (- WIDTH 150) (- (* 3 CONTROL-BOX-H) 75)) #f (void)))
 
-(define IPF-RULE1-PDA (textbox 40 25 INPUT-COLOR INPUT-COLOR "" 4 (posn (- WIDTH 150) (- (* 5 CONTROL-BOX-H) 80)) #f))
-(define IPF-RULE2-PDA (textbox 40 25 INPUT-COLOR INPUT-COLOR "" 4 (posn (- WIDTH 100) (- (* 5 CONTROL-BOX-H) 80)) #f))
-(define IPF-RULE3-PDA (textbox 40 25 INPUT-COLOR INPUT-COLOR "" 4 (posn (- WIDTH 50) (- (* 5 CONTROL-BOX-H) 80)) #f))
-(define IPF-RULE4-PDA (textbox 40 25 INPUT-COLOR INPUT-COLOR "" 4 (posn (- WIDTH 75) (- (* 5 CONTROL-BOX-H) 52)) #f))
-(define IPF-RULE5-PDA (textbox 40 25 INPUT-COLOR INPUT-COLOR "" 4 (posn (- WIDTH 125) (- (* 5 CONTROL-BOX-H) 52)) #f))
-
-(define IPF-RULE1-TM (textbox 50 25 INPUT-COLOR INPUT-COLOR "" 5 (posn (- WIDTH 135) (- (* 5 CONTROL-BOX-H) 80)) #f))
-(define IPF-RULE2-TM (textbox 50 25 INPUT-COLOR INPUT-COLOR "" 5 (posn (- WIDTH 65) (- (* 5 CONTROL-BOX-H) 80)) #f))
-(define IPF-RULE3-TM (textbox 50 25 INPUT-COLOR INPUT-COLOR "" 5 (posn (- WIDTH 135) (- (* 5 CONTROL-BOX-H) 52)) #f))
-(define IPF-RULE4-TM (textbox 50 25 INPUT-COLOR INPUT-COLOR "" 5 (posn (- WIDTH 65) (- (* 5 CONTROL-BOX-H) 52)) #f))
+(define IPF-END (textbox 75 25 INPUT-COLOR INPUT-COLOR "" 5 (posn (- WIDTH 150) (- (* 4 CONTROL-BOX-H) 50)) #f (void)))
+(define IPF-END-TM (textbox 75 25 INPUT-COLOR INPUT-COLOR "" 5 (posn (- WIDTH 150) (- (* 4 CONTROL-BOX-H) 75)) #f (void)))
+(define IPF-RULE1 (textbox 40 25 INPUT-COLOR INPUT-COLOR "" 4 (posn (- WIDTH 150) (- (* 5 CONTROL-BOX-H) 70)) #f (void)))
+(define IPF-RULE2 (textbox 40 25 INPUT-COLOR INPUT-COLOR "" 4 (posn (- WIDTH 100) (- (* 5 CONTROL-BOX-H) 70)) #f (void)))
+(define IPF-RULE3 (textbox 40 25 INPUT-COLOR INPUT-COLOR "" 4 (posn (- WIDTH 50) (- (* 5 CONTROL-BOX-H) 70)) #f (void)))
 
 
-(define IPF-SIGMA (textbox 100 25 INPUT-COLOR INPUT-COLOR "" 14 (posn (/ (/ WIDTH 11) 2) 40) #f))
+(define IPF-RULE1-PDA (textbox 40 25 INPUT-COLOR INPUT-COLOR "" 4 (posn (- WIDTH 150) (- (* 5 CONTROL-BOX-H) 80)) #f (void)))
+(define IPF-RULE2-PDA (textbox 40 25 INPUT-COLOR INPUT-COLOR "" 4 (posn (- WIDTH 100) (- (* 5 CONTROL-BOX-H) 80)) #f (void)))
+(define IPF-RULE3-PDA (textbox 40 25 INPUT-COLOR INPUT-COLOR "" 4 (posn (- WIDTH 50) (- (* 5 CONTROL-BOX-H) 80)) #f (void)))
+(define IPF-RULE4-PDA (textbox 40 25 INPUT-COLOR INPUT-COLOR "" 4 (posn (- WIDTH 75) (- (* 5 CONTROL-BOX-H) 52)) #f (void)))
+(define IPF-RULE5-PDA (textbox 40 25 INPUT-COLOR INPUT-COLOR "" 4 (posn (- WIDTH 125) (- (* 5 CONTROL-BOX-H) 52)) #f (void)))
+
+(define IPF-RULE1-TM (textbox 50 25 INPUT-COLOR INPUT-COLOR "" 5 (posn (- WIDTH 135) (- (* 5 CONTROL-BOX-H) 80)) #f (void)))
+(define IPF-RULE2-TM (textbox 50 25 INPUT-COLOR INPUT-COLOR "" 5 (posn (- WIDTH 65) (- (* 5 CONTROL-BOX-H) 80)) #f (void)))
+(define IPF-RULE3-TM (textbox 50 25 INPUT-COLOR INPUT-COLOR "" 5 (posn (- WIDTH 135) (- (* 5 CONTROL-BOX-H) 52)) #f (void)))
+(define IPF-RULE4-TM (textbox 50 25 INPUT-COLOR INPUT-COLOR "" 5 (posn (- WIDTH 65) (- (* 5 CONTROL-BOX-H) 52)) #f (void)))
+
+(define IPF-SIGMA (make-textbox 100 25 (posn (/ (/ WIDTH 11) 2) 40)
+                          #:color INPUT-COLOR
+                          #:limit 14
+                          #:func addSigma))
+
+
 
 ;;pda related inputs
-(define IPF-ALPHA-PDA (textbox 50 25 INPUT-COLOR INPUT-COLOR "" 3 (posn (- WIDTH 150) (- (* 2 CONTROL-BOX-H) 70)) #f))
-(define IPF-GAMMA-PDA (textbox 50 25 INPUT-COLOR INPUT-COLOR "" 3 (posn (- WIDTH 50) (- (* 2 CONTROL-BOX-H) 70)) #f))
+(define IPF-ALPHA-PDA (textbox 50 25 INPUT-COLOR INPUT-COLOR "" 3 (posn (- WIDTH 150) (- (* 2 CONTROL-BOX-H) 70)) #f (void)))
+(define IPF-GAMMA-PDA (textbox 50 25 INPUT-COLOR INPUT-COLOR "" 3 (posn (- WIDTH 50) (- (* 2 CONTROL-BOX-H) 70)) #f (void)))
 
 
 ;; Other
-(define IPF-TAPE-INDEX (textbox 75 25 INPUT-COLOR INPUT-COLOR "" 5 (posn (- WIDTH 50) (- (* 4 CONTROL-BOX-H) 60)) #f))
-(define IPF-USER-DEFINED-LANG-REC (textbox 75 25 INPUT-COLOR INPUT-COLOR "" 5 (posn (- WIDTH 50) (- (* 3 CONTROL-BOX-H) 60)) #f))
+(define IPF-TAPE-INDEX (textbox 75 25 INPUT-COLOR INPUT-COLOR "" 5 (posn (- WIDTH 50) (- (* 4 CONTROL-BOX-H) 60)) #f (void)))
+(define IPF-USER-DEFINED-LANG-REC (textbox 75 25 INPUT-COLOR INPUT-COLOR "" 5 (posn (- WIDTH 50) (- (* 3 CONTROL-BOX-H) 60)) #f (void)))
 
 
 ;; INPUT-LIST: A list containing all input fields that are displayed on the scene.

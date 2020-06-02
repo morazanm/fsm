@@ -62,8 +62,7 @@ Created by Joshua Schappel on 12/19/19
 
 ;; -- INPUTS --
 (define INPUT-COLOR (make-color 141 144 145)) ;; The color of an input field
-
-
+(define DEFAULT-IMP-COLOR (make-color 141 144 145))
 ;; -- CONTROL STACK --
 (define R 175)
 (define inner-R (- R 50))
