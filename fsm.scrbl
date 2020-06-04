@@ -329,7 +329,7 @@ Empty Tool
                           (A b A))))
   (sm-visualize a*a)
    )
-@(image "GithubPages/Images/aStar.png" "img1" #:scale .6)
+@(image "GithubPages/aStar.png" "img1" #:scale .6)
 
 
 @(linebreak)Prebuilt Machine with Invariants
@@ -354,7 +354,7 @@ Empty Tool
                 (list 'F F-INV)
                 (list 'A A-INV) 
                 (list 'ds DEAD-INV)))
-@(image "GithubPages/Images/aStarInv.png" "img2" #:scale .6)
+@(image "GithubPages/aStarInv.png" "img2" #:scale .6)
 
 
 @section{State Machine Observers}
