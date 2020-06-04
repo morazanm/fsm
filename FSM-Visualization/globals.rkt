@@ -58,7 +58,11 @@ Created by Joshua Schappel on 12/19/19
 (define CONTROLLER-BUTTON-COLOR (make-color 33 93 222)) ;; Color of button and center dot
 (define CONTROLLER-BUTTON-COLOR-HEX "#215dde")
 (define STACK-SCROLL-BUTTON-COLOR (make-color 135 204 222)) ;; Color of the stack buttons for pda's
-
+(define DEFAULT-BTN-COLOR (make-color 100 200 100)) ;; The default color for a button
+;; THIS FUNCTION IS JUST A PLACEHOLDER
+;;  This function is Just a placeholder for biulding out the GUI
+(define NULL-FUNCTION (lambda (w)
+                        w))
 
 ;; -- INPUTS --
 (define INPUT-COLOR (make-color 141 144 145)) ;; The color of an input field

@@ -22,13 +22,36 @@ Created by Joshua Schappel on 12/19/19
 Button Declarations
 -----------------------
 |# 
+(define BTN-ADD-STATE (make-button 70 25 (posn (- WIDTH 150) (- CONTROL-BOX-H 25))
+                                   #:text "Add"
+                                   #:color CONTROLLER-BUTTON-COLOR
+                                   #:fntsize 24
+                                   #:func addState))
 
-(define BTN-ADD-STATE (button 70 25 "Add" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 24 #f #f (posn (- WIDTH 150) (- CONTROL-BOX-H 25)) addState))
-(define BTN-REMOVE-STATE (button 70 25 "Remove" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 24 #f #f (posn (- WIDTH 50) (- CONTROL-BOX-H 25)) removeState))
+(define BTN-REMOVE-STATE (make-button 70 25 (posn (- WIDTH 50) (- CONTROL-BOX-H 25))
+                                      #:text "Remove"
+                                      #:color CONTROLLER-BUTTON-COLOR
+                                      #:fntsize 24
+                                      #:func removeState))
 
-(define BTN-ADD-ALPHA (button 70 25 "Add" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 24 #f #f (posn (- WIDTH 150) (- (* 2 CONTROL-BOX-H) 25)) addAlpha))
-(define BTN-REMOVE-ALPHA (button 70 25 "Remove" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 24 #f #f (posn (- WIDTH 50) (- (* 2 CONTROL-BOX-H ) 25)) rmvAlpha))
-(define BTN-ADD-ALPHA-PDA (button 35 25 "Add" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 175) (- (* 2 CONTROL-BOX-H) 25)) addAlpha))
+(define BTN-ADD-ALPHA (make-button 70 25 (posn (- WIDTH 150) (- (* 2 CONTROL-BOX-H) 25))
+                                   #:text "Add"
+                                   #:color CONTROLLER-BUTTON-COLOR
+                                   #:fntsize 24
+                                   #:func addAlpha))
+
+(define BTN-REMOVE-ALPHA (make-button 70 25 (posn (- WIDTH 50) (- (* 2 CONTROL-BOX-H ) 25))
+                                      #:text "Remove"
+                                      #:color CONTROLLER-BUTTON-COLOR
+                                      #:fntsize 24
+                                      #:func rmvAlpha))
+
+
+(define BTN-ADD-ALPHA-PDA (make-button 35 25 (posn (- WIDTH 175) (- (* 2 CONTROL-BOX-H) 25))
+                                       #:text "Add"
+                                       #:color CONTROLLER-BUTTON-COLOR
+                                       #:func addAlpha))
+
 (define BTN-REMOVE-ALPHA-PDA (button 35 25 "Rmv" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 125) (- (* 2 CONTROL-BOX-H ) 25)) rmvAlpha))
 
 (define BTN-ADD-GAMMA-PDA (button 35 25 "Add" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 75) (- (* 2 CONTROL-BOX-H) 25)) addGamma))

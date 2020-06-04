@@ -31,7 +31,6 @@ Created by Joshua Schappel on 12/19/19
  showPrev
  scrollbarRight
  scrollbarLeft
- NULL-FUNCTION ;; This function is Just a placeholder for biulding out the GUI
  openHelp
  send-url
  stackScrollUp
@@ -1006,8 +1005,3 @@ Created by Joshua Schappel on 12/19/19
        (set-tape-index-bottom -1)
        (set-tape-index 0)
        (set-init-index-bottom 0))]))
-
-
-;; THIS FUNCTION IS JUST A PLACEHOLDER
-(define NULL-FUNCTION (lambda (w)
-                        (redraw-world w)))

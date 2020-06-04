@@ -1,5 +1,5 @@
 #lang racket
-(require 2htdp/image 2htdp/universe "posn.rkt")
+(require 2htdp/image 2htdp/universe "posn.rkt" "../globals.rkt")
 
 ;; ------- button.rkt -------
 ;; This file contains the functionality and structure for buttons
@@ -9,6 +9,7 @@
 (provide
  (struct-out button)
  (struct-out posn)
+ make-button
  draw-button
  run-function
  button-pressed?
@@ -33,6 +34,10 @@
 ;; - onClick: A function to be run if the button is pressed
 (struct button (width height text type color orColor fontSize rounded? active location onClick))
 
+
+(define (make-button width height posn #:text[text ""] #:color[color DEFAULT-BTN-COLOR]
+                     #:fntsize[size 18] #:round?[round #f] #:func[func NULL-FUNCTION] #:style[style "solid"])
+  (button width height text style color color size round #f posn func))
 
 ;; draw-button: button posn scene -> scene
 ;; Purpose: Draws a given button onto the scene
