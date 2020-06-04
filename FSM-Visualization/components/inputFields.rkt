@@ -31,8 +31,7 @@ Textbox Declarations
                                 #:limit 5
                                 #:func addStart))
 
-                   
-(define IPF-START-LANG-REC (make-textbox 75 25 (posn (- WIDTH 150) (- (* 3 CONTROL-BOX-H) 50))
+(define IPF-START-LANG-REC (make-textbox 75 25 (posn (- WIDTH 150) (- (* 3 CONTROL-BOX-H) 75))
                                          #:limit 5
                                          #:func addStart))
 
@@ -56,19 +55,22 @@ Textbox Declarations
                                 #:limit 4
                                 #:func NULL-FUNCTION))
 
-
 (define IPF-RULE1-PDA (make-textbox 40 25 (posn (- WIDTH 150) (- (* 5 CONTROL-BOX-H) 80))
                                     #:limit 4
                                     #:func NULL-FUNCTION))
+
 (define IPF-RULE2-PDA (make-textbox 40 25 (posn (- WIDTH 100) (- (* 5 CONTROL-BOX-H) 80))
                                     #:limit 4
                                     #:func NULL-FUNCTION))
+
 (define IPF-RULE3-PDA (make-textbox 40 25 (posn (- WIDTH 50) (- (* 5 CONTROL-BOX-H) 80))
                                     #:limit 4
                                     #:func NULL-FUNCTION))
+
 (define IPF-RULE4-PDA (make-textbox 40 25 (posn (- WIDTH 75) (- (* 5 CONTROL-BOX-H) 52))
                                     #:limit 4
                                     #:func NULL-FUNCTION))
+
 (define IPF-RULE5-PDA (make-textbox 40 25 (posn (- WIDTH 125) (- (* 5 CONTROL-BOX-H) 52))
                                     #:limit 4
                                     #:func NULL-FUNCTION))
@@ -76,12 +78,15 @@ Textbox Declarations
 (define IPF-RULE1-TM (make-textbox 50 25 (posn (- WIDTH 135) (- (* 5 CONTROL-BOX-H) 80))
                                    #:limit 5
                                    #:func NULL-FUNCTION))
+
 (define IPF-RULE2-TM (make-textbox 50 25 (posn (- WIDTH 65) (- (* 5 CONTROL-BOX-H) 80))
                                    #:limit 5
                                    #:func NULL-FUNCTION))
+
 (define IPF-RULE3-TM (make-textbox 50 25 (posn (- WIDTH 135) (- (* 5 CONTROL-BOX-H) 52))
                                    #:limit 5
                                    #:func NULL-FUNCTION))
+
 (define IPF-RULE4-TM (make-textbox 50 25 (posn (- WIDTH 65) (- (* 5 CONTROL-BOX-H) 52))
                                    #:limit 5
                                    #:func NULL-FUNCTION))
@@ -97,6 +102,7 @@ Textbox Declarations
 (define IPF-ALPHA-PDA (make-textbox 50 25 (posn (- WIDTH 150) (- (* 2 CONTROL-BOX-H) 70))
                                     #:limit 3
                                     #:func addAlpha))
+
 (define IPF-GAMMA-PDA (make-textbox 50 25 (posn (- WIDTH 50) (- (* 2 CONTROL-BOX-H) 70))
                                     #:limit 3
                                     #:func addGamma))
@@ -106,6 +112,7 @@ Textbox Declarations
 (define IPF-TAPE-INDEX (make-textbox 75 25 (posn (- WIDTH 50) (- (* 4 CONTROL-BOX-H) 60))
                                      #:limit 5
                                      #:func setTapePosn))
+
 (define IPF-USER-DEFINED-LANG-REC (make-textbox 75 25 (posn (- WIDTH 50) (- (* 3 CONTROL-BOX-H) 60))
                                                 #:limit 5
                                                 #:func setAcceptState))
