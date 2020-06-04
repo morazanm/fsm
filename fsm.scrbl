@@ -3,7 +3,7 @@
 
 #lang scribble/manual
 
-@(require (for-label racket))
+@(require (for-label racket setup/collects))
 
 @title{FSM}
 @author[(author+email "Marco T. Morazán" "marco.morazan@shu.edu")]
@@ -329,7 +329,7 @@ Empty Tool
                           (A b A))))
   (sm-visualize a*a)
    )
-@(image "GithubPages/aStar.png" "img1" #:scale .6)
+@(image "aStar.png" "img1" #:scale .6)
 
 
 @(linebreak)Prebuilt Machine with Invariants
