@@ -8,7 +8,7 @@ Created by Joshua Schappel on 12/19/19
 (provide (all-defined-out))
 
 ;; -- VERSION --
-(define VERSION "VERSION 1.5")
+(define VERSION "VERSION 1.6")
 
 (define IS-GRAPH? #f) ;; Determines if the graph representation should be displayed
 
