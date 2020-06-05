@@ -203,7 +203,6 @@
                             '(Y N)
                             'Y))
 
-#|
 
 ;; gets the number of z's in the tape
 (define get-num-of-x (lambda (tape symbol)
@@ -314,7 +313,7 @@
                (list 'N N-INV)
                (list 'Y Y-INV))
 
-|#
+#|
 (define LB (make-tm '(S H)
                     `(a b)
                     `(((S a) (S ,LEFT))
@@ -326,7 +325,7 @@
 
 
 ;(sm-visualize a*)
-;;(sm-visualize a^nb^nc^n2)
+
 
 
 
@@ -495,6 +494,7 @@
                        (F b F))
                      'no-dead
                      ))
+|#
 #|
 (sm-visualize M (list 'S S-INV)
               (list 'A A-INV)
@@ -531,5 +531,4 @@
 
 ;;(sm-visualize a* (list 'S (lambda(v) #t)) (list 'F (lambda(v) 5)))
 
-(sm-visualize XX)
-
+(sm-visualize pda-numa=numb (list 'M (lambda (v s) "Josh")))

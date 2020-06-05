@@ -84,7 +84,7 @@ Created by Joshua Schappel on 12/19/19
                                   [(tm)
                                    (let* ((sig-list TM-ORIGIONAL-TAPE)
                                           (proper-list (cond
-                                                         [(empty? (sig-list)) #f]
+                                                         [(empty? sig-list) #f]
                                                          [(equal? LM (car sig-list))
                                                           TM-ORIGIONAL-TAPE]
                                                          [else
@@ -100,7 +100,7 @@ Created by Joshua Schappel on 12/19/19
                                   [(tm-language-recognizer)
                                    (let* ((sig-list TM-ORIGIONAL-TAPE)
                                           (proper-list (cond
-                                                         [(empty? (sig-list)) #f]
+                                                         [(empty? sig-list) #f]
                                                          [(equal? LM (car sig-list))
                                                           TM-ORIGIONAL-TAPE]
                                                          [else
