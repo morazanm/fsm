@@ -6,10 +6,6 @@ A Library for the Automata Theory Classroom
 ## Checkout the [FSM Website](https://morazanm.github.io/fsm/)
 
 ## Version History
-### 1.6
-- Bug fixes
-- GUI Quality of life improvements
-- New FSM website
 ### 1.5
 - Fixed bug for show-transitions for Turing machines
 - Fixed bug in rename-states

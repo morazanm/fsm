@@ -28,14 +28,6 @@ const PUBLICATIONS = [
 // Only the 5 most recent will be displayed
 const VERSION_HISTORY = [
     {
-        version: 1.6,
-        notes: [
-            "Bug fixes",
-            "Viz tool quality of life improvements",
-            "New FSM website",
-        ]
-    },
-    {
         version: 1.5,
         notes: [
             "Fixed bug for show-transitions for Turing machines",
