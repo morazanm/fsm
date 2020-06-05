@@ -57,7 +57,8 @@ TAGS
 # auto-generated rkt files
 fsmGUIFunctions.rkt
 *.dot
-*.png
+graph.png
+vizTool.png
 *.1
 *.2
 *.3
