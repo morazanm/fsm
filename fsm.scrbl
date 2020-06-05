@@ -16,7 +16,7 @@ FSM is a DSL designed to help ungraduate students understand Automata Theory by
 allowing them to construct and minipulate state machines and their grammars.
 For instructions on how to download the DSL, view the patch notes, or just browse the code, please see either the offical
 FSM readme on @(hyperlink "https://github.com/morazanm/fsm" "Github") or the
-new @(hyperlink "https://jschappel.github.io/FSM-Visualization/" "FSM website").
+new @(hyperlink "https://morazanm.github.io/fsm/index.html" "FSM website").
 
 
 @table-of-contents[]
@@ -294,12 +294,13 @@ A LABEL is a natnum.
 
 
 @section{State Machine Visualization}
+@bold{For more information about how the Vizualization tool works please visit the @(hyperlink "https://morazanm.github.io/fsm/index.html" "FSM Website")}
 @defproc[(sm-graph [m state-machine])
          image]{Converts the given state machine to .png image.@(linebreak)}
 
-@larger{@bold{You must have GraphViz installed as an enviroment variable
+@bold{You must have GraphViz installed as an enviroment variable
   for this to work. Please see
-  for more information how to set this up. @(hyperlink "https://github.com/morazanm/fsm/tree/master/GraphViz" "FSM GraphViz ReadMe")}}
+  for more information how to set this up. @(hyperlink "https://github.com/morazanm/fsm/tree/master/GraphViz" "FSM GraphViz ReadMe")}
 
 @defproc*[([(sm-visualize [sym symbol?]) void]
            [(sm-visualize [m state-machine]) void]
@@ -333,7 +334,6 @@ Empty Tool
                           (A b A))))
   (sm-visualize a*a)
   )
-@(image "./GithubPages/Images/aStar.png" "img1" #:scale .6)
 
 
 @(linebreak)Prebuilt Machine with Invariants
@@ -358,7 +358,6 @@ Empty Tool
                 (list 'F F-INV)
                 (list 'A A-INV) 
                 (list 'ds DEAD-INV)))
-@(image "./GithubPages/Images/aStarInv.png" "img2" #:scale .6)
 
 
 @section{State Machine Observers}
