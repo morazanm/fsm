@@ -59,6 +59,9 @@ fsmGUIFunctions.rkt
 *.dot
 graph.png
 vizTool.png
+aStar.png
+*.png
+
 *.1
 *.2
 *.3
