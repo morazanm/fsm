@@ -5,7 +5,7 @@ Created by Joshua Schappel on 4/5/20
   This file contains all functionality for the GenCode function
 |#
 (require racket/date "./structs/machine.rkt" "./structs/world.rkt" "./structs/state.rkt"
-         "../fsm-main.rkt" "globals.rkt")
+         "../fsm-main.rkt" "globals.rkt" "./structs/input.rkt")
 
 (provide genCode)
 
@@ -23,7 +23,7 @@ Created by Joshua Schappel on 4/5/20
       [(valid-machine? fsm-machine state-list)
        (begin
          (write-to-file
-          FILE-NAME
+          (determine-file-name (world-input-list world))
           (construct-machine
            state-list
            (machine-start-state fsm-machine)
@@ -57,6 +57,21 @@ Created by Joshua Schappel on 4/5/20
                                                      ". This file can be found at: ~n "
                                                      (path->string (current-directory)) "Please fix the erros and press 'Run' again.")
                                 "Error" MSG-ERROR))])))
+
+;; (listOf inputFields) -> String
+;; Purpose: Determines the files name
+(define (determine-file-name input-list)
+  (let ([inputFieldValue (case MACHINE-TYPE
+                           [(pda) (string-trim (textbox-text (list-ref input-list 11)))]
+                           [(tm) (string-trim (textbox-text (list-ref input-list 10)))]
+                           [(tm-language-recognizer) (string-trim (textbox-text (list-ref input-list 11)))]
+                           [else (textbox-text (list-ref input-list 8))])])
+    (cond
+      [(equal? "" inputFieldValue) FILE-NAME]
+      [(and
+        (> (string-length inputFieldValue) 4)
+        (equal? (list->string (take-right (string->list inputFieldValue) 4)) ".rkt")) inputFieldValue]
+      [else (string-append inputFieldValue ".rkt")])))
 
 ;; valid-machine?: machine state-list
 ;; Purpose: Determins if the given machine is valid

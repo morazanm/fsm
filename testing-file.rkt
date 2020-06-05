@@ -531,5 +531,5 @@
 
 ;;(sm-visualize a* (list 'S (lambda(v) #t)) (list 'F (lambda(v) 5)))
 
-(sm-visualize a*)
+(sm-visualize XX)
 

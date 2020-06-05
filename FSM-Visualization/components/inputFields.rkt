@@ -4,7 +4,7 @@ Created by Joshua Schappel on 12/19/19
   This file contaisn all the inputs that are rendered on the visualization tool
 |#
 
-(require "../structs/input.rkt" "../globals.rkt" "../structs/posn.rkt" "buttonFunctions.rkt")
+(require "../structs/input.rkt" "../globals.rkt" "../structs/posn.rkt" "buttonFunctions.rkt" "../genCode.rkt")
 
 
 (provide
@@ -97,6 +97,12 @@ Textbox Declarations
                           #:func addSigma))
 
 
+(define GEN-CODE (make-textbox 100 25 (posn (/ (/ WIDTH 11) 2) 235)
+                          #:color INPUT-COLOR
+                          #:limit 14
+                          #:func genCode))
+
+
 
 ;;pda related inputs
 (define IPF-ALPHA-PDA (make-textbox 50 25 (posn (- WIDTH 150) (- (* 2 CONTROL-BOX-H) 70))
@@ -122,21 +128,22 @@ Textbox Declarations
 (define INPUT-LIST (list IPF-STATE IPF-ALPHA
                          IPF-START IPF-END
                          IPF-RULE1 IPF-RULE2
-                         IPF-RULE3 IPF-SIGMA))
+                         IPF-RULE3 IPF-SIGMA GEN-CODE))
 
 (define INPUT-LIST-PDA (list IPF-STATE IPF-ALPHA-PDA
                              IPF-START IPF-END
                              IPF-RULE1-PDA IPF-RULE2-PDA
                              IPF-RULE3-PDA IPF-SIGMA
                              IPF-GAMMA-PDA IPF-RULE4-PDA
-                             IPF-RULE5-PDA))
+                             IPF-RULE5-PDA GEN-CODE))
 
 
 (define INPUT-LIST-TM (list IPF-STATE IPF-ALPHA
                             IPF-START IPF-END-TM
                             IPF-RULE1-TM IPF-RULE2-TM
                             IPF-RULE3-TM IPF-SIGMA
-                            IPF-RULE4-TM IPF-TAPE-INDEX))
+                            IPF-RULE4-TM IPF-TAPE-INDEX
+                            GEN-CODE))
 
 
 (define INPUT-LIST-LANG-REC (list IPF-STATE IPF-ALPHA
@@ -144,4 +151,5 @@ Textbox Declarations
                                   IPF-RULE1-TM IPF-RULE2-TM
                                   IPF-RULE3-TM IPF-SIGMA
                                   IPF-RULE4-TM IPF-TAPE-INDEX
-                                  IPF-USER-DEFINED-LANG-REC))
+                                  IPF-USER-DEFINED-LANG-REC
+                                  GEN-CODE))

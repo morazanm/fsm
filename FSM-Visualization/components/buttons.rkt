@@ -191,19 +191,19 @@ Button Declarations
                                  #:round? #t
                                  #:func toggle-display))
 
-(define BTN-NEXT (make-button 95 30 (posn 55 140)
-                              #:text "NEXT 🠊"
+(define BTN-NEXT (make-button 40 30 (posn 80 140)
+                              #:text "🠊"
                               #:color (make-color 116 156 188)
-                              #:fntsize 25
+                              #:fntsize 40
                               #:func showNext))
 
-(define BTN-PREV (make-button 95 30 (posn 55 175)
-                              #:text "🠈 PREV"
+(define BTN-PREV (make-button 40 30 (posn 30 140)
+                              #:text "🠈"
                               #:color (make-color 116 156 188)
-                              #:fntsize 25
+                              #:fntsize 40
                               #:func showPrev))
 
-(define BTN-GENCODE (make-button 95 50 (posn 55 220)
+(define BTN-GENCODE (make-button 95 50 (posn 55 190)
                                  #:text "GEN CODE"
                                  #:color (make-color 240 79 77)
                                  #:fntsize 30
