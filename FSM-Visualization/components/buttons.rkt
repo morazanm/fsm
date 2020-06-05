@@ -22,71 +22,217 @@ Created by Joshua Schappel on 12/19/19
 Button Declarations
 -----------------------
 |# 
+(define BTN-ADD-STATE (make-button 70 25 (posn (- WIDTH 150) (- CONTROL-BOX-H 25))
+                                   #:text "Add"
+                                   #:color CONTROLLER-BUTTON-COLOR
+                                   #:fntsize 24
+                                   #:func addState))
 
-(define BTN-ADD-STATE (button 70 25 "Add" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 24 #f #f (posn (- WIDTH 150) (- CONTROL-BOX-H 25)) addState))
-(define BTN-REMOVE-STATE (button 70 25 "Remove" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 24 #f #f (posn (- WIDTH 50) (- CONTROL-BOX-H 25)) removeState))
+(define BTN-REMOVE-STATE (make-button 70 25 (posn (- WIDTH 50) (- CONTROL-BOX-H 25))
+                                      #:text "Remove"
+                                      #:color CONTROLLER-BUTTON-COLOR
+                                      #:fntsize 24
+                                      #:func removeState))
 
-(define BTN-ADD-ALPHA (button 70 25 "Add" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 24 #f #f (posn (- WIDTH 150) (- (* 2 CONTROL-BOX-H) 25)) addAlpha))
-(define BTN-REMOVE-ALPHA (button 70 25 "Remove" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 24 #f #f (posn (- WIDTH 50) (- (* 2 CONTROL-BOX-H ) 25)) rmvAlpha))
-(define BTN-ADD-ALPHA-PDA (button 35 25 "Add" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 175) (- (* 2 CONTROL-BOX-H) 25)) addAlpha))
-(define BTN-REMOVE-ALPHA-PDA (button 35 25 "Rmv" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 125) (- (* 2 CONTROL-BOX-H ) 25)) rmvAlpha))
+(define BTN-ADD-ALPHA (make-button 70 25 (posn (- WIDTH 150) (- (* 2 CONTROL-BOX-H) 25))
+                                   #:text "Add"
+                                   #:color CONTROLLER-BUTTON-COLOR
+                                   #:fntsize 24
+                                   #:func addAlpha))
 
-(define BTN-ADD-GAMMA-PDA (button 35 25 "Add" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 75) (- (* 2 CONTROL-BOX-H) 25)) addGamma))
-(define BTN-REMOVE-GAMMA-PDA (button 35 25 "Rmv" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 25) (- (* 2 CONTROL-BOX-H ) 25)) rmvGamma))
+(define BTN-REMOVE-ALPHA (make-button 70 25 (posn (- WIDTH 50) (- (* 2 CONTROL-BOX-H ) 25))
+                                      #:text "Remove"
+                                      #:color CONTROLLER-BUTTON-COLOR
+                                      #:fntsize 24
+                                      #:func rmvAlpha))
 
+(define BTN-ADD-ALPHA-PDA (make-button 35 25 (posn (- WIDTH 175) (- (* 2 CONTROL-BOX-H) 25))
+                                       #:text "Add"
+                                       #:color CONTROLLER-BUTTON-COLOR
+                                       #:func addAlpha))
 
-(define BTN-ADD-START (button 50 25 "Add" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 50) (- (* 3 CONTROL-BOX-H) 71)) addStart))
-(define BTN-REMOVE-START (button 50 25 "Replace" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 50) (- (* 3 CONTROL-BOX-H) 25)) replaceStart))
-(define BTN-ADD-START-LANG-REC (button 35 25 "Add" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 175) (- (* 3 CONTROL-BOX-H) 25)) addStart))
-(define BTN-REMOVE-START-LANG-REC (button 35 25 "Rmv" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 125) (- (* 3 CONTROL-BOX-H) 25)) replaceStart))
+(define BTN-REMOVE-ALPHA-PDA (make-button 35 25 (posn (- WIDTH 125) (- (* 2 CONTROL-BOX-H ) 25))
+                                          #:text "Rmv"
+                                          #:color CONTROLLER-BUTTON-COLOR
+                                          #:func rmvAlpha))
 
+(define BTN-ADD-GAMMA-PDA (make-button 35 25 (posn (- WIDTH 75) (- (* 2 CONTROL-BOX-H) 25))
+                                       #:text "Add"
+                                       #:color CONTROLLER-BUTTON-COLOR
+                                       #:func addGamma))
 
+(define BTN-REMOVE-GAMMA-PDA (make-button 35 25 (posn (- WIDTH 25) (- (* 2 CONTROL-BOX-H ) 25))
+                                          #:text "Rmv"
+                                          #:color CONTROLLER-BUTTON-COLOR
+                                          #:func rmvGamma))
 
+(define BTN-ADD-START (make-button 50 25 (posn (- WIDTH 50) (- (* 3 CONTROL-BOX-H) 71))
+                                   #:text "Add"
+                                   #:color CONTROLLER-BUTTON-COLOR
+                                   #:func addStart))
 
-(define BTN-ADD-END (button 50 25 "Add" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 50) (- (* 4 CONTROL-BOX-H) 71)) addEnd))
-(define BTN-REMOVE-END (button 50 25 "Remove" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 50) (- (* 4 CONTROL-BOX-H) 25)) rmvEnd))
-(define BTN-ADD-END-TM (button 35 25 "Add" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 175) (- (* 4 CONTROL-BOX-H) 25)) addEnd))
-(define BTN-REMOVE-END-TM (button 35 25 "Rmv" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 125) (- (* 4 CONTROL-BOX-H) 25)) rmvEnd))
+(define BTN-REMOVE-START (make-button 50 25 (posn (- WIDTH 50) (- (* 3 CONTROL-BOX-H) 25))
+                                      #:text "Replace"
+                                      #:color CONTROLLER-BUTTON-COLOR
+                                      #:func replaceStart))
 
-(define BTN-SET-END-LANG-REC (button 50 25 "Set" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 50) (- (* 3 CONTROL-BOX-H) 25)) setAcceptState))
+(define BTN-ADD-START-LANG-REC (make-button 35 25 (posn (- WIDTH 175) (- (* 3 CONTROL-BOX-H) 25))
+                                            #:text "Add"
+                                            #:color CONTROLLER-BUTTON-COLOR
+                                            #:func addStart))
 
+(define BTN-REMOVE-START-LANG-REC (make-button 35 25 (posn (- WIDTH 125) (- (* 3 CONTROL-BOX-H) 25))
+                                               #:text "Rmv"
+                                               #:color CONTROLLER-BUTTON-COLOR
+                                               #:func replaceStart))
 
-(define BTN-TAPE-INPUT-TM (button 50 25 "Set" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 18 #f #f (posn (- WIDTH 50) (- (* 4 CONTROL-BOX-H) 25)) setTapePosn))
+(define BTN-ADD-END (make-button 50 25 (posn (- WIDTH 50) (- (* 4 CONTROL-BOX-H) 71))
+                                 #:text "Add"
+                                 #:color CONTROLLER-BUTTON-COLOR
+                                 #:func addEnd))
 
+(define BTN-REMOVE-END (make-button 50 25 (posn (- WIDTH 50) (- (* 4 CONTROL-BOX-H) 25))
+                                    #:text "Remove"
+                                    #:color CONTROLLER-BUTTON-COLOR
+                                    #:func rmvEnd))
 
-(define BTN-ADD-RULES (button 70 25 "Add" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 24 #f #f (posn (- WIDTH 150) (- (* 5 CONTROL-BOX-H) 25)) addRule))
-(define BTN-REMOVE-RULES (button 70 25 "Remove" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 24 #f #f (posn (- WIDTH 50) (- (* 5 CONTROL-BOX-H) 25)) removeRule))
-(define BTN-ADD-RULES-PDA (button 70 25 "Add" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 24 #f #f (posn (- WIDTH 150) (- (* 5 CONTROL-BOX-H) 20)) addRule))
-(define BTN-REMOVE-RULES-PDA (button 70 25 "Remove" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 24 #f #f (posn (- WIDTH 50) (- (* 5 CONTROL-BOX-H) 20)) removeRule))
+(define BTN-ADD-END-TM (make-button 35 25 (posn (- WIDTH 175) (- (* 4 CONTROL-BOX-H) 25))
+                                    #:text "Add"
+                                    #:color CONTROLLER-BUTTON-COLOR
+                                    #:func addEnd))
 
-(define BTN-TAPE-SCROLL-LEFT (button 30 TOP "🠈" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 35 #f #f (posn 125 30) tapeScrollLeft))
-(define BTN-TAPE-SCROLL-RIGHT (button 30 TOP "🠊" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 35 #f #f (posn (- WIDTH 215) 30) tapeScrollRight))
+(define BTN-REMOVE-END-TM (make-button 35 25 (posn (- WIDTH 125) (- (* 4 CONTROL-BOX-H) 25))
+                                       #:text "Rmv"
+                                       #:color CONTROLLER-BUTTON-COLOR
+                                       #:func rmvEnd))
 
+(define BTN-SET-END-LANG-REC (make-button 50 25 (posn (- WIDTH 50) (- (* 3 CONTROL-BOX-H) 25))
+                                          #:text "Set"
+                                          #:color CONTROLLER-BUTTON-COLOR
+                                          #:func setAcceptState))
 
-(define BTN-SCROLL-LEFT-RULES (button 30 BOTTOM "🠈" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 35 #f #f (posn 125 (- HEIGHT 37)) scrollbarLeft))
-(define BTN-SCROLL-RIGHT-RULES (button 30 BOTTOM "🠊" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 35 #f #f (posn (- WIDTH 215) (- HEIGHT 37)) scrollbarRight))
+(define BTN-TAPE-INPUT-TM (make-button 50 25 (posn (- WIDTH 50) (- (* 4 CONTROL-BOX-H) 25))
+                                       #:text "Set"
+                                       #:color CONTROLLER-BUTTON-COLOR
+                                       #:func setTapePosn))
 
+(define BTN-ADD-RULES (make-button 70 25 (posn (- WIDTH 150) (- (* 5 CONTROL-BOX-H) 25))
+                                   #:text "Add"
+                                   #:color CONTROLLER-BUTTON-COLOR
+                                   #:fntsize 24
+                                   #:func addRule))
 
+(define BTN-REMOVE-RULES (make-button 70 25 (posn (- WIDTH 50) (- (* 5 CONTROL-BOX-H) 25))
+                                      #:text "Remove"
+                                      #:color CONTROLLER-BUTTON-COLOR
+                                      #:fntsize 24
+                                      #:func removeRule))
 
-(define BTN-RUN (button 95 30 "Run" "solid" (make-color 29 153 68) (make-color 29 153 68) 25 #f #f (posn 55 105) runProgram))
-(define BTN-HELP (button 25 25 "?" "solid" (make-color 39 168 242) (make-color 39 168 242) 15 #t #f (posn 130 80) openHelp))
-(define BTN-COLOR-BLIND (button 25 25 "CB" "solid" (make-color 252 186 3) (make-color 252 186 3) 15 #t #f (posn 130 120) toogleColorBlindMode))
-(define BTN-DISPLAY (button 30 30 "DGr" "solid" (make-color 61 65 71) (make-color 61 65 71) 12 #t #f (posn 130 160) toggle-display))
+(define BTN-ADD-RULES-PDA (make-button 70 25 (posn (- WIDTH 150) (- (* 5 CONTROL-BOX-H) 20))
+                                       #:text "Add"
+                                       #:color CONTROLLER-BUTTON-COLOR
+                                       #:fntsize 24
+                                       #:func addRule))
 
+(define BTN-REMOVE-RULES-PDA (make-button 70 25 (posn (- WIDTH 50) (- (* 5 CONTROL-BOX-H) 20))
+                                          #:text "Remove"
+                                          #:color CONTROLLER-BUTTON-COLOR
+                                          #:fntsize 24
+                                          #:func removeRule))
 
-(define BTN-NEXT (button 95 30 "NEXT 🠊" "solid" (make-color 116 156 188) (make-color 116 156 188) 25 #f #f (posn 55 140) showNext))
-(define BTN-PREV (button 95 30 "🠈 PREV" "solid" (make-color 116 156 188) (make-color 116 156 188) 25 #f #f (posn 55 175) showPrev))
-(define BTN-GENCODE (button 95 50 "GEN CODE" "solid" (make-color 240 79 77) (make-color 240 79 77) 30 #f #f (posn 55 220) genCode))
+(define BTN-TAPE-SCROLL-LEFT (make-button 30 TOP (posn 125 30)
+                                          #:text "🠈"
+                                          #:color CONTROLLER-BUTTON-COLOR
+                                          #:fntsize 35
+                                          #:func tapeScrollLeft))
+
+(define BTN-TAPE-SCROLL-RIGHT (make-button 30 TOP (posn (- WIDTH 215) 30)
+                                           #:text "🠊"
+                                           #:color CONTROLLER-BUTTON-COLOR
+                                           #:fntsize 35
+                                           #:func tapeScrollRight))
+
+(define BTN-SCROLL-LEFT-RULES (make-button 30 BOTTOM (posn 125 (- HEIGHT 37))
+                                           #:text "🠈"
+                                           #:color CONTROLLER-BUTTON-COLOR
+                                           #:fntsize 35
+                                           #:func scrollbarLeft))
+
+(define BTN-SCROLL-RIGHT-RULES (make-button 30 BOTTOM (posn (- WIDTH 215) (- HEIGHT 37))
+                                            #:text "🠊"
+                                            #:color CONTROLLER-BUTTON-COLOR
+                                            #:fntsize 35
+                                            #:func scrollbarRight))
+
+(define BTN-RUN (make-button 95 30 (posn 55 105)
+                             #:text "Run"
+                             #:color (make-color 29 153 68)
+                             #:fntsize 25
+                             #:func runProgram))
+
+(define BTN-HELP (make-button 25 25 (posn 130 80)
+                              #:text "?"
+                              #:fntsize 12
+                              #:color (make-color 39 168 242)
+                              #:round? #t
+                              #:func openHelp))
+
+(define BTN-COLOR-BLIND (make-button 25 25 (posn 130 120)
+                                     #:text "CB"
+                                     #:fntsize 12
+                                     #:color (make-color 252 186 3)
+                                     #:round? #t
+                                     #:func toogleColorBlindMode))
+
+(define BTN-DISPLAY (make-button 30 30 (posn 130 160)
+                                 #:text "DGr"
+                                 #:color (make-color 61 65 71)
+                                 #:fntsize 12
+                                 #:round? #t
+                                 #:func toggle-display))
+
+(define BTN-NEXT (make-button 40 30 (posn 80 140)
+                              #:text "🠊"
+                              #:color (make-color 116 156 188)
+                              #:fntsize 40
+                              #:func showNext))
+
+(define BTN-PREV (make-button 40 30 (posn 30 140)
+                              #:text "🠈"
+                              #:color (make-color 116 156 188)
+                              #:fntsize 40
+                              #:func showPrev))
+
+(define BTN-GENCODE (make-button 95 50 (posn 55 190)
+                                 #:text "GEN CODE"
+                                 #:color (make-color 240 79 77)
+                                 #:fntsize 30
+                                 #:func genCode))
 
 ;; pda stack scroll btn's
-(define BTN-STACK-UP (button STACK-WIDTH 25 "🠉" "solid" STACK-SCROLL-BUTTON-COLOR STACK-SCROLL-BUTTON-COLOR 33 #f #f (posn (- WIDTH 250) 73) stackScrollUp))
-(define BTN-STACK-DOWN (button STACK-WIDTH 25 "🠋" "solid" STACK-SCROLL-BUTTON-COLOR STACK-SCROLL-BUTTON-COLOR 33 #f #f (posn (- WIDTH 250) (- HEIGHT 87)) stackScrollDown))
+(define BTN-STACK-UP (make-button STACK-WIDTH 25 (posn (- WIDTH 250) 73)
+                                  #:text "🠉"
+                                  #:color STACK-SCROLL-BUTTON-COLOR
+                                  #:fntsize 33
+                                  #:func stackScrollUp))
 
+(define BTN-STACK-DOWN (make-button STACK-WIDTH 25 (posn (- WIDTH 250) (- HEIGHT 87))
+                                    #:text "🠋"
+                                    #:color STACK-SCROLL-BUTTON-COLOR
+                                    #:fntsize 33
+                                    #:func stackScrollDown))
 
-(define BTN-SIGMA-ADD (button 40 25 "ADD" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 20 #f #f (posn 30 70) addSigma))
-(define BTN-SIGMA-CLEAR (button 40 25 "CLEAR" "solid" CONTROLLER-BUTTON-COLOR CONTROLLER-BUTTON-COLOR 20 #f #f (posn 80 70) clearSigma))
+(define BTN-SIGMA-ADD (make-button 40 25 (posn 30 70)
+                                   #:text "ADD"
+                                   #:color CONTROLLER-BUTTON-COLOR
+                                   #:fntsize 20
+                                   #:func addSigma))
 
-
+(define BTN-SIGMA-CLEAR (make-button 40 25 (posn 80 70)
+                                     #:text "CLEAR"
+                                     #:color CONTROLLER-BUTTON-COLOR
+                                     #:fntsize 20
+                                     #:func clearSigma))
 
 
 ;; BUTTON-LIST: A List containing all buttons that are displayed on the scene.

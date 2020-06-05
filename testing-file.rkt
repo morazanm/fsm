@@ -9,7 +9,8 @@
                      '(F)       ;; the set of final states
                      '((S a F)  ;; the transition functions
                        (F a F)
-                       (F b F))))
+                       (F b F))
+                     'nodead))
 
 ;;(sm-visualize a* (list 'S (lambda (v) true))
 ;;            (list 'F (lambda (v) false)))
@@ -327,7 +328,7 @@
 ;(sm-visualize a*)
 ;;(sm-visualize a^nb^nc^n2)
 
-#|
+
 
 
 (define XX
@@ -401,7 +402,7 @@
    '(Q12)))
 
 ;;(define x(sm-graph XX))
-
+#|
 (define FSM (make-ndfa '(F S M)
                        '(f s m)
                        'F
@@ -468,7 +469,7 @@
 (define (C-INV ci)
   (and (>= (length ci) 1) (andmap (λ (s) (eq? s 'a)) ci)))
 
-(define (D-INV ci) (empty? ci))
+(define (D-INV ci) "Josh")
 
 (define (E-INV ci)
   (and (= (length ci) 1) (eq? (first ci) 'a)))
@@ -502,49 +503,33 @@
               (list 'D D-INV)
               (list 'E E-INV)
               (list 'F F-INV))
-
 |#
-(define M2 (make-ndfa
-           '(Q0 Q1 Q2 Q3 Q4 Q5 Q6 Q7)
-           '(a b c d e f g h i j k l m n o p q r s t u v w x y z)
-           'Q0
-           '(Q3 Q7)
-           `((Q0 a Q0)
-             (Q0 b Q0)
-             (Q0 c Q0)
-             (Q0 d Q0)
-             (Q0 e Q0)
-             (Q0 f Q0)
-             (Q0 g Q0)
-             (Q0 h Q0)
-             (Q0 i Q0)
-             (Q0 j Q0)
-             (Q0 k Q0)
-             (Q0 l Q0)
-             (Q0 m Q0)
-             (Q0 n Q0)
-             (Q0 o Q0)
-             (Q0 p Q0)
-             (Q0 q Q0)
-             (Q0 r Q0)
-             (Q0 s Q0)
-             (Q0 t Q0)
-             (Q0 u Q0)
-             (Q0 v Q0)
-             (Q0 w Q0)
-             (Q0 x Q0)
-             (Q0 y Q0)
-             (Q0 z Q0) 
-             (Q0 w Q1)
-             (Q1 e Q2)
-             (Q2 b Q3)
-             (Q0 e Q4)
-             (Q4 b Q5)
-             (Q5 a Q6)
-             (Q6 y Q7))
-           'no-dead))
 
-(sm-visualize M2)
+(define ONE-MISSING
+  (make-dfa '(S A B C D E F)
+            '(a b c)
+            'S
+            '(S A B C D E F)
+            '((S a A)   
+              (S b B)
+              (S c C)
+              (A a A)
+              (A b D)
+              (A c E)
+              (B a D)
+              (B b B)
+              (B c F)
+              (C a E)
+              (C b F)
+              (C c C)
+              (D a D)
+              (D b D)
+              (E a E)
+              (E c E)
+              (F b F)
+              (F c F))))
 
+;;(sm-visualize a* (list 'S (lambda(v) #t)) (list 'F (lambda(v) 5)))
 
+(sm-visualize XX)
 

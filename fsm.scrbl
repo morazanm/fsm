@@ -7,19 +7,19 @@
 
 @title{FSM}
 @author[(author+email "Marco T. Morazán" "marco.morazan@shu.edu")]
-A DSL for the Automata Theory Classroom
+@defmodule[fsm]
 
+
+A DSL for the Automata Theory Classroom
 
 FSM is a DSL designed to help ungraduate students understand Automata Theory by
 allowing them to construct and minipulate state machines and their grammars.
 For instructions on how to download the DSL, view the patch notes, or just browse the code, please see either the offical
 FSM readme on @(hyperlink "https://github.com/morazanm/fsm" "Github") or the
-new @(hyperlink "https://jschappel.github.io/FSM-Visualization/" "FSM website").
+new @(hyperlink "https://morazanm.github.io/fsm/index.html" "FSM website").
 
 
 @table-of-contents[]
-
-@defmodule[fsm]
 
 @section{Constants}
 @defidform[ARROW]
@@ -71,7 +71,7 @@ variable to abstract over the currently read symbol.
 @defidform[alphabet] A list of lowercase symbols not including EMP.
 
 @defidform[word]{
-A @italic{(listof symbol)}. Each symbol is a member of the same alphabet.}
+ A @italic{(listof symbol)}. Each symbol is a member of the same alphabet.}
 
 @defidform[state]  
 An uppercase letter (e.g., A) or a symbol comprised of an uppercase 
@@ -83,19 +83,19 @@ deterministic finite-state automaton. The symbol must be in the
 alphabet of the machine.
 
 @defidform[ndfa-rule]{ 
-A @italic{(list state symbol state)} representing a transition in a 
-nondeterministic finite-state automaton. The symbol must either be 
-in the alphabet of the machine or be EMP.}
+ A @italic{(list state symbol state)} representing a transition in a 
+ nondeterministic finite-state automaton. The symbol must either be 
+ in the alphabet of the machine or be EMP.}
 
 @defidform[pda-rule]{ 
-A @italic{(list (list state symbol pop) (list state push))} denoting a 
-transition in a pushdown automaton. The symbol must be in the 
-alphabet of the machine. The elements to remove from the 
-top of the stack are denoted by pop which is either EMP or
-a list of symbols where the leftmost is first element to pop. 
-The elements to place onto the top of the stack 
-are denoted by push which is either EMP or a list of symbols where 
-the leftmost symbol is the last element to push.}
+ A @italic{(list (list state symbol pop) (list state push))} denoting a 
+ transition in a pushdown automaton. The symbol must be in the 
+ alphabet of the machine. The elements to remove from the 
+ top of the stack are denoted by pop which is either EMP or
+ a list of symbols where the leftmost is first element to pop. 
+ The elements to place onto the top of the stack 
+ are denoted by push which is either EMP or a list of symbols where 
+ the leftmost symbol is the last element to push.}
 
 @defidform[tm-action] 
 If an alphabet symbol, it denotes the symbol written to the tape of a Turing
@@ -103,9 +103,9 @@ machine. Otherwise, it is the direction in which to move the head:
 RIGHT or LEFT.
 
 @defidform[tm-rule]{ 
-A @italic{(list (list state symbol) (list state tm-action))} representing a 
-transition in a nondeterministic Turing machine. The symbol must
-either be in the alphabet of the machine or be EMP.}
+ A @italic{(list (list state symbol) (list state tm-action))} representing a 
+ transition in a nondeterministic Turing machine. The symbol must
+ either be in the alphabet of the machine or be EMP.}
 
 
 @defidform[dfa-configuration] 
@@ -151,13 +151,13 @@ S is the starting nonterminal, N and B are nonterminal symbols, and
 a is a terminal symbol.
 
 @defidform[cfrule]{ A context-free grammar rule is a list of the
-form @italic{(A ARROW J)}, where A is a nonterminal symbol and J is either
-EMP or a an aggregate symbol of terminals and nonterminals.}
+ form @italic{(A ARROW J)}, where A is a nonterminal symbol and J is either
+ EMP or a an aggregate symbol of terminals and nonterminals.}
 
 @defidform[csrule]{A context-sensitive grammar rule is a list of the
-form @italic{(H ARROW K)}, where H is an aggregate symbol of terminals and
-at least one nonterminal and J is either
-EMP or a an aggregate symbol of terminals and nonterminals.}
+ form @italic{(H ARROW K)}, where H is an aggregate symbol of terminals and
+ at least one nonterminal and J is either
+ EMP or a an aggregate symbol of terminals and nonterminals.}
 
 @defidform[state-machine]  
 A representation of a statemachine in FSM. A state machine is one of the following:
@@ -223,26 +223,30 @@ A LABEL is a natnum.
  statr state, list of final states, and list of
  pda-rule. @italic{delta} is a transition relation.}
 
-@defproc[(make-tm    [sts (listof state)] 
-                     [sigma alphabet] 
-                     [start state] 
-                     [finals (listof state)] 
-                     [delta (listof ndfa-rule)]
-                     (accept state))
-         tm]{Builds a nondeterministic Turing machine. 
+@defproc*[([(make-tm    [sts (listof state)] 
+                        [sigma alphabet]
+                        [delta (listof ndfa-rule)]
+                        [start state] 
+                        [finals (listof state)]) tm]
+           [(make-tm    [sts (listof state)] 
+                        [sigma alphabet]
+                        [delta (listof ndfa-rule)]
+                        [start state] 
+                        [finals (listof state)]
+                        (accept state)) tm])]{Builds a nondeterministic Turing machine. 
  @italic{delta} is a transition relation.
  @italic{LM} is automatically added to the machine's alphabet.
  Rules for moving off the @italic{LM} are automatically added
  to the machine's rules.
- If the optional accept argument is given then the resulting
- Turing machine is as a language recognizer.}
+ @italic{If the optional accept argument is given then the resulting
+  Turing machine is as a language recognizer.}}
 
 @defproc[(ndfa->dfa [m ndfa])
          dfa]{Builds a @italic{deterministic} finite-state 
  automaton equivalent to the given ndfa.}
 
-@defproc[(regexp->ndfa [r regexp])
-         ndfa]{Builds a ndfa for the language of the given
+@defproc[(regexp->fsa [r regexp])
+         ndfa]{Builds a fsm for the language of the given
  regular expression.}
 
 @defproc[(sm-rename-states [sts (listof state)] [m1 state-machine])
@@ -290,12 +294,13 @@ A LABEL is a natnum.
 
 
 @section{State Machine Visualization}
+@bold{For more information about how the Vizualization tool works please visit the @(hyperlink "https://morazanm.github.io/fsm/index.html" "FSM Website")}
 @defproc[(sm-graph [m state-machine])
          image]{Converts the given state machine to .png image.@(linebreak)}
 
-@larger{@bold{You must have GraphViz installed as an enviroment variable
- for this to work. Please see
- for more information how to set this up. @(hyperlink "https://github.com/morazanm/fsm/tree/master/GraphViz" "FSM GraphViz ReadMe")}}
+@bold{You must have GraphViz installed as an enviroment variable
+  for this to work. Please see
+  for more information how to set this up. @(hyperlink "https://github.com/morazanm/fsm/tree/master/GraphViz" "FSM GraphViz ReadMe")}
 
 @defproc*[([(sm-visualize [sym symbol?]) void]
            [(sm-visualize [m state-machine]) void]
@@ -314,7 +319,7 @@ Empty Tool
   ;; hello
   (sm-visualize 'dfa)
   (sm-visualize 'ndfa)
-)
+  )
 @(linebreak)Prebuilt Machine
 @(racketblock
   #| --Prebuilt Machine-- |#
@@ -328,8 +333,7 @@ Empty Tool
                           (A a F)
                           (A b A))))
   (sm-visualize a*a)
-   )
-@(image "/GithubPages/Images/aStar.png" "img1" #:scale .6)
+  )
 
 
 @(linebreak)Prebuilt Machine with Invariants
@@ -354,7 +358,6 @@ Empty Tool
                 (list 'F F-INV)
                 (list 'A A-INV) 
                 (list 'ds DEAD-INV)))
-@(image "GithubPages/Images/aStarInv.png" "img2" #:scale .6)
 
 
 @section{State Machine Observers}

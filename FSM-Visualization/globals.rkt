@@ -20,7 +20,12 @@ Created by Joshua Schappel on 12/19/19
 (define BOTTOM(/ HEIGHT 8)) ;; The height of the rule display box
 (define STACK-WIDTH 100) ;; The width of the control stack image for pdas
 (define TOP (/ HEIGHT 10)) ;; The height of the top input display box
-
+;; img scaling below
+(define h 450)
+(define w 800)
+(define h-pda 300)
+(define w-pda 600)
+(define SMALL-IMG-SCALE 1.3)
 
 ;; -- GUI COLORS --
 (define COLOR-BLIND-MODE false)
@@ -39,6 +44,9 @@ Created by Joshua Schappel on 12/19/19
 (define TRUE-INV-HEX "#00ab037F")
 (define TRUE-INV-CB (make-color 1 133 113)) ;; Color for passed invarant for color blind mode
 (define TRUE-INV-CB-HEX "#0185717F")
+(define CAUTION-INV (make-color 255 234 3)) ;; Color for a invalid invariant return 
+(define CAUTION-INV-HEX "#ffea037F")
+
 
 (define FALSE-INV (make-color 245 35 20)) ;; Color for failed invariant (red)
 (define FALSE-INV-HEX "#f523147F")
@@ -50,12 +58,15 @@ Created by Joshua Schappel on 12/19/19
 (define CONTROLLER-BUTTON-COLOR (make-color 33 93 222)) ;; Color of button and center dot
 (define CONTROLLER-BUTTON-COLOR-HEX "#215dde")
 (define STACK-SCROLL-BUTTON-COLOR (make-color 135 204 222)) ;; Color of the stack buttons for pda's
-
+(define DEFAULT-BTN-COLOR (make-color 100 200 100)) ;; The default color for a button
+;; THIS FUNCTION IS JUST A PLACEHOLDER
+;;  This function is Just a placeholder for biulding out the GUI
+(define NULL-FUNCTION (lambda (w)
+                        w))
 
 ;; -- INPUTS --
 (define INPUT-COLOR (make-color 141 144 145)) ;; The color of an input field
-
-
+(define DEFAULT-IMP-COLOR (make-color 141 144 145))
 ;; -- CONTROL STACK --
 (define R 175)
 (define inner-R (- R 50))
@@ -63,10 +74,14 @@ Created by Joshua Schappel on 12/19/19
 
 
 ;; -- OTHER --
-(define TRUE-FUNCTION (lambda (v) '())) ;; The default function for a state variable
-(define PDA-TRUE-FUNCTION (lambda (v c) '())) ;; The default function for a state variable
-(define TM-TRUE-FUNCTION (lambda (v c) '()))  ;; The default function for a state variable
+(define PLACEHOLDER '$k$) ;; default return value for a inv function. 
+(define TRUE-FUNCTION (lambda (v) PLACEHOLDER)) ;; The default function for a state variable
+(define PDA-TRUE-FUNCTION (lambda (v c) PLACEHOLDER)) ;; The default function for a state variable
+(define TM-TRUE-FUNCTION (lambda (v c) PLACEHOLDER))  ;; The default function for a state variable
 (define MACHINE-TYPE null) ;; The type of machine (pda, ndfa, ..)
+(define TM-ORIGIONAL-TAPE '()) ;; set-tm-og-tape
+(define TM-ORIGIONAL-TAPE-POSN 0) ;; the initial tape position set by the user. Defualts to 0
+
 
 
 ;; -- MUTATORS --
@@ -109,10 +124,7 @@ Created by Joshua Schappel on 12/19/19
                           'shape "circle")))
 
 
-(define h 400)
-(define w 700)
-(define h-pda 300)
-(define w-pda 600)
+
 
 
 
@@ -153,6 +165,13 @@ Created by Joshua Schappel on 12/19/19
 ;; -- SETTERS --
 (define (set-tape-index-bottom value)
   (set! TAPE-INDEX-BOTTOM value))
+
+(define (set-tm-og-tape tape)
+  (set! TM-ORIGIONAL-TAPE tape))
+
+(define (set-tm-og-tape-posn posn)
+  (println posn)
+  (set! TM-ORIGIONAL-TAPE-POSN posn))
 
 (define (set-init-index-bottom value)
   (set! INIT-INDEX-BOTTOM value))

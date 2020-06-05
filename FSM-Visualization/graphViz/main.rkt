@@ -5,17 +5,19 @@
 (provide scaled-graph create-png)
 
 
-
-
-
 (define (scaled-graph img type)
-  (cond
-    [(<= (image-width img) (image-height img)) (if (equal? type 'pda)
-                                                   (scale (/ h-pda (image-height img)) img)
-                                                   (scale (/ h (image-height img)) img))]
-    [else (if (equal? type 'pda)
-              (scale (/ w-pda (image-width img)) img)
-              (scale (/ w (image-width img)) img))]))
+  (let ([smallest (>= (- w (image-width img))
+                      (- h (image-height img)))])
+    (cond
+      [(and (< (image-width img) (if (eq? 'pda type) (/ w-pda 2)(/ w 2)))
+            (< (image-height img) (if (eq? 'pda type) (/ h-pda 2)(/ h 2))))
+       (scale SMALL-IMG-SCALE img)]
+      [smallest  (if (equal? type 'pda)
+                     (scale (/ h-pda (image-height img)) img)
+                     (scale (/ h (image-height img)) img))]
+      [else (if (equal? type 'pda)
+                (scale (/ w-pda (image-width img)) img)
+                (scale (/ w (image-width img)) img))])))
 
 
 
@@ -51,6 +53,6 @@
       (if (or (member 'empty cur-rule) (member 'null cur-rule))
           (scaled-graph (graph->png g) MACHINE-TYPE)
           (scaled-graph (graph->png g #:rule cur-rule) MACHINE-TYPE)))))
-      ;(scaled-graph (bitmap/file (string-append (path->string (current-directory)) "vizTool.png")) MACHINE-TYPE))))
+;(scaled-graph (bitmap/file (string-append (path->string (current-directory)) "vizTool.png")) MACHINE-TYPE))))
   
 

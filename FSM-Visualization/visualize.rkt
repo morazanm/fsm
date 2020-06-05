@@ -615,11 +615,22 @@ Scene Rendering
                                                                                                                (create-gui-left
                                                                                                                 (machine-alpha-list machine)
                                                                                                                 (machine-type machine))) (/ (/ WIDTH 11) 2) (/ (- HEIGHT BOTTOM) 2) MAIN-SCENE))))))))
-    (cond [IS-GRAPH?   (draw-error-msg (world-error-msg w) (place-image (create-png
+    (cond [IS-GRAPH?   (begin
+                         ;;(rectangle 800 450 "solid" "green")
+                         #|
+
+(place-image (create-png
                                                                          machine
                                                                          (not (empty? (world-processed-config-list w)))
                                                                          (world-cur-state w)
-                                                                         (world-cur-rule w)) X0 Y0  no-arrow))] ;;graphviz here  
+                                                                         (world-cur-rule w)) X0 Y0  no-arrow)
+
+|#
+                         (draw-error-msg (world-error-msg w) (place-image (create-png
+                                                                         machine
+                                                                         (not (empty? (world-processed-config-list w)))
+                                                                         (world-cur-state w)
+                                                                         (world-cur-rule w)) X0 Y0  no-arrow)))] ;;graphviz here  
           [else (if (not (null? (world-cur-state w)))
                     (draw-error-msg (world-error-msg w)(draw-main-img w no-arrow))                                                                                                                   
                     (draw-error-msg (world-error-msg w) (draw-main-img w with-arrow)))])))
@@ -1235,6 +1246,10 @@ EVENT HANDLERS
     (cond
       [(and (equal? 1 (string-length k)) (or (or (key=? k "-") (key=? k " "))(string<=? "a" (string-downcase k) "z") (string<=? "0" (string-downcase k) "9")))
        (create-new-world-input w (check-and-add (world-input-list w) #t))]
+      [(key=? k "\r") (let ([active-textbox (filter (lambda (tbox) (is-active? tbox)) (world-input-list w))])
+                        (if (not (empty? active-textbox))
+                            (call-proc (car active-textbox) w)
+                            w))]
       [(key=? k "\b") (create-new-world-input w (check-and-add (world-input-list w) #f))]
       [else w])))
 

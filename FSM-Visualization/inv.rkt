@@ -32,29 +32,36 @@
         [false-color (if COLOR-BLIND-MODE
                          (if mode FALSE-INV-CB-HEX FALSE-INV-CB)
                          (if mode FALSE-INV-HEX FALSE-INV))]
+        [caution-color (if COLOR-BLIND-MODE
+                         (if mode CAUTION-INV-HEX CAUTION-INV)
+                         (if mode CAUTION-INV-HEX CAUTION-INV))]
         [non-color (if mode "transparent" DEFAULT-ARROW-COLOR)])
     (case MACHINE-TYPE
       [(pda)
        (cond
          [(equal? #t (func p-list STACK-LIST)) true-color]
          [(equal? #f (func p-list STACK-LIST)) false-color]
-         [else non-color])]
+         [(equal? PLACEHOLDER (func p-list STACK-LIST)) non-color]
+         [else caution-color])]
       [(tm)
        (let ((tape-posn (tm-machine-tape-posn machine))
              (tape (machine-sigma-list machine)))
          (cond
            [(equal? #t (func tape tape-posn)) true-color]
            [(equal? #f (func tape tape-posn)) false-color]
-           [else non-color]))]
+           [(equal? PLACEHOLDER (func p-list STACK-LIST)) non-color]
+           [else caution-color]))]
       [(tm-language-recognizer)
        (let ((tape-posn (tm-machine-tape-posn machine))
              (tape (machine-sigma-list machine)))
          (cond
            [(equal? #t (func tape tape-posn)) true-color]
            [(equal? #f (func tape tape-posn)) false-color]
-           [else non-color]))]
+           [(equal? PLACEHOLDER (func p-list STACK-LIST)) non-color]
+           [else caution-color]))]
       [else
        (cond
          [(equal? #t (func p-list)) true-color]
          [(equal? #f (func p-list)) false-color]
-         [else non-color])])))
+         [(equal? PLACEHOLDER (func p-list)) non-color]
+         [else caution-color])])))

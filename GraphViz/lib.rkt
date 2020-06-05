@@ -358,6 +358,8 @@ This file contains the fsm-graphviz library used to render the graph
     (match aList
       ;; dfa/ndfa legacy way
       [val #:when (symbol? val) (convertEMP val)]
+      ;; string check for regexp
+      [val #:when (string? val) (convertEMP (string->symbol val))]
       ;; dfa/ndfa
       [(list _ input _)(symbol->string input)]
       ;; pda
