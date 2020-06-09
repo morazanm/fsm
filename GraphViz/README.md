@@ -25,7 +25,16 @@ dot - graphviz version 2.38.0 (20140413.2041)
 ```
 
 ### Mac
-Coming Soon!
+#### Using homebrew
+```powershell
+brew install graphviz
+```
+#### Using MacPorts
+```powershell
+sudo port install graphviz
+```
 
 ### Linux
-Coming Soon!
+```powershell
+sudo apt install graphviz
+```
