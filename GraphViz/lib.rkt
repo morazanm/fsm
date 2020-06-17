@@ -118,11 +118,11 @@ This file contains the fsm-graphviz library used to render the graph
            (extractor (lambda (list accum)
                         (cond
                           [(empty? list) #f]
-                          [(and (equal? start-node (edge-start-node (car list)))
-                                (equal? end-node (edge-end-node (car list)))) accum]
+                          [(and (equal? (remove-dashes start-node) (edge-start-node (car list)))
+                                (equal? (remove-dashes end-node) (edge-end-node (car list)))) accum]
                           [else
                            (extractor (cdr list) (+ accum 1))])))
-
+          
            (index (extractor (graph-edge-list graph) 0)))
     (cond
       [(equal? #f index) (set-graph-edge-list! graph
@@ -272,8 +272,6 @@ This file contains the fsm-graphviz library used to render the graph
 (define (graph->bitmap g #:scale [scale #f])
   (let ((rel-path (build-path (current-directory) "graph.png")))
     (begin
-      (println rel-path)
-      (println (path-string? rel-path))
       (render-graph g "graph.dot" #:scale scale)
       (dot->png "graph.dot" "graph.png" #t)
       (bitmap/file rel-path))))
