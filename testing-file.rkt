@@ -531,5 +531,23 @@
 
 ;;(sm-visualize a* (list 'S (lambda(v) #t)) (list 'F (lambda(v) 5)))
 
-(sm-visualize XX)
+
+
+;;(sm-visualize XX)
+
+(define pda=2ba
+  (make-ndpda '(S M1 F)
+              '(a b)
+              '(a b)
+              'S
+              '(F)
+              `(((S ,EMP ,EMP) (M1 ,EMP))
+                ((M1 a ,EMP) (M1 (a a)))
+                ((M1 b ,EMP) (M1 (b)))
+                ((M1 a (b)) (M1 (a)))
+                ((M1 a (b b)) (M1 ,EMP))
+                ((M1 b (a)) (M1 ,EMP))
+                ((M1 ,EMP ,EMP) (F ,EMP)))))
+
+(sm-visualize pda=2ba)
 

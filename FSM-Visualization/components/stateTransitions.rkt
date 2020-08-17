@@ -76,16 +76,21 @@
            (init-state (caadr pl)) ;; The state that the machien ends in
            (next-input (cadar pl)) ;; The initial state's input
            (init-input (cadadr pl)) ;; The state that the machien ends in input
-           (next-stack (caddar pl)) ;; The elemetns that are on the init stack
+           (next-stack (caddar pl)) ;; The elemetns that are on the next stack
            (sec (cadr pl))  ;; The second list in the stack
-           (init-stack (caddr sec)) ;; The elements that are on the next stack
+           (init-stack (caddr sec)) ;; The elements that are on the init stack
 
            ;; take*: Integer List -> List or symbol
            ;; Purpose: functions the same as Racket's take function except if the list
-           ;;   result of take is the empty list then 'e is returned instead
+           ;;   result of take is the empty list then EMP is returned instead
            (take* (lambda (num a-list)
                     (let ((t (take a-list num)))
                       (if (empty? t) EMP t))))
+
+           (num-dif (lambda (l1 l2)
+                      (cond [(empty? l1) 0]
+                            [(equal? (car l1) (car l2)) (num-dif (cdr l1) (cdr l2))]
+                            [else (+ 1 (num-dif (cdr l1) (cdr l2)))])))
 
            ;; determine-consumed: none -> symbol
            ;; Purpose: determins what the input is that is consumed
@@ -99,16 +104,27 @@
            ;; Purpose: Returns the number of elements that have been pushed on the stack
            (determin-pushed (lambda ()
                               (let ((num (- (length next-stack) (length init-stack))))
-                                (if (< num 0) 0 num))))
+                                (cond
+                                  [(and (equal? (length init-stack) (length next-stack))
+                                        (not (equal? init-stack next-stack)))
+                                   (num-dif init-stack next-stack)]
+                                  [else
+                                  (if (< num 0) 0 num)]))))
 
            ;; determin-poped: none -> integer
            ;; Purpose: Returns the number of elements that have been poped off the stack
            (determin-poped (lambda ()
                              (let ((num (- (length init-stack) (length next-stack))))
-                               (if (< num 0) 0 num)))))
-
+                               (cond
+                                 [(and (equal? (length init-stack) (length next-stack))
+                                       (not (equal? init-stack next-stack)))
+                                  (num-dif init-stack next-stack)]
+                                 [else 
+                                  (if (< num 0) 0 num)])))))
+    ;;(println init-stack)
+    ;;(println next-stack)
     (cond
-      ;; If there is less then 2 elements then we are at the ed so return the default
+      ;; If there is less then 2 elements then we are at the end so return the default
       [(< (length pl) 2) '((empty empty empty) (empty empty))]
       [else
        (list

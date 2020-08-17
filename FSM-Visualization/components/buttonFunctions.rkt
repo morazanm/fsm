@@ -544,7 +544,7 @@ Created by Joshua Schappel on 12/19/19
 ;;      where the rule will be sceen by the user.
 (define getScrollBarPosition (lambda (lor rule)
                                (let ((ruleIndex (index-of lor rule))
-                                     (rule-num (determine-rule-number MACHINE-TYPE)))                    
+                                     (rule-num (determine-rule-number MACHINE-TYPE)))
                                  (cond
                                    ;; See if there is no current rule. If so return the starting index of the scrollbar
                                    [(or (equal? rule '(empty empty empty))
@@ -625,8 +625,8 @@ Created by Joshua Schappel on 12/19/19
            (get-input (lambda (cur-rule)
                         (case MACHINE-TYPE
                           [(pda)(cadar cur-rule)]
-                          [(tm) (println "Should not reach this")]
-                          [(tm-language-recognizer) (println "Should not reach this")]
+                          [(tm) (error "Interanl error| buttonFuntions.rkt - go-next")]
+                          [(tm-language-recognizer) (error "Interanl error| buttonFuntions.rkt - go-next")]
                           [else (cadr cur-rule)]))))
     (cond
       [(eq? nextState 'accept)
@@ -714,6 +714,9 @@ Created by Joshua Schappel on 12/19/19
 ;; showPrev: world -> world
 ;; shows the previous state that the machine was in
 (define showPrev (lambda(w)
+                   ;;(println (world-processed-config-list w))
+                   ;;(println(cdr (world-processed-config-list w)))
+                    (println "---")
                    (cond
                      [(empty? (world-processed-config-list w)) (redraw-world-with-msg w "The tape is currently empty. Please add variables to the tape, then press 'Run'" "Notice" MSG-CAUTION)]
                      [(empty? (cdr (world-processed-config-list w))) (redraw-world-with-msg w "You have reached the beginning of the machine! There are no more previous states." "Notice" MSG-CAUTION)]
@@ -731,8 +734,8 @@ Created by Joshua Schappel on 12/19/19
                                                               (length (cadr (car (world-processed-config-list w)))))
                                                              EMP
                                                              #t)]
-                                                   [(tm) (println "Should not reach this")]
-                                                   [(tm-language-recognizer) (println "Should not reach this")]
+                                                   [(tm) (error "Interanl error| buttonFuntions.rkt - showPrev")]
+                                                   [(tm-language-recognizer) (error "Interanl error| buttonFuntions.rkt - showPrev")]
                                                    [else(cadr cur-rule)])))
                               
                               ;; Updates the machine to have the approperate values. This function is only needed for tm, to
@@ -788,7 +791,7 @@ Created by Joshua Schappel on 12/19/19
                           ;;(println (world-processed-config-list w))
                           ;; Determine if the tape input should decrease. This does not happen
                           ;; with tm's and an empty
-                          (determin-tape (input-consumed?))
+                          ;(determin-tape (input-consumed?))
                           
 
                           ;; If the machine is a pda we need to push or pop!
