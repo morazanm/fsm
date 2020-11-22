@@ -89,13 +89,11 @@
                                                                                      [(equal? current-rule rule) HIGHTLIGHT-RULE]
                                                                                      [else DEFAULT-RULE])))
                                                                  )
-                                                          (case MACHINE-TYPE
-                                                            [(pda) (text (create-pda-rule rule) FONT-SIZE (determin-color))]
-                                                            [(dfa) (text (create-dfa-ndfa-rule rule) FONT-SIZE (determin-color))]
-                                                            [(ndfa) (text (create-dfa-ndfa-rule rule) FONT-SIZE (determin-color))]
-                                                            ;; tm and lang-rec
-                                                            [else (text (create-tm-rule rule) FONT-SIZE (determin-color))]
-                                                            ))))
+                                                          (match rule
+                                                            [(list _ _ _) (text (create-dfa-ndfa-rule rule) FONT-SIZE (determin-color))]
+                                                            [(list (list _ _ _) (list _ _)) (text (create-pda-rule rule) FONT-SIZE (determin-color))]
+                                                            [(list (list _ _) (list _ _)) (text (create-tm-rule rule) FONT-SIZE (determin-color))]
+                                                            [else (error "Invalid pattern match")]))))
                                          
                                          (txt (create-text rule)) ;; The textbox
                                          ;; get-width: none -> int

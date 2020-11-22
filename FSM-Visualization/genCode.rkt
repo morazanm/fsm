@@ -4,6 +4,7 @@
 Created by Joshua Schappel on 4/5/20
   This file contains all functionality for the GenCode function
 |#
+
 (require racket/date "./structs/machine.rkt" "./structs/world.rkt" "./structs/state.rkt"
          "../fsm-main.rkt" "globals.rkt" "./structs/input.rkt")
 
