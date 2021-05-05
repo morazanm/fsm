@@ -94,7 +94,7 @@ This file contains the fsm-graphviz library used to render the graph
 
 ;; add-node: symbol symbol symbol hash-map -> node
 ;; Purpose: Creates a node
-;; Acceptable types:
+;; Acceptable types (3rd parameter):
 ;;    start           => A start state
 ;;    startfinal      => A start and final state
 ;;    final           => A final state
@@ -131,6 +131,7 @@ This file contains the fsm-graphviz library used to render the graph
                                                 (graph-edge-list graph)))]
       [else
        (let ((x (edge-atb (list-ref (graph-edge-list graph) index))))
+         (displayln "here")
          (set-edge-atb! (list-ref (graph-edge-list graph) index)
                         (hash-set x 'label (cons val (hash-ref x 'label)))))])))
 
@@ -331,14 +332,14 @@ This file contains the fsm-graphviz library used to render the graph
        ;(println val)
        (cond
          [(string-contains? val "\n") (convet-trans-to-string (cdr lot)
-                                                          (string-append accum " " val)
-                                                          (+ len (string-length val)))]
+                                                              (string-append accum " " val)
+                                                              (+ len (string-length val)))]
          [(> (string-length val) RULE-LIMIT) (convet-trans-to-string (cdr lot)
-                                                            (string-append accum "\n" val "\n")
-                                                            0)]
+                                                                     (string-append accum "\n" val "\n")
+                                                                     0)]
          [(> len RULE-LIMIT) (convet-trans-to-string (cdr lot)
-                                                             (string-append accum "," "\n" val)
-                                                             (string-length (string-trim val)))]
+                                                     (string-append accum "," "\n" val)
+                                                     (string-length (string-trim val)))]
          [(convet-trans-to-string (cdr lot)
                                   str
                                   (+ len (string-length val)))]))]))
