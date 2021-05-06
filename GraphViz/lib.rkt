@@ -131,7 +131,6 @@ This file contains the fsm-graphviz library used to render the graph
                                                 (graph-edge-list graph)))]
       [else
        (let ((x (edge-atb (list-ref (graph-edge-list graph) index))))
-         (displayln "here")
          (set-edge-atb! (list-ref (graph-edge-list graph) index)
                         (hash-set x 'label (cons val (hash-ref x 'label)))))])))
 

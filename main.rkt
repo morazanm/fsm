@@ -1,7 +1,7 @@
 
 
 
-(module fsm Racket
+(module fsm racket
 
   (require "fsm-main.rkt" "./FSM-Visualization/visualize.rkt" "./GraphViz/render-graph.rkt")
 

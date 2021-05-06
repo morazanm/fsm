@@ -6,9 +6,11 @@ Written by: Joshua Schappel, Sachin Mahashabde Sena Karsavran, and Isabella Feli
 This file contains the sm-graph function
 |#
 
-(provide sm-graph
-         states->nodes
-         rules->edges)
+(provide
+ sm-graph
+ states->nodes
+ rules->edges
+ fsa->graph)
 
 
 
@@ -69,10 +71,8 @@ This file contains the sm-graph function
            (rules->edges (cdr lor) m-type G cur-start cur-end color)))])))
 
 
-
-;; sm-graph: machine -> Image
-;; Purpose: draws the Graphviz graph of the geven machine
-(define (sm-graph machine #:color [color-blind 0])
+;; fsa->graph :: machine -> graph
+(define (fsa->graph machine color-blind)
   (let ((g (create-graph 'G #:color color-blind)))
     (begin
       (states->nodes (sm-getstates machine)
@@ -80,4 +80,10 @@ This file contains the sm-graph function
                      (sm-getfinals machine)
                      g)
       (rules->edges (sm-getrules machine) (sm-type machine) g "$NULL" "$NULL" "black")
-      (graph->bitmap g))))
+      g)))
+
+
+;; sm-graph: machine -> Image
+;; Purpose: draws the Graphviz graph of the geven machine
+(define (sm-graph machine #:color [color-blind 0])
+  (graph->bitmap (fsa->graph machine color-blind)))

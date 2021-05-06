@@ -2,7 +2,7 @@
 ; Copyright (C) 2015 by Marco T. Morazan
 ; Written by: Marco T. Morazan, 2015
 
-#lang Racket
+#lang racket
 
 (require "fsa.rkt" "cfg.rkt"  "pda.rkt" 
          "regular-grammar.rkt" "csg.rkt" "tm.rkt" "transducer.rkt"
