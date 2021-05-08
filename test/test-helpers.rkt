@@ -9,7 +9,7 @@
   (syntax-parse stx
     [(_ verbosity (val:id ...))
      #:with (calls ...) (stx-map (lambda (test-name)
-                                   #`(define #,(gensym '_) (run-tests #,test-name verbosity)))
+                                   #`(run-tests #,test-name verbosity))
                                  #`(val ...))
      #`(begin
          calls ...)]))
