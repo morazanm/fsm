@@ -20,12 +20,13 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       - uses: actions/checkout@master
+      - name: Install Racket and Raco
       - uses: Bogdanp/setup-racket@v1.3 # see https://github.com/Bogdanp/setup-racket for more info
         with:
           architecture: 'x64'  # or: 'x64', 'x86', 'arm32', 'arm64' (or 'aarch64')
           distribution: 'full' # or: 'minimal'
           variant: 'CS'        # or: 'BC' for Racket Before Chez
-          version: 'stable'       # or: 'stable' for the latest version, 'current' for the latest snapshot
+          version: '7.9'       # or: 'stable' for the latest version, 'current' for the latest snapshot
    
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       # - uses: actions/checkout@v2
@@ -33,5 +34,4 @@ jobs:
       # Kick off the tests
       - name: Run tests
         run: |
-          raco pkg install rackunit
           raco test test
