@@ -68,29 +68,4 @@
               )
             ]
       manager))
-    
- 
-  (define a-trans (make-dfst '(A B C)
-                             '(a b c)
-                             'A
-                             '(B C)
-                             (list '(A a B pie)
-                                   '(B a A bye)
-                                   )))
-
-#|
-  (check-expect ((a-trans 'apply) '(a a)) 'reject)
-  (check-expect ((a-trans 'apply) '(b b)) 'reject)
-  (check-expect ((a-trans 'apply) '(a)) '(pie))
-  (check-expect ((a-trans 'apply) '(a a a))  '(pie bye pie))
-  (check-expect ((a-trans 'apply) '()) 'reject)
-
-  (check-expect ((a-trans 'transitions) '(a a))  '((()) ((pie) (a) B) ((bye pie) () A) reject))
-  (check-expect ((a-trans 'transitions) '(b b)) '((()) reject))
-  (check-expect ((a-trans 'transitions) '(a)) '((()) ((pie) () B) accept))
-  (check-expect ((a-trans 'transitions) '(a a a)) '((()) ((pie) (a a) B) ((bye pie) (a) A) ((pie bye pie) () B) accept))
-  (check-expect ((a-trans 'transitions) '()) '((()) reject))
-|#
-  ;(define test-6 (equal? (a-trans 'a) "error"))
-
-  )
+) ;; end module

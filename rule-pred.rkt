@@ -4,6 +4,10 @@
   (provide  check-rgrule check-cfgrule check-csgrule
             check-dfarule check-ndfarule check-pda-rules check-tmrules
             ;check-pdarule check-tmrule
+
+            ;; experted for testing
+            allBoth oneAndOne allOne hasOne
+            
             )
 
   ;sub-member: (listof symbols) string num num --> boolean
@@ -26,11 +30,6 @@
       (if (< (string-length str) 1) #f
           (loop (string-length str)))))
 
-  ;;(check-expect (allBoth 'AbAbA '(A) '(b)) #t)
-  ;;(check-expect (allBoth 'Abbbbbb '(b A) '()) #t)
-  ;;(check-expect (allBoth 'Edeee '(E) '(d i s es)) #f)
-
-
   ;purpose: to check that the symbol given is composed
   ;         of one symbol from the second list,
   ;         possibly followed by one symbol from the first list
@@ -42,23 +41,11 @@
                        (if (> (string-length str) 1)
                            (sub-member list1 str 1 2)
                            #t))])))
-  #|
-  (check-expect (oneAndOne 'aB '(A) '(b)) #f)
-  (check-expect (oneAndOne 'Ab '(A) '(b)) #f)
-  (check-expect (oneAndOne 'A '(A) '(b)) #f)
-  (check-expect (oneAndOne 'b '(A) '(b)) #t)
-  (check-expect (oneAndOne 'bA '(A) '(b)) #t)
-  (check-expect (oneAndOne 'bB '(A B) '(a b)) #t)
-  (check-expect (oneAndOne 'aA '(A B) '(a b)) #t)
-  (check-expect (oneAndOne 'bA '(A) '(b)) #t)
-|#
+
   ;purpose: to check if the symbol is composed entirely of
   ;         symbols from the list
   (define (allOne sym list1)
     (allBoth sym list1 '()))
-
-  ;;(check-expect (allOne 'ajd '(a j d b s e)) #t)
-  ;;(check-expect (allOne 'abd '(e a d r s)) #f)
 
   ;purpose: to ensure that at least one symbol from a list is contained
   (define (hasOne sym list1)
@@ -70,9 +57,6 @@
                     [(sub-member list1 str (sub1 end) end) #t]
                     [else (loop (sub1 end))]))]
       (loop (string-length str))))
-
-  ;;(check-expect (hasOne 'AbueopjsfaH '(y r l w p j s)) #t)
-  ;;(check-expect (hasOne 'asdfghjkl '(q w e r t y u i)) #f)
 
   ;purpose: to check any three-part rule
   (define (checkThrupples LHpred Mpred RHpred rules)
