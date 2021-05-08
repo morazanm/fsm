@@ -26,7 +26,7 @@ jobs:
           architecture: 'x64'  # or: 'x64', 'x86', 'arm32', 'arm64' (or 'aarch64')
           distribution: 'full' # or: 'minimal'
           variant: 'CS'        # or: 'BC' for Racket Before Chez
-          version: '7.9'       # or: 'stable' for the latest version, 'current' for the latest snapshot
+          version: 'stable'       # or: 'stable' for the latest version, 'current' for the latest snapshot
    
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       # - uses: actions/checkout@v2
