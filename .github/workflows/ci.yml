@@ -33,4 +33,5 @@ jobs:
       # Kick off the tests
       - name: Run tests
         run: |
+          raco pkg install rackunit
           raco test test
