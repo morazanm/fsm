@@ -1,4 +1,4 @@
-# FSM
+# FSM   ![Build Status](https://github.com/morazanm/fsm/actions/workflows/build.yml/badge.svg) ![Test Status](https://github.com/morazanm/fsm/actions/workflows/ci.yml/badge.svg)
 ##### FSM Library Version 1.4
 A Library for the Automata Theory Classroom
 

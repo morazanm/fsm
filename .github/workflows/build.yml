@@ -1,4 +1,4 @@
-name: Test
+name: Build
 
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
@@ -30,10 +30,9 @@ jobs:
           distribution: 'full' # or: 'minimal'
           variant: 'CS'        # or: 'BC' for Racket Before Chez
           version: 'stable'       # or: 'stable' for the latest version, 'current' for the latest snapshot
-   
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      # - uses: actions/checkout@v2
-
-      # Kick off the tests
-      - name: Run tests
-        run: xvfb-run raco test test
+          sudo: never
+          dest: '${HOME}/racket'
+      - name: Add racket to PATH
+        run: echo "${HOME}/racket/bin" >> $GITHUB_PATH
+      - name: Build Library
+        run: xvfb-run racket main.rkt
