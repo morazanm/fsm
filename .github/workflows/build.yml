@@ -35,4 +35,4 @@ jobs:
       - name: Add racket to PATH
         run: echo "${HOME}/racket/bin" >> $GITHUB_PATH
       - name: Build Library
-        run: racket main.rkt
+        run: xvfb-run racket main.rkt
