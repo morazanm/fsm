@@ -30,6 +30,9 @@ jobs:
           distribution: 'full' # or: 'minimal'
           variant: 'CS'        # or: 'BC' for Racket Before Chez
           version: 'stable'       # or: 'stable' for the latest version, 'current' for the latest snapshot
+          dest: '${HOME}/racket'
+      - name: Add racket to PATH
+        run: echo "${HOME}/racket/bin" >> $GITHUB_PATH
       - name: Install Package and its Dependencies
         run: raco pkg install --auto --batch
       - name: Build Library
