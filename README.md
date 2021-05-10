@@ -1,4 +1,4 @@
-# FSM
+# FSM   ![example workflow](https://github.com/morazanm/fsm/blob/master/.github/workflows/ci.yml/badge.svg)
 ##### FSM Library Version 1.4
 A Library for the Automata Theory Classroom
 
