@@ -36,5 +36,4 @@ jobs:
 
       # Kick off the tests
       - name: Run tests
-        run: |
-          raco test test
+        run: xvfb-run raco test test
