@@ -29,6 +29,9 @@
          [((_ _ _) (_ _)) <- pda-rule-to-string]
          [((_ _) (_ _)) <- tm-rule-to-string])
 
+
+
+
 (check-equal? (graph-adapter '((A a B) (B a B))) '("AaB" "BaB") "fsa rule should return AaBBaB")
 (check-equal? (graph-adapter '((A 1 B) (B a B))) '("SPECIAL A1B" "SPECIAL BaB") "special fsa rule should return AaBHELLO BaB")
 (check-equal? (graph-adapter '(((A a A) (A a)) ((B b B) (B b)))) '("AaAAa" "BbBBb") "pda rule should return AaAAaBbBBb")

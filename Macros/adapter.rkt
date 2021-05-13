@@ -1,109 +1,50 @@
 #lang racket
-(require (for-syntax racket/syntax syntax/stx syntax/parse racket/list racket/string))
+(require
+  (for-syntax racket/syntax syntax/stx syntax/parse racket/list racket/string syntax/to-string racket/match))
+#|  Adapter pattern Macro. Written by Joshua Schappel 5/13/21
+See Macro readme for exact transformation and basic usage.
+|#
+
 (provide adapter)
-
 (begin-for-syntax
-  ;; transform-id :: syntax -> synatx
-  ;; Purpose: trandformes the syntax into 'a-<randome_number>'
-  (define (transform-id id)
-    (gensym "a-"))
+  ;; transform each variable that contains a ?
+  (define (trans-case stx-list)
+    (define (helper stx-list patts guards)
+      (match stx-list
+        ['() (list patts guards)]
+        [`(,f ,r ...) #:when (symbol? (syntax->datum f))
+                      (let [(last-letter (last ((compose string->list symbol->string syntax->datum) f)))
+                            (sym (gensym "a-"))]
+                        (if (equal? last-letter #\?)
+                            (helper r (cons #`#,sym patts) (cons #`(#,f #,sym)  guards))
+                            (helper r (cons f patts) guards)))]
+        [`(,f ,r ...) (helper r (cons f patts) guards)]))
+    (helper stx-list '() '()))
 
-  ;; transform-list :: syntax -> syntax-pair
-  ;; syntax pair: '(identifier procedure/'NONE)
-  ;; Purpse: if the syntax contains a procedure(i.e. number?) we
-  ;;   return a new identifier and the origional
-  (define (transform-list stx)
-    (for/list ([val (syntax->list stx)])
-      (if (symbol? (syntax->datum val))
-          (let ([s ((compose symbol->string syntax->datum) val)])
-            (cond
-              [(string-contains? (substring s (sub1 (string-length s))) "?") (list (transform-id val) val)]
-              [else (list val 'NONE)]))
-          (list val 'NONE))))
+  ;; transform each row of the pattern
+  (define (trans-row stx-patt stx-func)
+    (syntax-parse stx-patt
+      [((_ ...)...) (let* [(f (stx-map (λ (inner) (trans-case (syntax->list inner))) stx-patt))
+                           (g (flatten (map (λ (x) (cadr x)) f)))
+                           (t (map (λ (x) #`(list #,@(car x))) f))]
+                      #`[(list #,@t) #:when (and #,@g) (map #,stx-func data)])]
+      [(_ ...) (match-let [(`(,p ,g) (trans-case (syntax->list stx-patt)))]
+                 #`[(list #,@p) #:when (and #,@g) (map #,stx-func data)])])))
 
-  ;; parse-match :: synatx -> listof(listof(syntax-pairs))
-  ;; Purpose: converts the syntax to pairs for parsing the match statment for
-  ;;  guard clauses
-  (define (parse-match clause)
-    (syntax-parse clause
-      [(list (s ...) ...) (stx-map (lambda (inner) (transform-list inner))
-                                   #'((s ...) ...))]
-      [(s ...) (list (transform-list #'(s ...)))]))
-
-  ;; build-guard :: listof(listof(pairs)) -> synatx
-  ;; Purpose: builds the guard clause for the function. returns false if
-  ;;  there are not any guard clauses to be made.
-  (define (build-guard lop)
-    (define guards (flatten
-                    (filter-map (lambda (outter)
-                                  (let ([vals (filter-map (lambda (inner)
-                                                            (if (eq? (cadr inner) 'NONE)
-                                                                #f
-                                                                (with-syntax ([t1 (second inner)]
-                                                                              [t2 (first inner)])
-                                                                  #`(t1 t2)))) outter)])
-                                    (if (empty? vals) #f vals))) lop)))
-    (define guard-clause
-      (cond
-        [(= 1 (length guards)) (with-syntax([t (car guards)])
-                                 #`(#:when t))]
-        [(> (length guards) 1)
-         #`(#:when (and #,@guards))]
-        [else #'(void)]))
-
-    (if (empty? guards)
-        #f
-        #`(#,@guard-clause)))
-        
-  ;; transform-match :: syntax syntax -> syntax
-  ;; Purpose: takes in a syntax and converts it the the propper racket match synatx
-  (define (transform-match clause func)
-    (let* ((parsed-match (parse-match clause))
-           ;; fields are the first of the syntax pairs
-           (fields (let ([t (map (lambda (outter) (map (lambda (inner) (car inner)) outter)) parsed-match)])
-                     (if (eq? 1 (length t))
-                         (car t)
-                         t)))
-           ;; the guard cause syntax i.e. #:when ...
-           (guard-clause (build-guard parsed-match)))
-      (with-syntax ([f func])
-        (if guard-clause ;; if there is not a guard clause then dont add it...
-            (syntax-parse fields
-              [((field ...) ...) #`[(list (field ...) ...) #,@guard-clause (map f data)]]
-              [(field ...) #`[(field ...) #,@guard-clause (map f data)]])
-            (syntax-parse fields
-              [((field ...) ...) #`[(list (field ...) ...) (map f data)]]
-              [(field ...) #`[(field ...) (map f data)]]))))))
-
-;; adapter :: synatx -> syntax
-;; Purpose: This is the marco that converts the adapter syntax into the approperate racket
-;;  function. The name of the function is: <name supplied>-adapter. See examples below for
-;;  more details.
 (define-syntax (adapter stx)
-  (define-syntax-class wc
-    #:description "basic symbol"
-    (pattern _))
   (define-syntax-class lowc
-    #:description "valid lou"
-    (pattern (patt:wc ...))
-    (pattern ((npatt:wc ...) ...)))
-
+    (pattern (single:expr ...))
+    (pattern ((nested:expr ...) ...)))
+  (define-syntax-class branch
+    #:datum-literals (<-)
+    (pattern (left:lowc <- right:id)))
   (syntax-parse stx
-    [(_ adapter-name:id (p:lowc ... <- func:id) ...)
+    [(_ adapter-name:id a-case:branch ...)
      #:with adapt-fn-name (format-id #'adapter-name "~a-adapter" #'adapter-name)
-     #:with (conds ...) (stx-map (lambda (p f)
-                                   (syntax-parse p
-                                     [(((s ...) ...))
-                                      #:with fn f
-                                      #:with t (transform-match #'(list (list s ...) ...) #'fn)
-                                      #'t]
-                                     [((s ...))
-                                      #:with fn f
-                                      #:with t (transform-match #'(list s ...) #'fn)
-                                      #'t]))
-                                 #'((p ...) ...)
-                                 #'(func ...))
+     #:with (conds ...) (stx-map (lambda (l r) (trans-row l r))
+                                 #`(a-case.left ...) #`(a-case.right ...))
      #`(define (adapt-fn-name data)
          (match (car data)
            conds ...
-           [else (error "Invalid pattern supplied")]))]))
+           [else (error (format "Invalid pattern supplied to function ~s"
+                                (string adapt-fn-name)))]))]))
