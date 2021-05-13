@@ -153,6 +153,7 @@ To visualize a dfa or ndfa create a new file and require fsm. Then provide one o
 ## Publications
 - [Functional Automata - Formal Languages for Computer Science Students](https://arxiv.org/abs/1412.4878)
 - [FSM Error Messages](https://arxiv.org/abs/1906.11421v1)
+- [Visual Designing and Debugging of Deterministic Finite-State Machines in FSM](https://arxiv.org/abs/2008.09254)
 
 ## Contributors
 - [Marco T. Morazán](https://github.com/morazanm)
