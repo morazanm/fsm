@@ -13,7 +13,7 @@ const PUBLICATIONS = [
         authors: ["Marco T Morazán", "Joshua Schappel", "Sachin Mahashabde"],
         description: "This article presents a visualization tool for designing and debugging deterministic ﬁnite-state \
                         machines in FSM–a domain speciﬁc language for the automata theory classroom. Like other...",
-        link: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        link: "https://arxiv.org/abs/2008.09254",
     },
     {
         title: "FSM Error Messages",
