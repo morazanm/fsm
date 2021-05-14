@@ -2,16 +2,15 @@
 (require (for-syntax racket/syntax syntax/stx syntax/parse))
 (provide builder)
 
-
-
 (define-syntax (builder stx)
   (define-syntax-class distinct-fields
-    #:description "sequence of distinct field names"
+    #:description "builder structure field names"
+    #:datum-literals (:)
     (pattern ((~or* (field:id : val:expr) field:id) ...)
+             #:with (id ...) #'(field ...)
              #:fail-when (check-duplicate-identifier
                           (syntax->list #'(field ...)))
-             "duplicate field name"
-             #:with (id ...) #'(field ...)))
+             "Duplicate field name"))
   (syntax-parse stx
     [(_ defname:id (sname:id fnames:distinct-fields))
      #:with bname (format-id #'sname "~a-builder-s" #'sname) ;; name of the builder struct
