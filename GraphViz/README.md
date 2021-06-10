@@ -51,3 +51,7 @@ sudo yum install graphviz
 ```bash
 sudo yum install graphviz
 ```
+### Arch
+```bash
+pacman -S graphviz
+```
