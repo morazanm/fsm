@@ -34,7 +34,24 @@ brew install graphviz
 sudo port install graphviz
 ```
 
-### Linux
-```powershell
+## Linux 
+#### Debian:
+```bash
 sudo apt install graphviz
+```
+#### Ubuntu:
+```bash
+sudo apt install graphviz
+```
+#### Fedora:
+```bash
+sudo yum install graphviz
+```
+#### Redhat Enterprise and CentOs
+```bash
+sudo yum install graphviz
+```
+#### Arch
+```bash
+pacman -S graphviz
 ```

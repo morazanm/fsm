@@ -1,5 +1,5 @@
 # FSM   ![Build Status](https://github.com/morazanm/fsm/actions/workflows/build.yml/badge.svg) ![Test Status](https://github.com/morazanm/fsm/actions/workflows/ci.yml/badge.svg)
-##### FSM Library Version 1.4
+##### FSM Library Version 1.6
 A Library for the Automata Theory Classroom
 
 
@@ -153,6 +153,7 @@ To visualize a dfa or ndfa create a new file and require fsm. Then provide one o
 ## Publications
 - [Functional Automata - Formal Languages for Computer Science Students](https://arxiv.org/abs/1412.4878)
 - [FSM Error Messages](https://arxiv.org/abs/1906.11421v1)
+- [Visual Designing and Debugging of Deterministic Finite-State Machines in FSM](https://arxiv.org/abs/2008.09254)
 
 ## Contributors
 - [Marco T. Morazán](https://github.com/morazanm)
