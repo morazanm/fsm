@@ -549,5 +549,5 @@
                 ((M1 b (a)) (M1 ,EMP))
                 ((M1 ,EMP ,EMP) (F ,EMP)))))
 
-(sm-visualize pda=2ba)
+(sm-visualize a*)
 

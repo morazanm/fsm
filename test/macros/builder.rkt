@@ -21,3 +21,8 @@
 (check-equal? (point2-x p-defualt2) 10 "10 is the default value that was set")
 (check-equal? (point2-y p-defualt2) (list 1 2 3) "'(1 2 3) is the default list that was set")
 (check-equal? (point2-z p-defualt2) 50 "50 is the value that the pb set for z")
+
+
+;(define (add-x val) (set-point2-builder-s-x! temp val))
+;(define (add-y val) (set-point2-builder-s-y! temp val))
+;(define (add-z val) (set-point2-builder-s-z! temp val))
