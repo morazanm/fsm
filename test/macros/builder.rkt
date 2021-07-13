@@ -4,7 +4,7 @@
 ;; --- Pre defined builder ---
 (builder pb2 (point2 ([x : 10]
                       [y : (list 1 2 3)]
-                      z)))
+                      [z])))
 
 
 
