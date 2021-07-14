@@ -7,7 +7,7 @@
   (define-syntax-class distinct-fields
     #:description "builder structure field names and values"
     #:datum-literals (:)
-    (pattern ((field:id (~optional (~seq : val:expr) #:defaults ([val #`'NONE])) ...) ...)
+    (pattern ((field:id (~optional (~seq : val:expr) #:defaults ([val #`'NONE]))) ...)
              #:with (id ...) #'(field ...)
              #:fail-when (check-duplicate-identifier
                           (syntax->list #'(field ...)))
