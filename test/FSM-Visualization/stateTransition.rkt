@@ -3,7 +3,7 @@
 
 
 (module+ test
-  (require rackunit rackunit/gui)
+  (require rackunit)
 
   (define getCurrentRule
     (test-suite "Tests getCurRule Function"
