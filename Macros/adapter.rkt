@@ -16,7 +16,7 @@ See Macro readme for exact transformation and basic usage.
   (define (trans-case stx-list)
     (define (helper stx-list patts guards)
       (match stx-list
-        ['() (list patts guards)]
+        ['() (list (reverse patts) guards)]
         [`(,f ,r ...) #:when (symbol? (syntax->datum f))
                       (let [(sym (gensym "a-"))]
                         (if (eq? (syntax->datum f) '_)

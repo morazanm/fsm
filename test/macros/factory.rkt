@@ -10,22 +10,22 @@
 (define (other2 data) 'other2)
   
 (factory fsa
-         [(number? 1 symbol?) <- other]
-         [(_ 2 3) <- josh]
-         [(1 _ 1) <- marco]
+         [(number? number? symbol?) <- other]
+         [(_ number? number?) <- josh]
+         [(number? _ number?) <- marco]
          [(_ _ _) <- sach]
          [(_ _) <- sena])
 
-(check-equal? (fsa-factory '((1 2 3))) 'josh "Should return 'josh")
+(check-equal? (fsa-factory '((hi 2 3))) 'josh "Should return 'josh")
 (check-equal? (fsa-factory '((10 1 hello))) 'other "Should return 'other")
-(check-equal? (fsa-factory '((1 3 3))) 'sach "Should return 'sach")
-(check-equal? (fsa-factory '((1 1 1))) 'marco "Should return 'marco")
+(check-equal? (fsa-factory '((hi hi hi))) 'sach "Should return 'sach")
+(check-equal? (fsa-factory '((1 hi 1))) 'marco "Should return 'marco")
 (check-equal? (fsa-factory '((61 62))) 'sena "Should return 'sena")
 
 
 #| TWO LEVELS OF LISTS |#
 (factory pda
-         [((symbol? symbol?)(number? 1 symbol?)) <- sena]
+         [((symbol? symbol?)(number? number? symbol?)) <- sena]
          [((_ _)(_ _ _)) <- josh]
          [(number? _ symbol?) <- other2]
          [((number? _ number?) (_ _)) <- marco]
