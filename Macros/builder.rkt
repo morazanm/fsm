@@ -14,29 +14,27 @@
              "Duplicate field name"))
   (syntax-parse stx
     [(_ defname:id (sname:id fnames:distinct-fields))
-     #:with bname (format-id #'sname "~a-builder-s" #'sname) ;; name of the builder structure
      #:with bname-func (format-id #'sname "~a-builder" #'sname) ;; name of the builder function
      #:with msg-handler (format-id #'defname "~a-msg-handler" #'sname) ;; name of the msg-control function
      #:with (hidden-fn-names ...) (stx-map (λ (f) (format-id f "add-~a" f)) #`(fnames.field ...)) ;; names of the msg passing functions
-     #:with (field-checks ...) (stx-map (λ (f) (with-syntax [(id (format-id f "~a-~a" #'bname f))] ;; if statements used to check that there are no 'NONE's left in the builder struct
+     #:with (field-checks ...) (stx-map (λ (f) (with-syntax [(id (format-id f "~a-~a" #'sname f))] ;; if statements used to check that there are no 'NONE's left in the builder struct
                                                  #`(if (eq? 'NONE (id temp))
                                                        (error (format "Field ~a has not been set for the builder" #,((compose symbol->string syntax->datum) f)))
                                                        (id temp))))
                                         #`(fnames.field ...))
      
      #`(begin
-         (struct sname (fnames.field ...) #:transparent)
+         (struct sname ([fnames.field  #:mutable] ...) #:transparent)
          (define (bname-func)
-           (struct bname ([fnames.field  #:mutable] ...))
-           (define temp (bname fnames.val ...))
+           (define temp (sname fnames.val ...))
 
            #,@(stx-map (λ (f) #`(define (#,(format-id f "add-~a" f) val)
-                                  (#,(format-id f "set-~a-~a!" #'bname f) temp val)))
+                                  (#,(format-id f "set-~a-~a!" #'sname f) temp val)))
                        #`(fnames.field ...))
 
            (define (builder->struct)
              (define temp-struct (sname field-checks ...))
-             (set! temp (bname fnames.val ...))
+             (set! temp (sname fnames.val ...))
              temp-struct)
 
            (define (msg-handler msg)
