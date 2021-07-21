@@ -11,8 +11,8 @@ See Macro readme for exact transformation and basic usage.
   ;; If the ident is a _ then, we leave it, otherwise it is a procedure, so
   ;; we transforme the procedure into an identifer for the match case and add the
   ;; procedure to the guard. For Example:
-  ;;    input:  (_ symbol? _)
-  ;;    output: (list (_ a-123123 _) (a-123123))
+  ;;    input:  (_ symbol? number?)
+  ;;    output: (list (_ a-1 a-2) (list (symbol? a-1) (number? a-2)))
   (define (trans-case stx-list)
     (define (helper stx-list patts guards)
       (match stx-list
