@@ -31,13 +31,19 @@ See Macro readme for exact transformation and basic usage.
   ;;   input: ((_ number? _) (_ symbol?))       pda-rule-to-string
   ;;   output: [(list (list _ a-1 _) (list a-2 _)) #:when (and (number? a-1) (symbol? a-2)) (map pda-rule-to-string data)]
   (define (trans-row stx-patt stx-func)
+    (define (helper patts guards func)
+      (if (null? guards)
+          #`[(list #,@patts) #,func]
+          #`[(list #,@patts) #:when (and #,@guards) #,func]))
     (syntax-parse stx-patt
       [((_ ...)...) (let* [(f (stx-map (λ (inner) (trans-case (syntax->list inner))) stx-patt))
-                           (g (flatten (map (λ (x) (cadr x)) f)))
-                           (t (map (λ (x) #`(list #,@(car x))) f))]
-                      #`[(list #,@t) #:when (and #,@g) (map #,stx-func data)])]
-      [(_ ...) (match-let [(`(,p ,g) (trans-case (syntax->list stx-patt)))]
-                 #`[(list #,@p) #:when (and #,@g) (map #,stx-func data)])])))
+                           (new-var-names (flatten (map (λ (x) (cadr x)) f)))
+                           (patts (map (λ (x) #`(list #,@(car x))) f))]
+                      (helper patts new-var-names stx-func))]
+      [(_ ...) (match-let [(`(,patts ,guards) (trans-case (syntax->list stx-patt)))]
+                 (helper patts guards stx-func))])))        
+                 
+            
 
 (define-syntax (adapter stx)
   (define-syntax-class lowc
@@ -50,6 +56,6 @@ See Macro readme for exact transformation and basic usage.
      #:with adapt-fn-name (format-id #'adapter-name "~a-adapter" #'adapter-name) ; function name for adapter
      #`(define (adapt-fn-name data)
          (match (car data)
-           #,@(stx-map (lambda (l r) (trans-row l r)) ;; convert to racket match case
+           #,@(stx-map (λ (l r) (trans-row l #`(map #,r data))) ;; convert to racket match case
                        #`(a-case.left ...) #`(a-case.right ...))
            [else (error "Invalid pattern supplied to adapter")]))]))
