@@ -67,4 +67,5 @@ aStar.png
 *.3
 *.4
 
-testing-isabella.rkt
+# html
+/doc/*
