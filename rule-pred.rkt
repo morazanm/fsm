@@ -22,13 +22,15 @@
             (define str (symbol->string sym))
             ;loop: number --> boolean
             ;purpose: to iterate through the word
-            (define (loop end)
+            (define (loop st end)
               (cond [(zero? end) #t]
-                    [(sub-member combined str (sub1 end) end) (loop (sub1 end))]
-                    [else #f]))
-            ]
-      (if (< (string-length str) 1) #f
-          (loop (string-length str)))))
+                    [(zero? (add1 st)) #f]
+                    [(sub-member combined str st end)
+                     (loop (sub1 st) st)]
+                    [else (loop (sub1 st) end)]))]
+      (let ([e (string-length str)])
+        (if (< e 1) #f
+            (loop (sub1 e) e)))))
 
   ;purpose: to check that the symbol given is composed
   ;         of one symbol from the second list,
