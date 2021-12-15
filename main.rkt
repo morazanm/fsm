@@ -35,11 +35,12 @@
    grammar-union grammar-concat
    
    ; grammar observers
+   grammar-derive/timeout 
    grammar-derive grammar-gettype
    grammar-getnts grammar-getalphabet grammar-getrules grammar-getstart 
 
    ;grammar testers
-   grammar-both-derive grammar-testequiv grammar-test
+   grammar-both-derive grammar-testequiv grammar-test grammar-testequiv/timeout
 
    ; regexp constructors
    empty-regexp singleton-regexp union-regexp concat-regexp kleenestar-regexp
