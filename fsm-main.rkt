@@ -7,7 +7,8 @@
 (require "fsa.rkt" "cfg.rkt"  "pda.rkt" 
          "regular-grammar.rkt" "csg.rkt" "tm.rkt" "transducer.rkt"
          "regexp.rkt" "constants.rkt" "word.rkt" "misc.rkt"
-         "state.rkt" "sm-getters.rkt" "grammar-getters.rkt" 
+         "state.rkt" "sm-getters.rkt" "grammar-getters.rkt"
+         racket/engine
          "regexp-predicate.rkt" "abstract-predicate.rkt")
   
 (provide
@@ -42,11 +43,12 @@
  grammar-union grammar-concat
    
  ; grammar observers
+ grammar-derive/timeout 
  grammar-derive grammar-gettype
  grammar-getnts grammar-getalphabet grammar-getrules grammar-getstart 
 
  ;grammar testers
- grammar-both-derive grammar-testequiv grammar-test
+ grammar-both-derive grammar-testequiv grammar-test grammar-testequiv/timeout
 
  ; regexp constructors
  empty-regexp singleton-regexp union-regexp concat-regexp kleenestar-regexp
@@ -266,7 +268,15 @@
           [(cfg? g1) (cfg-concat g1 g2)]
           [(csg? g1) (csg-concat g1 g2)]
           [else (error (format "Unknown grammar type"))])))
-  
+
+; grammar word timeout -> derivation or "Not a member" or "Too short" or "Timeout"
+(define (grammar-derive/timeout cfg w t)
+  (define cfg-w/timeout (engine (λ (f) (grammar-derive cfg w))))
+  (let ([res? (engine-run t cfg-w/timeout)])
+    (if res?
+        (engine-result cfg-w/timeout)
+        (format "The word ~w timed out when testing." w))))
+
 ; grammar word -> derivation or "Not a member"
 (define (grammar-derive g w)
   (cond [(rg? g) (rg-derive g w)]
@@ -289,7 +299,29 @@
           [(csg? g) (error (format "test-grammar: A context-sensitive grammar must be tested manually."))]
           [else (error (format "Unknown grammar type"))])))
   
-  
+; grammar word -> (or true (listof word))
+(define (grammar-testequiv/timeout g1 g2 . l)
+  (let* ((numtests (if (null? l) NUM-TESTS (car l)))
+         (sigma1 (cond [(rg? g1) (rg-getalphabet g1)]
+                       [(cfg? g1) (cfg-get-alphabet g1)]
+                       [(csg? g1) (csg-getsigma g1)]))
+         (sigma2 (cond [(rg? g2) (rg-getalphabet g2)]
+                       [(cfg? g2) (cfg-get-alphabet g2)]
+                       [(csg? g2) (csg-getsigma g2)]))
+         (testlist (append (generate-words (floor (/ numtests 2)) sigma1 '())
+                           (generate-words (ceiling (/ numtests 2)) sigma2 '())))
+         (res1 (map (lambda (w) 
+                      (let ((r (grammar-derive/timeout g1 w 30000)))
+                        (if (string? r) r (last r))))
+                    testlist))
+         (res2 (map (lambda (w) 
+                      (let ((r (grammar-derive/timeout g2 w 30000)))
+                        (if (string? r) r (last r))))
+                    testlist))
+         (diffs (get-differences res1 res2 testlist)))
+    (if (null? diffs) true diffs)))
+
+
 ; grammar word -> (or true (listof word))
 (define (grammar-testequiv g1 g2 . l)
   (let* ((numtests (if (null? l) NUM-TESTS (car l)))
