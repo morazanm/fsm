@@ -275,7 +275,7 @@
   (let ([res? (engine-run t cfg-w/timeout)])
     (if res?
         (engine-result cfg-w/timeout)
-        (format "The word ~w timed out when testing." w))))
+        (format "The word ~s timed out when testing." w))))
 
 ; grammar word -> derivation or "Not a member"
 (define (grammar-derive g w)
