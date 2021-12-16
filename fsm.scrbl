@@ -68,7 +68,8 @@ variable to abstract over the currently read symbol.
 
 
 
-@defidform[alphabet] A list of lowercase symbols not including EMP.
+@defidform[alphabet] A list of lowercase symbols with a string representation
+of length one not including EMP.
 
 @defidform[word]{
  A @italic{(listof symbol)}. Each symbol is a member of the same alphabet.}
