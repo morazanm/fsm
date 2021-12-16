@@ -48,8 +48,8 @@
                      [(equal? a b) 0]
                      [(and (string? a) (regexp-match #rx"timed out" a)) 0]
                      [(and (string? b) (regexp-match #rx"timed out" b)) 0]
-                     [else c])) "
-                 r1" 
+                     [else c]))
+                 r1 
                  r2
                  low)))
   
