@@ -477,9 +477,9 @@ Empty Tool
          grammar]{Builds a grammar for the language of the given
  dfa, ndfa, or ndpda.}
 
-@defproc[(grammar-rename-nts [g grammar])
-         grammar]{Renames the nonterminals of the given grammar.}
-
+@defproc[(grammar-rename-nts [nts (listof nonterminals)][g grammar])
+         grammar]{Renames the nonterminals of the given grammar such that the renamed grammar
+ does not include any nonterminals in the given list of nonterminals.}  
 
 @section{Grammar Observers}
 

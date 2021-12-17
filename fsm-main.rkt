@@ -233,7 +233,7 @@
           [(eq? t1 'tm) (error (format "Converting a Turing machine to a Context-Sensitive Grammar is not yet implemented....stay tuned!"))]
           [else (error "Input is not a valid grammar.")])))
   
-; (listof symbol) grammar --> grammar
+; (listof nonterminals) grammar --> grammar
 (define (grammar-rename-nts nts g)
   (define type (grammar-gettype g))
   (cond [(eq? type 'rg) (rg-rename-nts nts g)]
