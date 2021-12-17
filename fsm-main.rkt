@@ -371,7 +371,7 @@
                                    finals
                                    deltas
                                    adddead))]
-        [else (begin (newline) (error"Check above message for error"))])
+        [else (begin (newline) (error "Check above message for error"))])
   )
   
 ;make-tm (listof state) (listof symbol) (listof (list state symbol) (list state symbol)) (listof state) state --> tm
