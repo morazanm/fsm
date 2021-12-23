@@ -139,9 +139,11 @@ alphabet, E, and {(, ), (), U, *} defined as follows:
 
 @defidform[terms] Lowercase letters.
 
-@defidform[nts]  
-Uppercase letters (e.g., A) or a symbols comprised of an uppercase 
-letter, a dash, and a number (e.g., A-72431).
+@defidform[nts]
+For an FSM programmer, a nonterminal symbol corresponds to a upercase
+letter in English: A..Z. That is, FSM programmers are limited to 26 nonterminals.
+The internal representation in FSM may use symbols of the form nts-<digit>+
+(e.g., A-72431). Such nonterminals may not be used in an FSM program.
 
 @defidform[rrule] A regular grammar rule is a list of 
 the following form:
@@ -153,7 +155,7 @@ a is a terminal symbol.
 
 @defidform[cfrule]{ A context-free grammar rule is a list of the
  form @italic{(A ARROW J)}, where A is a nonterminal symbol and J is either
- EMP or a an aggregate symbol of terminals and nonterminals.}
+ EMP or an aggregate symbol of terminals and nonterminals.}
 
 @defidform[csrule]{A context-sensitive grammar rule is a list of the
  form @italic{(H ARROW K)}, where H is an aggregate symbol of terminals and
@@ -240,7 +242,7 @@ A LABEL is a natnum.
  Rules for moving off the @italic{LM} are automatically added
  to the machine's rules.
  @italic{If the optional accept argument is given then the resulting
-  Turing machine is as a language recognizer.}}
+  Turing machine is a language recognizer.}}
 
 @defproc[(ndfa->dfa [m ndfa])
          dfa]{Builds a @italic{deterministic} finite-state 
@@ -392,40 +394,36 @@ Empty Tool
  machine: dfa, ndfa, ndpda, tm, or 
  tm-language-recognizer.}
 
-@defproc[(sm-apply [m state-machine] [w word] [n natnum])
-         symbol]{Applies the given state machine to the given word
- and returns either 'accept or 'reject for a dfa, a
+@defproc*[([(sm-apply [m state-machine] [w word]) symbol]
+           [(sm-apply [m state-machine] [w word] [n natnum]) symbol])
+         ]{Applies the given state machine to the given word
+ and returns either @racket['accept] or @racket['reject] for a dfa, a
  ndfa, a ndpa, or a Turing machine language 
  recognizer. If the given machine is a Turing machine,
- but not a language recognizer, a (list 'Halt: S) is
+ but not a language recognizer, a (list @racket['Halt:] S) is
  returned where S is a state. The optional natural 
  number is only used for the initial position of a 
  Turing machine head (the default position is zero).}
 
-@defproc[(sm-showtransitions [m state-machine] [w word] [n natnum])
-         (or (listof smconfig) 'reject)]{Applies the given state machine to the given word
+@defproc*[([(sm-showtransitions [m state-machine] [w word]) (or (listof smconfig) 'reject)]
+           [(sm-showtransitions [m state-machine] [w word] [n natnum]) (or (listof smconfig) 'reject)])
+        ]{Applies the given state machine to the given word
  and returns a list of configurations if the machine
- reaches halting state and 'reject otherwise. The 
- optional natural 
- number is only used for the initial position of a 
- Turing machine head (the default position is zero)}
+ reaches a halting state and @racket['reject] otherwise. The 
+ optional natural number is only used for the initial position of a 
+ Turing machine's head (the default position is zero)}
 
 @section{State Machine Testers}
 
-@defproc[(sm-test [m1 state-machine] [n natnum])
-         (listof (list word symbol))]{Applies the given machine to
- 100 randomly generated words 
- and returns a list of words and
- the obtained result. If the given
- machine is a Turing machine, it
- must be a language recognizer. For
- a Turing machine language recognizer,
- the generated tests start with the
- left-end marker followed by the input
- word and the head on the first letter
- of the input word. The
- optional natural number specifies
- the number of tests.}
+@defproc*[([(sm-test [m1 state-machine]) (listof (list word symbol))]
+           [(sm-test [m1 state-machine] [n natnum]) (listof (list word symbol))])]
+         Applies the given machine to randomly generated words  and returns
+          a list of words and the obtained result. If the given machine is a
+          Turing machine, it must be a language recognizer. For a Turing machine
+          language recognizer, the generated tests start with the left-end marker
+          followed by the input word and the head on the first letter of the input
+          word. The optional natural number specifies the number of tests
+          (the default is 100).
 
 @defproc[(sm-sameresult? [m1 state-machine] [m2 state-machine] [w word])
          boolean]{Tests if the two given machines return the same
@@ -516,21 +514,21 @@ Empty Tool
  the same result when trying to derive the given
  word.}
 
-@defproc[(grammar-testequiv [g1 grammar] [g2 grammar] [natnum n])
-         (or true (listof word))]{Tests in the given grammars obtain
- the same results when deriving 100
- (or the given optional numner)
- randomly generated words. If all tests
+@defproc*[([(grammar-testequiv [g1 grammar] [g2 grammar]) (or true (listof word))]
+           [(grammar-testequiv [g1 grammar] [g2 grammar] [natnum n]) (or true (listof word))])]
+Tests in the given grammars obtain
+ the same results when deriving 100 (or the optional n)
+ randomly generated words.  If all tests
  give the same result true is returned.
  Otherwise, a list or words that
  produce different results is 
- returned.}
+ returned.
 
-@defproc[(grammar-test [g1 grammar] [natnum n])
-         (listof (cons word (Derivation or string)))]{Tests the given grammar with 100 (or the given 
- optional number) randomly generated words.
- A list of pairs containing a word and the result
- of attemting to derive the word are returned.}
+@defproc*[([(grammar-test [g1 grammar]) (listof (cons word (Derivation or string)))]
+           [(grammar-test [g1 grammar] [n natnum]) (listof (cons word (Derivation or string)))])]
+Tests the given grammar with 100 (or the optional n) randomly generated words.
+A list of pairs containing a word and the result of attemting to derive the
+word are returned.
 
 
 @section{Combined Turing Machines}
