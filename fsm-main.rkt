@@ -265,7 +265,16 @@
              (sm->grammar newm))]
           [(cfg? g1) (cfg-concat g1 g2)]
           [(csg? g1) (csg-concat g1 g2)]
-          [else (error (format "Unknown grammar type"))])))
+          [else (error (format "Unknown grammar type ~s given to" (grammar-gettype g1) 'grammar-concat))])))
+
+; grammar --> grammar
+(define (grammar-kleenestar g1)
+  (let ((gtype (grammar-gettype g1)))
+    (cond [(eq? gtype 'rg) (sm->grammar (sm-kleenestar (grammar->sm g1)))]
+          [(eq? gtype 'cfg) (cfg-star g1)]
+          [(eq? gtype 'csg) (error (format "Stay tuned! The Kleene star of a csg is not yet implemented"))]
+          [else (error (format "Error in grammar-kleenestar: unknown grammar type ~s" gtype))])))
+          
   
 ; grammar word -> derivation or "Not a member"
 (define (grammar-derive g w)
@@ -460,5 +469,4 @@
         tentative)
     )
   )
-
 
