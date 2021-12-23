@@ -471,6 +471,11 @@ Empty Tool
  the concatenation of the languages of the given grammars.
  The given grammars must have the same type.}
 
+@defproc[(grammar-kleenestar [g grammar])
+         grammar]
+        Let L(g) denote the language defined by g. This function
+         builds a grammar for L(g)^*.
+
 @defproc[(sm->grammar [m state-machine])
          grammar]{Builds a grammar for the language of the given
  dfa, ndfa, or ndpda.}
