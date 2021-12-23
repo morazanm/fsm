@@ -10,7 +10,8 @@
                 (test-case "Marco tests"
                            (check-equal? (allBoth 'AbAbA '(A) '(b)) #t)
                            (check-equal? (allBoth 'Abbbbbb '(b A) '()) #t)
-                           (check-equal? (allBoth 'Edeee '(E) '(d i s es)) #f))))
+                           (check-equal? (allBoth 'Edeee '(E) '(d i s es)) #f)
+                           (check-equal? (allBoth 'A-1A-2 '(A-1 A-2) '(a b c)) #t))))
 
   (define oneAndOne-test
     (test-suite "Tests for oneAndOne function"

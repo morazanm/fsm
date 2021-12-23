@@ -43,7 +43,16 @@
   ; (listof symb) (listof symb) (listof words) --> (listof words)
   (define (get-differences r1 r2 low)
     (filter (lambda (n) (not (number? n)))
-            (map (lambda (a b c) (if (equal? a b) 0 c))
+            (map (lambda (a b c)
+                   (cond
+                     [(equal? a b) 0]
+                     [(and (string? a)
+                           (string? b))
+                      (cond
+                        [(and (regexp-match #rx"timed out" a) (regexp-match #rx"not in" b)) 0]
+                        [(and (regexp-match #rx"not in" a) (regexp-match #rx"timed out" b)) 0]
+                        [else c])]
+                     [else c]))
                  r1 
                  r2
                  low)))
