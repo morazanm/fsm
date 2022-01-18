@@ -13,7 +13,7 @@
 A DSL for the Automata Theory Classroom
 
 FSM is a DSL designed to help ungraduate students understand Automata Theory by
-allowing them to construct and minipulate state machines and their grammars.
+allowing them to construct and minipulate state machines and grammars.
 For instructions on how to download the DSL, view the patch notes, or just browse the code, please see either the offical
 FSM readme on @(hyperlink "https://github.com/morazanm/fsm" "Github") or the
 new @(hyperlink "https://morazanm.github.io/fsm/index.html" "FSM website").
@@ -266,15 +266,12 @@ A LABEL is a natnum.
 @defproc[(sm-concat [m1 state-machine] [m2 state-machine])
          state-machine]{Builds a state machine for the language obtained
  from the concatenation of the languages of the two given
- state machines. If the inputs are Turing machines then
- they must be language recognizers. The given machines 
- must have the same type.}
+ state machines. [Note: Not yet implemented for Turing machines language recognizers.].}
 
 @defproc[(sm-kleenestar [m1 state-machine])
          state-machine]{Builds a state machine for the language obtained
  from the Kleene star of the given machine's language.
- If the input is a Turing machine then
- it must be language recognizer.}
+ [Note: Not yet implemented for Turing machine language recognizers.].}
 
 @defproc[(sm-complement [m1 state-machine])
          state-machine]{Builds a state machine for the language obtained

@@ -71,8 +71,8 @@
     (cond [(and (eq? (tm-whatami? m1) 'tm-language-recognizer)
                 (eq? (tm-whatami? m2) 'tm-language-recognizer))
            (let* ((rm2 (tm-rename-states (tm-getstates m2) m2))
-                  (m1-rules (remove-LM-rule-tm-rules (tm-getrules m1)))
-                  (rm2-rules (remove-LM-rule-tm-rules (tm-getrules rm2)))
+                  (m1-rules (remove-LM-rule-unparsed-tm-rules (tm-getrules m1)))
+                  (rm2-rules (remove-LM-rule-unparsed-tm-rules (tm-getrules rm2)))
                   (new-sigma (remove-duplicates (append (tm-getalphabet m1) (tm-getalphabet rm2))))
                   (states (append (tm-getstates m1) (tm-getstates rm2)))
                   (newS (generate-symbol START states))
@@ -98,8 +98,8 @@
                   (new-rules (append new-rules-from-new-start
                                      new-rules-to-new-accept
                                      new-rules-to-new-reject
-                                     (unparse-tmrules m1-rules)
-                                     (unparse-tmrules rm2-rules)))
+                                     m1-rules
+                                     rm2-rules))
                   ; A RULE FOR EACH ELEMENT OF new-sigma TO MOVE TO THE TWO OLD START STATES
                   )
              (make-unchecked-tm new-states new-sigma new-rules newS new-finals new-accept))]
@@ -113,11 +113,13 @@
   
   ; tm-concat: tm tm --> tm
   ; ASSUMPTION: ***** The given tms are language recognizers *****
+  ; *** BUG: m1 only reaches Y by seeing a blank the concat machine never reaches m2's start state ***
   (define (tm-concat m1 m2)
     (let* ((rm2 (tm-rename-states (tm-getstates m2) m2))
            (m1-reject (tm-getreject m1))
-           (m1-rules (remove-LM-rule-tm-rules (tm-getrules m1)))
-           (rm2-rules (remove-LM-rule-tm-rules (tm-getrules rm2)))
+           (m1-rules (remove-LM-rule-unparsed-tm-rules (tm-getrules m1)))
+           (rm2-rules (remove-LM-rule-unparsed-tm-rules (tm-getrules rm2)))
+           (dd (displayln rm2-rules))
            (new-sigma (remove-duplicates (append (tm-getalphabet m1) (tm-getalphabet rm2))))
            (new-start (tm-getstart m1))
            (new-states (append (tm-getstates m1) (tm-getstates rm2)))
@@ -125,13 +127,14 @@
            (new-accept (tm-getaccept rm2))
            (new-reject (tm-getreject rm2))
            (new-rules-startM1-to-new-reject (mk-to-reject-rules-for-st new-start new-reject (cons BLANK (tm-getalphabet rm2))))
+           ;(d (displayln new-rules-startM1-to-new-reject))
            (new-rules-rejectM1-to-new-reject (mk-to-reject-rules-for-st m1-reject new-reject (cons BLANK new-sigma)))
            (new-rules-acceptM1-to-startRM2 (append-map (lambda (s) 
                                                          (list (list (list (tm-getaccept m1) s) (list (tm-getaccept m1) RIGHT))
                                                                (list (list (tm-getaccept m1) s) (list (tm-getstart rm2) RIGHT)))) 
                                                        (tm-getalphabet m1))) ; w = xy --> rules to consume all of x before processing y
-           (new-rules (append (unparse-tmrules m1-rules)
-                              (unparse-tmrules rm2-rules)
+           (new-rules (append m1-rules
+                              rm2-rules
                               new-rules-acceptM1-to-startRM2
                               new-rules-startM1-to-new-reject
                               )))
@@ -139,6 +142,7 @@
   
   ; tm-kleenestar: tm --> tm
   ; ASSUMPTION: ***** The given tm is a language recognizer *****
+  ; *** BUG: m1 only reaches Y by reading a blank then it never cycles back to m1's start state ***
   (define (tm-kleenestar m1)
     (let* ((m1-rules (remove-LM-rule-tm-rules (tm-getrules m1)))
            (new-sigma (tm-getalphabet m1))
@@ -444,6 +448,28 @@
       
       (if (null? inputctm)
           (tmconfig HALT i tape)
-          (eval inputctm (label-pairs inputctm) START))))  
+          (eval inputctm (label-pairs inputctm) START))))
+
+  ; L = a*
+  (define Alla (make-unchecked-tm '(S Y N)
+                                  `(a b ,LM)
+                                  `(((S a) (S ,RIGHT))
+                                    ((S b) (N b))
+                                    ((S ,BLANK) (Y ,BLANK)))
+                                  'S
+                                  '(Y N)
+                                  'Y))
+
+  ; L = b*
+  (define Allb (make-unchecked-tm '(S Y N)
+                                  `(a b ,LM)
+                                  `(((S b) (S ,RIGHT))
+                                    ((S a) (N b))
+                                    ((S ,BLANK) (Y ,BLANK)))
+                                  'S
+                                  '(Y N)
+                                  'Y))
+
+  (define Alla-Allb (tm-union Alla Allb))
 
   ) ; closes module

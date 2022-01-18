@@ -102,7 +102,8 @@
                (eq? t1 'ndfa))
            (concat-fsa m1 m2)]
           [(eq? t1 'pda) (concat-pda m1 m2)]
-          [(and (eq? t1 'tm-language-recognizer) (eq? t1 t2)) (tm-concat m1 m2)]
+          [(and (eq? t1 'tm-language-recognizer) (eq? t1 t2))
+           (error (format "Stay tuned: sm-concat for tm language recognizers is not yet implemented"))]
           [else (error (format "Unknown/Invalid machine types as input to sm-concat: first input is of type ~s and second input is of type ~s." t1 t2))])))
   
 ; fsm --> fsm
@@ -112,7 +113,8 @@
                (eq? t1 'ndfa)) 
            (kleenestar-fsa m)]
           [(eq? t1 'pda) (kleenestar-pda m )]
-          [(eq? t1 'tm-language-recognizer) (tm-kleenestar m )]
+          [(eq? t1 'tm-language-recognizer)
+           (error (format "Stay tuned: sm-kleenestar for tm language recognizers is not yet implemented"))]
           [else (error (format "Unknown/Invalid machine type as input to sm-kleenestar: input is of type ~s" t1))])))
   
 ; fsm --> fsm or error
@@ -387,13 +389,14 @@
                                                delta
                                                start
                                                finals)
-             (if (member (car accept) finals) (make-unchecked-tm
-                                         states
-                                         sigma
-                                         delta
-                                         start
-                                         finals
-                                         (car accept))
+             (if (member (car accept) finals)
+                 (make-unchecked-tm
+                  states
+                  sigma
+                  delta
+                  start
+                  finals
+                  (car accept))
                  (begin (newline) (error (format "accept state: ~s, not in final states" accept)))))]
         [else (begin (newline) (error"Check above message for error"))])) 
 
