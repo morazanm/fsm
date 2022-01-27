@@ -10,4 +10,4 @@
 ;; posn: A structutre that represents a position
 ;; - x: The x coordinate of the position
 ;; y -: The y coordinate of the position
-(struct posn (x y))
+(struct posn (x y) #:transparent)

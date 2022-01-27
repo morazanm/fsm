@@ -1,5 +1,5 @@
 #lang racket
-
+(require "../../constants.rkt")
 ;; ------- machine.rkt -------
 ;; This file contains the structure for a fsm machine (dfa, ndfa, pda, ...) 
 ;; Written by: Joshua Schappel 8/15/2019
@@ -12,6 +12,11 @@
  (struct-out pda-machine)
  (struct-out tm-machine)
  (struct-out lang-rec-machine)
+ make-new-dfa
+ make-new-ndfa
+ make-new-pda
+ make-new-tm
+ make-new-lang-req
  update-tm-machine
  update-lang-rec-machine
  update-lang-rec-accept-state
@@ -49,6 +54,14 @@
 ;;  is that it has an accept state
 ;; - accept-state { Symbol } The user-defined accepting state of the machine
 (struct lang-rec-machine tm-machine ([accept-state #:mutable]) #:transparent)
+
+
+#| Empty machines |#
+(define make-new-dfa (machine '() '() '() '() '() '() 'dfa))
+(define make-new-ndfa (machine '() '() '() '() '() '() 'ndfa))
+(define make-new-pda (pda-machine '() null '() '() '() '() 'pda '()))
+(define make-new-tm (tm-machine '() null '() '() `(,LM) '() 'tm 0 ))
+(define make-new-lang-req (lang-rec-machine '() null '() '() `(,LM) '() 'tm-language-recognizer 0 '||))
 
 
 ;; update-tm-machine-tape-posn: tm-machine int list-of-symbols -> tm-machine
