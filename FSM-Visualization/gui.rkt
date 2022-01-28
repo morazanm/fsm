@@ -1,7 +1,8 @@
 #lang racket/gui
+(require (for-syntax syntax/parse) "./structs/state.rkt" "./globals.rkt"
+         "./structs/machine.rkt" "./structs/posn.rkt") 
 (provide kick-off-gui)
-
-
+(define MAX-ALPHABET 14)
 
 
 
@@ -37,16 +38,200 @@
 ;(when (system-position-ok-before-cancel?)
 ;  (send panel change-children reverse))
 
-(define GLOBAL-WORLD '())
+(define-syntax (line-display stx)
+  (syntax-parse stx
+    [(_ [value:id ...] dest-port)
+     #`(begin
+         (begin
+           (display (quote value) dest-port)
+           (display ": " dest-port)
+           (display value dest-port)
+           (display "\n" dest-port))...)]))
 
+(define world%
+  (class* object% (writable<%>)
+    (init-field machine
+                [tape-position 0]
+                [mode 'idle] ;; Valid modes are: idle, active
+                [type (machine-type machine)]
+                [cur-rule CURRENT-RULE]
+                [cur-state CURRENT-STATE]
+                [processed-config-list '()]
+                [unporcessed-config-list '()]
+                [scroll-bar-index 0])
+   
+    
+    (define/public (custom-display dest-port)
+      (line-display [tape-position
+                     machine type
+                     mode
+                     cur-rule
+                     cur-state
+                     processed-config-list
+                     unporcessed-config-list
+                     scroll-bar-index]
+                    dest-port))
+
+    ;; get-machine-alpha-list :: listOfSymbol
+    (define/public (get-machine-alpha-list)
+      (machine-alpha-list machine))
+
+    ;; addAlpha :: symbol -> ()
+    (define/public (addAlpha value)
+      (set-machine-alpha-list! machine
+                               (sort (remove-duplicates (cons value (machine-alpha-list machine)))
+                                     symbol<?)))
+
+    ;; addAlpha :: symbol -> ()
+    (define/public (removeAlpha value)
+      (set-machine-alpha-list! machine
+                               (filter (lambda (v) (not (eq? v value)))
+                                       (machine-alpha-list machine))))
+
+    ;; addState :: symbol -> bool
+    (define/public (addState value)
+      (define isDuplicate (isInStateList value))
+      (unless isDuplicate
+        (set-machine-state-list!
+         machine
+         (cons (fsm-state value (true-function) (posn 0 0))
+               (machine-state-list machine))))
+      isDuplicate)
+
+    ;; removeState :: symbol -> bool
+    (define/public (removeState value)
+      (define exists (isInStateList value))
+      (when exists
+        (set-machine-state-list!
+         machine
+         (remove
+          value
+          (machine-state-list machine)
+          (lambda (target v2) (eq? target (fsm-state-name v2))))))
+      exists)
+
+    ;; addStart :: symbol -> ()
+    (define/public (addStart value)
+      (addState value) ;; Update the state list
+      (set-machine-start-state! machine value)) ;; Update the start state
+
+    ;; removeStart :: symbol -> bool
+    (define/public (removeStart value)
+      (define exists (removeState value))
+      (when exists
+        (set-machine-start-state! machine '()))
+      exists)
+
+    ;; addEnd :: symbol -> bool
+    (define/public (addEnd value)
+      (define exists (member value (machine-final-state-list machine) eq?))
+      (unless exists
+        (addState value)
+        (set-machine-final-state-list!
+         machine
+         (cons value (machine-final-state-list machine))))
+      exists)
+
+    ;; removeEnd :: symbol -> bool
+    (define/public (removeEnd value)
+      (define exists (member value (machine-final-state-list machine) eq?))
+      (when exists
+        (set-machine-final-state-list!
+         machine
+         (filter (lambda (v) (not (eq? value v))
+                   (machine-final-state-list machine)))))
+      exists)
+
+    ;; setMode :: symbol('idle | 'active) -> ()
+    (define/public (setMode value)
+      (set! mode value))
+    
+    (define/public (custom-write dest-port)
+      (write "Currently Unsupported" dest-port))
+
+    ;; isInStateList :: symbol -> bool
+    (define/private (isInStateList value)
+      (not (eq? #f
+                (member value
+                        (machine-state-list machine)
+                        (lambda (target v2) (eq? target (fsm-state-name v2)))))))
+
+    ;; true-function :: lambda
+    (define/private (true-function)
+      (match type
+        [(or 'dfa 'ndfa) TRUE-FUNCTION]
+        ['pda PDA-TRUE-FUNCTION]
+        [_ TM-TRUE-FUNCTION]))
+    
+    (super-new)))
+
+
+;; delete-children :: Object -> ()
+;; This function will remove all children on a given object
+(define (delete-children obj)
+  (for ([child (send obj get-children)])
+    (send obj delete-child child)))
 
 ;; kick-off-gui :: world -> GUI
 (require "./structs/world.rkt" "./structs/machine.rkt")
-(define (kick-off-gui world)
-  (set! GLOBAL-WORLD world)
-  (define type (world2-machine-type world))
-  (displayln type)
-
+(define (kick-off-gui machine)
+  (define world (new world% [machine machine]))
+  (define (event-dispatcher event value)
+    (define isActive (eq? 'active (get-field mode world)))
+    (define (setIdle)
+      (send world setMode 'idle)
+      ;;TODO(jschappel): trigger redraw
+      )
+    (match event
+      ['addAlpha (begin
+                   (send world addAlpha value)
+                   (delete-children inner-alpha-display)
+                   (when isActive
+                     (setIdle))
+                   (render-alpha-list))]
+      ['removeAlpha (begin
+                      (send world removeAlpha value)
+                      (delete-children inner-alpha-display)
+                      (when isActive
+                        (setIdle))
+                      (render-alpha-list))]
+      ['addStart (begin
+                   (send world addStart value)
+                   (setIdle) ;; regardless if the world's mode we need to redraw so just call setIdle
+                   (display world)
+                   )]
+      ['removeStart (begin
+                      (define needsRedraw (send world removeStart value))
+                      (when needsRedraw
+                        (setIdle))
+                      (display world))]
+      ['addState (begin
+                   (define needsRedraw (send world addState value))
+                   (when needsRedraw
+                     (setIdle))
+                   (display world))]
+      ['removeState (begin
+                      (define needsRedraw (send world removeState value))
+                      (when needsRedraw
+                        (setIdle))
+                      (display world))]
+      ['addEnd (begin
+                 (define needsRedraw (send world addEnd value))
+                 (when needsRedraw
+                   (setIdle))
+                 (display world))]      
+      ['removeEnd (begin
+                    (define needsRedraw (send world removeEnd value))
+                    (when needsRedraw
+                      (setIdle))
+                    (display world))]
+      ['addRule (begin
+                  (displayln "TODO(jschappel):")
+                 )]
+      ['removeRule (begin
+                  (displayln "TODO(jschappel):")
+                 )]
+      [_ (error (format "Invalid event to dispatch on '~s'" (symbol->string event)))]))
 
 
   (define WELCOME-MSG  "FSM Visualization Tool:  ")
@@ -56,7 +241,7 @@
                      [width 1400]
                      [height 700]
                      [style '(fullscreen-button)]
-                     [label (string-append WELCOME-MSG "Dfa/Ndfa")]))
+                     [label (string-append WELCOME-MSG (symbol->string (get-field type world)))]))
 
   ;; ----------------------------- MENU BAR -----------------------------
   (define menu-bar (new menu-bar% [parent frame]))
@@ -92,10 +277,10 @@
 
   (define top-level (new horizontal-panel%
                          [parent frame]))
-  ;[alignment '(center center)]))
 
-
-  ;; ----------------------------- LEFT SIDE BELOW -----------------------------
+  ;;***********************************************************************************************************
+  ;;********************************************** LEFT SIDE BELOW ********************************************
+  ;;***********************************************************************************************************
   (define left-side (new vertical-panel%
                          [parent top-level]
                          [stretchable-width #f]
@@ -163,13 +348,15 @@
   ;; render-alpha-list :: listOfSymbol -> msg
   ;; Renders the alphabet on the screen
   (define (render-alpha-list)
-    (for ([alpha (machine-alpha-list (world2-fsm-machine GLOBAL-WORLD))])
+    (for ([alpha (machine-alpha-list (get-field machine world))])
       (new message% [parent inner-alpha-display] [enabled #t]
            [label (symbol->string alpha)])))
-  (render-alpha-list );;(machine-alpha-list (world2-fsm-machine world)));; TODO:(Jschappel) Maybe move this?
+  (define alpha-list (render-alpha-list));;(machine-alpha-list (world2-fsm-machine world)));; TODO:(Jschappel) Maybe move this?
 
 
-  ;; ----------------------------- CENTER BELOW -----------------------------
+  ;;***********************************************************************************************************
+  ;;********************************************** Center *****************************************************
+  ;;***********************************************************************************************************
   (define myfont (make-font #:size 16
                             #:family 'swiss))
 
@@ -223,19 +410,21 @@
                      [stretchable-height #f]
                      [alignment '(center center)]))
 
-  (for ([i (range 97 123)])
-    (let* [(s (string (integer->char i)))
-           (rule (string-append "(" s " " s " "s ")"))]
-      (if (eq? i 100)
-          (new message% [parent rules] [color "red"] [font myfont] [enabled #t]
-               [label rule]) 
-          (new message% [parent rules] [font myfont] [enabled #t]
-               [label rule]))))
+  (for ([i (machine-rule-list (get-field machine world))])
+    (begin
+      (define o (open-output-string))
+      (write i o)
+      (new message% [parent rules] [font myfont] [enabled #t]
+           [label (get-output-string o)])))
 
 
 
-
-  ;; ----------------------------- RIGHT SIDE BELOW -----------------------------
+  ;;***********************************************************************************************************
+  ;;********************************************** RIGHT SIDE BELOW *******************************************
+  ;;***********************************************************************************************************
+  ;;------------------------------------------------------------------------------------------------------------
+  ;; State (Add/Remove)
+  ;;------------------------------------------------------------------------------------------------------------
   (define right-side (new vertical-panel%
                           [parent top-level]
                           [stretchable-width #f]
@@ -250,77 +439,154 @@
                            [border 10]
                            [alignment '(center center)]))
   (new message% [parent state-panel] [label "State Options"])
-  (new text-field% [parent state-panel] [label ""])
+  (define state-text-field (new text-field% [parent state-panel] [label ""]))
   ; Add a horizontal panel to the dialog, with centering for buttons
   (define panel (new horizontal-panel% [parent state-panel]
                      [alignment '(center center)]))
   ; Add Cancel and Ok buttons to the horizontal panel
-  (new button% [parent panel] [label "Add"])
-  (new button% [parent panel] [label "Remove"])
+  (new button%
+       [parent panel]
+       [label "Add"]
+       [callback (lambda (button event)
+                   (define editor (send state-text-field get-editor))
+                   (define text-value (string-trim (send editor get-text)))
+                   (when (not (eq? text-value ""))
+                     (send editor erase)
+                     (event-dispatcher 'addState (string->symbol text-value))))])
+                
+  (new button%
+       [parent panel]
+       [label "Remove"]
+       [callback (lambda (button event)
+                   (define editor (send state-text-field get-editor))
+                   (define text-value (string-trim (send editor get-text)))
+                   (when (not (eq? text-value ""))
+                     (send editor erase)
+                     (event-dispatcher 'removeState (string->symbol text-value))))])
   (when (system-position-ok-before-cancel?)
     (send panel change-children reverse))
 
 
-
+  ;;------------------------------------------------------------------------------------------------------------
+  ;; Alpha
+  ;;------------------------------------------------------------------------------------------------------------
   (define alpha-panel (new vertical-panel%
                            [parent right-side]
                            [style (list 'border)]
                            [border 10]
                            [alignment '(center center)]))
   (new message% [parent alpha-panel] [label "Alpha Options"])
-  (new text-field%
-       [parent alpha-panel]
-       [label ""])
+  (define alpha-text-field (new text-field%
+                                [parent alpha-panel]
+                                [label ""]))
   ; Add a horizontal panel to the dialog, with centering for buttons
   (define panel4 (new horizontal-panel% [parent alpha-panel]
                       [alignment '(center center)]))
   ; Add Cancel and Ok buttons to the horizontal panel
-  (new button% [parent panel4] [label "Add"]
+  (new button%
+       [parent panel4]
+       [label "Add"]
        [callback (lambda (button event)
-                   ;;TODO:(jschappel) Fix this to call the dispatcher
-                   (render-alpha-list))])
-  (new button% [parent panel4] [label "Remove"])
+                   (define editor (send alpha-text-field get-editor))
+                   (define text-value (string-trim (send editor get-text)))
+                   (when (and (not (eq? text-value ""))
+                              (<= (+ 1 (length (send world get-machine-alpha-list))) MAX-ALPHABET))
+                     (begin
+                       (send editor erase)
+                       (event-dispatcher 'addAlpha (string->symbol text-value)))))])
+
+  (new button%
+       [parent panel4]
+       [label "Remove"]
+       [callback (lambda (button event)
+                   (define editor (send alpha-text-field get-editor))
+                   (define text-value (string-trim (send editor get-text)))
+                   (when (not (eq? text-value ""))
+                     (begin
+                       (send editor erase)
+                       (event-dispatcher 'removeAlpha (string->symbol text-value)))))])
+
+  ;; TODO(jschappel): what does this do agai?!?!?!?!?!
   (when (system-position-ok-before-cancel?)
     (send panel change-children reverse))
 
 
-
+  ;;------------------------------------------------------------------------------------------------------------
+  ;; StartState
+  ;;------------------------------------------------------------------------------------------------------------
   (define start-panel (new vertical-panel%
                            [parent right-side]
                            [style (list 'border)]
                            [border 10]
                            [alignment '(center center)]))
   (new message% [parent start-panel] [label "Start State"])
-  (new text-field% [parent start-panel] [label ""])
+  (define start-state-text-field (new text-field% [parent start-panel] [label ""]))
   ; Add a horizontal panel to the dialog, with centering for buttons
   (define panel2 (new horizontal-panel% [parent start-panel]
                       [alignment '(center center)]))
   ; Add Cancel and Ok buttons to the horizontal panel
-  (new button% [parent panel2] [label "Add"])
-  (new button% [parent panel2] [label "Remove"])
+  (new button%
+       [parent panel2]
+       [label "Add"]
+       [callback (lambda (button event)
+                   (displayln "here")
+                   (define editor (send start-state-text-field get-editor))
+                   (define text-value (string-trim (send editor get-text)))
+                   (when (not (eq? "" text-value))
+                     (send editor erase)
+                     (event-dispatcher 'addStart (string->symbol text-value))))])
+  (new button%
+       [parent panel2]
+       [label "Remove"]
+       [callback (lambda (button event)
+                   (define editor (send start-state-text-field get-editor))
+                   (define text-value (string-trim (send editor get-text)))
+                   (when (not (eq? "" text-value))
+                     (send editor erase)
+                     (event-dispatcher 'removeStart (string->symbol text-value))))])
   (when (system-position-ok-before-cancel?)
     (send panel change-children reverse))
 
 
-
+  ;;------------------------------------------------------------------------------------------------------------
+  ;; End State
+  ;;------------------------------------------------------------------------------------------------------------
   (define end-panel (new vertical-panel%
                          [parent right-side]
                          [style (list 'border)]
                          [border 10]
                          [alignment '(center center)]))
   (new message% [parent end-panel] [label "End State"])
-  (new text-field% [parent end-panel] [label ""])
+  (define end-state-text-field (new text-field% [parent end-panel] [label ""]))
   ; Add a horizontal panel to the dialog, with centering for buttons
   (define panel3 (new horizontal-panel% [parent end-panel]
                       [alignment '(center center)]))
   ; Add Cancel and Ok buttons to the horizontal panel
-  (new button% [parent panel3] [label "Add"])
-  (new button% [parent panel3] [label "Remove"])
+  (new button%
+       [parent panel3]
+       [label "Add"]
+       [callback (lambda (button event)
+                   (define editor (send end-state-text-field get-editor))
+                   (define text-value (string-trim (send editor get-text)))
+                   (when (not (eq? "" text-value))
+                     (send editor erase)
+                     (event-dispatcher 'addEnd (string->symbol text-value))))])
+  (new button%
+       [parent panel3]
+       [label "Remove"]
+       [callback (lambda (button event)
+                   (define editor (send end-state-text-field get-editor))
+                   (define text-value (string-trim (send editor get-text)))
+                   (when (not (eq? "" text-value))
+                     (send editor erase)
+                     (event-dispatcher 'removeEnd (string->symbol text-value))))])
   (when (system-position-ok-before-cancel?)
     (send panel change-children reverse))
 
 
-
+  ;;------------------------------------------------------------------------------------------------------------
+  ;; Rules
+  ;;------------------------------------------------------------------------------------------------------------
   (define rule-panel (new vertical-panel%
                           [parent right-side]
                           [style (list 'border)]
@@ -328,15 +594,56 @@
                           [alignment '(center center)]))
   (new message% [parent rule-panel] [label "Add Rule"])
   (define panel5 (new horizontal-panel% [parent rule-panel] [alignment '(center center)]))
-  (new text-field% [parent panel5] [label ""] [stretchable-height #f])
-  (new text-field% [parent panel5] [label ""] [stretchable-height #f])
-  (new text-field% [parent panel5] [label ""] [stretchable-height #f])
+  (define rule-start-text-field (new text-field% [parent panel5] [label ""] [stretchable-height #f]))
+  (define rule-alpha-text-field (new text-field% [parent panel5] [label ""] [stretchable-height #f]))
+  (define rule-end-text-field (new text-field% [parent panel5] [label ""] [stretchable-height #f]))
   (define panel6 (new horizontal-panel% [parent rule-panel]
                       [alignment '(center center)]))
   ; Add Cancel and Ok buttons to the horizontal panel
-  (new button% [parent panel6] [label "Add"])
-  (new button% [parent panel6] [label "Remove"])
+  (new button%
+       [parent panel6]
+       [label "Add"]
+       [callback (lambda (button event)
+                   (define editor1 (send rule-start-text-field get-editor))
+                   (define editor2 (send rule-alpha-text-field get-editor))
+                   (define editor3 (send rule-end-text-field get-editor))
+                   (define start (string-trim (send editor1 get-text)))
+                   (define alpha (string-trim (send editor2 get-text)))
+                   (define end (string-trim (send editor3 get-text)))
+                   (define (notEmpty val) (not (eq? "" val)))
+                   (when (and (notEmpty start)
+                              (notEmpty alpha)
+                              (notEmpty end))
+                     
+                     (send editor1 erase)
+                     (send editor2 erase)
+                     (send editor3 erase)
+                     (event-dispatcher 'addRule `(,(string->symbol start)
+                                                  ,(string->symbol alpha)
+                                                  ,(string->symbol end)))))])
+  (new button%
+       [parent panel6]
+       [label "Remove"]
+       [callback (lambda (button event)
+                   (define editor1 (send rule-start-text-field get-editor))
+                   (define editor2 (send rule-alpha-text-field get-editor))
+                   (define editor3 (send rule-end-text-field get-editor))
+                   (define start (string-trim (send editor1 get-text)))
+                   (define alpha (string-trim (send editor2 get-text)))
+                   (define end (string-trim (send editor3 get-text)))
+                   (define (notEmpty val) (not (eq? "" val)))
+                   (when (and (notEmpty start)
+                              (notEmpty alpha)
+                              (notEmpty end))
+                     
+                     (send editor1 erase)
+                     (send editor2 erase)
+                     (send editor3 erase)
+                     (event-dispatcher 'endRule `(,(string->symbol start)
+                                                  ,(string->symbol alpha)
+                                                  ,(string->symbol end)))))])
   (when (system-position-ok-before-cancel?)
     (send panel change-children reverse))
   
-  (send frame show #t))
+  (send frame show #t)
+  )

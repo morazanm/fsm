@@ -6,8 +6,8 @@
 
 ;; run :: machine -> GUI
 ;; This function kicks off the GUI
-(define (run fsm-machine)
-  ((compose1 kick-off-gui build-world) fsm-machine))
+(define (run machine)
+  (kick-off-gui machine))
 
 ;; parse-input :: fsm-machine | symbol -> listOfArgs -> machine | GUI
 ;; Given the user input this is incharge of creating the approperate internal-representaion
@@ -91,19 +91,6 @@
                                                0
                                                (sm-getaccept fsm-machine))]
     [_ (error (format "~s is not a valid machine type" fsm-machine))]))
-
-
-;; build-world :: machine -> world
-(define (build-world machine)
-  (world2
-   machine
-   (machine-type machine)
-   0
-   CURRENT-RULE  ;; TODO:(jschappel) Rework the default
-   CURRENT-STATE ;; TODO:(jschappel) Rework the default
-   '()
-   '()
-   0))
    
    
    
