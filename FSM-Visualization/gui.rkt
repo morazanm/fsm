@@ -142,6 +142,45 @@
                    (machine-final-state-list machine)))))
       exists)
 
+    ;; addRule :: rule -> bool
+    (define/public (addRule rule)
+      (define exists (member rule (machine-rule-list machine) eqRule?))
+      (unless exists
+        (set-machine-rule-list!
+         machine
+         (cons rule (machine-rule-list machine))))
+      exists)
+
+    ;; addRule :: rule -> bool
+    (define/public (removeRule rule)
+      (define exists (member rule (machine-rule-list machine) eqRule?))
+      (when exists
+        (set-machine-rule-list!
+         machine
+         (remove
+          rule
+          (machine-rule-list machine)
+          eqRule?)))
+      exists)
+
+    ;; addTape :: listOfSymbol -> bool
+    ;; To be a valid tape value it must exist in the alphabet, if not return false 
+    (define/public (addTape values)
+      (define allValid (empty? (filter (lambda (v)
+                                         (not (member v (machine-alpha-list machine) eq?)))
+                                       values)))
+      (when allValid                     
+        (set-machine-sigma-list!
+         machine
+         (append (machine-sigma-list machine) values)))
+      allValid)
+
+    ;; clearTape :: listOfSymbol -> ()
+    (define/public (clearTape)
+      (set-machine-sigma-list!
+       machine
+       '()))
+
     ;; setMode :: symbol('idle | 'active) -> ()
     (define/public (setMode value)
       (set! mode value))
@@ -155,6 +194,12 @@
                 (member value
                         (machine-state-list machine)
                         (lambda (target v2) (eq? target (fsm-state-name v2)))))))
+
+    (define/match (eqRule? target actual)
+      [(`(,s1 ,r1 ,f1) `(,s2 ,r2 ,f2)) ;; dfa/ndfa 
+       (and (eq? s1 s2)
+            (eq? r1 r2)
+            (eq? f1 f2))])
 
     ;; true-function :: lambda
     (define/private (true-function)
@@ -226,15 +271,35 @@
                       (setIdle))
                     (display world))]
       ['addRule (begin
-                  (displayln "TODO(jschappel):")
-                 )]
+                  (define needsRedraw (send world addRule value))
+                  (unless needsRedraw
+                    (setIdle)
+                    (delete-children rule-display)
+                    (render-rule-list)))]
       ['removeRule (begin
-                  (displayln "TODO(jschappel):")
-                 )]
+                     (define needsRedraw (send world removeRule value))
+                     (when needsRedraw
+                       (setIdle)
+                       (delete-children rule-display)
+                       (render-rule-list)))]
+      ['clearTape (begin
+                    (send world clearTape)
+                    (setIdle)
+                    (delete-children tape-display)
+                    (render-tape-list))]
+      ['addTape (begin
+                  (define allValid (send world addTape value))
+                  (if (not allValid)
+                      (begin
+                        (displayln "Here:")
+                        (send tape-error-win show #t))
+                      (begin
+                        (setIdle)
+                        (delete-children tape-display)
+                        (render-tape-list))))]
       [_ (error (format "Invalid event to dispatch on '~s'" (symbol->string event)))]))
 
-
-  (define WELCOME-MSG  "FSM Visualization Tool:  ")
+  (define WELCOME-MSG "FSM Visualization Tool: ")
 
   ; Make a frame by instantiating the frame% class
   (define frame (new frame%
@@ -281,6 +346,9 @@
   ;;***********************************************************************************************************
   ;;********************************************** LEFT SIDE BELOW ********************************************
   ;;***********************************************************************************************************
+  ;;------------------------------------------------------------------------------------------------------------
+  ;; Tape
+  ;;------------------------------------------------------------------------------------------------------------
   (define left-side (new vertical-panel%
                          [parent top-level]
                          [stretchable-width #f]
@@ -295,17 +363,31 @@
                           [border 10]
                           [alignment '(center center)]))
   (new message% [parent tape-panel] [label "Tape"])
-  (new text-field% [parent tape-panel] [label ""])
+  (define tape-field (new text-field% [parent tape-panel] [label ""]))
   ; Add a horizontal panel to the dialog, with centering for buttons
   (define panel-tape (new horizontal-panel%
                           [parent tape-panel]
                           [alignment '(center center)]))
   ; Add Cancel and Ok buttons to the horizontal panel
-  (new button% [parent panel-tape] [label "Add"])
-  (new button% [parent panel-tape] [label "Remove"])
+  (new button%
+       [parent panel-tape]
+       [label "Add"]
+       [callback (lambda (button event)
+                   (define editor (send tape-field get-editor))
+                   (define text-value (string-trim (send editor get-text)))
+                   (when (not (eq? text-value ""))
+                     (send editor erase)
+                     (event-dispatcher 'addTape (map
+                                                 string->symbol
+                                                 (string-split text-value)))))])
+  (new button%
+       [parent panel-tape]
+       [label "Clear"]
+       [callback (lambda (button event)
+                   (event-dispatcher 'clearTape 'noAction))])
   (when (system-position-ok-before-cancel?)
     (send panel change-children reverse))
-
+  
 
   (define control-panel (new vertical-panel%
                              [parent left-side]
@@ -367,17 +449,18 @@
                            [min-height 300]
                            [alignment '(center center)]))
 
-  (define transitions (new horizontal-panel%
-                           [parent center-side]
-                           [min-height 60]
-                           [style '(hscroll border)]
-                           [spacing 10]
-                           [stretchable-height #f]
-                           [alignment '(center center)]))
+  (define tape-display (new horizontal-panel%
+                            [parent center-side]
+                            [min-height 60]
+                            [style '(hscroll border)]
+                            [spacing 10]
+                            [stretchable-height #f]
+                            [alignment '(center center)]))
 
-  (for ([i (range 97 123)])
-    (new message% [parent transitions] [font myfont] [enabled #t]
-         [label (string (integer->char i))]))
+  (define (render-tape-list)
+    (for ([input (machine-sigma-list (get-field machine world))])
+      (new message% [parent tape-display] [font myfont] [enabled #t]
+           [label (symbol->string input)])))
 
 
 
@@ -401,21 +484,23 @@
                                (make-screen-bitmap 100 100))]))
 
 
-  (define rules (new horizontal-panel%
-                     [parent center-side]
-                     [min-height 60]
-                     [style '(hscroll border)]
-                     [spacing 10]
-                     [border 10]
-                     [stretchable-height #f]
-                     [alignment '(center center)]))
+  (define rule-display (new horizontal-panel%
+                            [parent center-side]
+                            [min-height 60]
+                            [style '(hscroll border)]
+                            [spacing 10]
+                            [border 10]
+                            [stretchable-height #f]
+                            [alignment '(center center)]))
 
-  (for ([i (machine-rule-list (get-field machine world))])
-    (begin
-      (define o (open-output-string))
-      (write i o)
-      (new message% [parent rules] [font myfont] [enabled #t]
-           [label (get-output-string o)])))
+  (define  (render-rule-list)
+    (for ([i (machine-rule-list (get-field machine world))])
+      (begin
+        (define o (open-output-string))
+        (write i o)
+        (new message% [parent rule-display] [font myfont] [enabled #t]
+             [label (get-output-string o)]))))
+  (render-rule-list)
 
 
 
@@ -639,11 +724,26 @@
                      (send editor1 erase)
                      (send editor2 erase)
                      (send editor3 erase)
-                     (event-dispatcher 'endRule `(,(string->symbol start)
-                                                  ,(string->symbol alpha)
-                                                  ,(string->symbol end)))))])
+                     (event-dispatcher 'removeRule `(,(string->symbol start)
+                                                     ,(string->symbol alpha)
+                                                     ,(string->symbol end)))))])
   (when (system-position-ok-before-cancel?)
     (send panel change-children reverse))
-  
+
+  ;;------------------------------------------------------------------------------------------------------------
+  ;; Message Windows
+  ;;------------------------------------------------------------------------------------------------------------
+  (define tape-error-win (new dialog% [label "Error"]))
+  (define tape-error-win-panel (new vertical-panel%
+                                    [parent tape-error-win]
+                                    [border 5]
+                                    [stretchable-height #f]
+                                    [alignment '(center center)]))
+  (new message% [parent tape-error-win-panel]
+       [label "One or more of the tape input is not in the alphabet. Please add them and try again"])
+  (new button% [parent tape-error-win-panel]
+       [label "Continue"]
+       [callback (lambda (button event)
+                   (send tape-error-win show #f))])
   (send frame show #t)
   )
