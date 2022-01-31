@@ -60,6 +60,7 @@
                                        (machine-alpha-list machine))))
 
     ;; addState :: symbol -> bool
+    ;; returns true if we need to re-render
     (define/public (addState value)
       (define isDuplicate (isInStateList value))
       (unless isDuplicate
@@ -67,9 +68,10 @@
          machine
          (cons (fsm-state value (true-function) (posn 0 0))
                (machine-state-list machine))))
-      isDuplicate)
+      (not isDuplicate))
 
     ;; removeState :: symbol -> bool
+    ;; returns true if we need to re-render
     (define/public (removeState value)
       (define exists (isInStateList value))
       (when exists
@@ -82,11 +84,13 @@
       exists)
 
     ;; addStart :: symbol -> ()
+    ;; returns true if we need to re-render
     (define/public (addStart value)
       (addState value) ;; Update the state list
       (set-machine-start-state! machine value)) ;; Update the start state
 
     ;; removeStart :: symbol -> bool
+    ;; returns true if we need to re-render
     (define/public (removeStart value)
       (define exists (removeState value))
       (when exists
@@ -94,6 +98,7 @@
       exists)
 
     ;; addEnd :: symbol -> bool
+    ;; returns true if we need to re-render
     (define/public (addEnd value)
       (define exists (member value (machine-final-state-list machine) eq?))
       (unless exists
@@ -101,19 +106,21 @@
         (set-machine-final-state-list!
          machine
          (cons value (machine-final-state-list machine))))
-      exists)
+      (not exists))
 
     ;; removeEnd :: symbol -> bool
+    ;; returns true if we need to re-render
     (define/public (removeEnd value)
       (define exists (member value (machine-final-state-list machine) eq?))
       (when exists
         (set-machine-final-state-list!
          machine
-         (filter (lambda (v) (not (eq? value v))
-                   (machine-final-state-list machine)))))
+         (filter (lambda (v) (not (eq? value v)))
+                   (machine-final-state-list machine))))
       exists)
 
     ;; addRule :: rule -> bool
+    ;; returns true if we need to re-render
     (define/public (addRule rule)
       (define exists (member rule (machine-rule-list machine) eqRule?))
       (unless exists
@@ -123,6 +130,7 @@
       exists)
 
     ;; addRule :: rule -> bool
+    ;; returns true if we need to re-render
     (define/public (removeRule rule)
       (define exists (member rule (machine-rule-list machine) eqRule?))
       (when exists
