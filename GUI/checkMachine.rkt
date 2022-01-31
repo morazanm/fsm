@@ -88,7 +88,6 @@
                                          (sm-getstates fsm-machine)
                                          (map (lambda (x) (fsm-state-name x))
                                               (machine-state-list m)))))
-  (displayln state-list)
   (match type
     ['pda
      (pda-machine

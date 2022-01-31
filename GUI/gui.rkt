@@ -1,6 +1,12 @@
 #lang racket/gui
-(require (for-syntax syntax/parse) "./structs/state.rkt" "./globals.rkt"
-         "./structs/machine.rkt" "./structs/posn.rkt" "./checkMachine.rkt"
+(require (for-syntax syntax/parse)
+         2htdp/image
+         "./structs/state.rkt"
+         "./globals.rkt"
+         "./structs/machine.rkt"
+         "./structs/posn.rkt"
+         "./checkMachine.rkt"
+         "./draw.rkt"
          "./structs/world.rkt")
 
 (provide kick-off-gui)
@@ -54,14 +60,14 @@
     (define isActive (eq? 'active (get-field mode world)))
     (define (setIdle)
       (send world setMode 'idle)
-      ;;TODO(jschappel): trigger redraw
-      )
+      (remake-image 'control))
     (define (setActive)
       (send world setMode 'active)
       ;; re-render necessary fields
       (delete-children inner-alpha-display) (render-alpha-list)
       (delete-children rule-display) (render-rule-list)
-      (delete-children tape-display) (render-tape-list))
+      (delete-children tape-display) (render-tape-list)
+      (remake-image 'control))
     
     (match event
       ['addAlpha (begin
@@ -79,48 +85,47 @@
       ['addStart (begin
                    (send world addStart value)
                    (setIdle) ;; regardless if the world's mode we need to redraw so just call setIdle
-                   (display world)
                    )]
       ['removeStart (begin
                       (define needsRedraw (send world removeStart value))
                       (when needsRedraw
-                        (setIdle))
-                      (display world))]
+                        (setIdle)))]
       ['addState (begin
                    (define needsRedraw (send world addState value))
+                   (displayln needsRedraw)
                    (when needsRedraw
-                     (setIdle))
-                   (display world))]
+                     (setIdle)))]
       ['removeState (begin
                       (define needsRedraw (send world removeState value))
                       (when needsRedraw
-                        (setIdle))
-                      (display world))]
+                        (setIdle)))]
       ['addEnd (begin
                  (define needsRedraw (send world addEnd value))
                  (when needsRedraw
-                   (setIdle))
-                 (display world))]      
+                   (setIdle)))]      
       ['removeEnd (begin
                     (define needsRedraw (send world removeEnd value))
                     (when needsRedraw
-                      (setIdle))
-                    (display world))]
+                      (setIdle)))]
       ['addRule (begin
                   (define needsRedraw (send world addRule value))
                   (unless needsRedraw
-                    (setIdle)
+                    (when isActive
+                      (setIdle))
                     (delete-children rule-display)
                     (render-rule-list)))]
       ['removeRule (begin
                      (define needsRedraw (send world removeRule value))
                      (when needsRedraw
+                       (when isActive
+                         (setIdle))
                        (setIdle)
                        (delete-children rule-display)
                        (render-rule-list)))]
       ['clearTape (begin
                     (send world clearTape)
-                    (setIdle)
+                    (when isActive
+                      (setIdle))
                     (delete-children tape-display)
                     (render-tape-list))]
       ['addTape (begin
@@ -129,7 +134,8 @@
                       (begin
                         (send tape-error-win show #t))
                       (begin
-                        (setIdle)
+                        (when isActive
+                          (setIdle))
                         (delete-children tape-display)
                         (render-tape-list))))]
       ['runProgram (begin
@@ -322,20 +328,36 @@
                              [min-height 180]
                              [parent center-side]))
 
-  (define tmp (read-bitmap "/home/joshua/Github/fsm/aStar.png"))
+
+  (define firstTime? #t)
+  (define image null)
+  ;; remake-image :: symbol(graph | control -> path
+
   (define machine-view (new canvas%
                             [parent machine-panel]
                             [paint-callback
                              (lambda (canvas dc)
-                               ;;(displayln (send machine-panel get-height))
-                               ;;(displayln (send machine-panel get-width))
-                               (send dc draw-bitmap tmp
+                               (when firstTime?
+                                 (set! firstTime? #f)
+                                 (remake-image 'control))
+                               (send dc draw-bitmap image
                                      (- (/ (send machine-panel get-width) 2)
-                                        (/ (send tmp get-width) 2))
+                                        (/ (send image get-width)  2))
                                      (-
                                       (/ (send machine-panel get-height) 2)
-                                      (/ (send tmp get-height) 2)))
+                                      (/ (send image get-height) 2)))
                                (make-screen-bitmap 100 100))]))
+
+  (define (remake-image mode)
+    (define-values (width height) (send machine-view get-scaled-client-size))
+    (begin
+      (match mode
+        ['graph (displayln "TODO")]
+        ['control (set! image (read-bitmap (draw-gui world width height)))])
+      (send machine-view refresh-now)))
+
+
+                 
 
 
   (define rule-display (new horizontal-panel%
@@ -621,10 +643,10 @@
   (define machine-success-win (new dialog% [label "Success"]))
 
   (define machine-success-win-panel (new vertical-panel%
-                                        [parent machine-success-win]
-                                        [border 5]
-                                        [stretchable-height #f]
-                                        [alignment '(center center)]))
+                                         [parent machine-success-win]
+                                         [border 5]
+                                         [stretchable-height #f]
+                                         [alignment '(center center)]))
   (define machine-success-win-text (new message%
                                         [parent machine-success-win-panel]
                                         [auto-resize #t]
