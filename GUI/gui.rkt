@@ -61,6 +61,12 @@
   (define (event-dispatcher event value)
     (define isActive (eq? 'active (get-field mode world)))
 
+    ;;rerenders everything
+    (define (full-re-render)
+      (remake-image 'control)
+      (delete-children rule-display) (render-rule-list)
+      (delete-children tape-display) (render-tape-list))
+    
     ;; sets a machine to the idle state and handles necessary redraws
     (define (setIdle)
       (send world setMode 'idle)
@@ -193,10 +199,23 @@
                              (begin
                                ;; Now we can determine the next state of the machine
                                (goNext world)
-                               (remake-image 'control)
-                               (delete-children rule-display) (render-rule-list)
-                               (delete-children tape-display) (render-tape-list)
-                               (displayln (get-field cur-state world))))))))]
+                               (full-re-render)))))))]
+      ['goPrev (begin
+                 (define msg (can-go-next))
+                 (if (not (equal? "" msg))
+                     (begin
+                       (send machine-error-win-text set-label msg)
+                       (send machine-error-win show #t))
+                     (begin
+                       (let [(msg (at-beginning-msg world))]
+                         (if (not (equal? "" msg))
+                             (begin
+                               (send machine-end-win-text set-label msg)
+                               (send machine-end-win show #t))
+                             (begin
+                               (goPrev world)
+                               (full-re-render)))))))]
+                 
       [_ (error (format "Invalid event to dispatch on '~s'" (symbol->string event)))]))
 
 
@@ -320,7 +339,7 @@
   (new button% [parent fwd-rev-panel]
        [label "🠈"]
        [callback (lambda (button event)
-                   (event-dispatcher 'goBack 'noAction))])
+                   (event-dispatcher 'goPrev 'noAction))])
   (new button% [parent fwd-rev-panel]
        [label "🠊"]
        [callback (lambda (button event)
@@ -753,7 +772,7 @@
 
 
   ; -----   
-  (define machine-end-win (new dialog% [label "At End"]))
+  (define machine-end-win (new dialog% [label "Information"]))
   
   (define machine-end-win-panel (new vertical-panel%
                                      [parent machine-end-win]
@@ -770,6 +789,18 @@
                    (send machine-end-win show #f))])
   
   (send frame show #t))
+
+
+
+
+;; at-beginning-msg :: world -> string
+;; returns the propper msg to display when the machine is at the start of the tape
+;; if it is not at the start of the tape then the empty string is returned
+(define (at-beginning-msg world)
+  (if (empty? (cdr (get-field processed-config-list world)))
+      "You have reached the beginning of the machine! There are no more previous states."
+      ""))
+  
 
 ;; at-end-msg :: world -> string
 ;; returns the propper msg to display when the machine reaches the end of the tape
@@ -793,7 +824,44 @@
        ['halt "The machine has halted!!"]
        [_ ""])]))
 
-;; goNext :: world
+
+;; goPrev :: world -> ()
+;; Handles all functionality around setting the world up for the previous state transition
+(define (goPrev world)
+  (define type (get-field type world))
+  (define pros-list (get-field processed-config-list world))
+  (define prev-state (cadr pros-list))
+  (define cur-rule (getCurRule (cdr pros-list) type)) ; The current rule that the machine is in after prev is pressed
+  (define rule (getCurRule (if (equal? type 'ndfa)
+                               pros-list
+                               (cdr pros-list))
+                           type))
+  (define pda-cur-rule (getCurRule pros-list type)) ;; The current rule that pda machine is in after prev is pressed. Only use this for PDA's
+
+
+  ;; Based on the machine type certin things need to be updated:
+  ;; - pda: stack pushes and pops, world processed and unprocessed lists
+  ;; - tm: tape index, world processed and unprocessed lists
+  ;; - dfa/ndfa: world processed and unprocessed lists
+  (when (and (not (equal? 'tm type))
+             (not (equal? 'tm-language-recognizer type)))
+    (set-world-tape-decrease world rule cur-rule prev-state))
+
+  (when (equal? type 'pda)
+    (handle-push/pop-prev world cur-rule))
+
+  (send world setCurRule cur-rule)
+  (send world setCurState (determine-prev-state prev-state type))
+  (send world setProcessedConfigList (cdr pros-list))
+  (send world setUnprocessedConfigList (cons (car pros-list)
+                                             (get-field unprocessed-config-list world)))
+  (send world setScrollBarIndex (index-of
+                                 (machine-rule-list (get-field machine world))
+                                 cur-rule))
+  (displayln "Here"))
+
+;; goNext :: world -> ()
+;; Handles all functionality around setting the world up for the next state transition
 (define (goNext world)
   (match-let*
       ([type (get-field type world)]
@@ -802,14 +870,16 @@
        [pros-list (get-field processed-config-list world)]
        [`(,nextState ,transitions ...) unpros-list]
        [cur-rule (getCurRule (append (list nextState) pros-list) type)])
+
+
     ;; Based on the machine type certian things need to be updated:
     ;; - pda: stack pushes and pops, world processed and unprocessed lists, cur-state
     ;; - tm: tape index, world processed and unprocessed lists, cur-state
     ;; - dfa/ndfa: world processed and unprocessed lists, cur-state
     (begin
-      (setWorldTape world cur-rule)
+      (set-world-tape-increase world cur-rule)
       (when (eq? type 'pda)
-        (handle-push/pop world cur-rule))
+        (handle-push/pop-next world cur-rule))
       (send world setCurRule (getCurRule (append
                                           (list nextState)
                                           pros-list)
@@ -822,10 +892,10 @@
                                      cur-rule)))))
 
 
-;; setWorldTape :: world -> rule -> number
+;; set-world-tape-increase :: world -> rule -> number
 ;; Determine if the tape input should increase.
 ;; This does not need to be done for tm's or on an empty transition
-(define (setWorldTape world cur-rule)
+(define (set-world-tape-increase world cur-rule)
   (define type (get-field type world))
   (define get-input (match type
                       ['pda (cadar cur-rule)]
@@ -839,9 +909,35 @@
      TAPE-INDEX-BOTTOM]
     [else (send world add1TapePosition)]))
 
-;; handle-push/pop :: world -> rule -> ()
+;; set-world-tape-decrease :: world -> rule -> rule -> state -> ()
+;; determines if the tape needs to be decreased, if so then it decreases
+(define (set-world-tape-decrease world rule cur-rule prev-state)
+  (define type (get-field type world))
+  ;; Returns the input that was consumed by the machien 
+  (define (input-consumed?) 
+    (match type
+      ['pda (if (equal? (length (cadr prev-state))
+                        (length (cadr (car (get-field processed-config-list world)))))
+                EMP
+                #t)]
+      ['tm (error "Interanl error| buttonFuntions.rkt - showPrev")]
+      ['tm-language-recognizer (error "Interanl error| buttonFuntions.rkt - showPrev")]
+      [_ (cadr cur-rule)]))
+  
+  (define input (input-consumed?))
+  (match type
+    [(or 'dfa 'ndfa) #:when (and (not (equal? EMP (cadr rule)))
+                                 (not (<= (get-field tape-position world) -1)))
+                     (send world sub1TapePosition)]
+    [(not 'tm 'tm-language-recognizer) #:when (equal? EMP input)
+                                       (void)]
+    [_ (unless (<= (get-field tape-position world) -1)
+         (send world sub1TapePosition))]))
+  
+
+;; handle-push/pop-next :: world -> rule -> ()
 ;; handles the logic for pda stack pushs and pop for 'goNext'
-(define (handle-push/pop world cur-rule)
+(define (handle-push/pop-next world cur-rule)
   (define (handle-pop stack)
     (define pop-list (caddar cur-rule))
     (cond
@@ -861,9 +957,41 @@
    ((compose1 handle-push handle-pop) (get-field stack world))))
 
 
+;; handle-push/pop-prev :: world -> rule -> ()
+;; handles the logic for pda stack pushs and pop for 'goPrev'
+(define (handle-push/pop-prev world cur-rule)
+  (define (handle-pop stack)
+    (define pop-list (cadadr cur-rule))
+    (cond
+      [(symbol? pop-list) stack] ;; e is the element so nothing to pop
+      [else
+       (drop stack (length pop-list))]))
+  
+  (define (handle-push stack)
+    (define push-list (caddar cur-rule))
+    (cond
+      [(symbol? push-list) void] ;; e is the element so nothing to push
+      [else
+       (append push-list stack)]))
+  (send
+   world
+   updateWorldStack
+   ((compose1 handle-pop handle-push) (get-field stack world))))
+
+
 ;; determine-cur-state :: transition -> type
 ;; Determins the current state that the machine is in
 (define (determine-cur-state state type)
+  (match type
+    ['pda (car state)]
+    ['tm (car state)]
+    ['tm-language-recognizer (car state)]
+    [_ (car (cdr state))]))
+
+
+;; determine-prev-state :: state -> type -> state
+;; Determins what the previous state of the machine was
+(define (determine-prev-state state type)
   (match type
     ['pda (car state)]
     ['tm (car state)]

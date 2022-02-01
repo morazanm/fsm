@@ -1,6 +1,6 @@
 #lang racket
 (require "../../GUI/run.rkt" "../../GUI/structs/machine.rkt" "../../fsm-main.rkt" "../../main.rkt"
-         "../../GUI/structs/state.rkt"  "../../GUI/globals.rkt" "../../GUI/structs/posn.rkt")
+         "../../GUI/structs/state.rkt"  "../../GUI/globals.rkt" "../../GUI/structs/posn.rkt" "../../GUI/draw.rkt")
 
 (define a* (make-dfa '(S F)     ;; the states
                      '(a b)     ;; the input alphabet

@@ -205,8 +205,8 @@
     ;; reset the world values
     (define/public (reset)
       (set! tape-position -1)
-      (set! cur-rule '())
-      (set! cur-state '())
+      (set! cur-rule CURRENT-RULE)
+      (set! cur-state CURRENT-STATE)
       (set! processed-config-list '())
       (set! unprocessed-config-list '())
       (set! stack '())
