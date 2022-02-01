@@ -3,7 +3,10 @@
 
 (module fsm racket
 
-  (require "fsm-main.rkt" "./FSM-Visualization/visualize.rkt" "./GraphViz/render-graph.rkt")
+  (require "fsm-main.rkt"
+           "./FSM-Visualization/visualize.rkt"
+           "./GraphViz/render-graph.rkt"
+           "./GUI/run.rkt")
 
   (provide
    check-machine
@@ -62,9 +65,11 @@
 
    ; visualization
    sm-visualize
+   sm-visualize-new
    sm-marco)
 
   (define sm-visualize visualize)
+  (define sm-visualize-new parse-input)
   (define sm-marco marco)
 
   ) ; close module
