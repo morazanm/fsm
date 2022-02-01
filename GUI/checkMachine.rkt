@@ -69,10 +69,10 @@
                        fsm-machine))
   (new-machine-vars
    (if (list? transitions)
-       (car transitions)
+       (cdr transitions)
        '())
    (if (list? transitions)
-       (cdr transitions)
+       (list (car transitions))
        '())
    new-machine))
   

@@ -9,6 +9,7 @@
 (provide
  world%)
 
+;; small macro to make debugging life easier :-)
 (define-syntax (line-display! stx)
   (syntax-parse stx
     [(_ [value:id ...] dest-port)
@@ -22,26 +23,16 @@
 (define world%
   (class* object% (writable<%>)
     (init-field machine
-                [tape-position 0]
+                [tape-position -1]
                 [mode 'idle] ;; Valid modes are: idle, active
                 [type (machine-type machine)]
                 [cur-rule CURRENT-RULE]
                 [cur-state CURRENT-STATE]
                 [processed-config-list '()]
                 [unprocessed-config-list '()]
-                [scroll-bar-index 0])
-   
-    
-    (define/public (custom-display dest-port)
-      (line-display! [tape-position
-                     machine type
-                     mode
-                     cur-rule
-                     cur-state
-                     processed-config-list
-                     unprocessed-config-list
-                     scroll-bar-index]
-                    dest-port))
+                [stack '()]
+                [scroll-bar-index -1]) ;;TODO(jschappel): This will end up being used to tm, otherwise remove
+ 
 
     ;; get-machine-alpha-list :: listOfSymbol
     (define/public (get-machine-alpha-list)
@@ -116,7 +107,7 @@
         (set-machine-final-state-list!
          machine
          (filter (lambda (v) (not (eq? value v)))
-                   (machine-final-state-list machine))))
+                 (machine-final-state-list machine))))
       exists)
 
     ;; addRule :: rule -> bool
@@ -160,6 +151,32 @@
        machine
        '()))
 
+    ;; add1TapePosition :: :: number -> ()
+    (define/public (add1TapePosition)
+      (set! tape-position (add1 tape-position))
+      tape-position)
+
+    ;; sub1TapePosition :: :: number -> ()
+    (define/public (sub1TapePosition)
+      (set! tape-position (sub1 tape-position))
+      tape-position)
+
+    ;; setCurRule :: number -> () 
+    (define/public (setCurRule rule)
+      (set! cur-rule rule))
+
+    ;; setCurState :: number -> () 
+    (define/public (setCurState state)
+      (set! cur-state state))
+
+    ;; setProcessedConfigList listOfTrans -> ()
+    (define/public (setProcessedConfigList l)
+      (set! processed-config-list l))
+
+    ;; setUnprocessedConfigList listOfTrans -> ()
+    (define/public (setUnprocessedConfigList l)
+      (set! unprocessed-config-list l))
+
     ;; setMachine :: machine -> ()
     (define/public (setMachine m)
       (set! machine m))
@@ -172,10 +189,43 @@
     (define/public (setProcessedList l)
       (set! processed-config-list l))
 
+    ;; setScrollBarIndex :: number -> ()
+    (define/public (setScrollBarIndex i)
+      (set! scroll-bar-index i))
+
     ;; setMode :: symbol('idle | 'active) -> ()
     (define/public (setMode value)
       (set! mode value))
-    
+
+    ;; setWorldStack :: list -> ()
+    (define/public (setWorldStack new-stack)
+      (set! stack new-stack))
+
+    ;; reset :: ()
+    ;; reset the world values
+    (define/public (reset)
+      (set! tape-position -1)
+      (set! cur-rule '())
+      (set! cur-state '())
+      (set! processed-config-list '())
+      (set! unprocessed-config-list '())
+      (set! stack '())
+      (set! scroll-bar-index -1))
+
+    ;; Needed for inherited interface
+    (define/public (custom-display dest-port)
+      (line-display! [tape-position
+                      machine type
+                      mode
+                      cur-rule
+                      cur-state
+                      processed-config-list
+                      unprocessed-config-list
+                      stack
+                      scroll-bar-index]
+                     dest-port))
+
+    ;; Needed for inherited interface
     (define/public (custom-write dest-port)
       (write "Currently Unsupported" dest-port))
 

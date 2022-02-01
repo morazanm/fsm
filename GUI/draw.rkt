@@ -5,6 +5,7 @@
   "./structs/posn.rkt"
   "./structs/world.rkt"
   "./structs/machine.rkt"
+  "./stateTransitions.rkt"
   "./globals.rkt"
   "./inv.rkt")
 
@@ -26,9 +27,6 @@ IMPORTANT: Alot of the code in this file is legacy code that could us a rewite. 
               "./tmp.png")
   (displayln "Redrawing Image")
   "./tmp.png")
-
-
-(define (getCurRule r) r)
 
 
 (define (draw world scene width height)
@@ -148,7 +146,7 @@ IMPORTANT: Alot of the code in this file is legacy code that could us a rewite. 
   ;; determin-prev-rule :: rule -> rule
   ;; This is legacy code, get the previos rule that the machine transitioned on
   (define (determin-prev-rule rule)
-    (define c-rule (getCurRule rule))
+    (define c-rule (getCurRule rule (get-field type world)))
     (match (machine-type machine)
       ['pda (caar c-rule)]
       ['tm (caar c-rule)]
@@ -160,18 +158,19 @@ IMPORTANT: Alot of the code in this file is legacy code that could us a rewite. 
   ;; This is legacy code that draws the arrows that are used to show the
   ;;  transitions
   (define (draw-inner-with-prev)
+    (define cur-rule (get-field cur-rule world))
     (define cur-state (get-field cur-state world))
     (define state-list (machine-state-list (get-field machine world)))
     (define index (get-state-index state-list cur-state 0))
     (overlay
      CENTER-CIRCLE
      (inner-circle1 (- 360 (* (get-state-index state-list cur-state 0) deg-shift))
-                    (determin-input-symbol (cadr cur-state)) index)
+                    (determin-input-symbol (cadr cur-rule)) index)
      (inner-circle2 (- 360 (* (get-state-index
                                state-list
-                               (determin-prev-rule (get-field processed-config-list world) 0)
-                               deg-shift)))
-                    (circle inner-R "outline" "transparent"))))
+                               (determin-prev-rule (get-field processed-config-list world)) 0)
+                              deg-shift)))
+     (circle inner-R "outline" "transparent")))
 
   ;; draw-inner-no-prev :: image
   ;; Purpose: Creates the inner circle that contains the arrows
@@ -182,7 +181,7 @@ IMPORTANT: Alot of the code in this file is legacy code that could us a rewite. 
     (overlay
      CENTER-CIRCLE
      (inner-circle1 (- 360 (* index deg-shift))
-                    (determin-input-symbol (cadr cur-state))
+                    (determin-input-symbol (cadr (get-field cur-rule world)))
                     index)
      (circle inner-R "outline" "transparent")))
 

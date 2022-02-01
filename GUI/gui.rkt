@@ -2,12 +2,14 @@
 (require (for-syntax syntax/parse)
          2htdp/image
          "./structs/state.rkt"
-         "./globals.rkt"
          "./structs/machine.rkt"
+         "./structs/world.rkt"
          "./structs/posn.rkt"
+         "./globals.rkt"
          "./checkMachine.rkt"
          "./draw.rkt"
-         "./structs/world.rkt")
+         "./stateTransitions.rkt"
+         "../fsm-main.rkt")
 
 (provide kick-off-gui)
 (define MAX-ALPHABET 14)
@@ -58,9 +60,17 @@
   (define world (new world% [machine machine]))
   (define (event-dispatcher event value)
     (define isActive (eq? 'active (get-field mode world)))
+
+    ;; sets a machine to the idle state and handles necessary redraws
     (define (setIdle)
       (send world setMode 'idle)
+      (send world reset)
+      (delete-children inner-alpha-display) (render-alpha-list)
+      (delete-children rule-display) (render-rule-list)
+      (delete-children tape-display) (render-tape-list)
       (remake-image 'control))
+
+    ;; sets a world to the active state and handles necessary redraws
     (define (setActive)
       (send world setMode 'active)
       ;; re-render necessary fields
@@ -68,6 +78,20 @@
       (delete-children rule-display) (render-rule-list)
       (delete-children tape-display) (render-tape-list)
       (remake-image 'control))
+
+    ;; can-go-next :: string
+    ;; Determins if there is an error message that needs to be rendered
+    ;; when hitting the 'next' button
+    (define (can-go-next)
+      (define unpros-list (get-field unprocessed-config-list world))
+      (cond
+        [(not isActive) "You must build your machine before you can continue. Please press 'Run' to proceed."]
+        ;; sm-showtransitions for tm and lang rec can sometimes return a string,
+        ;; if they do then we have an error and need to render the message as set to idle
+        ;; till we fix the error
+        [(and (not (empty? unpros-list))
+              (string? (car unpros-list))) (car unpros-list)]
+        [else ""]))
     
     (match event
       ['addAlpha (begin
@@ -148,11 +172,37 @@
                            (match-let ([(new-machine-vars unpros pros new-machine) (build-new-interal-machine
                                                                                     (get-field machine world))])
                              (send world setMachine new-machine)
+                             (send world setCurState (machine-start-state new-machine))
                              (send world setUnprocessedList unpros)
                              (send world setProcessedList pros)
                              (setActive)
                              (send machine-success-win show #t)))))]
+      ['goNext (begin
+                 (define msg (can-go-next))
+                 (if (not (equal? "" msg))
+                     (begin
+                       (send machine-error-win-text set-label msg)
+                       (send machine-error-win show #t))
+                     (begin
+                       (let [(msg (at-end-msg world))]
+                         ;; see if we are at the end, if so then render approperate msg
+                         (if (not (equal? msg ""))
+                             (begin
+                               (send machine-end-win-text set-label msg)
+                               (send machine-end-win show #t))
+                             (begin
+                               ;; Now we can determine the next state of the machine
+                               (goNext world)
+                               (remake-image 'control)
+                               (delete-children rule-display) (render-rule-list)
+                               (delete-children tape-display) (render-tape-list)
+                               (displayln (get-field cur-state world))))))))]
       [_ (error (format "Invalid event to dispatch on '~s'" (symbol->string event)))]))
+
+
+
+  
+  ;; ***************************** BELOW ARE THE GUI OBJECTS *****************************
 
   (define WELCOME-MSG "FSM Visualization Tool: ")
 
@@ -267,8 +317,14 @@
   (define fwd-rev-panel (new horizontal-panel%
                              [parent control-panel]
                              [alignment '(center center)]))
-  (new button% [parent fwd-rev-panel] [label "🠈"])
-  (new button% [parent fwd-rev-panel] [label "🠊"])
+  (new button% [parent fwd-rev-panel]
+       [label "🠈"]
+       [callback (lambda (button event)
+                   (event-dispatcher 'goBack 'noAction))])
+  (new button% [parent fwd-rev-panel]
+       [label "🠊"]
+       [callback (lambda (button event)
+                   (event-dispatcher 'goNext 'noAction))])
 
   (define sig-font (make-font #:size 16
                               #:family 'swiss
@@ -318,9 +374,21 @@
                             [alignment '(center center)]))
 
   (define (render-tape-list)
-    (for ([input (machine-sigma-list (get-field machine world))])
-      (new message% [parent tape-display] [font myfont] [enabled #t]
-           [label (symbol->string input)])))
+    (define sigma-list (machine-sigma-list (get-field machine world)))
+    (for ([input sigma-list]
+          [index (in-range (length sigma-list))])
+      (if (> index (get-field tape-position world))
+          (new message%
+               [parent tape-display]
+               [font myfont]
+               [enabled #t]
+               [label (symbol->string input)])
+          (new message%
+               [parent tape-display]
+               [font myfont]
+               [enabled #t]
+               [color "Purple"]
+               [label (symbol->string input)]))))
 
 
 
@@ -371,11 +439,20 @@
 
   (define  (render-rule-list)
     (for ([i (machine-rule-list (get-field machine world))])
-      (begin
-        (define o (open-output-string))
-        (write i o)
-        (new message% [parent rule-display] [font myfont] [enabled #t]
-             [label (get-output-string o)]))))
+      (define o (open-output-string))
+      (write i o)
+      (if (equal? i (get-field cur-rule world))    
+          (new message%
+               [parent rule-display]
+               [font myfont]
+               [color "Purple"]
+               [enabled #t]
+               [label (get-output-string o)])
+          (new message%
+               [parent rule-display]
+               [font myfont]
+               [enabled #t]
+               [label (get-output-string o)]))))
   (render-rule-list)
 
 
@@ -637,7 +714,7 @@
        [label "Continue"]
        [callback (lambda (button event)
                    (send machine-error-win show #f))])
-  (send frame show #t)
+  
   ; -----
 
   (define machine-success-win (new dialog% [label "Success"]))
@@ -650,10 +727,149 @@
   (define machine-success-win-text (new message%
                                         [parent machine-success-win-panel]
                                         [auto-resize #t]
-                                        [label "The machine was successfully built. Press Next and Prev to show th emachines transitions"]))
+                                        [label "The machine was successfully built. Press Next and Prev to show the machines transitions"]))
   (new button% [parent machine-success-win-panel]
        [label "Continue"]
        [callback (lambda (button event)
                    (send machine-success-win show #f))])
-  (send frame show #t)
-  )
+
+  ; -----
+
+  (define go-next-error-win (new dialog% [label "Error"]))
+
+  (define go-next-error-win-panel (new vertical-panel%
+                                       [parent go-next-error-win]
+                                       [border 5]
+                                       [stretchable-height #f]
+                                       [alignment '(center center)]))
+  (define go-next-error-win-text (new message%
+                                      [parent go-next-error-win-panel]
+                                      [auto-resize #t]
+                                      [label ""]))
+  (new button% [parent go-next-error-win-panel]
+       [label "Continue"]
+       [callback (lambda (button event)
+                   (send go-next-error-win show #f))])
+
+
+  ; -----   
+  (define machine-end-win (new dialog% [label "At End"]))
+  
+  (define machine-end-win-panel (new vertical-panel%
+                                     [parent machine-end-win]
+                                     [border 5]
+                                     [stretchable-height #f]
+                                     [alignment '(center center)]))
+  (define machine-end-win-text (new message%
+                                    [parent machine-end-win-panel]
+                                    [auto-resize #t]
+                                    [label ""]))
+  (new button% [parent machine-end-win-panel]
+       [label "Done"]
+       [callback (lambda (button event)
+                   (send machine-end-win show #f))])
+  
+  (send frame show #t))
+
+;; at-end-msg :: world -> string
+;; returns the propper msg to display when the machine reaches the end of the tape
+;; if it is not at the end of the tape then the empty string is returned
+(define (at-end-msg world)
+  (define type (get-field type world))
+  (define machine (get-field machine world))
+  (define unpros-list (get-field unprocessed-config-list world))
+  (define pros-list (get-field processed-config-list world))
+  (cond
+    ;; Lang recs have a seperate end conditon so we will check it here
+    [(and (empty? unpros-list)
+          (equal? type 'tm-language-recognizer))
+     (if (equal? (caar pros-list) (lang-rec-machine-accept-state machine))
+         "The input is accepted."
+         "The input is rejected.")]
+    [else
+     (match (car unpros-list)
+       ['accept "The input is accepted."]
+       ['reject "The input is rejected."]
+       ['halt "The machine has halted!!"]
+       [_ ""])]))
+
+;; goNext :: world
+(define (goNext world)
+  (match-let*
+      ([type (get-field type world)]
+       [machine (get-field machine world)]
+       [unpros-list (get-field unprocessed-config-list world)]
+       [pros-list (get-field processed-config-list world)]
+       [`(,nextState ,transitions ...) unpros-list]
+       [cur-rule (getCurRule (append (list nextState) pros-list) type)])
+    ;; Based on the machine type certian things need to be updated:
+    ;; - pda: stack pushes and pops, world processed and unprocessed lists, cur-state
+    ;; - tm: tape index, world processed and unprocessed lists, cur-state
+    ;; - dfa/ndfa: world processed and unprocessed lists, cur-state
+    (begin
+      (setWorldTape world cur-rule)
+      (when (eq? type 'pda)
+        (handle-push/pop world cur-rule))
+      (send world setCurRule (getCurRule (append
+                                          (list nextState)
+                                          pros-list)
+                                         type))
+      (send world setCurState (determine-cur-state nextState type))
+      (send world setProcessedConfigList (append (list nextState) pros-list))
+      (send world setUnprocessedConfigList transitions)
+      (send world setScrollBarIndex (index-of
+                                     (machine-rule-list machine)
+                                     cur-rule)))))
+
+
+;; setWorldTape :: world -> rule -> number
+;; Determine if the tape input should increase.
+;; This does not need to be done for tm's or on an empty transition
+(define (setWorldTape world cur-rule)
+  (define type (get-field type world))
+  (define get-input (match type
+                      ['pda (cadar cur-rule)]
+                      ['tm 'NONE]
+                      ['tm-language-recognizer 'NONE]
+                      [else (cadr cur-rule)]))           
+  (cond
+    [(and (not (equal? 'tm type))
+          (not (equal? 'tm-language-recognizer type))
+          (equal? EMP get-input))
+     TAPE-INDEX-BOTTOM]
+    [else (send world add1TapePosition)]))
+
+;; handle-push/pop :: world -> rule -> ()
+;; handles the logic for pda stack pushs and pop for 'goNext'
+(define (handle-push/pop world cur-rule)
+  (define (handle-pop stack)
+    (define pop-list (caddar cur-rule))
+    (cond
+      [(symbol? pop-list) stack] ;; e is the element so nothing to pop
+      [else
+       (drop stack (length pop-list))]))
+  
+  (define (handle-push stack)
+    (define push-list (cadadr cur-rule))
+    (cond
+      [(symbol? push-list) void] ;; e is the element so nothing to push
+      [else
+       (append push-list stack)]))
+  (send
+   world
+   updateWorldStack
+   ((compose1 handle-push handle-pop) (get-field stack world))))
+
+
+;; determine-cur-state :: transition -> type
+;; Determins the current state that the machine is in
+(define (determine-cur-state state type)
+  (match type
+    ['pda (car state)]
+    ['tm (car state)]
+    ['tm-language-recognizer (car state)]
+    [_ (car (cdr state))]))
+  
+  
+     
+   
