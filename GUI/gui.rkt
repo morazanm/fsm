@@ -12,41 +12,8 @@
          "../fsm-main.rkt")
 
 (provide kick-off-gui)
+
 (define MAX-ALPHABET 14)
-
-
-
-
-;(define alpha-gamma-panel (new horizontal-panel% [parent left-side] [alignment '(center center)]))
-;(define alpha-panel (new vertical-panel%
-;                        [parent alpha-gamma-panel]
-;                        [style (list 'border)]
-;                        [border 10]
-;                        [alignment '(center center)]))
-;(new message% [parent alpha-panel] [label "Alpha"])
-;(new text-field% [parent alpha-panel] [label ""])
-;(define panel4 (new horizontal-panel% [parent alpha-panel]
-;                    [alignment '(center center)]))
-;; Add Cancel and Ok buttons to the horizontal panel
-;(new button% [parent panel4] [label "Add"])
-;(new button% [parent panel4] [label "Remove"])
-;(when (system-position-ok-before-cancel?)
-;  (send panel change-children reverse))
-;
-;(define gamma-panel (new vertical-panel%
-;                        [parent alpha-gamma-panel]
-;                        [style (list 'border)]
-;                        [border 10]
-;                        [alignment '(center center)]))
-;(new message% [parent gamma-panel] [label "Gamma"])
-;(new text-field% [parent gamma-panel] [label ""])
-;(define panel5 (new horizontal-panel% [parent gamma-panel]
-;                    [alignment '(center center)]))
-;; Add Cancel and Ok buttons to the horizontal panel
-;(new button% [parent panel5] [label "Add"])
-;(new button% [parent panel5] [label "Remove"])
-;(when (system-position-ok-before-cancel?)
-;  (send panel change-children reverse))
 
 
 ;; delete-children :: Object -> ()
@@ -58,6 +25,11 @@
 ;; kick-off-gui :: world -> GUI
 (define (kick-off-gui machine)
   (define world (new world% [machine machine]))
+
+  ;; event-dispatcher symbol -> value -> ()
+  ;; The event dispactech is in change of all events that need to be handled by
+  ;; the GUI. This allows for one central control point that can be used to reference
+  ;; how events are handled
   (define (event-dispatcher event value)
     (define isActive (eq? 'active (get-field mode world)))
 
@@ -98,7 +70,6 @@
         [(and (not (empty? unpros-list))
               (string? (car unpros-list))) (car unpros-list)]
         [else ""]))
-    
     (match event
       ['addAlpha (begin
                    (send world addAlpha value)
@@ -241,10 +212,14 @@
 
 
   (define machine-menu (new menu% [label "Machine"] [parent menu-bar] [help-string "Change machine type"]))
-  (define dfa/ndfa-menu-item (new menu-item%
-                                  [label "Dfa/Ndfa"]
+  (define dfa-menu-item (new menu-item%
+                                  [label "Dfa"]
                                   [parent machine-menu]
-                                  [callback (lambda (btn event) (send frame set-label (string-append WELCOME-MSG "Dfa/Ndfa")))]))
+                                  [callback (lambda (btn event) (send frame set-label (string-append WELCOME-MSG "Dfa")))]))
+  (define ndfa-menu-item (new menu-item%
+                                  [label "Ndfa"]
+                                  [parent machine-menu]
+                                  [callback (lambda (btn event) (send frame set-label (string-append WELCOME-MSG "Ndfa")))]))
   (define pda-menu-item (new menu-item%
                              [label "Pda"]
                              [parent machine-menu]
@@ -563,10 +538,41 @@
                        (send editor erase)
                        (event-dispatcher 'removeAlpha (string->symbol text-value)))))])
 
-  ;; TODO(jschappel): what does this do agai?!?!?!?!?!
   (when (system-position-ok-before-cancel?)
     (send panel change-children reverse))
 
+  ; IMPT!!!: Commented out code is for future addition
+  ;(define alpha-gamma-panel (new horizontal-panel% [parent left-side] [alignment '(center center)]))
+  ;(define alpha-panel (new vertical-panel%
+  ;                        [parent alpha-gamma-panel]
+  ;                        [style (list 'border)]
+  ;                        [border 10]
+  ;                        [alignment '(center center)]))
+  ;(new message% [parent alpha-panel] [label "Alpha"])
+  ;(new text-field% [parent alpha-panel] [label ""])
+  ;(define panel4 (new horizontal-panel% [parent alpha-panel]
+  ;                    [alignment '(center center)]))
+  ;; Add Cancel and Ok buttons to the horizontal panel
+  ;(new button% [parent panel4] [label "Add"])
+  ;(new button% [parent panel4] [label "Remove"])
+  ;(when (system-position-ok-before-cancel?)
+  ;  (send panel change-children reverse))
+  ;
+  ;(define gamma-panel (new vertical-panel%
+  ;                        [parent alpha-gamma-panel]
+  ;                        [style (list 'border)]
+  ;                        [border 10]
+  ;                        [alignment '(center center)]))
+  ;(new message% [parent gamma-panel] [label "Gamma"])
+  ;(new text-field% [parent gamma-panel] [label ""])
+  ;(define panel5 (new horizontal-panel% [parent gamma-panel]
+  ;                    [alignment '(center center)]))
+  ;; Add Cancel and Ok buttons to the horizontal panel
+  ;(new button% [parent panel5] [label "Add"])
+  ;(new button% [parent panel5] [label "Remove"])
+  ;(when (system-position-ok-before-cancel?)
+  ;  (send panel change-children reverse))
+  
 
   ;;------------------------------------------------------------------------------------------------------------
   ;; StartState
