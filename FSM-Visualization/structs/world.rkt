@@ -9,7 +9,6 @@ This file was created by Joshua Schappel on 12/19/19
 
 (provide
  (struct-out world)
- (struct-out world2)
  initialize-world
  create-new-world-input
  create-new-world-input-empty
@@ -39,21 +38,6 @@ This file was created by Joshua Schappel on 12/19/19
                unporcessed-config-list
                error-msg
                scroll-bar-index) #:transparent)
-
-(struct world2 (fsm-machine
-                machine-type
-                tape-position
-                cur-rule
-                cur-state
-                processed-config-list
-                unporcessed-config-list
-                scroll-bar-index) #:transparent)
-
-
-
-
-
-
 
 
 
