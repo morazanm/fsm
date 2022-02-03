@@ -1,6 +1,11 @@
 #lang racket
-(require "../fsm-main.rkt" "./structs/machine.rkt" "./structs/state.rkt" "globals.rkt" "./structs/posn.rkt"
-         "./gui.rkt" "./structs/world.rkt")
+(require
+  "../fsm-main.rkt"
+  "./structs/machine.rkt"
+  "./structs/state.rkt"
+  "globals.rkt"
+  "./structs/posn.rkt"
+  "./gui.rkt")
 
 (provide parse-input)
 
@@ -94,4 +99,3 @@
    
    
    
-  

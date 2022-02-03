@@ -192,7 +192,8 @@ IMPORTANT: Alot of the code in this file is legacy code that could us a rewite. 
     (define cur-state (get-field cur-state world))
     (define state-color (determin-inv
                          (get-field machine world)
-                         cur-state))
+                         cur-state
+                         (get-field tape-position world)))
     ;; arrow: none -> image
     ;; Purpose: draws a arrow
     (define (arrow)       

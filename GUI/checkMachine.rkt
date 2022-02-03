@@ -149,7 +149,7 @@
   (define (in-cur-state-list s msl)
     (match msl
       [`() #f]
-      [`(,f ,_ ...) #:when (eq? s f) f]
+      [`(,f ,_ ...) #:when (eq? s (fsm-state-name f)) f]
       [`(,_ ,r ...) (in-cur-state-list s r)]))
   (define (build-state s)
     (match type

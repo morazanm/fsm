@@ -7,15 +7,15 @@
 (provide
  determin-inv)
 
-;; determin-inv :: machine -> rule -> Optional KeywordArg -> color
+;; determin-inv :: machine -> rule -> number -> Optional KeywordArg -> color
 ;; determins the color that should be displayed for the invariant.
-(define (determin-inv machine cur-state #:graphViz[gv false])
+(define (determin-inv machine cur-state tape-index #:graphViz[gv false])
   (define state-list (machine-state-list machine))
   (define index (get-state-index state-list cur-state 0))
   (determin-inv-color (fsm-state-function (list-ref (machine-state-list machine) index))
                       (if (or (equal? MACHINE-TYPE 'tm) (equal? MACHINE-TYPE 'tm-language-recognizer))
                           (take (machine-sigma-list machine) (tm-machine-tape-posn machine))
-                          (take (machine-sigma-list machine) (if (< TAPE-INDEX-BOTTOM 0) 0 (add1 TAPE-INDEX-BOTTOM))))
+                          (take (machine-sigma-list machine) (if (< tape-index 0) 0 (add1 tape-index))))
                       machine
                       gv))
 

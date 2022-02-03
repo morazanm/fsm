@@ -1,6 +1,7 @@
 #lang racket/gui
 (require (for-syntax syntax/parse)
          2htdp/image
+         framework
          "./structs/state.rkt"
          "./structs/machine.rkt"
          "./structs/world.rkt"
@@ -13,6 +14,7 @@
 
 (provide kick-off-gui)
 
+
 (define MAX-ALPHABET 14)
 
 
@@ -24,6 +26,7 @@
 
 ;; kick-off-gui :: world -> GUI
 (define (kick-off-gui machine)
+  (color-prefs:white-on-black)
   (define world (new world% [machine machine]))
 
   ;; event-dispatcher symbol -> value -> ()
