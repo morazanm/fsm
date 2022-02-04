@@ -26,7 +26,7 @@
                 [tape-position -1]
                 [mode 'idle] ;; Valid modes are: idle, active
                 [view-mode 'control] ;; Valid modes are: control, graphviz
-                [has-gviz (find-executable-path	"dot")]
+                [has-gviz (hasGraphVizInstalled)]
                 [type (machine-type machine)]
                 [cur-rule CURRENT-RULE]
                 [cur-state CURRENT-STATE]
@@ -251,6 +251,7 @@
                         (machine-state-list machine)
                         (lambda (target v2) (eq? target (fsm-state-name v2)))))))
 
+    ;; eqRule? :: rule -> rule -> bool
     (define/match (eqRule? target actual)
       [(`(,s1 ,r1 ,f1) `(,s2 ,r2 ,f2)) ;; dfa/ndfa 
        (and (eq? s1 s2)
@@ -292,6 +293,23 @@
         (match (cons type rule)
           [`(dfa ,_ ,a ,_) (not (eq? a alpha))]))
       (set-machine-rule-list! machine (filter remove? rules)))
+
+    ;; hasGraphVizInstalled :: bool
+    ;; returns true if graphviz is installed
+    (define/private (hasGraphVizInstalled)
+      (define sys-type (system-type))
+      ;; On linux/MacOS this is easy
+      (cond
+        [(eq? sys-type 'windows)
+         ;; Windows is a pain.
+         ;; 1) get all the PATH vars in a list
+         ;; 2) check if Graphviz is in the list
+         (define path-vars (string-split (getenv "path") ";"))
+         (not (empty? (filter (curryr string-contains? "Graphviz") path-vars)))]
+        [else
+         ;; On linux/MacOS this is easy
+         (find-executable-path	"dot")]))
+      
                            
     
     (super-new)))
