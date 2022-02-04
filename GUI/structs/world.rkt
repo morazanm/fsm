@@ -305,7 +305,7 @@
          ;; 1) get all the PATH vars in a list
          ;; 2) check if Graphviz is in the list
          (define path-vars (string-split (getenv "path") ";"))
-         (not (empty? (filter (curryr string-contains? "Graphviz") path-vars)))]
+         (not (empty? (filter (curry string-contains? "Graphviz") path-vars)))]
         [else
          ;; On linux/MacOS this is easy
          (find-executable-path	"dot")]))
