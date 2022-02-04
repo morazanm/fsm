@@ -325,7 +325,7 @@
        [callback (lambda (button event)
                    (event-dispatcher 'clearTape 'noAction))])
   (when (system-position-ok-before-cancel?)
-    (send panel change-children reverse))
+    (send panel-tape change-children reverse))
   
 
   (define control-panel (new vertical-panel%
@@ -586,7 +586,7 @@
                        (event-dispatcher 'removeAlpha (string->symbol text-value)))))])
 
   (when (system-position-ok-before-cancel?)
-    (send panel change-children reverse))
+    (send panel4 change-children reverse))
 
   ; IMPT!!!: Commented out code is for future addition
   ;(define alpha-gamma-panel (new horizontal-panel% [parent left-side] [alignment '(center center)]))
@@ -654,7 +654,7 @@
                      (send editor erase)
                      (event-dispatcher 'removeStart (string->symbol text-value))))])
   (when (system-position-ok-before-cancel?)
-    (send panel change-children reverse))
+    (send panel2 change-children reverse))
 
 
   ;;------------------------------------------------------------------------------------------------------------
@@ -690,7 +690,7 @@
                      (send editor erase)
                      (event-dispatcher 'removeEnd (string->symbol text-value))))])
   (when (system-position-ok-before-cancel?)
-    (send panel change-children reverse))
+    (send panel3 change-children reverse))
 
 
   ;;------------------------------------------------------------------------------------------------------------
@@ -752,7 +752,7 @@
                                                      ,(string->symbol alpha)
                                                      ,(string->symbol end)))))])
   (when (system-position-ok-before-cancel?)
-    (send panel change-children reverse))
+    (send panel6 change-children reverse))
 
   ;;------------------------------------------------------------------------------------------------------------
   ;; Message Windows
