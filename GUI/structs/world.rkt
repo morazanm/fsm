@@ -52,9 +52,12 @@
 
     ;; addAlpha :: symbol -> ()
     (define/public (removeAlpha value)
-      (set-machine-alpha-list! machine
-                               (filter (lambda (v) (not (eq? v value)))
-                                       (machine-alpha-list machine))))
+      (begin
+        (set-machine-alpha-list! machine
+                                 (filter (lambda (v) (not (eq? v value)))
+                                         (machine-alpha-list machine)))
+        ;; Remove all rules that are associated with this alpha
+        (remove-associated-rules-for-alpha value)))
 
     ;; addState :: symbol -> bool
     ;; returns true if we need to re-render
@@ -72,12 +75,15 @@
     (define/public (removeState value)
       (define exists (isInStateList value))
       (when exists
-        (set-machine-state-list!
-         machine
-         (remove
-          value
-          (machine-state-list machine)
-          (lambda (target v2) (eq? target (fsm-state-name v2))))))
+        (begin
+          (set-machine-state-list!
+           machine
+           (remove
+            value
+            (machine-state-list machine)
+            (lambda (target v2) (eq? target (fsm-state-name v2)))))
+          ;; we also need to remove all rules that have this state in them!
+          (remove-associated-rules-for-state value)))
       exists)
 
     ;; addStart :: symbol -> ()
@@ -119,14 +125,17 @@
     ;; addRule :: rule -> bool
     ;; returns true if we need to re-render
     (define/public (addRule rule)
-      (define exists (member rule (machine-rule-list machine) eqRule?))
-      (unless exists
-        (set-machine-rule-list!
-         machine
-         (cons rule (machine-rule-list machine))))
-      exists)
+      (define rule-exists (member rule (machine-rule-list machine) eqRule?))
+      (cond
+        [rule-exists #f]
+        [(isValidRule? rule) (begin
+                               (set-machine-rule-list!
+                                machine
+                                (cons rule (machine-rule-list machine)))
+                               #t)]
+        [else #f]))
 
-    ;; addRule :: rule -> bool
+    ;; removeRule :: rule -> bool
     ;; returns true if we need to re-render
     (define/public (removeRule rule)
       (define exists (member rule (machine-rule-list machine) eqRule?))
@@ -254,5 +263,35 @@
         [(or 'dfa 'ndfa) TRUE-FUNCTION]
         ['pda PDA-TRUE-FUNCTION]
         [_ TM-TRUE-FUNCTION]))
+
+    ;; isValidRule :: rule -> bool
+    ;; true if the rule is in the list if states and alpha
+    (define/private (isValidRule? rule)
+      (match (cons type rule)
+        [`(dfa ,s ,r ,e) (and
+                          (isInStateList s)
+                          (isInStateList e)
+                          (not (eq? #f (member r (machine-alpha-list machine)))))]))
+
+    ;; remove-associated-rules-for-state :: state -> ()
+    ;; removes all rules that are associated with the given state
+    (define/private (remove-associated-rules-for-state state)
+      (define rules (machine-rule-list machine))
+      (define (remove? rule)
+        (match (cons type rule)
+          [`(dfa ,s1 ,_ ,s2) (not (or (eq? s1 state)
+                                      (eq? s2 state)))]))
+      (set-machine-rule-list! machine (filter remove? rules)))
+
+
+    ;; remove-associated-rules-for-alpha :: symbol -> ()
+    ;; removes all rules that are associated with the given alphabet
+    (define/private (remove-associated-rules-for-alpha alpha)
+      (define rules (machine-rule-list machine))
+      (define (remove? rule)
+        (match (cons type rule)
+          [`(dfa ,_ ,a ,_) (not (eq? a alpha))]))
+      (set-machine-rule-list! machine (filter remove? rules)))
+                           
     
     (super-new)))

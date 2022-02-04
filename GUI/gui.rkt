@@ -82,10 +82,7 @@
                    (render-alpha-list))]
       ['removeAlpha (begin
                       (send world removeAlpha value)
-                      (delete-children inner-alpha-display)
-                      (when isActive
-                        (setIdle))
-                      (render-alpha-list))]
+                      (setIdle))]
       ['addStart (begin
                    (send world addStart value)
                    (setIdle) ;; regardless if the world's mode we need to redraw so just call setIdle
@@ -113,9 +110,11 @@
                       (setIdle)))]
       ['addRule (begin
                   (define needsRedraw (send world addRule value))
-                  (unless needsRedraw
+                  (when needsRedraw
                     (when isActive
                       (setIdle))
+                    (when (eq? 'graphviz (get-field view-mode world))
+                      (remake-image))
                     (delete-children rule-display)
                     (render-rule-list)))]
       ['removeRule (begin
@@ -123,7 +122,8 @@
                      (when needsRedraw
                        (when isActive
                          (setIdle))
-                       (setIdle)
+                       (when (eq? 'graphviz (get-field view-mode world))
+                         (remake-image))
                        (delete-children rule-display)
                        (render-rule-list)))]
       ['clearTape (begin
