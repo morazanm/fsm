@@ -11,6 +11,7 @@
          "./checkMachine.rkt"
          "./draw.rkt"
          "./stateTransitions.rkt"
+         "./save.rkt"
          "../fsm-main.rkt")
 
 (provide
@@ -82,8 +83,18 @@
         [else ""]))
     (match event
       ['toggleColorBlindMode (begin
-                                (toggle-color-blind-mode)
-                                (remake-image))]
+                               (toggle-color-blind-mode)
+                               (remake-image))]
+      ['saveMachine (begin
+                      (define file-path (put-file #f frame #f #f "rkt" '()'()))
+                      (define wrote-valid-machine (saveMachine world file-path))
+                      (if wrote-valid-machine
+                          (begin
+                            (send machine-end-win-text set-label "The machine was sucessfully written")
+                            (send machine-end-win show #t))
+                          (begin
+                            (send machine-end-win-text set-label "The machine was sucessfully written, but faild to build")
+                            (send machine-end-win show #t))))]
       ['addAlpha (begin
                    (send world addAlpha value)
                    (delete-children inner-alpha-display)
@@ -234,8 +245,12 @@
   (define menu-bar (new menu-bar% [parent frame]))
 
   (define file-menu (new menu% [label "File"] [parent menu-bar]))
-  (define save-menu-item (new menu-item% [label "Save"] [parent file-menu] [callback (lambda (v x) (void))]))
-  (define load-menu-item (new menu-item% [label "Load"] [parent file-menu] [callback (lambda (v x) (void))]))
+  
+  (define save-menu-item (new menu-item%
+                              [label "Save Machine"]
+                              [parent file-menu]
+                              [callback (lambda (v x)
+                                          (event-dispatcher 'saveMachine 'noAction))]))
 
 
   (define machine-menu (new menu% [label "Machine"] [parent menu-bar] [help-string "Change machine type"]))
@@ -491,8 +506,8 @@
                                   world
                                   width
                                   height)
-                                 "tmp.png")
-                     (set! image (read-bitmap "tmp.png" 'png)))]
+                                 ".tmp.png")
+                     (set! image (read-bitmap ".tmp.png" 'png)))]
         ['control (set! image (read-bitmap (draw-gui world width height)))])
       (send machine-view refresh-now)))
 

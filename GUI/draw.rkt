@@ -24,9 +24,9 @@ IMPORTANT: Alot of the code in this file is legacy code that could us a rewite. 
 
 (define (draw-gui world width height)
   (save-image (draw world (empty-scene width height "white") width height)
-              "./tmp.png")
+              "./.tmp.png")
   ;(displayln "Redrawing Image")
-  "./tmp.png")
+  "./.tmp.png")
 
 
 (define (draw world scene width height)
