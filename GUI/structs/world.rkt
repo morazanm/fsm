@@ -25,6 +25,8 @@
     (init-field machine
                 [tape-position -1]
                 [mode 'idle] ;; Valid modes are: idle, active
+                [view-mode 'control]
+                [has-gviz (find-executable-path	"dot")]
                 [type (machine-type machine)]
                 [cur-rule CURRENT-RULE]
                 [cur-state CURRENT-STATE]
@@ -32,7 +34,11 @@
                 [unprocessed-config-list '()]
                 [stack '()]
                 [scroll-bar-index -1]) ;;TODO(jschappel): This will end up being used to tm, otherwise remove
- 
+
+    
+    ;; setViewMode :: 'control | 'graphviz -> ()
+    (define/public (setViewMode mode)
+      (set! view-mode mode))
 
     ;; get-machine-alpha-list :: listOfSymbol
     (define/public (get-machine-alpha-list)

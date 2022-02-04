@@ -2,10 +2,10 @@
 (require (for-syntax syntax/parse)
          2htdp/image
          framework
-         "./structs/state.rkt"
          "./structs/machine.rkt"
          "./structs/world.rkt"
          "./structs/posn.rkt"
+         "./graphViz/main.rkt"
          "./globals.rkt"
          "./checkMachine.rkt"
          "./draw.rkt"
@@ -38,7 +38,7 @@
 
     ;;rerenders everything
     (define (full-re-render)
-      (remake-image 'control)
+      (remake-image)
       (delete-children rule-display) (render-rule-list)
       (delete-children tape-display) (render-tape-list))
     
@@ -49,7 +49,7 @@
       (delete-children inner-alpha-display) (render-alpha-list)
       (delete-children rule-display) (render-rule-list)
       (delete-children tape-display) (render-tape-list)
-      (remake-image 'control))
+      (remake-image))
 
     ;; sets a world to the active state and handles necessary redraws
     (define (setActive)
@@ -58,7 +58,7 @@
       (delete-children inner-alpha-display) (render-alpha-list)
       (delete-children rule-display) (render-rule-list)
       (delete-children tape-display) (render-tape-list)
-      (remake-image 'control))
+      (remake-image))
 
     ;; can-go-next :: string
     ;; Determins if there is an error message that needs to be rendered
@@ -157,6 +157,22 @@
                              (send world setProcessedList pros)
                              (setActive)
                              (send machine-success-win show #t)))))]
+      ['setMode (match value
+                  ['control (begin
+                              (send world setViewMode value)
+                              (remake-image))]
+                  ['graphviz (begin
+                               (if (eq? #f (get-field has-gviz world))
+                                   (begin
+                                     (send graph-view check #f)
+                                     (send machine-error-win-text set-label "You must first download Graphviz to use this feature:\nhttps://graphviz.org/download/")
+                                     (send machine-error-win show #t)
+                                     (remake-image))
+                                   (begin
+                                     (send control-view check #f)
+                                     (send world setViewMode value)
+                                     (remake-image))))])]
+                                     
       ['goNext (begin
                  (define msg (can-go-next))
                  (if (not (equal? "" msg))
@@ -216,13 +232,13 @@
 
   (define machine-menu (new menu% [label "Machine"] [parent menu-bar] [help-string "Change machine type"]))
   (define dfa-menu-item (new menu-item%
-                                  [label "Dfa"]
-                                  [parent machine-menu]
-                                  [callback (lambda (btn event) (send frame set-label (string-append WELCOME-MSG "Dfa")))]))
+                             [label "Dfa"]
+                             [parent machine-menu]
+                             [callback (lambda (btn event) (send frame set-label (string-append WELCOME-MSG "Dfa")))]))
   (define ndfa-menu-item (new menu-item%
-                                  [label "Ndfa"]
-                                  [parent machine-menu]
-                                  [callback (lambda (btn event) (send frame set-label (string-append WELCOME-MSG "Ndfa")))]))
+                              [label "Ndfa"]
+                              [parent machine-menu]
+                              [callback (lambda (btn event) (send frame set-label (string-append WELCOME-MSG "Ndfa")))]))
   (define pda-menu-item (new menu-item%
                              [label "Pda"]
                              [parent machine-menu]
@@ -234,6 +250,27 @@
 
   (define window-menu (new menu% [label "Window"] [parent menu-bar]))
   (define color-blind-menu-item (new menu-item% [label "Toggle Color Blind Mode"] [parent window-menu] [callback (lambda (v x) (void))]))
+
+  (define mode-menu (new menu% [label "Mode"] [parent menu-bar]))
+  (define control-view (new checkable-menu-item%
+                            [label "Control"]
+                            [parent mode-menu]
+                            [checked #t]
+                            [callback (lambda (button event)
+                                        (send control-view check #t)
+                                        (send graph-view check #f) 
+                                        (event-dispatcher 'setMode 'control))]))
+
+  (define graph-view (new checkable-menu-item%
+                          [label "Graph"]
+                          [parent mode-menu]
+                          [checked #f]
+                          [callback (lambda (button event)
+                                      (send graph-view check #t)
+                                      ;; We will set control-view to not checked in the dispatcher to take
+                                      ;; care of the case where g-viz is not installed
+                                      (event-dispatcher 'setMode 'graphviz))]))
+  
 
   (define help-menu (new menu% [label "Help"] [parent menu-bar]))
   (define viz-tool-menu-item (new menu-item% [label "User Guide"] [parent help-menu] [callback (lambda (v x) (void))]))
@@ -396,7 +433,7 @@
 
   (define firstTime? #t)
   (define image null)
-  ;; remake-image :: symbol(graph | control -> path
+  ;; remake-image :: path
 
   (define machine-view (new canvas%
                             [parent machine-panel]
@@ -404,7 +441,7 @@
                              (lambda (canvas dc)
                                (when firstTime?
                                  (set! firstTime? #f)
-                                 (remake-image 'control))
+                                 (remake-image))
                                (send dc draw-bitmap image
                                      (- (/ (send machine-panel get-width) 2)
                                         (/ (send image get-width)  2))
@@ -413,11 +450,18 @@
                                       (/ (send image get-height) 2)))
                                (make-screen-bitmap 100 100))]))
 
-  (define (remake-image mode)
+  (define (remake-image)
     (define-values (width height) (send machine-view get-scaled-client-size))
     (begin
-      (match mode
-        ['graph (displayln "TODO")]
+      (match (get-field view-mode world)
+        ['graphviz (begin
+                     (save-image (world->graph-png
+                                  (not (empty? (get-field processed-config-list world)))
+                                  world
+                                  width
+                                  height)
+                                 "tmp.png")
+                     (set! image (read-bitmap "tmp.png" 'png)))]
         ['control (set! image (read-bitmap (draw-gui world width height)))])
       (send machine-view refresh-now)))
 
