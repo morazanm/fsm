@@ -1,5 +1,6 @@
 #lang racket/gui
 (require (for-syntax syntax/parse)
+         net/sendurl
          2htdp/image
          framework
          "./structs/machine.rkt"
@@ -12,10 +13,16 @@
          "./stateTransitions.rkt"
          "../fsm-main.rkt")
 
-(provide kick-off-gui)
+(provide
+ kick-off-gui)
 
 
 (define MAX-ALPHABET 14)
+(define GRAPHVIZ-DOWNLOAD-LINK "https://graphviz.org/download/")
+(define FSM-USER-GUIDE "https://morazanm.github.io/fsm/GithubPages/viztool.html")
+(define FSM-DOCUMENTATION "https://htmlpreview.github.io/?https://github.com/morazanm/fsm/blob/master/fsm.html")
+(define RACKET-DOCUMENTATION "https://docs.racket-lang.org/")
+(define FSM-WEBSITE "https://morazanm.github.io/fsm/index.html")
 
 
 ;; delete-children :: Object -> ()
@@ -74,6 +81,9 @@
               (string? (car unpros-list))) (car unpros-list)]
         [else ""]))
     (match event
+      ['toggleColorBlindMode (begin
+                                (toggle-color-blind-mode)
+                                (remake-image))]
       ['addAlpha (begin
                    (send world addAlpha value)
                    (delete-children inner-alpha-display)
@@ -93,7 +103,6 @@
                         (setIdle)))]
       ['addState (begin
                    (define needsRedraw (send world addState value))
-                   (displayln needsRedraw)
                    (when needsRedraw
                      (setIdle)))]
       ['removeState (begin
@@ -165,8 +174,7 @@
                                (if (eq? #f (get-field has-gviz world))
                                    (begin
                                      (send graph-view check #f)
-                                     (send machine-error-win-text set-label "You must first download Graphviz to use this feature:\nhttps://graphviz.org/download/")
-                                     (send machine-error-win show #t)
+                                     (send graphviz-download-win show #t)
                                      (remake-image))
                                    (begin
                                      (send control-view check #f)
@@ -249,7 +257,11 @@
                             [callback (lambda (btn event) (send frame set-label (string-append WELCOME-MSG "Turing Machine")))]))
 
   (define window-menu (new menu% [label "Window"] [parent menu-bar]))
-  (define color-blind-menu-item (new menu-item% [label "Toggle Color Blind Mode"] [parent window-menu] [callback (lambda (v x) (void))]))
+  (define color-blind-menu-item (new menu-item%
+                                     [label "Toggle Color Blind Mode"]
+                                     [parent window-menu]
+                                     [callback (lambda (v x)
+                                                 (event-dispatcher 'toggleColorBlindMode 'noAction))]))
 
   (define mode-menu (new menu% [label "Mode"] [parent menu-bar]))
   (define control-view (new checkable-menu-item%
@@ -273,10 +285,29 @@
   
 
   (define help-menu (new menu% [label "Help"] [parent menu-bar]))
-  (define viz-tool-menu-item (new menu-item% [label "User Guide"] [parent help-menu] [callback (lambda (v x) (void))]))
-  (define fsm-doc-menu-item (new menu-item% [label "FSM Documentation"] [parent help-menu] [callback (lambda (v x) (void))]))
-  (define racekt-doc-menu-item (new menu-item% [label "Racket Documentation"] [parent help-menu] [callback (lambda (v x) (void))]))
-  (define about-menu-item (new menu-item% [label "About"] [parent help-menu] [callback (lambda (v x) (void))]))
+  (define viz-tool-menu-item (new menu-item%
+                                  [label "User Guide"]
+                                  [parent help-menu]
+                                  [callback (lambda (v x)
+                                              (send-url FSM-USER-GUIDE))]))
+  
+  (define fsm-doc-menu-item (new menu-item%
+                                 [label "FSM Documentation"]
+                                 [parent help-menu]
+                                 [callback (lambda (v x)
+                                             (send-url FSM-DOCUMENTATION))]))
+  
+  (define racekt-doc-menu-item (new menu-item%
+                                    [label "Racket Documentation"]
+                                    [parent help-menu]
+                                    [callback (lambda (v x)
+                                                (send-url RACKET-DOCUMENTATION))]))
+  
+  (define about-menu-item (new menu-item%
+                               [label "About"]
+                               [parent help-menu]
+                               [callback (lambda (v x)
+                                           (send-url FSM-WEBSITE))]))
 
 
   (define top-level (new horizontal-panel%
@@ -421,7 +452,7 @@
                [parent tape-display]
                [font myfont]
                [enabled #t]
-               [color "Purple"]
+               [color "Dark Slate Gray"]
                [label (symbol->string input)]))))
 
 
@@ -486,7 +517,7 @@
           (new message%
                [parent rule-display]
                [font myfont]
-               [color "Purple"]
+               [color "Royal Blue"]
                [enabled #t]
                [label (get-output-string o)])
           (new message%
@@ -841,8 +872,38 @@
        [callback (lambda (button event)
                    (send machine-end-win show #f))])
   
-  (send frame show #t))
+  ; -----   
+  (define graphviz-download-win (new dialog% [label "Information"]))
+  
+  (define graphviz-download-win-panel (new vertical-panel%
+                                           [parent graphviz-download-win]
+                                           [border 5]
+                                           [stretchable-height #f]
+                                           [alignment '(center center)]))
+  (define graphviz-download-win-text (new message%
+                                          [parent graphviz-download-win-panel]
+                                          [auto-resize #t]
+                                          [label "You must first download Graphviz to use this feature"]))
 
+  (define graphviz-download-win-hpanel (new horizontal-panel%
+                                            [parent graphviz-download-win-panel]
+                                            [alignment '(center center)]))
+  
+  (new button% [parent graphviz-download-win-hpanel]
+       [label "Done"]
+       [callback (lambda (button event)
+                   (send graphviz-download-win show #f))])
+  (new button% [parent graphviz-download-win-hpanel]
+       [label "Download"]
+       [callback (lambda (button event)
+                   (send-url GRAPHVIZ-DOWNLOAD-LINK)
+                   (send graphviz-download-win show #f))])
+
+
+
+  
+  
+  (send frame show #t))
 
 
 
@@ -910,8 +971,7 @@
                                              (get-field unprocessed-config-list world)))
   (send world setScrollBarIndex (index-of
                                  (machine-rule-list (get-field machine world))
-                                 cur-rule))
-  (displayln "Here"))
+                                 cur-rule)))
 
 ;; goNext :: world -> ()
 ;; Handles all functionality around setting the world up for the next state transition

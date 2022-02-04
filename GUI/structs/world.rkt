@@ -25,7 +25,7 @@
     (init-field machine
                 [tape-position -1]
                 [mode 'idle] ;; Valid modes are: idle, active
-                [view-mode 'control]
+                [view-mode 'control] ;; Valid modes are: control, graphviz
                 [has-gviz (find-executable-path	"dot")]
                 [type (machine-type machine)]
                 [cur-rule CURRENT-RULE]
