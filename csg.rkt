@@ -99,7 +99,10 @@
                      [else (let* ((new-words (apply-one-step current (csg-getrules g)))
                                   (newstrings (filter (lambda (s) (not (member s generated-derivations)))
                                                       new-words))
-                                  (newpaths (ins (append (cdr tovisit) (map (lambda (s) (cons s firstpath)) newstrings))))
+                                  (newpaths (ins (append (cdr tovisit)
+                                                         (map (lambda (s)
+                                                                (cons s firstpath))
+                                                              newstrings))))
                                   )
                              (bfs-deriv (append newstrings generated-derivations) newpaths))]))]))
     
@@ -170,5 +173,25 @@
            (newR (cons (csg-rule (list newS) (list (csg-getstart g1) (csg-getstart newg2)))
                        (append (csg-getrules g1) (csg-getrules newg2)))))
       (csg newV newsigma newR newS)))
+
+;  ;cfg-star: csg -> csg
+;  (define (csg-star g1)
+;    (let* ((newsigma (csg-getsigma g1))
+;           (newS (gen-symbol 'S (csg-getv g1)))
+;           (newV (cons newS (csg-getv g1)))
+;           (newR (cons (csg-rule (list newS) (list EMP))
+;                       (cons (csg-rule (list newS) (list (csg-getstart g1) newS))
+;                             (csg-getrules g1)))))
+;      (csg newV newsigma newR newS)))
+
+  (define CSG-an-bn-cn (make-csg '(S A B C G H I) 
+                               '(a b c) 
+                               `( (S ,ARROW ABCS) (S ,ARROW G)
+                                                  (BA ,ARROW AB) (CA ,ARROW AC)
+                                                  (CB ,ARROW BC)
+                                                  (CG ,ARROW Gc) (G ,ARROW H) 
+                                                  (BH ,ARROW Hb) (H ,ARROW I)
+                                                  (AI ,ARROW Ia) (I ,ARROW ,EMP)) 
+                               'S))
   
   ) ;;; closes module

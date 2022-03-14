@@ -90,7 +90,7 @@
       
       (define (count-terminals st sigma)
         (length (filter (lambda (a) (member a sigma)) st)))
-      
+ 
       (cond [(empty? derivs) (format "~s is not in L(G)" w)]
             [(or (and chomsky (> (length (caar derivs)) (+ 2 (length w))))
                  (> (count-terminals (caar derivs) (cfg-get-alphabet g)) (length w)))
@@ -118,10 +118,10 @@
                                          (map (lambda (st) (cons st fderiv)) 
                                               new-states))
                                  g
-                                 chomsky))))]))
+                                 chomsky))))]))   
     (if (< (length w) 2)
         (format "The word ~s is too short to test." w)
-        (let* (
+        (let* ( ;; derive using g ONLY IF derivation found with g in CNF
                (ng (convert-to-cnf g))
                (ng-derivation (make-deriv (list (list (cfg-get-start ng))) 
                                           (list (list (list (cfg-get-start ng))))
@@ -494,15 +494,21 @@
       (cond [(null? l) ""]
             [else (string-append (car l) (lostr->string (cdr l)))]))
     (string->symbol (lostr->string (map symbol->string l))))
-  
+
+  #| BUG: Keeps eliminated NTs in the RHS of rules
+
   ; cfg --> cfg
   ; Purpose: Converts the given grammar to Chomsky Normal Form
   (define (convert-to-cnf g)  
     (let* ((nts (cfg-get-v g))
            (sigma (cfg-get-alphabet g))
            (start (cfg-get-start g))
-           (rls (map (lambda (r) (if (equal? (caddr r) (list EMP)) (list (car r) ARROW null) r))
-                     (map (lambda (r) (list (car r) (cadr r) (symbol->fsmlos (caddr r))))
+           (rls (map (lambda (r)
+                       (if (equal? (caddr r) (list EMP))
+                           (list (car r) ARROW null)
+                           r))
+                     (map (lambda (r)
+                            (list (car r) (cadr r) (symbol->fsmlos (caddr r))))
                           (cfg-get-rules g))))
            (new-rls1 (transform-rules-for-terminals rls sigma))
            (long-rules (filter (lambda (r) (> (length (caddr r)) 2)) new-rls1))
@@ -517,6 +523,266 @@
                           new-rls5))
            )
       (make-cfg (remove-duplicates (map car new-rls6)) sigma new-rls6 start)))
+  |#
+
+
+
+  ; cfg --> cfg
+  ; Purpose: Converts the given grammar to Chomsky Normal Form (START,TERM,BIN,DEL,UNIT)
+  (define (convert-to-cnf G)
+    (define (start-grammar G)
+      (let* ((nts (cfg-get-v G))
+             (sigma (cfg-get-alphabet G))
+             (start (cfg-get-start G))
+             (rls (map (lambda (r)
+                         (list (car r) (cadr r) (symbol->fsmlos (caddr r))))
+                       (cfg-get-rules G)))
+             (newS (generate-symbol start nts)))
+        (make-cfg (cons newS nts)
+                  sigma
+                  (cons (list newS ARROW start)
+                        (map (λ (r)
+                               (list (first r) ARROW (los->symbol (third r))))
+                             rls))
+                  newS)))
+
+    ;; cfg --> cfg
+    ;; Purpose: Eliminate rules with nonsolitary terminals
+    (define (term-grammar G)
+      (define (populate-hash! ht sigma nts)
+        (if (null? sigma)
+            ht
+            (let ((new-nt (generate-symbol (symbol-upcase (car sigma))
+                                           (append sigma nts))))
+              (begin
+                (hash-set! ht (car sigma) new-nt)
+                (populate-hash! ht (cdr sigma) (cons new-nt nts))))))
+
+      (define (convert-non-solitary rule sigma ht)
+        (let ((rhs (third rule)))
+          (if (= (length rhs) 1)
+              rule
+              (list (first rule)
+                    ARROW
+                    (map (λ (s)
+                           (if (member s sigma)
+                               (hash-ref ht s)
+                               s))
+                         rhs)))))
+    
+      (let* ((nts (cfg-get-v G))
+             (sigma (cfg-get-alphabet G))
+             (start (cfg-get-start G))
+             (rls (map (lambda (r)
+                         (list (car r) (cadr r) (symbol->fsmlos (caddr r))))
+                       (cfg-get-rules G)))
+             (ht (populate-hash! (make-hash) sigma nts))
+             ;(ddd (displayln ht))
+             (solitary-new-rules (map (λ (a) (list (hash-ref ht a) ARROW (list a)))
+                                      sigma))
+             (new-rls (map (λ (r) (convert-non-solitary r sigma ht)) rls)))
+        (make-cfg (append nts
+                          (map (λ (a) (hash-ref ht a)) sigma))
+                  sigma
+                  (map (λ (r)
+                         (list (first r) ARROW (los->symbol (third r))))
+                       (append new-rls solitary-new-rules))
+                  start)))
+
+    ;; cfg --> cfg
+    ;; Purpose: Eliminate rules with a rhs that has more than 2 nts
+    ;; Assume: For all rhs, if length > 2 it contains only nts
+    (define (bin-grammar G)
+
+      (define (convert-rule r nts)
+        (if (= (length (third r)) 2)
+            (list r)
+            (cons (list (first r) (second r) (list (first (third r)) (first nts)))
+                  (convert-rule (list (first nts) ARROW (rest (third r)))
+                                (rest nts)))))
+
+      (define (make-new-rls rls new-nts)
+        (if (null? rls)
+            '()
+            (append (convert-rule (first rls)
+                                  (take new-nts (- (length (third (first rls))) 2)))
+                    (make-new-rls (rest rls)
+                                  (drop new-nts (- (length (third (first rls))) 2))))))
+      
+      (let* ((nts (cfg-get-v G))
+             (sigma (cfg-get-alphabet G))
+             (start (cfg-get-start G))
+             (trls (map (lambda (r)
+                          (list (car r) (cadr r) (symbol->fsmlos (caddr r))))
+                        (cfg-get-rules G)))
+             (short-trls
+              (filter (λ (r)
+                        (<= (length (third r)) 2))
+                      trls))
+             (to-process-trls
+              (filter (λ (r)
+                        (> (length (third r)) 2))
+                      trls))
+             (num-new-nts (foldl (λ (r a) (+ (- (length (third r)) 2) a))
+                                 0
+                                 to-process-trls))
+             (new-nts (build-list num-new-nts (λ (i) (generate-symbol 'T (cons 'T nts)))))
+             (new-rls (make-new-rls to-process-trls new-nts))
+             ;(ddd (displayln (format "~s" (append nts new-nts))))
+             )
+        (make-cfg (append nts new-nts)
+                  sigma
+                  (map (λ (r)
+                         (list (first r) ARROW (los->symbol (third r))))
+                       (append short-trls new-rls))
+                  start)))
+
+    ;; (listof cfg-rule) --> (listof cfg-rule)
+    ;; Purpose: Remove rules with nts in the rhs that do not appear in a lhs
+    (define (remove-silly-rules rls start sigma)
+      (let ((lhs (map first rls)))
+        (filter (λ (r)
+                  (and (or (eq? (first r) start)
+                           (member (first r) (append-map third rls)))
+                       (let ((r-nts (filter (λ (a) (not (member a sigma))) (third r))))
+                         (andmap (λ (nt) (member nt (cons EMP lhs))) r-nts))))
+                rls)))
+
+    ;; cfg --> cfg
+    ;; Purpose: Remove e-rules from given grammar
+    (define (del-grammar G)
+
+      (define (compute-nullables rls nulls visited-nulls)
+        (let* ((new-nullables (map
+                               first
+                               (filter (λ (r) (andmap (λ (a) (member a nulls)) (third r)))
+                                       rls)))
+               ;(ddd (displayln (format "nulls: ~s \n new: ~s" nulls new-nullables)))
+               )
+          (if (null? new-nullables)
+              (append nulls visited-nulls)
+              (compute-nullables
+               rls
+               (remove-duplicates new-nullables)
+               (append nulls visited-nulls)))))
+
+      (define (convert-rule r nullables)
+        
+        (define (nullables-pos rhs pos)
+          (cond [(null? rhs) '()]
+                [(member (first rhs) nullables)
+                 (cons pos (nullables-pos (rest rhs) (add1 pos)))]
+                [else (nullables-pos (rest rhs) (add1 pos))]))
+              
+        (let* ((lhs (first r))
+               (rhs (third r))
+               (nullables-at (nullables-pos rhs 0)))
+          (if (null? nullables-at)
+              (list r)
+              (cons r (map (λ (pos)
+                             (let ((tmp-rhs (append (take rhs pos)
+                                                    (drop rhs (add1 pos)))))
+                               (list lhs
+                                     ARROW
+                                     (if (null? tmp-rhs)
+                                         (list EMP)
+                                         tmp-rhs))))                               
+                           nullables-at)))))
+      
+      (let* ((nts (cfg-get-v G))
+             (sigma (cfg-get-alphabet G))
+             (start (cfg-get-start G))
+             (trls (map (lambda (r)
+                          (list (car r) (cadr r) (symbol->fsmlos (caddr r))))
+                        (cfg-get-rules G)))
+             ;(start-trl (first (filter (λ (r) (eq? (first r) start)) trls)))
+             ;(ddd (display (format "trls: \n ~s \n" trls)))
+             (nullables (compute-nullables trls
+                                           (map first (filter {λ (r) (equal? (third r) (list EMP))}
+                                                              trls))
+                                           '()))
+             (new-rules (map (λ (r)
+                               (list (first r) ARROW (los->symbol (third r))))
+                             (remove-silly-rules
+                              (filter (λ (r)
+                                        (or (eq? (first r) start)
+                                            (and (not (eq? (first r) start))
+                                                 (not (equal? (third r) (list EMP))))))
+                                      (append-map (λ (r)
+                                                    (remove-duplicates (convert-rule r nullables)))
+                                                  trls))
+                              start
+                              sigma)))
+             ;(dd (display (format "new rules: \n ~s \n" new-rules)))
+             (new-nts (map first new-rules)))
+        (make-cfg new-nts
+                  sigma
+                  new-rules
+                  start)))
+
+    ;; cfg --> cfg
+    ;; Purpose: Remove unit rules
+    (define (unit-grammar G)
+
+      (define (rm-unit-rules rls nts)
+
+        (define (new-rules-for-urule rls urule)
+          ;; urule form: A -> B
+          (let* ((A (first urule))
+                 (B (third urule))
+                 (B-rules (filter (λ (r) (eq? (first B) (first r))) rls)))
+            (map (λ (r) (list A ARROW (third r))) B-rules)))
+        (let ((urules (filter (λ (r) (and (= (length (third r)) 1)
+                                          (member (first (third r)) nts)))
+                              rls)))
+          (if (empty? urules)
+              rls
+              (rm-unit-rules (append (remove (first urules) rls)
+                                     (new-rules-for-urule
+                                      (remove (first urules) rls)
+                                      (first urules)))
+                             nts))))
+
+      
+      (let* ((nts (cfg-get-v G))
+             (sigma (cfg-get-alphabet G))
+             (start (cfg-get-start G))
+             (trls (map (lambda (r)
+                          (list (car r) (cadr r) (symbol->fsmlos (caddr r))))
+                        (cfg-get-rules G)))
+             (unit-rules (filter (λ (r)
+                                   (and (= (length (third r)) 1)
+                                        (member (first (third r)) nts)))
+                                 trls))
+             (new-rules (map (λ (r)
+                               (list (first r) ARROW (los->symbol (third r))))
+                             (remove-silly-rules
+                              (rm-unit-rules trls nts)
+                              start
+                              sigma)))
+             (new-nts (map first new-rules))
+             ;(d (display (format "trls: \n ~s \n\n" trls)))
+             )
+        (make-cfg new-nts
+                  sigma
+                  new-rules
+                  start)
+        ;(display (format "ORIG rules: \n ~s \n \n RES new-rules: ~s \n" trls new-rules))
+        ;new-rules
+        ))
+                  
+      
+    (unit-grammar
+     (del-grammar (bin-grammar (term-grammar (start-grammar G))))))
+
+  (define G (make-cfg '(X Y Z A)
+                      '(a b c e)
+                      (list '(X -> ε)
+                            '(Y -> XXZ)
+                            '(Y -> XX)
+                            '(Z -> abc)
+                            '(A -> e))
+                      'Y))
   
   ;;;;; End Chomsky Normal Form Functions
   
