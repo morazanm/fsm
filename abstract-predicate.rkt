@@ -338,7 +338,7 @@
                                                 type
                                                 delta-check-m))
             (define final-bool (if (list? finals) ""
-                                   (format "The given list of final states is not a list: ~s" finals)))
+                                   (format "The given list of final states is not a list: ~s\n" finals)))
             (define big-length-error
               ;append all the errors together
               (string-append (if (string=? (first length-errors) "") ""
