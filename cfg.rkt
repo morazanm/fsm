@@ -763,7 +763,7 @@
              (new-nts (map first new-rules))
              ;(d (display (format "trls: \n ~s \n\n" trls)))
              )
-        (make-cfg new-nts
+        (make-cfg (remove-duplicates new-nts)
                   sigma
                   new-rules
                   start)
