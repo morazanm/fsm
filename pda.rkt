@@ -202,21 +202,23 @@
     ; (listof symbol) (listof cfg-rule) symbol --> (listof pdarules)
     (define (make-pda-rules sigma grules S)
       (let ((r1 `(((p ,EMP ,EMP) (q ,(list S)))))
-            (r2 (map (lambda (r) `((q ,EMP ,(list (cfg-rule-lhs r))) (q ,(if (equal? (cfg-rule-rhs r) (list EMP))
-                                                                      EMP
-                                                                      (cfg-rule-rhs r))))) 
+            (r2 (map (lambda (r)
+                       `((q ,EMP ,(list (cfg-rule-lhs r)))
+                         (q ,(if (equal? (cfg-rule-rhs r) (list EMP))
+                                 EMP
+                                 (cfg-rule-rhs r))))) 
                      grules))
             (r3 (map (lambda (a) `((q ,a ,(list a)) (q ,EMP))) sigma)))
         (append r1 r2 r3)))
     
-    (let ((K '(p q))
-          (sigma (cfg-get-alphabet g))
-          (gamma (cfg-get-v g))
-          (S 'p)
-          (F '(q))
-          (delta (make-pda-rules (cfg-get-alphabet g) 
-                                 (cfg-get-the-rules g) 
-                                 (cfg-get-start g))))
+    (let* ((K '(p q))
+           (sigma (cfg-get-alphabet g))
+           (gamma (append (cfg-get-v g) sigma))
+           (S 'p)
+           (F '(q))
+           (delta (make-pda-rules (cfg-get-alphabet g) 
+                                  (cfg-get-the-rules g) 
+                                  (cfg-get-start g))))
       (make-unchecked-ndpda K sigma gamma S F delta)))
   
   
@@ -443,11 +445,11 @@
                                                    (pdarule-push r))))
                            (pda-getrules m))))
       (make-unchecked-ndpda new-states 
-                  (pda-getalphabet m) 
-                  (pda-getgamma m) 
-                  new-start 
-                  new-finals 
-                  new-rules)))
+                            (pda-getalphabet m) 
+                            (pda-getgamma m) 
+                            new-start 
+                            new-finals 
+                            new-rules)))
   
   ; union-pda: pda pda --> pda
   (define (union-pda p1 p2)
