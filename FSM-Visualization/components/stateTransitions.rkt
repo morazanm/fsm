@@ -3,9 +3,9 @@
 
 (provide getCurRule)
 
-(define getCurRule (lambda (processed-list)
+(define getCurRule (lambda (processed-list #:debug [debug #f])
                      (case MACHINE-TYPE
-                       [(pda) (get-pda-rule processed-list)]
+                       [(pda) (get-pda-rule processed-list debug)]
                        [(tm) (get-tm-rule processed-list)]
                        [(tm-language-recognizer) (get-tm-rule processed-list)]
                        [else (get-dfa-ndfa-rule processed-list)])))
@@ -29,7 +29,7 @@
       (cadar processed-list))]))
 
 
-;; get-pda-rule: processed-list -> tm-rule
+;; get-tm-rule processed-list -> tm-rule
 ;; Purpose: Determins if the rule to be made should be empty or a real rule
 (define (get-tm-rule processed-list)
   (cond
@@ -63,19 +63,19 @@
 
 ;; get-pda-rule: processed-list -> pda-rule
 ;; Purpose: Determins if the rule to be made should be empty or a real rule
-(define (get-pda-rule processed-list)
+(define (get-pda-rule processed-list debug)
   (cond
     [(< (length processed-list) 2)  '((empty empty empty) (empty empty))]
-    [else (construct-pda-rule processed-list)]))
+    [else (construct-pda-rule processed-list debug)]))
 
-;; construct-pda-rule: processed-list -> pda-rule
+;; construct-pda-rule: processed-list -> bool -> pda-rule
 ;; Purpose: Constructes a pda rule from the given processed list
-(define (construct-pda-rule pl)
+(define (construct-pda-rule pl debug)
   (letrec (
            (next-state (caar pl)) ;; The initial state that the machine is in
            (init-state (caadr pl)) ;; The state that the machien ends in
            (next-input (cadar pl)) ;; The initial state's input
-           (init-input (cadadr pl)) ;; The state that the machien ends in input
+           (init-input (cadadr pl)) ;; The state that the machine ends in input
            (next-stack (caddar pl)) ;; The elemetns that are on the next stack
            (sec (cadr pl))  ;; The second list in the stack
            (init-stack (caddr sec)) ;; The elements that are on the init stack
@@ -101,32 +101,40 @@
                                   [else (car init-input)])))
 
            ;; determin-pushed: none -> integer
-           ;; Purpose: Returns the number of elements that have been pushed on the stack
-           (determin-pushed (lambda ()
-                              (let ((num (- (length next-stack) (length init-stack))))
-                                (cond
-                                  [(and (equal? (length init-stack) (length next-stack))
-                                        (not (equal? init-stack next-stack)))
-                                   (num-dif init-stack next-stack)]
-                                  [else
-                                  (if (< num 0) 0 num)]))))
+           ;; Purpose: Returns the list or elements to be pushed
+           (determin-pushed (lambda (prev-stack next-stack)
+                              (letrec [(helper
+                                        (lambda (rev-p-stack rev-n-stack)
+                                          (cond
+                                            [(empty? rev-n-stack) EMP]
+                                            [(empty? rev-p-stack) (reverse rev-n-stack)]
+                                            [(not (eq? (car rev-p-stack) (car rev-n-stack))) (reverse rev-n-stack)]
+                                            [else 
+                                             (helper (cdr rev-p-stack) (cdr rev-n-stack))])))]
+                                (helper (reverse prev-stack) (reverse next-stack)))))
 
-           ;; determin-poped: none -> integer
-           ;; Purpose: Returns the number of elements that have been poped off the stack
-           (determin-poped (lambda ()
-                             (let ((num (- (length init-stack) (length next-stack))))
-                               (cond
-                                 [(and (equal? (length init-stack) (length next-stack))
-                                       (not (equal? init-stack next-stack)))
-                                  (num-dif init-stack next-stack)]
-                                 [else 
-                                  (if (< num 0) 0 num)])))))
-    ;;(println init-stack)
-    ;;(println next-stack)
+           ;; determin-poped: list -> list -> list
+           ;; Purpose: Returns the list or elements to be popped
+           (determin-poped (lambda (prev-stack next-stack)
+                             (letrec [(helper
+                                       (lambda (rev-p-stack rev-n-stack)
+                                         (cond
+                                           [(empty? rev-p-stack) EMP]
+                                           [(empty? rev-n-stack) (reverse rev-p-stack)]
+                                           [(not (eq? (car rev-p-stack) (car rev-n-stack))) (reverse rev-p-stack)]
+                                           [else 
+                                            (helper (cdr rev-p-stack) (cdr rev-n-stack))])))]
+                               (helper (reverse prev-stack) (reverse next-stack))))))
+                                  
+    (when debug
+      (displayln "---Stacks are:---")
+      (displayln init-stack)
+      (displayln next-stack)
+      (displayln "------"))
     (cond
       ;; If there is less then 2 elements then we are at the end so return the default
       [(< (length pl) 2) '((empty empty empty) (empty empty))]
       [else
        (list
-        (list init-state (determin-consumed) (take* (determin-poped) init-stack))
-        (list next-state (take* (determin-pushed) next-stack)))])))
+        (list init-state (determin-consumed) (determin-poped init-stack next-stack))
+        (list next-state (determin-pushed init-stack  next-stack)))])))

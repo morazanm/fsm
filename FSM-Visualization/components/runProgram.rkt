@@ -114,13 +114,27 @@ Created by Joshua Schappel on 12/19/19
                                          (list trans)
                                          trans))]
                                   ;; dfa, ndfa, pda
-                                  [else (sm-showtransitions m
-                                                            (machine-sigma-list (world-fsm-machine w)))]))
+                                  [else
+                                   ;(display "Machine Type is: ") (displayln (machine-type fsm-machine))
+
+                                   ;(displayln "Alpha:")(pretty-print (machine-alpha-list (world-fsm-machine w)))
+                                   ;(displayln "Stack Alpha:")(pretty-print (pda-machine-stack-alpha-list (world-fsm-machine w)))
+                                   ;(displayln "Start")(pretty-print (machine-start-state (world-fsm-machine w)))
+                                   ;(displayln "Final")(pretty-print (machine-final-state-list (world-fsm-machine w)))
+                                   ;(displayln "Rules ")(pretty-print (machine-rule-list (world-fsm-machine w)))
+
+
+                                   
+                                   ;(display "Input is: ") (displayln (machine-sigma-list (world-fsm-machine w)))
+                                   #;(pretty-print (sm-showtransitions m
+                                                                     (machine-sigma-list (world-fsm-machine w))))
+                                   (sm-showtransitions m
+                                                       (machine-sigma-list (world-fsm-machine w)))]))
 
               )
                            
        ;; Set up the world to have all the valid machine components below                 
-       (begin                 
+       (begin
          (define new-list (remove-duplicates (append (sm-getstates m) state-list))) ;; new-list: checks for any fsm state add-ons (ie. 'ds)
          (world
           (constructWorldMachine new-list fsm-machine m)

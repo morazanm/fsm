@@ -10,7 +10,7 @@ Created by Joshua Schappel on 12/19/19
 (require net/sendurl "../structs/input.rkt" "../structs/world.rkt" "../structs/state.rkt"
          "../structs/machine.rkt" "../structs/posn.rkt" "../globals.rkt" "stateTransitions.rkt"
          "../structs/world.rkt" "../../fsm-main.rkt")
-
+(require racket/pretty)
 (provide
  addState
  removeState
@@ -41,8 +41,6 @@ Created by Joshua Schappel on 12/19/19
  setTapePosn
  setAcceptState
  toggle-display)
-
-
 
 ;; ------- Button Functions -------
 
@@ -647,12 +645,12 @@ Created by Joshua Schappel on 12/19/19
                                      (pop-stack (length pop-list)))]))))
 
                 (handle-push (lambda ()
-                               (let ((push-list (cadadr cur-rule)))
+                               (let ((push-list (cadadr cur-rule))) ;; WARNING: This can be EMP sometimes!!!
                                  (cond
                                    [(symbol? push-list) void] ;; e is the element so nothing to push
                                    [else
                                     (begin
-                                      (push-stack push-list))]))))
+                                      (push-stack (reverse push-list)))]))))
 
                 (tm-tape-move (lambda ()
                                 (let ((move (cadadr cur-rule)))
@@ -697,12 +695,11 @@ Created by Joshua Schappel on 12/19/19
 
            ;; If the machine is a pda we need to push or pop!
            ;; pops are handled first
-           (if (equal? MACHINE-TYPE 'pda)
-               (begin
-                 (handle-pop)
-                 (handle-push))
-               void)
-           
+           (when (equal? MACHINE-TYPE 'pda)
+             (begin
+               (handle-pop)
+               (handle-push)))
+
            ;; finally update the processed and unprocessed lists
            (world (update-machine (world-fsm-machine w)) (world-tape-position w)
                   (getCurRule (append (list nextState) (world-processed-config-list w)))
@@ -724,7 +721,9 @@ Created by Joshua Schappel on 12/19/19
                       (letrec(
                               (previousState (car (cdr (world-processed-config-list w))))
                               (cur-rule (getCurRule (cdr (world-processed-config-list w)))) ;; The current rule that the machine is in after prev is pressed
-                              (rule (getCurRule (if (equal? MACHINE-TYPE 'ndfa) (world-processed-config-list w) (cdr (world-processed-config-list w)))))
+                              (rule (getCurRule (if (equal? MACHINE-TYPE 'ndfa)
+                                                    (world-processed-config-list w)
+                                                    (cdr (world-processed-config-list w)))))
                               (pda-cur-rule (getCurRule (world-processed-config-list w))) ;; The current rule that pda machine is in after prev is pressed. Only use this for PDA's
 
                               (input-consumed? (lambda ()
@@ -755,11 +754,11 @@ Created by Joshua Schappel on 12/19/19
                                                        [(tm-language-recognizer) (car previousState)]
                                                        [else (car (cdr previousState))])))
 
-                              ;; hanlds the pda pops
+                              ;; handles the pda pops
                               (handle-pop (lambda ()
                                             (let ((pop-list (cadadr pda-cur-rule)))
                                               (cond
-                                                [(symbol? pop-list) void] ;; e is the element so nothing to pop
+                                                [(symbol? pop-list) (void)] ;; e is the element so nothing to pop
                                                 [else
                                                  (begin
                                                    (pop-stack (length pop-list)))]))))
@@ -771,7 +770,7 @@ Created by Joshua Schappel on 12/19/19
                                                  [(symbol? push-list) void] ;; e is the element so nothing to push
                                                  [else
                                                   (begin
-                                                    (push-stack push-list))]))))
+                                                    (push-stack (reverse push-list)))]))))
 
                               ;; moves the tape highlighter.
                               (determin-tape (lambda (input)       
@@ -784,12 +783,11 @@ Created by Joshua Schappel on 12/19/19
                                                        (equal? EMP input)) TAPE-INDEX-BOTTOM]
                                                  [else (if (<= TAPE-INDEX-BOTTOM -1) (void) (set-tape-index-bottom (- TAPE-INDEX-BOTTOM 1)))]))))
 
-                        ;; Based on the machien type certin things need to be updated:
+                        ;; Based on the machine type certian things need to be updated:
                         ;; - pda: stack pushes and pops, world processed and unprocessed lists
                         ;; - tm: tape index, world processed and unprocessed lists
                         ;; - dfa/ndfa: world processed and unprocessed lists
-                        (begin
-                          ;;(println (world-processed-config-list w))
+                        (begin                     
                           ;; Determine if the tape input should decrease. This does not happen
                           ;; with tm's and an empty
                           (if (and (not (equal? 'tm MACHINE-TYPE))
@@ -800,11 +798,11 @@ Created by Joshua Schappel on 12/19/19
 
                           ;; If the machine is a pda we need to push or pop!
                           ;; pops are handled first
-                          (if (equal? MACHINE-TYPE 'pda)
-                              (begin
-                                (handle-push)
-                                (handle-pop))
-                              void)
+                          (when (equal? MACHINE-TYPE 'pda)
+                            (begin
+                              (handle-pop)
+                              (handle-push)))
+                             
                           ;; finally update the processed and unprocessed lists
                           (world (update-machine (world-fsm-machine w)) (world-tape-position w) cur-rule
                                  (determin-prev-state) (world-button-list w) (world-input-list w)

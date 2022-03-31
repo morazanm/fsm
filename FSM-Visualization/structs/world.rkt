@@ -50,6 +50,8 @@ WORLD INITIALIZATION FUNCTIONS
 ;; initialize-world: fsm-machine string list-of-buttons list-of-inputs -> world
 ;; Purpose: returns the proper world structure based on the given inputs.
 (define (initialize-world machine window-msg btn-list input-list)
+  (set-stack-index 0)
+  (reset-stack)
   (world
    machine
    0
