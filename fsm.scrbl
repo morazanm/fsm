@@ -106,7 +106,13 @@ RIGHT or LEFT.
 @defidform[tm-rule]{ 
  A @italic{(list (list state symbol) (list state tm-action))} representing a 
  transition in a nondeterministic Turing machine. The symbol must
- either be in the alphabet of the machine or be EMP.}
+ either be either EMP or an element of the machine's alphabet.}
+
+@defidform[mttm-rule]{ 
+ A @italic{(list (list state (listof symbol)) (list state (listof action)))} representing
+ a transition in a nondeterministic multitape Turing machine. The symbols represent what
+ is read on each of the tapes and must be either EMP or an element of the machine's
+ alphabet.}
 
 
 @defidform[dfa-configuration] 
@@ -124,10 +130,15 @@ the input. The list of symbols is the contents of the stack where
 the leftmost symbol is the top of the stack.
 
 @defidform[tm-configuration] 
-A list containing a state, a batural number, and a list of symbols. 
+A list containing a state, a natural number, and a list of symbols. 
 The state is the current state of the machine. The natural number is
 the head's position. The list of symbols is the contents of the tape
 up to the rightmost position reached, so far, by the machine.
+
+@defidform[mttm-configuration] 
+A list containing a state and one or more tape configurations. A tape
+configuration is a list containing a natural number for the head's
+position and a sublist representing the contents of the tape.
 
 @defidform[regexp] A regular expression. That is, strings over an 
 alphabet, E, and {(, ), (), U, *} defined as follows:
@@ -142,8 +153,8 @@ alphabet, E, and {(, ), (), U, *} defined as follows:
 @defidform[nts]
 For an FSM programmer, a nonterminal symbol corresponds to a upercase
 letter in English: A..Z. That is, FSM programmers are limited to 26 nonterminals.
-The internal representation in FSM may use symbols of the form nts-<digit>+
-(e.g., A-72431). Such nonterminals may not be used in an FSM program.
+The internal representation in FSM may use symbols of the form nts-<digit>^+
+(e.g., A-72431). Such nonterminals may not be directly used in an FSM program.
 
 @defidform[rrule] A regular grammar rule is a list of 
 the following form:
@@ -169,7 +180,9 @@ A representation of a statemachine in FSM. A state machine is one of the followi
  @item{Nondeterministic Finite Automaton (ndfa)}
  @item{Pushdown Automaton (pda)}
  @item{Turing Machine (tm)}
- @item{Language Recognizer (tm-langauge-recognizer)}]
+ @item{Language Recognizer (tm-langauge-recognizer)}
+ @item{Multitape Turing Machine (mttm)}
+ @item{Multitape Turing Machine Language Recognizer (mttm-language-recognizer)}]
 
 @defidform[smrule]  
 A state machine rule is either a dfa-rule, an ndfa-rule, a 
@@ -228,12 +241,12 @@ A LABEL is a natnum.
 
 @defproc*[([(make-tm    [sts (listof state)] 
                         [sigma alphabet]
-                        [delta (listof ndfa-rule)]
+                        [delta (listof tm-rule)]
                         [start state] 
                         [finals (listof state)]) tm]
            [(make-tm    [sts (listof state)] 
                         [sigma alphabet]
-                        [delta (listof ndfa-rule)]
+                        [delta (listof tm-rule)]
                         [start state] 
                         [finals (listof state)]
                         (accept state)) tm])]{Builds a nondeterministic Turing machine. 
@@ -243,6 +256,23 @@ A LABEL is a natnum.
  to the machine's rules.
  @italic{If the optional accept argument is given then the resulting
   Turing machine is a language recognizer.}}
+
+@defproc*[([(make-mttm  [sts (listof state)] 
+                        [sigma alphabet]
+                        [start state]
+                        [finals (listof state)]
+                        [delta (listof mttm-rule)]
+                        [num-tapes number]) tm]
+           [(make-mttm  [sts (listof state)] 
+                        [sigma alphabet]
+                        [start state]
+                        [finals (listof state)]
+                        [delta (listof mttm-rule)]
+                        [num-tapes number]
+                        (accept state)) tm])]
+Builds a nondeterministic Multitape Turing machine with the given number of
+tapes. @italic{If the optional accept argument is given then the resulting multitape
+Turing machine is a language recognizer.}
 
 @defproc[(ndfa->dfa [m ndfa])
          dfa]{Builds a @italic{deterministic} finite-state 
@@ -296,11 +326,11 @@ A LABEL is a natnum.
 @section{State Machine Visualization}
 @bold{For more information about how the Vizualization tool works please visit the @(hyperlink "https://morazanm.github.io/fsm/index.html" "FSM Website")}
 @defproc[(sm-graph [m state-machine])
-         image]{Converts the given state machine to .png image.@(linebreak)}
+         image]{Converts the given state machine to .png image. The given machine
+                may not be a @bold{mttm}. @(linebreak)}
 
 @bold{You must have GraphViz installed as an enviroment variable
-  for this to work. Please see
-  for more information how to set this up. @(hyperlink "https://github.com/morazanm/fsm/tree/master/GraphViz" "FSM GraphViz ReadMe")}
+  for this to work. For more information how to set this up, please see: @(hyperlink "https://github.com/morazanm/fsm/tree/master/GraphViz" "FSM GraphViz ReadMe")}
 
 @defproc*[([(sm-visualize [sym symbol?]) void]
            [(sm-visualize [m state-machine]) void]
@@ -308,9 +338,11 @@ A LABEL is a natnum.
                           [inv-list (listof (listof symbol? procedure?))]) void])]{
  When supplied with a symbol as the argument the visualiztion tool is started for the specified machine type.
  Valid symbols are:@(racketblock 'dfa  'ndfa  'pda  'tm  'tm-language-recognizer)
- When supplied with a state-machine as the argument the visualiztion tool is started with the state-machine built within the tool
- When supplied with the third option the visualiztion tool is started with 
-}
+ When supplied with a state-machine as the argument the visualiztion tool is started with
+ the state-machine built within the tool. When supplied with the optional list of state and
+ invariant predicates the visualization tool changes the color of the arrow to green or
+ red to indicate, respectively, if the invariant holds or does not hold. The given machine
+ may not be a @bold{mttm}.}
 @(linebreak)@(linebreak)
 Examples: @(linebreak)@(linebreak)
 Empty Tool
@@ -388,16 +420,15 @@ Empty Tool
 
 @defproc[(sm-type [m state-machine])
          symbol]{Returns a symbol indicating the type of the given
- machine: dfa, ndfa, ndpda, tm, or 
- tm-language-recognizer.}
+ machine: dfa, ndfa, ndpda, tm, tm-language-recognizer, mttm, or mttm-language-recognizer.}
 
 @defproc*[([(sm-apply [m state-machine] [w word]) symbol]
            [(sm-apply [m state-machine] [w word] [n natnum]) symbol])
          ]{Applies the given state machine to the given word
  and returns either @racket['accept] or @racket['reject] for a dfa, a
- ndfa, a ndpa, or a Turing machine language 
- recognizer. If the given machine is a Turing machine,
- but not a language recognizer, a (list @racket['Halt:] S) is
+ ndfa, a ndpa, a Turing machine language 
+ recognizer, or a multitape Turing machine language recognizer. If the given machine
+ is a Turing machine, but not a language recognizer, a (list @racket['Halt:] S) is
  returned where S is a state. The optional natural 
  number is only used for the initial position of a 
  Turing machine head (the default position is zero).}
