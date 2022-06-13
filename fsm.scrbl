@@ -422,6 +422,9 @@ Empty Tool
          symbol]{Returns a symbol indicating the type of the given
  machine: dfa, ndfa, ndpda, tm, tm-language-recognizer, mttm, or mttm-language-recognizer.}
 
+@defproc[(sm-getnumtapes [m state-machine])
+         symbol]{Returns the number of tapes in the given state machine.}
+
 @defproc*[([(sm-apply [m state-machine] [w word]) symbol]
            [(sm-apply [m state-machine] [w word] [n natnum]) symbol])
          ]{Applies the given state machine to the given word
@@ -430,8 +433,9 @@ Empty Tool
  recognizer, or a multitape Turing machine language recognizer. If the given machine
  is a Turing machine, but not a language recognizer, a (list @racket['Halt:] S) is
  returned where S is a state. The optional natural 
- number is only used for the initial position of a 
- Turing machine head (the default position is zero).}
+ number is only used for the initial position of the 
+ Turing machine head (the default position is zero) or the head position for the first tape
+ in a multitape Turing machine.}
 
 @defproc*[([(sm-showtransitions [m state-machine] [w word]) (or (listof smconfig) 'reject)]
            [(sm-showtransitions [m state-machine] [w word] [n natnum]) (or (listof smconfig) 'reject)])
@@ -439,7 +443,8 @@ Empty Tool
  and returns a list of configurations if the machine
  reaches a halting state and @racket['reject] otherwise. The 
  optional natural number is only used for the initial position of a 
- Turing machine's head (the default position is zero)}
+ Turing machine's head of the head position for the first tape
+ in a multitape Turing machine (the default position is zero)}
 
 @section{State Machine Testers}
 
@@ -451,7 +456,8 @@ Empty Tool
           language recognizer, the generated tests start with the left-end marker
           followed by the input word and the head on the first letter of the input
           word. The optional natural number specifies the number of tests
-          (the default is 100).
+          (the default is 100). May not be used for Turing machines and multitape
+          Turing machines.
 
 @defproc[(sm-sameresult? [m1 state-machine] [m2 state-machine] [w word])
          boolean]{Tests if the two given machines return the same
@@ -465,7 +471,7 @@ Empty Tool
  if all results are the same. 
  Otherwise, a list of words for
  which different results were
- obtained is returned.}
+ obtained is returned. May not be used for Turing machines and multitape Turing machines.}
 
 @section{Grammar Constructors}
 
