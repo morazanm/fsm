@@ -8,7 +8,8 @@
          "regular-grammar.rkt" "csg.rkt" "tm.rkt" "transducer.rkt"
          "regexp.rkt" "constants.rkt" "word.rkt" "misc.rkt"
          "state.rkt" "sm-getters.rkt" "grammar-getters.rkt" 
-         "regexp-predicate.rkt" "abstract-predicate.rkt")
+         "regexp-predicate.rkt" "abstract-predicate.rkt"
+         "mtape-tm.rkt")
   
 (provide
  check-machine
@@ -23,6 +24,7 @@
  make-unchecked-ndfa
  make-unchecked-tm
  make-unchecked-ndpda
+ make-mttm
 
 
  ; sm observers
@@ -160,12 +162,8 @@
            (apply-fsa M w)]
           [(eq? t1 'pda) (apply-pda M w)]
           [(or (eq? t1 'tm) (eq? t1 'tm-language-recognizer)) (tm-apply M w head)]
+          [(or (eq? t1 'mttm) (eq? t1 'mttm-language-recognizer)) (mttm-apply M w head)]
           [else (error "Incorrect input to apply-fsm")])))
-  
-; ctm word [natnum] --> (list state natnum tape)
-(define (ctm-run M w . l)
-  (let ((res (ctm-apply M w (if (null? l) 0 (car l)))))
-    (list (tmconfig-state res) (tmconfig-index res) (tmconfig-tape res))))
   
 ; fsm word [natnum] --> path
 (define (sm-showtransitions M w . l)  
@@ -176,12 +174,22 @@
            (show-transitions-fsa M w)]
           [(eq? t1 'pda) (show-transitions-pda M w)]
           [(or (eq? t1 'tm) (eq? t1 'tm-language-recognizer)) (tm-showtransitions M w head)]
-          [(eq? t1 'dfst) (M 'show-transitions)]
+          [(or (eq? t1 'mttm) (eq? t1 'mttm-language-recognizer)) (mttm-show-transitions M w head)]
+          ;[(eq? t1 'dfst) (M 'show-transitions)]
           [else (error "Incorrect input to show-transitions")])))
+
+; ctm word [natnum] --> (list state natnum tape)
+(define (ctm-run M w . l)
+  (let ((res (ctm-apply M w (if (null? l) 0 (car l)))))
+    (list (tmconfig-state res) (tmconfig-index res) (tmconfig-tape res))))
   
 ; fsm fsm word --> boolean
 (define (sm-sameresult? M1 M2 w)
-  (eq? (sm-apply M1 w) (sm-apply M2 w)))
+  (let ((s1 (sm-getalphabet M1))
+        (s2 (sm-getalphabet M2)))
+    (if (equal? s1 s2)
+        (equal? (sm-apply M1 w) (sm-apply M2 w))
+        (error (format "The alphabets of the given machines are different: ~s ~s" s1 s2)))))
   
 ; fsm fsm [natnum] --> true or (listof words)
 (define (sm-testequiv?  M1 M2 . l)
