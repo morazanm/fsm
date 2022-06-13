@@ -99,7 +99,7 @@
             [(eq? mess 'get-start) start]
             [(eq? mess 'get-finals) finals]
             [(eq? mess 'get-rules) rules]
-            [(eq? mess 'get-numtapes) k)
+            [(eq? mess 'get-numtapes) k]
             [(eq? mess 'whatami)
              (if (equal? accept-state (void)) 'mttm 'mttm-language-recognizer)]
             [(eq? mess 'get-accept)
