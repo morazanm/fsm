@@ -1,0 +1,32 @@
+name: Docs
+
+on:
+  push:
+    branches:
+    - main
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    name: Build Docs and Push the GH-Pages
+    steps:
+      - name: Checkout 
+        uses: actions/checkout@master
+
+      - name: Install Racket and Raco 
+        uses: Bogdanp/setup-racket@v1.8.1 # see https://github.com/Bogdanp/setup-racket for more info
+        with:
+          architecture: 'x64'
+          distribution: 'full' # or: 'minimal'
+          variant: CS
+          version: stable
+
+      - name: install base package
+        run: raco pkg install
+      - name: build docs
+        run: scribble +m --redirect-main http://pkg-build.racket-lang.org/doc/ --htmls --dest ./docs ./fsm.scrbl
+      - name: push to gh-pages
+        uses: JamesIves/github-pages-deploy-action@4.1.4 # more info at: https://github.com/JamesIves/github-pages-deploy-action
+        with:
+          folder: docs/fsm
+          branch: gh-pages
