@@ -45,10 +45,7 @@
             [(or (eq? t1 'mttm) (eq? t1 'mttm-language-recognizer)) (M 'get-sigma)]
             [else (M null 'get-sigma)])))
   
-  (define (sm-type M)
-    (let ((t1 (sm-type M)))
-      (cond [(or (eq? t1 'mttm) (eq? t1 'mttm-language-recognizer)) (M 'what-am-i)]
-            [else (M 'whatami 0 'whatami)])))
+  (define (sm-type M) (M 'whatami 0 'whatami))
   
   (define (sm-getstackalphabet M)
     (if (eq? (sm-type M) 'pda)
