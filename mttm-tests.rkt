@@ -3,6 +3,8 @@
 #reader(lib "htdp-intermediate-lambda-reader.ss" "lang")((modname mttm-tests) (read-case-sensitive #t) (teachpacks ((lib "image.rkt" "teachpack" "2htdp") (lib "universe.rkt" "teachpack" "2htdp") (lib "abstraction.rkt" "teachpack" "2htdp"))) (htdp-settings #(#t constructor repeating-decimal #f #t none #f ((lib "image.rkt" "teachpack" "2htdp") (lib "universe.rkt" "teachpack" "2htdp") (lib "abstraction.rkt" "teachpack" "2htdp")) #f)))
 (require fsm)
 
+(require test-engine/racket-tests)
+
 (define ADD (make-mttm '(S A T U V)
                        `(I)
                        'S
@@ -101,3 +103,25 @@
                         ((E (,BLANK ,BLANK ,BLANK d)) (N (,BLANK ,BLANK ,BLANK d))))
                       4
                       'Y))
+
+(check-expect (sm-getstates ADD) (list 'S 'A 'T 'U 'V))
+(check-expect (sm-getalphabet ADD) (list 'I))
+(check-expect (sm-getstart ADD) 'S)
+(check-expect (sm-getfinals ADD) '(H))
+(check-expect (sm-getrules ADD)
+              (list
+               (list (list 'S (list '_ '_ '_)) (list 'A (list 'R 'R 'R)))
+               (list (list 'A (list 'I '_ '_)) (list 'A (list '_ 'I '_)))
+               (list (list 'A (list '_ 'I '_)) (list 'A (list 'R 'R '_)))
+               (list (list 'A (list '_ '_ '_)) (list 'T (list 'R '_ '_)))
+               (list (list 'T (list 'I '_ '_)) (list 'T (list '_ '_ 'I)))
+               (list (list 'T (list '_ '_ 'I)) (list 'T (list 'R '_ 'R)))
+               (list (list 'T (list '_ '_ '_)) (list 'Q (list 'L '_ '_)))
+               (list (list 'Q (list '_ '_ '_)) (list 'U (list 'L 'L 'L)))
+               (list (list 'U (list '_ 'I 'I)) (list 'U (list 'I 'I '_)))
+               (list (list 'U (list 'I 'I '_)) (list 'U (list 'L 'I 'L)))
+               (list (list 'U (list '_ 'I '_)) (list 'V (list '_ 'I '_)))
+               (list (list 'V (list '_ 'I '_)) (list 'V (list 'I '_ '_)))
+               (list (list 'V (list 'I '_ '_)) (list 'V (list 'L 'L '_)))
+               (list (list 'V (list '_ '_ '_)) (list 'H (list '_ '_ '_)))))
+(check-expect (sm-getnumtapes ADD) 3)

@@ -99,6 +99,7 @@
             [(eq? mess 'get-start) start]
             [(eq? mess 'get-finals) finals]
             [(eq? mess 'get-rules) rules]
+            [(eq? mess 'get-numtapes) k)
             [(eq? mess 'whatami)
              (if (equal? accept-state (void)) 'mttm 'mttm-language-recognizer)]
             [(eq? mess 'get-accept)
@@ -111,6 +112,7 @@
             [else (format "Unknown message give to mttm: ~s" mess)])))
   
 
+  (define (mttm-get-numtapes M) (M 'get-numtapes))
   (define (mttm-get-states M) (M 'get-states))
   (define (mttm-get-sigma M) (M 'get-sigma))
   (define (mttm-get-start M) (M 'get-start))

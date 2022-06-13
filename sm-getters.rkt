@@ -6,7 +6,8 @@
            sm-getalphabet
            sm-type
            sm-getstackalphabet
-           sm-getaccept)
+           sm-getaccept
+           sm-getnumtapes)
 
   (define (sm-getaccept M)
     (let ((mtype (sm-type M)))
@@ -51,4 +52,10 @@
     (if (eq? (sm-type M) 'pda)
         (M null 'get-gamma)
         (error (format "A ~s does not have a stack alphabet." (sm-type M)))))
+
+  (define (sm-getnumtapes M)
+    (let ((t1 (sm-type M)))
+    (if (or (eq? t1 'mttm) (eq? t1 'mttm-language-recognizer))
+        (M 'get-numtapes)
+        1)))
   )
