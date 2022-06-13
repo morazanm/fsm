@@ -125,3 +125,367 @@
                (list (list 'V (list 'I '_ '_)) (list 'V (list 'L 'L '_)))
                (list (list 'V (list '_ '_ '_)) (list 'H (list '_ '_ '_)))))
 (check-expect (sm-getnumtapes ADD) 3)
+(check-expect (sm-apply ADD `(,BLANK I I I ,BLANK I I))
+              (list
+               'H
+               (list 0 (list '_ 'I 'I 'I 'I 'I '_ '_))
+               (list 0 (list '_ '_ '_ '_ '_))
+               (list 0 (list '_ '_ '_ '_))))
+(check-expect (sm-showtransitions ADD `(,BLANK I I I ,BLANK I I))
+              (list
+               (list 'S (list 0 (list '_ 'I 'I 'I '_ 'I 'I)) (list 0 (list '_)) (list 0 (list '_)))
+               (list 'A (list 1 (list '_ 'I 'I 'I '_ 'I 'I)) (list 1 (list '_ '_)) (list 1 (list '_ '_)))
+               (list 'A (list 1 (list '_ '_ 'I 'I '_ 'I 'I)) (list 1 (list '_ 'I)) (list 1 (list '_ '_)))
+               (list 'A (list 2 (list '_ '_ 'I 'I '_ 'I 'I)) (list 2 (list '_ 'I '_)) (list 1 (list '_ '_)))
+               (list 'A (list 2 (list '_ '_ '_ 'I '_ 'I 'I)) (list 2 (list '_ 'I 'I)) (list 1 (list '_ '_)))
+               (list 'A (list 3 (list '_ '_ '_ 'I '_ 'I 'I)) (list 3 (list '_ 'I 'I '_)) (list 1 (list '_ '_)))
+               (list 'A (list 3 (list '_ '_ '_ '_ '_ 'I 'I)) (list 3 (list '_ 'I 'I 'I)) (list 1 (list '_ '_)))
+               (list
+                'A
+                (list 4 (list '_ '_ '_ '_ '_ 'I 'I))
+                (list 4 (list '_ 'I 'I 'I '_))
+                (list 1 (list '_ '_)))
+               (list
+                'T
+                (list 5 (list '_ '_ '_ '_ '_ 'I 'I))
+                (list 4 (list '_ 'I 'I 'I '_))
+                (list 1 (list '_ '_)))
+               (list
+                'T
+                (list 5 (list '_ '_ '_ '_ '_ '_ 'I))
+                (list 4 (list '_ 'I 'I 'I '_))
+                (list 1 (list '_ 'I)))
+               (list
+                'T
+                (list 6 (list '_ '_ '_ '_ '_ '_ 'I))
+                (list 4 (list '_ 'I 'I 'I '_))
+                (list 2 (list '_ 'I '_)))
+               (list
+                'T
+                (list 6 (list '_ '_ '_ '_ '_ '_ '_))
+                (list 4 (list '_ 'I 'I 'I '_))
+                (list 2 (list '_ 'I 'I)))
+               (list
+                'T
+                (list 7 (list '_ '_ '_ '_ '_ '_ '_ '_))
+                (list 4 (list '_ 'I 'I 'I '_))
+                (list 3 (list '_ 'I 'I '_)))
+               (list
+                'Q
+                (list 6 (list '_ '_ '_ '_ '_ '_ '_ '_))
+                (list 4 (list '_ 'I 'I 'I '_))
+                (list 3 (list '_ 'I 'I '_)))
+               (list
+                'U
+                (list 5 (list '_ '_ '_ '_ '_ '_ '_ '_))
+                (list 3 (list '_ 'I 'I 'I '_))
+                (list 2 (list '_ 'I 'I '_)))
+               (list
+                'U
+                (list 5 (list '_ '_ '_ '_ '_ 'I '_ '_))
+                (list 3 (list '_ 'I 'I 'I '_))
+                (list 2 (list '_ 'I '_ '_)))
+               (list
+                'U
+                (list 4 (list '_ '_ '_ '_ '_ 'I '_ '_))
+                (list 3 (list '_ 'I 'I 'I '_))
+                (list 1 (list '_ 'I '_ '_)))
+               (list
+                'U
+                (list 4 (list '_ '_ '_ '_ 'I 'I '_ '_))
+                (list 3 (list '_ 'I 'I 'I '_))
+                (list 1 (list '_ '_ '_ '_)))
+               (list
+                'U
+                (list 3 (list '_ '_ '_ '_ 'I 'I '_ '_))
+                (list 3 (list '_ 'I 'I 'I '_))
+                (list 0 (list '_ '_ '_ '_)))
+               (list
+                'V
+                (list 3 (list '_ '_ '_ '_ 'I 'I '_ '_))
+                (list 3 (list '_ 'I 'I 'I '_))
+                (list 0 (list '_ '_ '_ '_)))
+               (list
+                'V
+                (list 3 (list '_ '_ '_ 'I 'I 'I '_ '_))
+                (list 3 (list '_ 'I 'I '_ '_))
+                (list 0 (list '_ '_ '_ '_)))
+               (list
+                'V
+                (list 2 (list '_ '_ '_ 'I 'I 'I '_ '_))
+                (list 2 (list '_ 'I 'I '_ '_))
+                (list 0 (list '_ '_ '_ '_)))
+               (list
+                'V
+                (list 2 (list '_ '_ 'I 'I 'I 'I '_ '_))
+                (list 2 (list '_ 'I '_ '_ '_))
+                (list 0 (list '_ '_ '_ '_)))
+               (list
+                'V
+                (list 1 (list '_ '_ 'I 'I 'I 'I '_ '_))
+                (list 1 (list '_ 'I '_ '_ '_))
+                (list 0 (list '_ '_ '_ '_)))
+               (list
+                'V
+                (list 1 (list '_ 'I 'I 'I 'I 'I '_ '_))
+                (list 1 (list '_ '_ '_ '_ '_))
+                (list 0 (list '_ '_ '_ '_)))
+               (list
+                'V
+                (list 0 (list '_ 'I 'I 'I 'I 'I '_ '_))
+                (list 0 (list '_ '_ '_ '_ '_))
+                (list 0 (list '_ '_ '_ '_)))
+               (list
+                'H
+                (list 0 (list '_ 'I 'I 'I 'I 'I '_ '_))
+                (list 0 (list '_ '_ '_ '_ '_))
+                (list 0 (list '_ '_ '_ '_)))))
+
+(check-expect (sm-getstates a^nb^nc^nd^n) (list 'S 'A 'Y 'N))
+(check-expect (sm-getalphabet a^nb^nc^nd^n) (list 'a 'b 'c 'd))
+(check-expect (sm-getstart a^nb^nc^nd^n) 'S)
+(check-expect (sm-getfinals a^nb^nc^nd^n) '(Y N))
+(check-expect (sm-getrules a^nb^nc^nd^n)
+              (list
+               (list (list 'S (list '_ '_ '_ '_)) (list 'Q (list 'R 'R 'R 'R)))
+               (list (list 'Q (list '_ '_ '_ '_)) (list 'Y (list '_ '_ '_ '_)))
+               (list (list 'Q (list 'a '_ '_ '_)) (list 'A (list 'a '_ '_ '_)))
+               (list (list 'Q (list 'b '_ '_ '_)) (list 'N (list 'b '_ '_ '_)))
+               (list (list 'Q (list 'c '_ '_ '_)) (list 'N (list 'c '_ '_ '_)))
+               (list (list 'Q (list 'd '_ '_ '_)) (list 'N (list 'd '_ '_ '_)))
+               (list (list 'A (list 'a '_ '_ '_)) (list 'A (list 'R '_ '_ '_)))
+               (list (list 'A (list 'b '_ '_ '_)) (list 'B (list 'b '_ '_ '_)))
+               (list (list 'A (list '_ '_ '_ '_)) (list 'N (list '_ '_ '_ '_)))
+               (list (list 'A (list 'c '_ '_ '_)) (list 'N (list 'c '_ '_ '_)))
+               (list (list 'A (list 'd '_ '_ '_)) (list 'N (list 'd '_ '_ '_)))
+               (list (list 'B (list 'b '_ '_ '_)) (list 'B (list 'b 'b '_ '_)))
+               (list (list 'B (list '_ '_ '_ '_)) (list 'N (list '_ '_ '_ '_)))
+               (list (list 'B (list 'b 'b '_ '_)) (list 'B (list 'R 'R '_ '_)))
+               (list (list 'B (list 'c '_ '_ '_)) (list 'C (list 'c '_ '_ '_)))
+               (list (list 'B (list '_ '_ '_ '_)) (list 'N (list '_ '_ '_ '_)))
+               (list (list 'B (list 'a '_ '_ '_)) (list 'N (list 'a '_ '_ '_)))
+               (list (list 'B (list 'd '_ '_ '_)) (list 'N (list 'd '_ '_ '_)))
+               (list (list 'C (list 'c '_ '_ '_)) (list 'C (list 'c '_ 'c '_)))
+               (list (list 'C (list 'c '_ 'c '_)) (list 'C (list 'R '_ 'R '_)))
+               (list (list 'C (list 'd '_ '_ '_)) (list 'D (list 'd '_ '_ '_)))
+               (list (list 'C (list '_ '_ '_ '_)) (list 'N (list '_ '_ '_ '_)))
+               (list (list 'C (list 'a '_ '_ '_)) (list 'N (list 'a '_ '_ '_)))
+               (list (list 'C (list 'b '_ '_ '_)) (list 'N (list 'b '_ '_ '_)))
+               (list (list 'D (list 'd '_ '_ '_)) (list 'D (list 'd '_ '_ 'd)))
+               (list (list 'D (list 'd '_ '_ 'd)) (list 'D (list 'R '_ '_ 'R)))
+               (list (list 'D (list '_ '_ '_ '_)) (list 'E (list 'L 'L 'L 'L)))
+               (list (list 'D (list 'a '_ '_ '_)) (list 'N (list 'a '_ '_ '_)))
+               (list (list 'D (list 'b '_ '_ '_)) (list 'N (list 'b '_ '_ '_)))
+               (list (list 'D (list 'c '_ '_ '_)) (list 'N (list 'c '_ '_ '_)))
+               (list (list 'E (list '_ '_ '_ '_)) (list 'Y (list '_ '_ '_ '_)))
+               (list (list 'E (list 'd 'b 'c 'd)) (list 'E (list 'L 'b 'c 'd)))
+               (list (list 'E (list 'c 'b 'c 'd)) (list 'E (list 'L 'b 'c 'd)))
+               (list (list 'E (list 'b 'b 'c 'd)) (list 'E (list 'L 'b 'c 'd)))
+               (list (list 'E (list 'a 'b 'c 'd)) (list 'E (list 'L 'L 'L 'L)))
+               (list (list 'E (list '_ 'b 'c 'd)) (list 'N (list '_ 'b 'c 'd)))
+               (list (list 'E (list 'a '_ 'c 'd)) (list 'N (list 'a '_ 'c 'd)))
+               (list (list 'E (list 'a 'b '_ 'd)) (list 'N (list 'a 'b '_ 'd)))
+               (list (list 'E (list 'a 'b 'c '_)) (list 'N (list 'a 'b 'c '_)))
+               (list (list 'E (list '_ '_ 'c 'd)) (list 'N (list '_ '_ 'c 'd)))
+               (list (list 'E (list '_ 'b '_ 'd)) (list 'N (list '_ 'b '_ 'd)))
+               (list (list 'E (list '_ 'b 'c '_)) (list 'N (list '_ 'b 'c '_)))
+               (list (list 'E (list 'a '_ '_ 'd)) (list 'N (list 'a '_ '_ 'd)))
+               (list (list 'E (list 'a '_ 'c '_)) (list 'N (list 'a '_ 'c '_)))
+               (list (list 'E (list 'a 'b '_ '_)) (list 'N (list 'a 'b '_ '_)))
+               (list (list 'E (list 'a '_ '_ '_)) (list 'N (list 'a '_ '_ '_)))
+               (list (list 'E (list '_ 'b '_ '_)) (list 'N (list '_ 'b '_ '_)))
+               (list (list 'E (list '_ '_ 'c '_)) (list 'N (list '_ '_ 'c '_)))
+               (list (list 'E (list '_ '_ '_ 'd)) (list 'N (list '_ '_ '_ 'd)))))
+(check-expect (sm-getnumtapes a^nb^nc^nd^n) 4)
+(check-expect (sm-apply a^nb^nc^nd^n `(,BLANK a a b b c c d d)) 'accept)
+(check-expect (sm-apply a^nb^nc^nd^n `(,BLANK a a b b c d d)) 'reject)
+(check-expect (sm-showtransitions a^nb^nc^nd^n `(,BLANK a a b b c c d d))
+              (list
+               (list
+                'S
+                (list 0 (list '_ 'a 'a 'b 'b 'c 'c 'd 'd))
+                (list 0 (list '_))
+                (list 0 (list '_))
+                (list 0 (list '_)))
+               (list
+                'Q
+                (list 1 (list '_ 'a 'a 'b 'b 'c 'c 'd 'd))
+                (list 1 (list '_ '_))
+                (list 1 (list '_ '_))
+                (list 1 (list '_ '_)))
+               (list
+                'A
+                (list 1 (list '_ 'a 'a 'b 'b 'c 'c 'd 'd))
+                (list 1 (list '_ '_))
+                (list 1 (list '_ '_))
+                (list 1 (list '_ '_)))
+               (list
+                'A
+                (list 2 (list '_ 'a 'a 'b 'b 'c 'c 'd 'd))
+                (list 1 (list '_ '_))
+                (list 1 (list '_ '_))
+                (list 1 (list '_ '_)))
+               (list
+                'A
+                (list 3 (list '_ 'a 'a 'b 'b 'c 'c 'd 'd))
+                (list 1 (list '_ '_))
+                (list 1 (list '_ '_))
+                (list 1 (list '_ '_)))
+               (list
+                'B
+                (list 3 (list '_ 'a 'a 'b 'b 'c 'c 'd 'd))
+                (list 1 (list '_ '_))
+                (list 1 (list '_ '_))
+                (list 1 (list '_ '_)))
+               (list
+                'B
+                (list 3 (list '_ 'a 'a 'b 'b 'c 'c 'd 'd))
+                (list 1 (list '_ 'b))
+                (list 1 (list '_ '_))
+                (list 1 (list '_ '_)))
+               (list
+                'B
+                (list 4 (list '_ 'a 'a 'b 'b 'c 'c 'd 'd))
+                (list 2 (list '_ 'b '_))
+                (list 1 (list '_ '_))
+                (list 1 (list '_ '_)))
+               (list
+                'B
+                (list 4 (list '_ 'a 'a 'b 'b 'c 'c 'd 'd))
+                (list 2 (list '_ 'b 'b))
+                (list 1 (list '_ '_))
+                (list 1 (list '_ '_)))
+               (list
+                'B
+                (list 5 (list '_ 'a 'a 'b 'b 'c 'c 'd 'd))
+                (list 3 (list '_ 'b 'b '_))
+                (list 1 (list '_ '_))
+                (list 1 (list '_ '_)))
+               (list
+                'C
+                (list 5 (list '_ 'a 'a 'b 'b 'c 'c 'd 'd))
+                (list 3 (list '_ 'b 'b '_))
+                (list 1 (list '_ '_))
+                (list 1 (list '_ '_)))
+               (list
+                'C
+                (list 5 (list '_ 'a 'a 'b 'b 'c 'c 'd 'd))
+                (list 3 (list '_ 'b 'b '_))
+                (list 1 (list '_ 'c))
+                (list 1 (list '_ '_)))
+               (list
+                'C
+                (list 6 (list '_ 'a 'a 'b 'b 'c 'c 'd 'd))
+                (list 3 (list '_ 'b 'b '_))
+                (list 2 (list '_ 'c '_))
+                (list 1 (list '_ '_)))
+               (list
+                'C
+                (list 6 (list '_ 'a 'a 'b 'b 'c 'c 'd 'd))
+                (list 3 (list '_ 'b 'b '_))
+                (list 2 (list '_ 'c 'c))
+                (list 1 (list '_ '_)))
+               (list
+                'C
+                (list 7 (list '_ 'a 'a 'b 'b 'c 'c 'd 'd))
+                (list 3 (list '_ 'b 'b '_))
+                (list 3 (list '_ 'c 'c '_))
+                (list 1 (list '_ '_)))
+               (list
+                'D
+                (list 7 (list '_ 'a 'a 'b 'b 'c 'c 'd 'd))
+                (list 3 (list '_ 'b 'b '_))
+                (list 3 (list '_ 'c 'c '_))
+                (list 1 (list '_ '_)))
+               (list
+                'D
+                (list 7 (list '_ 'a 'a 'b 'b 'c 'c 'd 'd))
+                (list 3 (list '_ 'b 'b '_))
+                (list 3 (list '_ 'c 'c '_))
+                (list 1 (list '_ 'd)))
+               (list
+                'D
+                (list 8 (list '_ 'a 'a 'b 'b 'c 'c 'd 'd))
+                (list 3 (list '_ 'b 'b '_))
+                (list 3 (list '_ 'c 'c '_))
+                (list 2 (list '_ 'd '_)))
+               (list
+                'D
+                (list 8 (list '_ 'a 'a 'b 'b 'c 'c 'd 'd))
+                (list 3 (list '_ 'b 'b '_))
+                (list 3 (list '_ 'c 'c '_))
+                (list 2 (list '_ 'd 'd)))
+               (list
+                'D
+                (list 9 (list '_ 'a 'a 'b 'b 'c 'c 'd 'd '_))
+                (list 3 (list '_ 'b 'b '_))
+                (list 3 (list '_ 'c 'c '_))
+                (list 3 (list '_ 'd 'd '_)))
+               (list
+                'E
+                (list 8 (list '_ 'a 'a 'b 'b 'c 'c 'd 'd '_))
+                (list 2 (list '_ 'b 'b '_))
+                (list 2 (list '_ 'c 'c '_))
+                (list 2 (list '_ 'd 'd '_)))
+               (list
+                'E
+                (list 7 (list '_ 'a 'a 'b 'b 'c 'c 'd 'd '_))
+                (list 2 (list '_ 'b 'b '_))
+                (list 2 (list '_ 'c 'c '_))
+                (list 2 (list '_ 'd 'd '_)))
+               (list
+                'E
+                (list 6 (list '_ 'a 'a 'b 'b 'c 'c 'd 'd '_))
+                (list 2 (list '_ 'b 'b '_))
+                (list 2 (list '_ 'c 'c '_))
+                (list 2 (list '_ 'd 'd '_)))
+               (list
+                'E
+                (list 5 (list '_ 'a 'a 'b 'b 'c 'c 'd 'd '_))
+                (list 2 (list '_ 'b 'b '_))
+                (list 2 (list '_ 'c 'c '_))
+                (list 2 (list '_ 'd 'd '_)))
+               (list
+                'E
+                (list 4 (list '_ 'a 'a 'b 'b 'c 'c 'd 'd '_))
+                (list 2 (list '_ 'b 'b '_))
+                (list 2 (list '_ 'c 'c '_))
+                (list 2 (list '_ 'd 'd '_)))
+               (list
+                'E
+                (list 3 (list '_ 'a 'a 'b 'b 'c 'c 'd 'd '_))
+                (list 2 (list '_ 'b 'b '_))
+                (list 2 (list '_ 'c 'c '_))
+                (list 2 (list '_ 'd 'd '_)))
+               (list
+                'E
+                (list 2 (list '_ 'a 'a 'b 'b 'c 'c 'd 'd '_))
+                (list 2 (list '_ 'b 'b '_))
+                (list 2 (list '_ 'c 'c '_))
+                (list 2 (list '_ 'd 'd '_)))
+               (list
+                'E
+                (list 1 (list '_ 'a 'a 'b 'b 'c 'c 'd 'd '_))
+                (list 1 (list '_ 'b 'b '_))
+                (list 1 (list '_ 'c 'c '_))
+                (list 1 (list '_ 'd 'd '_)))
+               (list
+                'E
+                (list 0 (list '_ 'a 'a 'b 'b 'c 'c 'd 'd '_))
+                (list 0 (list '_ 'b 'b '_))
+                (list 0 (list '_ 'c 'c '_))
+                (list 0 (list '_ 'd 'd '_)))
+               (list
+                'Y
+                (list 0 (list '_ 'a 'a 'b 'b 'c 'c 'd 'd '_))
+                (list 0 (list '_ 'b 'b '_))
+                (list 0 (list '_ 'c 'c '_))
+                (list 0 (list '_ 'd 'd '_)))
+               'accept))
+(check-expect (sm-sameresult? ADD ADD `(,BLANK I I I ,BLANK I I I)) #true)
+(check-error (sm-sameresult? ADD a^nb^nc^nd^n `(,BLANK a a b b c c d d))
+             "The alphabets of the given machines are different: (I) (a b c d)")
+(check-error (sm-testequiv? ADD ADD 5)
+             "Random testing of Multitape Turing Machines is not possible.")
+(check-error (sm-test ADD 5)
+             "Random testing of Multitape Turing Machines is not possible.")

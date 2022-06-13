@@ -78,6 +78,8 @@
            (rename-states-fsa sts m)]
           [(eq? t1 'pda) (rename-states-pda sts m)]
           [(or (eq? t1 'tm) (eq? t1 'tm-language-recognizer)) (tm-rename-states sts m)]
+          [(or (eq? t1 'mttm) (eq? t1 'mttm-language-recognizer))
+           (error "State renaming not supported for multitape Turing machines")]
           [else (error "Incorrect input to sm-rename-states")])))
   
 ; fsm fsm --> fsm
@@ -91,6 +93,8 @@
            (union-fsa m1 m2)]
           [(eq? t1 'pda) (union-pda m1 m2)]
           [(and (eq? t1 'tm-language-recognizer) (eq? t1 t2)) (tm-union m1 m2)]
+          [(or (eq? t1 'mttm) (eq? t1 'mttm-language-recognizer))
+           (error "Union not supported for multitape Turing machines")]
           [else (error (format "Unknown/Invalid machine types as input to sm-union: first input is of type ~s and second input is of type ~s." t1 t2))])))
   
   
@@ -106,6 +110,8 @@
           [(eq? t1 'pda) (concat-pda m1 m2)]
           [(and (eq? t1 'tm-language-recognizer) (eq? t1 t2))
            (error (format "Stay tuned: sm-concat for tm language recognizers is not yet implemented"))]
+          [(or (eq? t1 'mttm) (eq? t1 'mttm-language-recognizer))
+           (error "Concatenation not supported for multitape Turing machines")]
           [else (error (format "Unknown/Invalid machine types as input to sm-concat: first input is of type ~s and second input is of type ~s." t1 t2))])))
   
 ; fsm --> fsm
@@ -117,6 +123,8 @@
           [(eq? t1 'pda) (kleenestar-pda m )]
           [(eq? t1 'tm-language-recognizer)
            (error (format "Stay tuned: sm-kleenestar for tm language recognizers is not yet implemented"))]
+          [(or (eq? t1 'mttm) (eq? t1 'mttm-language-recognizer))
+           (error "Kleene star not supported for multitape Turing machines")]
           [else (error (format "Unknown/Invalid machine type as input to sm-kleenestar: input is of type ~s" t1))])))
   
 ; fsm --> fsm or error
@@ -128,6 +136,8 @@
                (eq? t1 'ndfa))
            (complement-fsa m)]
           [(eq? t1 'tm-language-recognizer) (tm-complement m )]
+          [(or (eq? t1 'mttm) (eq? t1 'mttm-language-recognizer))
+           (error "Complement not supported for multitape Turing machines")]
           [else (error (format "Unknown/Invalid machine type as input to sm-complement: input is of type ~s" t1))])))
   
   
@@ -143,6 +153,8 @@
                (eq? t2 'ndfa))
            (intersection-fsa m1 m2)]
           [(and (eq? t1 'tm-language-recognizer) (eq? t1 t2)) (tm-intersection m1 m2)]
+          [(or (eq? t1 'mttm) (eq? t1 'mttm-language-recognizer))
+           (error "Intersection not supported for multitape Turing machines")]
           [else (error (format "Unknown/Invalid machine types as input to sm-intersection: first input is of type ~s and second input is of type ~s." t1 t2))])))
   
 ; grammar --> sm 
@@ -196,28 +208,33 @@
 ; fsm fsm [natnum] --> true or (listof words)
 (define (sm-testequiv?  M1 M2 . l)
   (define number-tests (if (null? l) NUM-TESTS (car l)))
-  (let* ((test-m1 (generate-words number-tests
-                                  (remove* `(,LM) (sm-getalphabet M1))
-                                  null))
-         (test-m2 (generate-words number-tests
-                                  (remove* `(,LM) (sm-getalphabet M2))
-                                  null))
-         (test-words (append test-m1 test-m2))
-         (res-m1 (map (lambda (w) (list w (sm-apply M1 w)))
-                      (if (or (eq? (sm-type M1) 'tm)
-                              (eq? (sm-type M1) 'tm-language-recognizer))
-                          (map (λ (w) (cons LM w)) test-words)
-                          test-words)))
-         (res-m2 (map (lambda (w) (list w (sm-apply M2 w)))
-                      (if (or (eq? (sm-type M2) 'tm)
-                              (eq? (sm-type M2) 'tm-language-recognizer))
-                          (map (λ (w) (cons LM w)) test-words)
-                          test-words))))
-    (cond [(or (eq? (sm-type M1) 'tm)
-               (eq? (sm-type M2) 'tm))
-           (error "Random testing of Turing Machines is not possible.")]
-          [(equal? res-m1 res-m2) #t]
-          [else (get-differences res-m1 res-m2 test-words)])))
+  (if (or (eq? (sm-type M1) 'mttm)
+          (eq? (sm-type M1) 'mttm-language-recognizer)
+          (eq? (sm-type M2) 'mttm)
+          (eq? (sm-type M2) 'mttm-language-recognizer))
+      (error "Random testing of Multitape Turing Machines is not possible.")
+      (let* ((test-m1 (generate-words number-tests
+                                      (remove* `(,LM) (sm-getalphabet M1))
+                                      null))
+             (test-m2 (generate-words number-tests
+                                      (remove* `(,LM) (sm-getalphabet M2))
+                                      null))
+             (test-words (append test-m1 test-m2))
+             (res-m1 (map (lambda (w) (list w (sm-apply M1 w)))
+                          (if (or (eq? (sm-type M1) 'tm)
+                                  (eq? (sm-type M1) 'tm-language-recognizer))
+                              (map (λ (w) (cons LM w)) test-words)
+                              test-words)))
+             (res-m2 (map (lambda (w) (list w (sm-apply M2 w)))
+                          (if (or (eq? (sm-type M2) 'tm)
+                                  (eq? (sm-type M2) 'tm-language-recognizer))
+                              (map (λ (w) (cons LM w)) test-words)
+                              test-words))))
+        (cond [(or (eq? (sm-type M1) 'tm)
+                   (eq? (sm-type M2) 'tm))
+               (error "Random testing of Turing Machines is not possible.")]
+              [(equal? res-m1 res-m2) #t]
+              [else (get-differences res-m1 res-m2 test-words)]))))
   
 ; sm [natnum] --> (listof (list word symbol))
 (define (sm-test M . l)
@@ -229,6 +246,8 @@
           [(eq? t1 'pda) (test-pda M numtests)]
           [(eq? t1 'tm-language-recognizer) (tm-test M numtests)]
           [(eq? t1 'tm) (error "Random testing of Turing Machines is not possible.")]
+          [(or (eq? t1 'mttm) (eq? t1 'mttm-language-recognizer))
+           (error "Random testing of Multitape Turing Machines is not possible.")]
           [else (error "Incorrect input to test-fsm")])))
 
   
