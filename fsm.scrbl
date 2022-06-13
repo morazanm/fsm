@@ -293,30 +293,32 @@ Turing machine is a language recognizer.}
  from the union of the languages of the two given
  state machines. If the inputs are Turing machines then
  they must be language recognizers. The given machines 
- must have the same type.}
+ must have the same type. May not be used with multitape Turing machines.}
 
 @defproc[(sm-concat [m1 state-machine] [m2 state-machine])
          state-machine]{Builds a state machine for the language obtained
  from the concatenation of the languages of the two given
- state machines. [Note: Not yet implemented for Turing machines language recognizers.].}
+ state machines. [Note: Not yet implemented for Turing machines language recognizers.
+ May not be used with multitape Turing machines.].}
 
 @defproc[(sm-kleenestar [m1 state-machine])
          state-machine]{Builds a state machine for the language obtained
- from the Kleene star of the given machine's language.
- [Note: Not yet implemented for Turing machine language recognizers.].}
+ from the Kleene star of the given machine's language. May not be used with
+ multitape Turing machines nor with Turing machine language recognizers.}
 
 @defproc[(sm-complement [m1 state-machine])
          state-machine]{Builds a state machine for the language obtained
  from the complement of the given machine's language.
  The given machine can not be a ndpda. If the inputs are 
- Turing machines then they must be language recognizers.}
+ Turing machines then they must be language recognizers. May not be used
+ with multitape Turing machines.}
 
 @defproc[(sm-intersection [m1 state-machine] [m2 state-machine])
          state-machine]{Builds a state machine for the language obtained
  from the intersection of the languages of the two given
  state machines. If the inputs are Turing machines then
  they must be language recognizers. The given machines 
- must have the same type.}
+ must have the same type. May not be used with multitape Turing machines.}
 
 @defproc[(grammar->sm [g grammar])
          state-machine]{Builds a state machine for the language of the given
