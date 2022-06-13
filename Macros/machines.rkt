@@ -29,8 +29,3 @@
              "Duplicate state name"))
   (syntax-parse stx
     [(_ s:states) #`(void)]))
-
-
-
-
-(make-dfa (A))
