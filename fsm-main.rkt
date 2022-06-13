@@ -155,9 +155,10 @@
   
 ; fsm word [natnum] --> 'accept or 'reject
 (define (sm-apply M w . l)
-  (let* ((head (if (null? l) 0 (car l)))
+  (let ((head (if (null? l) 0 (car l)))
         (t1 (sm-type M))
-        (d (displayln head)))
+        ;(d (displayln (format "Type: ~s  Head: ~s" t1 head)))
+        )
     (cond [(or (eq? t1 'dfa)
                (eq? t1 'ndfa))
            (apply-fsa M w)]
@@ -482,23 +483,5 @@
     )
   )
 
-(define ADD (make-mttm '(S A T U V)
-                       `(I)
-                       'S
-                       '(H)
-                       `(((S (,BLANK ,BLANK ,BLANK)) (A (R R R)))
-                         ((A (I ,BLANK ,BLANK)) (A (,BLANK I ,BLANK)))
-                         ((A (,BLANK I ,BLANK)) (A (R R ,BLANK)))
-                         ((A (,BLANK ,BLANK ,BLANK)) (T (R ,BLANK ,BLANK)))
-                         ((T (I ,BLANK ,BLANK)) (T (,BLANK ,BLANK I)))
-                         ((T (,BLANK ,BLANK I)) (T (R ,BLANK R)))
-                         ((T (,BLANK ,BLANK ,BLANK)) (Q (L ,BLANK ,BLANK)))
-                         ((Q (,BLANK ,BLANK ,BLANK)) (U (L L L)))
-                         ((U (,BLANK I I)) (U (I I ,BLANK)))
-                         ((U (I I ,BLANK)) (U (L I L)))
-                         ((U (,BLANK I ,BLANK)) (V (,BLANK I ,BLANK)))
-                         ((V (,BLANK I ,BLANK)) (V (I ,BLANK ,BLANK)))
-                         ((V (I ,BLANK ,BLANK)) (V (L L ,BLANK)))
-                         ((V (,BLANK ,BLANK ,BLANK)) (H (,BLANK ,BLANK ,BLANK))))
-                       3))
+
 

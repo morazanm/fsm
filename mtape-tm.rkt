@@ -99,7 +99,7 @@
             [(eq? mess 'get-start) start]
             [(eq? mess 'get-finals) finals]
             [(eq? mess 'get-rules) rules]
-            [(eq? mess 'what-am-i)
+            [(eq? mess 'whatami)
              (if (equal? accept-state (void)) 'mttm 'mttm-language-recognizer)]
             [(eq? mess 'get-accept)
              (if (equal? accept-state (void))
@@ -116,32 +116,11 @@
   (define (mttm-get-start M) (M 'get-start))
   (define (mttm-get-finals M) (M 'get-finals))
   (define (mttm-get-rules M) (M 'get-rules))
-  (define (mttm-what-am-i M) (M 'what-am-i))
+  (define (mttm-what-am-i M) (M 'whatami))
   (define (mttm-get-accept M) (M 'get-accept))
   (define (mttm-apply M w . t1pos) ((M 'apply) w (if (null? t1pos) 0 (car t1pos))))
   (define (mttm-show-transitions M w . t1pos)
     ((M 'show-transitions) w (if (null? t1pos) 0 (car t1pos))))
-
-
-  (define ADD (make-mttm '(S A T U V)
-                         `(I)
-                         'S
-                         '(H)
-                         `(((S (,BLANK ,BLANK ,BLANK)) (A (R R R)))
-                           ((A (I ,BLANK ,BLANK)) (A (,BLANK I ,BLANK)))
-                           ((A (,BLANK I ,BLANK)) (A (R R ,BLANK)))
-                           ((A (,BLANK ,BLANK ,BLANK)) (T (R ,BLANK ,BLANK)))
-                           ((T (I ,BLANK ,BLANK)) (T (,BLANK ,BLANK I)))
-                           ((T (,BLANK ,BLANK I)) (T (R ,BLANK R)))
-                           ((T (,BLANK ,BLANK ,BLANK)) (Q (L ,BLANK ,BLANK)))
-                           ((Q (,BLANK ,BLANK ,BLANK)) (U (L L L)))
-                           ((U (,BLANK I I)) (U (I I ,BLANK)))
-                           ((U (I I ,BLANK)) (U (L I L)))
-                           ((U (,BLANK I ,BLANK)) (V (,BLANK I ,BLANK)))
-                           ((V (,BLANK I ,BLANK)) (V (I ,BLANK ,BLANK)))
-                           ((V (I ,BLANK ,BLANK)) (V (L L ,BLANK)))
-                           ((V (,BLANK ,BLANK ,BLANK)) (H (,BLANK ,BLANK ,BLANK))))
-                         3))
   
   ) ; closes module
 
