@@ -5,13 +5,18 @@ Created by Joshua Schappel on 12/19/19
   This file contains all the buttons for the visualization tool
 |#
 
-(require 2htdp/image "../structs/button.rkt" "../globals.rkt" "buttonFunctions.rkt"
-         "./runProgram.rkt" "../genCode.rkt")
+(require 2htdp/image
+         "../structs/button.rkt"
+         "../globals.rkt"
+         "buttonFunctions.rkt"
+         "./runProgram.rkt"
+         "../genCode.rkt")
 
 (provide
  BUTTON-LIST
  BUTTON-LIST-PDA
  BUTTON-LIST-TM
+ BUTTON-LIST-MTTM
  BUTTON-LIST-LANG-REC
  BTN-DISPLAY)
 
@@ -191,6 +196,13 @@ Button Declarations
                                  #:round? #t
                                  #:func toggle-display))
 
+(define BTN-DISPLAY-MTTM-TAPES (make-button 30 40 (posn 130 200)
+                                            #:text "Tape"
+                                            #:color (make-color 61 65 71)
+                                            #:fntsize 12
+                                            #:round? #t
+                                            #:func toggle-display-mttm))
+
 (define BTN-NEXT (make-button 40 30 (posn 80 140)
                               #:text "🠊"
                               #:color (make-color 116 156 188)
@@ -287,3 +299,16 @@ Button Declarations
                                    BTN-TAPE-SCROLL-LEFT BTN-TAPE-SCROLL-RIGHT
                                    BTN-COLOR-BLIND BTN-TAPE-INPUT-TM
                                    BTN-SET-END-LANG-REC))
+
+(define BUTTON-LIST-MTTM (list BTN-ADD-STATE BTN-REMOVE-STATE
+                               BTN-ADD-ALPHA BTN-REMOVE-ALPHA
+                               BTN-ADD-START-LANG-REC BTN-REMOVE-START-LANG-REC
+                               BTN-ADD-END-TM BTN-REMOVE-END-TM
+                               BTN-ADD-RULES-PDA BTN-REMOVE-RULES-PDA
+                               BTN-GENCODE BTN-NEXT BTN-PREV
+                               BTN-SIGMA-ADD BTN-SIGMA-CLEAR
+                               BTN-RUN BTN-SCROLL-LEFT-RULES
+                               BTN-SCROLL-RIGHT-RULES BTN-HELP
+                               BTN-TAPE-SCROLL-LEFT BTN-TAPE-SCROLL-RIGHT
+                               BTN-COLOR-BLIND BTN-TAPE-INPUT-TM
+                               BTN-SET-END-LANG-REC BTN-DISPLAY-MTTM-TAPES))

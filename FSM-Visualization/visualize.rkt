@@ -29,7 +29,7 @@ Initialize World
 (define (build-world m type . msg)
   (letrec (
            (graphviz (system "dot -V"))
-           (messageWin (if (null? msg) ;; Determine if a message should be rendered duing on create
+           (messageWin (if (null? msg) ;; Determine if a message should be rendered during on create
                            null
                            (car msg)))
            
@@ -40,6 +40,7 @@ Initialize World
                                      [(pda) INPUT-LIST-PDA]
                                      [(tm) INPUT-LIST-TM]
                                      [(tm-language-recognizer) INPUT-LIST-LANG-REC]
+                                     [(mttm) INPUT-LIST-TM]
                                      [else INPUT-LIST])))
 
            ;; determine-button-list: none -> list-of-buttons
@@ -49,6 +50,7 @@ Initialize World
                                       [(pda) BUTTON-LIST-PDA]
                                       [(tm) BUTTON-LIST-TM]
                                       [(tm-language-recognizer) BUTTON-LIST-LANG-REC]
+                                      [(mttm) BUTTON-LIST-MTTM]
                                       [else BUTTON-LIST]))))
 
     (initialize-world m
@@ -618,25 +620,23 @@ Scene Rendering
                                                                                                                (create-gui-left
                                                                                                                 (machine-alpha-list machine)
                                                                                                                 (machine-type machine))) (/ (/ WIDTH 11) 2) (/ (- HEIGHT BOTTOM) 2) MAIN-SCENE))))))))
-    (cond [IS-GRAPH?   (begin
-                         ;;(rectangle 800 450 "solid" "green")
-                         #|
-
-(place-image (create-png
-                                                                         machine
-                                                                         (not (empty? (world-processed-config-list w)))
-                                                                         (world-cur-state w)
-                                                                         (world-cur-rule w)) X0 Y0  no-arrow)
-
-|#
-                         (draw-error-msg (world-error-msg w) (place-image (create-png
-                                                                           machine
-                                                                           (not (empty? (world-processed-config-list w)))
-                                                                           (world-cur-state w)
-                                                                           (world-cur-rule w)) X0 Y0  no-arrow)))] ;;graphviz here  
-          [else (if (not (null? (world-cur-state w)))
-                    (draw-error-msg (world-error-msg w)(draw-main-img w no-arrow))                                                                                                                   
-                    (draw-error-msg (world-error-msg w) (draw-main-img w with-arrow)))])))
+    (cond
+      ;; grahpviz view
+      [(eq? VIEW-MODE 'graph) (begin
+                                (draw-error-msg (world-error-msg w)
+                                                (place-image (create-png ;; build the graphviz img
+                                                              machine
+                                                              (not (empty? (world-processed-config-list w)))
+                                                              (world-cur-state w)
+                                                              (world-cur-rule w)) X0 Y0  no-arrow)))]
+      ;; mttm tape view
+      [(and (eq? VIEW-MODE 'tape)
+            (eq? 'mttm MACHINE-TYPE)) (displayln "TODO: finish")]
+      ;; control view
+      [else
+       (if (not (null? (world-cur-state w)))
+           (draw-error-msg (world-error-msg w)(draw-main-img w no-arrow))                                                                                                                   
+           (draw-error-msg (world-error-msg w) (draw-main-img w with-arrow)))])))
 #|
 -----------------------
 TOP GUI RENDERING
