@@ -4,4 +4,3 @@
 
 (define collection 'use-pkg-name)
 
-(define scribblings '(("fsm.scrbl" ())))

@@ -54,6 +54,9 @@ compiled/
 *.bak
 TAGS
 
+# vscode files
+*.vscode
+
 # auto-generated rkt files
 fsmGUIFunctions.rkt
 *.dot
