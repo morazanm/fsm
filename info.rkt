@@ -4,4 +4,4 @@
 
 (define collection 'use-pkg-name)
 
-(define scribblings '(("fsm.scrbl" ())))
+(define scribblings '(["scribblings/fsm.scrbl" ()]))
