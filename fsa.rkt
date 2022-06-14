@@ -333,7 +333,7 @@
     ; regexp --> alphabet
     (define (build-alphabet r)
       (cond [(empty-regexp? r) null]
-            [(singleton-regexp? r) (list (singleton-regexp-a r))]
+            [(singleton-regexp? r) (list (string->symbol (singleton-regexp-a r)))]
             [(concat-regexp? r) 
              (let ((a1 (build-alphabet (concat-regexp-r1 r)))
                    (a2 (build-alphabet (concat-regexp-r2 r))))
@@ -347,6 +347,8 @@
                a1)]))
     
     (define SIGMA (remove-duplicates (build-alphabet r)))
+
+    (display (format "SIGMA: ~s" SIGMA))
     
     ; regexp --> fsa
     ; ASSUMPTION: The given regexp is not a null-regexp
