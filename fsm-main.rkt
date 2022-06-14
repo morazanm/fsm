@@ -72,7 +72,13 @@
   
 ; (listof state) fsm --> fsm
 (define (sm-rename-states sts m)
-  (let ((t1 (sm-type m)))
+  (let ((t1 (sm-type m))
+        (d (displayln (format "type: ~s accept: ~s"
+                              (sm-type m)
+                              (if (eq? (sm-type m) 'tm-language-recognizer)
+                                  (sm-getaccept m)
+                                  (void)))))
+        )
     (cond [(or (eq? t1 'dfa)
                (eq? t1 'ndfa))
            (rename-states-fsa sts m)]
@@ -168,9 +174,7 @@
 ; fsm word [natnum] --> 'accept or 'reject
 (define (sm-apply M w . l)
   (let ((head (if (null? l) 0 (car l)))
-        (t1 (sm-type M))
-        ;(d (displayln (format "Type: ~s  Head: ~s" t1 head)))
-        )
+        (t1 (sm-type M)))
     (cond [(or (eq? t1 'dfa)
                (eq? t1 'ndfa))
            (apply-fsa M w)]
@@ -502,5 +506,19 @@
     )
   )
 
+
+(define tm-WriteI (make-tm '(S H) 
+                           '(i j k) 
+                           (list 
+                            (list (list 'S 'i) (list 'H 'i)) 
+                            (list (list 'S BLANK) (list 'H 'i))
+                            (list (list 'S 'j) (list 'H 'i)) 
+                            (list (list 'S 'k) (list 'H 'i)))
+                           'S
+                           '(H)))
+
+(define tm-rename-sts-WriteI (sm-rename-states (sm-getstates tm-WriteI) tm-WriteI))
+
+(cdr (last (sm-showtransitions  tm-rename-sts-WriteI `(i ,BLANK i ,BLANK i i ,BLANK) 1)))
 
 

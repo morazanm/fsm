@@ -12,7 +12,7 @@
   (define (sm-getaccept M)
     (let ((mtype (sm-type M)))
       (cond [(eq? mtype 'tm-language-recognizer) (M '() 0 'get-accept)]
-            [(eq? (eq? mtype 'mttm-language-recognizer)) (M 'get-accept)]
+            [(eq? mtype 'mttm-language-recognizer) (M 'get-accept)]
             [else (error "Only language recognizers have a specialized accept state.")])))
         
   
