@@ -27,7 +27,7 @@ jobs:
         shell: "bash"
         run: |
           cp -Rv ./GithubPages ./docs
-          cp ./index.html ./docs
+          cp -v ./index.html ./docs
       - name: build docs
         run: scribble +m --redirect-main http://pkg-build.racket-lang.org/doc/ --htmls --dest ./docs/ ./fsm.scrbl
       - name: push to gh-pages
