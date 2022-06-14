@@ -25,10 +25,11 @@ jobs:
         run: raco pkg install
       - name: build docs
         run: scribble +m --redirect-main http://pkg-build.racket-lang.org/doc/ --htmls --dest ./docs ./fsm.scrbl
-      - name: push to gh-pages
+      - name: copy GithubPages the docs
       - shell: bash
         run: | 
           cp -R ./GithubPages ./docs
+      - name: push to gh-pages
         uses: JamesIves/github-pages-deploy-action@4.1.4 # more info at: https://github.com/JamesIves/github-pages-deploy-action
         with:
           folder: docs/fsm
