@@ -11,11 +11,12 @@
                        (F a F)
                        (F b F))
                      'nodead))
+(sm-visualize a*)
 
 ;;(sm-visualize a* (list 'S (lambda (v) true))
 ;;            (list 'F (lambda (v) false)))
 
-(define pda-numa=numb (make-ndpda '(S M F)
+#;(define pda-numa=numb (make-ndpda '(S M F)
                                   '(a b)
                                   '(a b)
                                   'S
@@ -157,6 +158,7 @@
 ;; z => y is read
 |#
 
+#|
 (define a^nb^nc^n2 (make-tm '(S B C D E Y N)
                             '(a b c z x y)
                             `(((S a) (B z))
@@ -312,7 +314,7 @@
                (list 'E E-INV)
                (list 'N N-INV)
                (list 'Y Y-INV))
-
+|#
 #|
 (define LB (make-tm '(S H)
                     `(a b)
@@ -549,5 +551,5 @@
                 ((M1 b (a)) (M1 ,EMP))
                 ((M1 ,EMP ,EMP) (F ,EMP)))))
 
-(sm-visualize a*)
+#;(sm-visualize a*)
 

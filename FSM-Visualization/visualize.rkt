@@ -28,7 +28,7 @@ Initialize World
 ;; Purpose: Creates the initail world with the given machine
 (define (build-world m type . msg)
   (letrec (
-           (graphviz (system "dot -V"))
+           (graphviz (has-graphviz-in-path?))
            (messageWin (if (null? msg) ;; Determine if a message should be rendered duing on create
                            null
                            (car msg)))

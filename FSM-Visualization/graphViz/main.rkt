@@ -2,8 +2,25 @@
 (require 2htdp/image "../globals.rkt" "../../GraphViz/lib.rkt" "../../GraphViz/render-graph.rkt"
          "../structs/state.rkt" "../structs/machine.rkt" "../inv.rkt")
 
-(provide scaled-graph create-png)
+(provide scaled-graph
+         has-graphviz-in-path?
+         create-png)
 
+
+
+(define (has-graphviz-in-path?)
+      (define sys-type (system-type))
+      ;; On linux/MacOS this is easy
+      (cond
+        [(eq? sys-type 'windows)
+         ;; Windows is a pain...
+         ;; 1) get all the PATH vars in a list
+         ;; 2) check if Graphviz is in the list
+         (define path-vars (string-split (getenv "path") ";"))
+         (not (empty? (filter (curry string-contains? "Graphviz") path-vars)))]
+        [else
+         ;; On linux/MacOS this is easy
+         (find-executable-path	"dot")]))
 
 (define (scaled-graph img type)
   (let ([smallest (>= (- w (image-width img))
