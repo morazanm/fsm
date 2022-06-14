@@ -347,8 +347,6 @@
                a1)]))
     
     (define SIGMA (remove-duplicates (build-alphabet r)))
-
-    (display (format "SIGMA: ~s" SIGMA))
     
     ; regexp --> fsa
     ; ASSUMPTION: The given regexp is not a null-regexp
