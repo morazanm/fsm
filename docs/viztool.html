@@ -1,0 +1,182 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>FSM</title>
+    <meta name="description" content="The FSM Library">
+    <meta name="author" content="SitePoint">
+    <link rel="shortcut icon" href="./favicon.ico" type="image/x-icon">
+    <link rel="icon" href="./favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="./prism.css" data-noprefix />
+    <script src="scripts/prefixfree.min.js"></script>
+    <link rel="stylesheet" href="./font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" href="./index.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-sm navbar-dark bg-dark">
+        <a class="navbar-brand">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Racket-logo.svg/1200px-Racket-logo.svg.png" width="30" height="30" alt="" loading="lazy">
+        </a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+          <div class="navbar-nav">
+            <a class="nav-item nav-link" href="../index.html">Home <i class="fa fa-home" aria-hidden="true"></i></a>
+            <a class="nav-item nav-link active" href="#">VizTool <i class="fa fa-laptop" aria-hidden="true"></i><span class="sr-only">(current)</span></a>
+            <a class="nav-item nav-link" href="./examples.html">Examples <i class="fa fa-code" aria-hidden="true"></i></a>
+            <a class="nav-item nav-link" href="https://htmlpreview.github.io/?https://github.com/morazanm/fsm/blob/master/fsm.html">
+                Documentation <i class="fa fa-file-text-o" aria-hidden="true"></i></a>
+            <a class="nav-item nav-link" href="./download.html">Download <i class="fa fa-download" aria-hidden="true"></i></a>
+          </div>
+        </div>
+        <div class="collapse navbar-collapse">
+          <div class="navbar-nav ml-auto">
+            <a class="nav-item nav-link" href="https://github.com/morazanm/fsm/issues/new?assignees=morazanm%2C+jschappel%2C+sachinmahashabde&labels=bug&template=bug_report.md&title=%5BBUG%5D">
+              Report <i class="fa fa-bug" aria-hidden="true"></i></a>
+            <a class="nav-item nav-link" href="https://github.com/morazanm/fsm"><i class="fa fa-github" aria-hidden="true"></i></a>
+          </div>
+        </div>
+    </nav>
+
+    <div class="jumbotron jumbotron-fluid">
+        <div class="container">
+            <h1 class="display-4">The Visualization Tool</h1>
+            <p class="lead">A tool that allows you to visualize state machines built in FSM.<br/>
+                Visualize your machine, see the transitions, and check your invariants.</p>
+        </div>
+    </div>
+    <div class="container">
+        <div class="row justify-content-center">
+            <figure>
+                <img class="img-fluid" src="./Images/ViztoolMarkup.png" alt="Responsive image"/>
+                <figcaption class=" text-muted text-center" id="caption" >Fig 1: A pda being visualized in the tool.</figcaption>
+            </figure>
+        </div>
+        <div class="row">
+            <ol>
+                <li>State Options
+                    <ul><li>Add or remove a state.</li></ul>
+                </li>
+                <li>Alpha Options
+                    <ul><li>Add or remove a single letter from the alphabet (Displayed in 13).</li>
+                        <li>Add or remove a single letter from the gamma (PDA only).</li>
+                    </ul>
+                </li>
+                <li>Start State
+                    <ul><li>Add or replace a start state.</li></ul>
+                </li>
+                <li>End State
+                    <ul><li>Add or remove a end state</li></ul>
+                </li>
+                <li>Add Rules
+                    <ul>
+                        <li>Add a transition rule to the machine (Displayed in 6).</li>
+                        <li><i>Note: The appearance of this section changes based on the machine type.
+                            The functionality remains the same.</i>
+                        </li>
+                    </ul>
+                </li>
+                <li>Rules
+                    <ul><li>All machine transition rules are displayed in the bar.</li></ul>
+                </li>
+                <li>Machine Tape
+                    <ul><li>The input that the machine will consume (See figure 2).</li></ul>
+                    <div class="row justify-content-center">
+                        <figure class="mt-3 text-center">
+                            <img class="img-fluid" src="./Images/aStarBar.png" alt="Responsive image"/>
+                            <figcaption class=" text-muted text-center" id="caption" >Fig 2: The input for a machine. The lighter color symbolizes that the input was consumed. The red is added for emphasis.</figcaption>
+                        </figure>
+                    </div>
+                </li>
+                <li>Tape Input
+                    <ul><li>Add or clear the tape. Each input must be separated by a space.</li></ul>
+                </li>
+                <li>Run
+                    <ul><li>Run the machine with the given tape. An empty tape is allowed.</li></ul>
+                </li>
+                <li>Next and Prev
+                    <ul><li>Goes back or forward through the tape and visualizes each transition</li></ul>
+                </li>
+                <li>Gen Code
+                    <ul><li>Generates the FSM code fo the machine currently displayed in the Visualization tool.</li>
+                        <li>The input field below Gen Code allows the user to specify the name of the file. The file
+                             is always saved in the current directory.</li>
+                    </ul>
+                </li>
+                <li> Sigma (alphabet) and Gamma (stack alphabet)
+                    <ul><li>The alphabet for the machine</li>
+                        <li>For PDA: Gamma is also displayed</li>
+                    </ul>
+                </li>
+                <li>Help Button
+                    <ul><li>Link to this website.</li></ul>
+                </li>
+                <li>Color Blind Mode
+                    <ul><li>A toggle that enables color blind mode.</li></ul>
+                </li>
+                <li>Graph View
+                    <ul><li>A toggle that displays the graph or control representation of the machine</li>
+                        <li><i>Note: To display graph representation GraphViz must be installed and added as an env variable. 
+                            <a href="./download.html#graphviz">How to install</a>.</i></li>
+                    </ul>
+                </li>
+                <li>Final State
+                    <ul><li>A final state symbolized by two red circles. There can be multiple final states.</li></ul>
+                </li>
+                <li>Start State
+                    <ul><li>The starting state symbolized by a green circle.</li></ul>
+                </li> 
+                <li>Transition
+                    <ul><li>A transition being visualized in the tool.</li>
+                        <li>A <span style="color: gray">gray</span> dotted line denoted the previous state the machine was in.</li>
+                        <li>A black arrow symbolizes the state the machine is currently in</li>
+                        <li>A <span style="color: green">green</span> arrow symbolizes the state the machine is currently in where the invariant predicate associated with the state is true.</li>
+                        <li>A <span style="color: red">red</span> arrow symbolizes the state the machine is currently in were the invariant predicate associated with the state is false.</li>
+                        <li>A <span style="color: #dbd405">yellow</span> arrow symbolizes that the predicate given for the state does not evaluate to true or false.</li>
+                        <div class="row justify-content-center">
+                            <figure>
+                                <img class="img-fluid" src="./Images/invTypes.png" alt="Responsive image"/>
+                                <figcaption class=" text-muted text-center" id="caption">Fig 3: Possible outputs when visualizing invariants.</figcaption>
+                            </figure>
+                        </div>
+                    </ul>
+                </li> 
+                <li>Stack (PDA Only)
+                    <ul><li>The stack for the current machine</li></ul>
+                </li>
+            </ol>
+        </div>
+        <div class="row mt-5 bt-3 justify-content-center">
+            <h2 class="text-center">The following functionality is only applicable to tm's and language recognizers</h2>
+        </div>
+        <div class="row justify-content-center">
+            <figure>
+                <img class="img-fluid" src="./Images/tmMarkup.png" alt="Responsive image"/>
+                <figcaption class=" text-muted text-center" id="caption" >Fig 4: A tm-language-recognizer being visualized in the tool.</figcaption>
+            </figure>
+        </div>
+        <div class="row">
+            <ol>
+                <li>Accept State (language recognizer only)
+                    <ul><li>The accept state for the machine.</li></ul>
+                </li>
+                <li>Tape Position
+                    <ul><li>To alter to position of the head on the tape.</li></ul>
+                </li>
+                <li>Accept State (language recognizer only)
+                    <ul><li>A accept state symbolized by two red circles surrounded by a blue circle. There can only one accept states.</li></ul>
+                </li>
+                <li>Tm Tape
+                    <ul><li>The tape for a turing machine. The number below each sigma is their position on the tape</li>
+                        <li>The current head on the tape is the red highlighted sigma.</li>
+                    </ul>
+                </li>
+            </ol>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,6 +1,89 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<html><head><meta http-equiv="content-type" content="text/html; charset=utf-8"/><meta name="viewport" content="width=device-width, initial-scale=0.8"/><title>FSM</title><link rel="stylesheet" type="text/css" href="scribble.css" title="default"/><link rel="stylesheet" type="text/css" href="racket.css" title="default"/><link rel="stylesheet" type="text/css" href="manual-style.css" title="default"/><link rel="stylesheet" type="text/css" href="manual-racket.css" title="default"/><script type="text/javascript" src="scribble-common.js"></script><script type="text/javascript" src="manual-racket.js"></script><!--[if IE 6]><style type="text/css">.SIEHidden { overflow: hidden; }</style><![endif]--></head><body id="scribble-racket-lang-org"><div class="tocset"><div class="tocview"><div class="tocviewlist tocviewlisttopspace"><div class="tocviewtitle"><table cellspacing="0" cellpadding="0"><tr><td style="width: 1em;"><a href="javascript:void(0);" title="Expand/Collapse" class="tocviewtoggle" onclick="TocviewToggle(this,&quot;tocview_0&quot;);">&#9660;</a></td><td></td><td><a href="" class="tocviewselflink" data-pltdoc="x">FSM</a></td></tr></table></div><div class="tocviewsublistonly" style="display: block;" id="tocview_0"><table cellspacing="0" cellpadding="0"><tr><td align="right">1&nbsp;</td><td><a href="Constants.html" class="tocviewlink" data-pltdoc="x">Constants</a></td></tr><tr><td align="right">2&nbsp;</td><td><a href="Data_Definitions.html" class="tocviewlink" data-pltdoc="x">Data Definitions</a></td></tr><tr><td align="right">3&nbsp;</td><td><a href="State_Machine_Constructors.html" class="tocviewlink" data-pltdoc="x">State Machine Constructors</a></td></tr><tr><td align="right">4&nbsp;</td><td><a href="State_Machine_Visualization.html" class="tocviewlink" data-pltdoc="x">State Machine Visualization</a></td></tr><tr><td align="right">5&nbsp;</td><td><a href="State_Machine_Observers.html" class="tocviewlink" data-pltdoc="x">State Machine Observers</a></td></tr><tr><td align="right">6&nbsp;</td><td><a href="State_Machine_Testers.html" class="tocviewlink" data-pltdoc="x">State Machine Testers</a></td></tr><tr><td align="right">7&nbsp;</td><td><a href="Grammar_Constructors.html" class="tocviewlink" data-pltdoc="x">Grammar Constructors</a></td></tr><tr><td align="right">8&nbsp;</td><td><a href="Grammar_Observers.html" class="tocviewlink" data-pltdoc="x">Grammar Observers</a></td></tr><tr><td align="right">9&nbsp;</td><td><a href="Grammar_Testers.html" class="tocviewlink" data-pltdoc="x">Grammar Testers</a></td></tr><tr><td align="right">10&nbsp;</td><td><a href="Combined_Turing_Machines.html" class="tocviewlink" data-pltdoc="x">Combined Turing Machines</a></td></tr><tr><td align="right">11&nbsp;</td><td><a href="Regular_Expression_Constructors.html" class="tocviewlink" data-pltdoc="x">Regular Expression Constructors</a></td></tr><tr><td align="right">12&nbsp;</td><td><a href="Regular_Expression_Observers.html" class="tocviewlink" data-pltdoc="x">Regular Expression Observers</a></td></tr><tr><td align="right">13&nbsp;</td><td><a href="Some_Useful_Functions.html" class="tocviewlink" data-pltdoc="x">Some Useful Functions</a></td></tr><tr><td align="right">14&nbsp;</td><td><a href="Contributors.html" class="tocviewlink" data-pltdoc="x">Contributors</a></td></tr></table></div></div></div><div class="tocsub"><div class="tocsubtitle">On this page:</div><table class="tocsublist" cellspacing="0"><tr><td><span class="tocsublinknumber"></span><a href="#%28part._.F.S.M%29" class="tocsubseclink" data-pltdoc="x">FSM</a></td></tr></table></div></div><div class="maincolumn"><div class="main"><div class="versionbox"><span class="version">8.5</span></div><div class="navsettop"><span class="navleft"><div class="nosearchform"></div>&nbsp;&nbsp;<span class="tocsettoggle">&nbsp;&nbsp;<a href="javascript:void(0);" title="show/hide table of contents" onclick="TocsetToggle();">contents</a></span></span><span class="navright">&nbsp;&nbsp;<span class="nonavigation">&larr; prev</span>&nbsp;&nbsp;<span class="nonavigation">up</span>&nbsp;&nbsp;<a href="Constants.html" title="forward to &quot;1 Constants&quot;" data-pltdoc="x">next &rarr;</a></span>&nbsp;</div><h2><a name="(part._.F.S.M)"></a><a name="(mod-path._fsm)"></a>FSM</h2><div class="SAuthorListBox"><span class="SAuthorList"><p class="author">Marco T. Moraz&#225;n &lt;<a href="mailto:marco.morazan@shu.edu">marco.morazan@shu.edu</a>&gt;</p></span></div><p><div class="SIntrapara"></div><div class="SIntrapara"><table cellspacing="0" cellpadding="0" class="defmodule"><tr><td align="left"><span class="hspace">&nbsp;</span><span class="RktPn">(</span><span class="RktSym"><a href="http://pkg-build.racket-lang.org/doc/reference/require.html#%28form._%28%28lib._racket%2Fprivate%2Fbase..rkt%29._require%29%29" class="RktStxLink" data-pltdoc="x">require</a></span><span class="stt"> </span><a href="" class="RktModLink" data-pltdoc="x"><span class="RktSym">fsm</span></a><span class="RktPn">)</span></td><td align="right"><span class="RpackageSpec"><span class="Smaller">&nbsp;package:</span> <a href="https://pkgs.racket-lang.org/package/fsm" title="Install this package using `raco pkg install fsm`"><span class="stt">fsm</span></a></span></td></tr></table></div></p><p>A DSL for the Automata Theory Classroom</p><p>FSM is a DSL designed to help ungraduate students understand Automata Theory by
-allowing them to construct and minipulate state machines and grammars.
-For instructions on how to download the DSL, view the patch notes, or just browse the code, please see either the offical
-FSM readme on <a href="https://github.com/morazanm/fsm">Github</a> or the
-new <a href="https://morazanm.github.io/fsm/index.html">FSM website</a>.</p><table cellspacing="0" cellpadding="0"><tr><td><p><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;</span><a href="Constants.html" class="toptoclink" data-pltdoc="x">1<span class="hspace">&nbsp;</span>Constants</a></p></td></tr><tr><td><p><span class="hspace"></span></p></td></tr><tr><td><p><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;</span><a href="Data_Definitions.html" class="toptoclink" data-pltdoc="x">2<span class="hspace">&nbsp;</span>Data Definitions</a></p></td></tr><tr><td><p><span class="hspace"></span></p></td></tr><tr><td><p><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;</span><a href="State_Machine_Constructors.html" class="toptoclink" data-pltdoc="x">3<span class="hspace">&nbsp;</span>State Machine Constructors</a></p></td></tr><tr><td><p><span class="hspace"></span></p></td></tr><tr><td><p><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;</span><a href="State_Machine_Visualization.html" class="toptoclink" data-pltdoc="x">4<span class="hspace">&nbsp;</span>State Machine Visualization</a></p></td></tr><tr><td><p><span class="hspace"></span></p></td></tr><tr><td><p><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;</span><a href="State_Machine_Observers.html" class="toptoclink" data-pltdoc="x">5<span class="hspace">&nbsp;</span>State Machine Observers</a></p></td></tr><tr><td><p><span class="hspace"></span></p></td></tr><tr><td><p><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;</span><a href="State_Machine_Testers.html" class="toptoclink" data-pltdoc="x">6<span class="hspace">&nbsp;</span>State Machine Testers</a></p></td></tr><tr><td><p><span class="hspace"></span></p></td></tr><tr><td><p><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;</span><a href="Grammar_Constructors.html" class="toptoclink" data-pltdoc="x">7<span class="hspace">&nbsp;</span>Grammar Constructors</a></p></td></tr><tr><td><p><span class="hspace"></span></p></td></tr><tr><td><p><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;</span><a href="Grammar_Observers.html" class="toptoclink" data-pltdoc="x">8<span class="hspace">&nbsp;</span>Grammar Observers</a></p></td></tr><tr><td><p><span class="hspace"></span></p></td></tr><tr><td><p><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;</span><a href="Grammar_Testers.html" class="toptoclink" data-pltdoc="x">9<span class="hspace">&nbsp;</span>Grammar Testers</a></p></td></tr><tr><td><p><span class="hspace"></span></p></td></tr><tr><td><p><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;</span><a href="Combined_Turing_Machines.html" class="toptoclink" data-pltdoc="x">10<span class="hspace">&nbsp;</span>Combined Turing Machines</a></p></td></tr><tr><td><p><span class="hspace"></span></p></td></tr><tr><td><p><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;</span><a href="Regular_Expression_Constructors.html" class="toptoclink" data-pltdoc="x">11<span class="hspace">&nbsp;</span>Regular Expression Constructors</a></p></td></tr><tr><td><p><span class="hspace"></span></p></td></tr><tr><td><p><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;</span><a href="Regular_Expression_Observers.html" class="toptoclink" data-pltdoc="x">12<span class="hspace">&nbsp;</span>Regular Expression Observers</a></p></td></tr><tr><td><p><span class="hspace"></span></p></td></tr><tr><td><p><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;</span><a href="Some_Useful_Functions.html" class="toptoclink" data-pltdoc="x">13<span class="hspace">&nbsp;</span>Some Useful Functions</a></p></td></tr><tr><td><p><span class="hspace"></span></p></td></tr><tr><td><p><span class="hspace">&nbsp;&nbsp;&nbsp;&nbsp;</span><a href="Contributors.html" class="toptoclink" data-pltdoc="x">14<span class="hspace">&nbsp;</span>Contributors</a></p></td></tr></table><div class="navsetbottom"><span class="navleft"><div class="nosearchform"></div>&nbsp;&nbsp;<span class="tocsettoggle">&nbsp;&nbsp;<a href="javascript:void(0);" title="show/hide table of contents" onclick="TocsetToggle();">contents</a></span></span><span class="navright">&nbsp;&nbsp;<span class="nonavigation">&larr; prev</span>&nbsp;&nbsp;<span class="nonavigation">up</span>&nbsp;&nbsp;<a href="Constants.html" title="forward to &quot;1 Constants&quot;" data-pltdoc="x">next &rarr;</a></span>&nbsp;</div></div></div><div id="contextindicator">&nbsp;</div></body></html>
+<!doctype html>
+
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>FSM</title>
+    <meta name="description" content="The FSM Library">
+    <meta name="author" content="SitePoint">
+    <link rel="shortcut icon" href="./GithubPages/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="./GithubPages/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="./GithubPages/font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+    <link rel="stylesheet" href="./GithubPages/index.css">
+
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-md navbar-dark bg-dark">
+        <a class="navbar-brand">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Racket-logo.svg/1200px-Racket-logo.svg.png" width="30" height="30" alt="" loading="lazy">
+        </a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+          <div class="navbar-nav">
+            <a class="nav-item nav-link active" href="#">Home <i class="fa fa-home" aria-hidden="true"></i><span class="sr-only">(current)</span></a>
+            <a class="nav-item nav-link" href="./GithubPages/viztool.html">VizTool <i class="fa fa-laptop" aria-hidden="true"></i></a>
+            <a class="nav-item nav-link" href="./GithubPages/examples.html">Examples <i class="fa fa-code" aria-hidden="true"></i></a>
+            <a class="nav-item nav-link" href="https://htmlpreview.github.io/?https://github.com/morazanm/fsm/blob/master/fsm.html">
+                Documentation <i class="fa fa-file-text-o" aria-hidden="true"></i></a>
+            <a class="nav-item nav-link" href="./GithubPages/download.html">Download <i class="fa fa-download" aria-hidden="true"></i></a>
+          </div>
+        </div>
+        <div class="collapse navbar-collapse">
+          <div class="navbar-nav ml-auto">
+            <a class="nav-item nav-link" href="https://github.com/morazanm/fsm/issues/new?assignees=morazanm%2C+jschappel%2C+sachinmahashabde&labels=bug&template=bug_report.md&title=%5BBUG%5D">
+              Report <i class="fa fa-bug" aria-hidden="true"></i></a>
+            <a class="nav-item nav-link" href="https://github.com/morazanm/fsm"><i class="fa fa-github" aria-hidden="true"></i></a>
+          </div>
+        </div>
+      </nav>
+
+      <div class="jumbotron text-center jum">
+        <h1 class="display-2">Welcome to FSM</h1>
+        <p class="lead">A Library for the Automata Theory Classroom</p>
+        <hr class="my-4">
+        <p>FSM is a Domain Specific Language (DSL) designed to construct and manipulate state machines and their grammars. 
+            <br /> Interested in FSM? <br/> Click the download link below and follow the instructions to get started.
+        </p>
+        <br />
+        <a class="btn btn-dark btn-lg" href="./GithubPages/download.html" role="button">Download <i class="fa fa-download" aria-hidden="true"></i></a>
+      </div>
+    
+      <div class="container justify-content-center pb-5">
+        <h1 class="display-4 text-center pb-5">Version History</h1>
+        <div class="row main justify-content-center" id="history">
+          <!-- Table is rendered here-->
+        </div>
+    </div>
+      <div class="container main">
+          <h1 class="display-4 text-center pb-5">Publications</h1>
+          <div class="row" id="publications">
+            <!-- Publications are rendered here -->
+          </div>
+      </div>
+
+
+
+
+      <script  type="text/javascript" src="./GithubPages/data.js"></script>
+      <script  type="text/javascript" src="./GithubPages/convert.js"></script>
+      <script>
+
+        renderCardData(PUBLICATIONS);
+        renderTableData(VERSION_HISTORY);
+      </script>
+
+      <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js" integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI" crossorigin="anonymous"></script>
+    <script src="js/scripts.js"></script>
+</body>
+
+<footer class="mt-5">
+  <hr />
+  <p class="text-center">Developed with <i class="fa fa-coffee" aria-hidden="true"></i> and  <i class="fa fa-heart" aria-hidden="true"> using <a href="https://getbootstrap.com/">Bootstrap</a> and <a href="https://fontawesome.com/">Font Awesome</a></i></p>
+</footer>
+</html>

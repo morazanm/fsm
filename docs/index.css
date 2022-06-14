@@ -1,0 +1,30 @@
+.main {
+   /* background-color: aquamarine; */
+    border-radius: 10px;
+}
+
+.t {
+    padding-top: 10px;
+}
+
+#image-size {
+    max-width: 800px;
+    max-height: 800px;
+}
+
+#important {
+    color: #f80f0f;
+}
+
+#test {
+    background-color: coral;
+}
+
+#exampleImage {
+    max-width: 700px;
+    max-height: 400px;
+}
+
+#caption {
+    font-size: 12px;
+}
