@@ -26,7 +26,7 @@ jobs:
       - name: push main website to ph-pages
         shell: "bash"
         run: |
-          cp -Rv ./GithubPages ./docs
+          cp -Rv ./GithubPages ./
           cp -v ./index.html ./docs
       - name: build docs
         run: scribble +m --redirect-main http://pkg-build.racket-lang.org/doc/ --htmls --dest ./docs/ ./fsm.scrbl
@@ -36,4 +36,3 @@ jobs:
           folder: docs
           branch: gh-pages
           clean: true
-          target-folder: docs
