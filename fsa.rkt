@@ -7,6 +7,7 @@
 (module fsa racket
   (require "configuration.rkt" "regexp.rkt" "word.rkt" "rules.rkt" "state.rkt" 
            "string.rkt" "path.rkt" "constants.rkt" "misc.rkt" "regular-grammar.rkt"
+           "regexp.rkt"
            )
   
   (provide make-unchecked-dfa make-unchecked-ndfa union-fsa concat-fsa kleenestar-fsa complement-fsa intersection-fsa
@@ -102,7 +103,7 @@
         ; BFS search
         (define (consume visited paths)
           (cond [(null? paths) null] ; null paths means there is no path that accepts w
-                [else (let* ((path (car paths)) ; the first path
+                [else (let* ((path (car paths)) ; the first path                             
                              (config (first-config-path path)) ; the first config of the path
                              (newconfigs (mk-transitions config visited)) ; a list of configs obtained using one transition from config
                              (accept (first-accept-config newconfigs))) ; null or the first accept configuration in newconfigs
@@ -332,7 +333,7 @@
     ; regexp --> alphabet
     (define (build-alphabet r)
       (cond [(empty-regexp? r) null]
-            [(singleton-regexp? r) (list (singleton-regexp-a r))]
+            [(singleton-regexp? r) (list (string->symbol (singleton-regexp-a r)))]
             [(concat-regexp? r) 
              (let ((a1 (build-alphabet (concat-regexp-r1 r)))
                    (a2 (build-alphabet (concat-regexp-r2 r))))
@@ -359,7 +360,8 @@
         (make-unchecked-dfa '(q0 q1) SIGMA 'q0 '(q1) (list (mk-fsarule 'q0 symb 'q1))))
       
       (cond [(empty-regexp? r) (make-empty-fsa)]
-            [(singleton-regexp? r) (make-singleton-fsa (singleton-regexp-a r))]
+            [(singleton-regexp? r) (make-singleton-fsa
+                                    (string->symbol (singleton-regexp-a r)))]
             [(concat-regexp? r) 
              (let ((m1 (build-fsa (concat-regexp-r1 r)))
                    (m2 (build-fsa (concat-regexp-r2 r))))
@@ -463,4 +465,8 @@
     (let ((test-words (generate-words number-tests (fsa-getalphabet m) null))) ;(build-list number-tests (lambda (i) (generate-word (fsa-getalphabet m))))))
       (map (lambda (w) (list w (apply-fsa m w))) test-words)))
 
+  (define aUb (regexp->fsa (make-unchecked-union
+                            (make-unchecked-singleton "a")
+                            (make-unchecked-singleton "b"))))
+                         
   )  ; closes module

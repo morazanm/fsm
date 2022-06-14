@@ -270,7 +270,7 @@ A LABEL is a natnum.
                         [delta (listof mttm-rule)]
                         [num-tapes number]
                         (accept state)) tm])]
-Builds a nondeterministic Multitape Turing machine with the given number of
+Builds a nondeterministic multitape Turing machine with the given number of
 tapes. @italic{If the optional accept argument is given then the resulting multitape
 Turing machine is a language recognizer.}
 
