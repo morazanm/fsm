@@ -23,18 +23,17 @@ jobs:
 
       - name: install base package
         run: raco pkg install
+      - name: push main website to ph-pages
+        shell: "bash"
+        run: |
+          cp -Rv ./GithubPages ./docs
+          cp ./index.html ./docs
       - name: build docs
-        run: scribble +m --redirect-main http://pkg-build.racket-lang.org/doc/ --htmls --dest ./docs ./fsm.scrbl
+        run: scribble +m --redirect-main http://pkg-build.racket-lang.org/doc/ --htmls --dest ./docs/ ./fsm.scrbl
       - name: push to gh-pages
         uses: JamesIves/github-pages-deploy-action@4.1.4 # more info at: https://github.com/JamesIves/github-pages-deploy-action
         with:
-          folder: docs/fsm
+          folder: docs
           branch: gh-pages
           clean: true
           target-folder: docs
-      - name: push main website to ph-pages
-        uses: JamesIves/github-pages-deploy-action@4.1.4 # more info at: https://github.com/JamesIves/github-pages-deploy-action
-        with:
-          folder: ./GithubPages
-          branch: gh-pages
-          clean: false
