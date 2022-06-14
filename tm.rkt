@@ -54,12 +54,17 @@
                                                 (list (cadr (assoc (tmrule-tos r) rename-table))
                                                       (tmrule-action r))))
                                    (tm-getdelta m)))))
-      (make-unchecked-tm new-states (tm-getalphabet m) 
-                         new-rules 
-                         new-start 
-                         new-finals 
-                         (if (null? (tm-getaccept m)) 
-                             null 
+      (if (null? (tm-getaccept m))
+          (make-unchecked-tm new-states
+                             (tm-getalphabet m) 
+                             new-rules 
+                             new-start 
+                             new-finals)
+          (make-unchecked-tm new-states
+                             (tm-getalphabet m) 
+                             new-rules 
+                             new-start 
+                             new-finals
                              (cadr (assoc (tm-getaccept m) rename-table))))))
   
   (define (mk-to-reject-rules-for-st st rej sigma)
@@ -119,7 +124,6 @@
            (m1-reject (tm-getreject m1))
            (m1-rules (remove-LM-rule-unparsed-tm-rules (tm-getrules m1)))
            (rm2-rules (remove-LM-rule-unparsed-tm-rules (tm-getrules rm2)))
-           (dd (displayln rm2-rules))
            (new-sigma (remove-duplicates (append (tm-getalphabet m1) (tm-getalphabet rm2))))
            (new-start (tm-getstart m1))
            (new-states (append (tm-getstates m1) (tm-getstates rm2)))
@@ -127,7 +131,6 @@
            (new-accept (tm-getaccept rm2))
            (new-reject (tm-getreject rm2))
            (new-rules-startM1-to-new-reject (mk-to-reject-rules-for-st new-start new-reject (cons BLANK (tm-getalphabet rm2))))
-           ;(d (displayln new-rules-startM1-to-new-reject))
            (new-rules-rejectM1-to-new-reject (mk-to-reject-rules-for-st m1-reject new-reject (cons BLANK new-sigma)))
            (new-rules-acceptM1-to-startRM2 (append-map (lambda (s) 
                                                          (list (list (list (tm-getaccept m1) s) (list (tm-getaccept m1) RIGHT))
@@ -255,7 +258,7 @@
              rls))
       
       ; (listof tmconfig) (list (listof tmconfig)) --> (listof tmconfig) 
-      (define (consume visited tovisit)
+      (define (consume visited tovisit)        
         (cond [(null? tovisit) tovisit]
               [(and (not (null? accept)) ; the TM is a language recognizer & reached accept
                     (eq? (car accept) (tmconfig-state (caar tovisit))))
@@ -308,24 +311,24 @@
               [(eq? (car L) 'get-finals) H]
               [(eq? (car L) 'get-accept) (if (null? accept) null (car accept))]
               [else (error (format "Unknown request to tm: ~s" (car L)))])))
-    (if (null? accept)
-        (mk-tm K
-               (remove-duplicates (cons LM SIGMA))
-               (remove-duplicates
-                (parse-tm-rules (append (map (lambda (s) (list (list s LM) (list s RIGHT)))
-                                             (remove* H K))
-                                        delta)))
-               s
-               H)
-        (mk-tm K
-               (remove-duplicates (cons LM SIGMA))
-               (remove-duplicates
-                (parse-tm-rules (append (map (lambda (s) (list (list s LM) (list s RIGHT)))
-                                             (remove* H K))
-                                        delta)))
-               s
-               H
-               (car accept))))
+      (if (null? accept)
+          (mk-tm K
+                 (remove-duplicates (cons LM SIGMA))
+                 (remove-duplicates
+                  (parse-tm-rules (append (map (lambda (s) (list (list s LM) (list s RIGHT)))
+                                               (remove* H K))
+                                          delta)))
+                 s
+                 H)
+          (mk-tm K
+                 (remove-duplicates (cons LM SIGMA))
+                 (remove-duplicates
+                  (parse-tm-rules (append (map (lambda (s) (list (list s LM) (list s RIGHT)))
+                                               (remove* H K))
+                                          delta)))
+                 s
+                 H
+                 (car accept))))
   
   (define (tm-getalphabet m) (m '() 0 'get-alphabet)) 
   
@@ -395,7 +398,6 @@
       
       ; ctm --> (listof (list number ctm))
       (define (label-pairs m)
-        ;(define d (displayln (format "label-pairs m: ~s \n" m)))
         (cond [(null? m) null]
               [(procedure? (car m)) (label-pairs (cdr m))]
               [(label? (car m)) (cons (list (car m) (cdr m)) (label-pairs (cdr m)))]
@@ -427,9 +429,7 @@
                (let ((val (apply-env env (car m))))
                  (eval (cons (cadr (assoc val WRITERS)) (cdr m)) env laststate))]
               [(procedure? (car m)) 
-               (let* ((res ((car m) tape i 'lastconfig))
-                      ;(d (displayln (format "state: ~s" res)))
-                      )
+               (let* ((res ((car m) tape i 'lastconfig)))
                  (begin
                    (set! tape (tmconfig-tape res))
                    (set! i (tmconfig-index res))
@@ -471,5 +471,19 @@
                                   'Y))
 
   (define Alla-Allb (tm-union Alla Allb))
+
+  (define tm-WriteI (make-unchecked-tm '(S H) 
+                                       '(i j k) 
+                                       (list 
+                                        (list (list 'S 'i) (list 'H 'i)) 
+                                        (list (list 'S BLANK) (list 'H 'i))
+                                        (list (list 'S 'j) (list 'H 'i)) 
+                                        (list (list 'S 'k) (list 'H 'i)))
+                                       'S
+                                       '(H)))
+
+  (define tm-rename-sts-WriteI (tm-rename-states (tm-getstates tm-WriteI) tm-WriteI))
+
+  ;(tm-apply tm-rename-sts-WriteI `(i ,BLANK i ,BLANK i i ,BLANK) 1)
 
   ) ; closes module
