@@ -28,7 +28,10 @@ jobs:
         run: |
           cp -Rv ./GithubPages ./docs
       - name: build docs
-        run: scribble +m --redirect-main http://pkg-build.racket-lang.org/doc/ --htmls --dest ./docs ./scribblings/fsm.scrbl
+        shell: "bash"
+        run: | 
+          cd scribblings
+          scribble +m --redirect-main http://pkg-build.racket-lang.org/doc/ --htmls --dest ../docs ./fsm.scrbl
       - name: push to gh-pages
         uses: JamesIves/github-pages-deploy-action@4.1.4 # more info at: https://github.com/JamesIves/github-pages-deploy-action
         with:
