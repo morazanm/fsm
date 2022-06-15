@@ -11,6 +11,7 @@ Created by Joshua Schappel on 12/19/19
  INPUT-LIST
  INPUT-LIST-PDA
  INPUT-LIST-TM
+ INPUT-LIST-MTTM
  INPUT-LIST-LANG-REC)
 
 
@@ -92,15 +93,15 @@ Textbox Declarations
                                    #:func NULL-FUNCTION))
 
 (define IPF-SIGMA (make-textbox 100 25 (posn (/ (/ WIDTH 11) 2) 40)
-                          #:color INPUT-COLOR
-                          #:limit 14
-                          #:func addSigma))
+                                #:color INPUT-COLOR
+                                #:limit 14
+                                #:func addSigma))
 
 
 (define GEN-CODE (make-textbox 100 25 (posn (/ (/ WIDTH 11) 2) 235)
-                          #:color INPUT-COLOR
-                          #:limit 14
-                          #:func genCode))
+                               #:color INPUT-COLOR
+                               #:limit 14
+                               #:func genCode))
 
 
 
@@ -153,3 +154,7 @@ Textbox Declarations
                                   IPF-RULE4-TM IPF-TAPE-INDEX
                                   IPF-USER-DEFINED-LANG-REC
                                   GEN-CODE))
+
+
+(define INPUT-LIST-MTTM (list IPF-SIGMA
+                              GEN-CODE))

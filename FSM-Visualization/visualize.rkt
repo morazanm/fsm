@@ -40,7 +40,7 @@ Initialize World
                                      [(pda) INPUT-LIST-PDA]
                                      [(tm) INPUT-LIST-TM]
                                      [(tm-language-recognizer) INPUT-LIST-LANG-REC]
-                                     [(mttm) INPUT-LIST-TM]
+                                     [(mttm) INPUT-LIST-MTTM]
                                      [else INPUT-LIST])))
 
            ;; determine-button-list: none -> list-of-buttons
@@ -56,7 +56,9 @@ Initialize World
     (initialize-world m
                       messageWin
                       (if graphviz
-                          (cons BTN-DISPLAY (determine-button-list))
+                          (if (eq? MACHINE-TYPE 'mttm)
+                              (cons BTN-DISPLAY-MTTM (determine-button-list))
+                              (cons BTN-DISPLAY (determine-button-list)))
                           (determine-button-list))
                       (determine-input-list))))
 
@@ -103,6 +105,10 @@ Cmd Functions
                  (set-machine-type 'tm)
                  (run-program (build-world (tm-machine '() null '() '() `(,LM) '() 'tm 0 ) 'tm))
                  (void))]
+         [(mttm) (begin
+                   (set-machine-type 'mttm)
+                   (run-program (build-world (mttm-machine '() null '() '() `(,LM) '() 'mttm '()) 'mttm))
+                   (void))]
          [(tm-language-recognizer) (begin
                                      (set-machine-type 'tm-language-recognizer)
                                      (run-program (build-world (lang-rec-machine '() null '() '() `(,LM) '() 'tm-language-recognizer 0 '||) 'tm-language-recognizer))
@@ -598,37 +604,48 @@ Scene Rendering
                                                 (place-image (create-gui-bottom (machine-rule-list (world-fsm-machine w)) (world-cur-rule w) (world-scroll-bar-index w)) (/ WIDTH 2) (- HEIGHT (/ BOTTOM 2))
                                                              (draw-button-list (world-button-list w)
                                                                                (draw-input-list (world-input-list w)
-                                                                                                (place-image (if (equal? (machine-type machine) 'pda)
-                                                                                                                 (create-gui-left
-                                                                                                                  (machine-alpha-list machine)
-                                                                                                                  (machine-type machine)
-                                                                                                                  (pda-machine-stack-alpha-list (world-fsm-machine w)))
-                                                                                                                 (create-gui-left
-                                                                                                                  (machine-alpha-list machine)
-                                                                                                                  (machine-type machine))) (/ (/ WIDTH 11) 2) (/ (- HEIGHT BOTTOM) 2) MAIN-SCENE)))))))
+                                                                                                (place-image (case (machine-type machine)
+                                                                                                               [(pda)
+                                                                                                                (create-gui-left
+                                                                                                                 (machine-alpha-list machine)
+                                                                                                                 (machine-type machine)
+                                                                                                                 (pda-machine-stack-alpha-list (world-fsm-machine w)))]
+                                                                                                               [else
+                                                                                                                (create-gui-left
+                                                                                                                 (machine-alpha-list machine)
+                                                                                                                 (machine-type machine))])
+                                                                                                             (/ (/ WIDTH 11) 2)
+                                                                                                             (/ (- HEIGHT BOTTOM) 2)
+                                                                                                             MAIN-SCENE)))))))
           ;;draws the images without an arrow
           (no-arrow (place-image (determin-gui-draw) (- WIDTH 100) (/ HEIGHT 2)
                                  (place-image (create-gui-top (world-fsm-machine w) (world-cur-rule w)) (/ WIDTH 2) (/ TOP 2)
                                               (place-image (create-gui-bottom (machine-rule-list (world-fsm-machine w)) (world-cur-rule w) (world-scroll-bar-index w)) (/ WIDTH 2) (- HEIGHT (/ BOTTOM 2))
                                                            (draw-button-list (world-button-list w)
                                                                              (draw-input-list (world-input-list w)
-                                                                                              (place-image (if (equal? (machine-type machine) 'pda)
-                                                                                                               (create-gui-left
-                                                                                                                (machine-alpha-list machine)
-                                                                                                                (machine-type machine)
-                                                                                                                (pda-machine-stack-alpha-list (world-fsm-machine w)))
-                                                                                                               (create-gui-left
-                                                                                                                (machine-alpha-list machine)
-                                                                                                                (machine-type machine))) (/ (/ WIDTH 11) 2) (/ (- HEIGHT BOTTOM) 2) MAIN-SCENE))))))))
+                                                                                              (place-image (case (machine-type machine)
+                                                                                                             [(pda)
+                                                                                                              (create-gui-left
+                                                                                                               (machine-alpha-list machine)
+                                                                                                               (machine-type machine)
+                                                                                                               (pda-machine-stack-alpha-list (world-fsm-machine w)))]
+                                                                                                             [else 
+                                                                                                              (create-gui-left
+                                                                                                               (machine-alpha-list machine)
+                                                                                                               (machine-type machine))])
+                                                                                                           (/ (/ WIDTH 11) 2)
+                                                                                                           (/ (- HEIGHT BOTTOM) 2)
+                                                                                                           MAIN-SCENE))))))))
     (cond
       ;; grahpviz view
-      [(eq? VIEW-MODE 'graph) (begin
-                                (draw-error-msg (world-error-msg w)
-                                                (place-image (create-png ;; build the graphviz img
-                                                              machine
-                                                              (not (empty? (world-processed-config-list w)))
-                                                              (world-cur-state w)
-                                                              (world-cur-rule w)) X0 Y0  no-arrow)))]
+      [(eq? VIEW-MODE 'graph)
+       (begin
+         (draw-error-msg (world-error-msg w)
+                         (place-image (create-png ;; build the graphviz img
+                                       machine
+                                       (not (empty? (world-processed-config-list w)))
+                                       (world-cur-state w)
+                                       (world-cur-rule w)) X0 Y0  no-arrow)))]
       ;; mttm tape view
       [(and (eq? VIEW-MODE 'tape)
             (eq? 'mttm MACHINE-TYPE)) (displayln "TODO: finish")]
@@ -784,6 +801,11 @@ TOP GUI RENDERING
                                                 (top-input-label)
                                                 (tm-los-top input-list cur-rule (tm-machine-tape-posn m) 32))
                                                (rectangle WIDTH TOP "outline" "transparent"))]
+      [(mttm)(overlay/align "left" "middle"
+                            (beside
+                             (top-input-label)
+                             empty-image)
+                            (rectangle WIDTH TOP "outline" "transparent"))]
       [else
        (overlay/align "left" "middle"
                       (beside
@@ -802,12 +824,16 @@ BOTTOM GUI RENDERING
 ;; create-gui-bottom: list-of-rules rule int -> image
 ;; Purpose: Creates the bottom of the gui layout
 (define (create-gui-bottom lor cur-rule scroll-index)
+  (define target-width (if (eq? 'mttm MACHINE-TYPE)
+                           (+ 200 (- (- WIDTH (/ WIDTH 11)) 200))
+                           (- (- WIDTH (/ WIDTH 11)) 200)))
   (cond
-    [(empty? lor) (overlay/align "left" "middle"
-                                 (align-items
-                                  (rules-bottom-label)
-                                  (rectangle (- (- WIDTH (/ WIDTH 11)) 200) BOTTOM "outline" OUTLINE-COLOR))
-                                 (rectangle WIDTH BOTTOM "outline" "transparent"))]
+    [(empty? lor)
+     (overlay/align "left" "middle"
+                    (align-items
+                     (rules-bottom-label)
+                     (rectangle target-width BOTTOM "outline" OUTLINE-COLOR))
+                    (rectangle WIDTH BOTTOM "outline" "transparent"))]
     [else 
      (overlay/align "left" "middle"
                     (align-items
@@ -820,7 +846,9 @@ BOTTOM GUI RENDERING
 ;; Purpose: Creates the left bottom label in the gui
 (define (rules-bottom-label)
   (overlay
-   (text (string-upcase "Rules:") 24 "Black")
+   (case MACHINE-TYPE
+     [(mttm)(text (string-upcase "Cur Rule") 14 "Black")]
+     [else (text (string-upcase "Rules:") 24 "Black")])
    (rectangle (/ WIDTH 11) BOTTOM "outline" OUTLINE-COLOR)))
 
 
@@ -1098,6 +1126,9 @@ RIGHT GUI RENDERING
                                                                       (pda-stack)
                                                                       control)
                                                         (rectangle full-width HEIGHT "outline" "transparent"))]
+                                  [(mttm) (overlay/align "left" "top"
+                                                         empty-image
+                                                         (rectangle 200 HEIGHT "outline" "transparent"))]
                                   [else control])))))
 
     (construct-image)))
