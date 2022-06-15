@@ -331,10 +331,18 @@ Scene Rendering
 (define (draw-main-img w s)
   (letrec
       (
-       (X0  (if (equal? MACHINE-TYPE 'pda)
-                (/ (+ (/ WIDTH 11) (- WIDTH 300)) 2)
-                (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2)))
-       (Y0 (/ (+ TOP (- HEIGHT BOTTOM)) 2))
+       (X0 (cond
+             [(equal? MACHINE-TYPE 'pda)
+              (/ (+ (/ WIDTH 11) (- WIDTH 300)) 2)]
+             [(equal? MACHINE-TYPE 'mttm)
+              (+ 100 (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2))]
+             [else
+              (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2)]))
+       (Y0 (cond
+             [(eq? MACHINE-TYPE 'mttm)
+              (- (/ (+ TOP (- HEIGHT BOTTOM)) 2) 25)]
+             [else
+              (/ (+ TOP (- HEIGHT BOTTOM)) 2)]))
        (deg-shift (if (empty? (machine-state-list (world-fsm-machine w)))
                       0
                       (/ 360 (length (machine-state-list (world-fsm-machine w))))))
