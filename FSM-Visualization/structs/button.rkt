@@ -12,6 +12,7 @@
  make-button
  draw-button
  run-function
+ is-visiable?
  button-pressed?
  set-inactive-button
  set-active-button
@@ -35,17 +36,30 @@
 ;; - location: posn that represents the location for the button
 ;; - onClick: A function to be run if the button is pressed
 ;; - hidden? { boolean }: when true it is not shown on the screen
-(struct button (width height text type color orColor fontSize rounded? active location onClick [hidden? #:mutable]))
+;; - id { symbol }: A way to make buttons distinct. This allows you to select a button by its id
+(struct button (width height text type color orColor fontSize rounded? active location onClick id [hidden? #:mutable]))
 
 
-(define (make-button width height posn #:text[text ""] #:color[color DEFAULT-BTN-COLOR]
-                     #:fntsize[size 18] #:round?[round #f] #:func[func NULL-FUNCTION] #:style[style "solid"] #:hidden[hidden #f])
-  (button width height text style color color size round #f posn func hidden))
+(define (make-button
+         width
+         height
+         posn
+         #:text[text ""]
+         #:color[color DEFAULT-BTN-COLOR]
+         #:fntsize[size 18]
+         #:round?[round #f]
+         #:func[func NULL-FUNCTION]
+         #:style[style "solid"]
+         #:hidden[hidden #f]
+         #:id[id 'none])
+  (button width height text style color color size round #f posn func id hidden))
 
 ;; draw-button: button posn scene -> scene
 ;; Purpose: Draws a given button onto the scene
 (define (draw-button btn scn)
-  (place-image (create-button btn) (posn-x (button-location btn)) (posn-y (button-location btn)) scn))
+  (if (is-visiable? btn)
+      (place-image (create-button btn) (posn-x (button-location btn)) (posn-y (button-location btn)) scn)
+      scn))
 
 ;; create-button: button -> Image
 ;; Purpose: creates an image that represents the button and then returns it
@@ -91,6 +105,7 @@
           #t
           (button-location btn)
           (button-onClick btn)
+          (button-id btn)
           (button-hidden? btn)))
 
 ;; set-inactive-button: button -> button
@@ -107,7 +122,12 @@
           #f
           (button-location btn)
           (button-onClick btn)
+          (button-id btn)
           (button-hidden? btn)))
+
+;; is-visiable? :: button -> 
+(define (is-visiable? btn)
+  (not (button-hidden? btn)))
 
 ;; set-button-hidden! :: boolean -> button
 ;; sets a button to hidden

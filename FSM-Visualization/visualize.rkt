@@ -564,6 +564,35 @@ Scene Rendering
                        (draw-states (machine-state-list (world-fsm-machine w)) 0 s))])])))
 
 
+;; draw-button-list :: [button] scene -> scene
+;; draws are non hidden buttons on the screen
+(define (draw-button-list lob scn)
+  ;; set button active if needed
+  (define (check-set-active-button btn)
+    (if (and (eq? VIEW-MODE 'tape)
+             (and (or (eq? (button-id btn) 'mttm-up)
+                      (eq? (button-id btn) 'mttm-down))
+                  (not (is-visiable? btn))))
+        (begin
+          ;(displayln (button-id btn))
+          (set-button-visible! btn))
+        btn))
+  ;; set button hidden if needed
+  (define (check-set-hidden-button btn)
+    (if (and (not (eq? VIEW-MODE 'tape))
+             (and (or (eq? (button-id btn) 'mttm-up)
+                      (eq? (button-id btn) 'mttm-down))
+                  (is-visiable? btn)))
+        (set-button-hidden! btn)
+        btn))
+  (foldr (lambda (btn scn-acc)
+           (draw-button ((compose check-set-active-button check-set-hidden-button) btn)
+                        scn-acc))
+         scn
+         lob))
+
+
+
 ;; draw-world: world -> world
 ;; Purpose: draws the world every time on-draw is called
 (define (draw-world w)
@@ -581,13 +610,6 @@ Scene Rendering
                              (cond
                                [(empty? loi) scn]
                                [else (draw-textbox (car loi) (draw-input-list (cdr loi) scn))])))
-          
-          ;; draw-button-list: list-of-buttons sceen -> sceen
-          ;; Purpose: draws every button structure from the list onto the given sceen
-          (draw-button-list (lambda (lob scn)
-                              (cond
-                                [(empty? lob) scn]
-                                [else (draw-button (car lob) (draw-button-list (cdr lob) scn))])))
           
           ;; draw-error-msg: msgWindow sceen -> sceen
           ;; Purpose: renders the error message onto the screen if there is one.
