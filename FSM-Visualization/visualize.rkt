@@ -656,12 +656,27 @@ Scene Rendering
                                        (world-cur-rule w)) X0 Y0  no-arrow)))]
       ;; mttm tape view
       [(and (eq? VIEW-MODE 'tape)
-            (eq? 'mttm MACHINE-TYPE)) (displayln "TODO: finish")]
+            (eq? 'mttm MACHINE-TYPE)) (define X (+ 100 (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2)))
+                                      (define Y (- (/ (+ TOP (- HEIGHT BOTTOM)) 2) 25))
+                                      (place-image
+                                       (construct-tape-view w X Y)
+                                       (+ 25 X)
+                                       (- Y 5)
+                                       with-arrow)]
       ;; control view
       [else
        (if (not (null? (world-cur-state w)))
            (draw-error-msg (world-error-msg w)(draw-main-img w no-arrow))                                                                                                                   
            (draw-error-msg (world-error-msg w) (draw-main-img w with-arrow)))])))
+
+
+
+;; construct-tape-view :: world -> image
+;; Purpose: creates a image that has all the tapes
+(define (construct-tape-view world w h)
+  (rectangle (- WIDTH 160) (- HEIGHT BOTTOM) "outline" "red"))
+
+
 #|
 -----------------------
 TOP GUI RENDERING

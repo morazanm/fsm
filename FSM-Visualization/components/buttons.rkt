@@ -199,25 +199,25 @@ Button Declarations
 
 
 (define BTN-HELP-MTTM (make-button 25 25 (posn 130 20)
-                              #:text "?"
-                              #:fntsize 12
-                              #:color (make-color 39 168 242)
-                              #:round? #t
-                              #:func openHelp))
+                                   #:text "?"
+                                   #:fntsize 12
+                                   #:color (make-color 39 168 242)
+                                   #:round? #t
+                                   #:func openHelp))
 
 (define BTN-COLOR-BLIND-MTTM (make-button 25 25 (posn 130 60)
-                                     #:text "CB"
-                                     #:fntsize 12
-                                     #:color (make-color 252 186 3)
-                                     #:round? #t
-                                     #:func toogleColorBlindMode))
+                                          #:text "CB"
+                                          #:fntsize 12
+                                          #:color (make-color 252 186 3)
+                                          #:round? #t
+                                          #:func toogleColorBlindMode))
 
 (define BTN-DISPLAY-MTTM (make-button 30 30 (posn 130 100)
-                                 #:text "DGr"
-                                 #:color (make-color 61 65 71)
-                                 #:fntsize 12
-                                 #:round? #t
-                                 #:func toggle-display))
+                                      #:text "DGr"
+                                      #:color (make-color 61 65 71)
+                                      #:fntsize 12
+                                      #:round? #t
+                                      #:func toggle-display))
 
 (define BTN-DISPLAY-MTTM-TAPES (make-button 35 30 (posn 130 140)
                                             #:text "Tape"
@@ -256,6 +256,25 @@ Button Declarations
                                     #:color STACK-SCROLL-BUTTON-COLOR
                                     #:fntsize 33
                                     #:func stackScrollDown))
+
+
+(define BTM-TAPE-SCROLL-UP-MTTM (make-button (- WIDTH 160) 25
+                                               (posn
+                                                (+ 25 (+ 100 (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2)))
+                                                13)
+                                               #:text "🠉"
+                                               #:color STACK-SCROLL-BUTTON-COLOR
+                                               #:fntsize 33
+                                               #:func (lambda (v) v)))
+
+(define BTM-TAPE-SCROLL-DOWN-MTTM (make-button (- WIDTH 160) 25
+                                             (posn
+                                              (+ 25 (+ 100 (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2)))
+                                              (- HEIGHT 87))
+                                             #:text "🠋"
+                                             #:color STACK-SCROLL-BUTTON-COLOR
+                                             #:fntsize 33
+                                             #:func (lambda (v) v)))
 
 (define BTN-SIGMA-ADD (make-button 40 25 (posn 30 70)
                                    #:text "ADD"
@@ -378,4 +397,6 @@ Button Declarations
                                BTN-RUN
                                BTN-HELP-MTTM
                                BTN-COLOR-BLIND-MTTM
-                               BTN-DISPLAY-MTTM-TAPES))
+                               BTN-DISPLAY-MTTM-TAPES
+                               BTM-TAPE-SCROLL-DOWN-MTTM
+                               BTM-TAPE-SCROLL-UP-MTTM))
