@@ -573,9 +573,7 @@ Scene Rendering
              (and (or (eq? (button-id btn) 'mttm-up)
                       (eq? (button-id btn) 'mttm-down))
                   (not (is-visiable? btn))))
-        (begin
-          ;(displayln (button-id btn))
-          (set-button-visible! btn))
+        (set-button-visible! btn)
         btn))
   ;; set button hidden if needed
   (define (check-set-hidden-button btn)
