@@ -40,7 +40,8 @@ Created by Joshua Schappel on 12/19/19
  toogleColorBlindMode
  setTapePosn
  setAcceptState
- toggle-display)
+ toggle-display
+ toggle-display-mttm)
 
 ;; ------- Button Functions -------
 
@@ -954,9 +955,23 @@ Created by Joshua Schappel on 12/19/19
 ;; toggle-display -> world
 ;; Purpose: toggles the display between control and graph representation
 (define toggle-display (lambda (w)
+                         (define current-mode VIEW-MODE)
                          (begin
-                           (set-is-graph?)
+                           (if (eq? VIEW-MODE 'graph)
+                               (set-view-mode 'control)
+                               (set-view-mode 'graph))
                            w)))
+
+
+;; toggle-display-mttm -> world
+;; Purpose: toggles the display between control and tape representation
+(define toggle-display-mttm (lambda (w)
+                              (define current-mode VIEW-MODE)
+                              (begin
+                                (if (eq? VIEW-MODE 'tape)
+                                    (set-view-mode 'control)
+                                    (set-view-mode 'tape))
+                                w)))
 
 
 

@@ -113,7 +113,7 @@
                                   (overlay
                                    (scale-txt txt 1)
                                    (rectangle (get-width) BOX-HEIGHT "outline" RULE-BOX-COLOR))))))
-    (list-2-img aList empty-image)))
+    (if (eq? type 'mttm) empty-image (list-2-img aList empty-image))))
 
 
 ;; create-dfa-ndfa-rule: rule (tuple) -> string

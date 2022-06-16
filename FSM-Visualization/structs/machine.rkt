@@ -11,8 +11,10 @@
  (struct-out machine)
  (struct-out pda-machine)
  (struct-out tm-machine)
+ (struct-out mttm-machine)
  (struct-out lang-rec-machine)
  update-tm-machine
+ update-mttm-machine
  update-lang-rec-machine
  update-lang-rec-accept-state
  reset-tm-machine-tap-index)
@@ -44,6 +46,10 @@
 ;; - tape-posn { Number } the current location on the tape
 (struct tm-machine machine ([tape-posn #:mutable]) #:transparent)
 
+;; mttm-machine: A structure that is a subtype of machine
+;; - tape-posn-list { list-of-numbers } the current locations on the tapes
+(struct mttm-machine machine ([tape-posn-list #:mutable]) #:transparent)
+
 
 ;; lang-rec-machine: A structure that is a subtype of tm-machine. The one difference
 ;;  is that it has an accept state
@@ -62,6 +68,28 @@
               (machine-alpha-list m)
               (machine-type m)
               new-posn))
+
+;; update-mttm-machine: mttm-machine tuple list-of-symbols -> mttm-machine
+;;   where tuple = (int, int)   First int is then the index of the tape list to change
+;;                              second int is the new tape posn to set
+;; Purpose: Builds a new mttm machine with the updated tape posn
+(define (update-mttm-machine m tuples new-sigma)
+  (define (has-tuple-value target tuples)
+    (match tuples
+      [`() #f]
+      [`((,i ,v) ,r ...) (if (eq? i target) v (has-tuple-value target r))]))
+  (tm-machine (machine-state-list m)
+              (machine-start-state m)
+              (machine-final-state-list m)
+              (machine-rule-list m)
+              new-sigma
+              (machine-alpha-list m)
+              (machine-type m)
+              (for/list ([cur-val (mttm-machine-tape-posn-list m)]
+                         [i (in-naturals)])
+                (define new-val (has-tuple-value i tuples))
+                (or new-val cur-val))))
+                    
 
 ;; update-lang-rec-machine: lang-rec-machine int list-of-symbols -> tm-machine
 ;; Purpose: Builds a new tm machine with the updated tape posn
