@@ -40,7 +40,7 @@ Initialize World
                                      [(pda) INPUT-LIST-PDA]
                                      [(tm) INPUT-LIST-TM]
                                      [(tm-language-recognizer) INPUT-LIST-LANG-REC]
-                                     [(mttm) INPUT-LIST-MTTM]
+                                     [(mttm-language-recognizer) INPUT-LIST-MTTM]
                                      [else INPUT-LIST])))
 
            ;; determine-button-list: none -> list-of-buttons
@@ -50,13 +50,13 @@ Initialize World
                                       [(pda) BUTTON-LIST-PDA]
                                       [(tm) BUTTON-LIST-TM]
                                       [(tm-language-recognizer) BUTTON-LIST-LANG-REC]
-                                      [(mttm) BUTTON-LIST-MTTM]
+                                      [(mttm-language-recognizer) BUTTON-LIST-MTTM]
                                       [else BUTTON-LIST]))))
 
     (initialize-world m
                       messageWin
                       (if graphviz
-                          (if (eq? MACHINE-TYPE 'mttm)
+                          (if (eq? MACHINE-TYPE 'mttm-language-recognizer)
                               (cons BTN-DISPLAY-MTTM (determine-button-list))
                               (cons BTN-DISPLAY (determine-button-list)))
                           (determine-button-list))
@@ -105,10 +105,7 @@ Cmd Functions
                  (set-machine-type 'tm)
                  (run-program (build-world (tm-machine '() null '() '() `(,LM) '() 'tm 0 ) 'tm))
                  (void))]
-         [(mttm) (begin
-                   (set-machine-type 'mttm)
-                   (run-program (build-world (mttm-machine '() null '() '() `(,LM) '() 'mttm '()) 'mttm))
-                   (void))]
+         [(mttm-language-recognizer) (error "The machine type \"mttm-language-recognizer\" is not allowed to be made from scratch. Please use one of the other sm-visualization options")]
          [(tm-language-recognizer) (begin
                                      (set-machine-type 'tm-language-recognizer)
                                      (run-program (build-world (lang-rec-machine '() null '() '() `(,LM) '() 'tm-language-recognizer 0 '||) 'tm-language-recognizer))
@@ -172,13 +169,34 @@ Cmd Functions
                               (sm-getstart fsm-machine)
                               (sm-getfinals fsm-machine)
                               (reverse (sm-getrules fsm-machine))
-                              `(,LM) (sm-getalphabet fsm-machine)
+                              `(,LM)
+                              (sm-getalphabet fsm-machine)
                               (sm-type fsm-machine)
                               0)
                   (sm-type fsm-machine)
                   (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation."
                              "tm" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
                 (void))]
+
+         ['mttm-language-recognizer (begin
+                                      (set-machine-type 'mttm-language-recognizer)
+                                      (run-program
+                                       (build-world
+                                        (mttm-machine
+                                         (map (lambda (x) (fsm-state x TM-TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine))
+                                         (sm-getstart fsm-machine)
+                                         (sm-getfinals fsm-machine)
+                                         (reverse (sm-getrules fsm-machine))
+                                         `(,LM)
+                                         (sm-getalphabet fsm-machine)
+                                         (sm-type fsm-machine)
+                                         (sm-getnumtapes fsm-machine)
+                                         '())
+                                        'mttm-language-recognizer
+                                        (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation."
+                                                   "tm" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)
+                                        (void)
+                                        )))]
          
          ['tm-language-recognizer (begin
                                     (set-machine-type 'tm-language-recognizer)
@@ -274,6 +292,28 @@ Cmd Functions
                     (void))
                   )]
 
+           ['mttm-language-recognizer (begin
+                                        (set-machine-type 'mttm-language-recognizer)
+                                        (run-program
+                                         (build-world
+                                          (mttm-machine
+                                           (map (lambda (x)
+                                                  (let ((temp (get-member x args)))
+                                                    (if (empty? temp)
+                                                        (fsm-state x MTTM-TRUE-FUNCTION (posn 0 0))
+                                                        (fsm-state x (cadr temp) (posn 0 0))))) state-list)
+                                           (sm-getstart fsm-machine)
+                                           (sm-getfinals fsm-machine)
+                                           (reverse (sm-getrules fsm-machine))
+                                           `(,LM)
+                                           (sm-getalphabet fsm-machine)
+                                           (sm-type fsm-machine)
+                                           (sm-getnumtapes fsm-machine)
+                                           '())
+                                          'mttm-language-recognizer
+                                          (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "tm" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
+                                        (void))]
+
            ['tm-language-recognizer (begin
                                       (begin
                                         (set-machine-type 'tm-language-recognizer)
@@ -334,12 +374,12 @@ Scene Rendering
        (X0 (cond
              [(equal? MACHINE-TYPE 'pda)
               (/ (+ (/ WIDTH 11) (- WIDTH 300)) 2)]
-             [(equal? MACHINE-TYPE 'mttm)
+             [(equal? MACHINE-TYPE 'mttm-language-recognizer)
               (+ 100 (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2))]
              [else
               (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2)]))
        (Y0 (cond
-             [(eq? MACHINE-TYPE 'mttm)
+             [(eq? MACHINE-TYPE 'mttm-language-recognizer)
               (- (/ (+ TOP (- HEIGHT BOTTOM)) 2) 25)]
              [else
               (/ (+ TOP (- HEIGHT BOTTOM)) 2)]))
@@ -676,7 +716,7 @@ Scene Rendering
                                        (world-cur-rule w)) X0 Y0  no-arrow)))]
       ;; mttm tape view
       [(and (eq? VIEW-MODE 'tape)
-            (eq? 'mttm MACHINE-TYPE)) (define X (+ 100 (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2)))
+            (eq? 'mttm-language-recognizer MACHINE-TYPE)) (define X (+ 100 (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2)))
                                       (define Y (- (/ (+ TOP (- HEIGHT BOTTOM)) 2) 25))
                                       (place-image
                                        (construct-tape-view w X Y)
@@ -844,7 +884,7 @@ TOP GUI RENDERING
                                                 (top-input-label)
                                                 (tm-los-top input-list cur-rule (tm-machine-tape-posn m) 32))
                                                (rectangle WIDTH TOP "outline" "transparent"))]
-      [(mttm)(overlay/align "left" "middle"
+      [(mttm-language-recognizer)(overlay/align "left" "middle"
                             (beside
                              (top-input-label)
                              empty-image)
@@ -867,7 +907,7 @@ BOTTOM GUI RENDERING
 ;; create-gui-bottom: list-of-rules rule int -> image
 ;; Purpose: Creates the bottom of the gui layout
 (define (create-gui-bottom lor cur-rule scroll-index)
-  (define target-width (if (eq? 'mttm MACHINE-TYPE)
+  (define target-width (if (eq? 'mttm-language-recognizer MACHINE-TYPE)
                            (+ 200 (- (- WIDTH (/ WIDTH 11)) 200))
                            (- (- WIDTH (/ WIDTH 11)) 200)))
   (cond
@@ -890,7 +930,7 @@ BOTTOM GUI RENDERING
 (define (rules-bottom-label)
   (overlay
    (case MACHINE-TYPE
-     [(mttm)(text (string-upcase "Cur Rule") 14 "Black")]
+     [(mttm-language-recognizer)(text (string-upcase "Cur Rule") 14 "Black")]
      [else (text (string-upcase "Rules:") 24 "Black")])
    (rectangle (/ WIDTH 11) BOTTOM "outline" OUTLINE-COLOR)))
 
@@ -1169,7 +1209,7 @@ RIGHT GUI RENDERING
                                                                       (pda-stack)
                                                                       control)
                                                         (rectangle full-width HEIGHT "outline" "transparent"))]
-                                  [(mttm) (overlay/align "left" "top"
+                                  [(mttm-language-recognizer) (overlay/align "left" "top"
                                                          empty-image
                                                          (rectangle 200 HEIGHT "outline" "transparent"))]
                                   [else control])))))

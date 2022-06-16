@@ -47,8 +47,9 @@
 (struct tm-machine machine ([tape-posn #:mutable]) #:transparent)
 
 ;; mttm-machine: A structure that is a subtype of machine
+;; num-tapes { list-of-numbers } the number of tapes that the machine has
 ;; - tape-posn-list { list-of-numbers } the current locations on the tapes
-(struct mttm-machine machine ([tape-posn-list #:mutable]) #:transparent)
+(struct mttm-machine machine (num-tapes [tape-posn-list #:mutable]) #:transparent)
 
 
 ;; lang-rec-machine: A structure that is a subtype of tm-machine. The one difference
@@ -78,13 +79,14 @@
     (match tuples
       [`() #f]
       [`((,i ,v) ,r ...) (if (eq? i target) v (has-tuple-value target r))]))
-  (tm-machine (machine-state-list m)
+  (mttm-machine (machine-state-list m)
               (machine-start-state m)
               (machine-final-state-list m)
               (machine-rule-list m)
               new-sigma
               (machine-alpha-list m)
               (machine-type m)
+              (mttm-machine-num-tapes m)
               (for/list ([cur-val (mttm-machine-tape-posn-list m)]
                          [i (in-naturals)])
                 (define new-val (has-tuple-value i tuples))

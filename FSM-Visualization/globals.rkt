@@ -83,6 +83,7 @@ Created by Joshua Schappel on 12/19/19
 (define TRUE-FUNCTION (lambda (v) PLACEHOLDER)) ;; The default function for a state variable
 (define PDA-TRUE-FUNCTION (lambda (v c) PLACEHOLDER)) ;; The default function for a state variable
 (define TM-TRUE-FUNCTION (lambda (v c) PLACEHOLDER))  ;; The default function for a state variable
+(define MTTM-TRUE-FUNCTION (lambda (a . r) PLACEHOLDER)) ;; The default function for a state variable
 (define MACHINE-TYPE null) ;; The type of machine (pda, ndfa, ..)
 (define TM-ORIGIONAL-TAPE '()) ;; set-tm-og-tape
 (define TM-ORIGIONAL-TAPE-POSN 0) ;; the initial tape position set by the user. Defualts to 0
