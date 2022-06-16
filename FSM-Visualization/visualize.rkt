@@ -717,12 +717,12 @@ Scene Rendering
       ;; mttm tape view
       [(and (eq? VIEW-MODE 'tape)
             (eq? 'mttm-language-recognizer MACHINE-TYPE)) (define X (+ 100 (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2)))
-                                      (define Y (- (/ (+ TOP (- HEIGHT BOTTOM)) 2) 25))
-                                      (place-image
-                                       (construct-tape-view w X Y)
-                                       (+ 25 X)
-                                       (- Y 5)
-                                       with-arrow)]
+                                                          (define Y (- (/ (+ TOP (- HEIGHT BOTTOM)) 2) 25))
+                                                          (place-image
+                                                           (construct-tape-view w X Y)
+                                                           (+ 25 X)
+                                                           (- Y 5)
+                                                           with-arrow)]
       ;; control view
       [else
        (if (not (null? (world-cur-state w)))
@@ -885,10 +885,10 @@ TOP GUI RENDERING
                                                 (tm-los-top input-list cur-rule (tm-machine-tape-posn m) 32))
                                                (rectangle WIDTH TOP "outline" "transparent"))]
       [(mttm-language-recognizer)(overlay/align "left" "middle"
-                            (beside
-                             (top-input-label)
-                             empty-image)
-                            (rectangle WIDTH TOP "outline" "transparent"))]
+                                                (beside
+                                                 (top-input-label)
+                                                 empty-image)
+                                                (rectangle WIDTH TOP "outline" "transparent"))]
       [else
        (overlay/align "left" "middle"
                       (beside
@@ -910,6 +910,9 @@ BOTTOM GUI RENDERING
   (define target-width (if (eq? 'mttm-language-recognizer MACHINE-TYPE)
                            (+ 200 (- (- WIDTH (/ WIDTH 11)) 200))
                            (- (- WIDTH (/ WIDTH 11)) 200)))
+  (define target-width-2 (if (eq? 'mttm-language-recognizer MACHINE-TYPE)
+                             target-width
+                             WIDTH))
   (cond
     [(empty? lor)
      (overlay/align "left" "middle"
@@ -917,11 +920,13 @@ BOTTOM GUI RENDERING
                      (rules-bottom-label)
                      (rectangle target-width BOTTOM "outline" OUTLINE-COLOR))
                     (rectangle WIDTH BOTTOM "outline" "transparent"))]
-    [else 
+    [else
      (overlay/align "left" "middle"
                     (align-items
                      (rules-bottom-label)
-                     (lor-bottom-label lor 83 cur-rule scroll-index))
+                     (if (eq? MACHINE-TYPE 'mttm-language-recognizer)
+                         (rectangle target-width BOTTOM "outline" OUTLINE-COLOR) ;;TODO: jschappel display current rule here
+                         (lor-bottom-label lor 83 cur-rule scroll-index)))
                     (rectangle WIDTH BOTTOM "outline" "transparent"))]))
 
 
@@ -1210,8 +1215,8 @@ RIGHT GUI RENDERING
                                                                       control)
                                                         (rectangle full-width HEIGHT "outline" "transparent"))]
                                   [(mttm-language-recognizer) (overlay/align "left" "top"
-                                                         empty-image
-                                                         (rectangle 200 HEIGHT "outline" "transparent"))]
+                                                                             empty-image
+                                                                             (rectangle 200 HEIGHT "outline" "transparent"))]
                                   [else control])))))
 
     (construct-image)))

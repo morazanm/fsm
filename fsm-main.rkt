@@ -168,9 +168,7 @@
 ; fsm word [natnum] --> 'accept or 'reject
 (define (sm-apply M w . l)
   (let ((head (if (null? l) 0 (car l)))
-        (t1 (sm-type M))
-        ;(d (displayln (format "Type: ~s  Head: ~s" t1 head)))
-        )
+        (t1 (sm-type M)))
     (cond [(or (eq? t1 'dfa)
                (eq? t1 'ndfa))
            (apply-fsa M w)]
