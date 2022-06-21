@@ -613,6 +613,8 @@ Scene Rendering
   (define (check-set-active-button btn)
     (if (and (eq? VIEW-MODE 'tape)
              (and (or (eq? (button-id btn) 'mttm-up)
+                      (eq? (button-id btn) 'typeview-right)
+                      (eq? (button-id btn) 'typeview-left)
                       (eq? (button-id btn) 'mttm-down))
                   (not (is-visiable? btn))))
         (set-button-visible! btn)
@@ -621,6 +623,8 @@ Scene Rendering
   (define (check-set-hidden-button btn)
     (if (and (not (eq? VIEW-MODE 'tape))
              (and (or (eq? (button-id btn) 'mttm-up)
+                      (eq? (button-id btn) 'typeview-right)
+                      (eq? (button-id btn) 'typeview-left)
                       (eq? (button-id btn) 'mttm-down))
                   (is-visiable? btn)))
         (set-button-hidden! btn)
@@ -739,7 +743,7 @@ Scene Rendering
   (define view-width (- WIDTH 160))
   (define view-height-no-btn (- HEIGHT BOTTOM))
   (define view-height (- view-height-no-btn 50))
-  (overlay/align "center" "top"
+  (overlay/align "center" "middle"
                  (make-mttm-tapes (world-fsm-machine world) '(a b a) view-width view-height)
                  (rectangle view-width view-height-no-btn "outline" "red")))
 
@@ -923,7 +927,8 @@ TOP GUI RENDERING
   (foldr (lambda (t s) (above
                         s
                         (make-single-mttm-tape 0 s)))
-         (rectangle rec-width 25 "outline" "transparent")
+         empty-image
+         ;(rectangle rec-width 25 "outline" "transparent")
          (range (if (> (mttm-machine-num-tapes machine) 5)
                     5
                     (mttm-machine-num-tapes machine)))))

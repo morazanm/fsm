@@ -121,6 +121,23 @@ Created by Joshua Schappel on 12/19/19
                                      (if (string? trans)
                                          (list trans)
                                          trans))]
+
+                                  [(mttm-language-recognizer) ;;TODO: jschappel NOT CORRECT
+                                   (let* ((sig-list TM-ORIGIONAL-TAPE)
+                                          (proper-list (cond
+                                                         [(empty? sig-list) #f]
+                                                         [(equal? LM (car sig-list))
+                                                          TM-ORIGIONAL-TAPE]
+                                                         [else
+                                                          (cons LM TM-ORIGIONAL-TAPE)]))
+                                          (trans (sm-showtransitions m
+                                                                     (if proper-list
+                                                                         proper-list
+                                                                         '('()'()))
+                                                                     (tm-machine-tape-posn (world-fsm-machine w)))))
+                                     (if (string? trans)
+                                         (list trans)
+                                         trans))]
                                   ;; dfa, ndfa, pda
                                   [else
                                    ;(display "Machine Type is: ") (displayln (machine-type fsm-machine))

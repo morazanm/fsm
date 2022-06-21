@@ -488,9 +488,10 @@ Created by Joshua Schappel on 12/19/19
 ;; clearSigma: world -> world
 ;; Purpose: Removes all elements of the sigma list
 (define clearSigma (lambda (w)
-                     (let* ((comparator (lambda (v1) (eq? (textbox-id v1) 'sigma-input)))
-                           (input-idx (index-where (world-input-list w) comparator))
-                           (new-input-list (list-set (world-input-list w) input-idx (remove-text (list-ref (world-input-list w) input-idx) 100))))
+                     (let* ((input-idx (index-where (world-input-list w)
+                                                    (lambda (v1)
+                                                      (eq? (textbox-id v1) 'sigma-input))))
+                            (new-input-list (list-set (world-input-list w) input-idx (remove-text (list-ref (world-input-list w) input-idx) 100))))
                        (cond
                          [(or (equal? MACHINE-TYPE 'tm)
                               (equal? MACHINE-TYPE 'tm-language-recognizer))
