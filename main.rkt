@@ -36,8 +36,8 @@
    grammar-union grammar-concat
    
    ; grammar observers
-   grammar-derive grammar-gettype
-   grammar-getnts grammar-getalphabet grammar-getrules grammar-getstart 
+   grammar-derive grammar-type
+   grammar-nts grammar-sigma grammar-rules grammar-start 
 
    ;grammar testers
    grammar-both-derive grammar-testequiv grammar-test

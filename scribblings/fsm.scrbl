@@ -522,23 +522,23 @@ Empty Tool
 
 @section{Grammar Observers}
 
-@defproc[(grammar-getnts [g grammar])
+@defproc[(grammar-nts [g grammar])
          (listof nts)]{Returns the nonterminals of the given 
  grammar.}
 
-@defproc[(grammar-getalphabet [g grammar])
+@defproc[(grammar-alphabet [g grammar])
          alphabet]{Returns the alphabet of the given 
  grammar.}
 
-@defproc[(grammar-getrules [g grammar])
+@defproc[(grammar-rules [g grammar])
          (listof grule)]{Returns the rules of the given 
  grammar.}
 
-@defproc[(grammar-getstart [g grammar])
+@defproc[(grammar-start [g grammar])
          nts]{Returns the starting nonterminal of the given 
  grammar.}
 
-@defproc[(grammar-gettype [g grammar])
+@defproc[(grammar-type [g grammar])
          symbol]{Returns a symbol for the type of the given 
  grammar: 'rg, 'cfg, or 'csg.}
 

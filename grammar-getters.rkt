@@ -1,33 +1,33 @@
 (module grammar-getters racket
   (require "cfg.rkt" "csg.rkt" "regular-grammar.rkt")
-  (provide grammar-getnts
-           grammar-getalphabet
-           grammar-getrules
-           grammar-getstart
-           grammar-gettype)
+  (provide grammar-nts
+           grammar-sigma
+           grammar-rules
+           grammar-start
+           grammar-type)
 
 
-   (define (grammar-getnts g)
+   (define (grammar-nts g)
     (cond [(rg? g) (rg-getnts g)]
           [(cfg? g) (cfg-get-v g)]
           [(csg? g) (csg-getv g)]))
   
-  (define (grammar-getalphabet g)
+  (define (grammar-sigma g)
     (cond [(rg? g) (rg-getalphabet g)]
           [(cfg? g) (cfg-get-alphabet g)]
           [(csg? g) (csg-getsigma g)]))
   
-  (define (grammar-getrules g)
+  (define (grammar-rules g)
     (cond [(rg? g) (rg-getunparsedrules g)]
           [(cfg? g) (cfg-get-rules g)]
           [(csg? g) (csg-get-unparsed-rules g)]))
   
-  (define (grammar-getstart g)
+  (define (grammar-start g)
     (cond [(rg? g) (rg-getstart g)]
           [(cfg? g) (cfg-get-start g)]
           [(csg? g) (csg-getstart g)]))
   
-  (define (grammar-gettype g)
+  (define (grammar-type g)
     (cond [(rg? g) 'rg]
           [(cfg? g) 'cfg]
           [(csg? g) 'csg]
