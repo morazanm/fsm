@@ -6,7 +6,7 @@
 @(require (for-label racket setup/collects))
 
 @title{FSM}
-@author[(author+email "Marco T. Morazán" "marco.morazan@shu.edu")]
+@author[(author+email "Marco T. Morazán" "morazanm@shu.edu")]
 @defmodule[fsm]
 
 
@@ -526,7 +526,7 @@ Empty Tool
          (listof nts)]{Returns the nonterminals of the given 
  grammar.}
 
-@defproc[(grammar-alphabet [g grammar])
+@defproc[(grammar-sigma [g grammar])
          alphabet]{Returns the alphabet of the given 
  grammar.}
 
