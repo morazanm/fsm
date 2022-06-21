@@ -1,6 +1,6 @@
 
 (module mttm racket
-  (require "constants.rkt" "misc.rkt" "word.rkt")
+  (require "constants.rkt" "misc.rkt" "word.rkt" test-engine/racket-tests)
   (provide make-mttm
            mttm-get-states
            mttm-get-sigma
@@ -23,7 +23,8 @@
 
   ;; (listof state) (listof alpha) state state (listof mttm-rule)
   ;; Assume: Rules are for k tapes
-  (define (make-mttm sts sigma start finals rules k . accept)
+  (define (make-mttm sts alpha start finals rules k . accept)
+    (define sigma (if (member LM alpha) alpha (cons LM alpha)))
     (define accept-state (if (null? accept) (void) (car accept)))
     (define (show-transitions w t1pos)
       ;; (listof mttm-config) --> (listof tmconfig)
@@ -123,6 +124,7 @@
   (define (mttm-apply M w . t1pos) ((M 'apply) w (if (null? t1pos) 0 (car t1pos))))
   (define (mttm-show-transitions M w . t1pos)
     ((M 'show-transitions) w (if (null? t1pos) 0 (car t1pos))))
+
   
   ) ; closes module
 
