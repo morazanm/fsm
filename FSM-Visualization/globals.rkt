@@ -96,6 +96,7 @@ Created by Joshua Schappel on 12/19/19
 
 
 ;; -- Scrollbars --
+(define MTTM-TAPE-INDEX 0) ;; the start of the current tapes to be displayed
 (define TAPE-INDEX-BOTTOM -1) ;; The current tape input that is being used
 (define INIT-INDEX-BOTTOM 0) ;; The initail index of the scrollbar
 (define STACK-INDEX 0) ;; The index of the stack scroll bar. The index is the first item to be rendered

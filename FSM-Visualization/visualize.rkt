@@ -191,6 +191,7 @@ Cmd Functions
                                          (sm-getalphabet fsm-machine)
                                          (sm-type fsm-machine)
                                          (sm-getnumtapes fsm-machine)
+                                         (sm-getaccept fsm-machine)
                                          '())
                                         'mttm-language-recognizer
                                         (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation."
@@ -309,6 +310,7 @@ Cmd Functions
                                            (sm-getalphabet fsm-machine)
                                            (sm-type fsm-machine)
                                            (sm-getnumtapes fsm-machine)
+                                           (sm-getaccept fsm-machine)
                                            '())
                                           'mttm-language-recognizer
                                           (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "tm" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
@@ -734,7 +736,12 @@ Scene Rendering
 ;; construct-tape-view :: world -> image
 ;; Purpose: creates a image that has all the tapes
 (define (construct-tape-view world w h)
-  (rectangle (- WIDTH 160) (- HEIGHT BOTTOM) "outline" "red"))
+  (define view-width (- WIDTH 160))
+  (define view-height-no-btn (- HEIGHT BOTTOM))
+  (define view-height (- view-height-no-btn 50))
+  (overlay/align "center" "top"
+                 (make-mttm-tapes (world-fsm-machine world) '(a b a) view-width view-height)
+                 (rectangle view-width view-height-no-btn "outline" "red")))
 
 
 #|
@@ -864,8 +871,62 @@ TOP GUI RENDERING
 
            
 
-           
+;;(tm-los-top input-list cur-rule (tm-machine-tape-posn m) 32)           
+;; JSchappel: finish
+(define (make-mttm-tapes machine cur-rule rec-width rec-height)
+  (define (make-single-mttm-tape tape-index scene)
+    (define los (machine-sigma-list machine)) ;; input-list
+    (define rectWidth (/ (- rec-width 40) TAPE-RENDER-LIMIT))
+    (define rectHeight (/ rec-height 5))
+    ;; Gets the tape inptu that needs to be rendered on the screen
+    (define input-to-render (take '(a b c d e f g h i h k l m n o p q r s t u v w x y z aa bb cc dd) TAPE-RENDER-LIMIT))
+    ;; list-2-img: list-of-sigma (tape input) int -> image
+    ;; Purpose: Converts the tape input into image that overlays the tape in the center
+    (define (list-2-img los accum)
+      (cond
+        [(empty? los) empty-image]
+        [(equal? 1 (length los)) (tape-box (car los) 24 accum)]
+        [else
+         (beside
+          (tape-box (car los) 24 accum)
+          (list-2-img (cdr los) (add1 accum)))]))
+  
+    (define (input-box input highlight? fnt-size)
+      (let ((color (if highlight? TAPE-HIGHLIGHT-COLOR "black")))
+        (overlay
+         (text (symbol->string input) fnt-size color)
+         (rectangle rectWidth (* rectHeight .75) "outline" OUTLINE-COLOR))))
 
+    (define (index-box index)
+      (overlay
+       (text (number->string index) 10 "black")
+       (rectangle rectWidth (* rectHeight .25) "outline" OUTLINE-COLOR)))
+
+    ;; tape-box: string int int -> image
+    ;; Purpose: given a string, will overlay the text onto a image
+    (define (tape-box sigma fnt-size index)
+      (cond
+        ;; Check if the input is the current hightlighed one
+        [(equal? index tape-index)
+         (overlay
+          (above
+           (input-box sigma #t fnt-size)
+           (index-box index))
+          (rectangle rectWidth rectHeight "outline" "transparent"))]
+        [else
+         (overlay
+          (above
+           (input-box sigma #f fnt-size)
+           (index-box index))
+          (rectangle rectWidth rectHeight "outline" "transparent"))]))
+    (list-2-img input-to-render tape-index))
+  (foldr (lambda (t s) (above
+                        s
+                        (make-single-mttm-tape 0 s)))
+         (rectangle rec-width 25 "outline" "transparent")
+         (range (if (> (mttm-machine-num-tapes machine) 5)
+                    5
+                    (mttm-machine-num-tapes machine)))))
 
 
 

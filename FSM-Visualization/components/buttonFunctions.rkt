@@ -7,9 +7,15 @@ Created by Joshua Schappel on 12/19/19
 |#
 
 
-(require net/sendurl "../structs/input.rkt" "../structs/world.rkt" "../structs/state.rkt"
-         "../structs/machine.rkt" "../structs/posn.rkt" "../globals.rkt" "stateTransitions.rkt"
-         "../structs/world.rkt" "../../fsm-main.rkt")
+(require net/sendurl
+         "../structs/input.rkt"
+         "../structs/world.rkt"
+         "../structs/state.rkt"
+         "../structs/machine.rkt"
+         "../structs/posn.rkt"
+         "../globals.rkt"
+         "stateTransitions.rkt"
+         "../../fsm-main.rkt")
 (require racket/pretty)
 (provide
  addState
@@ -407,7 +413,11 @@ Created by Joshua Schappel on 12/19/19
 ;; addSigma: world -> world
 ;; Purpose: adds a letter or group of letters to the sigma list
 (define addSigma (lambda (w)
-                   (letrec ((input-value (string-trim (textbox-text(list-ref (world-input-list w) 7))))
+                   (letrec (
+                            (comparator (lambda (v1) (eq? (textbox-id v1) 'sigma-input)))
+                            (input-idx (index-where (world-input-list w) comparator))
+
+                            (input-value (string-trim (textbox-text (list-ref (world-input-list w) input-idx))))
 
                             ;; string->input-list: string -> list-of-symbols
                             ;; Purpose: Converts the string input into tape input.
@@ -445,9 +455,9 @@ Created by Joshua Schappel on 12/19/19
                                                [(empty? loa) #f]
                                                [(empty? los) #f]
                                                [else (check-lists loa los)]))))
-                            (new-input-list (list-set (world-input-list w) 7 (remove-text (list-ref (world-input-list w) 7) 100))) 
+                            (new-input-list (list-set (world-input-list w) input-idx (remove-text (list-ref (world-input-list w) input-idx) 100)))
                             (sigma-list (reverse (string->input-list input-value))))
-                     
+                   
                      (cond
                        [(equal? (check-alpha (machine-alpha-list (world-fsm-machine w)) sigma-list) #f)
                         (redraw-world-with-msg w "Some of the input is not in the alphabet. Please make sure there is a space between each letter. " "Error" MSG-ERROR)]
@@ -478,7 +488,9 @@ Created by Joshua Schappel on 12/19/19
 ;; clearSigma: world -> world
 ;; Purpose: Removes all elements of the sigma list
 (define clearSigma (lambda (w)
-                     (let ((new-input-list (list-set (world-input-list w) 7 (remove-text (list-ref (world-input-list w) 7) 100))))
+                     (let* ((comparator (lambda (v1) (eq? (textbox-id v1) 'sigma-input)))
+                           (input-idx (index-where (world-input-list w) comparator))
+                           (new-input-list (list-set (world-input-list w) input-idx (remove-text (list-ref (world-input-list w) input-idx) 100))))
                        (cond
                          [(or (equal? MACHINE-TYPE 'tm)
                               (equal? MACHINE-TYPE 'tm-language-recognizer))

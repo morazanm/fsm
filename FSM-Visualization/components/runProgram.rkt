@@ -72,6 +72,14 @@ Created by Joshua Schappel on 12/19/19
                                        (machine-rule-list (world-fsm-machine w))
                                        (machine-start-state (world-fsm-machine w))
                                        (machine-final-state-list (world-fsm-machine w)))]
+                   ['mttm-language-recognizer
+                    (make-mttm state-list
+                               (machine-alpha-list (world-fsm-machine w))
+                               (machine-rule-list (world-fsm-machine w))
+                               (machine-start-state (world-fsm-machine w))
+                               (machine-final-state-list (world-fsm-machine w))
+                               (mttm-machine-num-tapes (world-fsm-machine w))
+                               (mttm-machine-accept-state (world-fsm-machine w)))]
                    [else (make-unchecked-tm state-list
                                             (machine-alpha-list (world-fsm-machine w))
                                             (machine-rule-list (world-fsm-machine w))
@@ -127,7 +135,7 @@ Created by Joshua Schappel on 12/19/19
                                    
                                    ;(display "Input is: ") (displayln (machine-sigma-list (world-fsm-machine w)))
                                    #;(pretty-print (sm-showtransitions m
-                                                                     (machine-sigma-list (world-fsm-machine w))))
+                                                                       (machine-sigma-list (world-fsm-machine w))))
                                    (sm-showtransitions m
                                                        (machine-sigma-list (world-fsm-machine w)))]))
 

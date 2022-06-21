@@ -95,6 +95,7 @@ Textbox Declarations
 (define IPF-SIGMA (make-textbox 100 25 (posn (/ (/ WIDTH 11) 2) 40)
                                 #:color INPUT-COLOR
                                 #:limit 14
+                                #:id 'sigma-input
                                 #:func addSigma))
 
 

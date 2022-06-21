@@ -257,7 +257,6 @@ Button Declarations
                                     #:fntsize 33
                                     #:func stackScrollDown))
 
-
 (define BTM-TAPE-SCROLL-UP-MTTM (make-button (- WIDTH 160) 25
                                                (posn
                                                 (+ 25 (+ 100 (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2)))
