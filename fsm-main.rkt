@@ -29,8 +29,8 @@
 
  ; sm observers
  sm-apply sm-showtransitions sm-type
- sm-getstates sm-getalphabet sm-getrules sm-getfinals sm-getstart sm-getstackalphabet
- sm-getaccept sm-getnumtapes
+ sm-states sm-sigma sm-rules sm-finals sm-start sm-gamma
+ sm-accept sm-numtapes
 
  ; sm testers
  sm-sameresult? sm-testequiv? sm-test
@@ -197,8 +197,8 @@
   
 ; fsm fsm word --> boolean
 (define (sm-sameresult? M1 M2 w)
-  (let ((s1 (sm-getalphabet M1))
-        (s2 (sm-getalphabet M2)))
+  (let ((s1 (sm-sigma M1))
+        (s2 (sm-sigma M2)))
     (if (equal? s1 s2)
         (equal? (sm-apply M1 w) (sm-apply M2 w))
         (error (format "The alphabets of the given machines are different: ~s ~s" s1 s2)))))
@@ -212,10 +212,10 @@
           (eq? (sm-type M2) 'mttm-language-recognizer))
       (error "Random testing of Multitape Turing Machines is not possible.")
       (let* ((test-m1 (generate-words number-tests
-                                      (remove* `(,LM) (sm-getalphabet M1))
+                                      (remove* `(,LM) (sm-sigma M1))
                                       null))
              (test-m2 (generate-words number-tests
-                                      (remove* `(,LM) (sm-getalphabet M2))
+                                      (remove* `(,LM) (sm-sigma M2))
                                       null))
              (test-words (append test-m1 test-m2))
              (res-m1 (map (lambda (w) (list w (sm-apply M1 w)))

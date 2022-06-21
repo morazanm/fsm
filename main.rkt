@@ -18,8 +18,8 @@
 
    ; sm observers
    sm-apply sm-showtransitions sm-type
-   sm-getstates sm-getalphabet sm-getrules sm-getfinals sm-getstart sm-getstackalphabet
-   sm-getaccept sm-getnumtapes
+   sm-states sm-sigma sm-rules sm-finals sm-start sm-gamma
+   sm-accept sm-numtapes
 
    ;; sm graph
    sm-graph

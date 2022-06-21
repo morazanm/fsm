@@ -75,11 +75,11 @@ This file contains the sm-graph function
 (define (fsa->graph machine color-blind)
   (let ((g (create-graph 'G #:color color-blind)))
     (begin
-      (states->nodes (sm-getstates machine)
-                     (sm-getstart machine)
-                     (sm-getfinals machine)
+      (states->nodes (sm-states machine)
+                     (sm-start machine)
+                     (sm-finals machine)
                      g)
-      (rules->edges (sm-getrules machine) (sm-type machine) g "$NULL" "$NULL" "black")
+      (rules->edges (sm-rules machine) (sm-type machine) g "$NULL" "$NULL" "black")
       g)))
 
 

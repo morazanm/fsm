@@ -135,7 +135,7 @@ Created by Joshua Schappel on 12/19/19
                            
        ;; Set up the world to have all the valid machine components below                 
        (begin
-         (define new-list (remove-duplicates (append (sm-getstates m) state-list))) ;; new-list: checks for any fsm state add-ons (ie. 'ds)
+         (define new-list (remove-duplicates (append (sm-states m) state-list))) ;; new-list: checks for any fsm state add-ons (ie. 'ds)
          (world
           (constructWorldMachine new-list fsm-machine m)
           (world-tape-position w)
@@ -222,42 +222,42 @@ Created by Joshua Schappel on 12/19/19
     [(pda)
      (pda-machine
       (addTrueFunctions state-list worldMachine)
-      (sm-getstart newMachine)
-      (sm-getfinals newMachine)
-      (sm-getrules newMachine)
+      (sm-start newMachine)
+      (sm-finals newMachine)
+      (sm-rules newMachine)
       (machine-sigma-list worldMachine)
-      (sm-getalphabet newMachine)
+      (sm-sigma newMachine)
       (sm-type newMachine)
-      (sm-getstackalphabet newMachine))]
+      (sm-gamma newMachine))]
     [(tm)
      (tm-machine
       (addTrueFunctions state-list worldMachine)
-      (sm-getstart newMachine)
-      (sm-getfinals newMachine)
-      (sm-getrules newMachine)
+      (sm-start newMachine)
+      (sm-finals newMachine)
+      (sm-rules newMachine)
       (decide-machine-input TM-ORIGIONAL-TAPE)
-      (sm-getalphabet newMachine)
+      (sm-sigma newMachine)
       (sm-type newMachine)
       (tm-machine-tape-posn worldMachine))]
     [(tm-language-recognizer)
      (lang-rec-machine
       (addTrueFunctions state-list worldMachine)
-      (sm-getstart newMachine)
-      (sm-getfinals newMachine)
-      (sm-getrules newMachine)
+      (sm-start newMachine)
+      (sm-finals newMachine)
+      (sm-rules newMachine)
       (decide-machine-input TM-ORIGIONAL-TAPE)
-      (sm-getalphabet newMachine)
+      (sm-sigma newMachine)
       (sm-type newMachine)
       (tm-machine-tape-posn worldMachine)
-      (sm-getaccept newMachine))]
+      (sm-accept newMachine))]
     [else
      (machine
       (addTrueFunctions state-list worldMachine)
-      (sm-getstart newMachine)
-      (sm-getfinals newMachine)
-      (sm-getrules newMachine)
+      (sm-start newMachine)
+      (sm-finals newMachine)
+      (sm-rules newMachine)
       (machine-sigma-list worldMachine)
-      (sm-getalphabet newMachine)
+      (sm-sigma newMachine)
       (sm-type newMachine))]))
       
 
