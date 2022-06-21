@@ -105,11 +105,11 @@
 (module+ test 
   (require rackunit rackunit/text-ui)
   
-  (check-equal? (sm-getstates ADD) (list 'S 'A 'T 'U 'V))
-  (check-equal? (sm-getalphabet ADD) (list 'I))
-  (check-equal? (sm-getstart ADD) 'S)
-  (check-equal? (sm-getfinals ADD) '(H))
-  (check-equal? (sm-getrules ADD)
+  (check-equal? (sm-states ADD) (list 'S 'A 'T 'U 'V))
+  (check-equal? (sm-sigma ADD) (list 'I))
+  (check-equal? (sm-start ADD) 'S)
+  (check-equal? (sm-finals ADD) '(H))
+  (check-equal? (sm-rules ADD)
                 (list
                  (list (list 'S (list '_ '_ '_)) (list 'A (list 'R 'R 'R)))
                  (list (list 'A (list 'I '_ '_)) (list 'A (list '_ 'I '_)))
@@ -125,7 +125,7 @@
                  (list (list 'V (list '_ 'I '_)) (list 'V (list 'I '_ '_)))
                  (list (list 'V (list 'I '_ '_)) (list 'V (list 'L 'L '_)))
                  (list (list 'V (list '_ '_ '_)) (list 'H (list '_ '_ '_)))))
-  (check-equal? (sm-getnumtapes ADD) 3)
+  (check-equal? (sm-numtapes ADD) 3)
   (check-equal? (sm-apply ADD `(,BLANK I I I ,BLANK I I))
                 (list
                  'H
@@ -242,11 +242,11 @@
                   (list 0 (list '_ '_ '_ '_ '_))
                   (list 0 (list '_ '_ '_ '_)))))
 
-  (check-equal? (sm-getstates a^nb^nc^nd^n) (list 'S 'A 'Y 'N))
-  (check-equal? (sm-getalphabet a^nb^nc^nd^n) (list 'a 'b 'c 'd))
-  (check-equal? (sm-getstart a^nb^nc^nd^n) 'S)
-  (check-equal? (sm-getfinals a^nb^nc^nd^n) '(Y N))
-  (check-equal? (sm-getrules a^nb^nc^nd^n)
+  (check-equal? (sm-states a^nb^nc^nd^n) (list 'S 'A 'Y 'N))
+  (check-equal? (sm-sigma a^nb^nc^nd^n) (list 'a 'b 'c 'd))
+  (check-equal? (sm-start a^nb^nc^nd^n) 'S)
+  (check-equal? (sm-finals a^nb^nc^nd^n) '(Y N))
+  (check-equal? (sm-rules a^nb^nc^nd^n)
                 (list
                  (list (list 'S (list '_ '_ '_ '_)) (list 'Q (list 'R 'R 'R 'R)))
                  (list (list 'Q (list '_ '_ '_ '_)) (list 'Y (list '_ '_ '_ '_)))
@@ -297,7 +297,7 @@
                  (list (list 'E (list '_ 'b '_ '_)) (list 'N (list '_ 'b '_ '_)))
                  (list (list 'E (list '_ '_ 'c '_)) (list 'N (list '_ '_ 'c '_)))
                  (list (list 'E (list '_ '_ '_ 'd)) (list 'N (list '_ '_ '_ 'd)))))
-  (check-equal? (sm-getnumtapes a^nb^nc^nd^n) 4)
+  (check-equal? (sm-numtapes a^nb^nc^nd^n) 4)
   (check-equal? (sm-apply a^nb^nc^nd^n `(,BLANK a a b b c c d d)) 'accept)
   (check-equal? (sm-apply a^nb^nc^nd^n `(,BLANK a a b b c d d)) 'reject)
   (check-equal? (sm-showtransitions a^nb^nc^nd^n `(,BLANK a a b b c c d d))
