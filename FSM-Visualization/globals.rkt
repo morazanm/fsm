@@ -10,7 +10,12 @@ Created by Joshua Schappel on 12/19/19
 ;; -- VERSION --
 (define VERSION "VERSION 1.6")
 
-(define IS-GRAPH? #f) ;; Determines if the graph representation should be displayed
+;; Determines if the graph representation should be displayed
+;; vaild modes are:
+;; - graph
+;; - control
+;; - tape (mttm only!!)
+(define VIEW-MODE 'control)
 
 
 ;; -- DIMENTIONS --
@@ -185,8 +190,13 @@ Created by Joshua Schappel on 12/19/19
 (define (set-tape-index value)
   (set! TAPE-INDEX value))
 
-(define (set-is-graph?)
-  (set! IS-GRAPH? (not IS-GRAPH?)))
+(define (set-view-mode mode)
+  (if (or (eq? mode 'control)
+          (eq? mode 'graph)
+          (eq? mode 'tape))
+      (set! VIEW-MODE mode)
+      (error (format "Internal Viz tool error. Invalid mode supplief ~s"
+                     (symbol->string mode)))))
 
 (define (toggle-color-blind-mode)
   (set! COLOR-BLIND-MODE (not COLOR-BLIND-MODE)))

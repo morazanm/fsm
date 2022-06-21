@@ -5,15 +5,21 @@ Created by Joshua Schappel on 12/19/19
   This file contains all the buttons for the visualization tool
 |#
 
-(require 2htdp/image "../structs/button.rkt" "../globals.rkt" "buttonFunctions.rkt"
-         "./runProgram.rkt" "../genCode.rkt")
+(require 2htdp/image
+         "../structs/button.rkt"
+         "../globals.rkt"
+         "buttonFunctions.rkt"
+         "./runProgram.rkt"
+         "../genCode.rkt")
 
 (provide
  BUTTON-LIST
  BUTTON-LIST-PDA
  BUTTON-LIST-TM
+ BUTTON-LIST-MTTM
  BUTTON-LIST-LANG-REC
- BTN-DISPLAY)
+ BTN-DISPLAY
+ BTN-DISPLAY-MTTM)
 
 
 
@@ -191,6 +197,35 @@ Button Declarations
                                  #:round? #t
                                  #:func toggle-display))
 
+
+(define BTN-HELP-MTTM (make-button 25 25 (posn 130 20)
+                                   #:text "?"
+                                   #:fntsize 12
+                                   #:color (make-color 39 168 242)
+                                   #:round? #t
+                                   #:func openHelp))
+
+(define BTN-COLOR-BLIND-MTTM (make-button 25 25 (posn 130 60)
+                                          #:text "CB"
+                                          #:fntsize 12
+                                          #:color (make-color 252 186 3)
+                                          #:round? #t
+                                          #:func toogleColorBlindMode))
+
+(define BTN-DISPLAY-MTTM (make-button 30 30 (posn 130 100)
+                                      #:text "DGr"
+                                      #:color (make-color 61 65 71)
+                                      #:fntsize 12
+                                      #:round? #t
+                                      #:func toggle-display))
+
+(define BTN-DISPLAY-MTTM-TAPES (make-button 35 30 (posn 130 140)
+                                            #:text "Tape"
+                                            #:color (make-color 232 89 79)
+                                            #:fntsize 12
+                                            #:round? #t
+                                            #:func toggle-display-mttm))
+
 (define BTN-NEXT (make-button 40 30 (posn 80 140)
                               #:text "🠊"
                               #:color (make-color 116 156 188)
@@ -222,6 +257,29 @@ Button Declarations
                                     #:fntsize 33
                                     #:func stackScrollDown))
 
+
+(define BTM-TAPE-SCROLL-UP-MTTM (make-button (- WIDTH 160) 25
+                                               (posn
+                                                (+ 25 (+ 100 (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2)))
+                                                13)
+                                               #:text "🠉"
+                                               #:color STACK-SCROLL-BUTTON-COLOR
+                                               #:fntsize 33
+                                               #:hidden #t
+                                               #:id 'mttm-up
+                                               #:func (lambda (v) v)))
+
+(define BTM-TAPE-SCROLL-DOWN-MTTM (make-button (- WIDTH 160) 25
+                                             (posn
+                                              (+ 25 (+ 100 (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2)))
+                                              (- HEIGHT 87))
+                                             #:text "🠋"
+                                             #:color STACK-SCROLL-BUTTON-COLOR
+                                             #:fntsize 33
+                                              #:id 'mttm-down
+                                             #:hidden #t
+                                             #:func (lambda (v) v)))
+
 (define BTN-SIGMA-ADD (make-button 40 25 (posn 30 70)
                                    #:text "ADD"
                                    #:color CONTROLLER-BUTTON-COLOR
@@ -236,54 +294,113 @@ Button Declarations
 
 
 ;; BUTTON-LIST: A List containing all buttons that are displayed on the scene.
-(define BUTTON-LIST (list BTN-ADD-STATE BTN-REMOVE-STATE
-                          BTN-ADD-ALPHA BTN-REMOVE-ALPHA
-                          BTN-ADD-START BTN-REMOVE-START
-                          BTN-ADD-END BTN-REMOVE-END
-                          BTN-ADD-RULES BTN-REMOVE-RULES
-                          BTN-GENCODE BTN-NEXT BTN-PREV
-                          BTN-SIGMA-ADD BTN-SIGMA-CLEAR
-                          BTN-RUN BTN-SCROLL-LEFT-RULES
-                          BTN-SCROLL-RIGHT-RULES BTN-HELP
-                          BTN-TAPE-SCROLL-LEFT BTN-TAPE-SCROLL-RIGHT
+(define BUTTON-LIST (list BTN-ADD-STATE
+                          BTN-REMOVE-STATE
+                          BTN-ADD-ALPHA
+                          BTN-REMOVE-ALPHA
+                          BTN-ADD-START
+                          BTN-REMOVE-START
+                          BTN-ADD-END
+                          BTN-REMOVE-END
+                          BTN-ADD-RULES
+                          BTN-REMOVE-RULES
+                          BTN-GENCODE
+                          BTN-NEXT
+                          BTN-PREV
+                          BTN-SIGMA-ADD
+                          BTN-SIGMA-CLEAR
+                          BTN-RUN
+                          BTN-SCROLL-LEFT-RULES
+                          BTN-SCROLL-RIGHT-RULES
+                          BTN-HELP
+                          BTN-TAPE-SCROLL-LEFT
+                          BTN-TAPE-SCROLL-RIGHT
                           BTN-COLOR-BLIND))
 
-(define BUTTON-LIST-PDA (list BTN-ADD-STATE BTN-REMOVE-STATE
-                              BTN-ADD-ALPHA-PDA BTN-REMOVE-ALPHA-PDA
-                              BTN-ADD-GAMMA-PDA BTN-REMOVE-GAMMA-PDA
-                              BTN-ADD-START BTN-REMOVE-START
-                              BTN-ADD-END BTN-REMOVE-END
-                              BTN-ADD-RULES-PDA BTN-REMOVE-RULES-PDA
-                              BTN-GENCODE BTN-NEXT BTN-PREV
-                              BTN-SIGMA-ADD BTN-SIGMA-CLEAR
-                              BTN-RUN BTN-SCROLL-LEFT-RULES
-                              BTN-SCROLL-RIGHT-RULES BTN-HELP
-                              BTN-STACK-UP BTN-STACK-DOWN
-                              BTN-SCROLL-RIGHT-RULES BTN-HELP
-                              BTN-TAPE-SCROLL-LEFT BTN-TAPE-SCROLL-RIGHT
+(define BUTTON-LIST-PDA (list BTN-ADD-STATE
+                              BTN-REMOVE-STATE
+                              BTN-ADD-ALPHA-PDA
+                              BTN-REMOVE-ALPHA-PDA
+                              BTN-ADD-GAMMA-PDA
+                              BTN-REMOVE-GAMMA-PDA
+                              BTN-ADD-START
+                              BTN-REMOVE-START
+                              BTN-ADD-END
+                              BTN-REMOVE-END
+                              BTN-ADD-RULES-PDA
+                              BTN-REMOVE-RULES-PDA
+                              BTN-GENCODE
+                              BTN-NEXT
+                              BTN-PREV
+                              BTN-SIGMA-ADD
+                              BTN-SIGMA-CLEAR
+                              BTN-RUN
+                              BTN-SCROLL-LEFT-RULES
+                              BTN-SCROLL-RIGHT-RULES
+                              BTN-STACK-UP
+                              BTN-STACK-DOWN
+                              BTN-SCROLL-RIGHT-RULES
+                              BTN-HELP
+                              BTN-TAPE-SCROLL-LEFT
+                              BTN-TAPE-SCROLL-RIGHT
                               BTN-COLOR-BLIND))
 
-(define BUTTON-LIST-TM (list BTN-ADD-STATE BTN-REMOVE-STATE
-                             BTN-ADD-ALPHA BTN-REMOVE-ALPHA
-                             BTN-ADD-START BTN-REMOVE-START
-                             BTN-ADD-END-TM BTN-REMOVE-END-TM
-                             BTN-ADD-RULES-PDA BTN-REMOVE-RULES-PDA
-                             BTN-GENCODE BTN-NEXT BTN-PREV
-                             BTN-SIGMA-ADD BTN-SIGMA-CLEAR
-                             BTN-RUN BTN-SCROLL-LEFT-RULES
-                             BTN-SCROLL-RIGHT-RULES BTN-HELP
-                             BTN-TAPE-SCROLL-LEFT BTN-TAPE-SCROLL-RIGHT
-                             BTN-COLOR-BLIND BTN-TAPE-INPUT-TM))
+(define BUTTON-LIST-TM (list BTN-ADD-STATE
+                             BTN-REMOVE-STATE
+                             BTN-ADD-ALPHA
+                             BTN-REMOVE-ALPHA
+                             BTN-ADD-START
+                             BTN-REMOVE-START
+                             BTN-ADD-END-TM
+                             BTN-REMOVE-END-TM
+                             BTN-ADD-RULES-PDA
+                             BTN-REMOVE-RULES-PDA
+                             BTN-GENCODE
+                             BTN-NEXT BTN-PREV
+                             BTN-SIGMA-ADD
+                             BTN-SIGMA-CLEAR
+                             BTN-RUN
+                             BTN-SCROLL-LEFT-RULES
+                             BTN-SCROLL-RIGHT-RULES
+                             BTN-HELP
+                             BTN-TAPE-SCROLL-LEFT
+                             BTN-TAPE-SCROLL-RIGHT
+                             BTN-COLOR-BLIND
+                             BTN-TAPE-INPUT-TM))
 
-(define BUTTON-LIST-LANG-REC (list BTN-ADD-STATE BTN-REMOVE-STATE
-                                   BTN-ADD-ALPHA BTN-REMOVE-ALPHA
-                                   BTN-ADD-START-LANG-REC BTN-REMOVE-START-LANG-REC
-                                   BTN-ADD-END-TM BTN-REMOVE-END-TM
-                                   BTN-ADD-RULES-PDA BTN-REMOVE-RULES-PDA
-                                   BTN-GENCODE BTN-NEXT BTN-PREV
-                                   BTN-SIGMA-ADD BTN-SIGMA-CLEAR
-                                   BTN-RUN BTN-SCROLL-LEFT-RULES
-                                   BTN-SCROLL-RIGHT-RULES BTN-HELP
-                                   BTN-TAPE-SCROLL-LEFT BTN-TAPE-SCROLL-RIGHT
-                                   BTN-COLOR-BLIND BTN-TAPE-INPUT-TM
+(define BUTTON-LIST-LANG-REC (list BTN-ADD-STATE
+                                   BTN-REMOVE-STATE
+                                   BTN-ADD-ALPHA
+                                   BTN-REMOVE-ALPHA
+                                   BTN-ADD-START-LANG-REC
+                                   BTN-REMOVE-START-LANG-REC
+                                   BTN-ADD-END-TM
+                                   BTN-REMOVE-END-TM
+                                   BTN-ADD-RULES-PDA
+                                   BTN-REMOVE-RULES-PDA
+                                   BTN-GENCODE
+                                   BTN-NEXT
+                                   BTN-PREV
+                                   BTN-SIGMA-ADD
+                                   BTN-SIGMA-CLEAR
+                                   BTN-RUN
+                                   BTN-SCROLL-LEFT-RULES
+                                   BTN-SCROLL-RIGHT-RULES
+                                   BTN-HELP
+                                   BTN-TAPE-SCROLL-LEFT
+                                   BTN-TAPE-SCROLL-RIGHT
+                                   BTN-COLOR-BLIND
+                                   BTN-TAPE-INPUT-TM
                                    BTN-SET-END-LANG-REC))
+
+(define BUTTON-LIST-MTTM (list BTN-GENCODE
+                               BTN-NEXT
+                               BTN-PREV
+                               BTN-SIGMA-ADD
+                               BTN-SIGMA-CLEAR
+                               BTN-RUN
+                               BTN-HELP-MTTM
+                               BTN-COLOR-BLIND-MTTM
+                               BTN-DISPLAY-MTTM-TAPES
+                               BTM-TAPE-SCROLL-DOWN-MTTM
+                               BTM-TAPE-SCROLL-UP-MTTM))
