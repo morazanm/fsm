@@ -6,7 +6,7 @@
 @(require (for-label racket setup/collects))
 
 @title{FSM}
-@author[(author+email "Marco T. Morazán" "marco.morazan@shu.edu")]
+@author[(author+email "Marco T. Morazán" "morazanm@shu.edu")]
 @defmodule[fsm]
 
 
