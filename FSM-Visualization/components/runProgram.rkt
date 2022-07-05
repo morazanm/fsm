@@ -79,7 +79,7 @@ Created by Joshua Schappel on 12/19/19
                                (machine-start-state (world-fsm-machine w))
                                (machine-final-state-list (world-fsm-machine w))
                                (mttm-machine-num-tapes (world-fsm-machine w))
-                               (mttm-machine-accept-state (world-fsm-machine w)))]
+                               (mttm-lang-rec-machine-accept-state (world-fsm-machine w)))]
                    [else (make-unchecked-tm state-list
                                             (machine-alpha-list (world-fsm-machine w))
                                             (machine-rule-list (world-fsm-machine w))

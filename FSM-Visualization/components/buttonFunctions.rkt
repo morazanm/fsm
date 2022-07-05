@@ -498,11 +498,15 @@ Created by Joshua Schappel on 12/19/19
                             (new-input-list (list-set (world-input-list w) input-idx (remove-text (list-ref (world-input-list w) input-idx) 100))))
                        (cond
                          [(or (equal? MACHINE-TYPE 'tm)
+                              (equal? MACHINE-TYPE 'mttm)
+                              (equal? MACHINE-TYPE 'mttm-language-recognizer)
                               (equal? MACHINE-TYPE 'tm-language-recognizer))
                           (begin
                             (reset-bottom-indices)
                             (set-machine-sigma-list! (world-fsm-machine w) `(,LM))
-                            (reset-tm-machine-tap-index (world-fsm-machine w))
+                            (when (or (equal? MACHINE-TYPE 'tm)
+                                      (equal? MACHINE-TYPE 'tm-language-recognizer))
+                              (reset-tm-machine-tap-index (world-fsm-machine w)))
                             (create-new-world-input-empty w new-input-list))]
                          [else
                           (begin
@@ -1054,6 +1058,7 @@ Created by Joshua Schappel on 12/19/19
   (cond
     [(empty? args)
      (begin
+       (set-tape-view-scroll-bar 0)
        (set-tape-index-bottom -1)
        (set-tape-index 0)
        (reset-stack)
@@ -1062,6 +1067,7 @@ Created by Joshua Schappel on 12/19/19
     [else
      (begin
        (reset-tm-machine-tap-index (car args))
+       (set-tape-view-scroll-bar 0)
        (set-tape-index-bottom -1)
        (set-tape-index 0)
        (set-init-index-bottom 0))]))

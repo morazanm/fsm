@@ -186,17 +186,17 @@ Cmd Functions
                                       (set-machine-type 'mttm-language-recognizer)
                                       (run-program
                                        (build-world
-                                        (mttm-machine
+                                        (mttm-lang-rec-machine
                                          (map (lambda (x) (fsm-state x TM-TRUE-FUNCTION (posn 0 0))) (sm-getstates fsm-machine))
                                          (sm-getstart fsm-machine)
                                          (sm-getfinals fsm-machine)
                                          (reverse (sm-getrules fsm-machine))
-                                         `(,LM a b c d e f g h i j k l m n o p q r s t u v w x y z)
+                                         `(,LM)
                                          (sm-getalphabet fsm-machine)
                                          (sm-type fsm-machine)
                                          (sm-getnumtapes fsm-machine)
-                                         (sm-getaccept fsm-machine)
-                                         '())
+                                         '()
+                                         (sm-getaccept fsm-machine))
                                         'mttm-language-recognizer
                                         (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation."
                                                    "tm" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)
@@ -301,7 +301,7 @@ Cmd Functions
                                         (set-machine-type 'mttm-language-recognizer)
                                         (run-program
                                          (build-world
-                                          (mttm-machine
+                                          (mttm-lang-rec-machine
                                            (map (lambda (x)
                                                   (let ((temp (get-member x args)))
                                                     (if (empty? temp)
@@ -314,8 +314,8 @@ Cmd Functions
                                            (sm-getalphabet fsm-machine)
                                            (sm-type fsm-machine)
                                            (sm-getnumtapes fsm-machine)
-                                           (sm-getaccept fsm-machine)
-                                           '())
+                                           '()
+                                           (sm-getaccept fsm-machine))
                                           'mttm-language-recognizer
                                           (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "tm" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
                                         (void))]
@@ -749,12 +749,12 @@ Scene Rendering
   (define view-height (- view-height-no-btn 50))
   (define view-width (- view-width-no-btn 40))
   (overlay/align "center" "middle"
-                 ;(rectangle view-width view-height "outline" "pink")
-                 (overlay/align "left" "top"
+                 
+                 (overlay/align "left" "center"
                                 (beside
                                  (make-mttm-tape-indexs (world-fsm-machine world) view-width view-height)
                                  (make-mttm-tapes (world-fsm-machine world) '(a b a) view-width view-height))
-                                (rectangle view-width view-height "outline" "pink"))
+                                (rectangle view-width view-height "outline" "transparent"))
                  (rectangle view-width-no-btn view-height-no-btn "outline" "red")))
 
 

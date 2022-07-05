@@ -13,6 +13,7 @@
  (struct-out tm-machine)
  (struct-out mttm-machine)
  (struct-out lang-rec-machine)
+ (struct-out mttm-lang-rec-machine)
  update-tm-machine
  update-mttm-machine
  update-lang-rec-machine
@@ -49,7 +50,12 @@
 ;; mttm-machine: A structure that is a subtype of machine
 ;; num-tapes { list-of-numbers } the number of tapes that the machine has
 ;; - tape-posn-list { list-of-numbers } the current locations on the tapes
-(struct mttm-machine machine (num-tapes accept-state [tape-posn-list #:mutable]) #:transparent)
+(struct mttm-machine machine (num-tapes [tape-posn-list #:mutable]) #:transparent)
+
+;; mttm-lang-rec-machine  A structure that is a subtype of mttm-machine. The one difference
+;;  is that it has an accept state
+;; - accept-state { Symbol } The user-defined accepting state of the machine
+(struct mttm-lang-rec-machine mttm-machine ([accept-state #:mutable]) #:transparent)
 
 
 ;; lang-rec-machine: A structure that is a subtype of tm-machine. The one difference
