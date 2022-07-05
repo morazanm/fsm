@@ -726,13 +726,15 @@ Scene Rendering
                                        (world-cur-rule w)) X0 Y0  no-arrow)))]
       ;; mttm tape view
       [(and (eq? VIEW-MODE 'tape)
-            (eq? 'mttm-language-recognizer MACHINE-TYPE)) (define X (+ 100 (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2)))
-                                                          (define Y (- (/ (+ TOP (- HEIGHT BOTTOM)) 2) 25))
-                                                          (place-image
-                                                           (construct-tape-view w X Y)
-                                                           (+ 25 X)
-                                                           (- Y 5)
-                                                           with-arrow)]
+            (eq? 'mttm-language-recognizer MACHINE-TYPE))
+       (define X (+ 100 (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2)))
+       (define Y (- (/ (+ TOP (- HEIGHT BOTTOM)) 2) 25))
+       (draw-error-msg (world-error-msg w)
+                       (place-image
+                        (construct-tape-view w X Y)
+                        (+ 25 X)
+                        (- Y 5)
+                        with-arrow))]
       ;; control view
       [else
        (if (not (null? (world-cur-state w)))
