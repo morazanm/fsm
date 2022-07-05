@@ -52,6 +52,10 @@ Initialize World
                                       [(tm-language-recognizer) BUTTON-LIST-LANG-REC]
                                       [(mttm-language-recognizer) BUTTON-LIST-MTTM]
                                       [else BUTTON-LIST]))))
+    ;; mttm's have a smaller tape limit so we will change it if necessary
+    (when (or (equal? type 'mttm-language-recognizer)
+              (equal? type 'mttm))
+      (set-tape-render-limit 24))
 
     (initialize-world m
                       messageWin
@@ -187,7 +191,7 @@ Cmd Functions
                                          (sm-getstart fsm-machine)
                                          (sm-getfinals fsm-machine)
                                          (reverse (sm-getrules fsm-machine))
-                                         `(,LM)
+                                         `(,LM a b c d e f g h i j k l m n o p q r s t u v w x y z)
                                          (sm-getalphabet fsm-machine)
                                          (sm-type fsm-machine)
                                          (sm-getnumtapes fsm-machine)
@@ -740,12 +744,18 @@ Scene Rendering
 ;; construct-tape-view :: world -> image
 ;; Purpose: creates a image that has all the tapes
 (define (construct-tape-view world w h)
-  (define view-width (- WIDTH 160))
+  (define view-width-no-btn (- WIDTH 160))
   (define view-height-no-btn (- HEIGHT BOTTOM))
   (define view-height (- view-height-no-btn 50))
+  (define view-width (- view-width-no-btn 40))
   (overlay/align "center" "middle"
-                 (make-mttm-tapes (world-fsm-machine world) '(a b a) view-width view-height)
-                 (rectangle view-width view-height-no-btn "outline" "red")))
+                 ;(rectangle view-width view-height "outline" "pink")
+                 (overlay/align "left" "top"
+                                (beside
+                                 (make-mttm-tape-indexs (world-fsm-machine world) view-width view-height)
+                                 (make-mttm-tapes (world-fsm-machine world) '(a b a) view-width view-height))
+                                (rectangle view-width view-height "outline" "pink"))
+                 (rectangle view-width-no-btn view-height-no-btn "outline" "red")))
 
 
 #|
@@ -873,6 +883,26 @@ TOP GUI RENDERING
                     (list-2-img input-to-render TAPE-INDEX))
      (rectangle (- (- WIDTH (/ WIDTH 11)) 200) TOP "outline" OUTLINE-COLOR))))
 
+
+
+;; make-mttm-tape-indexs :: machine -> number -> number -> image
+;; Creates a image that has the indexes of the current displayed tapes stacked on top of each other
+(define (make-mttm-tape-indexs machine rec-width rec-height)
+  (define rectWidth (/ (- rec-width 40) (- TAPE-RENDER-LIMIT 1)))
+  (define rectHeight (/ rec-height 5))
+  (define range* (range MTTM-TAPE-INDEX (mttm-machine-num-tapes machine)))
+  (define (make-image index)
+    (overlay
+     (text (number->string index) 10 "black")
+     (rectangle rectWidth rectHeight "outline" OUTLINE-COLOR)))
+  (foldr (lambda (i s)
+           (above (make-image i)
+                  s))
+         empty-image
+         (if (> (length range*) 5)
+             (take range* 5)
+             range*)))
+         
            
 
 ;;(tm-los-top input-list cur-rule (tm-machine-tape-posn m) 32)           
@@ -883,7 +913,12 @@ TOP GUI RENDERING
     (define rectWidth (/ (- rec-width 40) TAPE-RENDER-LIMIT))
     (define rectHeight (/ rec-height 5))
     ;; Gets the tape inptu that needs to be rendered on the screen
-    (define input-to-render (take '(a b c d e f g h i h k l m n o p q r s t u v w x y z aa bb cc dd) TAPE-RENDER-LIMIT))
+    (define input-to-render (cond
+                              [(> (length los) TAPE-RENDER-LIMIT)
+                               (let ((c (drop los TAPE-INDEX)))
+                                 (take c TAPE-RENDER-LIMIT))]
+                              [else
+                               los]))
     ;; list-2-img: list-of-sigma (tape input) int -> image
     ;; Purpose: Converts the tape input into image that overlays the tape in the center
     (define (list-2-img los accum)
@@ -926,7 +961,7 @@ TOP GUI RENDERING
     (list-2-img input-to-render tape-index))
   (foldr (lambda (t s) (above
                         s
-                        (make-single-mttm-tape 0 s)))
+                        (make-single-mttm-tape TAPE-INDEX s)))
          empty-image
          ;(rectangle rec-width 25 "outline" "transparent")
          (range (if (> (mttm-machine-num-tapes machine) 5)

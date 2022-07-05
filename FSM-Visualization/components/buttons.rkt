@@ -266,7 +266,7 @@ Button Declarations
                                              #:fntsize 33
                                              #:hidden #t
                                              #:id 'mttm-up
-                                             #:func (lambda (v) v)))
+                                             #:func tapeViewScrollUp))
 
 (define BTM-TAPE-SCROLL-DOWN-MTTM (make-button (- WIDTH 160) 25
                                                (posn
@@ -277,7 +277,7 @@ Button Declarations
                                                #:fntsize 33
                                                #:id 'mttm-down
                                                #:hidden #t
-                                               #:func (lambda (v) v)))
+                                               #:func tapeViewScrollDown))
 
 
 (define BTM-TAPE-SCROLL-LEFT-MTTM (make-button 20 200
@@ -289,7 +289,7 @@ Button Declarations
                                                #:fntsize 33
                                                #:id 'typeview-left
                                                #:hidden #t
-                                               #:func (lambda (v) v)))
+                                               #:func tapeViewScrollLeft))
 
 (define BTM-TAPE-SCROLL-RIGHT-MTTM (make-button 20 200
                                                (posn
@@ -300,7 +300,7 @@ Button Declarations
                                                #:fntsize 33
                                                #:id 'typeview-right
                                                #:hidden #t
-                                               #:func (lambda (v) v)))
+                                               #:func tapeViewScrollRight))
 
 (define BTN-SIGMA-ADD (make-button 40 25 (posn 30 70)
                                    #:text "ADD"

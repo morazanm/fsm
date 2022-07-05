@@ -47,6 +47,10 @@ Created by Joshua Schappel on 12/19/19
  setTapePosn
  setAcceptState
  toggle-display
+ tapeViewScrollUp
+ tapeViewScrollDown
+ tapeViewScrollRight
+ tapeViewScrollLeft
  toggle-display-mttm)
 
 ;; ------- Button Functions -------
@@ -985,6 +989,29 @@ Created by Joshua Schappel on 12/19/19
                                     (set-view-mode 'control)
                                     (set-view-mode 'tape))
                                 w)))
+
+;; tapeViewScrollUp :: world -> world
+;; scrolls up on the scrollBar if possiable
+(define (tapeViewScrollUp w)
+  (when (> MTTM-TAPE-INDEX 0)
+    (set-tape-view-scroll-bar (sub1 MTTM-TAPE-INDEX)))
+  w)
+
+(define (tapeViewScrollDown w)
+  (when (< MTTM-TAPE-INDEX  (- (mttm-machine-num-tapes (world-fsm-machine w)) 5))
+    (set-tape-view-scroll-bar (add1 MTTM-TAPE-INDEX)))
+  w)
+
+(define (tapeViewScrollLeft w)
+  (when (> TAPE-INDEX 0)
+    (set-tape-index (sub1 TAPE-INDEX)))
+  w)
+
+(define (tapeViewScrollRight w)
+  (define input-list (machine-sigma-list (world-fsm-machine w)))
+  (when (< (+ TAPE-INDEX 24) (length input-list))
+    (set-tape-index (add1 TAPE-INDEX)))
+  w)
 
 
 
