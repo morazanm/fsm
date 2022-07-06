@@ -141,7 +141,8 @@ Created by Joshua Schappel on 12/19/19
                                                            [else
                                                             (cons LM TM-ORIGIONAL-TAPE)]))
                                             (trans (sm-showtransitions m
-                                                                       (if proper-list proper-list '()))))
+                                                                       (if proper-list proper-list '())
+                                                                       (mttm-machine-start-tape-posn (world-fsm-machine w)))))
                                        (if (string? trans)
                                            (list trans)
                                            (append trans '(halt))))]
@@ -154,7 +155,8 @@ Created by Joshua Schappel on 12/19/19
                                                            [else
                                                             (cons LM TM-ORIGIONAL-TAPE)]))
                                             (trans (sm-showtransitions m
-                                                                       (if proper-list proper-list '()))))
+                                                                       (if proper-list proper-list '())
+                                                                       (mttm-machine-start-tape-posn (world-fsm-machine w)))))
                                        (if (string? trans)
                                            (list trans)
                                            trans))]
@@ -297,6 +299,7 @@ Created by Joshua Schappel on 12/19/19
       (sm-getalphabet newMachine)
       (sm-type newMachine)
       (mttm-machine-num-tapes worldMachine)
+      0
       (mttm-machine-tape-posn-list worldMachine))]
     [(mttm-language-recognizer)
      (mttm-lang-rec-machine
@@ -308,6 +311,7 @@ Created by Joshua Schappel on 12/19/19
       (sm-getalphabet newMachine)
       (sm-type newMachine)
       (mttm-machine-num-tapes worldMachine)
+      0
       (mttm-machine-tape-posn-list worldMachine)
       (mttm-lang-rec-machine-accept-state worldMachine))]
     [else

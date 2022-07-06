@@ -48,9 +48,10 @@
 (struct tm-machine machine ([tape-posn #:mutable]) #:transparent)
 
 ;; mttm-machine: A structure that is a subtype of machine
-;; num-tapes { list-of-numbers } the number of tapes that the machine has
+;; - num-tapes { list-of-numbers } the number of tapes that the machine has
+;; - start-tape-posn { number } the starting location on the tape
 ;; - tape-posn-list { list-of-numbers } the current locations on the tapes
-(struct mttm-machine machine (num-tapes [tape-posn-list #:mutable]) #:transparent)
+(struct mttm-machine machine (num-tapes [start-tape-posn #:mutable] [tape-posn-list #:mutable]) #:transparent)
 
 ;; mttm-lang-rec-machine  A structure that is a subtype of mttm-machine. The one difference
 ;;  is that it has an accept state

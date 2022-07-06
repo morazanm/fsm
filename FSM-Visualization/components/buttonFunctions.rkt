@@ -835,34 +835,38 @@ Created by Joshua Schappel on 12/19/19
 
 ;; setTapePosn world -> world
 ;; Purpose: Sets the tape-input for a turing machine
-(define setTapePosn (lambda (w)
-                      (let*((input-value (string-trim (textbox-text(list-ref (world-input-list w) 9))))
-                            (new-input-list (list-set (world-input-list w) 9 (remove-text (list-ref (world-input-list w) 9) 100)))
-                            (all-numbers? (ormap (lambda (letter)
-                                                   (let ((ascii-val (char->integer letter)))
-                                                     (and
-                                                      (>= ascii-val 48)    ;; 0
-                                                      (<= ascii-val 57)))) ;; 9 
-                                                 (string->list input-value))))
-                        (cond
-                          [(equal? "" input-value) w]
-                          [(not all-numbers?)
-                           (redraw-world-with-msg w
-                                                  "Please enter a number greater then -1"
-                                                  "Error"
-                                                  MSG-CAUTION)]
-                          [(< (sub1 (length (machine-sigma-list (world-fsm-machine w))))
-                              (string->number input-value))
-                           (redraw-world-with-msg w
-                                                  "Invalid tape index position. Make sure your tape position is less then or equal to the tape input"
-                                                  "Error"
-                                                  MSG-CAUTION)]
-                          [else
-                           (begin
-                             (reset-bottom-indices)
-                             (set-tm-og-tape-posn (string->number input-value))
-                             (set-tm-machine-tape-posn! (world-fsm-machine w) (string->number input-value))
-                             (create-new-world-input-empty w new-input-list))]))))
+(define (setTapePosn w)
+  (define input-idx (index-where (world-input-list w) (lambda (v1) (eq? (textbox-id v1) 'tapePosnInput))))
+  (define input-value (string-trim (textbox-text (list-ref (world-input-list w) input-idx))))
+  (define new-input-list (list-set (world-input-list w) input-idx (remove-text (list-ref (world-input-list w) input-idx) 100)))
+  (define all-numbers? (ormap (lambda (letter)
+                                (let ((ascii-val (char->integer letter)))
+                                  (and
+                                   (>= ascii-val 48)    ;; 0
+                                   (<= ascii-val 57)))) ;; 9 
+                              (string->list input-value)))
+  (cond
+    [(equal? "" input-value) w]
+    [(not all-numbers?)
+     (redraw-world-with-msg w
+                            "Please enter a number greater then -1"
+                            "Error"
+                            MSG-CAUTION)]
+    [(< (sub1 (length (machine-sigma-list (world-fsm-machine w))))
+        (string->number input-value))
+     (redraw-world-with-msg w
+                            "Invalid tape index position. Make sure your tape position is less then or equal to the tape input"
+                            "Error"
+                            MSG-CAUTION)]
+    [else
+     (begin
+       (reset-bottom-indices)
+       (set-tm-og-tape-posn (string->number input-value))
+       (if (or (equal? MACHINE-TYPE 'tm)
+               (equal? MACHINE-TYPE 'tm-language-recognizer))
+           (set-tm-machine-tape-posn! (world-fsm-machine w) (string->number input-value))
+           (set-mttm-machine-start-tape-posn! (world-fsm-machine w) (string->number input-value)))
+       (create-new-world-input-empty w new-input-list))]))
 
 
 ;; setAcceptState: world -> world

@@ -15,6 +15,7 @@ Created by Joshua Schappel on 12/19/19
  INPUT-LIST-LANG-REC)
 
 
+
 #|
 -----------------------
 Textbox Declarations
@@ -119,6 +120,12 @@ Textbox Declarations
 ;; Other
 (define IPF-TAPE-INDEX (make-textbox 75 25 (posn (- WIDTH 50) (- (* 4 CONTROL-BOX-H) 60))
                                      #:limit 5
+                                     #:id 'tapePosnInput
+                                     #:func setTapePosn))
+
+(define IPF-TAPE-INDEX-MTTM (make-textbox 75 25 (posn 55 210)
+                                     #:limit 5
+                                     #:id 'tapePosnInput
                                      #:func setTapePosn))
 
 (define IPF-USER-DEFINED-LANG-REC (make-textbox 75 25 (posn (- WIDTH 50) (- (* 3 CONTROL-BOX-H) 60))
@@ -157,5 +164,4 @@ Textbox Declarations
                                   GEN-CODE))
 
 
-(define INPUT-LIST-MTTM (list IPF-SIGMA
-                              GEN-CODE))
+(define INPUT-LIST-MTTM (list IPF-SIGMA IPF-TAPE-INDEX-MTTM))

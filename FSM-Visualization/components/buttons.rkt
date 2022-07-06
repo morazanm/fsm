@@ -120,6 +120,13 @@ Button Declarations
 (define BTN-TAPE-INPUT-TM (make-button 50 25 (posn (- WIDTH 50) (- (* 4 CONTROL-BOX-H) 25))
                                        #:text "Set"
                                        #:color CONTROLLER-BUTTON-COLOR
+                                       #:id 'tapePosn
+                                       #:func setTapePosn))
+
+(define BTN-TAPE-INPUT-MTTM (make-button 50 25 (posn 55 240)
+                                       #:text "Set"
+                                       #:color CONTROLLER-BUTTON-COLOR
+                                       #:id 'tapePosn
                                        #:func setTapePosn))
 
 (define BTN-ADD-RULES (make-button 70 25 (posn (- WIDTH 150) (- (* 5 CONTROL-BOX-H) 25))
@@ -415,7 +422,7 @@ Button Declarations
                                    BTN-TAPE-INPUT-TM
                                    BTN-SET-END-LANG-REC))
 
-(define BUTTON-LIST-MTTM (list BTN-GENCODE
+(define BUTTON-LIST-MTTM (list BTN-TAPE-INPUT-MTTM
                                BTN-NEXT
                                BTN-PREV
                                BTN-SIGMA-ADD

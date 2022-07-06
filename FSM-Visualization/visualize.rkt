@@ -195,6 +195,7 @@ Cmd Functions
                                          (sm-getalphabet fsm-machine)
                                          (sm-type fsm-machine)
                                          (sm-getnumtapes fsm-machine)
+                                         0
                                          '()
                                          (sm-getaccept fsm-machine))
                                         'mttm-language-recognizer
@@ -314,6 +315,7 @@ Cmd Functions
                                            (sm-getalphabet fsm-machine)
                                            (sm-type fsm-machine)
                                            (sm-getnumtapes fsm-machine)
+                                           0
                                            '()
                                            (sm-getaccept fsm-machine))
                                           'mttm-language-recognizer
@@ -685,13 +687,10 @@ Scene Rendering
                                                                                                 (place-image (case (machine-type machine)
                                                                                                                [(pda)
                                                                                                                 (create-gui-left
-                                                                                                                 (machine-alpha-list machine)
-                                                                                                                 (machine-type machine)
+                                                                                                                 machine
                                                                                                                  (pda-machine-stack-alpha-list (world-fsm-machine w)))]
                                                                                                                [else
-                                                                                                                (create-gui-left
-                                                                                                                 (machine-alpha-list machine)
-                                                                                                                 (machine-type machine))])
+                                                                                                                (create-gui-left machine)])
                                                                                                              (/ (/ WIDTH 11) 2)
                                                                                                              (/ (- HEIGHT BOTTOM) 2)
                                                                                                              MAIN-SCENE)))))))
@@ -704,42 +703,44 @@ Scene Rendering
                                                                                               (place-image (case (machine-type machine)
                                                                                                              [(pda)
                                                                                                               (create-gui-left
-                                                                                                               (machine-alpha-list machine)
-                                                                                                               (machine-type machine)
+                                                                                                               machine
                                                                                                                (pda-machine-stack-alpha-list (world-fsm-machine w)))]
                                                                                                              [else 
-                                                                                                              (create-gui-left
-                                                                                                               (machine-alpha-list machine)
-                                                                                                               (machine-type machine))])
+                                                                                                              (create-gui-left machine)])
                                                                                                            (/ (/ WIDTH 11) 2)
                                                                                                            (/ (- HEIGHT BOTTOM) 2)
                                                                                                            MAIN-SCENE))))))))
-    (cond
-      ;; grahpviz view
-      [(eq? VIEW-MODE 'graph)
-       (begin
-         (draw-error-msg (world-error-msg w)
-                         (place-image (create-png ;; build the graphviz img
-                                       machine
-                                       (not (empty? (world-processed-config-list w)))
-                                       (world-cur-state w)
-                                       (world-cur-rule w)) X0 Y0  no-arrow)))]
-      ;; mttm tape view
-      [(and (eq? VIEW-MODE 'tape)
-            (eq? 'mttm-language-recognizer MACHINE-TYPE))
-       (define X (+ 100 (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2)))
-       (define Y (- (/ (+ TOP (- HEIGHT BOTTOM)) 2) 25))
-       (draw-error-msg (world-error-msg w)
-                       (place-image
-                        (construct-tape-view w X Y)
-                        (+ 25 X)
-                        (- Y 5)
-                        with-arrow))]
-      ;; control view
-      [else
-       (if (not (null? (world-cur-state w)))
-           (draw-error-msg (world-error-msg w)(draw-main-img w no-arrow))                                                                                                                   
-           (draw-error-msg (world-error-msg w) (draw-main-img w with-arrow)))])))
+    (draw-error-msg
+     (world-error-msg w)
+     (cond
+       ;; --------------
+       ;; grahpviz view
+       ;; --------------
+       [(eq? VIEW-MODE 'graph)
+        (place-image (create-png ;; build the graphviz img
+                      machine
+                      (not (empty? (world-processed-config-list w)))
+                      (world-cur-state w)
+                      (world-cur-rule w)) X0 Y0  no-arrow)]
+       ;; --------------
+       ;; mttm tape view
+       ;; --------------
+       [(and (eq? VIEW-MODE 'tape)
+             (eq? 'mttm-language-recognizer MACHINE-TYPE))
+        (define X (+ 100 (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2)))
+        (define Y (- (/ (+ TOP (- HEIGHT BOTTOM)) 2) 25))
+        (place-image
+         (construct-tape-view w X Y)
+         (+ 25 X)
+         (- Y 5)
+         with-arrow)]
+       ;; --------------
+       ;; control view
+       ;; --------------
+       [else
+        (if (not (null? (world-cur-state w)))
+            (draw-main-img w no-arrow)                                                                                                             
+            (draw-main-img w with-arrow))]))))
 
 
 
@@ -1093,38 +1094,70 @@ LEFT GUI RENDERING
 |# 
 
 
-;; create-gui-left: list of alpha type list-of-gamma(optional) -> image
+;; create-gui-left:machine -> image
 ;; Purpose: Creates the img for the left hand side of the gui
-(define (create-gui-left loa type . log)
-  (letrec (
-           ;; create-alpha-control: list of alpha -> image
-           (create-alpha-control (lambda (loa)
-                                   (letrec (
-                                            (title1-width (/ WIDTH 11)) ;; The width of the title for all machines besides pda's
-                                            (title2-width (/ (/ WIDTH 11) 2))) ;; The title width for pdas
-                                     
-                                     ;; Determine if the gamma needs to be drawin or not.
-                                     (cond
-                                       [(empty? log)
-                                        (overlay/align "right" "top"
-                                                       (rectangle (/ WIDTH 11) (- (/ HEIGHT 2) 30) "outline" OUTLINE-COLOR)
-                                                       (above
-                                                        (control-header2 "Σ" title1-width 18)
-                                                        (draw-verticle loa 14 title1-width 14)))]
-                                       [else
-                                        (overlay/align "right" "top"
-                                                       (rectangle (/ WIDTH 11) (- (/ HEIGHT 2) 30) "outline" OUTLINE-COLOR)
-                                                       (beside/align "top"
-                                                                     (above
-                                                                      (control-header2 "Σ" title2-width 18)
-                                                                      (draw-verticle loa 14 title2-width 14))
-                                                                     (above
-                                                                      (control-header2 "Γ" title2-width 18)
-                                                                      (draw-verticle (car log) 14 title2-width 14))))])))))
+;; TODO: JSchappel finish this
+(define (create-gui-left m . log)
+  (define loa (machine-alpha-list m))
+  (define CONTROL-BOX-H 95)
+  ;;create-mttm-set-tape-posn :: image
+  ;; for mttm's the set tape posn is locacted on the left so we will draw it
+  ;; in this function
+  (define (create-mttm-set-tape-posn)
+                             
+    ;; draw-left: none -> img
+    ;; Purpose: draws the message that telles the user the current position
+    (define (draw-tape-index)
+      (define msg (string-append "Current posn:" (number->string (mttm-machine-start-tape-posn m))))
+      (overlay
+       (text msg 11 (make-color 94 36 23))
+       (rectangle (/ WIDTH 11) 10 "outline" "transparent")))
+                                            
+    ;; draw-right: none -> img
+    ;; Purpose: Draws the tape index option
+    (define (draw-right)
+      (overlay/align "left" "top"
+                     (rectangle (/ WIDTH 11) CONTROL-BOX-H "outline" OUTLINE-COLOR)
+                     (above
+                      (control-header4 "Tape Posn")
+                      (draw-tape-index))))
+    (overlay
+     (draw-right)
+     (rectangle (/ WIDTH 11) CONTROL-BOX-H "outline" OUTLINE-COLOR)))
+  
+  ;; create-alpha-control: list of alpha -> image
+  (define (create-alpha-control loa)
+    (define title1-width (/ WIDTH 11)) ;; The width of the title for all machines besides pda's
+    (define title2-width (/ (/ WIDTH 11) 2)) ;; The title width for pdas                               
+    ;; Determine if the gamma needs to be drawin or not.
+    (cond
+      [(empty? log)
+       (overlay/align "right" "top"
+                      (rectangle (/ WIDTH 11) (- (/ HEIGHT 2) 30) "outline" OUTLINE-COLOR)
+                      (above
+                       (control-header2 "Σ" title1-width 18)
+                       (draw-verticle loa 14 title1-width 14)))]
+      [else
+       (overlay/align "right" "top"
+                      (rectangle (/ WIDTH 11) (- (/ HEIGHT 2) 30) "outline" OUTLINE-COLOR)
+                      (above
+                       empty-image
+                       (beside/align "top"
+                                     (above
+                                      (control-header2 "Σ" title2-width 18)
+                                      (draw-verticle loa 14 title2-width 14))
+                                     (above
+                                      (control-header2 "Γ" title2-width 18)
+                                      (draw-verticle (car log) 14 title2-width 14)))))]))
     
-    (overlay/align "left" "bottom"
-                   (rectangle (/ WIDTH 11) (- HEIGHT BOTTOM) "outline" OUTLINE-COLOR)
-                   (create-alpha-control loa))))
+  (overlay/align "left" "bottom"
+                 (rectangle (/ WIDTH 11) (- HEIGHT BOTTOM) "outline" OUTLINE-COLOR)
+                 (if (or (equal? MACHINE-TYPE 'mttm)
+                         (equal? MACHINE-TYPE 'mttm-language-recognizer))
+                     (above
+                      (create-mttm-set-tape-posn)
+                      (create-alpha-control loa))
+                     (create-alpha-control loa))))
 
 
 
