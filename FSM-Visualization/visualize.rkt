@@ -921,16 +921,22 @@ TOP GUI RENDERING
          (take c TAPE-RENDER-LIMIT))]
       [else
        lst]))
-  
-  ;; builds the list of tape values to be displayed
+
+  ;; tapes is a list of tuples where the first val is the tape index and the second
+  ;; is the tape values
   (define tapes
-    ;; if the processed list is empty then we have not run the machine yet so
-    ;; we will set the first tape to the input and the rest will be blank
-    (for/list ([i (range 0 (mttm-machine-num-tapes machine))])
-      (cond
-        [(and (eq? i 0) (empty? processed-list))
-         (get-render-vals (machine-sigma-list machine))]
-        [(empty? processed-list) (list BLANK)])))
+    (if (empty? processed-list)
+        ;; if the processed list is empty then we have not run the machine yet so
+        ;; we will set the first tape to the input and the rest will be blank
+        (for/list ([i (range 0 (mttm-machine-num-tapes machine))])
+          (cond
+            [(eq? i 0)
+             (list
+              (mttm-machine-start-tape-posn machine)
+              (get-render-vals (machine-sigma-list machine)))]
+            [else (list 0 (list BLANK))]))
+        ;; otherwise we grab the latest tape 
+        (cdar processed-list)))
   
   (define (tapes-to-render)
     (define dropped-tapes (drop tapes MTTM-TAPE-INDEX))
@@ -938,13 +944,8 @@ TOP GUI RENDERING
         dropped-tapes
         (take dropped-tapes 5)))
         
-        
-
-  
   (define (make-single-mttm-tape lst scene)
-    (define tape-index (if (empty? (mttm-machine-tape-posn-list machine))
-                           (mttm-machine-start-tape-posn machine)
-                           10000)) ;; TODO: finish
+    (define tape-index (car lst))
     (define rectWidth (/ (- rec-width 40) TAPE-RENDER-LIMIT))
     (define rectHeight (/ rec-height 5))
     ;; list-2-img: list-of-sigma (tape input) int -> image
@@ -986,8 +987,7 @@ TOP GUI RENDERING
            (input-box sigma #f fnt-size)
            (index-box index))
           (rectangle rectWidth rectHeight "outline" "transparent"))]))
-    (list-2-img lst TAPE-INDEX))
-
+    (list-2-img (cadr lst) TAPE-INDEX))
 
   (foldr (lambda (t s) (above/align "left" t s)) empty-image
          (map (lambda (t)

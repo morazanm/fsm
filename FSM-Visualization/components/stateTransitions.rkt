@@ -1,14 +1,24 @@
 #lang racket
-(require "../../fsm-main.rkt" "../structs/world.rkt" "../globals.rkt")
+(require "../../fsm-main.rkt"
+         "../structs/world.rkt"
+         "../globals.rkt")
 
 (provide getCurRule)
 
 (define getCurRule (lambda (processed-list #:debug [debug #f])
                      (case MACHINE-TYPE
-                       [(pda) (get-pda-rule processed-list debug)]
-                       [(tm) (get-tm-rule processed-list)]
-                       [(tm-language-recognizer) (get-tm-rule processed-list)]
-                       [else (get-dfa-ndfa-rule processed-list)])))
+                       [(pda)
+                        (get-pda-rule processed-list debug)]
+                       [(tm)
+                        (get-tm-rule processed-list)]
+                       [(tm-language-recognizer)
+                        (get-tm-rule processed-list)]
+                       [(mttm)
+                        (get-mttm-rule processed-list)]
+                       [(mttm-language-recognizer)
+                        (get-mttm-rule processed-list)]
+                       [else
+                        (get-dfa-ndfa-rule processed-list)])))
 
 
 ;;get-dfa-ndfa-rule: Returns the current rule for a dfa/ndfa
@@ -59,6 +69,20 @@
        (list (list cur-state cur-tape-element) (list next-state RIGHT))]
       [else                                   ;;statyed in same posn
        (list (list cur-state cur-tape-element) (list next-state next-tape-element))])))
+
+;; get-mttm-rule processed-list -> mttm-rule
+;; Purpose: Determins if the rule to be made should be empty or a real rule
+(define (get-mttm-rule pl)
+  (cond
+    [(< (length pl) 2) '((empty (empty empty empty)) (empty (empty empty empty)))]
+    [else (construct-mttm-rule pl)]))
+
+;; construct-mttm-rule :: processed-list -> mttm-rule
+;; Purpose: Constructs the current mttm rule based on the processed list
+(define (construct-mttm-rule pl)
+  (define cur-trans (cadr pl)) ;; The current transiton
+  (define next-trans (car pl)) ;; The next transition
+  (displayln pl))
 
 
 ;; get-pda-rule: processed-list -> pda-rule

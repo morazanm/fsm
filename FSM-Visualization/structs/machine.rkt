@@ -3,7 +3,6 @@
 ;; ------- machine.rkt -------
 ;; This file contains the structure for a fsm machine (dfa, ndfa, pda, ...) 
 ;; Written by: Joshua Schappel 8/15/2019
-;; Last updated: 3/3/20 by Josh
 
 
 ;; export necessary files
@@ -42,7 +41,6 @@
 ;; - stack-alpha-list { list-of-symbols }: TODO: discription
 (struct pda-machine machine ([stack-alpha-list #:mutable]) #:transparent)
 
-
 ;; tm-machine: A structure that is a subtype of machine
 ;; - tape-posn { Number } the current location on the tape
 (struct tm-machine machine ([tape-posn #:mutable]) #:transparent)
@@ -58,12 +56,10 @@
 ;; - accept-state { Symbol } The user-defined accepting state of the machine
 (struct mttm-lang-rec-machine mttm-machine ([accept-state #:mutable]) #:transparent)
 
-
 ;; lang-rec-machine: A structure that is a subtype of tm-machine. The one difference
 ;;  is that it has an accept state
 ;; - accept-state { Symbol } The user-defined accepting state of the machine
 (struct lang-rec-machine tm-machine ([accept-state #:mutable]) #:transparent)
-
 
 ;; update-tm-machine-tape-posn: tm-machine int list-of-symbols -> tm-machine
 ;; Purpose: Builds a new tm machine with the updated tape posn

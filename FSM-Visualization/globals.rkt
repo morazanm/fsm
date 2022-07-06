@@ -66,8 +66,7 @@ Created by Joshua Schappel on 12/19/19
 (define DEFAULT-BTN-COLOR (make-color 100 200 100)) ;; The default color for a button
 ;; THIS FUNCTION IS JUST A PLACEHOLDER
 ;;  This function is Just a placeholder for biulding out the GUI
-(define NULL-FUNCTION (lambda (w)
-                        w))
+(define NULL-FUNCTION (lambda (w) w))
 
 ;; -- INPUTS --
 (define INPUT-COLOR (make-color 141 144 145)) ;; The color of an input field
@@ -83,7 +82,7 @@ Created by Joshua Schappel on 12/19/19
 (define TRUE-FUNCTION (lambda (v) PLACEHOLDER)) ;; The default function for a state variable
 (define PDA-TRUE-FUNCTION (lambda (v c) PLACEHOLDER)) ;; The default function for a state variable
 (define TM-TRUE-FUNCTION (lambda (v c) PLACEHOLDER))  ;; The default function for a state variable
-(define MTTM-TRUE-FUNCTION (lambda (a . r) PLACEHOLDER)) ;; The default function for a state variable
+(define MTTM-TRUE-FUNCTION (lambda (a r) PLACEHOLDER)) ;; The default function for a state variable
 (define MACHINE-TYPE null) ;; The type of machine (pda, ndfa, ..)
 (define TM-ORIGIONAL-TAPE '()) ;; set-tm-og-tape
 (define TM-ORIGIONAL-TAPE-POSN 0) ;; the initial tape position set by the user. Defualts to 0
@@ -180,7 +179,6 @@ Created by Joshua Schappel on 12/19/19
   (set! TM-ORIGIONAL-TAPE tape))
 
 (define (set-tm-og-tape-posn posn)
-  (println posn)
   (set! TM-ORIGIONAL-TAPE-POSN posn))
 
 (define (set-init-index-bottom value)

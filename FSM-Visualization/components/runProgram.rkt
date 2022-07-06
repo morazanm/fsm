@@ -178,9 +178,7 @@ Created by Joshua Schappel on 12/19/19
             (world-button-list w)
             (world-input-list w)    
             (if (list? unprocessed-list)
-                (begin
-                  (displayln (car unprocessed-list))
-                (list (car unprocessed-list)))
+                (list (car unprocessed-list))
                 '())
                                     
             (if (list? unprocessed-list)
