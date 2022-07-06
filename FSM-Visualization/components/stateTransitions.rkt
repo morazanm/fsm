@@ -80,8 +80,8 @@
 ;; construct-mttm-rule :: processed-list -> mttm-rule
 ;; Purpose: Constructs the current mttm rule based on the processed list
 (define (construct-mttm-rule pl)
-  (define cur-trans (cadr pl)) ;; The current transiton
-  (define next-trans (car pl)) ;; The next transition
+  (match-define `(,cur-state ,cur-tapes ...) (cadr pl)) ;; The current transiton
+  (match-define `(,next-state ,next-tapes ...) (car pl)) ;; The next transition
   (displayln pl))
 
 

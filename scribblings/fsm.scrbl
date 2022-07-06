@@ -6,7 +6,7 @@
 @(require (for-label racket setup/collects))
 
 @title{FSM}
-@author[(author+email "Marco T. Morazán" "marco.morazan@shu.edu")]
+@author[(author+email "Marco T. Morazán" "morazanm@shu.edu")]
 @defmodule[fsm]
 
 
@@ -397,26 +397,26 @@ Empty Tool
 
 @section{State Machine Observers}
 
-@defproc[(sm-getstates [m state-machine])
+@defproc[(sm-states [m state-machine])
          (listof state)]{Returns the states of the given state 
  machine.}
 
-@defproc[(sm-getalphabet [m state-machine])
+@defproc[(sm-sigma [m state-machine])
          alphabet]{Returns the alphabet of the given state 
  machine.}
 
-@defproc[(sm-getrules [m state-machine])
+@defproc[(sm-rules [m state-machine])
          (listof smrule)]{Returns the rules of the given state 
  machine.}
 
-@defproc[(sm-getstart [m state-machine])
+@defproc[(sm-start [m state-machine])
          state]{Returns the start state of the given state machine.}
 
-@defproc[(sm-getfinals [m state-machine])
+@defproc[(sm-finals [m state-machine])
          (listof state)]{Returns the final states of the given state 
  machine.}
 
-@defproc[(sm-getstackalphabet [m ndpda])
+@defproc[(sm-gamma [m ndpda])
          (listof symbol)]{Returns the stack alphabet of the given pushdown
  automaton.}
 
@@ -424,7 +424,7 @@ Empty Tool
          symbol]{Returns a symbol indicating the type of the given
  machine: dfa, ndfa, ndpda, tm, tm-language-recognizer, mttm, or mttm-language-recognizer.}
 
-@defproc[(sm-getnumtapes [m state-machine])
+@defproc[(sm-numtapes [m state-machine])
          symbol]{Returns the number of tapes in the given state machine.}
 
 @defproc*[([(sm-apply [m state-machine] [w word]) symbol]
@@ -522,23 +522,23 @@ Empty Tool
 
 @section{Grammar Observers}
 
-@defproc[(grammar-getnts [g grammar])
+@defproc[(grammar-nts [g grammar])
          (listof nts)]{Returns the nonterminals of the given 
  grammar.}
 
-@defproc[(grammar-getalphabet [g grammar])
+@defproc[(grammar-sigma [g grammar])
          alphabet]{Returns the alphabet of the given 
  grammar.}
 
-@defproc[(grammar-getrules [g grammar])
+@defproc[(grammar-rules [g grammar])
          (listof grule)]{Returns the rules of the given 
  grammar.}
 
-@defproc[(grammar-getstart [g grammar])
+@defproc[(grammar-start [g grammar])
          nts]{Returns the starting nonterminal of the given 
  grammar.}
 
-@defproc[(grammar-gettype [g grammar])
+@defproc[(grammar-type [g grammar])
          symbol]{Returns a symbol for the type of the given 
  grammar: 'rg, 'cfg, or 'csg.}
 

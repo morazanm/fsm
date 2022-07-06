@@ -29,8 +29,8 @@
 
  ; sm observers
  sm-apply sm-showtransitions sm-type
- sm-getstates sm-getalphabet sm-getrules sm-getfinals sm-getstart sm-getstackalphabet
- sm-getaccept sm-getnumtapes
+ sm-states sm-sigma sm-rules sm-finals sm-start sm-gamma
+ sm-accept sm-numtapes
 
  ; sm testers
  sm-sameresult? sm-testequiv? sm-test
@@ -44,8 +44,8 @@
  grammar-union grammar-concat
    
  ; grammar observers
- grammar-derive grammar-gettype
- grammar-getnts grammar-getalphabet grammar-getrules grammar-getstart 
+ grammar-derive grammar-type
+ grammar-nts grammar-sigma grammar-rules grammar-start 
 
  ;grammar testers
  grammar-both-derive grammar-testequiv grammar-test
@@ -159,7 +159,7 @@
   
 ; grammar --> sm 
 (define (grammar->sm g)
-  (let ((t1 (grammar-gettype g)))
+  (let ((t1 (grammar-type g)))
     (cond [(eq? t1 'rg) (rg->fsa g)]
           [(eq? t1 'cfg) (cfg->pda g)]
           [(eq? t1 'csg) (error (format "Converting a Context-Sensitive Grammar to a Turing machine is not yet implemented....stay tuned!"))]
@@ -197,8 +197,8 @@
   
 ; fsm fsm word --> boolean
 (define (sm-sameresult? M1 M2 w)
-  (let ((s1 (sm-getalphabet M1))
-        (s2 (sm-getalphabet M2)))
+  (let ((s1 (sm-sigma M1))
+        (s2 (sm-sigma M2)))
     (if (equal? s1 s2)
         (equal? (sm-apply M1 w) (sm-apply M2 w))
         (error (format "The alphabets of the given machines are different: ~s ~s" s1 s2)))))
@@ -212,10 +212,10 @@
           (eq? (sm-type M2) 'mttm-language-recognizer))
       (error "Random testing of Multitape Turing Machines is not possible.")
       (let* ((test-m1 (generate-words number-tests
-                                      (remove* `(,LM) (sm-getalphabet M1))
+                                      (remove* `(,LM) (sm-sigma M1))
                                       null))
              (test-m2 (generate-words number-tests
-                                      (remove* `(,LM) (sm-getalphabet M2))
+                                      (remove* `(,LM) (sm-sigma M2))
                                       null))
              (test-words (append test-m1 test-m2))
              (res-m1 (map (lambda (w) (list w (sm-apply M1 w)))
@@ -264,7 +264,7 @@
   
 ; (listof nonterminals) grammar --> grammar
 (define (grammar-rename-nts nts g)
-  (define type (grammar-gettype g))
+  (define type (grammar-type g))
   (cond [(eq? type 'rg) (rg-rename-nts nts g)]
         [(eq? type 'cfg) (cfg-rename-nts nts g)]
         [(eq? type 'csg) (csg-rename-nts nts g)]
@@ -272,7 +272,7 @@
   
 ; grammar grammar --> grammar
 (define (grammar-union g1 g2)
-  (let ((same-type (eq? (grammar-gettype g1) (grammar-gettype g2))))
+  (let ((same-type (eq? (grammar-type g1) (grammar-type g2))))
     (cond [(not same-type) (error (format "grammar-union: the input grammars are not the same type."))]
           [(rg? g1)
            (let* ((m1 (grammar->sm g1))
@@ -285,7 +285,7 @@
   
 ; grammar grammar --> grammar
 (define (grammar-concat g1 g2)
-  (let ((same-type (eq? (grammar-gettype g1) (grammar-gettype g2))))
+  (let ((same-type (eq? (grammar-type g1) (grammar-type g2))))
     (cond [(not same-type) (error (format "grammar-concat: the input grammars are not the same type."))]
           [(rg? g1)
            (let* ((m1 (grammar->sm g1))
@@ -294,11 +294,11 @@
              (sm->grammar newm))]
           [(cfg? g1) (cfg-concat g1 g2)]
           [(csg? g1) (csg-concat g1 g2)]
-          [else (error (format "Unknown grammar type ~s given to" (grammar-gettype g1) 'grammar-concat))])))
+          [else (error (format "Unknown grammar type ~s given to" (grammar-type g1) 'grammar-concat))])))
 
 ; grammar --> grammar
 (define (grammar-kleenestar g1)
-  (let ((gtype (grammar-gettype g1)))
+  (let ((gtype (grammar-type g1)))
     (cond [(eq? gtype 'rg) (sm->grammar (sm-kleenestar (grammar->sm g1)))]
           [(eq? gtype 'cfg) (cfg-star g1)]
           [(eq? gtype 'csg) (error (format "Stay tuned! The Kleene star of a csg is not yet implemented"))]

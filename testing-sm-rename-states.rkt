@@ -20,7 +20,7 @@
 (check-expect (last (sm-showtransitions tm-WriteI `(i ,BLANK i ,BLANK i i ,BLANK) 0))
               '(H 0 (i _ i _ i i _)))                                        
 
-(define tm-rename-sts-WriteI (sm-rename-states (sm-getstates tm-WriteI) tm-WriteI))
+(define tm-rename-sts-WriteI (sm-rename-states (sm-states tm-WriteI) tm-WriteI))
 
 (check-expect (cdr (last (sm-showtransitions  tm-rename-sts-WriteI `(i ,BLANK i ,BLANK i i ,BLANK) 1)))
               '(1 (i i i _ i i _)))
