@@ -909,9 +909,11 @@ TOP GUI RENDERING
            
 
 ;;(tm-los-top input-list cur-rule (tm-machine-tape-posn m) 32)           
-;; JSchappel: finish
 (define (make-mttm-tapes machine cur-rule rec-width rec-height)
-  (define (make-single-mttm-tape tape-index scene)
+  (define (make-single-mttm-tape scene)
+    (define tape-index (if (empty? (mttm-machine-tape-posn-list machine))
+                           (mttm-machine-start-tape-posn machine)
+                           10000)) ;; TODO: finish
     (define los (machine-sigma-list machine)) ;; input-list
     (define rectWidth (/ (- rec-width 40) TAPE-RENDER-LIMIT))
     (define rectHeight (/ rec-height 5))
@@ -961,10 +963,10 @@ TOP GUI RENDERING
            (input-box sigma #f fnt-size)
            (index-box index))
           (rectangle rectWidth rectHeight "outline" "transparent"))]))
-    (list-2-img input-to-render tape-index))
+    (list-2-img input-to-render TAPE-INDEX))
   (foldr (lambda (t s) (above
                         s
-                        (make-single-mttm-tape TAPE-INDEX s)))
+                        (make-single-mttm-tape s)))
          empty-image
          ;(rectangle rec-width 25 "outline" "transparent")
          (range (if (> (mttm-machine-num-tapes machine) 5)
