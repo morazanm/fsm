@@ -756,7 +756,11 @@ Scene Rendering
                  (overlay/align "left" "center"
                                 (beside
                                  (make-mttm-tape-indexs (world-fsm-machine world) view-width view-height)
-                                 (make-mttm-tapes (world-fsm-machine world) '(a b a) view-width view-height))
+                                 (make-mttm-tapes (world-fsm-machine world)
+                                                  '(a b a)
+                                                  (world-processed-config-list world)
+                                                  view-width
+                                                  view-height))
                                 (rectangle view-width view-height "outline" "transparent"))
                  (rectangle view-width-no-btn view-height-no-btn "outline" "red")))
 
@@ -909,21 +913,40 @@ TOP GUI RENDERING
            
 
 ;;(tm-los-top input-list cur-rule (tm-machine-tape-posn m) 32)           
-(define (make-mttm-tapes machine cur-rule rec-width rec-height)
-  (define (make-single-mttm-tape scene)
+(define (make-mttm-tapes machine cur-rule processed-list rec-width rec-height)
+  (define (get-render-vals lst)
+    (cond
+      [(> (length lst) TAPE-RENDER-LIMIT)
+       (let ((c (drop lst TAPE-INDEX)))
+         (take c TAPE-RENDER-LIMIT))]
+      [else
+       lst]))
+  
+  ;; builds the list of tape values to be displayed
+  (define tapes
+    ;; if the processed list is empty then we have not run the machine yet so
+    ;; we will set the first tape to the input and the rest will be blank
+    (for/list ([i (range 0 (mttm-machine-num-tapes machine))])
+      (cond
+        [(and (eq? i 0) (empty? processed-list))
+         (get-render-vals (machine-sigma-list machine))]
+        [(empty? processed-list) (list BLANK)])))
+  
+  (define (tapes-to-render)
+    (define dropped-tapes (drop tapes MTTM-TAPE-INDEX))
+    (if (<= (length dropped-tapes) 5)
+        dropped-tapes
+        (take dropped-tapes 5)))
+        
+        
+
+  
+  (define (make-single-mttm-tape lst scene)
     (define tape-index (if (empty? (mttm-machine-tape-posn-list machine))
                            (mttm-machine-start-tape-posn machine)
                            10000)) ;; TODO: finish
-    (define los (machine-sigma-list machine)) ;; input-list
     (define rectWidth (/ (- rec-width 40) TAPE-RENDER-LIMIT))
     (define rectHeight (/ rec-height 5))
-    ;; Gets the tape inptu that needs to be rendered on the screen
-    (define input-to-render (cond
-                              [(> (length los) TAPE-RENDER-LIMIT)
-                               (let ((c (drop los TAPE-INDEX)))
-                                 (take c TAPE-RENDER-LIMIT))]
-                              [else
-                               los]))
     ;; list-2-img: list-of-sigma (tape input) int -> image
     ;; Purpose: Converts the tape input into image that overlays the tape in the center
     (define (list-2-img los accum)
@@ -963,15 +986,13 @@ TOP GUI RENDERING
            (input-box sigma #f fnt-size)
            (index-box index))
           (rectangle rectWidth rectHeight "outline" "transparent"))]))
-    (list-2-img input-to-render TAPE-INDEX))
-  (foldr (lambda (t s) (above
-                        s
-                        (make-single-mttm-tape s)))
-         empty-image
-         ;(rectangle rec-width 25 "outline" "transparent")
-         (range (if (> (mttm-machine-num-tapes machine) 5)
-                    5
-                    (mttm-machine-num-tapes machine)))))
+    (list-2-img lst TAPE-INDEX))
+
+
+  (foldr (lambda (t s) (above/align "left" t s)) empty-image
+         (map (lambda (t)
+                (make-single-mttm-tape t empty-image))
+              (tapes-to-render))))
 
 
 
