@@ -1,10 +1,11 @@
 ; FSM Library Version 1.0
-; Copyright (C) 2015 by Marco T. Morazan and Rosario Antunez
-; Written by: Marco T. Morazan and Rosario Antunez, 2015
+; Copyright (C) 2015 by Marco T. Morazan
+; Written by: Marco T. Morazan
 
 ;;; REGULAR EXPRESSIONS
 
 ; A regular expression (regexp) is either
+;  0. empty-regexp
 ;  1. A singleton-regexp
 ;  2. A concat-regexp
 ;  3. A union-regexp
@@ -238,9 +239,12 @@
                (string-append "(" r1 " U " r2 ")"))]
             [(kleenestar-regexp? r) 
              (let* ((r1 (helper (kleenestar-regexp-r1 r))))
-               (if (= (string-length r1) 1)
-                   (string-append r1 "*")
-                   (string-append "(" r1 ")" "*")))]))
+               (cond [(= (string-length r1) 1) (string-append r1 "*")]
+                     [(and (equal? (substring r1 0 1) "(")
+                           (equal? (substring r1 (sub1 (string-length r1)) (string-length r1))
+                                   ")"))
+                      (string-append r1 "*")]
+                     [else (string-append "(" r1 ")" "*")]))]))
     (helper r))
 
   ;regexp?: element --> boolean
@@ -254,11 +258,6 @@
   
  
   ;;; END REGULAR EXPRESSIONS
-  
-  (define test (concat-regexp (null-regexp) 
-                              (concat-regexp (kleenestar-regexp (union-regexp (empty-regexp) 
-                                                                              (singleton-regexp "a"))) 
-                                             (singleton-regexp "b")))) 
   
   
   )
