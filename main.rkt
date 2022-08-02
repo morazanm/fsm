@@ -48,7 +48,11 @@
    ; regexp observers
    simplify-regexp printable-regexp
    regexp? singleton-regexp? concat-regexp? union-regexp? kleenestar-regexp? null-regexp? empty-regexp?
-
+   singleton-regexp-a
+   concat-regexp-r1 concat-regexp-r2
+   union-regexp-r1 union-regexp-r2
+   kleenestar-regexp-r1
+ 
    ; regexp transformers
    fsa->regexp
 
