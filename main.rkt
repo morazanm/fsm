@@ -52,6 +52,7 @@
    concat-regexp-r1 concat-regexp-r2
    union-regexp-r1 union-regexp-r2
    kleenestar-regexp-r1
+   word-in-regexp
  
    ; regexp transformers
    fsa->regexp
