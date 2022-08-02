@@ -284,7 +284,7 @@
     (cond [(empty-regexp? rexp) EMP]
           [(singleton-regexp? rexp)
            (let [(element (singleton-regexp-a rexp))]
-             (if (symbol? element)
+             (if (string<=? "a" element "z")
                  (list (string->symbol element))
                  (list (string->number element))))]
           [(kleenestar-regexp? rexp)
