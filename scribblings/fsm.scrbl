@@ -1,4 +1,4 @@
-; FSM Library Version 1.0
+; FSM Version 1.0
 ; Copyright (C) 202- by Marco T. Morazan 
 
 #lang scribble/manual
@@ -606,6 +606,9 @@ word are returned.
 
 @defproc[(fsa->regexp [m ndfa])
          reg-exp]{Returns a regular expression for the language of the given ndfa.}
+
+@defproc[(simplify-regexp [r regexp])
+         reg-exp]{Performs elementary simplifications on the given regular expression.}
 
 
 @section{Regular Expression Observers}
