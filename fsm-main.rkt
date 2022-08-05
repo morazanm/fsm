@@ -237,7 +237,7 @@
                    (eq? (sm-type M2) 'tm))
                (error "Random testing of Turing Machines is not possible.")]
               [(equal? res-m1 res-m2) #t]
-              [else (get-differences res-m1 res-m2 test-words)]))))
+              [else (remove-duplicates (get-differences res-m1 res-m2 test-words))]))))
   
 ; sm [natnum] --> (listof (list word symbol))
 (define (sm-test M . l)
