@@ -430,7 +430,6 @@ Button Declarations
                                BTN-RUN
                                BTN-HELP-MTTM
                                BTN-COLOR-BLIND-MTTM
-                               BTN-DISPLAY-MTTM-TAPES
                                BTM-TAPE-SCROLL-DOWN-MTTM
                                BTM-TAPE-SCROLL-UP-MTTM
                                BTM-TAPE-SCROLL-LEFT-MTTM

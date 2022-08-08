@@ -74,15 +74,31 @@
 ;; Purpose: Determins if the rule to be made should be empty or a real rule
 (define (get-mttm-rule pl)
   (cond
-    [(< (length pl) 2) '((empty (empty empty empty)) (empty (empty empty empty)))]
+    [(< (length pl) 2) '(null null null)]
     [else (construct-mttm-rule pl)]))
 
 ;; construct-mttm-rule :: processed-list -> mttm-rule
 ;; Purpose: Constructs the current mttm rule based on the processed list
 (define (construct-mttm-rule pl)
-  (match-define `(,cur-state ,cur-tapes ...) (cadr pl)) ;; The current transiton
-  (match-define `(,next-state ,next-tapes ...) (car pl)) ;; The next transition
-  (displayln pl))
+  (match-define `(,cur-state ,cur-tapes ...) (cadr pl)) ;; The state that the machine is in
+  (match-define `(,next-state ,next-tapes ...) (car pl)) ;; The next state that the machine is in
+  (define tuple-list (map (match-lambda* [`((,cur-pos ,cur-tape) (,next-pos ,next-tape))
+                                          #:when (< cur-pos next-pos)
+                                          ;; tape incriments so we move Right
+                                          (cons BLANK RIGHT)]
+                                         [`((,cur-pos ,cur-tape) (,next-pos ,next-tape))
+                                          #:when (> cur-pos next-pos)
+                                          ;; tape decriments so we move LEFT
+                                          (cons BLANK LEFT)]
+                                         ;; Otherwise we write to the tape
+                                         [`((,cur-pos ,cur-tape) (,next-pos ,next-tape))
+                                          (cons (list-ref cur-tape cur-pos) (list-ref next-tape next-pos))])
+                          cur-tapes
+                          next-tapes))
+  `((,cur-state ,(map car tuple-list)) (,next-state ,(map cdr tuple-list))))
+
+  
+ 
 
 
 ;; get-pda-rule: processed-list -> pda-rule

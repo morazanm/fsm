@@ -28,7 +28,11 @@ Initialize World
 ;; Purpose: Creates the initail world with the given machine
 (define (build-world m type . msg)
   (letrec (
-           (graphviz (system "dot -V"))
+           ;; graphviz is not supported for mttms
+           (graphviz (if (or (eq? 'mttm-language-recognizer MACHINE-TYPE)
+                             (eq? 'mttm MACHINE-TYPE))
+                         #f
+                         (system "dot -V")))
            (messageWin (if (null? msg) ;; Determine if a message should be rendered during on create
                            null
                            (car msg)))
@@ -41,6 +45,7 @@ Initialize World
                                      [(tm) INPUT-LIST-TM]
                                      [(tm-language-recognizer) INPUT-LIST-LANG-REC]
                                      [(mttm-language-recognizer) INPUT-LIST-MTTM]
+                                     [(mttm) INPUT-LIST-MTTM]
                                      [else INPUT-LIST])))
 
            ;; determine-button-list: none -> list-of-buttons
@@ -53,16 +58,16 @@ Initialize World
                                       [(mttm-language-recognizer) BUTTON-LIST-MTTM]
                                       [else BUTTON-LIST]))))
     ;; mttm's have a smaller tape limit so we will change it if necessary
+    ;; mttm's only use the view mode! Nothing else!!!
     (when (or (equal? type 'mttm-language-recognizer)
               (equal? type 'mttm))
+      (set-view-mode 'tape)
       (set-tape-render-limit 24))
 
     (initialize-world m
                       messageWin
                       (if graphviz
-                          (if (eq? MACHINE-TYPE 'mttm-language-recognizer)
-                              (cons BTN-DISPLAY-MTTM (determine-button-list))
-                              (cons BTN-DISPLAY (determine-button-list)))
+                          (cons BTN-DISPLAY (determine-button-list))
                           (determine-button-list))
                       (determine-input-list))))
 
@@ -1051,7 +1056,13 @@ BOTTOM GUI RENDERING
                     (align-items
                      (rules-bottom-label)
                      (if (eq? MACHINE-TYPE 'mttm-language-recognizer)
-                         (rectangle target-width BOTTOM "outline" OUTLINE-COLOR) ;;TODO: jschappel display current rule here
+                         (if (eq? CURRENT-RULE cur-rule)
+                             (rectangle target-width BOTTOM "outline" OUTLINE-COLOR)
+                             (let ((port (open-output-string)))
+                               (write cur-rule port)
+                               (overlay
+                                (text (get-output-string port) FONT-SIZE "black")
+                                (rectangle target-width BOTTOM "outline" OUTLINE-COLOR)))) ;;TODO: jschappel display current rule here
                          (lor-bottom-label lor 83 cur-rule scroll-index)))
                     (rectangle WIDTH BOTTOM "outline" "transparent"))]))
 

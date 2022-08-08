@@ -562,22 +562,26 @@ Created by Joshua Schappel on 12/19/19
 ;; getScrollBarPosition: list-of-rules rule -> int
 ;; Purpose: Trys to place the currently highlighted rule at the beginning of the scrollbar. If not possiable moves to scrollbar to a position
 ;;      where the rule will be sceen by the user.
-(define getScrollBarPosition (lambda (lor rule)
-                               (let ((ruleIndex (index-of lor rule))
-                                     (rule-num (determine-rule-number MACHINE-TYPE)))
-                                 (cond
-                                   ;; See if there is no current rule. If so return the starting index of the scrollbar
-                                   [(or (equal? rule '(empty empty empty))
-                                        (equal? rule '((empty empty) (empty empty)))
-                                        (equal? rule '((empty empty empty) (empty empty))))
-                                    0]
-                                   ;; If true then we set the scroll index to max
-                                   [(> (+ ruleIndex rule-num) (- (length lor) 1))
-                                    (let* ((i (- (length lor) rule-num)))
-                                      (if (< i 0) 0
-                                          i))]
-                                   ;; Otherwise return the rule index
-                                   [else ruleIndex]))))
+(define (getScrollBarPosition lor rule)
+  ;; mttm types only display the current rule so it will always be 0
+  (if (or (eq? MACHINE-TYPE 'mttm-language-recognizer)
+          (eq? MACHINE-TYPE 'mttm))
+      0
+      (let ([ruleIndex (index-of lor rule)]
+            [rule-num (determine-rule-number MACHINE-TYPE)])
+        (cond
+          ;; See if there is no current rule. If so return the starting index of the scrollbar
+          [(or (equal? rule '(empty empty empty))
+               (equal? rule '((empty empty) (empty empty)))
+               (equal? rule '((empty empty empty) (empty empty))))
+           0]
+          ;; If true then we set the scroll index to max
+          [(> (+ ruleIndex rule-num) (- (length lor) 1))
+           (let* ((i (- (length lor) rule-num)))
+             (if (< i 0) 0
+                 i))]
+          ;; Otherwise return the rule index
+          [else ruleIndex]))))
 
                   
 
