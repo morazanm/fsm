@@ -375,7 +375,9 @@ Created by Joshua Schappel on 12/19/19
                        [else
                         (begin
                           (reset-bottom-indices)
-                          (set-machine-alpha-list! (world-fsm-machine w) (sort (remove-duplicates (cons (string->symbol input-value) (machine-alpha-list (world-fsm-machine w)))) symbol<?))
+                          (set-machine-alpha-list! (world-fsm-machine w) (sort-data
+                                                                          (remove-duplicates (cons (or (string->number input-value) (string->symbol input-value))
+                                                                                                   (machine-alpha-list (world-fsm-machine w))))))
                           (create-new-world-input-empty w new-input-list))]))))
 
 ;; rmvAlpha: world -> world
@@ -399,7 +401,8 @@ Created by Joshua Schappel on 12/19/19
                        [else
                         (begin
                           (reset-bottom-indices)
-                          (set-machine-alpha-list! (world-fsm-machine w) (sort (remove (string->symbol input-value) (machine-alpha-list (world-fsm-machine w))) symbol<?))
+                          (set-machine-alpha-list! (world-fsm-machine w) (sort-data (remove (or (string->number input-value) (string->symbol input-value))
+                                                                                            (machine-alpha-list (world-fsm-machine w)))))
                           (set-machine-rule-list! (world-fsm-machine w) (remove-all (machine-rule-list (world-fsm-machine w)) input-value))
                           (create-new-world-input-empty w new-input-list))]))))
                    
@@ -422,7 +425,8 @@ Created by Joshua Schappel on 12/19/19
                                                                              [else (convert-list
                                                                                     (cdr los)
                                                                                     (cons (format-states
-                                                                                           (string->symbol (car los)))
+                                                                                           (or (string->number (car los))
+                                                                                               (string->symbol (car los))))
                                                                                           accum))]))))
                                                     (convert-list split-string '()))))
                                                            
@@ -507,7 +511,8 @@ Created by Joshua Schappel on 12/19/19
                        [else
                         (begin
                           (reset-bottom-indices)
-                          (set-pda-machine-stack-alpha-list! (world-fsm-machine w) (sort (remove-duplicates (cons (string->symbol input-value) (pda-machine-stack-alpha-list (world-fsm-machine w)))) symbol<?))
+                          (set-pda-machine-stack-alpha-list! (world-fsm-machine w) (sort-data (remove-duplicates (cons (or (string->number input-value) (string->symbol input-value))
+                                                                                                                       (pda-machine-stack-alpha-list (world-fsm-machine w))))))
                           (create-new-world-input-empty w new-input-list))]))))
 
 
@@ -530,7 +535,8 @@ Created by Joshua Schappel on 12/19/19
                        [else
                         (begin
                           (reset-bottom-indices)
-                          (set-pda-machine-stack-alpha-list! (world-fsm-machine w) (sort (remove (string->symbol input-value) (pda-machine-stack-alpha-list (world-fsm-machine w))) symbol<?))
+                          (set-pda-machine-stack-alpha-list! (world-fsm-machine w) (sort-data (remove (or (string->number input-value) (string->symbol input-value))
+                                                                                                      (pda-machine-stack-alpha-list (world-fsm-machine w)))))
                           ;;(set-machine-rule-list! (world-fsm-machine w) (remove-all (machine-rule-list (world-fsm-machine w)) input-value))
                           (create-new-world-input-empty w new-input-list))]))))
 
@@ -1025,3 +1031,11 @@ Created by Joshua Schappel on 12/19/19
        (set-tape-index-bottom -1)
        (set-tape-index 0)
        (set-init-index-bottom 0))]))
+
+
+;; sort-data :: [symbol | number] -> [symbol | number]
+;; sorts the list assending order with numbers first
+(define (sort-data data)
+  (define sorted-numbers (sort (filter number? data) <=))
+  (define sorted-symbols (sort (filter symbol? data) symbol<?))
+  (append sorted-numbers sorted-symbols))
