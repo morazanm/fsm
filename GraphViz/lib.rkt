@@ -229,7 +229,7 @@ This file contains the fsm-graphviz library used to render the graph
   (cond [(empty? los) (string-append (string-trim accum) ")")]
         [else (list->str
                (cdr los)
-               (string-append accum (symbol->string (car los)) " "))]))
+               (string-append accum (stringify-value (car los)) " "))]))
                              
 
 ;; render-edges list-of-edges write-buffer -> NONE
@@ -249,7 +249,7 @@ This file contains the fsm-graphviz library used to render the graph
 ; remove-dashes: symbol -> symbol
 ; Purpose: Remove dashes
 (define (remove-dashes s)
-  (string->symbol (string-replace (symbol->string s) "-" "")))
+  (string->symbol (string-replace (stringify-value s) "-" "")))
 
 
 ;; dot->png: stirng string boolean-> NONE
@@ -352,14 +352,14 @@ This file contains the fsm-graphviz library used to render the graph
            (convertEMP (lambda (x)
                          (if (equal? EMP x)
                              "ε"
-                             (symbol->string x)))))
+                             (stringify-value x)))))
     (match aList
       ;; dfa/ndfa legacy way
-      [val #:when (symbol? val) (convertEMP val)]
+      [val #:when (or (number? val) (symbol? val)) (convertEMP val)]
       ;; string check for regexp
-      [val #:when (string? val) (convertEMP (string->symbol val))]
+      [val #:when (string? val) (convertEMP (or (string->number val) (string->symbol val)))]
       ;; dfa/ndfa
-      [(list _ input _)(symbol->string input)]
+      [(list _ input _)(stringify-value input)]
       ;; pda
       [(list
         (list _ read pop)
@@ -380,3 +380,10 @@ This file contains the fsm-graphviz library used to render the graph
                                    " "
                                    (convertEMP d)
                                    "],\n")])))
+
+
+;; Helper function to convert a value to a string
+(define (stringify-value input)
+  (if (number? input)
+      (number->string input)
+      (symbol->string input)))
