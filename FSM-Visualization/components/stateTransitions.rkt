@@ -14,9 +14,9 @@
                        [(tm-language-recognizer)
                         (get-tm-rule processed-list)]
                        [(mttm)
-                        (get-mttm-rule processed-list)]
+                        (get-mttm-rule processed-list debug)]
                        [(mttm-language-recognizer)
-                        (get-mttm-rule processed-list)]
+                        (get-mttm-rule processed-list debug)]
                        [else
                         (get-dfa-ndfa-rule processed-list)])))
 
@@ -72,14 +72,14 @@
 
 ;; get-mttm-rule processed-list -> mttm-rule
 ;; Purpose: Determins if the rule to be made should be empty or a real rule
-(define (get-mttm-rule pl)
+(define (get-mttm-rule pl debug)
   (cond
     [(< (length pl) 2) '(null null null)]
-    [else (construct-mttm-rule pl)]))
+    [else (construct-mttm-rule pl debug)]))
 
 ;; construct-mttm-rule :: processed-list -> mttm-rule
 ;; Purpose: Constructs the current mttm rule based on the processed list
-(define (construct-mttm-rule pl)
+(define (construct-mttm-rule pl debug)
   (match-define `(,cur-state ,cur-tapes ...) (cadr pl)) ;; The state that the machine is in
   (match-define `(,next-state ,next-tapes ...) (car pl)) ;; The next state that the machine is in
   (define tuple-list (map (match-lambda* [`((,cur-pos ,cur-tape) (,next-pos ,_))
