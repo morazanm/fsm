@@ -707,7 +707,7 @@ Scene Rendering
           ;;draws the images with an arrow
           (with-arrow (place-image (determin-gui-draw) (- WIDTH 100) (/ HEIGHT 2)
                                    (place-image (create-gui-top (world-fsm-machine w) (world-cur-rule w)) (/ WIDTH 2) (/ TOP 2)
-                                                (place-image (create-gui-bottom (machine-rule-list (world-fsm-machine w)) (world-cur-rule w) (world-scroll-bar-index w)) (/ WIDTH 2) (- HEIGHT (/ BOTTOM 2))
+                                                (place-image (create-gui-bottom (machine-rule-list (world-fsm-machine w)) (world-cur-rule w) (world-scroll-bar-index w) (world-cur-state w)) (/ WIDTH 2) (- HEIGHT (/ BOTTOM 2))
                                                              (draw-button-list (world-button-list w)
                                                                                (draw-input-list (world-input-list w)
                                                                                                 (place-image (case (machine-type machine)
@@ -723,7 +723,7 @@ Scene Rendering
           ;;draws the images without an arrow
           (no-arrow (place-image (determin-gui-draw) (- WIDTH 100) (/ HEIGHT 2)
                                  (place-image (create-gui-top (world-fsm-machine w) (world-cur-rule w)) (/ WIDTH 2) (/ TOP 2)
-                                              (place-image (create-gui-bottom (machine-rule-list (world-fsm-machine w)) (world-cur-rule w) (world-scroll-bar-index w)) (/ WIDTH 2) (- HEIGHT (/ BOTTOM 2))
+                                              (place-image (create-gui-bottom (machine-rule-list (world-fsm-machine w)) (world-cur-rule w) (world-scroll-bar-index w) (world-cur-state w)) (/ WIDTH 2) (- HEIGHT (/ BOTTOM 2))
                                                            (draw-button-list (world-button-list w)
                                                                              (draw-input-list (world-input-list w)
                                                                                               (place-image (case (machine-type machine)
@@ -1044,10 +1044,10 @@ TOP GUI RENDERING
                                                  empty-image)
                                                 (rectangle WIDTH TOP "outline" "transparent"))]
       [(mttm)(overlay/align "left" "middle"
-                                                (beside
-                                                 (top-input-label)
-                                                 empty-image)
-                                                (rectangle WIDTH TOP "outline" "transparent"))]
+                            (beside
+                             (top-input-label)
+                             empty-image)
+                            (rectangle WIDTH TOP "outline" "transparent"))]
       [else
        (overlay/align "left" "middle"
                       (beside
@@ -1065,21 +1065,39 @@ BOTTOM GUI RENDERING
 
 ;; create-gui-bottom: list-of-rules rule int -> image
 ;; Purpose: Creates the bottom of the gui layout
-(define (create-gui-bottom lor cur-rule scroll-index)
+(define (create-gui-bottom lor cur-rule scroll-index cur-state)
   (define target-width (if (or (eq? 'mttm-language-recognizer MACHINE-TYPE)
                                (eq? 'mttm MACHINE-TYPE))
                            (+ 200 (- (- WIDTH (/ WIDTH 11)) 200))
                            (- (- WIDTH (/ WIDTH 11)) 200)))
-  (define target-width-2 (if (or (eq? 'mttm-language-recognizer MACHINE-TYPE)
-                                 (eq? 'mttm MACHINE-TYPE))
-                             target-width
-                             WIDTH))
+  (define target-width-mttm (if (or (eq? 'mttm-language-recognizer MACHINE-TYPE)
+                                    (eq? 'mttm MACHINE-TYPE))
+                                (- target-width 200)
+                                WIDTH))
+
+  (define (make-mttm-bottom)
+    (define mttm-cur-rule-view
+      (overlay (above
+                (overlay
+                 (text (if (null? cur-state) "" (stringify-value cur-state)) 24 "black")
+                 (rectangle 100 50 "outline" OUTLINE-COLOR))
+                (overlay
+                 (text "Cur State" 12 "black")
+                 (rectangle 100 25 "outline" OUTLINE-COLOR)))
+               (rectangle 100 BOTTOM "outline" OUTLINE-COLOR)))
+    (beside
+     (rectangle target-width-mttm BOTTOM "outline" OUTLINE-COLOR)
+     mttm-cur-rule-view
+     (rectangle 100 BOTTOM "solid" "pink")))
   (cond
     [(empty? lor)
      (overlay/align "left" "middle"
                     (align-items
                      (rules-bottom-label)
-                     (rectangle target-width BOTTOM "outline" OUTLINE-COLOR))
+                     (if (or (eq? 'mttm-language-recognizer MACHINE-TYPE)
+                             (eq? 'mttm MACHINE-TYPE))
+                         (make-mttm-bottom)
+                         (rectangle target-width BOTTOM "outline" OUTLINE-COLOR)))
                     (rectangle WIDTH BOTTOM "outline" "transparent"))]
     [else
      (overlay/align "left" "middle"
@@ -1087,12 +1105,12 @@ BOTTOM GUI RENDERING
                      (rules-bottom-label)
                      (if (or (eq? MACHINE-TYPE 'mttm-language-recognizer) (eq? MACHINE-TYPE 'mttm))
                          (if (equal? CURRENT-RULE cur-rule)
-                             (rectangle target-width BOTTOM "outline" OUTLINE-COLOR)
+                             (make-mttm-bottom)
                              (let ((port (open-output-string)))
                                (write cur-rule port)
                                (overlay
                                 (text (get-output-string port) FONT-SIZE "black")
-                                (rectangle target-width BOTTOM "outline" OUTLINE-COLOR)))) ;;TODO: jschappel display current rule here
+                                (rectangle target-width-mttm BOTTOM "outline" OUTLINE-COLOR)))) ;;TODO: jschappel display current rule here
                          (lor-bottom-label lor 83 cur-rule scroll-index)))
                     (rectangle WIDTH BOTTOM "outline" "transparent"))]))
 
@@ -1418,8 +1436,8 @@ RIGHT GUI RENDERING
                                                                              empty-image
                                                                              (rectangle 200 HEIGHT "outline" "transparent"))]
                                   [(mttm) (overlay/align "left" "top"
-                                                                             empty-image
-                                                                             (rectangle 200 HEIGHT "outline" "transparent"))]
+                                                         empty-image
+                                                         (rectangle 200 HEIGHT "outline" "transparent"))]
                                   [else control])))))
 
     (construct-image)))
