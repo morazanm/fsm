@@ -51,12 +51,11 @@ Created by Joshua Schappel on 12/19/19
 (define addState (lambda (w)
                    (let ((state (string-trim (textbox-text (car (world-input-list w)))))
                          (new-input-list (list-set (world-input-list w) 0 (remove-text (car (world-input-list w)) 100)))
-                         (f (lambda ()
-                              (case MACHINE-TYPE
+                         (inv-func (case MACHINE-TYPE
                                 [(pda) PDA-TRUE-FUNCTION]
                                 [(tm) TM-TRUE-FUNCTION]
                                 [(tm-language-recognizer) TM-TRUE-FUNCTION]
-                                [else TRUE-FUNCTION]))))
+                                [else TRUE-FUNCTION])))
                      (cond[(equal? "" state) w]
                           [(ormap (lambda (x) (equal? (format-states state) (symbol->string (fsm-state-name x))))
                                   (machine-state-list (world-fsm-machine w)))
@@ -66,7 +65,7 @@ Created by Joshua Schappel on 12/19/19
                              (set-machine-state-list!
                               (world-fsm-machine w)
                               (cons (fsm-state (format-states (string->symbol state))
-                                               f
+                                               inv-func
                                                (posn 0 0))
                                     (machine-state-list (world-fsm-machine w))))
                              (reset-bottom-indices)
@@ -262,7 +261,7 @@ Created by Joshua Schappel on 12/19/19
                          [else (rmv-dfa)]))))
 
 
-;; addState: world -> world
+;; addStart: world -> world
 ;; Purpose: Adds a start state to the world
 (define addStart (lambda(w)
                    (let
