@@ -82,19 +82,23 @@
 (define (construct-mttm-rule pl)
   (match-define `(,cur-state ,cur-tapes ...) (cadr pl)) ;; The state that the machine is in
   (match-define `(,next-state ,next-tapes ...) (car pl)) ;; The next state that the machine is in
-  (define tuple-list (map (match-lambda* [`((,cur-pos ,_) (,next-pos ,_))
+  (define tuple-list (map (match-lambda* [`((,cur-pos ,cur-tape) (,next-pos ,_))
                                           #:when (< cur-pos next-pos)
                                           ;; tape incriments so we move Right
-                                          (cons BLANK RIGHT)]
-                                         [`((,cur-pos ,_) (,next-pos ,_))
+                                          (cons (list-ref cur-tape cur-pos) RIGHT)]
+                                         [`((,cur-pos ,cur-tape) (,next-pos ,_))
                                           #:when (> cur-pos next-pos)
                                           ;; tape decriments so we move LEFT
-                                          (cons BLANK LEFT)]
+                                          (cons (list-ref cur-tape cur-pos) LEFT)]
                                          ;; Otherwise we write to the tape
                                          [`((,cur-pos ,cur-tape) (,next-pos ,next-tape))
                                           (cons (list-ref cur-tape cur-pos) (list-ref next-tape next-pos))])
                           cur-tapes
                           next-tapes))
+  (when debug
+    (displayln (format "Current: ~s ~s" cur-state cur-tapes))
+    (displayln (format "Next: ~s ~s" next-state next-tapes))
+    (displayln (format "Rule: ~s\n\n" `((,cur-state ,(map car tuple-list)) (,next-state ,(map cdr tuple-list))))))
   `((,cur-state ,(map car tuple-list)) (,next-state ,(map cdr tuple-list))))
 
   
