@@ -56,6 +56,7 @@ Initialize World
                                       [(tm) BUTTON-LIST-TM]
                                       [(tm-language-recognizer) BUTTON-LIST-LANG-REC]
                                       [(mttm-language-recognizer) BUTTON-LIST-MTTM]
+                                      [(mttm) BUTTON-LIST-MTTM]
                                       [else BUTTON-LIST]))))
     ;; mttm's have a smaller tape limit so we will change it if necessary
     ;; mttm's only use the view mode! Nothing else!!!
@@ -115,6 +116,7 @@ Cmd Functions
                  (run-program (build-world (tm-machine '() null '() '() `(,LM) '() 'tm 0 ) 'tm))
                  (void))]
          [(mttm-language-recognizer) (error "The machine type \"mttm-language-recognizer\" is not allowed to be made from scratch. Please use one of the other sm-visualization options")]
+         [(mttm) (error "The machine type \"mttm\" is not allowed to be made from scratch. Please use one of the other sm-visualization options")]
          [(tm-language-recognizer) (begin
                                      (set-machine-type 'tm-language-recognizer)
                                      (run-program (build-world (lang-rec-machine '() null '() '() `(,LM) '() 'tm-language-recognizer 0 '||) 'tm-language-recognizer))
@@ -185,6 +187,26 @@ Cmd Functions
                   (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation."
                              "tm" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
                 (void))]
+         ['mttm (begin
+                  (set-machine-type 'mttm)
+                  (run-program
+                   (build-world
+                    (mttm-machine
+                     (map (lambda (x) (fsm-state x TM-TRUE-FUNCTION (posn 0 0))) (sm-states fsm-machine))
+                     (sm-start fsm-machine)
+                     (sm-finals fsm-machine)
+                     (reverse (sm-rules fsm-machine))
+                     `(,LM)
+                     (sm-sigma fsm-machine)
+                     (sm-type fsm-machine)
+                     (sm-numtapes fsm-machine)
+                     0
+                     '())
+                    'mttm-language-recognizer
+                    (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation."
+                               "tm" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)
+                    (void)
+                    )))]
 
          ['mttm-language-recognizer (begin
                                       (set-machine-type 'mttm-language-recognizer)
@@ -386,12 +408,12 @@ Scene Rendering
        (X0 (cond
              [(equal? MACHINE-TYPE 'pda)
               (/ (+ (/ WIDTH 11) (- WIDTH 300)) 2)]
-             [(equal? MACHINE-TYPE 'mttm-language-recognizer)
+             [(or (equal? MACHINE-TYPE 'mttm-language-recognizer) (equal? MACHINE-TYPE 'mttm))
               (+ 100 (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2))]
              [else
               (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2)]))
        (Y0 (cond
-             [(eq? MACHINE-TYPE 'mttm-language-recognizer)
+             [(or (equal? MACHINE-TYPE 'mttm-language-recognizer) (equal? MACHINE-TYPE 'mttm))
               (- (/ (+ TOP (- HEIGHT BOTTOM)) 2) 25)]
              [else
               (/ (+ TOP (- HEIGHT BOTTOM)) 2)]))
@@ -730,7 +752,8 @@ Scene Rendering
        ;; mttm tape view
        ;; --------------
        [(and (eq? VIEW-MODE 'tape)
-             (eq? 'mttm-language-recognizer MACHINE-TYPE))
+             (or (eq? 'mttm-language-recognizer MACHINE-TYPE)
+                 (eq? 'mttm MACHINE-TYPE)))
         (define X (+ 100 (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2)))
         (define Y (- (/ (+ TOP (- HEIGHT BOTTOM)) 2) 25))
         (place-image
@@ -1020,6 +1043,11 @@ TOP GUI RENDERING
                                                  (top-input-label)
                                                  empty-image)
                                                 (rectangle WIDTH TOP "outline" "transparent"))]
+      [(mttm)(overlay/align "left" "middle"
+                                                (beside
+                                                 (top-input-label)
+                                                 empty-image)
+                                                (rectangle WIDTH TOP "outline" "transparent"))]
       [else
        (overlay/align "left" "middle"
                       (beside
@@ -1038,10 +1066,12 @@ BOTTOM GUI RENDERING
 ;; create-gui-bottom: list-of-rules rule int -> image
 ;; Purpose: Creates the bottom of the gui layout
 (define (create-gui-bottom lor cur-rule scroll-index)
-  (define target-width (if (eq? 'mttm-language-recognizer MACHINE-TYPE)
+  (define target-width (if (or (eq? 'mttm-language-recognizer MACHINE-TYPE)
+                               (eq? 'mttm MACHINE-TYPE))
                            (+ 200 (- (- WIDTH (/ WIDTH 11)) 200))
                            (- (- WIDTH (/ WIDTH 11)) 200)))
-  (define target-width-2 (if (eq? 'mttm-language-recognizer MACHINE-TYPE)
+  (define target-width-2 (if (or (eq? 'mttm-language-recognizer MACHINE-TYPE)
+                                 (eq? 'mttm MACHINE-TYPE))
                              target-width
                              WIDTH))
   (cond
@@ -1055,7 +1085,7 @@ BOTTOM GUI RENDERING
      (overlay/align "left" "middle"
                     (align-items
                      (rules-bottom-label)
-                     (if (eq? MACHINE-TYPE 'mttm-language-recognizer)
+                     (if (or (eq? MACHINE-TYPE 'mttm-language-recognizer) (eq? MACHINE-TYPE 'mttm))
                          (if (eq? CURRENT-RULE cur-rule)
                              (rectangle target-width BOTTOM "outline" OUTLINE-COLOR)
                              (let ((port (open-output-string)))
@@ -1073,6 +1103,7 @@ BOTTOM GUI RENDERING
   (overlay
    (case MACHINE-TYPE
      [(mttm-language-recognizer)(text (string-upcase "Cur Rule") 14 "Black")]
+     [(mttm)(text (string-upcase "Cur Rule") 14 "Black")]
      [else (text (string-upcase "Rules:") 24 "Black")])
    (rectangle (/ WIDTH 11) BOTTOM "outline" OUTLINE-COLOR)))
 
@@ -1384,6 +1415,9 @@ RIGHT GUI RENDERING
                                                                       control)
                                                         (rectangle full-width HEIGHT "outline" "transparent"))]
                                   [(mttm-language-recognizer) (overlay/align "left" "top"
+                                                                             empty-image
+                                                                             (rectangle 200 HEIGHT "outline" "transparent"))]
+                                  [(mttm) (overlay/align "left" "top"
                                                                              empty-image
                                                                              (rectangle 200 HEIGHT "outline" "transparent"))]
                                   [else control])))))
