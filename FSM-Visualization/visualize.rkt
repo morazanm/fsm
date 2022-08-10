@@ -1086,7 +1086,7 @@ BOTTOM GUI RENDERING
                     (align-items
                      (rules-bottom-label)
                      (if (or (eq? MACHINE-TYPE 'mttm-language-recognizer) (eq? MACHINE-TYPE 'mttm))
-                         (if (eq? CURRENT-RULE cur-rule)
+                         (if (equal? CURRENT-RULE cur-rule)
                              (rectangle target-width BOTTOM "outline" OUTLINE-COLOR)
                              (let ((port (open-output-string)))
                                (write cur-rule port)
