@@ -6,19 +6,28 @@
 
 
 (define (scaled-graph img type)
-  (let ([smallest (>= (- w (image-width img))
-                      (- h (image-height img)))])
+  (let* ([w-with-left-btns (- w 50)]
+         [smallest (>= (- w-with-left-btns (image-width img))
+                       (- h (image-height img)))]
+         [allocated-w (if (eq? 'pda type) (/ w-pda 2)(/ w 2))]
+         [allocated-h (if (eq? 'pda type) (/ h-pda 2)(/ h 2))])
     (cond
-      [(and (< (image-width img) (if (eq? 'pda type) (/ w-pda 2)(/ w 2)))
-            (< (image-height img) (if (eq? 'pda type) (/ h-pda 2)(/ h 2))))
-       (scale SMALL-IMG-SCALE img)]
-      [smallest  (if (equal? type 'pda)
-                     (scale (/ h-pda (image-height img)) img)
-                     (scale (/ h (image-height img)) img))]
-      [else (if (equal? type 'pda)
-                (scale (/ w-pda (image-width img)) img)
-                (scale (/ w (image-width img)) img))])))
-
+      [(and (< (image-width img) allocated-w)
+            (< (image-height img) allocated-h))
+       (define new-img (scale SMALL-IMG-SCALE img))
+       ;; if the newly scaled img is larger then the allocated space we will use the old one
+       (if (or (> (image-width new-img) allocated-w)
+               (> (image-height new-img) allocated-h))
+           img
+           new-img)]
+      [smallest
+       (if (equal? type 'pda)
+           (scale (floor (/ h-pda (image-height img))) img)
+           (scale (floor (/ w-with-left-btns (image-width img))) img))]
+      [else
+       (if (equal? type 'pda)
+           (scale (/ w-pda (image-width img)) img)
+           (scale (/ w-with-left-btns (image-width img)) img))])))
 
 
 (define (create-png machine hasRun? cur-state cur-rule)

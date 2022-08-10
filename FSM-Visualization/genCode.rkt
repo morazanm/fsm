@@ -74,36 +74,36 @@ Created by Joshua Schappel on 4/5/20
         (equal? (list->string (take-right (string->list inputFieldValue) 4)) ".rkt")) inputFieldValue]
       [else (string-append inputFieldValue ".rkt")])))
 
-;; valid-machine?: machine state-list
+;; valid-machine?: machine state-list -> boolean
 ;; Purpose: Determins if the given machine is valid
 (define (valid-machine? fsm-machine state-list)
-  (case MACHINE-TYPE
-    [(tm) (check-machine state-list
-                         (machine-alpha-list fsm-machine)
-                         (machine-final-state-list fsm-machine)
-                         (machine-rule-list fsm-machine)
-                         (machine-start-state fsm-machine)
-                         (machine-type fsm-machine))]
-    [(pda) (check-machine  state-list
-                           (machine-alpha-list fsm-machine)
-                           (machine-final-state-list fsm-machine)
-                           (machine-rule-list fsm-machine)
-                           (machine-start-state fsm-machine)
-                           (machine-type fsm-machine)
-                           (pda-machine-stack-alpha-list fsm-machine))]
-    [(tm-language-recognizer) (check-machine state-list
-                                             (remove-duplicates (machine-alpha-list fsm-machine))
-                                             (machine-final-state-list fsm-machine)
-                                             (machine-rule-list fsm-machine)
-                                             (machine-start-state fsm-machine)
-                                             'tm)]
-    [else
-     (check-machine state-list
-                    (machine-alpha-list fsm-machine)
-                    (machine-final-state-list fsm-machine)
-                    (machine-rule-list fsm-machine)
-                    (machine-start-state fsm-machine)
-                    (machine-type fsm-machine))]))
+  (not (void? (case MACHINE-TYPE
+                [(tm) (check-machine state-list
+                                     (machine-alpha-list fsm-machine)
+                                     (machine-final-state-list fsm-machine)
+                                     (machine-rule-list fsm-machine)
+                                     (machine-start-state fsm-machine)
+                                     (machine-type fsm-machine))]
+                [(pda) (check-machine  state-list
+                                       (machine-alpha-list fsm-machine)
+                                       (machine-final-state-list fsm-machine)
+                                       (machine-rule-list fsm-machine)
+                                       (machine-start-state fsm-machine)
+                                       (machine-type fsm-machine)
+                                       (pda-machine-stack-alpha-list fsm-machine))]
+                [(tm-language-recognizer) (check-machine state-list
+                                                         (remove-duplicates (machine-alpha-list fsm-machine))
+                                                         (machine-final-state-list fsm-machine)
+                                                         (machine-rule-list fsm-machine)
+                                                         (machine-start-state fsm-machine)
+                                                         'tm)]
+                [else
+                 (check-machine state-list
+                                (machine-alpha-list fsm-machine)
+                                (machine-final-state-list fsm-machine)
+                                (machine-rule-list fsm-machine)
+                                (machine-start-state fsm-machine)
+                                (machine-type fsm-machine))]))))
 
 
 ;; write-to-file: string string boolean

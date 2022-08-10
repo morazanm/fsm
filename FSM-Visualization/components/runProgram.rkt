@@ -165,32 +165,51 @@ Created by Joshua Schappel on 12/19/19
                                      (sm-showtransitions m
                                                          (machine-sigma-list (world-fsm-machine w)))]))
 
-                )
+                                   ;(displayln "Alpha:")(pretty-print (machine-alpha-list (world-fsm-machine w)))
+                                   ;(displayln "Stack Alpha:")(pretty-print (pda-machine-stack-alpha-list (world-fsm-machine w)))
+                                   ;(displayln "Start")(pretty-print (machine-start-state (world-fsm-machine w)))
+                                   ;(displayln "Final")(pretty-print (machine-final-state-list (world-fsm-machine w)))
+                                   ;(displayln "Rules ")(pretty-print (machine-rule-list (world-fsm-machine w)))
+
+
+                                   
+                                   ;(display "Input is: ") (displayln (machine-sigma-list (world-fsm-machine w)))
+                                   #;(pretty-print (sm-showtransitions m
+                                                                       (machine-sigma-list (world-fsm-machine w))))
+                                   (sm-showtransitions m
+                                                       (machine-sigma-list (world-fsm-machine w)))]))
+
+              )
                            
        ;; Set up the world to have all the valid machine components below                 
        (begin
          (define new-list (remove-duplicates (append (sm-states m) state-list))) ;; new-list: checks for any fsm state add-ons (ie. 'ds)
-         (world
-          (constructWorldMachine new-list fsm-machine m)
-          (world-tape-position w)
-          CURRENT-RULE
-          (machine-start-state (world-fsm-machine w))
-          (world-button-list w)
-          (world-input-list w)    
-          (if (list? unprocessed-list)
-              (list (car unprocessed-list))
-              '())
+         ;; check for the ds edge case where 'nodead is used but the ds is included in the transitions
+         (if (and
+              (not (member 'ds (sm-states m)))
+              (member 'ds (flatten unprocessed-list)))
+             (redraw-world-with-msg w "Dead state and dead state rules missing in the machine's set of rules." "Error" MSG-ERROR)
+             (world
+              (constructWorldMachine new-list fsm-machine m)
+              (world-tape-position w)
+              CURRENT-RULE
+              (machine-start-state (world-fsm-machine w))
+              (world-button-list w)
+              (world-input-list w)    
+              (if (list? unprocessed-list)
+                  (list (car unprocessed-list))
+                  '())
                                     
-            (if (list? unprocessed-list)
-                (cdr unprocessed-list)
-                '())
+              (if (list? unprocessed-list)
+                  (cdr unprocessed-list)
+                  '())
                                     
-            (if (list? unprocessed-list)
-                (msgWindow "The machine was sucessfully built. Press Next and Prev to show the machine's transitions" "Success"
-                           (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)
-                (msgWindow "The Input was rejected" "Warning"
-                           (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-CAUTION))
-            0))))]
+              (if (list? unprocessed-list)
+                  (msgWindow "The machine was successfully built. Press Next and Prev to show the machine's transitions" "Success"
+                             (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)
+                  (msgWindow "The Input was rejected" "Warning"
+                             (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-CAUTION))
+              0))))]
     [else
      (redraw-world-with-msg w "The Machine failed to build. Please see the cmd for more info" "Error" MSG-ERROR)]))
 
@@ -263,7 +282,7 @@ Created by Joshua Schappel on 12/19/19
       (addTrueFunctions state-list worldMachine)
       (sm-start newMachine)
       (sm-finals newMachine)
-      (sm-rules newMachine)
+      (remove-duplicates (sm-rules newMachine))
       (machine-sigma-list worldMachine)
       (sm-sigma newMachine)
       (sm-type newMachine)
@@ -273,7 +292,7 @@ Created by Joshua Schappel on 12/19/19
       (addTrueFunctions state-list worldMachine)
       (sm-start newMachine)
       (sm-finals newMachine)
-      (sm-rules newMachine)
+      (remove-duplicates (sm-rules newMachine))
       (decide-machine-input TM-ORIGIONAL-TAPE)
       (sm-sigma newMachine)
       (sm-type newMachine)
@@ -283,7 +302,7 @@ Created by Joshua Schappel on 12/19/19
       (addTrueFunctions state-list worldMachine)
       (sm-start newMachine)
       (sm-finals newMachine)
-      (sm-rules newMachine)
+      (remove-duplicates (sm-rules newMachine))
       (decide-machine-input TM-ORIGIONAL-TAPE)
       (sm-sigma newMachine)
       (sm-type newMachine)
@@ -319,7 +338,7 @@ Created by Joshua Schappel on 12/19/19
       (addTrueFunctions state-list worldMachine)
       (sm-start newMachine)
       (sm-finals newMachine)
-      (sm-rules newMachine)
+      (remove-duplicates (sm-rules newMachine))
       (machine-sigma-list worldMachine)
       (sm-sigma newMachine)
       (sm-type newMachine))]))
@@ -353,7 +372,7 @@ Created by Joshua Schappel on 12/19/19
 
 
 ;; reset-bottom-indices: tm-machine world (optional) -> none
-;; Purpose: Resest the bottom indicies to there origional value
+;; Purpose: Reset the bottom indices to there original value
 (define (reset-bottom-indices type w)
   (cond
     [(or (equal? 'tm type) (equal? 'tm-language-recognizer type))

@@ -121,7 +121,7 @@
 (define (create-dfa-ndfa-rule tup)
   (match tup
     [(list start input final)
-     (string-append "(" (symbol->string start) " " (symbol->string input) " " (symbol->string final) ")")]
+     (string-append "(" (stringify-value start) " " (stringify-value input) " " (stringify-value final) ")")]
     [else (error "Invalid dfa/ndfa pattern match")]))
 
 
@@ -132,29 +132,29 @@
     [(list (list from tape pop) (list to push))
      #:when (and (list? pop) (list? push)) ;; case: pop and push are lists
      (string-append
-      "((" (symbol->string from) " " (symbol->string tape)
+      "((" (stringify-value from) " " (stringify-value tape)
       " " (list->string pop) ") ("
-      (symbol->string to) " "  (list->string push) "))")]
+      (stringify-value to) " "  (list->string push) "))")]
     
     [(list (list from tape pop) (list to push))
      #:when (list? pop) ;; case: just pop is a list
      (string-append
-      "((" (symbol->string from) " " (symbol->string tape)
+      "((" (stringify-value from) " " (stringify-value tape)
       " " (list->string pop) ") ("
-      (symbol->string to) " "  (symbol->string push) "))")]
+      (stringify-value to) " "  (stringify-value push) "))")]
     
     [(list (list from tape pop) (list to push))
      #:when (list? push) ;; case: just push is a list
      (string-append
-      "((" (symbol->string from) " " (symbol->string tape)
-      " " (symbol->string pop) ") ("
-      (symbol->string to) " "  (list->string push) "))")]
+      "((" (stringify-value from) " " (stringify-value tape)
+      " " (stringify-value pop) ") ("
+      (stringify-value to) " "  (list->string push) "))")]
     
     [(list (list from tape pop) (list to push)) ;; case: pop and push are not lists
      (string-append
-      "((" (symbol->string from) " " (symbol->string tape)
-      " " (symbol->string pop) ") ("
-      (symbol->string to) " "  (symbol->string push) "))")]
+      "((" (stringify-value from) " " (stringify-value tape)
+      " " (stringify-value pop) ") ("
+      (stringify-value to) " "  (stringify-value push) "))")]
     
     ;; Otherwise throw an error
     [else
@@ -167,8 +167,8 @@
   (match rule
     [(list (list state1 alpha1) (list state2 alpha2))
      (string-append
-      "((" (symbol->string state1) " " (symbol->string (format-tm-input alpha1)) ")"
-      " (" (symbol->string state2) " " (symbol->string (format-tm-input alpha2)) "))")]
+      "((" (stringify-value state1) " " (stringify-value (format-tm-input alpha1)) ")"
+      " (" (stringify-value state2) " " (stringify-value (format-tm-input alpha2)) "))")]
     [else
      (error "Invalid pattern match")]))
 
@@ -179,7 +179,7 @@
   (let ((string (string-append
                  "("
                  (foldr (lambda (val accum)
-                          (string-append (symbol->string val) " " accum)) "" los))))
+                          (string-append (stringify-value val) " " accum)) "" los))))
     (string-append
      (substring
       string

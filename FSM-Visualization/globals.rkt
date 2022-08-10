@@ -206,3 +206,6 @@ Created by Joshua Schappel on 12/19/19
 
 (define (toggle-color-blind-mode)
   (set! COLOR-BLIND-MODE (not COLOR-BLIND-MODE)))
+
+;; Helper function to convert a value to a string
+(define (stringify-value input) (if (number? input) (number->string input) (symbol->string input)))

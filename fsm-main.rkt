@@ -56,6 +56,11 @@
  ; regexp observers
  simplify-regexp printable-regexp
  regexp? singleton-regexp? concat-regexp? union-regexp? kleenestar-regexp? null-regexp? empty-regexp?
+ singleton-regexp-a
+ concat-regexp-r1 concat-regexp-r2
+ union-regexp-r1 union-regexp-r2
+ kleenestar-regexp-r1
+ word-in-regexp
 
  ; regexp transformers
  fsa->regexp
@@ -232,7 +237,7 @@
                    (eq? (sm-type M2) 'tm))
                (error "Random testing of Turing Machines is not possible.")]
               [(equal? res-m1 res-m2) #t]
-              [else (get-differences res-m1 res-m2 test-words)]))))
+              [else (remove-duplicates (get-differences res-m1 res-m2 test-words))]))))
   
 ; sm [natnum] --> (listof (list word symbol))
 (define (sm-test M . l)
@@ -470,8 +475,8 @@
   
 (define (concat-regexp a b)
   (local [(define tentative (if (and (regexp? a) (regexp? b)) (make-unchecked-concat a b)
-                                (if (regexp? a) (format "~s must be a regexp to be a valid rhs for the concat-regexp ~s ~s" b a b)
-                                    (format "~s must be a regexp to be a valid rhs for the concat-regexp ~s ~s" a a b))))
+                                (if (regexp? a) (format "~s must be a regexp to be a valid second input to concat-regexp ~s ~s" b a b)
+                                    (format "~s must be a regexp to be a valid first input to concat-regexp ~s ~s" a a b))))
           (define final (if (string? tentative) tentative
                             (valid-regexp? tentative)))]
     (if (string? final) (error final)
@@ -481,8 +486,8 @@
   
 (define (union-regexp a b)
   (local [(define tentative (if (and (regexp? a) (regexp? b)) (make-unchecked-union a b)
-                                (if (regexp? a) (format "~s must be a regexp to be a valid rhs for the union-regexp ~s ~s" b a b)
-                                    (format "~s must be a regexp to be a valid rhs for the union-regexp ~s ~s" a a b))))
+                                (if (regexp? a) (format "~s must be a regexp to be a valid second input to union-regexp ~s ~s" b a b)
+                                    (format "~s must be a regexp to be a valid first input to union-regexp ~s ~s" a a b))))
           (define final (if (string? tentative) tentative
                             (valid-regexp? tentative)))]
     (if (string? final) (error final)
@@ -492,7 +497,7 @@
   
 (define (kleenestar-regexp a)
   (local [(define tentative (if (regexp? a) (make-unchecked-kleenestar a)
-                                (format "~s must be a regexp to be a valid input to the kleenestar-regexp" a)))
+                                (format "~s must be a regexp to be a valid input to kleenestar-regexp" a)))
           (define final (if (string? tentative) tentative
                             (valid-regexp? tentative)))]
     (if (string? final) (error final)

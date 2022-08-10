@@ -1,4 +1,4 @@
-; FSM Library Version 1.0
+; FSM Version 1.0
 ; Copyright (C) 202- by Marco T. Morazan 
 
 #lang scribble/manual
@@ -140,18 +140,12 @@ A list containing a state and one or more tape configurations. A tape
 configuration is a list containing a natural number for the head's
 position and a sublist representing the contents of the tape.
 
-@defidform[regexp] A regular expression. That is, strings over an 
-alphabet, E, and {(, ), (), U, *} defined as follows:
-@itemlist[@item{() and each element of E is a reg-exp.}
-          @item{If A and B are reg-exp, so is (AB).}
-          @item{If A and B are reg-exp, so is (A U B).}
-          @item{If A is a reg-exp, so is (A*).}
-          @item{Nothing else is a reg-exp.}]
+@defidform[regexp] A regular expression (see regular expression constructors below).
 
 @defidform[terms] Lowercase letters.
 
 @defidform[nts]
-For an FSM programmer, a nonterminal symbol corresponds to a upercase
+A set of nonterminal symbols. A nonterminal symbol is an upercase
 letter in English: A..Z. That is, FSM programmers are limited to 26 nonterminals.
 The internal representation in FSM may use symbols of the form nts-<digit>^+
 (e.g., A-72431). Such nonterminals may not be directly used in an FSM program.
@@ -188,9 +182,12 @@ A representation of a statemachine in FSM. A state machine is one of the followi
 A state machine rule is either a dfa-rule, an ndfa-rule, a 
 ndpda-rule, or a tm-rule.
 
-@defidform[grammar]  
-A grammar is either a regular grammar, a context-free grammar, or
-a context-sensitive grammar.
+@defidform[grammar]
+A representation of a grammar in FSM. A grammar is one of the following:
+@itemlist[
+ @item{Regular Grammar (rg)}
+ @item{Context-Free Grammar (cfg)}
+ @item{Context-Sensitive Grammar (csg)}]
 
 @defidform[grule]  
 A grammar rule is either a rrule, a cfrule, or csrule.
@@ -608,14 +605,56 @@ word are returned.
 
 
 @defproc[(fsa->regexp [m ndfa])
-         reg-exp]{Returns a regular expression for the language of
- the given ndfa. Warning: be careful with this function, as it can quickly cause DrRacket to run out of memory.}
+         reg-exp]{Returns a regular expression for the language of the given ndfa.}
+
+@defproc[(simplify-regexp [r regexp])
+         reg-exp]{Performs elementary simplifications on the given regular expression.}
 
 
 @section{Regular Expression Observers}
 
+@defproc[(regexp? [r regexp])
+         Boolean]{Predicate for regular expressions.}
+
+@defproc[(empty-regexp? [r regexp])
+         Boolean]{Predicate for the empty regular expression.}
+
+@defproc[(singleton-regexp? [r regexp])
+         Boolean]{Predicate for a singleton regular expression.}
+
+@defproc[(union-regexp? [r regexp])
+         Boolean]{Predicate for a union regular expression.}
+
+@defproc[(concat-regexp? [r regexp])
+         Boolean]{Predicate for a concat regular expression.}
+
+@defproc[(kleenestar-regexp? [r regexp])
+         Boolean]{Predicate for a Kleene star regular expression.}
+
 @defproc[(printable-regexp [r regexp])
          string]{Converts the given regular expression to a string.}
+
+@defproc[(singleton-regexp-a [r singelton-regexp])
+         string]{Extracts the string in the given singleton-regexp.}
+
+@defproc[(union-regexp-r1 [r union-regexp])
+         regexp]{Extracts the first regular expression in the given union-regexp.}
+
+@defproc[(union-regexp-r2 [r union-regexp])
+         regexp]{Extracts the second regular expression in the given union-regexp.}
+
+@defproc[(concat-regexp-r1 [r concat-regexp])
+         regexp]{Extracts the first regular expression in the given concat-regexp.}
+
+@defproc[(concat-regexp-r2 [r concat-regexp])
+         regexp]{Extracts the second regular expression in the given concat-regexp.}
+
+@defproc[(kleenestar-regexp-r1 [r kleenestar-regexp])
+         regexp]{Extracts the regular expression in the given kleenestar-regexp.}
+
+@defproc[(word-in-regexp [r regexp])
+         word]{Generates a random word of length at most 20 in the language defined by the given regular expression.}
+
 
 @section{Some Useful Functions}
 
@@ -646,10 +685,7 @@ Names in no paticular order:
 @itemlist[@item{Marco T. Morazán}
           @item{Rosario Antunez}
           @item{Josephine A. Des Rosiers}
-          @item{Joshua Schappel}
-          @item{Sachin Mahashabde}
-          @item{Sena Karsavran}
-          @item{Isabella Felix}]
+          @item{Joshua Schappel}]
 
 
 

@@ -88,7 +88,7 @@ Cmd Functions
                           (big-bang
                               w
                             (name (string-append
-                                   (symbol->string (machine-type (world-fsm-machine w)))
+                                   (stringify-value (machine-type (world-fsm-machine w)))
                                    ": "
                                    VERSION))
                             (on-draw draw-world)
@@ -455,7 +455,7 @@ Scene Rendering
                                           (machine-final-state-list (world-fsm-machine w))))
 
                               ;; **
-                              (place-image(overlay (text (symbol->string (fsm-state-name (car l))) 25 "black")
+                              (place-image(overlay (text (stringify-value (fsm-state-name (car l))) 25 "black")
                                                    (circle 21 "outline" START-STATE-COLOR)
                                                    (circle 25 "outline" END-STATE-COLOR)
                                                    (circle 30 "outline" END-STATE-COLOR)
@@ -471,7 +471,7 @@ Scene Rendering
                                           (draw-states(cdr l) (add1 i) s))]
                              
                              [(equal? (fsm-state-name (car l)) (machine-start-state (world-fsm-machine w)))
-                              (place-image(overlay (text (symbol->string (fsm-state-name (car l))) 25 "black")
+                              (place-image(overlay (text (stringify-value (fsm-state-name (car l))) 25 "black")
                                                    (circle 25 "outline" START-STATE-COLOR))
                                           (posn-x (fsm-state-posn (car l)))
                                           (posn-y (fsm-state-posn (car l)))
@@ -479,7 +479,7 @@ Scene Rendering
 
                              ;; **
                              [(ormap (lambda(x) (equal? (fsm-state-name (car l)) x)) (machine-final-state-list (world-fsm-machine w)))
-                              (place-image (overlay (text (symbol->string (fsm-state-name (car l))) 20 "black")
+                              (place-image (overlay (text (stringify-value (fsm-state-name (car l))) 20 "black")
                                                     (overlay
                                                      (circle 20 "outline" END-STATE-COLOR)
                                                      (circle 25 "outline" END-STATE-COLOR)
@@ -493,7 +493,7 @@ Scene Rendering
                                            (posn-x (fsm-state-posn (car l)))
                                            (posn-y (fsm-state-posn (car l)))
                                            (draw-states (cdr l) (add1 i) s))]
-                             [else (place-image (text  (symbol->string (fsm-state-name (car l))) 25 "black")
+                             [else (place-image (text  (stringify-value (fsm-state-name (car l))) 25 "black")
                                                 (posn-x (fsm-state-posn  (car l)))
                                                 (posn-y (fsm-state-posn (car l)))
                                                 (draw-states (cdr l) (add1 i) s))]))))
@@ -573,7 +573,7 @@ Scene Rendering
                              (arrow (lambda ()
                                      
                                       (overlay/offset 
-                                       (text (symbol->string sym) 18 ARROW-RULE-COLOR)
+                                       (text (stringify-value sym) 18 ARROW-RULE-COLOR)
                                        15 15
                                        (beside/align "center"
                                                      (rectangle (- inner-R 15) 5 "solid" state-color)
@@ -583,7 +583,7 @@ Scene Rendering
                              ;; Purpose: creates an upside-down arrow
                              (down-arrow (lambda ()
                                            (overlay/offset 
-                                            (rotate 180 (text (symbol->string sym) 18 ARROW-RULE-COLOR))
+                                            (rotate 180 (text (stringify-value sym) 18 ARROW-RULE-COLOR))
                                             15 -15
                                             (beside/align "center"
                                                           (rectangle (- inner-R 15) 5 "solid" state-color)
@@ -842,11 +842,11 @@ TOP GUI RENDERING
                          [(<= index TAPE-INDEX-BOTTOM)
                           ;;(and (equal? sigma (cadr cur-rule)) (equal? index TAPE-INDEX-BOTTOM))
                           (overlay
-                           (text (symbol->string sigma) fnt-size "gray")
+                           (text (stringify-value sigma) fnt-size "gray")
                            (rectangle rectWidth TOP "outline" "transparent"))]
                          [else
                           (overlay
-                           (text (symbol->string sigma) fnt-size "Black")
+                           (text (stringify-value sigma) fnt-size "Black")
                            (rectangle rectWidth TOP "outline" "transparent"))]))))
 
     (overlay
@@ -883,7 +883,7 @@ TOP GUI RENDERING
            (input-box (lambda (input highlight? fnt-size)
                         (let ((color (if highlight? TAPE-HIGHLIGHT-COLOR "black")))
                           (overlay
-                           (text (symbol->string input) fnt-size color)
+                           (text (stringify-value input) fnt-size color)
                            (rectangle rectWidth (* TOP .75) "outline" OUTLINE-COLOR)))))
 
            (index-box (lambda (index)
@@ -1152,8 +1152,8 @@ BOTTOM GUI RENDERING
            ;; Purpose: some characters can also be part of the alphabet so we render there symbol
            (determin-letter-render (lambda (letter)
                                      (cond
-                                       [(equal? 'LM letter) (symbol->string '@)]
-                                       [else (symbol->string letter)])))
+                                       [(equal? 'LM letter) (stringify-value '@)]
+                                       [else (stringify-value letter)])))
            
            ;; t-box: string int -> image
            ;; Purpose: Creates a box for the sting to be placed in
@@ -1304,7 +1304,7 @@ RIGHT GUI RENDERING
                                               ;; draw-left: none -> img
                                               ;; Purpose: draws the message that telles the user the current position
                                               (draw-tape-index (lambda ()
-                                                                 (let ([state (symbol->string (cadr args))])
+                                                                 (let ([state (stringify-value (cadr args))])
                                                                    (overlay
                                                                     (beside
                                                                      (text "Current: " 11 (make-color 94 36 23))
@@ -1557,7 +1557,7 @@ EVENT HANDLERS
             (println
              (string-append
               "State: "
-              (symbol->string (fsm-state-name (checkButtonStates (machine-state-list (world-fsm-machine w)) x y)))
+              (stringify-value (fsm-state-name (checkButtonStates (machine-state-list (world-fsm-machine w)) x y)))
               " was pressed"))
             (redraw-world w))]
 
