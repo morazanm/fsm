@@ -1093,15 +1093,15 @@ BOTTOM GUI RENDERING
                            (- (- WIDTH (/ WIDTH 11)) 200)))
   (define target-width-mttm (if (or (eq? 'mttm-language-recognizer MACHINE-TYPE)
                                     (eq? 'mttm MACHINE-TYPE))
-                                (- target-width 200)
+                                ( + (/ WIDTH 11) (- target-width 200))
                                 WIDTH))
   (define rules-bottom-label
-    (overlay
-     (case MACHINE-TYPE
-       [(mttm-language-recognizer)(text "Current Rule:" 12 "Black")]
-       [(mttm)(text "Current Rule:" 14 "Black")]
-       [else (text (string-upcase "Rules:") 24 "Black")])
-     (rectangle (/ WIDTH 11) BOTTOM "outline" OUTLINE-COLOR)))
+    (if (or (equal? MACHINE-TYPE 'mttm-language-recognizer)
+            (equal? MACHINE-TYPE 'mttm))
+        empty-image
+        (overlay
+         (text (string-upcase "Rules:") 24 "Black")
+         (rectangle (/ WIDTH 11) BOTTOM "outline" OUTLINE-COLOR))))
 
   (define (make-mttm-bottom cur-rule)
     (define prev-rule (getCurRule (world-processed-config-list w)))
