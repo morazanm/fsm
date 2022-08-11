@@ -204,9 +204,8 @@ Cmd Functions
                      '())
                     'mttm-language-recognizer
                     (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation."
-                               "tm" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)
-                    (void)
-                    )))]
+                               "tm" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
+                  (void))]
 
          ['mttm-language-recognizer (begin
                                       (set-machine-type 'mttm-language-recognizer)
@@ -226,9 +225,8 @@ Cmd Functions
                                          (sm-accept fsm-machine))
                                         'mttm-language-recognizer
                                         (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation."
-                                                   "tm" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)
-                                        (void)
-                                        )))]
+                                                   "tm" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
+                                      (void))]
          
          ['tm-language-recognizer (begin
                                     (set-machine-type 'tm-language-recognizer)
@@ -321,8 +319,31 @@ Cmd Functions
                                   0)
                       (sm-type fsm-machine)
                       (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "tm" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
-                    (void))
-                  )]
+                    (void)))]
+
+           ['mttm (begin
+                    (set-machine-type 'mttm)
+                    (run-program
+                     (build-world
+                      (mttm-machine
+                       (map (lambda (x)
+                              (let ((temp (get-member x args)))
+                                (if (empty? temp)
+                                    (fsm-state x MTTM-TRUE-FUNCTION (posn 0 0))
+                                    (fsm-state x (cadr temp) (posn 0 0))))) state-list)
+                       (sm-start fsm-machine)
+                       (sm-finals fsm-machine)
+                       (reverse (sm-rules fsm-machine))
+                       `(,LM)
+                       (sm-sigma fsm-machine)
+                       (sm-type fsm-machine)
+                       (sm-numtapes fsm-machine)
+                       0
+                       '())
+                      'mttm-language-recognizer
+                      (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation."
+                                 "tm" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
+                    (void))]
 
            ['mttm-language-recognizer (begin
                                         (set-machine-type 'mttm-language-recognizer)
@@ -707,7 +728,7 @@ Scene Rendering
           ;;draws the images with an arrow
           (with-arrow (place-image (determin-gui-draw) (- WIDTH 100) (/ HEIGHT 2)
                                    (place-image (create-gui-top (world-fsm-machine w) (world-cur-rule w)) (/ WIDTH 2) (/ TOP 2)
-                                                (place-image (create-gui-bottom (machine-rule-list (world-fsm-machine w)) (world-cur-rule w) (world-scroll-bar-index w) (world-cur-state w)) (/ WIDTH 2) (- HEIGHT (/ BOTTOM 2))
+                                                (place-image (create-gui-bottom (machine-rule-list (world-fsm-machine w)) (world-cur-rule w) (world-scroll-bar-index w) (world-cur-state w) w) (/ WIDTH 2) (- HEIGHT (/ BOTTOM 2))
                                                              (draw-button-list (world-button-list w)
                                                                                (draw-input-list (world-input-list w)
                                                                                                 (place-image (case (machine-type machine)
@@ -723,7 +744,7 @@ Scene Rendering
           ;;draws the images without an arrow
           (no-arrow (place-image (determin-gui-draw) (- WIDTH 100) (/ HEIGHT 2)
                                  (place-image (create-gui-top (world-fsm-machine w) (world-cur-rule w)) (/ WIDTH 2) (/ TOP 2)
-                                              (place-image (create-gui-bottom (machine-rule-list (world-fsm-machine w)) (world-cur-rule w) (world-scroll-bar-index w) (world-cur-state w)) (/ WIDTH 2) (- HEIGHT (/ BOTTOM 2))
+                                              (place-image (create-gui-bottom (machine-rule-list (world-fsm-machine w)) (world-cur-rule w) (world-scroll-bar-index w) (world-cur-state w) w) (/ WIDTH 2) (- HEIGHT (/ BOTTOM 2))
                                                            (draw-button-list (world-button-list w)
                                                                              (draw-input-list (world-input-list w)
                                                                                               (place-image (case (machine-type machine)
@@ -1065,7 +1086,7 @@ BOTTOM GUI RENDERING
 
 ;; create-gui-bottom: list-of-rules rule int -> image
 ;; Purpose: Creates the bottom of the gui layout
-(define (create-gui-bottom lor cur-rule scroll-index cur-state)
+(define (create-gui-bottom lor cur-rule scroll-index cur-state w)
   (define target-width (if (or (eq? 'mttm-language-recognizer MACHINE-TYPE)
                                (eq? 'mttm MACHINE-TYPE))
                            (+ 200 (- (- WIDTH (/ WIDTH 11)) 200))
@@ -1074,64 +1095,67 @@ BOTTOM GUI RENDERING
                                     (eq? 'mttm MACHINE-TYPE))
                                 (- target-width 200)
                                 WIDTH))
+  (define rules-bottom-label
+    (overlay
+     (case MACHINE-TYPE
+       [(mttm-language-recognizer)(text "Current Rule:" 12 "Black")]
+       [(mttm)(text "Current Rule:" 14 "Black")]
+       [else (text (string-upcase "Rules:") 24 "Black")])
+     (rectangle (/ WIDTH 11) BOTTOM "outline" OUTLINE-COLOR)))
 
-  (define (make-mttm-bottom)
+  (define (make-mttm-bottom cur-rule)
+    (define prev-rule (getCurRule (world-processed-config-list w)))
     (define mttm-cur-rule-view
+      (if cur-rule (overlay
+                    (text cur-rule FONT-SIZE "black")
+                    (rectangle target-width-mttm BOTTOM "outline" OUTLINE-COLOR))
+          (rectangle target-width-mttm BOTTOM "outline" OUTLINE-COLOR)))
+    (define mttm-prev-state-view
+      (overlay (above
+                (overlay
+                 (text (if (equal? CURRENT-RULE prev-rule) "" (stringify-value (caar prev-rule))) 24 "black")
+                 (rectangle 100 50 "outline" OUTLINE-COLOR))
+                (overlay
+                 (text "Previous State" 12 "black")
+                 (rectangle 100 25 "outline" OUTLINE-COLOR)))
+               (rectangle 100 BOTTOM "outline" OUTLINE-COLOR)))
+    (define mttm-cur-state-view
       (overlay (above
                 (overlay
                  (text (if (null? cur-state) "" (stringify-value cur-state)) 24 "black")
                  (rectangle 100 50 "outline" OUTLINE-COLOR))
                 (overlay
-                 (text "Cur State" 12 "black")
+                 (text "Current State" 12 "black")
                  (rectangle 100 25 "outline" OUTLINE-COLOR)))
                (rectangle 100 BOTTOM "outline" OUTLINE-COLOR)))
     (beside
-     (rectangle target-width-mttm BOTTOM "outline" OUTLINE-COLOR)
-     mttm-cur-rule-view
-     (rectangle 100 BOTTOM "solid" "pink")))
+     mttm-cur-state-view
+     mttm-prev-state-view
+     rules-bottom-label
+     mttm-cur-rule-view))
   (cond
     [(empty? lor)
      (overlay/align "left" "middle"
-                    (align-items
-                     (rules-bottom-label)
-                     (if (or (eq? 'mttm-language-recognizer MACHINE-TYPE)
-                             (eq? 'mttm MACHINE-TYPE))
-                         (make-mttm-bottom)
+                    (if (or (eq? 'mttm-language-recognizer MACHINE-TYPE)
+                            (eq? 'mttm MACHINE-TYPE))
+                        (make-mttm-bottom #f)
+                        (beside
+                         rules-bottom-label
                          (rectangle target-width BOTTOM "outline" OUTLINE-COLOR)))
                     (rectangle WIDTH BOTTOM "outline" "transparent"))]
     [else
      (overlay/align "left" "middle"
-                    (align-items
-                     (rules-bottom-label)
-                     (if (or (eq? MACHINE-TYPE 'mttm-language-recognizer) (eq? MACHINE-TYPE 'mttm))
-                         (if (equal? CURRENT-RULE cur-rule)
-                             (make-mttm-bottom)
-                             (let ((port (open-output-string)))
-                               (write cur-rule port)
-                               (overlay
-                                (text (get-output-string port) FONT-SIZE "black")
-                                (rectangle target-width-mttm BOTTOM "outline" OUTLINE-COLOR)))) ;;TODO: jschappel display current rule here
+                    (if (or (eq? MACHINE-TYPE 'mttm-language-recognizer) (eq? MACHINE-TYPE 'mttm))
+                        (if (equal? CURRENT-RULE cur-rule)
+                            (make-mttm-bottom #f)
+                            (let ((port (open-output-string)))
+                              (write cur-rule port)
+                              (make-mttm-bottom (get-output-string port))))
+                        (beside
+                         rules-bottom-label
                          (lor-bottom-label lor 83 cur-rule scroll-index)))
                     (rectangle WIDTH BOTTOM "outline" "transparent"))]))
 
-
-;; rules-bottom-label: null -> image
-;; Purpose: Creates the left bottom label in the gui
-(define (rules-bottom-label)
-  (overlay
-   (case MACHINE-TYPE
-     [(mttm-language-recognizer)(text (string-upcase "Cur Rule") 14 "Black")]
-     [(mttm)(text (string-upcase "Cur Rule") 14 "Black")]
-     [else (text (string-upcase "Rules:") 24 "Black")])
-   (rectangle (/ WIDTH 11) BOTTOM "outline" OUTLINE-COLOR)))
-
-
-;; align-items image image -> image
-;; Purpose: Aligns 2 images next to each other
-(define (align-items item1 item2)
-  (beside
-   item1
-   item2))
 
 ;; lor-bottom-label: list-of-rules int rule int -> image
 ;; Purpose: The label for the list of rules

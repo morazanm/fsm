@@ -163,23 +163,7 @@ Created by Joshua Schappel on 12/19/19
                                     ;; dfa, ndfa, pda below
                                     [else
                                      (sm-showtransitions m
-                                                         (machine-sigma-list (world-fsm-machine w)))]))
-
-                                   ;(displayln "Alpha:")(pretty-print (machine-alpha-list (world-fsm-machine w)))
-                                   ;(displayln "Stack Alpha:")(pretty-print (pda-machine-stack-alpha-list (world-fsm-machine w)))
-                                   ;(displayln "Start")(pretty-print (machine-start-state (world-fsm-machine w)))
-                                   ;(displayln "Final")(pretty-print (machine-final-state-list (world-fsm-machine w)))
-                                   ;(displayln "Rules ")(pretty-print (machine-rule-list (world-fsm-machine w)))
-
-
-                                   
-                                   ;(display "Input is: ") (displayln (machine-sigma-list (world-fsm-machine w)))
-                                   #;(pretty-print (sm-showtransitions m
-                                                                       (machine-sigma-list (world-fsm-machine w))))
-                                   (sm-showtransitions m
-                                                       (machine-sigma-list (world-fsm-machine w)))]))
-
-              )
+                                                       (machine-sigma-list (world-fsm-machine w)))])))
                            
        ;; Set up the world to have all the valid machine components below                 
        (begin
@@ -209,7 +193,7 @@ Created by Joshua Schappel on 12/19/19
                              (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)
                   (msgWindow "The Input was rejected" "Warning"
                              (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-CAUTION))
-              0))))]
+              0)))))]
     [else
      (redraw-world-with-msg w "The Machine failed to build. Please see the cmd for more info" "Error" MSG-ERROR)]))
 

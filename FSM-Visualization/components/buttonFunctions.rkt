@@ -62,10 +62,10 @@ Created by Joshua Schappel on 12/19/19
                    (let ((state (string-trim (textbox-text (car (world-input-list w)))))
                          (new-input-list (list-set (world-input-list w) 0 (remove-text (car (world-input-list w)) 100)))
                          (inv-func (case MACHINE-TYPE
-                                [(pda) PDA-TRUE-FUNCTION]
-                                [(tm) TM-TRUE-FUNCTION]
-                                [(tm-language-recognizer) TM-TRUE-FUNCTION]
-                                [else TRUE-FUNCTION])))
+                                     [(pda) PDA-TRUE-FUNCTION]
+                                     [(tm) TM-TRUE-FUNCTION]
+                                     [(tm-language-recognizer) TM-TRUE-FUNCTION]
+                                     [else TRUE-FUNCTION])))
                      (cond[(equal? "" state) w]
                           [(ormap (lambda (x) (equal? (format-states state) (symbol->string (fsm-state-name x))))
                                   (machine-state-list (world-fsm-machine w)))
@@ -648,6 +648,8 @@ Created by Joshua Schappel on 12/19/19
                                    [(pda) (car nextState)]
                                    [(tm) (car nextState)]
                                    [(tm-language-recognizer) (car nextState)]
+                                   [(mttm) (car nextState)]
+                                   [(mttm-language-recognizer) (car nextState)]
                                    [else (car (cdr nextState))])))
            ;; get-input: Rule -> symbol
            ;; Purpose: determins the input from the given rule
@@ -766,6 +768,8 @@ Created by Joshua Schappel on 12/19/19
                                                              #t)]
                                                    [(tm) (error "Interanl error| buttonFuntions.rkt - showPrev")]
                                                    [(tm-language-recognizer) (error "Interanl error| buttonFuntions.rkt - showPrev")]
+                                                   [(mttm-language-recognizer) (error "Interanl error| buttonFuntions.rkt - showPrev")]
+                                                   [(mttm) (error "Interanl error| buttonFuntions.rkt - showPrev")]
                                                    [else(cadr cur-rule)])))
                               
                               ;; Updates the machine to have the approperate values. This function is only needed for tm, to
@@ -783,6 +787,8 @@ Created by Joshua Schappel on 12/19/19
                                                        [(pda) (car previousState)]
                                                        [(tm) (car previousState)]
                                                        [(tm-language-recognizer) (car previousState)]
+                                                       [(mttm-language-recognizer) (car previousState)]
+                                                       [(mttm) (car previousState)]
                                                        [else (car (cdr previousState))])))
 
                               ;; handles the pda pops
@@ -820,11 +826,12 @@ Created by Joshua Schappel on 12/19/19
                         ;; - dfa/ndfa: world processed and unprocessed lists
                         (begin                     
                           ;; Determine if the tape input should decrease. This does not happen
-                          ;; with tm's and an empty
-                          (if (and (not (equal? 'tm MACHINE-TYPE))
-                                   (not (equal? 'tm-language-recognizer MACHINE-TYPE)))
-                              (determin-tape (input-consumed?))
-                              (void))
+                          ;; with tm's and mttm's and an empty
+                          (when (and (and (not (equal? 'tm MACHINE-TYPE))
+                                          (not (equal? 'mttm MACHINE-TYPE))
+                                          (not (equal? 'mttm-language-recognizer MACHINE-TYPE))
+                                          (not (equal? 'tm-language-recognizer MACHINE-TYPE))))
+                            (determin-tape (input-consumed?)))
                           
 
                           ;; If the machine is a pda we need to push or pop!
