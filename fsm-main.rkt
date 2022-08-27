@@ -51,7 +51,7 @@
  grammar-both-derive grammar-testequiv grammar-test
 
  ; regexp constructors
- empty-regexp singleton-regexp union-regexp concat-regexp kleenestar-regexp
+ empty-regexp singleton-regexp union-regexp concat-regexp kleenestar-regexp null-regexp
 
  ; regexp observers
  simplify-regexp printable-regexp
