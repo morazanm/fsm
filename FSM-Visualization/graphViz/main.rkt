@@ -7,7 +7,10 @@
          "../../GraphViz/lib.rkt"
          "../../GraphViz/render-graph.rkt")
 
-(provide scaled-graph create-png resize-image)
+(provide
+ scaled-graph
+ create-gql-png
+ resize-image)
 
 ;; resize-image :: image -> int -> int -> image
 ;; Scales a image to the given dimentions. This solution was adapted from
@@ -52,11 +55,11 @@
       (resize-image img image-area-width image-area-height)
       img))
 
-;; create-png :: machine -> bool -> symbol -> rule -> image
+;; create-gql-png :: machine -> bool -> symbol -> rule -> image
 ;; converts a machine to a graphviz internal representaion of a machine and
 ;; calls the gviz library to convert it to a png. Then we scale it to the viztool
 ;; if necessary.
-(define (create-png machine hasRun? cur-state cur-rule)
+(define (create-gql-png machine hasRun? cur-state cur-rule)
   (letrec ((g (create-graph 'G #:color 0))
            (states (machine-state-list machine))
            (start (machine-start-state machine))
