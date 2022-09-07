@@ -52,10 +52,10 @@ Created by Joshua Schappel on 12/19/19
                    (let ((state (string-trim (textbox-text (car (world-input-list w)))))
                          (new-input-list (list-set (world-input-list w) 0 (remove-text (car (world-input-list w)) 100)))
                          (inv-func (case MACHINE-TYPE
-                                [(pda) PDA-TRUE-FUNCTION]
-                                [(tm) TM-TRUE-FUNCTION]
-                                [(tm-language-recognizer) TM-TRUE-FUNCTION]
-                                [else TRUE-FUNCTION])))
+                                     [(pda) PDA-TRUE-FUNCTION]
+                                     [(tm) TM-TRUE-FUNCTION]
+                                     [(tm-language-recognizer) TM-TRUE-FUNCTION]
+                                     [else TRUE-FUNCTION])))
                      (cond[(equal? "" state) w]
                           [(ormap (lambda (x) (equal? (format-states state) (symbol->string (fsm-state-name x))))
                                   (machine-state-list (world-fsm-machine w)))
@@ -69,9 +69,17 @@ Created by Joshua Schappel on 12/19/19
                                                (posn 0 0))
                                     (machine-state-list (world-fsm-machine w))))
                              (reset-bottom-indices)
-                             (world (world-fsm-machine w) (world-tape-position w) (world-cur-rule w)
-                                    null (world-button-list w) new-input-list '()
-                                    '() (world-error-msg w) (world-scroll-bar-index w)))]))))
+                             (world (world-fsm-machine w)
+                                    (world-tape-position w)
+                                    (world-cur-rule w)
+                                    null
+                                    (world-button-list w)
+                                    new-input-list
+                                    '()
+                                    '()
+                                    (world-error-msg w)
+                                    (world-scroll-bar-index w)
+                                    (world-graphql-img w)))]))))
 
 
 ;; removeState: world -> world
@@ -112,9 +120,17 @@ Created by Joshua Schappel on 12/19/19
                               (set-machine-state-list! (world-fsm-machine w) (filter(lambda(x) (not(equal? (fsm-state-name x) (string->symbol state)))) (machine-state-list (world-fsm-machine w))))
                               (set-machine-rule-list! (world-fsm-machine w) (remove-all (machine-rule-list (world-fsm-machine w))))
                               (reset-bottom-indices)
-                              (world (world-fsm-machine w)(world-tape-position w) (world-cur-rule w)
-                                     null (world-button-list w) new-input-list
-                                     '() '() (world-error-msg w) (world-scroll-bar-index w)))
+                              (world (world-fsm-machine w)
+                                     (world-tape-position w)
+                                     (world-cur-rule w)
+                                     null
+                                     (world-button-list w)
+                                     new-input-list
+                                     '()
+                                     '()
+                                     (world-error-msg w)
+                                     (world-scroll-bar-index w)
+                                     (world-graphql-img w)))
 
                             (begin
                               (set-machine-state-list! (world-fsm-machine w) (filter (lambda(x) (not(equal? (fsm-state-name x) (string->symbol state)))) (machine-state-list (world-fsm-machine w))))
@@ -274,24 +290,48 @@ Created by Joshua Schappel on 12/19/19
                         (begin
                           (reset-bottom-indices)
                           (set-machine-start-state! (world-fsm-machine w) (string->symbol start-state))
-                          (world (world-fsm-machine w)(world-tape-position w) (world-cur-rule w)
-                                 null (world-button-list w) new-input-list
-                                 '() '() (world-error-msg w) (world-scroll-bar-index w)))]
+                          (world (world-fsm-machine w)
+                                 (world-tape-position w)
+                                 (world-cur-rule w)
+                                 null
+                                 (world-button-list w)
+                                 new-input-list
+                                 '()
+                                 '()
+                                 (world-error-msg w)
+                                 (world-scroll-bar-index w)
+                                 (world-graphql-img w)))]
                        [ (null? (machine-start-state (world-fsm-machine w)))
                          (begin
                            (reset-bottom-indices)
                            (set-machine-state-list! (world-fsm-machine w) (cons (fsm-state (string->symbol start-state) TRUE-FUNCTION (posn 0 0)) (machine-state-list (world-fsm-machine w))))
                            (set-machine-start-state! (world-fsm-machine w) (string->symbol start-state))
-                           (world (world-fsm-machine w) (world-tape-position w) (world-cur-rule w)
-                                  null (world-button-list w) new-input-list
-                                  '() '() (world-error-msg w) (world-scroll-bar-index w)))]
+                           (world (world-fsm-machine w)
+                                  (world-tape-position w)
+                                  (world-cur-rule w)
+                                  null
+                                  (world-button-list w)
+                                  new-input-list
+                                  '()
+                                  '()
+                                  (world-error-msg w)
+                                  (world-scroll-bar-index w)
+                                  (world-graphql-img w)))]
                        [ (ormap (lambda (x) (equal? start-state (symbol->string (fsm-state-name x)))) (machine-state-list (world-fsm-machine w)))
                          (begin
                            (reset-bottom-indices)
                            (set-machine-start-state! (world-fsm-machine w) (string->symbol start-state))
-                           (world (world-fsm-machine w)(world-tape-position w) (world-cur-rule w)
-                                  null (world-button-list w) new-input-list
-                                  '() '() (world-error-msg w) (world-scroll-bar-index w)))]
+                           (world (world-fsm-machine w)
+                                  (world-tape-position w)
+                                  (world-cur-rule w)
+                                  null
+                                  (world-button-list w)
+                                  new-input-list
+                                  '()
+                                  '()
+                                  (world-error-msg w)
+                                  (world-scroll-bar-index w)
+                                  (world-graphql-img w)))]
                        [else w]))))
 
 ;; replaceStart: world -> world
@@ -303,22 +343,38 @@ Created by Joshua Schappel on 12/19/19
                          (cond
                            [(equal? "" start-state) (redraw-world w)]
                            
-                           [ (ormap (lambda (x) (equal? (string->symbol start-state)(fsm-state-name x))) (machine-state-list (world-fsm-machine w)))
-                             (begin
-                               (reset-bottom-indices)
-                               (set-machine-start-state! (world-fsm-machine w) (string->symbol start-state))
-                               (world (world-fsm-machine w) (world-tape-position w) (world-cur-rule w)
-                                      null (world-button-list w) new-input-list
-                                      '() '() (world-error-msg w) (world-scroll-bar-index w)))]
+                           [(ormap (lambda (x) (equal? (string->symbol start-state)(fsm-state-name x))) (machine-state-list (world-fsm-machine w)))
+                            (begin
+                              (reset-bottom-indices)
+                              (set-machine-start-state! (world-fsm-machine w) (string->symbol start-state))
+                              (world (world-fsm-machine w)
+                                     (world-tape-position w)
+                                     (world-cur-rule w)
+                                     null
+                                     (world-button-list w)
+                                     new-input-list
+                                     '()
+                                     '()
+                                     (world-error-msg w)
+                                     (world-scroll-bar-index w)
+                                     (world-graphql-img w)))]
                            
                            [else
                             (begin
                               (reset-bottom-indices)
                               (set-machine-state-list! (world-fsm-machine w) (cons (fsm-state (string->symbol start-state) TRUE-FUNCTION (posn 0 0))  (machine-state-list (world-fsm-machine w))))
                               (set-machine-start-state! (world-fsm-machine w) (string->symbol start-state))
-                              (world (world-fsm-machine w)(world-tape-position w) (world-cur-rule w)
-                                     null (world-button-list w) new-input-list
-                                     '() '() (world-error-msg w) (world-scroll-bar-index w)))]))))
+                              (world (world-fsm-machine w)
+                                     (world-tape-position w)
+                                     (world-cur-rule w)
+                                     null
+                                     (world-button-list w)
+                                     new-input-list
+                                     '()
+                                     '()
+                                     (world-error-msg w)
+                                     (world-scroll-bar-index w)
+                                     (world-graphql-img w)))]))))
 
 ;; addEnd: world -> world
 ;; Purpose: Adds an end state to the world
@@ -707,11 +763,17 @@ Created by Joshua Schappel on 12/19/19
                (handle-push)))
 
            ;; finally update the processed and unprocessed lists
-           (world (update-machine (world-fsm-machine w)) (world-tape-position w)
+           (world (update-machine (world-fsm-machine w))
+                  (world-tape-position w)
                   (getCurRule (append (list nextState) (world-processed-config-list w)))
-                  (determin-cur-state) (world-button-list w) (world-input-list w)
-                  (append (list nextState) (world-processed-config-list w)) transitions (world-error-msg w)
-                  (getScrollBarPosition (reverse (machine-rule-list (world-fsm-machine w))) cur-rule))))])))
+                  (determin-cur-state)
+                  (world-button-list w)
+                  (world-input-list w)
+                  (append (list nextState) (world-processed-config-list w))
+                  transitions
+                  (world-error-msg w)
+                  (getScrollBarPosition (reverse (machine-rule-list (world-fsm-machine w))) cur-rule)
+                  (world-graphql-img w))))])))
 
 
 ;; showPrev: world -> world
@@ -810,11 +872,17 @@ Created by Joshua Schappel on 12/19/19
                               (handle-push)))
                              
                           ;; finally update the processed and unprocessed lists
-                          (world (update-machine (world-fsm-machine w)) (world-tape-position w) cur-rule
-                                 (determin-prev-state) (world-button-list w) (world-input-list w)
+                          (world (update-machine (world-fsm-machine w))
+                                 (world-tape-position w)
+                                 cur-rule
+                                 (determin-prev-state)
+                                 (world-button-list w)
+                                 (world-input-list w)
                                  (cdr (world-processed-config-list w))
-                                 (cons (car (world-processed-config-list w)) (world-unporcessed-config-list w)) (world-error-msg w)
-                                 (getScrollBarPosition (reverse (machine-rule-list (world-fsm-machine w))) cur-rule))))])))
+                                 (cons (car (world-processed-config-list w)) (world-unporcessed-config-list w))
+                                 (world-error-msg w)
+                                 (getScrollBarPosition (reverse (machine-rule-list (world-fsm-machine w))) cur-rule)
+                                 (world-graphql-img w))))])))
 
 
 ;; setTapePosn world -> world
@@ -878,13 +946,21 @@ Created by Joshua Schappel on 12/19/19
 (define scrollbarRight (lambda (w)
                          (let ((index (world-scroll-bar-index w))
                                (rule-num (determine-rule-number MACHINE-TYPE)))
-                           
                            (cond
                              [(< (length (machine-rule-list (world-fsm-machine w))) rule-num) (redraw-world w)]
                              [(< (length (list-tail (machine-rule-list (world-fsm-machine w)) (add1 index))) rule-num) (redraw-world w)]
                              [else
-                              (world (world-fsm-machine w) (world-tape-position w) (world-cur-rule w) (world-cur-state w) (world-button-list w)
-                                     (world-input-list w) (world-processed-config-list w)(world-unporcessed-config-list w) (world-error-msg w) (add1 index))]))))
+                              (world (world-fsm-machine w)
+                                     (world-tape-position w)
+                                     (world-cur-rule w)
+                                     (world-cur-state w)
+                                     (world-button-list w)
+                                     (world-input-list w)
+                                     (world-processed-config-list w)
+                                     (world-unporcessed-config-list w)
+                                     (world-error-msg w)
+                                     (add1 index)
+                                     (world-graphql-img w))]))))
 
 ;; scrollbarLeft: world -> world
 ;; Purpose: moves the scroll bar over 1 place to the left
@@ -893,8 +969,17 @@ Created by Joshua Schappel on 12/19/19
                           (cond
                             [(< (- index 1) 0)(redraw-world w)]
                             [else
-                             (world (world-fsm-machine w) (world-tape-position w) (world-cur-rule w) (world-cur-state w) (world-button-list w)
-                                    (world-input-list w) (world-processed-config-list w)(world-unporcessed-config-list w) (world-error-msg w) (sub1 index))]))))
+                             (world (world-fsm-machine w)
+                                    (world-tape-position w)
+                                    (world-cur-rule w)
+                                    (world-cur-state w)
+                                    (world-button-list w)
+                                    (world-input-list w)
+                                    (world-processed-config-list w)
+                                    (world-unporcessed-config-list w)
+                                    (world-error-msg w)
+                                    (sub1 index)
+                                    (world-graphql-img w))]))))
 
 ;; stackScrollDown: world -> world
 ;; Purpose: Handles scrolling on the pda stack

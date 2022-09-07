@@ -1279,10 +1279,18 @@ EVENT HANDLERS
          ;; See if there is an error to be displayed. If so disable all buttons and inputs
          [(not (null? (world-error-msg w)))
           (cond
-            [(equal? (exit-pressed? x y (world-error-msg w) WIDTH HEIGHT) #t) (world (world-fsm-machine w) (world-tape-position w) (world-cur-rule w)
-                                                                                     (world-cur-state w) (world-button-list w) (world-input-list w)
-                                                                                     (world-processed-config-list w) (world-unporcessed-config-list w) null
-                                                                                     (world-scroll-bar-index w))]
+            [(equal? (exit-pressed? x y (world-error-msg w) WIDTH HEIGHT) #t)
+             (world (world-fsm-machine w)
+                    (world-tape-position w)
+                    (world-cur-rule w)
+                    (world-cur-state w)
+                    (world-button-list w)
+                    (world-input-list w)
+                    (world-processed-config-list w)
+                    (world-unporcessed-config-list w)
+                    null
+                    (world-scroll-bar-index w)
+                    (world-graphql-img w))]
             [else (redraw-world w)])]
 
          ;; Check if a state was pressed
