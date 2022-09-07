@@ -1211,7 +1211,6 @@ LEFT GUI RENDERING
 
 ;; create-gui-left:machine -> image
 ;; Purpose: Creates the img for the left hand side of the gui
-;; TODO: JSchappel finish this
 (define (create-gui-left m . log)
   (define loa (machine-alpha-list m))
   (define CONTROL-BOX-H 95)

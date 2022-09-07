@@ -1,22 +1,21 @@
 #lang racket
-
-
 #|
 Created by Joshua Schappel on 12/19/19
   This file contains all the functions associated with a button
 |#
 
+(require
+  net/sendurl
+  racket/pretty
+  "../structs/input.rkt"
+  "../structs/world.rkt"
+  "../structs/state.rkt"
+  "../structs/machine.rkt"
+  "../structs/posn.rkt"
+  "../globals.rkt"
+  "stateTransitions.rkt"
+  "../../fsm-main.rkt")
 
-(require net/sendurl
-         "../structs/input.rkt"
-         "../structs/world.rkt"
-         "../structs/state.rkt"
-         "../structs/machine.rkt"
-         "../structs/posn.rkt"
-         "../globals.rkt"
-         "stateTransitions.rkt"
-         "../../fsm-main.rkt")
-(require racket/pretty)
 (provide
  addState
  removeState
@@ -51,11 +50,8 @@ Created by Joshua Schappel on 12/19/19
  tapeViewScrollDown
  tapeViewScrollRight
  tapeViewScrollLeft
- toggle-display-mttm)
  toggle-display-mttm
  re-render-listener)
-
-;; ------- Button Functions -------
 
 
 ;; addState: world -> world
