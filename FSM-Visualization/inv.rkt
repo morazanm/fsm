@@ -1,5 +1,9 @@
 #lang racket
-(require "globals.rkt" "./structs/machine.rkt" "./structs/world.rkt" "./structs/state.rkt")
+(require
+  "globals.rkt"
+  "./structs/machine.rkt"
+  "./structs/state.rkt")
+
 (provide determin-inv)
 
 

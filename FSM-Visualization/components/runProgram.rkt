@@ -193,7 +193,8 @@ Created by Joshua Schappel on 12/19/19
                              (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)
                   (msgWindow "The Input was rejected" "Warning"
                              (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-CAUTION))
-              0)))))]
+              0
+              (world-graphql-img w)))))]
     [else
      (redraw-world-with-msg w "The Machine failed to build. Please see the cmd for more info" "Error" MSG-ERROR)]))
 

@@ -51,7 +51,7 @@
  grammar-both-derive grammar-testequiv grammar-test
 
  ; regexp constructors
- empty-regexp singleton-regexp union-regexp concat-regexp kleenestar-regexp
+ empty-regexp singleton-regexp union-regexp concat-regexp kleenestar-regexp null-regexp
 
  ; regexp observers
  simplify-regexp printable-regexp
@@ -150,13 +150,11 @@
 (define (sm-intersection m1 m2)
   (let ((t1 (sm-type m1))
         (t2 (sm-type m2)))
-    (cond [(not (eq? t1 t2)) 
-           (error "Machines have different types: intersection-fsm")]
+    (cond [(and (or (eq? t1 'dfa) (eq? t1 'ndfa))
+                (or (eq? t2 'dfa) (eq? t2 'ndfa)))
+           (intersection-fsa m1 m2)]
           [(eq? t1 'pda)
            (error "Cannot intersect two pdas")]
-          [(or (eq? t1 'dfa)
-               (eq? t2 'ndfa))
-           (intersection-fsa m1 m2)]
           [(and (eq? t1 'tm-language-recognizer) (eq? t1 t2)) (tm-intersection m1 m2)]
           [(or (eq? t1 'mttm) (eq? t1 'mttm-language-recognizer))
            (error "Intersection not supported for multitape Turing machines")]

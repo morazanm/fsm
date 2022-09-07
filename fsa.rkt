@@ -565,18 +565,19 @@
   
   ; rg --> fsa
   (define (rg->fsa g)
+    (define FS (generate-symbol 'Z (rg-nts g)))
     ; rrule --> fsarule
     (define (make-delta rr)
-      (cond [(erule? rr) (mk-fsarule (symbol-upcase (rg-s g)) EMP 'QF)]
+      (cond [(erule? rr) (mk-fsarule (symbol-upcase (rg-s g)) EMP FS)]
             [(srule? rr) (mk-fsarule (symbol-upcase (srule-lhs rr))
                                      (srule-rhs rr)
-                                     'QF)]
+                                     FS)]
             [(crule? rr) (mk-fsarule (symbol-upcase (crule-lhs rr))
                                      (crule-rhs1 rr)
                                      (symbol-upcase (crule-rhs2 rr)))]))
     
-    (let ((F (list 'QF))
-          (K (map symbol-upcase (rg-nts g)))
+    (let ((F (list FS))
+          (K (cons FS (map symbol-upcase (rg-nts g))))
           (S (symbol-upcase (rg-s g)))
           (SIGMA (rg-sigma g))
           (DELTAS (map make-delta (rg-rules g))))
