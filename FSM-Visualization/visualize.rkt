@@ -9,7 +9,8 @@
          "./structs/button.rkt" "./structs/posn.rkt" "./structs/state.rkt"
          "./structs/input.rkt" "./structs/machine.rkt" "./structs/world.rkt"
          "./structs/world.rkt" "./components/inputFields.rkt" "globals.rkt"
-         "./components/buttons.rkt" "./components/stateTransitions.rkt" "./graphViz/main.rkt"
+         "./components/buttons.rkt" "./components/stateTransitions.rkt"
+         ;"./graphViz/main.rkt"
          "inv.rkt")
 
 (provide visualize marco)
@@ -669,11 +670,7 @@ Scene Rendering
       [(eq? VIEW-MODE 'graph)
        (begin
          (draw-error-msg (world-error-msg w)
-                         (place-image (create-png ;; build the graphviz img
-                                       machine
-                                       (not (empty? (world-processed-config-list w)))
-                                       (world-cur-state w)
-                                       (world-cur-rule w)) X0 Y0  no-arrow)))]
+                         (place-image (world-graphql-img w) X0 Y0 no-arrow)))]
       ;; mttm tape view
       [(and (eq? VIEW-MODE 'tape)
             (eq? 'mttm MACHINE-TYPE)) (define X (+ 100 (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2)))

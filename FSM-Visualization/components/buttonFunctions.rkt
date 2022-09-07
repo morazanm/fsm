@@ -41,7 +41,8 @@ Created by Joshua Schappel on 12/19/19
  setTapePosn
  setAcceptState
  toggle-display
- toggle-display-mttm)
+ toggle-display-mttm
+ re-render-listener)
 
 ;; ------- Button Functions -------
 
@@ -1044,13 +1045,15 @@ Created by Joshua Schappel on 12/19/19
 
 ;; toggle-display -> world
 ;; Purpose: toggles the display between control and graph representation
-(define toggle-display (lambda (w)
-                         (define current-mode VIEW-MODE)
-                         (begin
-                           (if (eq? VIEW-MODE 'graph)
-                               (set-view-mode 'control)
-                               (set-view-mode 'graph))
-                           w)))
+(define (toggle-display w)
+  (define current-mode VIEW-MODE)
+  (match VIEW-MODE
+    ['graph (begin
+              (set-view-mode 'control)
+              w)]
+    ['control (begin
+                (set-view-mode 'graph)
+                (redraw-world-img w))]))
 
 
 ;; toggle-display-mttm -> world
@@ -1062,6 +1065,16 @@ Created by Joshua Schappel on 12/19/19
                                     (set-view-mode 'control)
                                     (set-view-mode 'tape))
                                 w)))
+
+;; re-render-listener :: (world -> world) -> (world -> world)
+;; Converts the given function to a new function that will re-draw the graphql image
+;; when the current view is the graph-view
+(define (re-render-listener proc)
+  (lambda (world)
+    (define new-world (proc world))
+    (if (equal? VIEW-MODE 'graph)
+        (redraw-world-img new-world)
+        new-world)))
 
 
 

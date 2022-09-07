@@ -5,7 +5,11 @@ This file was created by Joshua Schappel on 12/19/19
   This file contains the world struct for the visualization tool
 |#
 
-(require "msgWindow.rkt" "posn.rkt" "../globals.rkt")
+(require
+  "msgWindow.rkt"
+  "posn.rkt"
+  "../globals.rkt"
+  "../graphViz/main.rkt")
 
 (provide
  (struct-out world)
@@ -14,7 +18,8 @@ This file was created by Joshua Schappel on 12/19/19
  create-new-world-input-empty
  create-new-world-button
  redraw-world
- redraw-world-with-msg)
+ redraw-world-with-msg
+ redraw-world-img)
 
 
 ;; world: The world for the GUI
@@ -148,3 +153,22 @@ WORLD DRAWING FUNCTIONS
          (msgWindow msg-body msg-header (posn (/ WIDTH 2) (/ HEIGHT 2)) msg-color)
          (world-scroll-bar-index a-world)
          (world-graphql-img a-world)))
+
+
+;; redraw-world-img :: world -> world
+;; recreates the world with the updated graphql image
+(define (redraw-world-img a-world)
+  (world (world-fsm-machine a-world)
+         (world-tape-position a-world)
+         (world-cur-rule a-world)
+         (world-cur-state a-world)
+         (world-button-list a-world)
+         (world-input-list a-world)
+         (world-processed-config-list a-world)
+         (world-unporcessed-config-list a-world)
+         (world-error-msg a-world)
+         (world-scroll-bar-index a-world)
+         (create-gql-png (world-fsm-machine a-world)
+                         (not (empty? (world-processed-config-list a-world)))
+                         (world-cur-state a-world)
+                         (world-cur-rule a-world))))

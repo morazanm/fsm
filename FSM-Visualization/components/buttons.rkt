@@ -32,13 +32,13 @@ Button Declarations
                                    #:text "Add"
                                    #:color CONTROLLER-BUTTON-COLOR
                                    #:fntsize 24
-                                   #:func addState))
+                                   #:func (re-render-listener addState)))
 
 (define BTN-REMOVE-STATE (make-button 70 25 (posn (- WIDTH 50) (- CONTROL-BOX-H 25))
                                       #:text "Remove"
                                       #:color CONTROLLER-BUTTON-COLOR
                                       #:fntsize 24
-                                      #:func removeState))
+                                      #:func (re-render-listener removeState)))
 
 (define BTN-ADD-ALPHA (make-button 70 25 (posn (- WIDTH 150) (- (* 2 CONTROL-BOX-H) 25))
                                    #:text "Add"
@@ -75,76 +75,76 @@ Button Declarations
 (define BTN-ADD-START (make-button 50 25 (posn (- WIDTH 50) (- (* 3 CONTROL-BOX-H) 71))
                                    #:text "Add"
                                    #:color CONTROLLER-BUTTON-COLOR
-                                   #:func addStart))
+                                   #:func (re-render-listener addStart)))
 
 (define BTN-REMOVE-START (make-button 50 25 (posn (- WIDTH 50) (- (* 3 CONTROL-BOX-H) 25))
                                       #:text "Replace"
                                       #:color CONTROLLER-BUTTON-COLOR
-                                      #:func replaceStart))
+                                      #:func (re-render-listener replaceStart)))
 
 (define BTN-ADD-START-LANG-REC (make-button 35 25 (posn (- WIDTH 175) (- (* 3 CONTROL-BOX-H) 25))
                                             #:text "Add"
                                             #:color CONTROLLER-BUTTON-COLOR
-                                            #:func addStart))
+                                            #:func (re-render-listener addStart)))
 
 (define BTN-REMOVE-START-LANG-REC (make-button 35 25 (posn (- WIDTH 125) (- (* 3 CONTROL-BOX-H) 25))
                                                #:text "Rmv"
                                                #:color CONTROLLER-BUTTON-COLOR
-                                               #:func replaceStart))
+                                               #:func (re-render-listener replaceStart)))
 
 (define BTN-ADD-END (make-button 50 25 (posn (- WIDTH 50) (- (* 4 CONTROL-BOX-H) 71))
                                  #:text "Add"
                                  #:color CONTROLLER-BUTTON-COLOR
-                                 #:func addEnd))
+                                 #:func (re-render-listener addEnd)))
 
 (define BTN-REMOVE-END (make-button 50 25 (posn (- WIDTH 50) (- (* 4 CONTROL-BOX-H) 25))
                                     #:text "Remove"
                                     #:color CONTROLLER-BUTTON-COLOR
-                                    #:func rmvEnd))
+                                    #:func (re-render-listener rmvEnd)))
 
 (define BTN-ADD-END-TM (make-button 35 25 (posn (- WIDTH 175) (- (* 4 CONTROL-BOX-H) 25))
                                     #:text "Add"
                                     #:color CONTROLLER-BUTTON-COLOR
-                                    #:func addEnd))
+                                    #:func (re-render-listener addEnd)))
 
 (define BTN-REMOVE-END-TM (make-button 35 25 (posn (- WIDTH 125) (- (* 4 CONTROL-BOX-H) 25))
                                        #:text "Rmv"
                                        #:color CONTROLLER-BUTTON-COLOR
-                                       #:func rmvEnd))
+                                       #:func (re-render-listener rmvEnd)))
 
 (define BTN-SET-END-LANG-REC (make-button 50 25 (posn (- WIDTH 50) (- (* 3 CONTROL-BOX-H) 25))
                                           #:text "Set"
                                           #:color CONTROLLER-BUTTON-COLOR
-                                          #:func setAcceptState))
+                                          #:func (re-render-listener setAcceptState)))
 
 (define BTN-TAPE-INPUT-TM (make-button 50 25 (posn (- WIDTH 50) (- (* 4 CONTROL-BOX-H) 25))
                                        #:text "Set"
                                        #:color CONTROLLER-BUTTON-COLOR
-                                       #:func setTapePosn))
+                                       #:func (re-render-listener setTapePosn)))
 
 (define BTN-ADD-RULES (make-button 70 25 (posn (- WIDTH 150) (- (* 5 CONTROL-BOX-H) 25))
                                    #:text "Add"
                                    #:color CONTROLLER-BUTTON-COLOR
                                    #:fntsize 24
-                                   #:func addRule))
+                                   #:func (re-render-listener addRule)))
 
 (define BTN-REMOVE-RULES (make-button 70 25 (posn (- WIDTH 50) (- (* 5 CONTROL-BOX-H) 25))
                                       #:text "Remove"
                                       #:color CONTROLLER-BUTTON-COLOR
                                       #:fntsize 24
-                                      #:func removeRule))
+                                      #:func (re-render-listener removeRule)))
 
 (define BTN-ADD-RULES-PDA (make-button 70 25 (posn (- WIDTH 150) (- (* 5 CONTROL-BOX-H) 20))
                                        #:text "Add"
                                        #:color CONTROLLER-BUTTON-COLOR
                                        #:fntsize 24
-                                       #:func addRule))
+                                       #:func (re-render-listener addRule)))
 
 (define BTN-REMOVE-RULES-PDA (make-button 70 25 (posn (- WIDTH 50) (- (* 5 CONTROL-BOX-H) 20))
                                           #:text "Remove"
                                           #:color CONTROLLER-BUTTON-COLOR
                                           #:fntsize 24
-                                          #:func removeRule))
+                                          #:func (re-render-listener removeRule)))
 
 (define BTN-TAPE-SCROLL-LEFT (make-button 30 TOP (posn 125 30)
                                           #:text "🠈"
@@ -174,7 +174,7 @@ Button Declarations
                              #:text "Run"
                              #:color (make-color 29 153 68)
                              #:fntsize 25
-                             #:func runProgram))
+                             #:func (re-render-listener runProgram)))
 
 (define BTN-HELP (make-button 25 25 (posn 130 80)
                               #:text "?"
@@ -188,14 +188,14 @@ Button Declarations
                                      #:fntsize 12
                                      #:color (make-color 252 186 3)
                                      #:round? #t
-                                     #:func toogleColorBlindMode))
+                                     #:func (re-render-listener toogleColorBlindMode)))
 
 (define BTN-DISPLAY (make-button 30 30 (posn 130 160)
                                  #:text "DGr"
                                  #:color (make-color 61 65 71)
                                  #:fntsize 12
                                  #:round? #t
-                                 #:func toggle-display))
+                                 #:func (re-render-listener toggle-display)))
 
 
 (define BTN-HELP-MTTM (make-button 25 25 (posn 130 20)
@@ -230,13 +230,13 @@ Button Declarations
                               #:text "🠊"
                               #:color (make-color 116 156 188)
                               #:fntsize 40
-                              #:func showNext))
+                              #:func (re-render-listener showNext)))
 
 (define BTN-PREV (make-button 40 30 (posn 30 140)
                               #:text "🠈"
                               #:color (make-color 116 156 188)
                               #:fntsize 40
-                              #:func showPrev))
+                              #:func (re-render-listener showPrev)))
 
 (define BTN-GENCODE (make-button 95 50 (posn 55 190)
                                  #:text "GEN CODE"
