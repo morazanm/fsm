@@ -163,38 +163,38 @@ Created by Joshua Schappel on 12/19/19
                                     ;; dfa, ndfa, pda below
                                     [else
                                      (sm-showtransitions m
-                                                       (machine-sigma-list (world-fsm-machine w)))])))
+                                                         (machine-sigma-list (world-fsm-machine w)))])))
                            
-       ;; Set up the world to have all the valid machine components below                 
-       (begin
-         (define new-list (remove-duplicates (append (sm-states m) state-list))) ;; new-list: checks for any fsm state add-ons (ie. 'ds)
-         ;; check for the ds edge case where 'nodead is used but the ds is included in the transitions
-         (if (and
-              (not (member 'ds (sm-states m)))
-              (member 'ds (flatten unprocessed-list)))
-             (redraw-world-with-msg w "Dead state and dead state rules missing in the machine's set of rules." "Error" MSG-ERROR)
-             (world
-              (constructWorldMachine new-list fsm-machine m)
-              (world-tape-position w)
-              CURRENT-RULE
-              (machine-start-state (world-fsm-machine w))
-              (world-button-list w)
-              (world-input-list w)    
-              (if (list? unprocessed-list)
-                  (list (car unprocessed-list))
-                  '())
+         ;; Set up the world to have all the valid machine components below                 
+         (begin
+           (define new-list (remove-duplicates (append (sm-states m) state-list))) ;; new-list: checks for any fsm state add-ons (ie. 'ds)
+           ;; check for the ds edge case where 'nodead is used but the ds is included in the transitions
+           (if (and
+                (not (member 'ds (sm-states m)))
+                (member 'ds (flatten unprocessed-list)))
+               (redraw-world-with-msg w "Dead state and dead state rules missing in the machine's set of rules." "Error" MSG-ERROR)
+               (world
+                (constructWorldMachine new-list fsm-machine m)
+                (world-tape-position w)
+                CURRENT-RULE
+                (machine-start-state (world-fsm-machine w))
+                (world-button-list w)
+                (world-input-list w)    
+                (if (list? unprocessed-list)
+                    (list (car unprocessed-list))
+                    '())
                                     
-              (if (list? unprocessed-list)
-                  (cdr unprocessed-list)
-                  '())
+                (if (list? unprocessed-list)
+                    (cdr unprocessed-list)
+                    '())
                                     
-              (if (list? unprocessed-list)
-                  (msgWindow "The machine was successfully built. Press Next and Prev to show the machine's transitions" "Success"
-                             (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)
-                  (msgWindow "The Input was rejected" "Warning"
-                             (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-CAUTION))
-              0
-              (world-graphql-img w)))))]
+                (if (list? unprocessed-list)
+                    (msgWindow "The machine was successfully built. Press Next and Prev to show the machine's transitions" "Success"
+                               (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)
+                    (msgWindow "The Input was rejected" "Warning"
+                               (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-CAUTION))
+                0
+                (world-graphql-img w))))))]
     [else
      (redraw-world-with-msg w "The Machine failed to build. Please see the cmd for more info" "Error" MSG-ERROR)]))
 
