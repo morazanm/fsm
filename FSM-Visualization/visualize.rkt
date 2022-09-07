@@ -5,15 +5,27 @@
             has to offer.
 |#
 
-(require 2htdp/image 2htdp/universe "../fsm-main.rkt" "inputFactory.rkt" "./structs/msgWindow.rkt"
-         "./structs/button.rkt" "./structs/posn.rkt" "./structs/state.rkt"
-         "./structs/input.rkt" "./structs/machine.rkt" "./structs/world.rkt"
-         "./structs/world.rkt" "./components/inputFields.rkt" "globals.rkt"
-         "./components/buttons.rkt" "./components/stateTransitions.rkt"
-         ;"./graphViz/main.rkt"
-         "inv.rkt")
+(require
+  2htdp/image
+  2htdp/universe
+  "globals.rkt"
+  "inputFactory.rkt"
+  "inv.rkt"
+  "./structs/msgWindow.rkt"
+  "./structs/button.rkt"
+  "./structs/posn.rkt"
+  "./structs/state.rkt"
+  "./structs/input.rkt"
+  "./structs/machine.rkt"
+  "./structs/world.rkt"
+  "./components/inputFields.rkt"
+  "./components/buttons.rkt"
+  "./components/stateTransitions.rkt"
+  "../fsm-main.rkt")
 
-(provide visualize marco)
+(provide
+ visualize
+ marco)
 
 ;; GLOBAL VALIRABLES FOR FILE
 (define MAIN-SCENE (empty-scene WIDTH HEIGHT "white")) ;; Create the initial scene
