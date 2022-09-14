@@ -6,6 +6,7 @@ This file was created by Joshua Schappel on 12/19/19
 |#
 
 (require
+  2htdp/image
   "msgWindow.rkt"
   "posn.rkt"
   "../globals.rkt"
@@ -33,7 +34,7 @@ This file was created by Joshua Schappel on 12/19/19
 ;; - unprocessed-config-list: All the transitions that still have to be processed by the machine
 ;; - error msg: A msgWindow structure that will be rendered on the screen if not null.
 ;; - scroll-bar-index: An integer that represents the first position in the rule list to be rendered on the screen.
-;; - graphql-img: A image that is the graph view for the viz tool. It is set to #f on initialization
+;; - graphql-img: A image that is the graph view for the viz tool. It is set to empty-image on initialization
 (struct world (fsm-machine
                tape-position
                cur-rule
@@ -69,7 +70,7 @@ WORLD INITIALIZATION FUNCTIONS
          '()
          window-msg
          INIT-INDEX-BOTTOM
-         #f))
+         empty-image))
 
 #|
 ---------------------------

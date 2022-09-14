@@ -86,4 +86,4 @@ This file contains the sm-graph function
 ;; sm-graph: machine -> Image
 ;; Purpose: draws the Graphviz graph of the geven machine
 (define (sm-graph machine #:color [color-blind 0])
-  (graph->bitmap (fsa->graph machine color-blind)))
+  (graph->bitmap (fsa->graph machine color-blind) (current-directory) "vizTool"))

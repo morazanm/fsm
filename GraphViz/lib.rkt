@@ -1,22 +1,48 @@
 #lang racket
 (require 2htdp/image "../constants.rkt")
 #| lib.rkt
-Written by: Joshua Schappel, Sena Karsavran, and Isabella Felix on 4/15/20
-
 This file contains the fsm-graphviz library used to render the graph
   representation onto the Visualization tool.
+
+Written by: Joshua Schappel
 |#
 
-(provide (struct-out graph)
-         (struct-out node)
-         (struct-out edge)
-         create-graph
-         add-node
-         add-edge
-         render-graph
-         dot->png
-         graph->bitmap
-         graph->png)
+(define (colorblind-opt? n)
+  (and (>= n 0) (<= n 2)))
+
+(define (state-type? s)
+  (or (equal? 'start s)     ; A start state
+      (equal? 'startfinal s); A start and final state
+      (equal? 'final s)     ; A final state
+      (equal? 'accept s)    ; An accepting state (lang recs)
+      (equal? 'none s)))    ; Just a plain old state 
+
+
+(provide
+ (contract-out
+  [struct node ((name symbol?)
+                (value symbol?)
+                (atb hash?)
+                (type state-type?))]
+  [struct edge ((atb hash?)
+                (start-node symbol?)
+                (end-node symbol?))]
+  [struct graph ((name symbol?)
+                 (node-list (listof node?))
+                 (edge-list (listof edge?))
+                 (color-blind colorblind-opt?))]
+  [create-graph (->* (symbol?)
+                     (#:color colorblind-opt?)
+                     graph?)]
+  [add-node (->* (graph? symbol? state-type?)
+                 (#:atb hash?)
+                 graph?)]
+  [add-edge (->* (graph? (or/c list? symbol?) symbol? symbol?)
+                 (#:atb hash?)
+                 graph?)]
+  [graph->bitmap (-> graph? path? string? image?)]
+  [graph->dot (-> graph? path? string? path?)]
+  [graph->str (-> graph? string?)]))
 
 
 ;; Constants 
@@ -78,8 +104,40 @@ This file contains the fsm-graphviz library used to render the graph
               [start-node #:mutable]
               [end-node #:mutable]) #:transparent)
 
+;; node->str: node -> string
+;; returns the graphviz representation of a node as a string
+(define (node->str node)
+  (string-append (format "    ~s [label=\"~s\", "
+                         (node-name node)
+                         (node-value node))
+                 (hash->graphvizString (node-atb node)) "];\n"))
 
+;; edge->str: edge -> string
+;; returns the graphviz representation of a edge as a string
+(define (edge->str edge)
+  (string-append (format "    ~s -> ~s ["
+                         (edge-start-node edge)
+                         (edge-end-node edge))
+                 (hash->graphvizString (edge-atb edge)) "];\n"))
 
+;; graph->str: graph -> string
+;; returns the graphviz representation of a graph as a string
+(define (graph->str graph)
+  (define base-str (string-append
+                    (format "digraph ~s {" (graph-name graph))
+                    "\n    rankdir=\"LR\";\n"))
+  #;(if scale
+        (format "\n    size=\"~s, ~s!\";\n" GRAPH-WIDTH GRAPH-HEIGHT) "\n")
+
+  (string-append
+   base-str
+   (foldl (lambda (n a) (string-append a (node->str n)))
+          ""
+          (graph-node-list graph))
+   (foldl (lambda (e a) (string-append a (edge->str e)))
+          ""
+          (graph-edge-list graph))
+   "}"))
 
 
 ;; create-graph: symbol -> graph
@@ -92,7 +150,7 @@ This file contains the fsm-graphviz library used to render the graph
       (graph name '() '() color-blind)))
 
 
-;; add-node: symbol symbol symbol hash-map -> node
+;; add-node: symbol symbol symbol hash-map -> graph
 ;; Purpose: Creates a node
 ;; Acceptable types (3rd parameter):
 ;;    start           => A start state
@@ -104,7 +162,8 @@ This file contains the fsm-graphviz library used to render the graph
 (define (add-node graph name type  #:atb [atb DEFAULT-NODE])
   (set-graph-node-list! graph
                         (cons (create-node name type (graph-color-blind graph) #:atb atb)
-                              (graph-node-list graph))))
+                              (graph-node-list graph)))
+  graph)
 
 
 
@@ -114,8 +173,7 @@ This file contains the fsm-graphviz library used to render the graph
 ;; Purpose: adds an edge to the graph
 ;; IMPORTANT: This function assumes that the node exists in the graph structure
 (define (add-edge graph val start-node end-node #:atb [atb DEFAULT-EDGE])
-  (letrec (
-           (extractor (lambda (list accum)
+  (letrec ((extractor (lambda (list accum)
                         (cond
                           [(empty? list) #f]
                           [(and (equal? (remove-dashes start-node) (edge-start-node (car list)))
@@ -125,14 +183,18 @@ This file contains the fsm-graphviz library used to render the graph
           
            (index (extractor (graph-edge-list graph) 0)))
     (cond
-      [(equal? #f index) (set-graph-edge-list! graph
-                                               (cons
-                                                (create-edge val start-node end-node #:atb atb)
-                                                (graph-edge-list graph)))]
+      [(equal? #f index) (begin
+                           (set-graph-edge-list! graph
+                                                 (cons
+                                                  (create-edge val start-node end-node #:atb atb)
+                                                  (graph-edge-list graph)))
+                           graph)]
       [else
        (let ((x (edge-atb (list-ref (graph-edge-list graph) index))))
-         (set-edge-atb! (list-ref (graph-edge-list graph) index)
-                        (hash-set x 'label (cons val (hash-ref x 'label)))))])))
+         (begin
+           (set-edge-atb! (list-ref (graph-edge-list graph) index)
+                          (hash-set x 'label (cons val (hash-ref x 'label))))
+           graph))])))
 
 
 
@@ -181,48 +243,6 @@ This file contains the fsm-graphviz library used to render the graph
   (edge (hash-set atb 'label (list val))  (remove-dashes start-node) (remove-dashes end-node)))
 
 
-;; render-graph: graph string -> NONE
-;; Purpose: writes graph to the specified file
-(define (render-graph graph path #:scale [scale #f] #:rule [rule #f])
-  (call-with-output-file path
-    #:exists 'replace
-    (lambda (out)
-      (displayln (format "digraph ~s {" (graph-name graph)) out)
-      (displayln "    rankdir=\"LR\";" out)
-      (if scale
-          (displayln (format "    size=\"~s, ~s!\";" GRAPH-WIDTH GRAPH-HEIGHT) out)
-          (void))
-      (render-nodes (graph-node-list graph) out)
-      (render-edges (graph-edge-list graph) out)
-      (displayln "}" out))))
-
-
-;; NO LONGER USED!!!
-;; render-header rule out-port
-;; Purpose: renders the current rule in the top right
-(define (render-header cur-rule stdout)
-  (displayln "labelloc=\"t\";" stdout)
-  (displayln "labeljust=\"r\";" stdout)
-  (displayln (format "label=\"Rule: ~s\";" cur-rule) stdout)
-  (displayln "fontcolor=\"blue\";" stdout))
-  
-
-
-;; render-nodes list-of-nodes write-buffer -> NONE
-(define (render-nodes lon port)
-  (cond
-    [(empty? lon) (void)]
-    [else
-     (let ((node (car lon)))                    
-       (begin
-         (displayln (string-append (format "    ~s [label=\"~s\", "
-                                           (node-name node)
-                                           (node-value node))
-                                   (hash->graphvizString (node-atb node)) "];")
-                    port)
-         (render-nodes (cdr lon) port)))]))
-
-
 ;list->str: (listof symbols) -> string
 ;Purpose: to convert the symbols in the list to a string
 (define (list->str los accum)
@@ -230,62 +250,39 @@ This file contains the fsm-graphviz library used to render the graph
         [else (list->str
                (cdr los)
                (string-append accum (stringify-value (car los)) " "))]))
-                             
 
-;; render-edges list-of-edges write-buffer -> NONE
-(define (render-edges loe port)
-  (cond
-    [(empty? loe) (void)]
-    [else
-     (let ((edge (car loe)))
-       (begin
-         (displayln (string-append (format "    ~s -> ~s ["
-                                           (edge-start-node edge)
-                                           (edge-end-node edge))
-                                   (hash->graphvizString (edge-atb edge)) "];")
-                    port)
-         (render-edges (cdr loe) port)))]))
-  
+
 ; remove-dashes: symbol -> symbol
 ; Purpose: Remove dashes
 (define (remove-dashes s)
   (string->symbol (string-replace (stringify-value s) "-" "")))
 
+;; graph->dot: graph -> path -> string -> path
+;; Purpose: writes graph to the specified file
+(define (graph->dot graph save-dir filename)
+  (define dot-path (build-path save-dir (format "~a.dot" filename)))
+  (call-with-output-file dot-path
+    #:exists 'replace
+    (lambda (out)
+      (displayln (graph->str graph) out)))
+  dot-path)
 
-;; dot->png: stirng string boolean-> NONE
-;; Purpose: converts a dot file to a png. The png files is saved in
-;;   this directory
-(define (dot->png path png-name check)
-  (if check
-      (if (system "dot -V")
-          (begin
-            (system (format "dot -Tpng ~s -o ~s" path png-name))
-            (void))
-          (error "\nError:\nPlease add graphviz as an enviroment variable. Instructions can be found at:\n   https://github.com/morazanm/fsm/tree/master/GraphViz\n\n"))
-      (begin
-        (system (format "dot -Tpng ~s -o ~s" path png-name))
-        (void))))
+;; dot->png: path -> path
+;; Purpose: converts a dot file to a png. The png files in the current directory
+(define (dot->png dot-path)
+  (define png-path (path-replace-extension dot-path ".png"))
+  (if (system (format "dot -Tpng ~s -o ~s"  (path->string dot-path) (path->string png-path)))
+      png-path
+      (error "Error caused when creating png file. This was probably due to the dot environment variable not existing on the path")))
 
+;; png->bitmap: path -> string
+(define png->bitmap bitmap/file)
 
 ;; graph->bitmap: graph string string boolean -> image
 ;; Converts a graph to an image
-(define (graph->bitmap g #:scale [scale #f])
-  (let ((rel-path (build-path (current-directory) "graph.png")))
-    (begin
-      (render-graph g "graph.dot" #:scale scale)
-      (dot->png "graph.dot" "graph.png" #t)
-      (bitmap/file rel-path))))
-
-;; graph->png: graph number rule -> NONE
-;; Converts a graph to a png file stored at the root directory of fsm
-(define (graph->png g #:scale [scale #f] #:rule [rule #f])
-  (let ((rel-path (build-path (current-directory) "vizTool.png")))
-    (begin
-      (render-graph g "vizTool.dot" #:scale scale #:rule rule)
-      (dot->png "vizTool.dot" "vizTool.png" #f)
-      (bitmap/file rel-path))))
-
-  
+(define (graph->bitmap graph save-dir filename)
+  ((compose1 png->bitmap dot->png graph->dot) graph save-dir filename))
+ 
 
 ;; hash->graphvizString: hash-map -> string
 ;; Purpose: conversts all elemts of the hashmap to a string that can
@@ -384,6 +381,7 @@ This file contains the fsm-graphviz library used to render the graph
 
 ;; Helper function to convert a value to a string
 (define (stringify-value input)
-  (if (number? input)
-      (number->string input)
-      (symbol->string input)))
+  (cond [(number? input) (number->string input)]
+        [(string? input) input]
+        [[symbol? input] (symbol->string input)]
+        [else (error "Graphviz internal error: Unable to convert to string")]))

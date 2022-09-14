@@ -89,5 +89,5 @@
                     (if (or (member 'empty cur-rule) (member 'null cur-rule)) "$NULL" (rule-end))
                     "black")
       (if (or (member 'empty cur-rule) (member 'null cur-rule))
-          (scaled-graph (graph->png g) MACHINE-TYPE)
-          (scaled-graph (graph->png g #:rule cur-rule) MACHINE-TYPE)))))
+          (scaled-graph (graph->bitmap g (current-directory) "vizTool") MACHINE-TYPE)
+          (scaled-graph (graph->bitmap g (current-directory) "vizTool") MACHINE-TYPE)))))
