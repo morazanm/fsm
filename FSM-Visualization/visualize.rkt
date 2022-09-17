@@ -5,14 +5,27 @@
             has to offer.
 |#
 
-(require 2htdp/image 2htdp/universe "../fsm-main.rkt" "inputFactory.rkt" "./structs/msgWindow.rkt"
-         "./structs/button.rkt" "./structs/posn.rkt" "./structs/state.rkt"
-         "./structs/input.rkt" "./structs/machine.rkt" "./structs/world.rkt"
-         "./structs/world.rkt" "./components/inputFields.rkt" "globals.rkt"
-         "./components/buttons.rkt" "./components/stateTransitions.rkt" "./graphViz/main.rkt"
-         "inv.rkt")
+(require
+  2htdp/image
+  2htdp/universe
+  "globals.rkt"
+  "inputFactory.rkt"
+  "inv.rkt"
+  "./structs/msgWindow.rkt"
+  "./structs/button.rkt"
+  "./structs/posn.rkt"
+  "./structs/state.rkt"
+  "./structs/input.rkt"
+  "./structs/machine.rkt"
+  "./structs/world.rkt"
+  "./components/inputFields.rkt"
+  "./components/buttons.rkt"
+  "./components/stateTransitions.rkt"
+  "../fsm-main.rkt")
 
-(provide visualize marco)
+(provide
+ visualize
+ marco)
 
 ;; GLOBAL VALIRABLES FOR FILE
 (define MAIN-SCENE (empty-scene WIDTH HEIGHT "white")) ;; Create the initial scene
@@ -669,11 +682,7 @@ Scene Rendering
       [(eq? VIEW-MODE 'graph)
        (begin
          (draw-error-msg (world-error-msg w)
-                         (place-image (create-png ;; build the graphviz img
-                                       machine
-                                       (not (empty? (world-processed-config-list w)))
-                                       (world-cur-state w)
-                                       (world-cur-rule w)) X0 Y0  no-arrow)))]
+                         (place-image (world-graphql-img w) X0 Y0 no-arrow)))]
       ;; mttm tape view
       [(and (eq? VIEW-MODE 'tape)
             (eq? 'mttm MACHINE-TYPE)) (define X (+ 100 (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2)))
@@ -1279,10 +1288,18 @@ EVENT HANDLERS
          ;; See if there is an error to be displayed. If so disable all buttons and inputs
          [(not (null? (world-error-msg w)))
           (cond
-            [(equal? (exit-pressed? x y (world-error-msg w) WIDTH HEIGHT) #t) (world (world-fsm-machine w) (world-tape-position w) (world-cur-rule w)
-                                                                                     (world-cur-state w) (world-button-list w) (world-input-list w)
-                                                                                     (world-processed-config-list w) (world-unporcessed-config-list w) null
-                                                                                     (world-scroll-bar-index w))]
+            [(equal? (exit-pressed? x y (world-error-msg w) WIDTH HEIGHT) #t)
+             (world (world-fsm-machine w)
+                    (world-tape-position w)
+                    (world-cur-rule w)
+                    (world-cur-state w)
+                    (world-button-list w)
+                    (world-input-list w)
+                    (world-processed-config-list w)
+                    (world-unporcessed-config-list w)
+                    null
+                    (world-scroll-bar-index w)
+                    (world-graphql-img w))]
             [else (redraw-world w)])]
 
          ;; Check if a state was pressed
