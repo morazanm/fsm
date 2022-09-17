@@ -655,9 +655,11 @@
       (define (compute-nullables rls nulls visited-nulls)
         (let* ((new-nullables (map
                                first
-                               (filter (λ (r) (andmap (λ (a) (member a nulls)) (third r)))
+                               (filter (λ (r) (andmap (λ (a) (and (not (member (first r) visited-nulls))
+                                                                  (member a nulls)))
+                                                      (third r)))
                                        rls)))
-               ;(ddd (displayln (format "nulls: ~s \n new: ~s" nulls new-nullables)))
+               ;;(ddd (displayln (format "nulls: ~s \n new: ~s\n\n" nulls new-nullables)))
                )
           (if (null? new-nullables)
               (append nulls visited-nulls)
@@ -783,6 +785,13 @@
                             '(Z -> abc)
                             '(A -> e))
                       'Y))
+
+  (define BPG (make-cfg '(S)
+                      '(o c)
+                      `((S ,ARROW ,EMP)
+                        (S ,ARROW SS)
+                        (S ,ARROW oSc))
+                      'S))
   
   ;;;;; End Chomsky Normal Form Functions
   
