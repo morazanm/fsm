@@ -1,6 +1,6 @@
 ; FSM Library Version 1.0
-; Copyright (C) 2015 by Marco T. Morazan and Rosario Antunez
-; Written by: Marco T. Morazan and Rosario Antunez, 2015
+; Copyright (C) 2015 by Marco T. Morazan
+; Written by: Marco T. Morazan, 2015
 
 (module cfg racket
   (require "constants.rkt" "misc.rkt" "word.rkt")
@@ -91,7 +91,7 @@
       (define (count-terminals st sigma)
         (length (filter (lambda (a) (member a sigma)) st)))
  
-      (cond [(empty? derivs) (format "~s is not in L(G)" w)]
+      (cond [(empty? derivs) (format "~s is not in L(G)." w)]
             [(or (and chomsky (> (length (caar derivs)) (+ 2 (length w))))
                  (> (count-terminals (caar derivs) (cfg-get-alphabet g)) (length w)))
              (make-deriv visited (cdr derivs) g chomsky)]
