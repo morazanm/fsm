@@ -63,12 +63,12 @@ This file contains the sm-graph function
                                       (get-start rule)
                                       (get-end rule))))))                
     (cond
-      [(empty? lor) (void)]
+      [(empty? lor) G]
       [else
        (let ((rule (car lor)))
          (begin
-           (make-edge rule)
-           (rules->edges (cdr lor) m-type G cur-start cur-end color)))])))
+           (define new-graph (make-edge rule))
+           (rules->edges (cdr lor) m-type new-graph cur-start cur-end color)))])))
 
 
 ;; fsa->graph :: machine -> graph
@@ -79,8 +79,7 @@ This file contains the sm-graph function
                      (sm-start machine)
                      (sm-finals machine)
                      g)
-      (rules->edges (sm-rules machine) (sm-type machine) g "$NULL" "$NULL" "black")
-      g)))
+      (rules->edges (sm-rules machine) (sm-type machine) g "$NULL" "$NULL" "black"))))
 
 
 ;; sm-graph: machine -> Image

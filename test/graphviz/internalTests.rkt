@@ -87,22 +87,19 @@
   (define graph-add-edge
     (test-suite "Add Edge Function"
                 (test-case "Default"
-                           (define test-graph (create-graph 'test))
+                           (define test-graph (add-edge (create-graph 'test) 'a 'A 'B))
                            (define expected-atb (hash
                                                  'fontsize 15
                                                  'label (list 'a)))
-                           (add-edge test-graph 'a 'A 'B)
-                       
+                           
                            (check-equal? (edge-atb (car (graph-edge-list test-graph))) expected-atb)
                            (check-equal? (edge-start-node (car (graph-edge-list test-graph))) 'A)
                            (check-equal? (edge-end-node (car (graph-edge-list test-graph))) 'B))
                 (test-case "Dashed"
-                           (define test-graph (create-graph 'test))
+                           (define test-graph (add-edge (create-graph 'test) 'a 'A-1 'B-2))
                            (define expected-atb (hash
                                                  'fontsize 15
                                                  'label (list 'a)))
-                           (add-edge test-graph 'a 'A-1 'B-2)
-                       
                            (check-equal? (edge-atb (car (graph-edge-list test-graph))) expected-atb)
                            (check-equal? (edge-start-node (car (graph-edge-list test-graph))) 'A1)
                            (check-equal? (edge-end-node (car (graph-edge-list test-graph))) 'B2))))

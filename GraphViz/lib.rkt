@@ -7,6 +7,11 @@ This file contains the fsm-graphviz library used to render the graph
 Written by: Joshua Schappel
 |#
 
+; *Color Blind States*
+; 0 -> default colors
+; 1 -> Deuteranopia (Red-Green colorblindness)
+; 2 -> Deuteranopia (alt colors)
+; 3 -> Blue-Red
 (define (colorblind-opt? n)
   (and (>= n 0) (<= n 2)))
 
@@ -63,17 +68,6 @@ Written by: Joshua Schappel
                       'shape "circle"))
 (define RULE-LIMIT 5)
 
-
-#| ----IMPORTANT VALUES----
-
-*Color Blind States*
-0 -> default colors
-1 -> Deuteranopia (Red-Green colorblindness)
-2 -> Deuteranopia (alt colors)
-3 -> Blue-Red
-                      
-         
-|#
 ; A graph is represented as a structure with three elements:
 ; name is a symbol used to represent the name of the graph
 ; node-list is a list of node structures
@@ -110,7 +104,7 @@ Written by: Joshua Schappel
   (string-append (format "    ~s [label=\"~s\", "
                          (node-name node)
                          (node-value node))
-                 (hash->graphvizString (node-atb node)) "];\n"))
+                 (hash->str (node-atb node)) "];\n"))
 
 ;; edge->str: edge -> string
 ;; returns the graphviz representation of a edge as a string
@@ -118,7 +112,7 @@ Written by: Joshua Schappel
   (string-append (format "    ~s -> ~s ["
                          (edge-start-node edge)
                          (edge-end-node edge))
-                 (hash->graphvizString (edge-atb edge)) "];\n"))
+                 (hash->str (edge-atb edge)) "];\n"))
 
 ;; graph->str: graph -> string
 ;; returns the graphviz representation of a graph as a string
@@ -169,34 +163,28 @@ Written by: Joshua Schappel
 
 
 
-;; add-edge: graph symbol symbol symbol hash-map
+;; add-edge: graph -> symbol -> symbol -> symbol -> Optional(hash-map) -> graph
 ;; Purpose: adds an edge to the graph
 ;; IMPORTANT: This function assumes that the node exists in the graph structure
-(define (add-edge graph val start-node end-node #:atb [atb DEFAULT-EDGE])
-  (letrec ((extractor (lambda (list accum)
-                        (cond
-                          [(empty? list) #f]
-                          [(and (equal? (remove-dashes start-node) (edge-start-node (car list)))
-                                (equal? (remove-dashes end-node) (edge-end-node (car list)))) accum]
-                          [else
-                           (extractor (cdr list) (+ accum 1))])))
-          
-           (index (extractor (graph-edge-list graph) 0)))
-    (cond
-      [(equal? #f index) (begin
-                           (set-graph-edge-list! graph
-                                                 (cons
-                                                  (create-edge val start-node end-node #:atb atb)
-                                                  (graph-edge-list graph)))
-                           graph)]
-      [else
-       (let ((x (edge-atb (list-ref (graph-edge-list graph) index))))
-         (begin
-           (set-edge-atb! (list-ref (graph-edge-list graph) index)
-                          (hash-set x 'label (cons val (hash-ref x 'label))))
-           graph))])))
-
-
+(define (add-edge g val start-node end-node #:atb [atb DEFAULT-EDGE])
+  (define start (remove-dashes start-node))
+  (define end (remove-dashes end-node))
+  (define (edge-eq? e) (and (equal? start (edge-start-node e))
+                            (equal? end (edge-end-node e))))      
+  (define edge-index (index-where (graph-edge-list g) edge-eq?))
+  (graph (graph-name g)
+         (graph-node-list g)
+         (if (equal? #f edge-index)
+             (cons (create-edge val start-node end-node #:atb atb)
+                   (graph-edge-list g))
+             (list-update (graph-edge-list g)
+                          edge-index
+                          (lambda (e)
+                            (edge
+                             (hash-set (edge-atb e) 'label (cons val (hash-ref (edge-atb e) 'label)))
+                             (edge-start-node e)
+                             (edge-end-node e)))))  
+         (graph-color-blind g)))
 
 
 
@@ -284,99 +272,51 @@ Written by: Joshua Schappel
   ((compose1 png->bitmap dot->png graph->dot) graph save-dir filename))
  
 
-;; hash->graphvizString: hash-map -> string
-;; Purpose: conversts all elemts of the hashmap to a string that can
-;;  be used as a node or graph property
-(define (hash->graphvizString hash)
-  (letrec ((first-posn (hash-iterate-first hash))
-
-           (key-val->string (lambda (pair)
-                              (cond
-                                [(and (list? (cdr pair)) (equal? (car pair) 'label))
-                                 (format "~s=~s" (car pair) (convet-trans-to-string (cdr pair) "" 0))]
-                                [else
-                                 (format "~s=~s" (car pair) (cdr pair))])))
-
-           (iterate-hash (lambda (posn accum)
-                           (cond
-                             [(eq? #f posn) (string-trim accum)]
-                                
-                             [else
-                              (iterate-hash (hash-iterate-next hash posn)
-                                            (string-append (key-val->string
-                                                            (hash-iterate-pair hash posn))
-                                                           (if (eq? "" accum)
-                                                               ""
-                                                               ", ")
-                                                           accum))]))))
-    (iterate-hash first-posn "")))
+;; hash->str: hash -> string
+;; Purpose: converts the hash to a graphviz string
+(define (hash->str hash)
+  (define (key-val->string key value)
+    (if (and (list? value) (equal? key 'label))
+        (format "~s=~s" key (rule-label->str value))
+        (format "~s=~s" key value)))
+  (string-join (hash-map hash key-val->string) ", "))
 
 
-;; convet-trans-to-string: (listOf transitions) string int -> string
-;; Purpose: Converts a list of transitions into a graphviz string
-(define (convet-trans-to-string lot accum len)
-  (cond
-    [(empty? lot) (string-trim accum)]
-    [else
-     (let* ([val (determine-list-type (car lot))]
-            [str (cond
-                   [(and (not (equal? "" accum))
-                         (empty? (cdr lot))) (string-append accum ", " val)]
-                   [(or (equal? "" accum)
-                        (empty? (cdr lot))) (string-append accum " " val)]
-                   [else (string-append accum ", " val)])])
-       ;(println val)
-       (cond
-         [(string-contains? val "\n") (convet-trans-to-string (cdr lot)
-                                                              (string-append accum " " val)
-                                                              (+ len (string-length val)))]
-         [(> (string-length val) RULE-LIMIT) (convet-trans-to-string (cdr lot)
-                                                                     (string-append accum "\n" val "\n")
-                                                                     0)]
-         [(> len RULE-LIMIT) (convet-trans-to-string (cdr lot)
-                                                     (string-append accum "," "\n" val)
-                                                     (string-length (string-trim val)))]
-         [(convet-trans-to-string (cdr lot)
-                                  str
-                                  (+ len (string-length val)))]))]))
+;; rule-label->str: listof(rules) -> string
+;; Purpose: Converts a list of rules to a graphviz label
+(define (rule-label->str rules)
+  (define (format-line l acc count)
+    (match l
+      ['() (cons acc '())]
+      [`(,x ,xs ...)
+       (if (and (not (empty? acc))
+                (> (+ 2 count (string-length x)) RULE-LIMIT))
+           (cons acc l)
+           (format-line xs (append acc (list x)) (+ count (string-length x))))]))
+  (define (format-lines lines)
+    (match-define (cons line xs) (format-line lines '() 0))
+    (if (empty? lines)
+        '()
+        (cons (string-join line ", ") (format-lines xs))))
+  (string-join (format-lines (map fsa-rule->label rules)) ",\n"))
 
 
-;; determine-list-type: transition -> string
+;; fsa-rule->label: transition -> string
 ;; Purpose: Converts the list to its string representation
-(define (determine-list-type aList)
-  (letrec (;; convertEMP: symbol -> string
-           ;; Purpose: converts 'e to ε
-           (convertEMP (lambda (x)
-                         (if (equal? EMP x)
-                             "ε"
-                             (stringify-value x)))))
-    (match aList
-      ;; dfa/ndfa legacy way
-      [val #:when (or (number? val) (symbol? val)) (convertEMP val)]
-      ;; string check for regexp
-      [val #:when (string? val) (convertEMP (or (string->number val) (string->symbol val)))]
-      ;; dfa/ndfa
-      [(list _ input _)(stringify-value input)]
-      ;; pda
-      [(list
-        (list _ read pop)
-        (list _ push))
-       (string-append "["
-                      (convertEMP read)
-                      " "
-                      (if (list? pop) (list->str pop "(") (convertEMP pop))
-                      " "
-                      (if (list? push) (list->str push "(") (convertEMP push))
-                      "],"
-                      "\n")]
-      ;; tm and lang rec
-      [(list
-        (list _ b)
-        (list _ d)) (string-append "["
-                                   (convertEMP b)
-                                   " "
-                                   (convertEMP d)
-                                   "],\n")])))
+(define (fsa-rule->label aList)
+  (match aList
+    ;; dfa/ndfa
+    [(list _ input _) (stringify-value input)]
+    ;; pda
+    [(list (list _ read pop) (list _ push))
+     (format "[~a ~a ~a]" (stringify-value read)
+             (if (list? pop) (list->str pop "(") (stringify-value pop))
+             (if (list? push) (list->str push "(") (stringify-value push)))]
+    ;; tm and lang rec
+    [(list (list _ b) (list _ d))
+     (format "[~a ~a]" (stringify-value b) (stringify-value d))]
+    ;; dfa/ndfa legacy way
+    [val (stringify-value val)]))
 
 
 ;; Helper function to convert a value to a string
