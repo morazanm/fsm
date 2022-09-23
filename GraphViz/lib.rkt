@@ -144,24 +144,18 @@ Written by: Joshua Schappel
       (graph name '() '() color-blind)))
 
 
-;; add-node: symbol symbol symbol hash-map -> graph
-;; Purpose: Creates a node
-;; Acceptable types (3rd parameter):
-;;    start           => A start state
-;;    startfinal      => A start and final state
-;;    final           => A final state
-;;    accept          => An accepting state (lang recs)
-;;    none            => just a plain old state 
+;; add-node: graph -> string -> symbol -> Optional(hash-map) -> graph
 ;; Purpose: adds a node to the given graph
-(define (add-node graph name type  #:atb [atb DEFAULT-NODE])
-  (set-graph-node-list! graph
-                        (cons (create-node name type (graph-color-blind graph) #:atb atb)
-                              (graph-node-list graph)))
-  graph)
-
-
-
-
+(define (add-node g name type  #:atb [atb DEFAULT-NODE])
+  (graph
+   (graph-name g)
+   (cons (node (remove-dashes name)
+               name
+               (set-node-color-shape type (graph-color-blind g) atb)
+               type)
+         (graph-node-list g))
+   (graph-edge-list g)
+   (graph-color-blind g)))
 
 ;; add-edge: graph -> symbol -> symbol -> symbol -> Optional(hash-map) -> graph
 ;; Purpose: adds an edge to the graph
@@ -175,37 +169,20 @@ Written by: Joshua Schappel
   (graph (graph-name g)
          (graph-node-list g)
          (if (equal? #f edge-index)
-             (cons (create-edge val start-node end-node #:atb atb)
+             (cons (edge (hash-set atb 'label (list val))
+                         (remove-dashes start-node)
+                         (remove-dashes end-node))
                    (graph-edge-list g))
              (list-update (graph-edge-list g)
                           edge-index
                           (lambda (e)
                             (edge
-                             (hash-set (edge-atb e) 'label (cons val (hash-ref (edge-atb e) 'label)))
+                             (hash-set (edge-atb e)
+                                       'label
+                                       (cons val (hash-ref (edge-atb e) 'label)))
                              (edge-start-node e)
                              (edge-end-node e)))))  
          (graph-color-blind g)))
-
-
-
-;; create-node: symbol symbol symbol hash-map -> node
-;; Purpose: Creates a node
-;; Acceptable types:
-;;    start           => A start state
-;;    startfinal      => A start and final state
-;;    final           => A final state
-;;    accept          => An accepting state (lang recs)
-;;    startaccept     => A starting and accepting state
-;;    none (default)  => just a plain old state 
-(define (create-node name type color-blind #:atb [atb DEFAULT-NODE])
-  (if (or (equal? 'start type)
-          (equal? 'none type)
-          (equal? 'final type)
-          (equal? 'accept type)
-          (equal? 'startaccept type)
-          (equal? 'startfinal type))
-      (node (remove-dashes name) name (set-node-color-shape type  color-blind atb) type)
-      (error "Invalid node type. A node must be one of the following symbols:\n'start\n'startfinal\n'final\n'accept\n'startaccept\n'none")))
 
 
 ;; set-node-color-shape: type hash-map -> hash-map
@@ -222,13 +199,8 @@ Written by: Joshua Schappel
       [(startaccept)(hash-set (hash-set hash-map 'shape ACCEPT-STATE-SHAPE)
                               'color color)]
       [(final) (hash-set hash-map 'shape FINAL-STATE-SHAPE)]
+      [(accept) (hash-set hash-map 'shape ACCEPT-STATE-SHAPE)]
       [else hash-map])))
-
-
-;; create-edge: symbol symbol symbol symbol -> edge
-;; Purpose: Creates an edge
-(define (create-edge val start-node end-node #:atb [atb DEFAULT-EDGE])
-  (edge (hash-set atb 'label (list val))  (remove-dashes start-node) (remove-dashes end-node)))
 
 
 ;list->str: (listof symbols) -> string
@@ -266,7 +238,7 @@ Written by: Joshua Schappel
 ;; png->bitmap: path -> string
 (define png->bitmap bitmap/file)
 
-;; graph->bitmap: graph string string boolean -> image
+;; graph->bitmap: graph string string -> image
 ;; Converts a graph to an image
 (define (graph->bitmap graph save-dir filename)
   ((compose1 png->bitmap dot->png graph->dot) graph save-dir filename))

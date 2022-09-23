@@ -32,7 +32,7 @@
 
   (define ACCEPT-NODE (hash
                        'color "black"
-                       'shape "circle"))
+                       'shape "doubleoctagon"))
 
   ;; -------------------------------
   ;; --------- create graph --------
@@ -58,26 +58,23 @@
   (define graph-add-node
     (test-suite "Add Node Function"
                 (test-case "Default"
-                           (define test-graph (create-graph 'test))
-                           (add-node test-graph 'A 'none)
+                           (define test-graph (add-node (create-graph 'test) 'A 'none))
+                           
                            (check-equal? (length (graph-node-list test-graph)) 1)
                            (check-equal? (node-name (car (graph-node-list test-graph))) 'A)
                            (check-equal? (node-type (car (graph-node-list test-graph))) 'none)
                            (check-equal? (node-atb (car (graph-node-list test-graph))) DEFAULT-NODE))
                 (test-case "Start Node"
-                           (define test-graph (create-graph 'test))
-                           (add-node test-graph 'A 'start)
+                           (define test-graph (add-node (create-graph 'test) 'A 'start))
                            (check-equal? (node-atb (car (graph-node-list test-graph))) START-NODE))
                 (test-case "Final Node"
-                           (define test-graph (create-graph 'test))
-                           (add-node test-graph 'A 'final)
+                           (define test-graph (add-node (create-graph 'test) 'A 'final))
                            (check-equal? (node-atb (car (graph-node-list test-graph))) END-NODE))
                 (test-case "Startfinal Node"
-                           (define test-graph (create-graph 'test))
-                           (add-node test-graph 'A 'startfinal)
+                           (define test-graph (add-node (create-graph 'test) 'A 'startfinal))
                            (check-equal? (node-atb (car (graph-node-list test-graph))) STARTFINAL-NODE))
                 (test-case "Acept Node"
-                           (define test-graph (create-graph 'test))
+                           (define test-graph (add-node (create-graph 'test) 'A 'accept))
                            (add-node test-graph 'A 'accept)
                            (check-equal? (node-atb (car (graph-node-list test-graph))) ACCEPT-NODE))))
 
@@ -117,7 +114,7 @@
                                               (node 'S 'S '#hash((color . "forestgreen") (shape . "circle")) 'start))
                                              (list (edge '#hash((fontsize . 15) (label . (b a))) 'F 'F) (edge '#hash((fontsize . 15) (label . (a))) 'S 'F))
                                              0))
-                           (check-equal? expected (fsa->graph a* 0)))
+                           (check-equal? expected (fsa->graph a* 0 #f #f)))
                 (test-case "ndfa"
                            (define expected (graph
                                              'G
@@ -130,7 +127,7 @@
                                               (edge '#hash((fontsize . 15) (label . (m))) 'S 'M)
                                               (edge '#hash((fontsize . 15) (label . (s))) 'F 'S))
                                              0))
-                           (check-equal? expected (fsa->graph FSM 0)))
+                           (check-equal? expected (fsa->graph FSM 0 #f #f)))
                 (test-case "pda"
                            (define expected (graph
                                              'G
@@ -143,13 +140,13 @@
                                               (edge '#hash((fontsize . 15) (label . (((M ε ε) (F ε))))) 'M 'F)
                                               (edge '#hash((fontsize . 15) (label . (((S ε ε) (M ε))))) 'S 'M))
                                              0))
-                           (check-equal? expected (fsa->graph pda-numa=numb 0)))
+                           (check-equal? expected (fsa->graph pda-numa=numb 0 #f #f)))
                 (test-case "tm"
                            (define expected (graph
                                              'G
                                              (list
                                               (node 'N 'N '#hash((color . "black") (shape . "doublecircle")) 'final)
-                                              (node 'Y 'Y '#hash((color . "black") (shape . "doublecircle")) 'final)
+                                              (node 'Y 'Y '#hash((color . "black") (shape . "doubleoctagon")) 'accept)
                                               (node 'E 'E '#hash((color . "black") (shape . "circle")) 'none)
                                               (node 'D 'D '#hash((color . "black") (shape . "circle")) 'none)
                                               (node 'C 'C '#hash((color . "black") (shape . "circle")) 'none)
@@ -174,7 +171,7 @@
                                               (edge '#hash((fontsize . 15) (label . (((B z) (B R)) ((B a) (B R)) ((B @) (B R))))) 'B 'B)
                                               (edge '#hash((fontsize . 15) (label . (((S @) (S R))))) 'S 'S))
                                              0))
-                           (check-equal? expected (fsa->graph a^nb^nc^n 0)))))
+                           (check-equal? expected (fsa->graph a^nb^nc^n 0 #f #f)))))
 
   (test-all 'verbose
             (graph-add-node

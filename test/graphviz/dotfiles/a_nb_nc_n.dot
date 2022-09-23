@@ -1,7 +1,7 @@
 digraph G {
     rankdir="LR";
     N [label="N", color="black", shape="doublecircle"];
-    Y [label="Y", color="black", shape="doublecircle"];
+    Y [label="Y", color="black", shape="doubleoctagon"];
     E [label="E", color="black", shape="circle"];
     D [label="D", color="black", shape="circle"];
     C [label="C", color="black", shape="circle"];

@@ -2,9 +2,9 @@
 
 (require
   rackunit
-  "../../fsm-main.rkt"
   "../test-helpers.rkt"
   "../test-machine.rkt"
+  "../../fsm-main.rkt"
   "../../GraphViz/lib.rkt"
   "../../GraphViz/render-graph.rkt")
 
@@ -29,11 +29,11 @@
 (module+ test
   
   (check-eq-snapshot-graph
-   (fsa->graph a* 0)
+   (fsa->graph a* 0 #f #f)
    "a_star")
 
   (check-eq-snapshot-graph
-   (fsa->graph pda-numa=numb 0)
+   (fsa->graph pda-numa=numb 0 #f #f)
    "pda_numa_numb")
   
   (check-eq-snapshot-graph
@@ -41,7 +41,8 @@
    "FSM")
   
   (check-eq-snapshot-graph
-   (fsa->graph a^nb^nc^n 0)
-   "a_nb_nc_n")
+   (fsa->graph a^nb^nc^n 0 #f #f)
+   "a_nb_nc_n"
+   #:rebuild #t)
 
   ); end module+ test

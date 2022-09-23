@@ -8,81 +8,62 @@ This file contains the sm-graph function
 
 (provide
  sm-graph
- states->nodes
- rules->edges
  fsa->graph)
 
+;; state-type->node-type: symbol -> machine -> symbol
+;; determins the state type for the given state
+(define (state-type->node-type state fsa)
+  (define is-tm? (or (equal? (sm-type fsa) 'tm)
+                     (equal? (sm-type fsa) 'tm-language-recognizer)))
+  (cond
+    [(and is-tm? (equal? state (sm-accept fsa))) 'accept]
+    [(and (equal? state (sm-start fsa))
+          (member state (sm-finals fsa))) 'startfinal]
+    [(equal? state (sm-start fsa)) 'start]
+    [(member state (sm-finals fsa)) 'final]
+    [else 'none]))
+
+;; fsa-states->nodes: machine -> boolean -> graph -> graph
+;; Adds all the machine states to the graph
+(define (fsa-states->nodes fsa is-cur-state? graph)
+  (define (fsa-state->node state graph)
+    (if (and is-cur-state?)
+        (add-node graph state (state-type->node-type state fsa)) ;; #:atb color-atb ;;TODO Jschappel add color blind back in 
+        (add-node graph state (state-type->node-type state fsa))))
+  (foldl fsa-state->node graph (sm-states fsa)))
 
 
 
-; states->nodes: (listof symbols) symbol (listof symbol) graph -> NONE 
-; Purpose: for every state in the los a node is add to the graph
-(define (states->nodes los S lof G #:cur-state[cur-state #f] #:color[color #f])
-  (let ((type (lambda (x)
-                (cond [(and (equal? x S)(member x lof))
-                       'startfinal]
-                      [(equal? x S) 'start]
-                      [(member x lof) 'final]
-                      [else 'none]))))
-    (cond
-      [(empty? los) (void)]
-      [else (begin 
-              (if (and color (equal? (car los) cur-state))
-                  (add-node G (car los) (type (car los)) #:atb color)
-                  (add-node G (car los) (type (car los))))
-              (states->nodes (cdr los) S lof G #:cur-state cur-state #:color color))])))
-
-;; rules->edges: (listof rules) symbol graph symbol symbol string -> (listof edges)
-;; Purpose: Creates a list of edges when given a list of rules
-(define (rules->edges lor m-type G cur-start cur-end color)
-  (letrec ((get-start (lambda (rule)
-                        (case m-type
-                          [(dfa) (car rule)]
-                          [(ndfa) (car rule)]
-                          [else (caar rule)])))
-                          
-           (get-end (lambda (rule)
-                      (case m-type
-                        [(dfa) (last rule)]
-                        [(ndfa) (last rule)]
-                        [else (caadr rule)])))
-           ;; determins if a esge is highlighted or not
-           (make-edge (lambda (rule)
-                        (if (and (equal? (get-start rule) cur-start) (equal? (get-end rule) cur-end))
-                            (add-edge G
-                                      (if (or (equal? m-type 'dfa) (equal? m-type 'ndfa))
-                                          (cadr rule)
-                                          rule)
-                                      (get-start rule)
-                                      (get-end rule)
-                                      #:atb HIGHLIGHT-EDGE)
-                            (add-edge G
-                                      (if (or (equal? m-type 'dfa) (equal? m-type 'ndfa))
-                                          (cadr rule)
-                                          rule)
-                                      (get-start rule)
-                                      (get-end rule))))))                
-    (cond
-      [(empty? lor) G]
-      [else
-       (let ((rule (car lor)))
-         (begin
-           (define new-graph (make-edge rule))
-           (rules->edges (cdr lor) m-type new-graph cur-start cur-end color)))])))
+;; fsa-rules->edges :: machine -> symbol | boolean -> symbol | boolean -> graph -> graph
+;; Adds all the machines rules to the graph
+(define (fsa-rules->edges fsa start-state end-state graph)
+  (define type (sm-type fsa))
+  (define (fsa-rule->edge rule graph)
+    (match-define `(,start ,end) (match type
+                                   [(or 'dfa 'ndfa) (list (first rule) (last rule))]
+                                   [_ (list (caar rule) (caadr rule))]))
+    (define rule-label (if (or (equal? type 'dfa) (equal? type 'ndfa))
+                           (cadr rule)
+                           rule))
+    (if (and (equal? start start-state) (equal? end end-state))
+        (add-edge graph rule-label start end #:atb HIGHLIGHT-EDGE)
+        (add-edge graph rule-label start end)))
+  (foldl fsa-rule->edge graph (sm-rules fsa)))
 
 
 ;; fsa->graph :: machine -> graph
-(define (fsa->graph machine color-blind)
-  (let ((g (create-graph 'G #:color color-blind)))
-    (begin
-      (states->nodes (sm-states machine)
-                     (sm-start machine)
-                     (sm-finals machine)
-                     g)
-      (rules->edges (sm-rules machine) (sm-type machine) g "$NULL" "$NULL" "black"))))
+(define (fsa->graph machine color-blind-mode cur-rule cur-state)
+  (fsa-rules->edges machine
+                    #f
+                    #f
+                    (fsa-states->nodes machine
+                                       #f
+                                       (create-graph 'G #:color color-blind-mode))))
+
+
 
 
 ;; sm-graph: machine -> Image
 ;; Purpose: draws the Graphviz graph of the geven machine
-(define (sm-graph machine #:color [color-blind 0])
-  (graph->bitmap (fsa->graph machine color-blind) (current-directory) "vizTool"))
+(define (sm-graph machine #:color [color-blind-mode 0])
+  (graph->bitmap (fsa->graph machine color-blind-mode #f #f) (current-directory) "vizTool"))

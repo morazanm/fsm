@@ -76,7 +76,8 @@
                                   [else (caadr cur-rule)])))
            (new-states (map (lambda (s) (fsm-state-name s)) states)))
     (begin
-      (states->nodes new-states
+      (fsa->graph machine 0 
+      #;(states->nodes new-states
                      start
                      finals
                      g
