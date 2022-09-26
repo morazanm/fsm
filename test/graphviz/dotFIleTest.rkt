@@ -29,11 +29,11 @@
 (module+ test
   
   (check-eq-snapshot-graph
-   (fsa->graph a* 0 #f #f)
+   (fsa->graph a* 0)
    "a_star")
 
   (check-eq-snapshot-graph
-   (fsa->graph pda-numa=numb 0 #f #f)
+   (fsa->graph pda-numa=numb 0)
    "pda_numa_numb")
   
   (check-eq-snapshot-graph
@@ -41,8 +41,7 @@
    "FSM")
   
   (check-eq-snapshot-graph
-   (fsa->graph a^nb^nc^n 0 #f #f)
-   "a_nb_nc_n"
-   #:rebuild #t)
+   (fsa->graph a^nb^nc^n 0)
+   "a_nb_nc_n")
 
   ); end module+ test

@@ -83,7 +83,7 @@
                      g
                      #:cur-state cur-state
                      #:color (HIGHLIGHT-NODE color))
-      (rules->edges rules
+      #;(rules->edges rules
                     MACHINE-TYPE
                     g
                     (if (or (member 'empty cur-rule) (member 'null cur-rule)) "$NULL" (rule-start))
@@ -91,4 +91,4 @@
                     "black")
       (if (or (member 'empty cur-rule) (member 'null cur-rule))
           (scaled-graph (graph->bitmap g (current-directory) "vizTool") MACHINE-TYPE)
-          (scaled-graph (graph->bitmap g (current-directory) "vizTool") MACHINE-TYPE)))))
+          (scaled-graph (graph->bitmap g (current-directory) "vizTool") MACHINE-TYPE))))))
