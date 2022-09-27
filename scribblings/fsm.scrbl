@@ -18,7 +18,6 @@ For instructions on how to download the DSL, view the patch notes, or just brows
 FSM readme on @(hyperlink "https://github.com/morazanm/fsm" "Github") or the
 new @(hyperlink "https://morazanm.github.io/fsm/index.html" "FSM website").
 
-
 @table-of-contents[]
 
 @section{Constants}
@@ -679,6 +678,8 @@ word are returned.
 @defproc[(symbol-upcase [s symbol])
          symbol]{Builds a symbol that is the same as the given symbol,
  but with all characters in uppercase.}
+
+@include-section["../Graphviz/scribblings/gviz.scrbl"]
 
 @section{Contributors}
 Names in no paticular order:

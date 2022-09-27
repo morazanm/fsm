@@ -115,9 +115,6 @@
   (define base-str (string-append
                     (format "digraph ~s {" (graph-name graph))
                     "\n    rankdir=\"LR\";\n"))
-  #;(if scale
-        (format "\n    size=\"~s, ~s!\";\n" GRAPH-WIDTH GRAPH-HEIGHT) "\n")
-
   (string-append
    base-str
    (foldl (lambda (n a) (string-append a (node->str n)))
