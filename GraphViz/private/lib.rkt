@@ -19,6 +19,7 @@
 
 (provide
  colorblind-opt?
+ state-type?
  (contract-out
   [struct node ((name symbol?)
                 (value symbol?)
