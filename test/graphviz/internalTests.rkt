@@ -1,9 +1,7 @@
 #lang racket
 (require
-  "../../GraphViz/render-graph.rkt"
-  "../../GraphViz/lib.rkt"
+  "../../GraphViz/interface.rkt"
   "../test-helpers.rkt"
-  "../../main.rkt"
   "../test-machine.rkt")
 #|
   This file houses the test for the GraphViz library and fsm interface files
