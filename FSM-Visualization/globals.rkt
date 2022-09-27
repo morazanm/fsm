@@ -112,28 +112,6 @@ Created by Joshua Schappel on 12/19/19
 (define RULE-BOX-COLOR "gray") ;; The color of the box around a rule
 
 
-;; -- GRAPH-VIZ --
-;;HIGHLIGHT-EDGE string -> map
-;; Purpose: when given a color reutrns a hasmap for the edge with to color
-(define HIGHLIGHT-EDGE (hash
-                        ;;'penwidth 2
-                        'color HIGHLIGHT-RULE-HEX
-                        'fontsize 15))
-
-;;HIGHLIGHT-EDGE string -> map
-;; Purpose: when given a color reutrns a hasmap for the node with to color
-(define HIGHLIGHT-NODE (lambda (color)
-                         (hash
-                          'style "filled"
-                          'fillcolor color
-                          'shape "circle")))
-
-
-
-
-
-
-
 ;; -- INPUT FACTORY --
 (define DFA-NDFA_NUMBER 8) ;; The number of dfa's/ndfa's to render in the rule box
 (define PDA_NUMBER 4) ;; The number of pda's to render in the rule box

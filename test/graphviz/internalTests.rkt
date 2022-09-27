@@ -114,7 +114,7 @@
                                               (node 'S 'S '#hash((color . "forestgreen") (shape . "circle")) 'start))
                                              (list (edge '#hash((fontsize . 15) (label . (b a))) 'F 'F) (edge '#hash((fontsize . 15) (label . (a))) 'S 'F))
                                              0))
-                           (check-equal? expected (fsa->graph a* 0 #f #f)))
+                           (check-equal? expected (fsa->graph a* 0)))
                 (test-case "ndfa"
                            (define expected (graph
                                              'G
@@ -127,7 +127,7 @@
                                               (edge '#hash((fontsize . 15) (label . (m))) 'S 'M)
                                               (edge '#hash((fontsize . 15) (label . (s))) 'F 'S))
                                              0))
-                           (check-equal? expected (fsa->graph FSM 0 #f #f)))
+                           (check-equal? expected (fsa->graph FSM 0)))
                 (test-case "pda"
                            (define expected (graph
                                              'G
@@ -140,7 +140,7 @@
                                               (edge '#hash((fontsize . 15) (label . (((M ε ε) (F ε))))) 'M 'F)
                                               (edge '#hash((fontsize . 15) (label . (((S ε ε) (M ε))))) 'S 'M))
                                              0))
-                           (check-equal? expected (fsa->graph pda-numa=numb 0 #f #f)))
+                           (check-equal? expected (fsa->graph pda-numa=numb 0)))
                 (test-case "tm"
                            (define expected (graph
                                              'G
@@ -171,7 +171,7 @@
                                               (edge '#hash((fontsize . 15) (label . (((B z) (B R)) ((B a) (B R)) ((B @) (B R))))) 'B 'B)
                                               (edge '#hash((fontsize . 15) (label . (((S @) (S R))))) 'S 'S))
                                              0))
-                           (check-equal? expected (fsa->graph a^nb^nc^n 0 #f #f)))))
+                           (check-equal? expected (fsa->graph a^nb^nc^n 0)))))
 
   (test-all 'verbose
             (graph-add-node

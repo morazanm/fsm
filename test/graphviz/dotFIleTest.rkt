@@ -2,11 +2,8 @@
 
 (require
   rackunit
-  "../test-helpers.rkt"
   "../test-machine.rkt"
-  "../../fsm-main.rkt"
-  "../../GraphViz/lib.rkt"
-  "../../GraphViz/render-graph.rkt")
+  "../../GraphViz/interface.rkt")
 
 ;; check-eq-snapshot-graph :: graph -> string -> bool (optional) -> bool
 ;; checks if the graph is equal to the given file. If rebuild is passed with true
