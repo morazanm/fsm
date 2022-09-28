@@ -11,9 +11,9 @@
   [fsa->graph (-> any/c colorblind-opt? graph?)]
   [machine->graph (-> machine?
                       colorblind-opt?
-                      symbol?
-                      symbol?
-                      symbol?
+                      (or/c dfa/ndfa-rule? pda/tm-rule? boolean?)
+                      (or/c symbol? boolean?)
+                      string?
                       graph?)]))
 
 

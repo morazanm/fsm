@@ -10,6 +10,8 @@
   (listof (listof symbol?) (listof symbol?)))
 
 (provide
+ dfa/ndfa-rule?
+ pda/tm-rule?
  (contract-out
   [struct fsa-adapter ([states (listof symbol?)]
                        [start symbol?]
@@ -61,10 +63,10 @@
 (define (fsa-states->nodes fsa graph)
   (define (fsa-state->node state graph)
     (if (equal? state (fsa-adapter-cur-state fsa))
-        (add-node graph state (state-type->node-type
-                               state
-                               fsa
-                               #:atb (build-color-state-hash (fsa-adapter-cur-state-color fsa))))
+        (add-node graph
+                  state
+                  (state-type->node-type state fsa)
+                  #:atb (build-color-state-hash (fsa-adapter-cur-state-color fsa)))
         (add-node graph state (state-type->node-type state fsa))))
   (foldl fsa-state->node graph (fsa-adapter-states fsa)))
 

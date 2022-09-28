@@ -59,7 +59,7 @@
 ;; calls the gviz library to convert it to a png. Then we scale it to the viztool
 ;; if necessary.
 (define (create-gql-png machine hasRun? cur-state cur-rule)
-  (define cur-state-color (if hasRun? (determin-inv machine cur-state #:graphViz true) #f))
+  (define cur-state-color (if hasRun? (determin-inv machine cur-state #:graphViz true) "transparent"))
   (scaled-graph (graph->bitmap
                  (machine->graph
                   machine

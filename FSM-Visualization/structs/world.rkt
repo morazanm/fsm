@@ -171,5 +171,5 @@ WORLD DRAWING FUNCTIONS
          (world-scroll-bar-index a-world)
          (create-gql-png (world-fsm-machine a-world)
                          (not (empty? (world-processed-config-list a-world)))
-                         (world-cur-state a-world)
-                         (world-cur-rule a-world))))
+                         (if (equal? CURRENT-STATE (world-cur-state a-world)) #f (world-cur-state a-world))
+                         (if (equal? CURRENT-RULE (world-cur-rule a-world)) #f (world-cur-rule a-world)))))
