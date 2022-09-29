@@ -12,6 +12,16 @@
                        (F b F))
                      'nodead))
 
+(define a*a (make-dfa '(S F A)         ;the states
+                      '(a b)           ;the alphabet
+                      'S               ;the starting state
+                      '(F)             ;final states
+                      '((S a F)        ;the transition function
+                        (F a F)
+                        (F b A)
+                        (A a F)
+                        (A b A))))
+
 (define pda-numa=numb (make-ndpda '(S M F)
                                   '(a b)
                                   '(a b)
@@ -32,6 +42,14 @@
                          (S m M)
                          (M f F)) 'nodead))
 
+(define Ma (make-tm '(S H)                  ;the states
+                    `(a b ,LM)              ;the alphabet
+                    `(((S ,LM) (S ,RIGHT))  ;the transition relation
+                      ((S a) (H a))
+                      ((S b) (H a))
+                      ((S ,BLANK) (H a)))
+                    'S                      ;the starting state
+                    '(H)))
 
 (define a^nb^nc^n (make-tm '(S B C D E Y N)
                            '(a b c z)

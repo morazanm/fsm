@@ -113,11 +113,11 @@
 ;; graph->str: graph -> string
 ;; returns the graphviz representation of a graph as a string
 (define (graph->str graph)
-  (define base-str (string-append
+  (define header-str (string-append
                     (format "digraph ~s {" (graph-name graph))
                     "\n    rankdir=\"LR\";\n"))
   (string-append
-   base-str
+   header-str
    (foldl (lambda (n a) (string-append a (node->str n)))
           ""
           (graph-node-list graph))
