@@ -32,18 +32,18 @@
             (define delta-bool
               ;if the rules are empty, give an error
               ;(if (empty? delta) (format "The given list of rules is empty ~s: " delta)
-                  (if (list? delta)
-                      ;otherwise check the rules for correct lengths
-                      (local [(define invalid-rules (check-delta))]
-                        ;if we returned a string, than we have an error
-                        (if (empty? invalid-rules) ""
-                            (string-append "  The following rules are not rules of three symbols: \n "
-                                           (foldr string-append "" (map (lambda (x)
-                                                                          (string-append "\t"
-                                                                                         (format "~s " x)
-                                                                                         "\n"))
-                                                                        invalid-rules)))))
-                      (format "The delta ~s is not a list" delta)));)
+              (if (list? delta)
+                  ;otherwise check the rules for correct lengths
+                  (local [(define invalid-rules (check-delta))]
+                    ;if we returned a string, than we have an error
+                    (if (empty? invalid-rules) ""
+                        (string-append "  The following rules are not rules of three symbols: \n "
+                                       (foldr string-append "" (map (lambda (x)
+                                                                      (string-append "\t"
+                                                                                     (format "~s " x)
+                                                                                     "\n"))
+                                                                    invalid-rules)))))
+                  (format "The delta ~s is not a list" delta)));)
             ]
       (list upper-bool sigma-bool start-bool delta-bool)
       ))
@@ -207,8 +207,8 @@
                                                   v
                                                   a))))
                                   (filter (lambda (x) (if (symbol? x)
-                                                             (= (string-length (symbol->string x)) 1)
-                                                             (<= 0 x 9)))
+                                                          (= (string-length (symbol->string x)) 1)
+                                                          (<= 0 x 9)))
                                           (remove-repeats (flatten d)))))
 
             (define start-message (if start (begin
@@ -252,8 +252,8 @@
       end-message))
 
   (define (los->string l)
-  (cond [(empty? l) ""]
-        [else (string-append (symbol->string (car l)) (los->string (cdr l)))]))
+    (cond [(empty? l) ""]
+          [else (string-append (symbol->string (car l)) (los->string (cdr l)))]))
 
   ;; check-machine states alphabet final-states rules start-state machine-type [stack-alpha (optional)] -> True or Void
   ;;    Returns true if the machine passes. Otherwise returns void if the machine fails.
@@ -263,9 +263,9 @@
             (define (check-gamma g)
               (let [(problems (filter (lambda (s)
                                         (or (not (number? s))
-                                            (not (symbol? s))
-                                            (not (char-alphabetic? (string-ref (symbol->string s) 0)))
-                                            (not (char-lower-case? (string-ref (symbol->string s) 0)))))
+                                            (and (not (symbol? s))
+                                                 (not (char-alphabetic? (string-ref (symbol->string s) 0)))
+                                                 (not (char-lower-case? (string-ref (symbol->string s) 0))))))
                                       g))]
                 (if (null? problems)
                     ""
@@ -483,8 +483,8 @@
                                                   (cond [(equal? type 'rg) (check-rgrule nts sigma
                                                                                          (filter
                                                                                           (lambda (x) (not (and (equal? (car x) start)
-                                                                                                           (equal? (cadr x) ARROW)
-                                                                                                           (equal? (caddr x) EMP))))
+                                                                                                                (equal? (cadr x) ARROW)
+                                                                                                                (equal? (caddr x) EMP))))
                                                                                           delta))]
                                                         [(equal? type 'cfg) (check-cfgrule nts sigma delta)]
                                                         [(equal? type 'csg) (check-csgrule nts sigma delta)]
