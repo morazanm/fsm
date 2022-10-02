@@ -111,7 +111,8 @@
                                               (node 'F 'F '#hash((color . "black") (shape . "doublecircle")) 'final)
                                               (node 'S 'S '#hash((color . "forestgreen") (shape . "circle")) 'start))
                                              (list (edge 'F 'F  '#hash((fontsize . 15) (label . (b a)))) (edge 'S 'F '#hash((fontsize . 15) (label . (a)))))
-                                             0))
+                                             0
+                                             '#hash((rankdir . "LR"))))
                            (check-equal? expected (fsa->graph a* 0)))
                 (test-case "ndfa"
                            (define expected (graph
@@ -124,7 +125,8 @@
                                               (edge 'M 'F '#hash((fontsize . 15) (label . (f))))
                                               (edge 'S 'M '#hash((fontsize . 15) (label . (m))))
                                               (edge 'F 'S '#hash((fontsize . 15) (label . (s))) ))
-                                             0))
+                                             0
+                                             '#hash((rankdir . "LR"))))
                            (check-equal? expected (fsa->graph FSM 0)))
                 (test-case "pda"
                            (define expected (graph
@@ -137,7 +139,8 @@
                                               (edge 'M 'M '#hash((fontsize . 15) (label . (((M b (a)) (M ε)) ((M a (b)) (M ε)) ((M b ε) (M (b))) ((M a ε) (M (a)))))))
                                               (edge 'M 'F '#hash((fontsize . 15) (label . (((M ε ε) (F ε))))))
                                               (edge 'S 'M '#hash((fontsize . 15) (label . (((S ε ε) (M ε)))))))
-                                             0))
+                                             0
+                                             '#hash((rankdir . "LR"))))
                            (check-equal? expected (fsa->graph pda-numa=numb 0)))
                 (test-case "tm"
                            (define expected (graph
@@ -168,7 +171,8 @@
                                               (edge 'C 'C '#hash((fontsize . 15) (label . (((C z) (C R)) ((C b) (C R)) ((C @) (C R))))))
                                               (edge 'B 'B '#hash((fontsize . 15) (label . (((B z) (B R)) ((B a) (B R)) ((B @) (B R))))))
                                               (edge 'S 'S '#hash((fontsize . 15) (label . (((S @) (S R)))))))
-                                             0))
+                                             0
+                                             '#hash((rankdir . "LR"))))
                            (check-equal? expected (fsa->graph a^nb^nc^n 0)))))
 
   (test-all 'verbose

@@ -1,6 +1,11 @@
 #lang racket
 (require 2htdp/image "../../constants.rkt")
 
+;; NOTICE: For more info on the functions and structures of this library please
+;; read the scribble file
+
+
+
 ; *Color Blind States*
 ; 0 -> default colors
 ; 1 -> Deuteranopia (Red-Green colorblindness)
@@ -22,7 +27,7 @@
  state-type?
  (contract-out
   [struct node ((name symbol?)
-                (value symbol?)
+                (dotfile-value symbol?)
                 (atb hash?)
                 (type state-type?))]
   [struct edge ((start-node symbol?)
@@ -65,33 +70,20 @@
 (define DEFAULT-NODE (hash 'color "black" 'shape "circle"))
 (define RULE-LIMIT 5)
 
-; A graph is represented as a structure with three elements:
-; name is a symbol used to represent the name of the graph
-; node-list is a list of node structures
-; edge-list is a list of edge structures
-; color-blind is a interger from 1-2 that represents the color bind state (see color-blind state above)
+; A structure the represents a digraph in the dot language
 (struct graph ([name]
                [node-list]
                [edge-list]
-               [color-blind]
+               [color-blind] ;;TODO: Jschappel: remove?
                [atb #:mutable]) #:transparent)
 
-; A node is a structure with four elements that represents a single state in FSA
-; - name is a symbol used to represent the name of a graphviz node
-; - value is symbol used to represent the name of a state
-; - abt is a hashmap used to represent a graphviz node attributes
-;      For all colors see: https://www.graphviz.org/doc/info/colors.html
-; - type is a symbol used to represent if a state is a starting, final, or accepting state 
+; A structure the represents a node in the dot language
 (struct node ([name]
-              [value]
+              [dotfile-value]
               [atb #:mutable]
               [type]) #:transparent)
 
-; An edge is a structure that represents a transition from one node to another
-; - start-node is a node-name (symbol)
-; - end-node is a node-name (symbol) 
-; - abt is a hashmap used to represent a graphviz edge attributes
-;      For all colors see: https://www.graphviz.org/doc/info/colors.html
+; A structure the represents a edgs in the dot language
 (struct edge ([start-node]
               [end-node]
               [atb #:mutable]) #:transparent)
@@ -101,7 +93,7 @@
 (define (node->str node)
   (string-append (format "    ~s [label=\"~s\", "
                          (node-name node)
-                         (node-value node))
+                         (node-dotfile-value node))
                  (hash->str (node-atb node)) "];\n"))
 
 ;; edge->str: edge -> string
