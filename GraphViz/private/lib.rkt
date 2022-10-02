@@ -25,9 +25,9 @@
                 (value symbol?)
                 (atb hash?)
                 (type state-type?))]
-  [struct edge ((atb hash?)
-                (start-node symbol?)
-                (end-node symbol?))]
+  [struct edge ((start-node symbol?)
+                (end-node symbol?)
+                (atb hash?))]
   [struct graph ((name symbol?)
                  (node-list (listof node?))
                  (edge-list (listof edge?))
@@ -70,9 +70,9 @@
 ; edge-list is a list of edge structures
 ; color-blind is a interger from 1-2 that represents the color bind state (see color-blind state above)
 (struct graph ([name]
-               [node-list #:mutable]
-               [edge-list #:mutable]
-               [color-blind #:mutable]) #:transparent)
+               [node-list]
+               [edge-list]
+               [color-blind]) #:transparent)
 
 ; A node is a structure with four elements that represents a single state in FSA
 ; - name is a symbol used to represent the name of a graphviz node
@@ -86,13 +86,13 @@
               [type]) #:transparent)
 
 ; An edge is a structure that represents a transition from one node to another
-; - abt is a hashmap used to represent a graphviz edge attributes
-;      For all colors see: https://www.graphviz.org/doc/info/colors.html
 ; - start-node is a node-name (symbol)
 ; - end-node is a node-name (symbol) 
-(struct edge ([atb #:mutable]
-              [start-node #:mutable]
-              [end-node #:mutable]) #:transparent)
+; - abt is a hashmap used to represent a graphviz edge attributes
+;      For all colors see: https://www.graphviz.org/doc/info/colors.html
+(struct edge ([start-node]
+              [end-node]
+              [atb #:mutable]) #:transparent)
 
 ;; node->str: node -> string
 ;; returns the graphviz representation of a node as a string
@@ -162,19 +162,19 @@
   (graph (graph-name g)
          (graph-node-list g)
          (if (equal? #f edge-index)
-             (cons (edge (hash-set atb 'label (list val))
-                         (remove-dashes start-node)
-                         (remove-dashes end-node))
+             (cons (edge (remove-dashes start-node)
+                         (remove-dashes end-node)
+                         (hash-set atb 'label (list val)))
                    (graph-edge-list g))
              (list-update (graph-edge-list g)
                           edge-index
                           (lambda (e)
                             (edge
+                             (edge-start-node e)
+                             (edge-end-node e)
                              (hash-set (edge-atb e)
                                        'label
-                                       (cons val (hash-ref (edge-atb e) 'label)))
-                             (edge-start-node e)
-                             (edge-end-node e)))))  
+                                       (cons val (hash-ref (edge-atb e) 'label)))))))
          (graph-color-blind g)))
 
 

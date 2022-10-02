@@ -29,6 +29,7 @@
             (check-equal? (length lines)
                           (length actual-graph)))))))
 
+;; Converts a fsa to a viztool machine
 (define (fsa->machine fsa)
   (match (sm-type fsa)
     [(or 'dfa 'ndfa) (machine (map (lambda (s) (fsm-state s #f #f)) (sm-states fsa))
@@ -93,6 +94,5 @@
 
   (check-eq-snapshot-graph
    (machine->graph (fsa->machine a^nb^nc^n) 0 '((E @) (E R)) 'E TRUE-INV-HEX)
-   "a_nb_nc_n_vizTool"
-   #:rebuild #t)
+   "a_nb_nc_n_vizTool")
   ); end module+ test
