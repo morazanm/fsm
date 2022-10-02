@@ -262,7 +262,8 @@
             ;;something for gamma
             (define (check-gamma g)
               (let [(problems (filter (lambda (s)
-                                        (or (not (symbol? s))
+                                        (or (not (number? s))
+                                            (not (symbol? s))
                                             (not (char-alphabetic? (string-ref (symbol->string s) 0)))
                                             (not (char-lower-case? (string-ref (symbol->string s) 0)))))
                                       g))]
