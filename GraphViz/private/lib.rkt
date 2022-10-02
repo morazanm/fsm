@@ -31,9 +31,11 @@
   [struct graph ((name symbol?)
                  (node-list (listof node?))
                  (edge-list (listof edge?))
-                 (color-blind colorblind-opt?))]
+                 (color-blind colorblind-opt?)
+                 (atb hash?))]
   [create-graph (->* (symbol?)
-                     (#:color colorblind-opt?)
+                     (#:color colorblind-opt?
+                      #:atb hash?)
                      graph?)]
   [add-node (->* (graph? symbol? state-type?)
                  (#:atb hash?)
@@ -57,11 +59,10 @@
 (define ACCEPT-STATE-SHAPE "doubleoctagon")
 (define GRAPH-WIDTH 600)
 (define GRAPH-HEIGHT 600)
-(define DEFAULT-EDGE (hash
-                      'fontsize 15))
-(define DEFAULT-NODE (hash
-                      'color "black"
-                      'shape "circle"))
+
+(define DEFAULT-GRAPH (hash 'rankdir "LR"))
+(define DEFAULT-EDGE (hash 'fontsize 15))
+(define DEFAULT-NODE (hash 'color "black" 'shape "circle"))
 (define RULE-LIMIT 5)
 
 ; A graph is represented as a structure with three elements:
@@ -72,7 +73,8 @@
 (struct graph ([name]
                [node-list]
                [edge-list]
-               [color-blind]) #:transparent)
+               [color-blind]
+               [atb #:mutable]) #:transparent)
 
 ; A node is a structure with four elements that represents a single state in FSA
 ; - name is a symbol used to represent the name of a graphviz node
@@ -113,11 +115,10 @@
 ;; graph->str: graph -> string
 ;; returns the graphviz representation of a graph as a string
 (define (graph->str graph)
-  (define header-str (string-append
-                    (format "digraph ~s {" (graph-name graph))
-                    "\n    rankdir=\"LR\";\n"))
+  (define name (format "digraph ~s {\n" (graph-name graph)))
   (string-append
-   header-str
+   name
+   (format "    ~a;\n" (hash->str (graph-atb graph) ";\n    "))
    (foldl (lambda (n a) (string-append a (node->str n)))
           ""
           (graph-node-list graph))
@@ -131,10 +132,8 @@
 ;; name: The name of the graph
 ;; color-blind: An unsignded integer value that represents the color-blind state
 ;; Purpose: Creates a Graph wiht the given name
-(define (create-graph name #:color[color-blind 0])
-  (if (> color-blind 3)
-      (error "The color blind option must be one of the following:\n0 -> default\n1 -> Deuteranopia option1\n2 -> Deuteranopia option2\n3 -> Red-Blue color blindness")
-      (graph name '() '() color-blind)))
+(define (create-graph name #:color[color-blind 0] #:atb [atb DEFAULT-GRAPH])
+      (graph name '() '() color-blind atb))
 
 
 ;; add-node: graph -> string -> symbol -> Optional(hash-map) -> graph
@@ -148,7 +147,8 @@
                type)
          (graph-node-list g))
    (graph-edge-list g)
-   (graph-color-blind g)))
+   (graph-color-blind g)
+   (graph-atb g)))
 
 ;; add-edge: graph -> symbol -> symbol -> symbol -> Optional(hash-map) -> graph
 ;; Purpose: adds an edge to the graph
@@ -175,7 +175,8 @@
                              (hash-set (edge-atb e)
                                        'label
                                        (cons val (hash-ref (edge-atb e) 'label)))))))
-         (graph-color-blind g)))
+         (graph-color-blind g)
+         (graph-atb g)))
 
 
 ;; set-node-color-shape: type hash-map -> hash-map
@@ -237,14 +238,14 @@
   ((compose1 png->bitmap dot->png graph->dot) graph save-dir filename))
  
 
-;; hash->str: hash -> string
+;; hash->str: hash -> Optional(string) -> string
 ;; Purpose: converts the hash to a graphviz string
-(define (hash->str hash)
+(define (hash->str hash (spacer ", "))
   (define (key-val->string key value)
     (if (and (list? value) (equal? key 'label))
         (format "~s=~s" key (rule-label->str value))
         (format "~s=~s" key value)))
-  (string-join (hash-map hash key-val->string) ", "))
+  (string-join (hash-map hash key-val->string) spacer))
 
 
 ;; rule-label->str: listof(rules) -> string
