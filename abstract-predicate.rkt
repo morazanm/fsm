@@ -264,7 +264,8 @@
               (let [(problems (filter (lambda (s)
                                         (or (not (symbol? s))
                                             (not (char-alphabetic? (string-ref (symbol->string s) 0)))
-                                            (not (char-lower-case? (string-ref (symbol->string s) 0)))))
+                                            ;(not (char-lower-case? (string-ref (symbol->string s) 0))
+                                            )))
                                       g))]
                 (if (null? problems)
                     ""

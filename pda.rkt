@@ -85,7 +85,7 @@
   
   (define (stack-pop S v)
     (cond [(eq? v EMP) S]
-          [(empty-stack? S) (error "Pop of an empty stack error")]
+          [(empty-stack? S) (error "Pop off an empty stack error")]
           [else (list-tail S (length v))]))
   
   (define (stack-pop-n S n)
