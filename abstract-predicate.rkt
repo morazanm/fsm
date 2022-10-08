@@ -265,7 +265,7 @@
                                         (or (and (not (symbol? s)) (not (number? s)))
                                             (if (symbol? s)
                                                 (not (char-alphabetic? (string-ref (symbol->string s) 0)))
-                                                (not (char-numeric? (string-ref (number->string s) 0))))
+                                                (not (and (= (string-length (number->string s)) 1))))
                                             ))
                                       g))]
                 (if (null? problems)
