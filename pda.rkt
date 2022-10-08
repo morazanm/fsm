@@ -149,26 +149,14 @@
       (cond [(null? tovisit) 'reject]
             [else
              (let* ((first-path (car tovisit))
-                    (config (first-config-pdapath first-path)))
-               (if (< (- (length w) (second config))
-                      (length (filter
-                               (λ (c) (or (char-lower-case? c) (char-numeric? c)))
-                               (append-map (λ (s)
-                                             (if (symbol? s)
-                                                 (string->list (symbol->string s))
-                                                 (string->list (number->string s))))
-                                           (third config)))))
-                   (consume w visited (rest tovisit))
-                   (let* [(new-configs (filter-pdaconfigs (mk-pdatransitions config w)
-                                                          (generated-configs visited tovisit)))
-                          ;(d (if (>= (second config) 2)
-                          ;       (displayln (format "config: ~s\nnew-configs: ~s\n" config new-configs))
-                          ;      (void)))
-                          (accepts (get-pdaconfig-accepts (cons config new-configs) w))]
-                     (if (not (null? accepts))
-                         (reverse (mk-pdapath (car accepts) first-path))
-                         (consume w (cons config visited) (append (cdr tovisit)
-                                                                  (new-pda-paths new-configs first-path)))))))]))
+                    (config (first-config-pdapath first-path))
+                    (new-configs (filter-pdaconfigs (mk-pdatransitions config w)
+                                                    (generated-configs visited tovisit)))
+                    (accepts (get-pdaconfig-accepts (cons config new-configs) w)))
+               (if (not (null? accepts))
+                   (reverse (mk-pdapath (car accepts) first-path))
+                   (consume w (cons config visited) (append (cdr tovisit)
+                                                            (new-pda-paths new-configs first-path)))))]))
     (lambda (w . L)
       (cond [(eq? w 'whatami) 'pda]
             [(empty? L) 
@@ -516,20 +504,6 @@
     (let ((test-words (generate-words number-tests (pda-getalphabet p1) null)))
       (map (lambda (w) (list w (apply-pda p1 w))) test-words)))
 
-  (define P (make-unchecked-ndpda '(P Q)
-                                  '(0 1)
-                                  '(0 1)
-                                  'P
-                                  '(Q)
-                                  '(((P ε ε) (Q (S)))
-                                    ((Q ε (S)) (Q (1)))
-                                    ((Q ε (S)) (Q (A 1 A)))
-                                    ((Q ε (A)) (Q (A 0 A 1 A)))
-                                    ((Q ε (A)) (Q (A 1 A 0 A)))
-                                    ((Q ε (A)) (Q ε))
-                                    ((Q ε (A)) (Q (1 A)))
-                                    ((Q a (0)) (Q ε))
-                                    ((Q b (1)) (Q ε)))))
   
   ); closes module
 
