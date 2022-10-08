@@ -149,14 +149,23 @@
       (cond [(null? tovisit) 'reject]
             [else
              (let* ((first-path (car tovisit))
-                    (config (first-config-pdapath first-path))
-                    (new-configs (filter-pdaconfigs (mk-pdatransitions config w)
-                                                    (generated-configs visited tovisit)))
-                    (accepts (get-pdaconfig-accepts (cons config new-configs) w)))
-               (if (not (null? accepts))
-                   (reverse (mk-pdapath (car accepts) first-path))
-                   (consume w (cons config visited) (append (cdr tovisit)
-                                                            (new-pda-paths new-configs first-path)))))]))
+                    (config (first-config-pdapath first-path)))
+               (if (< (- (length w) (second config))
+                      (length (filter
+                               char-lower-case?
+                               (append-map (λ (s) (string->list (symbol->string s)))
+                                           (third config)))))
+                   (consume w visited (rest tovisit))
+                   (let* [(new-configs (filter-pdaconfigs (mk-pdatransitions config w)
+                                                          (generated-configs visited tovisit)))
+                          ;(d (if (>= (second config) 2)
+                          ;       (displayln (format "config: ~s\nnew-configs: ~s\n" config new-configs))
+                          ;      (void)))
+                          (accepts (get-pdaconfig-accepts (cons config new-configs) w))]
+                     (if (not (null? accepts))
+                         (reverse (mk-pdapath (car accepts) first-path))
+                         (consume w (cons config visited) (append (cdr tovisit)
+                                                                  (new-pda-paths new-configs first-path)))))))]))
     (lambda (w . L)
       (cond [(eq? w 'whatami) 'pda]
             [(empty? L) 
@@ -503,6 +512,21 @@
     (define number-tests (if (null? l) NUM-TESTS (car l)))
     (let ((test-words (generate-words number-tests (pda-getalphabet p1) null)))
       (map (lambda (w) (list w (apply-pda p1 w))) test-words)))
+
+  (define P (make-unchecked-ndpda '(P Q)
+                                  '(a b)
+                                  '(a b)
+                                  'P
+                                  '(Q)
+                                  '(((P ε ε) (Q (S)))
+                                    ((Q ε (S)) (Q (b)))
+                                    ((Q ε (S)) (Q (A b A)))
+                                    ((Q ε (A)) (Q (A a A b A)))
+                                    ((Q ε (A)) (Q (A b A a A)))
+                                    ((Q ε (A)) (Q ε))
+                                    ((Q ε (A)) (Q (b A)))
+                                    ((Q a (a)) (Q ε))
+                                    ((Q b (b)) (Q ε)))))
   
   ); closes module
 
