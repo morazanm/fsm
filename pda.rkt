@@ -152,8 +152,11 @@
                     (config (first-config-pdapath first-path)))
                (if (< (- (length w) (second config))
                       (length (filter
-                               char-lower-case?
-                               (append-map (λ (s) (string->list (symbol->string s)))
+                               (λ (c) (or (char-lower-case? c) (char-numeric? c)))
+                               (append-map (λ (s)
+                                             (if (symbol? s)
+                                                 (string->list (symbol->string s))
+                                                 (string->list (number->string s))))
                                            (third config)))))
                    (consume w visited (rest tovisit))
                    (let* [(new-configs (filter-pdaconfigs (mk-pdatransitions config w)
@@ -514,19 +517,19 @@
       (map (lambda (w) (list w (apply-pda p1 w))) test-words)))
 
   (define P (make-unchecked-ndpda '(P Q)
-                                  '(a b)
-                                  '(a b)
+                                  '(0 1)
+                                  '(0 1)
                                   'P
                                   '(Q)
                                   '(((P ε ε) (Q (S)))
-                                    ((Q ε (S)) (Q (b)))
-                                    ((Q ε (S)) (Q (A b A)))
-                                    ((Q ε (A)) (Q (A a A b A)))
-                                    ((Q ε (A)) (Q (A b A a A)))
+                                    ((Q ε (S)) (Q (1)))
+                                    ((Q ε (S)) (Q (A 1 A)))
+                                    ((Q ε (A)) (Q (A 0 A 1 A)))
+                                    ((Q ε (A)) (Q (A 1 A 0 A)))
                                     ((Q ε (A)) (Q ε))
-                                    ((Q ε (A)) (Q (b A)))
-                                    ((Q a (a)) (Q ε))
-                                    ((Q b (b)) (Q ε)))))
+                                    ((Q ε (A)) (Q (1 A)))
+                                    ((Q a (0)) (Q ε))
+                                    ((Q b (1)) (Q ε)))))
   
   ); closes module
 
