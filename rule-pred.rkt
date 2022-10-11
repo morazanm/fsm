@@ -24,15 +24,14 @@
             ;loop: number --> boolean
             ;purpose: to iterate through the word
             (define (loop end)
-              (cond [(or (andmap (λ (s) (member s combined)) losfsm)
-                         (zero? end))
-                     #t]
+              (cond [(zero? end) #t]
                     [(sub-member combined str (sub1 end) end)
                      (loop (sub1 end))]
                     [else #f]))
             ]
-      (if (< (string-length str) 1) #f
-          (loop (string-length str)))))
+      (cond [(andmap (λ (s) (member s combined)) losfsm) #t]
+            [(< (string-length str) 1) #f]
+            [else (loop (string-length str))])))
 
   ;purpose: to check that the symbol given is composed
   ;         of one symbol from the second list,
@@ -80,6 +79,7 @@
                                                         (theFold RHerrors))]
                                         [else ""]))]))])))
 
+  
   ;purpose: to make sure the rule is
   ;          (NTs ARROW (Ts V (Ts && NTs)))
   ;       or (S ARROW empty)
@@ -89,6 +89,7 @@
                     (lambda (x) (oneAndOne x nts sigma))
                     delta))
 
+  ;; (listof symbol) (listof symbol) (listof cfg-rule) --> string
   ;purpose: to make sure the rule is
   ;          (NTs ARROW (Ts V NTs)*)
   (define (check-cfgrule nts sigma delta)
