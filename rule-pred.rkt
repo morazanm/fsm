@@ -1,5 +1,5 @@
 (module temp-rulepreds racket
-  (require "constants.rkt")
+  (require "constants.rkt" "misc.rkt")
   (require test-engine/racket-tests)
   (provide  check-rgrule check-cfgrule check-csgrule
             check-dfarule check-ndfarule check-pda-rules check-tmrules
@@ -20,11 +20,15 @@
   (define (allBoth sym list1 list2)
     (local [(define combined (append list1 list2))
             (define str (symbol->string sym))
+            (define losfsm (symbol->fsmlos sym));; added by Marco
             ;loop: number --> boolean
             ;purpose: to iterate through the word
             (define (loop end)
-              (cond [(zero? end) #t]
-                    [(sub-member combined str (sub1 end) end) (loop (sub1 end))]
+              (cond [(or (andmap (λ (s) (member s combined)) losfsm)
+                         (zero? end))
+                     #t]
+                    [(sub-member combined str (sub1 end) end)
+                     (loop (sub1 end))]
                     [else #f]))
             ]
       (if (< (string-length str) 1) #f
