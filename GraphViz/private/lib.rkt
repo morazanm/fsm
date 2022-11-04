@@ -1,5 +1,5 @@
 #lang racket
-(require 2htdp/image "../../constants.rkt")
+(require 2htdp/image)
 
 ;; NOTICE: For more info on the functions and structures of this library please
 ;; read the scribble file
@@ -7,50 +7,42 @@
 (provide
  stringify-value
  (contract-out
-  (struct formatters ((graph hash?)
-                      (node hash?)
-                      (edge hash?)))
+  (struct formatters ((graph (hash/c symbol? (-> any/c string?)))
+                      (node (hash/c symbol? (-> any/c string?)))
+                      (edge (hash/c symbol? (-> any/c string?)))))
   [struct node ((name symbol?)
-                (atb hash?))]
+                (atb (hash/c symbol? any/c)))]
   [struct edge ((start-node symbol?)
                 (end-node symbol?)
-                (atb hash?))]
+                (atb (hash/c symbol? any/c)))]
   [struct graph ((name symbol?)
                  (node-list (listof node?))
                  (edge-list (listof edge?))
                  (fmtrs formatters?)
-                 (atb hash?))]
+                 (atb (hash/c symbol? any/c)))]
   [create-graph (->* (symbol?)
-                     (#:fmtrs formatters? #:atb hash?)
+                     (#:fmtrs formatters?
+                      #:atb (hash/c symbol? any/c))
                      graph?)]
   [add-node (->* (graph? symbol?)
-                 (#:atb hash?)
+                 (#:atb (hash/c symbol? any/c))
                  graph?)]
   [add-edge (->* (graph? (or/c list? symbol?) symbol? symbol?)
-                 (#:atb hash?)
+                 (#:atb (hash/c symbol? any/c))
                  graph?)]
   [graph->bitmap (-> graph? path? string? image?)]
   [graph->dot (-> graph? path? string? path?)]
   [graph->str (-> graph? string?)]))
 
 
-;; Constants 
-(define START-STATE-COLOR-0 "forestgreen")
-(define START-STATE-COLOR-1 "#ede209") ;; Yellow
-(define START-STATE-COLOR-2 "#d48217");; Orange
-(define START-STATE-COLOR-3 "#002afc") ;; Blue
-
-(define DEFAULT-STATE-COLOR "black")
-(define GRAPH-WIDTH 600)
-(define GRAPH-HEIGHT 600)
-
+;; Constants
 (define DEFAULT-GRAPH (hash 'rankdir "LR"))
 (define DEFAULT-EDGE (hash 'fontsize 15))
 (define DEFAULT-NODE (hash 'color "black" 'shape "circle"))
 
-
 ;; formatters contain custom formatting functions for attributes
 (struct formatters (graph node edge))
+
 (define DEFAULT-FORMATTERS (formatters (hash) (hash) (hash)))
 
 ; A structure the represents a digraph in the dot language

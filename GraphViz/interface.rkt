@@ -13,9 +13,8 @@
 (define (colorblind-opt? n)
   (and (>= n 0) (<= n 2)))
 
-
 (provide
- (except-out (all-from-out  "private/lib.rkt") stringify-value)
+ (except-out (all-from-out "private/lib.rkt") stringify-value)
  (contract-out
   [fsa->graph (-> any/c colorblind-opt? graph?)]
   [machine->graph (-> machine?
