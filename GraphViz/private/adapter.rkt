@@ -9,10 +9,21 @@
 (define (pda/tm-rule? r)
   (listof (listof symbol?) (listof symbol?)))
 
+;; valid invariant state options
+(define (inv-state? o)
+  (member  o '(pass fail none)))
+
+(define hex-string? string?)
+
 (provide
  dfa/ndfa-rule?
  pda/tm-rule?
+ inv-state?
  (contract-out
+  [struct color-palette ([start hex-string?]
+                         [inv-true hex-string?]
+                         [inv-false hex-string?]
+                         [edge-highlight hex-string?])]
   [struct fsa-adapter ([states (listof symbol?)]
                        [start symbol?]
                        [finals (listof symbol?)]
@@ -24,50 +35,116 @@
                        [cur-rule (or/c boolean?
                                        dfa/ndfa-rule?
                                        pda/tm-rule?)]
-                       [cur-state-color string?])]
-  [fsa-adapter->graph (-> fsa-adapter?
-                          colorblind-opt?
-                          graph?)]))
+                       [inv-state inv-state?]
+                       [palette color-palette?])]
+  [fsa-adapter->graph (-> fsa-adapter? graph?)]))
 
 
+(struct fsa-adapter (states
+                     start
+                     finals
+                     rules
+                     type
+                     accept
+                     cur-state
+                     cur-rule
+                     inv-state ; 'none 'pass 'fail
+                     palette) #:transparent)
+
+
+;; holds the colors needed for the graph
+(struct color-palette (start inv-true inv-false edge-highlight))
 
 (define HIGHLIGHT-EDGE (hash
                         'color "#215dde"
                         'fontsize 15))
+(define RULE-LIMIT 5)
 
-
-(struct fsa-adapter (states start finals rules type accept cur-state cur-rule cur-state-color) #:transparent)
 (define (is-tm-lang-rec? type) (equal? type 'tm-language-recognizer))
 
+;; rule-label->str: listof(rules) -> string
+;; Purpose: Converts a list of rules to a graphviz label
+(define (rule-label->str rules)
+  (define (format-line l acc count)
+    (match l
+      ['() (cons acc '())]
+      [`(,x ,xs ...)
+       (if (and (not (empty? acc))
+                (> (+ 2 count (string-length x)) RULE-LIMIT))
+           (cons acc l)
+           (format-line xs (append acc (list x)) (+ count (string-length x))))]))
+  (define (format-lines lines)
+    (match-define (cons line xs) (format-line lines '() 0))
+    (if (empty? lines)
+        '()
+        (cons (string-join line ", ") (format-lines xs))))
+  (string-join (format-lines (map fsa-rule->label rules)) ",\n"))
 
-(define (build-color-state-hash color)
-  (hash
-   'style "filled"
-   'fillcolor color
-   'shape "circle"))
 
-;; state-type->node-type: symbol -> fsa-adapter -> symbol
-;; determins the state type for the given state
-(define (state-type->node-type state fsa)
-  (cond
-    [(and (is-tm-lang-rec? (fsa-adapter-type fsa))
-          (equal? state (fsa-adapter-accept fsa))) 'accept]
-    [(and (equal? state (fsa-adapter-start fsa))
-          (member state (fsa-adapter-finals fsa))) 'startfinal]
-    [(equal? state (fsa-adapter-start fsa)) 'start]
-    [(member state (fsa-adapter-finals fsa)) 'final]
-    [else 'none]))
+;; fsa-rule->label: transition -> string
+;; Purpose: Converts the list to its string representation
+(define (fsa-rule->label aList)
+  (define (list->str los accum)
+    (match los
+      ['() (string-append (string-trim accum) ")")]
+      [`(,x ,xs ...) (list->str
+                      xs
+                      (string-append accum (stringify-value x) " "))]))
+  (match aList
+    ;; dfa/ndfa
+    [(list _ input _) (stringify-value input)]
+    ;; pda
+    [(list (list _ read pop) (list _ push))
+     (format "[~a ~a ~a]" (stringify-value read)
+             (if (list? pop) (list->str pop "(") (stringify-value pop))
+             (if (list? push) (list->str push "(") (stringify-value push)))]
+    ;; tm and lang rec
+    [(list (list _ b) (list _ d))
+     (format "[~a ~a]" (stringify-value b) (stringify-value d))]
+    ;; dfa/ndfa legacy way
+    [val (stringify-value val)]))
+
+
+;; build-node-hash :: symbol -> fsa-adapter -> hash
+;; creates the attribute hash for a node
+(define (build-node-hash state fsa)
+  (define inv-state (fsa-adapter-inv-state fsa))
+  (define is-cur-state? (equal? state (fsa-adapter-cur-state fsa)))
+  (define palette (fsa-adapter-palette fsa))
+  (define state-type (cond
+                       [(and (is-tm-lang-rec? (fsa-adapter-type fsa))
+                             (equal? state (fsa-adapter-accept fsa))) 'accept]
+                       [(and (equal? state (fsa-adapter-start fsa))
+                             (member state (fsa-adapter-finals fsa))) 'startfinal]
+                       [(equal? state (fsa-adapter-start fsa)) 'start]
+                       [(member state (fsa-adapter-finals fsa)) 'final]
+                       [else 'default]))
+  (define color (match state-type
+                  [(or 'start 'startfinal 'startaccept)
+                   (color-palette-start palette)]
+                  [_ "black"]))
+  (define shape (match state-type
+                  [(or 'startaccept 'accept) "doubleoctagon"]
+                  [(or 'final 'startfinal) "doublecircle"]
+                  [_ "circle"]))
+  (define attributes `((color . ,color) (shape . ,shape)))
+  ;; If there is an invariant and its the current state we need to add the fillcolor
+  (make-immutable-hash
+   (if (and is-cur-state? (not (equal? 'none inv-state)))
+       (append attributes
+               `((style . "filled")
+                 (fillcolor . ,(match inv-state
+                                 ['pass (color-palette-inv-true palette)]
+                                 ['fail (color-palette-inv-false palette)]))))
+       attributes)))
 
 ;; fsa-states->nodes: fsa-adapter -> graph -> graph
 ;; Adds all the machine states to the graph
 (define (fsa-states->nodes fsa graph)
   (define (fsa-state->node state graph)
-    (if (equal? state (fsa-adapter-cur-state fsa))
-        (add-node graph
-                  state
-                  (state-type->node-type state fsa)
-                  #:atb (build-color-state-hash (fsa-adapter-cur-state-color fsa)))
-        (add-node graph state (state-type->node-type state fsa))))
+    (add-node graph
+              state
+              #:atb (build-node-hash state fsa)))
   (foldl fsa-state->node graph (fsa-adapter-states fsa)))
 
 
@@ -95,7 +172,12 @@
 
 ;; fsa-adapter->graph :: fsa-adapter -> graph
 ;; Converts the structure to a graph
-(define (fsa-adapter->graph adapter color-blind-mode)
+(define (fsa-adapter->graph adapter)
   (fsa-rules->edges adapter
                     (fsa-states->nodes adapter
-                                       (create-graph 'G #:color color-blind-mode))))
+                                       (create-graph
+                                        'G
+                                        #:fmtrs (formatters
+                                                 (hash)
+                                                 (hash)
+                                                 (hash 'label rule-label->str))))))

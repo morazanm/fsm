@@ -1,8 +1,8 @@
 digraph G {
     rankdir="LR";
-    M [label="M", color="black", shape="doublecircle"];
-    S [label="S", color="black", shape="circle"];
-    F [label="F", color="forestgreen", shape="circle"];
+    M [color="black", shape="doublecircle", label="M"];
+    S [color="black", shape="circle", label="S"];
+    F [color="forestgreen", shape="circle", label="F"];
     M -> F [fontsize=15, label="f"];
     S -> M [fontsize=15, label="m"];
     F -> S [fontsize=15, label="s"];

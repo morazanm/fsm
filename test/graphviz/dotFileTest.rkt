@@ -85,14 +85,26 @@
    "a_nb_nc_n")
 
   (check-eq-snapshot-graph
-   (machine->graph (fsa->machine a*a) 0 '(A a F) 'A TRUE-INV-HEX)
-   "a_star_a_vizTool")
+   (machine->graph (fsa->machine a*a) 0 '(A a F) 'A 'pass)
+   "a_star_a_vizTool_pass")
 
   (check-eq-snapshot-graph
-   (machine->graph (fsa->machine pda-numa=numb) 0 '((S ε ε) (M ε)) 'S TRUE-INV-HEX)
-   "pda_numa_numb_vizTool")
+   (machine->graph (fsa->machine a*a) 1 '(A a F) 'A 'pass)
+   "a_star_a_vizTool_pass_cb1")
 
   (check-eq-snapshot-graph
-   (machine->graph (fsa->machine a^nb^nc^n) 0 '((E @) (E R)) 'E TRUE-INV-HEX)
+   (machine->graph (fsa->machine pda-numa=numb) 0 '((S ε ε) (M ε)) 'S 'none)
+   "pda_numa_numb_vizTool_none")
+  
+  (check-eq-snapshot-graph
+   (machine->graph (fsa->machine pda-numa=numb) 0 '((S ε ε) (M ε)) 'S 'pass)
+   "pda_numa_numb_vizTool_pass")
+
+  (check-eq-snapshot-graph
+   (machine->graph (fsa->machine pda-numa=numb) 0 '((S ε ε) (M ε)) 'S 'fail)
+   "pda_numa_numb_vizTool_fail")
+
+  (check-eq-snapshot-graph
+   (machine->graph (fsa->machine a^nb^nc^n) 0 '((E @) (E R)) 'E 'pass)
    "a_nb_nc_n_vizTool")
   ); end module+ test

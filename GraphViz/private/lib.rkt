@@ -4,45 +4,26 @@
 ;; NOTICE: For more info on the functions and structures of this library please
 ;; read the scribble file
 
-
-
-; *Color Blind States*
-; 0 -> default colors
-; 1 -> Deuteranopia (Red-Green colorblindness)
-; 2 -> Deuteranopia (alt colors)
-; 3 -> Blue-Red
-(define (colorblind-opt? n)
-  (and (>= n 0) (<= n 2)))
-
-(define (state-type? s)
-  (or (equal? 'start s)     ; A start state
-      (equal? 'startfinal s); A start and final state
-      (equal? 'final s)     ; A final state
-      (equal? 'accept s)    ; An accepting state (lang recs)
-      (equal? 'none s)))    ; Just a plain old state 
-
-
 (provide
- colorblind-opt?
- state-type?
+ stringify-value
  (contract-out
+  (struct formatters ((graph hash?)
+                      (node hash?)
+                      (edge hash?)))
   [struct node ((name symbol?)
-                (dotfile-value symbol?)
-                (atb hash?)
-                (type state-type?))]
+                (atb hash?))]
   [struct edge ((start-node symbol?)
                 (end-node symbol?)
                 (atb hash?))]
   [struct graph ((name symbol?)
                  (node-list (listof node?))
                  (edge-list (listof edge?))
-                 (color-blind colorblind-opt?)
+                 (fmtrs formatters?)
                  (atb hash?))]
   [create-graph (->* (symbol?)
-                     (#:color colorblind-opt?
-                      #:atb hash?)
+                     (#:fmtrs formatters? #:atb hash?)
                      graph?)]
-  [add-node (->* (graph? symbol? state-type?)
+  [add-node (->* (graph? symbol?)
                  (#:atb hash?)
                  graph?)]
   [add-edge (->* (graph? (or/c list? symbol?) symbol? symbol?)
@@ -60,86 +41,83 @@
 (define START-STATE-COLOR-3 "#002afc") ;; Blue
 
 (define DEFAULT-STATE-COLOR "black")
-(define FINAL-STATE-SHAPE "doublecircle")
-(define ACCEPT-STATE-SHAPE "doubleoctagon")
 (define GRAPH-WIDTH 600)
 (define GRAPH-HEIGHT 600)
 
 (define DEFAULT-GRAPH (hash 'rankdir "LR"))
 (define DEFAULT-EDGE (hash 'fontsize 15))
 (define DEFAULT-NODE (hash 'color "black" 'shape "circle"))
-(define RULE-LIMIT 5)
+
+
+;; formatters contain custom formatting functions for attributes
+(struct formatters (graph node edge))
+(define DEFAULT-FORMATTERS (formatters (hash) (hash) (hash)))
 
 ; A structure the represents a digraph in the dot language
 (struct graph ([name]
                [node-list]
                [edge-list]
-               [color-blind] ;;TODO: Jschappel: remove?
+               [fmtrs]
                [atb #:mutable]) #:transparent)
 
 ; A structure the represents a node in the dot language
 (struct node ([name]
-              [dotfile-value]
-              [atb #:mutable]
-              [type]) #:transparent)
+              [atb #:mutable]) #:transparent)
 
 ; A structure the represents a edgs in the dot language
 (struct edge ([start-node]
               [end-node]
               [atb #:mutable]) #:transparent)
 
-;; node->str: node -> string
+;; node->str: node -> hash -> string
 ;; returns the graphviz representation of a node as a string
-(define (node->str node)
-  (string-append (format "    ~s [label=\"~s\", "
-                         (node-name node)
-                         (node-dotfile-value node))
-                 (hash->str (node-atb node)) "];\n"))
+(define (node->str node fmtr)
+  (format "    ~s [~a];\n"
+          (node-name node)
+          (hash->str (node-atb node) fmtr)))
 
-;; edge->str: edge -> string
+;; edge->str: edge -> hash -> string
 ;; returns the graphviz representation of a edge as a string
-(define (edge->str edge)
-  (string-append (format "    ~s -> ~s ["
-                         (edge-start-node edge)
-                         (edge-end-node edge))
-                 (hash->str (edge-atb edge)) "];\n"))
+(define (edge->str edge fmtr)
+  (format "    ~s -> ~s [~a];\n"
+          (edge-start-node edge)
+          (edge-end-node edge)
+          (hash->str (edge-atb edge) fmtr)))
 
 ;; graph->str: graph -> string
 ;; returns the graphviz representation of a graph as a string
-(define (graph->str graph)
-  (define name (format "digraph ~s {\n" (graph-name graph)))
+(define (graph->str g)
+  (define name (format "digraph ~s {\n" (graph-name g)))
+  (define fmtrs (graph-fmtrs g))
   (string-append
    name
-   (format "    ~a;\n" (hash->str (graph-atb graph) ";\n    "))
-   (foldl (lambda (n a) (string-append a (node->str n)))
+   (format "    ~a;\n" (hash->str (graph-atb g) (formatters-graph fmtrs) ";\n    "))
+   (foldl (lambda (n a) (string-append a (node->str n (formatters-node fmtrs))))
           ""
-          (graph-node-list graph))
-   (foldl (lambda (e a) (string-append a (edge->str e)))
+          (graph-node-list g))
+   (foldl (lambda (e a) (string-append a (edge->str e (formatters-edge fmtrs))))
           ""
-          (graph-edge-list graph))
+          (graph-edge-list g))
    "}"))
 
 
 ;; create-graph: symbol -> graph
 ;; name: The name of the graph
-;; color-blind: An unsignded integer value that represents the color-blind state
-;; Purpose: Creates a Graph wiht the given name
-(define (create-graph name #:color[color-blind 0] #:atb [atb DEFAULT-GRAPH])
-      (graph name '() '() color-blind atb))
+;; Purpose: Creates a Graph with the given name
+(define (create-graph name #:fmtrs(fmtrs DEFAULT-FORMATTERS) #:atb [atb DEFAULT-GRAPH])
+  (graph name '() '() fmtrs atb))
 
 
-;; add-node: graph -> string -> symbol -> Optional(hash-map) -> graph
+;; add-node: graph -> string -> Optional(hash-map) -> graph
 ;; Purpose: adds a node to the given graph
-(define (add-node g name type  #:atb [atb DEFAULT-NODE])
+(define (add-node g name #:atb [atb DEFAULT-NODE])
   (graph
    (graph-name g)
    (cons (node (remove-dashes name)
-               name
-               (set-node-color-shape type (graph-color-blind g) atb)
-               type)
+               (hash-set atb 'label (stringify-value name)))
          (graph-node-list g))
    (graph-edge-list g)
-   (graph-color-blind g)
+   (graph-fmtrs g)
    (graph-atb g)))
 
 ;; add-edge: graph -> symbol -> symbol -> symbol -> Optional(hash-map) -> graph
@@ -167,36 +145,8 @@
                              (hash-set (edge-atb e)
                                        'label
                                        (cons val (hash-ref (edge-atb e) 'label)))))))
-         (graph-color-blind g)
+         (graph-fmtrs g)
          (graph-atb g)))
-
-
-;; set-node-color-shape: type hash-map -> hash-map
-(define (set-node-color-shape type color-blind hash-map)
-  (let ((color (case color-blind
-                 [(0) START-STATE-COLOR-0]
-                 [(1) START-STATE-COLOR-1]
-                 [(2) START-STATE-COLOR-2]
-                 [else START-STATE-COLOR-3])))
-    (case type
-      [(start) (hash-set hash-map 'color color)]
-      [(startfinal)(hash-set (hash-set hash-map 'shape FINAL-STATE-SHAPE)
-                             'color color)]
-      [(startaccept)(hash-set (hash-set hash-map 'shape ACCEPT-STATE-SHAPE)
-                              'color color)]
-      [(final) (hash-set hash-map 'shape FINAL-STATE-SHAPE)]
-      [(accept) (hash-set hash-map 'shape ACCEPT-STATE-SHAPE)]
-      [else hash-map])))
-
-
-;list->str: (listof symbols) -> string
-;Purpose: to convert the symbols in the list to a string
-(define (list->str los accum)
-  (cond [(empty? los) (string-append (string-trim accum) ")")]
-        [else (list->str
-               (cdr los)
-               (string-append accum (stringify-value (car los)) " "))]))
-
 
 ; remove-dashes: symbol -> symbol
 ; Purpose: Remove dashes
@@ -229,53 +179,15 @@
 (define (graph->bitmap graph save-dir filename)
   ((compose1 png->bitmap dot->png graph->dot) graph save-dir filename))
  
-
-;; hash->str: hash -> Optional(string) -> string
+;; hash->str: hash -> hash -> Optional(string) -> string
 ;; Purpose: converts the hash to a graphviz string
-(define (hash->str hash (spacer ", "))
+(define (hash->str hash fmtr (spacer ", "))
   (define (key-val->string key value)
-    (if (and (list? value) (equal? key 'label))
-        (format "~s=~s" key (rule-label->str value))
+    (define fmtr-fun (hash-ref fmtr key #f))
+    (if fmtr-fun
+        (format "~s=~s" key (fmtr-fun value))
         (format "~s=~s" key value)))
   (string-join (hash-map hash key-val->string) spacer))
-
-
-;; rule-label->str: listof(rules) -> string
-;; Purpose: Converts a list of rules to a graphviz label
-(define (rule-label->str rules)
-  (define (format-line l acc count)
-    (match l
-      ['() (cons acc '())]
-      [`(,x ,xs ...)
-       (if (and (not (empty? acc))
-                (> (+ 2 count (string-length x)) RULE-LIMIT))
-           (cons acc l)
-           (format-line xs (append acc (list x)) (+ count (string-length x))))]))
-  (define (format-lines lines)
-    (match-define (cons line xs) (format-line lines '() 0))
-    (if (empty? lines)
-        '()
-        (cons (string-join line ", ") (format-lines xs))))
-  (string-join (format-lines (map fsa-rule->label rules)) ",\n"))
-
-
-;; fsa-rule->label: transition -> string
-;; Purpose: Converts the list to its string representation
-(define (fsa-rule->label aList)
-  (match aList
-    ;; dfa/ndfa
-    [(list _ input _) (stringify-value input)]
-    ;; pda
-    [(list (list _ read pop) (list _ push))
-     (format "[~a ~a ~a]" (stringify-value read)
-             (if (list? pop) (list->str pop "(") (stringify-value pop))
-             (if (list? push) (list->str push "(") (stringify-value push)))]
-    ;; tm and lang rec
-    [(list (list _ b) (list _ d))
-     (format "[~a ~a]" (stringify-value b) (stringify-value d))]
-    ;; dfa/ndfa legacy way
-    [val (stringify-value val)]))
-
 
 ;; Helper function to convert a value to a string
 (define (stringify-value input)
