@@ -1,5 +1,6 @@
 ; FSM Version 1.0
 ; Copyright (C) 202- by Marco T. Morazan 
+; @include-section["../Graphviz/scribblings/gviz.scrbl"]
 
 #lang scribble/manual
 
@@ -17,7 +18,6 @@ allowing them to construct and minipulate state machines and grammars.
 For instructions on how to download the DSL, view the patch notes, or just browse the code, please see either the offical
 FSM readme on @(hyperlink "https://github.com/morazanm/fsm" "Github") or the
 new @(hyperlink "https://morazanm.github.io/fsm/index.html" "FSM website").
-
 
 @table-of-contents[]
 
@@ -679,6 +679,8 @@ word are returned.
 @defproc[(symbol-upcase [s symbol])
          symbol]{Builds a symbol that is the same as the given symbol,
  but with all characters in uppercase.}
+
+
 
 @section{Contributors}
 Names in no paticular order:

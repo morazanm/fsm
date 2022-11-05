@@ -4,8 +4,7 @@
          "../globals.rkt"
          "../structs/state.rkt"
          "../structs/machine.rkt"
-         "../../GraphViz/lib.rkt"
-         "../../GraphViz/render-graph.rkt")
+         "../../GraphViz/interface.rkt")
 
 (provide
  scaled-graph
@@ -60,34 +59,14 @@
 ;; calls the gviz library to convert it to a png. Then we scale it to the viztool
 ;; if necessary.
 (define (create-gql-png machine hasRun? cur-state cur-rule)
-  (letrec ((g (create-graph 'G #:color 0))
-           (states (machine-state-list machine))
-           (start (machine-start-state machine))
-           (finals (machine-final-state-list machine))
-           (rules (machine-rule-list machine))
-           (color (if hasRun? (determin-inv machine cur-state #:graphViz true) #f))
-           (rule-start (lambda () (case MACHINE-TYPE
-                                    [(dfa) (car cur-rule)]
-                                    [(ndfa) (car cur-rule)]
-                                    [else (caar cur-rule)])))
-           (rule-end (lambda () (case MACHINE-TYPE
-                                  [(dfa) (last cur-rule)]
-                                  [(ndfa) (last cur-rule)]
-                                  [else (caadr cur-rule)])))
-           (new-states (map (lambda (s) (fsm-state-name s)) states)))
-    (begin
-      (states->nodes new-states
-                     start
-                     finals
-                     g
-                     #:cur-state cur-state
-                     #:color (HIGHLIGHT-NODE color))
-      (rules->edges rules
-                    MACHINE-TYPE
-                    g
-                    (if (or (member 'empty cur-rule) (member 'null cur-rule)) "$NULL" (rule-start))
-                    (if (or (member 'empty cur-rule) (member 'null cur-rule)) "$NULL" (rule-end))
-                    "black")
-      (if (or (member 'empty cur-rule) (member 'null cur-rule))
-          (scaled-graph (graph->png g) MACHINE-TYPE)
-          (scaled-graph (graph->png g #:rule cur-rule) MACHINE-TYPE)))))
+  (define inv-type (if hasRun? (determin-inv machine cur-state #:graphViz true) 'none))
+  (scaled-graph (graph->bitmap
+                 (machine->graph
+                  machine
+                  0 ;;TODO use color blind option
+                  cur-rule
+                  cur-state
+                  inv-type)
+                 (current-directory)
+                 "vizTool")
+                MACHINE-TYPE))

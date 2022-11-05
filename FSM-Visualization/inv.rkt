@@ -31,15 +31,15 @@
 
 (define (determin-inv-color func p-list machine mode)
   (let ([true-color (if COLOR-BLIND-MODE
-                        (if mode TRUE-INV-CB-HEX TRUE-INV-CB)
-                        (if mode TRUE-INV-HEX TRUE-INV))]
+                        (if mode 'pass TRUE-INV-CB)
+                        (if mode 'pass TRUE-INV))]
         [false-color (if COLOR-BLIND-MODE
-                         (if mode FALSE-INV-CB-HEX FALSE-INV-CB)
-                         (if mode FALSE-INV-HEX FALSE-INV))]
+                         (if mode 'fail FALSE-INV-CB)
+                         (if mode 'fail FALSE-INV))]
         [caution-color (if COLOR-BLIND-MODE
-                         (if mode CAUTION-INV-HEX CAUTION-INV)
-                         (if mode CAUTION-INV-HEX CAUTION-INV))]
-        [non-color (if mode "transparent" DEFAULT-ARROW-COLOR)])
+                         (if mode 'fail CAUTION-INV)
+                         (if mode 'fail CAUTION-INV))]
+        [non-color (if mode 'none DEFAULT-ARROW-COLOR)])
     (case MACHINE-TYPE
       [(pda)
        (cond

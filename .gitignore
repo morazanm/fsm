@@ -59,11 +59,12 @@ TAGS
 
 # auto-generated rkt files
 fsmGUIFunctions.rkt
-*.dot
-graph.png
-vizTool.png
-aStar.png
+
+# VizTool Generated png's
 *.png
+
+# Viztool Generated dot files
+*vizTool.dot
 
 *.1
 *.2

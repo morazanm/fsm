@@ -4,7 +4,7 @@
 
 (module fsm racket
 
-  (require "fsm-main.rkt" "./FSM-Visualization/visualize.rkt" "./GraphViz/render-graph.rkt")
+  (require "fsm-main.rkt" "./FSM-Visualization/visualize.rkt" "GraphViz/interface.rkt")
 
   (provide
    check-machine
@@ -71,6 +71,9 @@
    sm-visualize
    sm-marco)
 
+  (define (sm-graph fsa #:color [color-blind-mode 0])
+    (graph->bitmap (fsa->graph fsa color-blind-mode) (current-directory) "vizTool"))
+    
   (define sm-visualize visualize)
   (define sm-marco marco)
 
