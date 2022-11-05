@@ -1,5 +1,6 @@
 ; FSM Version 1.0
 ; Copyright (C) 202- by Marco T. Morazan 
+; @include-section["../Graphviz/scribblings/gviz.scrbl"]
 
 #lang scribble/manual
 
@@ -679,7 +680,7 @@ word are returned.
          symbol]{Builds a symbol that is the same as the given symbol,
  but with all characters in uppercase.}
 
-@include-section["../Graphviz/scribblings/gviz.scrbl"]
+
 
 @section{Contributors}
 Names in no paticular order:
