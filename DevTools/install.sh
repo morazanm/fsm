@@ -8,9 +8,11 @@ set -u # exit if unset var is called
 
 
 repo="https://github.com/morazanm/fsm.git"
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 function installFSM() {
   if [ $1 ]; then
+    cd $SCRIPT_DIR
     cd ..
     echo "\n\n***Install Local Dev FSM at $(pwd)***\n\n"
     raco pkg install 
