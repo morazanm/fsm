@@ -151,6 +151,7 @@
 ;; fsa-rules->edges :: fsa-adapter -> graph -> graph
 ;; Adds all the machines rules to the graph
 (define (fsa-rules->edges fsa graph)
+  (define palette (fsa-adapter-palette fsa))
   (define (parse-rule rule)
     (if (not rule)
         (list #f #f)
@@ -164,7 +165,12 @@
                            (cadr rule)
                            rule))
     (if (and (equal? start start-state) (equal? end end-state))
-        (add-edge graph rule-label start end #:atb HIGHLIGHT-EDGE)
+        (add-edge graph
+                  rule-label
+                  start
+                  end
+                  #:atb (hash 'color  (color-palette-edge-highlight palette)
+                                                         'fontsize 15))
         (add-edge graph rule-label start end)))
   (foldl fsa-rule->edge graph (fsa-adapter-rules fsa)))
 

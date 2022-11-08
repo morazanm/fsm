@@ -3,14 +3,15 @@
 (require "main.rkt")
 
 ;;---- DFA ----
-(define a* (make-dfa '(S F)     ;; the states
-                     '(a b)     ;; the input alphabet
-                     'S         ;; the staring state
-                     '(F)       ;; the set of final states
-                     '((S a F)  ;; the transition functions
-                       (F a F)
-                       (F b F))
-                     'nodead))
+(define a*
+  (make-dfa '(S F)     ;; the states
+            '(a b)     ;; the input alphabet
+            'S         ;; the staring state
+            '(F)       ;; the set of final states
+            '((S a F)  ;; the transition functions
+              (F a F)
+              (F b F))
+            'nodead))
 
 ;;(sm-visualize a* (list 'S (lambda (v) true))
 ;;            (list 'F (lambda (v) false)))
@@ -305,13 +306,13 @@
                    (= (modulo (length list-of-xyz) 3) 0)))))
 
 
- (sm-visualize a^nb^nc^n2 (list 'S S-INV)
-               (list 'B B-INV)
-               (list 'C C-INV)
-               (list 'D D-INV)
-               (list 'E E-INV)
-               (list 'N N-INV)
-               (list 'Y Y-INV))
+(sm-visualize a^nb^nc^n2 (list 'S S-INV)
+              (list 'B B-INV)
+              (list 'C C-INV)
+              (list 'D D-INV)
+              (list 'E E-INV)
+              (list 'N N-INV)
+              (list 'Y Y-INV))
 
 #|
 (define LB (make-tm '(S H)

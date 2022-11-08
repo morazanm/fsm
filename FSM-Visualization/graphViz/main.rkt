@@ -54,6 +54,9 @@
       (resize-image img image-area-width image-area-height)
       img))
 
+(define (get-cb-opt)
+  (if COLOR-BLIND-MODE 1 0))
+
 ;; create-gql-png :: machine -> bool -> symbol -> rule -> image
 ;; converts a machine to a graphviz internal representaion of a machine and
 ;; calls the gviz library to convert it to a png. Then we scale it to the viztool
@@ -63,7 +66,7 @@
   (scaled-graph (graph->bitmap
                  (machine->graph
                   machine
-                  0 ;;TODO use color blind option
+                  (get-cb-opt)
                   cur-rule
                   cur-state
                   inv-type)
