@@ -72,7 +72,7 @@
    sm-marco)
 
   (define (sm-graph fsa #:color [color-blind-mode 0])
-    (graph->bitmap (fsa->graph fsa color-blind-mode) (current-directory) "vizTool"))
+    (fsa->bitmap fsa color-blind-mode))
     
   (define sm-visualize visualize)
   (define sm-marco marco)

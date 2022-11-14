@@ -63,13 +63,10 @@
 ;; if necessary.
 (define (create-gql-png machine hasRun? cur-state cur-rule)
   (define inv-type (if hasRun? (determin-inv machine cur-state #:graphViz true) 'none))
-  (scaled-graph (graph->bitmap
-                 (machine->graph
-                  machine
-                  (get-cb-opt)
-                  cur-rule
-                  cur-state
-                  inv-type)
-                 (current-directory)
-                 "vizTool")
+  (scaled-graph (machine->bitmap
+                 machine
+                 (get-cb-opt)
+                 cur-rule
+                 cur-state
+                 inv-type)
                 MACHINE-TYPE))

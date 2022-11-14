@@ -15,14 +15,16 @@
 
 (provide
  (except-out (all-from-out "private/lib.rkt") stringify-value)
+ machine->graph ;; Used for testing
+ fsa->graph ;; Used for testing
  (contract-out
-  [fsa->graph (-> any/c colorblind-opt? graph?)]
-  [machine->graph (-> machine?
-                      colorblind-opt?
-                      (or/c dfa/ndfa-rule? pda/tm-rule? boolean?)
-                      (or/c symbol? boolean?)
-                      inv-state?
-                      graph?)]))
+  [fsa->bitmap (-> any/c colorblind-opt? image?)]
+  [machine->bitmap (-> machine?
+                       colorblind-opt?
+                       (or/c dfa/ndfa-rule? pda/tm-rule? boolean?)
+                       (or/c symbol? boolean?)
+                       inv-state?
+                       image?)]))
 
 (define (make-color-palette opt)
   (match opt
@@ -52,6 +54,14 @@
   (fsa-adapter->graph adapter))
 
 
+;; fsa->graph :: fsa -> image
+;; converts the fsa to a image
+(define (fsa->bitmap fsa color-blind-mode)
+  (graph->bitmap (fsa->graph fsa color-blind-mode)
+                 (current-directory)
+                 "vizTool"))
+
+
 ;; machine->graph :: machine -> symbol -> symbol -> symbol -> graph
 ;; converts the machine to a graphviz graph
 (define (machine->graph machine color-blind-mode cur-rule cur-state inv-state)
@@ -70,3 +80,15 @@
                    inv-state
                    (make-color-palette color-blind-mode)))
   (fsa-adapter->graph adapter))
+
+;; machine->graph :: machine -> symbol -> symbol -> symbol -> image
+;; coverts the machine to a image
+(define (machine->bitmap machine color-blind-mode cur-rule cur-state inv-state)
+  (graph->bitmap (machine->graph
+                  machine
+                  color-blind-mode
+                  cur-rule
+                  cur-state
+                  inv-state)
+                 (current-directory)
+                 "vizTool"))

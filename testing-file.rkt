@@ -2,6 +2,26 @@
 
 (require "main.rkt")
 
+(define a-aUb*
+  (make-ndfa '(S F)     ;; the states
+             '(a b)     ;; the input alphabet
+             'S         ;; the staring state
+             '(F)       ;; the set of final states
+             '((S a F)  ;; the transition functions
+               (F a F))
+             'nodead))
+
+
+(define (SS-INV ci) (empty? ci))
+
+(define (FF-INV ci)
+  (define ans (and (not (empty? ci))
+       (eq? (first ci) 'a)
+       (andmap (λ (s) (or (eq? s 'a) (eq? s 'b)))
+               (rest ci))))
+  ans)
+(sm-visualize  a-aUb* (list 'S SS-INV) (list 'F FF-INV))
+
 ;;---- DFA ----
 (define a*
   (make-dfa '(S F)     ;; the states

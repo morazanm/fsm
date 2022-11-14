@@ -6,6 +6,7 @@
 
 (provide
  stringify-value
+ image?
  (contract-out
   (struct formatters ((graph (hash/c symbol? (-> any/c string?)))
                       (node (hash/c symbol? (-> any/c string?)))
