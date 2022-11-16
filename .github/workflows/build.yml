@@ -31,4 +31,4 @@ jobs:
           version: ${{ matrix.racket-version }} # Taken from `racket-version: ["stable"]`
 
       - name: Build Library
-        run: xvfb-run raco pkg install https://github.com/morazanm/fsm.git
+        run: xvfb-run raco pkg install

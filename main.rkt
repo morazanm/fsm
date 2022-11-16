@@ -4,7 +4,11 @@
 
 (module main racket
 
-  (require rackunit "fsm-main.rkt" "./FSM-Visualization/visualize.rkt" "GraphViz/interface.rkt")
+  (require rackunit
+           "fsm-core/interface.rkt"
+           "fsm-gviz/interface.rkt"
+           "fsm-gui/visualize.rkt"
+           )
   
   (provide
    (all-from-out racket)
