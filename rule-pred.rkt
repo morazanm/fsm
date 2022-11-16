@@ -1,6 +1,5 @@
 (module temp-rulepreds racket
   (require "constants.rkt" "misc.rkt")
-  (require test-engine/racket-tests)
   (provide  check-rgrule check-cfgrule check-csgrule
             check-dfarule check-ndfarule check-pda-rules check-tmrules
             ;check-pdarule check-tmrule

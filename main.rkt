@@ -4,10 +4,11 @@
 
 (module main racket
 
-  (require "fsm-main.rkt" "./FSM-Visualization/visualize.rkt" "GraphViz/interface.rkt")
+  (require rackunit "fsm-main.rkt" "./FSM-Visualization/visualize.rkt" "GraphViz/interface.rkt")
   
   (provide
    (all-from-out racket)
+   (all-from-out rackunit)
    check-machine
    empties
 
@@ -64,9 +65,6 @@
 
    ; constants
    EMP DEAD RIGHT LEFT LM BLANK BRANCH GOTO ARROW VAR
-
-   ; transducers
-   make-dfst
 
    ; visualization
    sm-visualize

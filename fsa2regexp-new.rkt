@@ -1,6 +1,6 @@
 #lang racket
 
-(require "main.rkt" test-engine/racket-tests)
+(require "main.rkt")
 
 ; L(KLEENESTAR-abUaba) = (abUaba)*
 ;; does not require new start and final states
@@ -224,19 +224,17 @@
 ;    
 ;    (printable-regexp (simplify-regexp (second (first final-graph))))))
 
-(check-expect (fsa->regexp KLEENESTAR-abUaba)
+(check-equal? (fsa->regexp KLEENESTAR-abUaba)
               "(aba(aba)* U (ε U (a U aba(aba)*a)b((a U aba(aba)*a)b)*(ε U aba(aba)*)))")
 
-(check-expect (fsa->regexp KLEENESTAR-abUaba2)
+(check-equal? (fsa->regexp KLEENESTAR-abUaba2)
               "(aba(aba)* U (ε U (a U aba(aba)*a)b((a U aba(aba)*a)b)*(ε U aba(aba)*)))")
 
-(check-expect (fsa->regexp a*)
+(check-equal? (fsa->regexp a*)
               "a*")
 
-(check-expect (fsa->regexp a*b*)
+(check-equal? (fsa->regexp a*b*)
               "a*b*")
 
-(check-expect (fsa->regexp aab*)
+(check-equal? (fsa->regexp aab*)
               "(ε U aa(baa)*b)")
-
-(test)

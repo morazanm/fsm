@@ -1,6 +1,6 @@
 
 (module mttm racket
-  (require "constants.rkt" "misc.rkt" "word.rkt" test-engine/racket-tests)
+  (require "constants.rkt" "misc.rkt" "word.rkt")
   (provide make-mttm
            mttm-get-states
            mttm-get-sigma

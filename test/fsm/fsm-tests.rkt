@@ -1,6 +1,6 @@
 #lang racket
 
-(require "../../main.rkt" test-engine/racket-tests)
+(require "../../main.rkt")
 
 
 

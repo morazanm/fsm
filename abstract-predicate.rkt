@@ -2,8 +2,7 @@
   (require "rule-pred.rkt" "constants.rkt"
            "sm-getters.rkt" "fsa.rkt" "tm.rkt" "pda.rkt"
            "grammar-getters.rkt"
-           ) 
-  (require test-engine/racket-tests)
+           )
   (provide check-machine check-grammar) 
 
   ;check-types: three different things that need to be checked and can be anything and a name --> listof strings

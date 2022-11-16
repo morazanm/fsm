@@ -5,7 +5,7 @@
 #lang racket
 
 (require "fsa.rkt" "cfg.rkt"  "pda.rkt" 
-         "regular-grammar.rkt" "csg.rkt" "tm.rkt" "transducer.rkt"
+         "regular-grammar.rkt" "csg.rkt" "tm.rkt" 
          "regexp.rkt" "constants.rkt" "word.rkt" "misc.rkt"
          "state.rkt" "sm-getters.rkt" "grammar-getters.rkt" 
          "regexp-predicate.rkt" "abstract-predicate.rkt"
@@ -69,10 +69,7 @@
  los->symbol symbol->list generate-symbol symbol->fsmlos symbol-upcase
 
  ; constants
- EMP DEAD RIGHT LEFT LM BLANK BRANCH GOTO ARROW VAR
- 
- ; transducers
- make-dfst)
+ EMP DEAD RIGHT LEFT LM BLANK BRANCH GOTO ARROW VAR)
 ; Primitive constructors imported from other modules
   
 ; (listof state) fsm --> fsm
