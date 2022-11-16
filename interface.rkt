@@ -1,13 +1,11 @@
 ; FSM Library Version 1.0
 ; Copyright (C) 2015 by Marco T. Morazan
 ; Written by: Marco T. Morazan, 2015
-
-(module main racket
+(module fsm racket
 
   (require "fsm-main.rkt" "./FSM-Visualization/visualize.rkt" "GraphViz/interface.rkt")
-  
+
   (provide
-   (all-from-out racket)
    check-machine
    empties
 
