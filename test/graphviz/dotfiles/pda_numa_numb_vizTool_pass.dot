@@ -1,9 +1,0 @@
-digraph G {
-    rankdir="LR";
-    F [color="black", shape="doublecircle", label="F"];
-    M [color="black", shape="circle", label="M"];
-    S [color="forestgreen", shape="circle", style="filled", label="S", fillcolor="#00ab037F"];
-    M -> M [fontsize=15, label="[b (a) ε],\n[a (b) ε],\n[b ε (b)],\n[a ε (a)]"];
-    M -> F [fontsize=15, label="[ε ε ε]"];
-    S -> M [fontsize=15, color="#215dde", label="[ε ε ε]"];
-}
