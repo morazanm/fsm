@@ -106,5 +106,5 @@
 
   (check-eq-snapshot-graph
    (machine->graph (fsa->machine a^nb^nc^n) 0 '((E @) (E R)) 'E 'pass)
-   "a_nb_nc_n_vizTool")
+   "a_nb_nc_n_viztool")
   ); end module+ test
