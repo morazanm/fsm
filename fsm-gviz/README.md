@@ -15,23 +15,15 @@ sudo port install graphviz
 ```
 
 ## Linux 
-#### Debian:
+#### Debian Based Systems:
 ```bash
 sudo apt install graphviz
 ```
-#### Ubuntu:
-```bash
-sudo apt install graphviz
-```
-#### Fedora:
+#### Fedora/ReaHat/CentOS:
 ```bash
 sudo yum install graphviz
 ```
-#### Redhat Enterprise and CentOs
-```bash
-sudo yum install graphviz
-```
-#### Arch
+#### Arch Base Systems
 ```bash
 pacman -S graphviz
 ```
