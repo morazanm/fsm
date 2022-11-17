@@ -7,12 +7,12 @@
   (require rackunit
            "fsm-core/interface.rkt"
            "fsm-gviz/interface.rkt"
-           "fsm-gui/visualize.rkt"
-           )
+           "fsm-gui/interface.rkt")
   
   (provide
    (all-from-out racket)
    (all-from-out rackunit)
+   (all-from-out "fsm-gui/interface.rkt")
    check-machine
    empties
 
@@ -68,17 +68,10 @@
    los->symbol symbol->list generate-symbol symbol->fsmlos symbol-upcase
 
    ; constants
-   EMP DEAD RIGHT LEFT LM BLANK BRANCH GOTO ARROW VAR
-
-   ; visualization
-   sm-visualize
-   sm-marco)
+   EMP DEAD RIGHT LEFT LM BLANK BRANCH GOTO ARROW VAR)
 
   (define (sm-graph fsa #:color [color-blind-mode 0])
     (fsa->bitmap fsa color-blind-mode))
-    
-  (define sm-visualize visualize)
-  (define sm-marco marco)
 
  
   ) ; close module
