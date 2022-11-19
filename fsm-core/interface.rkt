@@ -184,7 +184,7 @@
                (eq? t1 'ndfa))
            (apply-fsa M w)]
           [(eq? t1 'pda) (apply-pda M w)]
-          [(or (eq? t1 'tm) (eq? t1 'tm-language-recognizer)) (tm-apply M w head)]
+          [(or (eq? t1 'tm) (eq? t1 'tm-language-recognizer)) (tm-apply M (if (null? w) (list BLANK) w) head)]
           [(or (eq? t1 'mttm) (eq? t1 'mttm-language-recognizer)) (mttm-apply M w head)]
           [else (error "Incorrect input to apply-fsm")])))
   
