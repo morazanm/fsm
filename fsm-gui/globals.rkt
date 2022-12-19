@@ -153,7 +153,6 @@ Created by Joshua Schappel on 12/19/19
   (set! TM-ORIGIONAL-TAPE tape))
 
 (define (set-tm-og-tape-posn posn)
-  (println posn)
   (set! TM-ORIGIONAL-TAPE-POSN posn))
 
 (define (set-init-index-bottom value)
