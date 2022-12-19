@@ -1,11 +1,18 @@
+; FSM Library Version 1.0
+; Copyright (C) 2015 by Marco T. Morazan
+; Written by: Marco T. Morazan, 2015
 
+(module main racket
 
-
-(module fsm racket
-
-  (require "fsm-main.rkt" "./FSM-Visualization/visualize.rkt" "./GraphViz/render-graph.rkt")
-
+  (require rackunit
+           "fsm-core/interface.rkt"
+           "fsm-gviz/interface.rkt"
+           "fsm-gui/interface.rkt")
+  
   (provide
+   (all-from-out racket)
+   (all-from-out rackunit)
+   (all-from-out "fsm-gui/interface.rkt")
    check-machine
    empties
 
@@ -61,16 +68,10 @@
    los->symbol symbol->list generate-symbol symbol->fsmlos symbol-upcase
 
    ; constants
-   EMP DEAD RIGHT LEFT LM BLANK BRANCH GOTO ARROW VAR
+   EMP DEAD RIGHT LEFT LM BLANK BRANCH GOTO ARROW VAR)
 
-   ; transducers
-   make-dfst
+  (define (sm-graph fsa #:color [color-blind-mode 0])
+    (fsa->bitmap fsa color-blind-mode))
 
-   ; visualization
-   sm-visualize
-   sm-marco)
-
-  (define sm-visualize visualize)
-  (define sm-marco marco)
-
+ 
   ) ; close module
