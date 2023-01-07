@@ -380,9 +380,9 @@
   
   
   ; ctmd alphabet --> ctm
-  (define (combine-tms inputctm sigma)
+  (define (combine-tms inputctm sigma-input)
 
-    (define sigma (cons LM sigma))
+    (define sigma (cons LM sigma-input))
     
     ; symbol --> tm
     (define (make-writer a)
