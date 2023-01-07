@@ -33,10 +33,10 @@
               (F b F))
             'nodead))
 
-;;(sm-visualize a* (list 'S (lambda (v) true))
-;;            (list 'F (lambda (v) false)))
+(sm-visualize a* (list 'S (lambda (v) true))
+            (list 'F (lambda (v) false)))
 
-(define pda-numa=numb (make-ndpda '(S M F)
+#;(define pda-numa=numb (make-ndpda '(S M F)
                                   '(a b)
                                   '(a b)
                                   'S
@@ -570,5 +570,5 @@
                 ((M1 b (a)) (M1 ,EMP))
                 ((M1 ,EMP ,EMP) (F ,EMP)))))
 
-(sm-visualize a*)
+;(sm-visualize a*)
 

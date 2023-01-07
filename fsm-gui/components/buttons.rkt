@@ -5,12 +5,13 @@ Created by Joshua Schappel on 12/19/19
   This file contains all the buttons for the visualization tool
 |#
 
-(require 2htdp/image
-         "../structs/button.rkt"
-         "../globals.rkt"
-         "buttonFunctions.rkt"
-         "./runProgram.rkt"
-         "../genCode.rkt")
+(require
+  2htdp/image
+  "buttonFunctions.rkt"
+  "./runProgram.rkt"
+  "../structs/button.rkt"
+  "../globals.rkt"
+  "../genCode.rkt")
 
 (provide
  BUTTON-LIST
@@ -120,7 +121,14 @@ Button Declarations
 (define BTN-TAPE-INPUT-TM (make-button 50 25 (posn (- WIDTH 50) (- (* 4 CONTROL-BOX-H) 25))
                                        #:text "Set"
                                        #:color CONTROLLER-BUTTON-COLOR
+                                       #:id 'tapePosn
                                        #:func (re-render-listener setTapePosn)))
+
+(define BTN-TAPE-INPUT-MTTM (make-button 50 25 (posn 55 240)
+                                         #:text "Set"
+                                         #:color CONTROLLER-BUTTON-COLOR
+                                         #:id 'tapePosn
+                                         #:func setTapePosn))
 
 (define BTN-ADD-RULES (make-button 70 25 (posn (- WIDTH 150) (- (* 5 CONTROL-BOX-H) 25))
                                    #:text "Add"
@@ -257,28 +265,50 @@ Button Declarations
                                     #:fntsize 33
                                     #:func stackScrollDown))
 
-
 (define BTM-TAPE-SCROLL-UP-MTTM (make-button (- WIDTH 160) 25
-                                               (posn
-                                                (+ 25 (+ 100 (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2)))
-                                                13)
-                                               #:text "🠉"
-                                               #:color STACK-SCROLL-BUTTON-COLOR
-                                               #:fntsize 33
-                                               #:hidden #t
-                                               #:id 'mttm-up
-                                               #:func (lambda (v) v)))
-
-(define BTM-TAPE-SCROLL-DOWN-MTTM (make-button (- WIDTH 160) 25
                                              (posn
                                               (+ 25 (+ 100 (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2)))
-                                              (- HEIGHT 87))
-                                             #:text "🠋"
+                                              13)
+                                             #:text "🠉"
                                              #:color STACK-SCROLL-BUTTON-COLOR
                                              #:fntsize 33
-                                              #:id 'mttm-down
                                              #:hidden #t
-                                             #:func (lambda (v) v)))
+                                             #:id 'mttm-up
+                                             #:func tapeViewScrollUp))
+
+(define BTM-TAPE-SCROLL-DOWN-MTTM (make-button (- WIDTH 160) 25
+                                               (posn
+                                                (+ 25 (+ 100 (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2)))
+                                                (- HEIGHT 87))
+                                               #:text "🠋"
+                                               #:color STACK-SCROLL-BUTTON-COLOR
+                                               #:fntsize 33
+                                               #:id 'mttm-down
+                                               #:hidden #t
+                                               #:func tapeViewScrollDown))
+
+
+(define BTM-TAPE-SCROLL-LEFT-MTTM (make-button 20 200
+                                               (posn
+                                                (- WIDTH 1030)
+                                                (/ (- HEIGHT BOTTOM) 2))
+                                               #:text "🠈"
+                                               #:color STACK-SCROLL-BUTTON-COLOR
+                                               #:fntsize 33
+                                               #:id 'typeview-left
+                                               #:hidden #t
+                                               #:func tapeViewScrollLeft))
+
+(define BTM-TAPE-SCROLL-RIGHT-MTTM (make-button 20 200
+                                                (posn
+                                                 (- WIDTH 10)
+                                                 (/ (- HEIGHT BOTTOM) 2))
+                                                #:text "🠊"
+                                                #:color STACK-SCROLL-BUTTON-COLOR
+                                                #:fntsize 33
+                                                #:id 'typeview-right
+                                                #:hidden #t
+                                                #:func tapeViewScrollRight))
 
 (define BTN-SIGMA-ADD (make-button 40 25 (posn 30 70)
                                    #:text "ADD"
@@ -393,7 +423,7 @@ Button Declarations
                                    BTN-TAPE-INPUT-TM
                                    BTN-SET-END-LANG-REC))
 
-(define BUTTON-LIST-MTTM (list BTN-GENCODE
+(define BUTTON-LIST-MTTM (list BTN-TAPE-INPUT-MTTM
                                BTN-NEXT
                                BTN-PREV
                                BTN-SIGMA-ADD
@@ -401,6 +431,7 @@ Button Declarations
                                BTN-RUN
                                BTN-HELP-MTTM
                                BTN-COLOR-BLIND-MTTM
-                               BTN-DISPLAY-MTTM-TAPES
                                BTM-TAPE-SCROLL-DOWN-MTTM
-                               BTM-TAPE-SCROLL-UP-MTTM))
+                               BTM-TAPE-SCROLL-UP-MTTM
+                               BTM-TAPE-SCROLL-LEFT-MTTM
+                               BTM-TAPE-SCROLL-RIGHT-MTTM))

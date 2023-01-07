@@ -3,7 +3,6 @@
 ;; ------- machine.rkt -------
 ;; This file contains the structure for a fsm machine (dfa, ndfa, pda, ...) 
 ;; Written by: Joshua Schappel 8/15/2019
-;; Last updated: 3/3/20 by Josh
 
 
 ;; export necessary files
@@ -13,6 +12,7 @@
  (struct-out tm-machine)
  (struct-out mttm-machine)
  (struct-out lang-rec-machine)
+ (struct-out mttm-lang-rec-machine)
  update-tm-machine
  update-mttm-machine
  update-lang-rec-machine
@@ -41,21 +41,25 @@
 ;; - stack-alpha-list { list-of-symbols }: TODO: discription
 (struct pda-machine machine ([stack-alpha-list #:mutable]) #:transparent)
 
-
 ;; tm-machine: A structure that is a subtype of machine
 ;; - tape-posn { Number } the current location on the tape
 (struct tm-machine machine ([tape-posn #:mutable]) #:transparent)
 
 ;; mttm-machine: A structure that is a subtype of machine
+;; - num-tapes { list-of-numbers } the number of tapes that the machine has
+;; - start-tape-posn { number } the starting location on the tape
 ;; - tape-posn-list { list-of-numbers } the current locations on the tapes
-(struct mttm-machine machine ([tape-posn-list #:mutable]) #:transparent)
+(struct mttm-machine machine (num-tapes [start-tape-posn #:mutable] [tape-posn-list #:mutable]) #:transparent)
 
+;; mttm-lang-rec-machine  A structure that is a subtype of mttm-machine. The one difference
+;;  is that it has an accept state
+;; - accept-state { Symbol } The user-defined accepting state of the machine
+(struct mttm-lang-rec-machine mttm-machine ([accept-state #:mutable]) #:transparent)
 
 ;; lang-rec-machine: A structure that is a subtype of tm-machine. The one difference
 ;;  is that it has an accept state
 ;; - accept-state { Symbol } The user-defined accepting state of the machine
 (struct lang-rec-machine tm-machine ([accept-state #:mutable]) #:transparent)
-
 
 ;; update-tm-machine-tape-posn: tm-machine int list-of-symbols -> tm-machine
 ;; Purpose: Builds a new tm machine with the updated tape posn
@@ -78,13 +82,14 @@
     (match tuples
       [`() #f]
       [`((,i ,v) ,r ...) (if (eq? i target) v (has-tuple-value target r))]))
-  (tm-machine (machine-state-list m)
+  (mttm-machine (machine-state-list m)
               (machine-start-state m)
               (machine-final-state-list m)
               (machine-rule-list m)
               new-sigma
               (machine-alpha-list m)
               (machine-type m)
+              (mttm-machine-num-tapes m)
               (for/list ([cur-val (mttm-machine-tape-posn-list m)]
                          [i (in-naturals)])
                 (define new-val (has-tuple-value i tuples))

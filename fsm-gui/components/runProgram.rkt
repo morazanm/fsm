@@ -44,129 +44,161 @@ Created by Joshua Schappel on 12/19/19
 (define (construct-world state-list fsm-machine w)
   (cond
     [(isValidMachine? state-list fsm-machine)
-     (letrec (
-              ;; Build a passing machine
-              (m (case (machine-type fsm-machine)
-                   ['dfa (if (member 'ds state-list)
-                             (make-unchecked-dfa state-list
+     (with-handlers
+         ([exn:fail? (lambda (e)
+                       (redraw-world-with-msg w (exn-message e) "Error" MSG-ERROR))])
+       (letrec (
+                ;; Build a passing machine
+                (m (case (machine-type fsm-machine)
+                     ['dfa (if (member 'ds state-list)
+                               (make-unchecked-dfa state-list
+                                                   (machine-alpha-list (world-fsm-machine w))
+                                                   (machine-start-state (world-fsm-machine w))
+                                                   (machine-final-state-list (world-fsm-machine w))
+                                                   (machine-rule-list (world-fsm-machine w)))
+                               (make-unchecked-dfa state-list
+                                                   (machine-alpha-list (world-fsm-machine w))
+                                                   (machine-start-state (world-fsm-machine w))
+                                                   (machine-final-state-list (world-fsm-machine w))
+                                                   (machine-rule-list (world-fsm-machine w))
+                                                   'nodead))]
+                     ['ndfa (make-unchecked-ndfa state-list
                                                  (machine-alpha-list (world-fsm-machine w))
                                                  (machine-start-state (world-fsm-machine w))
                                                  (machine-final-state-list (world-fsm-machine w))
-                                                 (machine-rule-list (world-fsm-machine w)))
-                             (make-unchecked-dfa state-list
+                                                 (machine-rule-list (world-fsm-machine w)))]
+                     ['pda (make-unchecked-ndpda state-list
                                                  (machine-alpha-list (world-fsm-machine w))
+                                                 (pda-machine-stack-alpha-list (world-fsm-machine w))
                                                  (machine-start-state (world-fsm-machine w))
                                                  (machine-final-state-list (world-fsm-machine w))
-                                                 (machine-rule-list (world-fsm-machine w))
-                                                 'nodead))]
-                   ['ndfa (make-unchecked-ndfa state-list
-                                               (machine-alpha-list (world-fsm-machine w))
-                                               (machine-start-state (world-fsm-machine w))
-                                               (machine-final-state-list (world-fsm-machine w))
-                                               (machine-rule-list (world-fsm-machine w)))]
-                   ['pda (make-unchecked-ndpda state-list
-                                               (machine-alpha-list (world-fsm-machine w))
-                                               (pda-machine-stack-alpha-list (world-fsm-machine w))
-                                               (machine-start-state (world-fsm-machine w))
-                                               (machine-final-state-list (world-fsm-machine w))
-                                               (machine-rule-list (world-fsm-machine w)))]
-                   ['tm
-                    (make-unchecked-tm state-list
-                                       (machine-alpha-list (world-fsm-machine w))
-                                       (machine-rule-list (world-fsm-machine w))
-                                       (machine-start-state (world-fsm-machine w))
-                                       (machine-final-state-list (world-fsm-machine w)))]
-                   [else (make-unchecked-tm state-list
-                                            (machine-alpha-list (world-fsm-machine w))
-                                            (machine-rule-list (world-fsm-machine w))
-                                            (machine-start-state (world-fsm-machine w))
-                                            (machine-final-state-list (world-fsm-machine w))
-                                            (lang-rec-machine-accept-state (world-fsm-machine w)))]))
+                                                 (machine-rule-list (world-fsm-machine w)))]
+                     ['tm
+                      (make-unchecked-tm state-list
+                                         (machine-alpha-list (world-fsm-machine w))
+                                         (machine-rule-list (world-fsm-machine w))
+                                         (machine-start-state (world-fsm-machine w))
+                                         (machine-final-state-list (world-fsm-machine w)))]
+                     ['mttm-language-recognizer
+                      (make-mttm state-list
+                                 (machine-alpha-list (world-fsm-machine w))
+                                 (machine-start-state (world-fsm-machine w))
+                                 (machine-final-state-list (world-fsm-machine w))
+                                 (machine-rule-list (world-fsm-machine w))
+                                 (mttm-machine-num-tapes (world-fsm-machine w))
+                                 (mttm-lang-rec-machine-accept-state (world-fsm-machine w)))]
+                     ['mttm
+                      (make-mttm state-list
+                                 (machine-alpha-list (world-fsm-machine w))
+                                 (machine-start-state (world-fsm-machine w))
+                                 (machine-final-state-list (world-fsm-machine w))
+                                 (machine-rule-list (world-fsm-machine w))
+                                 (mttm-machine-num-tapes (world-fsm-machine w)))]
+                   
+                     [else (make-unchecked-tm state-list
+                                              (machine-alpha-list (world-fsm-machine w))
+                                              (machine-rule-list (world-fsm-machine w))
+                                              (machine-start-state (world-fsm-machine w))
+                                              (machine-final-state-list (world-fsm-machine w))
+                                              (lang-rec-machine-accept-state (world-fsm-machine w)))]))
 
-              ;; Unprocessed transitions
-              (unprocessed-list (case MACHINE-TYPE
-                                  [(tm)
-                                   (let* ((sig-list TM-ORIGIONAL-TAPE)
-                                          (proper-list (cond
-                                                         [(empty? sig-list) #f]
-                                                         [(equal? LM (car sig-list))
-                                                          TM-ORIGIONAL-TAPE]
-                                                         [else
-                                                          (cons LM TM-ORIGIONAL-TAPE)]))
-                                          (trans (sm-showtransitions m
-                                                                     (if proper-list
-                                                                         proper-list
-                                                                         '('()'()))
-                                                                     (tm-machine-tape-posn (world-fsm-machine w)))))
-                                     (if (string? trans)
-                                         (list trans)
-                                         (append trans '(halt))))]
-                                  [(tm-language-recognizer)
-                                   (let* ((sig-list TM-ORIGIONAL-TAPE)
-                                          (proper-list (cond
-                                                         [(empty? sig-list) #f]
-                                                         [(equal? LM (car sig-list))
-                                                          TM-ORIGIONAL-TAPE]
-                                                         [else
-                                                          (cons LM TM-ORIGIONAL-TAPE)]))
-                                          (trans (sm-showtransitions m
-                                                                     (if proper-list
-                                                                         proper-list
-                                                                         '('()'()))
-                                                                     (tm-machine-tape-posn (world-fsm-machine w)))))
-                                     (if (string? trans)
-                                         (list trans)
-                                         trans))]
-                                  ;; dfa, ndfa, pda
-                                  [else
-                                   ;(display "Machine Type is: ") (displayln (machine-type fsm-machine))
-
-                                   ;(displayln "Alpha:")(pretty-print (machine-alpha-list (world-fsm-machine w)))
-                                   ;(displayln "Stack Alpha:")(pretty-print (pda-machine-stack-alpha-list (world-fsm-machine w)))
-                                   ;(displayln "Start")(pretty-print (machine-start-state (world-fsm-machine w)))
-                                   ;(displayln "Final")(pretty-print (machine-final-state-list (world-fsm-machine w)))
-                                   ;(displayln "Rules ")(pretty-print (machine-rule-list (world-fsm-machine w)))
-
-
-                                   
-                                   ;(display "Input is: ") (displayln (machine-sigma-list (world-fsm-machine w)))
-                                   #;(pretty-print (sm-showtransitions m
-                                                                       (machine-sigma-list (world-fsm-machine w))))
-                                   (sm-showtransitions m
-                                                       (machine-sigma-list (world-fsm-machine w)))]))
-
-              )
+                ;; Unprocessed transitions
+                (unprocessed-list (case MACHINE-TYPE
+                                    [(tm)
+                                     (let* ((sig-list TM-ORIGIONAL-TAPE)
+                                            (proper-list (cond
+                                                           [(empty? sig-list) #f]
+                                                           [(equal? LM (car sig-list))
+                                                            TM-ORIGIONAL-TAPE]
+                                                           [else
+                                                            (cons LM TM-ORIGIONAL-TAPE)]))
+                                            (trans (sm-showtransitions m
+                                                                       (if proper-list
+                                                                           proper-list
+                                                                           '('()'()))
+                                                                       (tm-machine-tape-posn (world-fsm-machine w)))))
+                                       (if (string? trans)
+                                           (list trans)
+                                           (append trans '(halt))))]
+                                    [(tm-language-recognizer)
+                                     (let* ((sig-list TM-ORIGIONAL-TAPE)
+                                            (proper-list (cond
+                                                           [(empty? sig-list) #f]
+                                                           [(equal? LM (car sig-list))
+                                                            TM-ORIGIONAL-TAPE]
+                                                           [else
+                                                            (cons LM TM-ORIGIONAL-TAPE)]))
+                                            (trans (sm-showtransitions m
+                                                                       (if proper-list
+                                                                           proper-list
+                                                                           '('()'()))
+                                                                       (tm-machine-tape-posn (world-fsm-machine w)))))
+                                       (if (string? trans)
+                                           (list trans)
+                                           trans))]
+                                    [(mttm)
+                                     (let* ((sig-list TM-ORIGIONAL-TAPE)
+                                            (proper-list (cond
+                                                           [(empty? sig-list) #f]
+                                                           [(equal? LM (car sig-list))
+                                                            TM-ORIGIONAL-TAPE]
+                                                           [else
+                                                            (cons LM TM-ORIGIONAL-TAPE)]))
+                                            (trans (sm-showtransitions m
+                                                                       (if proper-list proper-list '())
+                                                                       (mttm-machine-start-tape-posn (world-fsm-machine w)))))
+                                       (if (string? trans)
+                                           (list trans)
+                                           (append trans '(halt))))]
+                                    [(mttm-language-recognizer)
+                                     (let* ((sig-list TM-ORIGIONAL-TAPE)
+                                            (proper-list (cond
+                                                           [(empty? sig-list) #f]
+                                                           [(equal? LM (car sig-list))
+                                                            TM-ORIGIONAL-TAPE]
+                                                           [else
+                                                            (cons LM TM-ORIGIONAL-TAPE)]))
+                                            (trans (sm-showtransitions m
+                                                                       (if proper-list proper-list '())
+                                                                       (mttm-machine-start-tape-posn (world-fsm-machine w)))))
+                                       (if (string? trans)
+                                           (list trans)
+                                           trans))]
+                                    ;; dfa, ndfa, pda below
+                                    [else
+                                     (sm-showtransitions m
+                                                         (machine-sigma-list (world-fsm-machine w)))])))
                            
-       ;; Set up the world to have all the valid machine components below                 
-       (begin
-         (define new-list (remove-duplicates (append (sm-states m) state-list))) ;; new-list: checks for any fsm state add-ons (ie. 'ds)
-         ;; check for the ds edge case where 'nodead is used but the ds is included in the transitions
-         (if (and
-              (not (member 'ds (sm-states m)))
-              (member 'ds (flatten unprocessed-list)))
-             (redraw-world-with-msg w "Dead state and dead state rules missing in the machine's set of rules." "Error" MSG-ERROR)
-             (world
-              (constructWorldMachine new-list fsm-machine m)
-              (world-tape-position w)
-              CURRENT-RULE
-              (machine-start-state (world-fsm-machine w))
-              (world-button-list w)
-              (world-input-list w)    
-              (if (list? unprocessed-list)
-                  (list (car unprocessed-list))
-                  '())
+         ;; Set up the world to have all the valid machine components below                 
+         (begin
+           (define new-list (remove-duplicates (append (sm-states m) state-list))) ;; new-list: checks for any fsm state add-ons (ie. 'ds)
+           ;; check for the ds edge case where 'nodead is used but the ds is included in the transitions
+           (if (and
+                (not (member 'ds (sm-states m)))
+                (member 'ds (flatten unprocessed-list)))
+               (redraw-world-with-msg w "Dead state and dead state rules missing in the machine's set of rules." "Error" MSG-ERROR)
+               (world
+                (constructWorldMachine new-list fsm-machine m)
+                (world-tape-position w)
+                CURRENT-RULE
+                (machine-start-state (world-fsm-machine w))
+                (world-button-list w)
+                (world-input-list w)    
+                (if (list? unprocessed-list)
+                    (list (car unprocessed-list))
+                    '())
                                     
-              (if (list? unprocessed-list)
-                  (cdr unprocessed-list)
-                  '())
+                (if (list? unprocessed-list)
+                    (cdr unprocessed-list)
+                    '())
                                     
-              (if (list? unprocessed-list)
-                  (msgWindow "The machine was sucessfully built. Press Next and Prev to show the machine's transitions" "Success"
-                             (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)
-                  (msgWindow "The Input was rejected" "Warning"
-                             (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-CAUTION))
-              0
-              (world-graphql-img w)))))]
+                (if (list? unprocessed-list)
+                    (msgWindow "The machine was successfully built. Press Next and Prev to show the machine's transitions" "Success"
+                               (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)
+                    (msgWindow "The Input was rejected" "Warning"
+                               (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-CAUTION))
+                0
+                (world-graphql-img w))))))]
     [else
      (redraw-world-with-msg w "The Machine failed to build. Please see the cmd for more info" "Error" MSG-ERROR)]))
 
@@ -213,6 +245,11 @@ Created by Joshua Schappel on 12/19/19
        (machine-rule-list fsm-machine)
        (machine-start-state fsm-machine)
        'tm))]
+    ;; mttm and mttm-language-recognizer do not work for check-machine.
+    ;; Since we restrict how much the user can edit these machines in the GUI
+    ;; we will assume the machine is valid when sm-visualize is called
+    [(mttm) #t]
+    [(mttm-language-recognizer) #t]
     [else
      (boolean?
       (check-machine
@@ -260,6 +297,31 @@ Created by Joshua Schappel on 12/19/19
       (sm-type newMachine)
       (tm-machine-tape-posn worldMachine)
       (sm-accept newMachine))]
+    [(mttm)
+     (mttm-machine
+      (addTrueFunctions state-list worldMachine)
+      (sm-start newMachine)
+      (sm-finals newMachine)
+      (sm-rules newMachine)
+      (decide-machine-input TM-ORIGIONAL-TAPE)
+      (sm-sigma newMachine)
+      (sm-type newMachine)
+      (mttm-machine-num-tapes worldMachine)
+      0
+      (mttm-machine-tape-posn-list worldMachine))]
+    [(mttm-language-recognizer)
+     (mttm-lang-rec-machine
+      (addTrueFunctions state-list worldMachine)
+      (sm-start newMachine)
+      (sm-finals newMachine)
+      (sm-rules newMachine)
+      (decide-machine-input TM-ORIGIONAL-TAPE)
+      (sm-sigma newMachine)
+      (sm-type newMachine)
+      (mttm-machine-num-tapes worldMachine)
+      0
+      (mttm-machine-tape-posn-list worldMachine)
+      (mttm-lang-rec-machine-accept-state worldMachine))]
     [else
      (machine
       (addTrueFunctions state-list worldMachine)
@@ -299,7 +361,7 @@ Created by Joshua Schappel on 12/19/19
 
 
 ;; reset-bottom-indices: tm-machine world (optional) -> none
-;; Purpose: Resest the bottom indicies to there origional value
+;; Purpose: Reset the bottom indices to there original value
 (define (reset-bottom-indices type w)
   (cond
     [(or (equal? 'tm type) (equal? 'tm-language-recognizer type))
