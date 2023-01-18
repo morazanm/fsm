@@ -41,7 +41,11 @@ Initialize World
 ;; Purpose: Creates the initail world with the given machine
 (define (build-world m type . msg)
   (letrec (
-           (graphviz (system "dot -V"))
+           ;; graphviz is not supported for mttms
+           (graphviz (if (or (eq? 'mttm-language-recognizer MACHINE-TYPE)
+                             (eq? 'mttm MACHINE-TYPE))
+                         #f
+                         (system "dot -V")))
            (messageWin (if (null? msg) ;; Determine if a message should be rendered during on create
                            null
                            (car msg)))
@@ -53,6 +57,7 @@ Initialize World
                                      [(pda) INPUT-LIST-PDA]
                                      [(tm) INPUT-LIST-TM]
                                      [(tm-language-recognizer) INPUT-LIST-LANG-REC]
+                                     [(mttm-language-recognizer) INPUT-LIST-MTTM]
                                      [(mttm) INPUT-LIST-MTTM]
                                      [else INPUT-LIST])))
 
@@ -63,15 +68,20 @@ Initialize World
                                       [(pda) BUTTON-LIST-PDA]
                                       [(tm) BUTTON-LIST-TM]
                                       [(tm-language-recognizer) BUTTON-LIST-LANG-REC]
+                                      [(mttm-language-recognizer) BUTTON-LIST-MTTM]
                                       [(mttm) BUTTON-LIST-MTTM]
                                       [else BUTTON-LIST]))))
+    ;; mttm's have a smaller tape limit so we will change it if necessary
+    ;; mttm's only use the view mode! Nothing else!!!
+    (when (or (equal? type 'mttm-language-recognizer)
+              (equal? type 'mttm))
+      (set-view-mode 'tape)
+      (set-tape-render-limit 24))
 
     (initialize-world m
                       messageWin
                       (if graphviz
-                          (if (eq? MACHINE-TYPE 'mttm)
-                              (cons BTN-DISPLAY-MTTM (determine-button-list))
-                              (cons BTN-DISPLAY (determine-button-list)))
+                          (cons BTN-DISPLAY (determine-button-list))
                           (determine-button-list))
                       (determine-input-list))))
 
@@ -118,10 +128,8 @@ Cmd Functions
                  (set-machine-type 'tm)
                  (run-program (build-world (tm-machine '() null '() '() `(,LM) '() 'tm 0 ) 'tm))
                  (void))]
-         [(mttm) (begin
-                   (set-machine-type 'mttm)
-                   (run-program (build-world (mttm-machine '() null '() '() `(,LM) '() 'mttm '()) 'mttm))
-                   (void))]
+         [(mttm-language-recognizer) (error "The machine type \"mttm-language-recognizer\" is not allowed to be made from scratch. Please use one of the other sm-visualization options")]
+         [(mttm) (error "The machine type \"mttm\" is not allowed to be made from scratch. Please use one of the other sm-visualization options")]
          [(tm-language-recognizer) (begin
                                      (set-machine-type 'tm-language-recognizer)
                                      (run-program (build-world (lang-rec-machine '() null '() '() `(,LM) '() 'tm-language-recognizer 0 '||) 'tm-language-recognizer))
@@ -192,6 +200,46 @@ Cmd Functions
                   (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation."
                              "tm" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
                 (void))]
+         ['mttm (begin
+                  (set-machine-type 'mttm)
+                  (run-program
+                   (build-world
+                    (mttm-machine
+                     (map (lambda (x) (fsm-state x TM-TRUE-FUNCTION (posn 0 0))) (sm-states fsm-machine))
+                     (sm-start fsm-machine)
+                     (sm-finals fsm-machine)
+                     (reverse (sm-rules fsm-machine))
+                     `(,LM)
+                     (sm-sigma fsm-machine)
+                     (sm-type fsm-machine)
+                     (sm-numtapes fsm-machine)
+                     0
+                     '())
+                    'mttm-language-recognizer
+                    (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation."
+                               "tm" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
+                  (void))]
+
+         ['mttm-language-recognizer (begin
+                                      (set-machine-type 'mttm-language-recognizer)
+                                      (run-program
+                                       (build-world
+                                        (mttm-lang-rec-machine
+                                         (map (lambda (x) (fsm-state x TM-TRUE-FUNCTION (posn 0 0))) (sm-states fsm-machine))
+                                         (sm-start fsm-machine)
+                                         (sm-finals fsm-machine)
+                                         (reverse (sm-rules fsm-machine))
+                                         `(,LM)
+                                         (sm-sigma fsm-machine)
+                                         (sm-type fsm-machine)
+                                         (sm-numtapes fsm-machine)
+                                         0
+                                         '()
+                                         (sm-accept fsm-machine))
+                                        'mttm-language-recognizer
+                                        (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation."
+                                                   "tm" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
+                                      (void))]
          
          ['tm-language-recognizer (begin
                                     (set-machine-type 'tm-language-recognizer)
@@ -284,8 +332,55 @@ Cmd Functions
                                   0)
                       (sm-type fsm-machine)
                       (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "tm" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
-                    (void))
-                  )]
+                    (void)))]
+
+           ['mttm (begin
+                    (set-machine-type 'mttm)
+                    (run-program
+                     (build-world
+                      (mttm-machine
+                       (map (lambda (x)
+                              (let ((temp (get-member x args)))
+                                (if (empty? temp)
+                                    (fsm-state x MTTM-TRUE-FUNCTION (posn 0 0))
+                                    (fsm-state x (cadr temp) (posn 0 0))))) state-list)
+                       (sm-start fsm-machine)
+                       (sm-finals fsm-machine)
+                       (reverse (sm-rules fsm-machine))
+                       `(,LM)
+                       (sm-sigma fsm-machine)
+                       (sm-type fsm-machine)
+                       (sm-numtapes fsm-machine)
+                       0
+                       '())
+                      'mttm-language-recognizer
+                      (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation."
+                                 "tm" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
+                    (void))]
+
+           ['mttm-language-recognizer (begin
+                                        (set-machine-type 'mttm-language-recognizer)
+                                        (run-program
+                                         (build-world
+                                          (mttm-lang-rec-machine
+                                           (map (lambda (x)
+                                                  (let ((temp (get-member x args)))
+                                                    (if (empty? temp)
+                                                        (fsm-state x MTTM-TRUE-FUNCTION (posn 0 0))
+                                                        (fsm-state x (cadr temp) (posn 0 0))))) state-list)
+                                           (sm-start fsm-machine)
+                                           (sm-finals fsm-machine)
+                                           (reverse (sm-rules fsm-machine))
+                                           `(,LM)
+                                           (sm-sigma fsm-machine)
+                                           (sm-type fsm-machine)
+                                           (sm-numtapes fsm-machine)
+                                           0
+                                           '()
+                                           (sm-accept fsm-machine))
+                                          'mttm-language-recognizer
+                                          (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "tm" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
+                                        (void))]
 
            ['tm-language-recognizer (begin
                                       (begin
@@ -347,12 +442,12 @@ Scene Rendering
        (X0 (cond
              [(equal? MACHINE-TYPE 'pda)
               (/ (+ (/ WIDTH 11) (- WIDTH 300)) 2)]
-             [(equal? MACHINE-TYPE 'mttm)
+             [(or (equal? MACHINE-TYPE 'mttm-language-recognizer) (equal? MACHINE-TYPE 'mttm))
               (+ 100 (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2))]
              [else
               (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2)]))
        (Y0 (cond
-             [(eq? MACHINE-TYPE 'mttm)
+             [(or (equal? MACHINE-TYPE 'mttm-language-recognizer) (equal? MACHINE-TYPE 'mttm))
               (- (/ (+ TOP (- HEIGHT BOTTOM)) 2) 25)]
              [else
               (/ (+ TOP (- HEIGHT BOTTOM)) 2)]))
@@ -584,6 +679,8 @@ Scene Rendering
   (define (check-set-active-button btn)
     (if (and (eq? VIEW-MODE 'tape)
              (and (or (eq? (button-id btn) 'mttm-up)
+                      (eq? (button-id btn) 'typeview-right)
+                      (eq? (button-id btn) 'typeview-left)
                       (eq? (button-id btn) 'mttm-down))
                   (not (is-visiable? btn))))
         (set-button-visible! btn)
@@ -592,6 +689,8 @@ Scene Rendering
   (define (check-set-hidden-button btn)
     (if (and (not (eq? VIEW-MODE 'tape))
              (and (or (eq? (button-id btn) 'mttm-up)
+                      (eq? (button-id btn) 'typeview-right)
+                      (eq? (button-id btn) 'typeview-left)
                       (eq? (button-id btn) 'mttm-down))
                   (is-visiable? btn)))
         (set-button-hidden! btn)
@@ -642,68 +741,85 @@ Scene Rendering
           ;;draws the images with an arrow
           (with-arrow (place-image (determin-gui-draw) (- WIDTH 100) (/ HEIGHT 2)
                                    (place-image (create-gui-top (world-fsm-machine w) (world-cur-rule w)) (/ WIDTH 2) (/ TOP 2)
-                                                (place-image (create-gui-bottom (machine-rule-list (world-fsm-machine w)) (world-cur-rule w) (world-scroll-bar-index w)) (/ WIDTH 2) (- HEIGHT (/ BOTTOM 2))
+                                                (place-image (create-gui-bottom (machine-rule-list (world-fsm-machine w)) (world-cur-rule w) (world-scroll-bar-index w) (world-cur-state w) w) (/ WIDTH 2) (- HEIGHT (/ BOTTOM 2))
                                                              (draw-button-list (world-button-list w)
                                                                                (draw-input-list (world-input-list w)
                                                                                                 (place-image (case (machine-type machine)
                                                                                                                [(pda)
                                                                                                                 (create-gui-left
-                                                                                                                 (machine-alpha-list machine)
-                                                                                                                 (machine-type machine)
+                                                                                                                 machine
                                                                                                                  (pda-machine-stack-alpha-list (world-fsm-machine w)))]
                                                                                                                [else
-                                                                                                                (create-gui-left
-                                                                                                                 (machine-alpha-list machine)
-                                                                                                                 (machine-type machine))])
+                                                                                                                (create-gui-left machine)])
                                                                                                              (/ (/ WIDTH 11) 2)
                                                                                                              (/ (- HEIGHT BOTTOM) 2)
                                                                                                              MAIN-SCENE)))))))
           ;;draws the images without an arrow
           (no-arrow (place-image (determin-gui-draw) (- WIDTH 100) (/ HEIGHT 2)
                                  (place-image (create-gui-top (world-fsm-machine w) (world-cur-rule w)) (/ WIDTH 2) (/ TOP 2)
-                                              (place-image (create-gui-bottom (machine-rule-list (world-fsm-machine w)) (world-cur-rule w) (world-scroll-bar-index w)) (/ WIDTH 2) (- HEIGHT (/ BOTTOM 2))
+                                              (place-image (create-gui-bottom (machine-rule-list (world-fsm-machine w)) (world-cur-rule w) (world-scroll-bar-index w) (world-cur-state w) w) (/ WIDTH 2) (- HEIGHT (/ BOTTOM 2))
                                                            (draw-button-list (world-button-list w)
                                                                              (draw-input-list (world-input-list w)
                                                                                               (place-image (case (machine-type machine)
                                                                                                              [(pda)
                                                                                                               (create-gui-left
-                                                                                                               (machine-alpha-list machine)
-                                                                                                               (machine-type machine)
+                                                                                                               machine
                                                                                                                (pda-machine-stack-alpha-list (world-fsm-machine w)))]
                                                                                                              [else 
-                                                                                                              (create-gui-left
-                                                                                                               (machine-alpha-list machine)
-                                                                                                               (machine-type machine))])
+                                                                                                              (create-gui-left machine)])
                                                                                                            (/ (/ WIDTH 11) 2)
                                                                                                            (/ (- HEIGHT BOTTOM) 2)
                                                                                                            MAIN-SCENE))))))))
-    (cond
-      ;; grahpviz view
-      [(eq? VIEW-MODE 'graph)
-       (begin
-         (draw-error-msg (world-error-msg w)
-                         (place-image (world-graphql-img w) X0 Y0 no-arrow)))]
-      ;; mttm tape view
-      [(and (eq? VIEW-MODE 'tape)
-            (eq? 'mttm MACHINE-TYPE)) (define X (+ 100 (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2)))
-                                      (define Y (- (/ (+ TOP (- HEIGHT BOTTOM)) 2) 25))
-                                      (place-image
-                                       (construct-tape-view w X Y)
-                                       (+ 25 X)
-                                       (- Y 5)
-                                       with-arrow)]
-      ;; control view
-      [else
-       (if (not (null? (world-cur-state w)))
-           (draw-error-msg (world-error-msg w)(draw-main-img w no-arrow))                                                                                                                   
-           (draw-error-msg (world-error-msg w) (draw-main-img w with-arrow)))])))
+    (draw-error-msg
+     (world-error-msg w)
+     (cond
+       ;; --------------
+       ;; grahpviz view
+       ;; --------------
+       [(eq? VIEW-MODE 'graph)
+        (place-image (world-graphql-img w) X0 Y0  no-arrow)]
+       ;; --------------
+       ;; mttm tape view
+       ;; --------------
+       [(and (eq? VIEW-MODE 'tape)
+             (or (eq? 'mttm-language-recognizer MACHINE-TYPE)
+                 (eq? 'mttm MACHINE-TYPE)))
+        (define X (+ 100 (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2)))
+        (define Y (- (/ (+ TOP (- HEIGHT BOTTOM)) 2) 25))
+        (place-image
+         (construct-tape-view w X Y)
+         (+ 25 X)
+         (- Y 5)
+         with-arrow)]
+       ;; --------------
+       ;; control view
+       ;; --------------
+       [else
+        (if (not (null? (world-cur-state w)))
+            (draw-main-img w no-arrow)                                                                                                             
+            (draw-main-img w with-arrow))]))))
 
 
 
 ;; construct-tape-view :: world -> image
 ;; Purpose: creates a image that has all the tapes
 (define (construct-tape-view world w h)
-  (rectangle (- WIDTH 160) (- HEIGHT BOTTOM) "outline" "red"))
+  (define view-width-no-btn (- WIDTH 160))
+  (define view-height-no-btn (- HEIGHT BOTTOM))
+  (define view-height (- view-height-no-btn 50))
+  (define view-width (- view-width-no-btn 40))
+  (overlay/align "center" "middle"
+                 
+                 (overlay/align "left" "center"
+                                (beside
+                                 (make-mttm-tape-indexs (world-fsm-machine world) view-width view-height)
+                                 (make-mttm-tapes (world-fsm-machine world)
+                                                  '(a b a)
+                                                  (world-processed-config-list world)
+                                                  view-width
+                                                  view-height))
+                                (rectangle view-width view-height "outline" "transparent"))
+                 (rectangle view-width-no-btn view-height-no-btn "outline" "red")))
 
 
 #|
@@ -831,10 +947,109 @@ TOP GUI RENDERING
                     (list-2-img input-to-render TAPE-INDEX))
      (rectangle (- (- WIDTH (/ WIDTH 11)) 200) TOP "outline" OUTLINE-COLOR))))
 
+
+
+;; make-mttm-tape-indexs :: machine -> number -> number -> image
+;; Creates a image that has the indexes of the current displayed tapes stacked on top of each other
+(define (make-mttm-tape-indexs machine rec-width rec-height)
+  (define rectWidth (/ (- rec-width 40) (- TAPE-RENDER-LIMIT 1)))
+  (define rectHeight (/ rec-height 5))
+  (define range* (range MTTM-TAPE-INDEX (mttm-machine-num-tapes machine)))
+  (define (make-image index)
+    (overlay
+     (text (number->string index) 10 "black")
+     (rectangle rectWidth rectHeight "outline" OUTLINE-COLOR)))
+  (foldr (lambda (i s)
+           (above (make-image i)
+                  s))
+         empty-image
+         (if (> (length range*) 5)
+             (take range* 5)
+             range*)))
+         
            
 
-           
+;;(tm-los-top input-list cur-rule (tm-machine-tape-posn m) 32)           
+(define (make-mttm-tapes machine cur-rule processed-list rec-width rec-height)
+  (define (get-render-vals lst)
+    (cond
+      [(> (length lst) TAPE-RENDER-LIMIT)
+       (let ((c (drop lst TAPE-INDEX)))
+         (take c TAPE-RENDER-LIMIT))]
+      [else
+       lst]))
 
+  ;; tapes is a list of tuples where the first val is the tape index and the second
+  ;; is the tape values
+  (define tapes
+    (if (empty? processed-list)
+        ;; if the processed list is empty then we have not run the machine yet so
+        ;; we will set the first tape to the input and the rest will be blank
+        (for/list ([i (range 0 (mttm-machine-num-tapes machine))])
+          (cond
+            [(eq? i 0)
+             (list
+              (mttm-machine-start-tape-posn machine)
+              (get-render-vals (machine-sigma-list machine)))]
+            [else (list 0 (list BLANK))]))
+        ;; otherwise we grab the latest tape 
+        (cdar processed-list)))
+  
+  (define (tapes-to-render)
+    (define dropped-tapes (drop tapes MTTM-TAPE-INDEX))
+    (if (<= (length dropped-tapes) 5)
+        dropped-tapes
+        (take dropped-tapes 5)))
+        
+  (define (make-single-mttm-tape lst scene)
+    (define tape-index (car lst))
+    (define rectWidth (/ (- rec-width 40) TAPE-RENDER-LIMIT))
+    (define rectHeight (/ rec-height 5))
+    ;; list-2-img: list-of-sigma (tape input) int -> image
+    ;; Purpose: Converts the tape input into image that overlays the tape in the center
+    (define (list-2-img los accum)
+      (cond
+        [(empty? los) empty-image]
+        [(equal? 1 (length los)) (tape-box (car los) 24 accum)]
+        [else
+         (beside
+          (tape-box (car los) 24 accum)
+          (list-2-img (cdr los) (add1 accum)))]))
+  
+    (define (input-box input highlight? fnt-size)
+      (let ((color (if highlight? TAPE-HIGHLIGHT-COLOR "black")))
+        (overlay
+         (text (symbol->string input) fnt-size color)
+         (rectangle rectWidth (* rectHeight .75) "outline" OUTLINE-COLOR))))
+
+    (define (index-box index)
+      (overlay
+       (text (number->string index) 10 "black")
+       (rectangle rectWidth (* rectHeight .25) "outline" OUTLINE-COLOR)))
+
+    ;; tape-box: string int int -> image
+    ;; Purpose: given a string, will overlay the text onto a image
+    (define (tape-box sigma fnt-size index)
+      (cond
+        ;; Check if the input is the current hightlighed one
+        [(equal? index tape-index)
+         (overlay
+          (above
+           (input-box sigma #t fnt-size)
+           (index-box index))
+          (rectangle rectWidth rectHeight "outline" "transparent"))]
+        [else
+         (overlay
+          (above
+           (input-box sigma #f fnt-size)
+           (index-box index))
+          (rectangle rectWidth rectHeight "outline" "transparent"))]))
+    (list-2-img (cadr lst) TAPE-INDEX))
+
+  (foldr (lambda (t s) (above/align "left" t s)) empty-image
+         (map (lambda (t)
+                (make-single-mttm-tape t empty-image))
+              (tapes-to-render))))
 
 
 
@@ -853,6 +1068,11 @@ TOP GUI RENDERING
                                                 (top-input-label)
                                                 (tm-los-top input-list cur-rule (tm-machine-tape-posn m) 32))
                                                (rectangle WIDTH TOP "outline" "transparent"))]
+      [(mttm-language-recognizer)(overlay/align "left" "middle"
+                                                (beside
+                                                 (top-input-label)
+                                                 empty-image)
+                                                (rectangle WIDTH TOP "outline" "transparent"))]
       [(mttm)(overlay/align "left" "middle"
                             (beside
                              (top-input-label)
@@ -875,41 +1095,76 @@ BOTTOM GUI RENDERING
 
 ;; create-gui-bottom: list-of-rules rule int -> image
 ;; Purpose: Creates the bottom of the gui layout
-(define (create-gui-bottom lor cur-rule scroll-index)
-  (define target-width (if (eq? 'mttm MACHINE-TYPE)
+(define (create-gui-bottom lor cur-rule scroll-index cur-state w)
+  (define target-width (if (or (eq? 'mttm-language-recognizer MACHINE-TYPE)
+                               (eq? 'mttm MACHINE-TYPE))
                            (+ 200 (- (- WIDTH (/ WIDTH 11)) 200))
                            (- (- WIDTH (/ WIDTH 11)) 200)))
+  (define target-width-mttm (if (or (eq? 'mttm-language-recognizer MACHINE-TYPE)
+                                    (eq? 'mttm MACHINE-TYPE))
+                                ( + (/ WIDTH 11) (- target-width 200))
+                                WIDTH))
+  (define rules-bottom-label
+    (if (or (equal? MACHINE-TYPE 'mttm-language-recognizer)
+            (equal? MACHINE-TYPE 'mttm))
+        empty-image
+        (overlay
+         (text (string-upcase "Rules:") 24 "Black")
+         (rectangle (/ WIDTH 11) BOTTOM "outline" OUTLINE-COLOR))))
+
+  (define (make-mttm-bottom cur-rule)
+    (define prev-rule (getCurRule (world-processed-config-list w)))
+    (define mttm-cur-rule-view
+      (if cur-rule (overlay
+                    (text cur-rule FONT-SIZE "black")
+                    (rectangle target-width-mttm BOTTOM "outline" OUTLINE-COLOR))
+          (rectangle target-width-mttm BOTTOM "outline" OUTLINE-COLOR)))
+    (define mttm-prev-state-view
+      (overlay (above
+                (overlay
+                 (text (if (equal? CURRENT-RULE prev-rule) "" (stringify-value (caar prev-rule))) 24 "black")
+                 (rectangle 100 50 "outline" OUTLINE-COLOR))
+                (overlay
+                 (text "Previous State" 12 "black")
+                 (rectangle 100 25 "outline" OUTLINE-COLOR)))
+               (rectangle 100 BOTTOM "outline" OUTLINE-COLOR)))
+    (define mttm-cur-state-view
+      (overlay (above
+                (overlay
+                 (text (if (null? cur-state) "" (stringify-value cur-state)) 24 "black")
+                 (rectangle 100 50 "outline" OUTLINE-COLOR))
+                (overlay
+                 (text "Current State" 12 "black")
+                 (rectangle 100 25 "outline" OUTLINE-COLOR)))
+               (rectangle 100 BOTTOM "outline" OUTLINE-COLOR)))
+    (beside
+     mttm-cur-state-view
+     mttm-prev-state-view
+     rules-bottom-label
+     mttm-cur-rule-view))
   (cond
     [(empty? lor)
      (overlay/align "left" "middle"
-                    (align-items
-                     (rules-bottom-label)
-                     (rectangle target-width BOTTOM "outline" OUTLINE-COLOR))
+                    (if (or (eq? 'mttm-language-recognizer MACHINE-TYPE)
+                            (eq? 'mttm MACHINE-TYPE))
+                        (make-mttm-bottom #f)
+                        (beside
+                         rules-bottom-label
+                         (rectangle target-width BOTTOM "outline" OUTLINE-COLOR)))
                     (rectangle WIDTH BOTTOM "outline" "transparent"))]
-    [else 
+    [else
      (overlay/align "left" "middle"
-                    (align-items
-                     (rules-bottom-label)
-                     (lor-bottom-label lor 83 cur-rule scroll-index))
+                    (if (or (eq? MACHINE-TYPE 'mttm-language-recognizer) (eq? MACHINE-TYPE 'mttm))
+                        (if (equal? CURRENT-RULE cur-rule)
+                            (make-mttm-bottom #f)
+                            (let ((port (open-output-string)))
+                              (write cur-rule port)
+                              (make-mttm-bottom (get-output-string port))))
+                        (beside
+                         rules-bottom-label
+                         (lor-bottom-label lor 83 cur-rule scroll-index)))
                     (rectangle WIDTH BOTTOM "outline" "transparent"))]))
 
-
-;; rules-bottom-label: null -> image
-;; Purpose: Creates the left bottom label in the gui
-(define (rules-bottom-label)
-  (overlay
-   (case MACHINE-TYPE
-     [(mttm)(text (string-upcase "Cur Rule") 14 "Black")]
-     [else (text (string-upcase "Rules:") 24 "Black")])
-   (rectangle (/ WIDTH 11) BOTTOM "outline" OUTLINE-COLOR)))
-
-
-;; align-items image image -> image
-;; Purpose: Aligns 2 images next to each other
-(define (align-items item1 item2)
-  (beside
-   item1
-   item2))
 
 ;; lor-bottom-label: list-of-rules int rule int -> image
 ;; Purpose: The label for the list of rules
@@ -954,38 +1209,69 @@ LEFT GUI RENDERING
 |# 
 
 
-;; create-gui-left: list of alpha type list-of-gamma(optional) -> image
+;; create-gui-left:machine -> image
 ;; Purpose: Creates the img for the left hand side of the gui
-(define (create-gui-left loa type . log)
-  (letrec (
-           ;; create-alpha-control: list of alpha -> image
-           (create-alpha-control (lambda (loa)
-                                   (letrec (
-                                            (title1-width (/ WIDTH 11)) ;; The width of the title for all machines besides pda's
-                                            (title2-width (/ (/ WIDTH 11) 2))) ;; The title width for pdas
-                                     
-                                     ;; Determine if the gamma needs to be drawin or not.
-                                     (cond
-                                       [(empty? log)
-                                        (overlay/align "right" "top"
-                                                       (rectangle (/ WIDTH 11) (- (/ HEIGHT 2) 30) "outline" OUTLINE-COLOR)
-                                                       (above
-                                                        (control-header2 "Σ" title1-width 18)
-                                                        (draw-verticle loa 14 title1-width 14)))]
-                                       [else
-                                        (overlay/align "right" "top"
-                                                       (rectangle (/ WIDTH 11) (- (/ HEIGHT 2) 30) "outline" OUTLINE-COLOR)
-                                                       (beside/align "top"
-                                                                     (above
-                                                                      (control-header2 "Σ" title2-width 18)
-                                                                      (draw-verticle loa 14 title2-width 14))
-                                                                     (above
-                                                                      (control-header2 "Γ" title2-width 18)
-                                                                      (draw-verticle (car log) 14 title2-width 14))))])))))
+(define (create-gui-left m . log)
+  (define loa (machine-alpha-list m))
+  (define CONTROL-BOX-H 95)
+  ;;create-mttm-set-tape-posn :: image
+  ;; for mttm's the set tape posn is locacted on the left so we will draw it
+  ;; in this function
+  (define (create-mttm-set-tape-posn)
+                             
+    ;; draw-left: none -> img
+    ;; Purpose: draws the message that telles the user the current position
+    (define (draw-tape-index)
+      (define msg (string-append "Current posn:" (number->string (mttm-machine-start-tape-posn m))))
+      (overlay
+       (text msg 11 (make-color 94 36 23))
+       (rectangle (/ WIDTH 11) 10 "outline" "transparent")))
+                                            
+    ;; draw-right: none -> img
+    ;; Purpose: Draws the tape index option
+    (define (draw-right)
+      (overlay/align "left" "top"
+                     (rectangle (/ WIDTH 11) CONTROL-BOX-H "outline" OUTLINE-COLOR)
+                     (above
+                      (control-header4 "Tape Posn")
+                      (draw-tape-index))))
+    (overlay
+     (draw-right)
+     (rectangle (/ WIDTH 11) CONTROL-BOX-H "outline" OUTLINE-COLOR)))
+  
+  ;; create-alpha-control: list of alpha -> image
+  (define (create-alpha-control loa)
+    (define title1-width (/ WIDTH 11)) ;; The width of the title for all machines besides pda's
+    (define title2-width (/ (/ WIDTH 11) 2)) ;; The title width for pdas                               
+    ;; Determine if the gamma needs to be drawin or not.
+    (cond
+      [(empty? log)
+       (overlay/align "right" "top"
+                      (rectangle (/ WIDTH 11) (- (/ HEIGHT 2) 30) "outline" OUTLINE-COLOR)
+                      (above
+                       (control-header2 "Σ" title1-width 18)
+                       (draw-verticle loa 14 title1-width 14)))]
+      [else
+       (overlay/align "right" "top"
+                      (rectangle (/ WIDTH 11) (- (/ HEIGHT 2) 30) "outline" OUTLINE-COLOR)
+                      (above
+                       empty-image
+                       (beside/align "top"
+                                     (above
+                                      (control-header2 "Σ" title2-width 18)
+                                      (draw-verticle loa 14 title2-width 14))
+                                     (above
+                                      (control-header2 "Γ" title2-width 18)
+                                      (draw-verticle (car log) 14 title2-width 14)))))]))
     
-    (overlay/align "left" "bottom"
-                   (rectangle (/ WIDTH 11) (- HEIGHT BOTTOM) "outline" OUTLINE-COLOR)
-                   (create-alpha-control loa))))
+  (overlay/align "left" "bottom"
+                 (rectangle (/ WIDTH 11) (- HEIGHT BOTTOM) "outline" OUTLINE-COLOR)
+                 (if (or (equal? MACHINE-TYPE 'mttm)
+                         (equal? MACHINE-TYPE 'mttm-language-recognizer))
+                     (above
+                      (create-mttm-set-tape-posn)
+                      (create-alpha-control loa))
+                     (create-alpha-control loa))))
 
 
 
@@ -1178,6 +1464,9 @@ RIGHT GUI RENDERING
                                                                       (pda-stack)
                                                                       control)
                                                         (rectangle full-width HEIGHT "outline" "transparent"))]
+                                  [(mttm-language-recognizer) (overlay/align "left" "top"
+                                                                             empty-image
+                                                                             (rectangle 200 HEIGHT "outline" "transparent"))]
                                   [(mttm) (overlay/align "left" "top"
                                                          empty-image
                                                          (rectangle 200 HEIGHT "outline" "transparent"))]

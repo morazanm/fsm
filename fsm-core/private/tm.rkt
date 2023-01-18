@@ -380,17 +380,23 @@
   
   
   ; ctmd alphabet --> ctm
-  (define (combine-tms inputctm sigma)
+  (define (combine-tms inputctm sigma-input)
+
+    (define sigma (cons LM sigma-input))
     
     ; symbol --> tm
     (define (make-writer a)
       (make-unchecked-tm '(s h) 
                          sigma 
-                         (map (lambda (symb) (list (list 's symb) (list 'h a))) (cons BLANK sigma))
+                         (map (lambda (symb)
+                                (list (list 's symb) (list 'h a)))
+                              (cons BLANK sigma))
                          's
                          '(h)))
     
-    (define WRITERS (map (lambda (s) (list s (make-writer s))) (cons BLANK sigma)))
+    (define WRITERS (map (lambda (s)
+                           (list s (make-writer s)))
+                         (cons BLANK sigma)))
     
     (lambda (tape i . l)      
       
@@ -485,5 +491,4 @@
   (define tm-rename-sts-WriteI (tm-rename-states (tm-getstates tm-WriteI) tm-WriteI))
 
   ;k(tm-apply tm-rename-sts-WriteI `(i ,BLANK i ,BLANK i i ,BLANK) 1)
-
   ) ; closes module

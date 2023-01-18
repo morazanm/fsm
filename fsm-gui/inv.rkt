@@ -63,6 +63,22 @@
            [(equal? #f (func tape tape-posn)) false-color]
            [(equal? PLACEHOLDER (func p-list STACK-LIST)) non-color]
            [else caution-color]))]
+      [(mttm)
+       (let ((tape-posn #f)
+             (tape #t))
+         (cond
+           [(equal? #t (func tape tape-posn)) true-color]
+           [(equal? #f (func tape tape-posn)) false-color]
+           [(equal? PLACEHOLDER (func p-list STACK-LIST)) non-color]
+           [else caution-color]))]
+       [(mttm-language-recognizer)
+       (let ((tape-posn #f)
+             (tape #t))
+         (cond
+           [(equal? #t (func tape tape-posn)) true-color]
+           [(equal? #f (func tape tape-posn)) false-color]
+           [(equal? PLACEHOLDER (func p-list STACK-LIST)) non-color]
+           [else caution-color]))]
       [else
        (cond
          [(equal? #t (func p-list)) true-color]

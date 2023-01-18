@@ -31,12 +31,20 @@
 ;; - location: posn-struct, the position of the textbox on the scene
 ;; - active: boolean, ALWAYS SET TO FALSE.
 ;; - func: procedure, a procedure associated with the textbox
-(struct textbox (width height color orColor text charLength location active func))
+;; - id { symbol }: A way to make textbox distinct. This allows you to select a textbox by its id
+(struct textbox (width height color orColor text charLength location active func id))
 
 
 ;; default constructor for a textbox
-(define (make-textbox width height posn #:color[color DEFAULT-IMP-COLOR] #:limit[limit 10] #:func[func (void)])
-  (textbox width height color color "" limit posn #f func))
+(define (make-textbox
+         width
+         height
+         posn
+         #:color[color DEFAULT-IMP-COLOR]
+         #:limit[limit 10]
+         #:func[func (void)]
+         #:id[id 'none])
+  (textbox width height color color "" limit posn #f func id))
 
 
 ;; draw-button: textbox scene -> scene
@@ -65,11 +73,27 @@
 (define (add-text tbox msg)
   (cond
     [(> (+ (string-length msg) (string-length (textbox-text tbox))) (textbox-charLength tbox))
-     (textbox (textbox-width tbox) (textbox-height tbox) (textbox-color tbox) (textbox-orColor tbox)
-              (textbox-text tbox) (textbox-charLength tbox) (textbox-location tbox) (textbox-active tbox) (textbox-func tbox))]
+     (textbox (textbox-width tbox)
+              (textbox-height tbox)
+              (textbox-color tbox)
+              (textbox-orColor tbox)
+              (textbox-text tbox)
+              (textbox-charLength tbox)
+              (textbox-location tbox)
+              (textbox-active tbox)
+              (textbox-func tbox)
+              (textbox-id tbox))]
     [else (textbox
-           (textbox-width tbox) (textbox-height tbox) (textbox-color tbox) (textbox-orColor tbox) (string-append (textbox-text tbox) msg)
-           (textbox-charLength tbox) (textbox-location tbox) (textbox-active tbox) (textbox-func tbox))]))
+           (textbox-width tbox)
+           (textbox-height tbox)
+           (textbox-color tbox)
+           (textbox-orColor tbox)
+           (string-append (textbox-text tbox) msg)
+           (textbox-charLength tbox)
+           (textbox-location tbox)
+           (textbox-active tbox)
+           (textbox-func tbox)
+           (textbox-id tbox))]))
 
 ;; remove-text: textbox int -> textbox
 ;; Purpose: Removes a specified amount of text from a textbox 
@@ -79,22 +103,48 @@
           ;; Purpose: removes a gven number of text from a string. It the stiring is empty or the amount to remove is greater then the string length, will return an empty string.
           (rmv-text (lambda (text num)
                       (cond
-                        [(>= (string-length text) num) (substring (textbox-text tbox) 0 (- (string-length (textbox-text tbox)) num))]
+                        [(>= (string-length text) num) (substring (textbox-text tbox)
+                                                                  0
+                                                                  (- (string-length (textbox-text tbox)) num))]
                         [else (substring (textbox-text tbox) 0 0)]))))
-    (textbox (textbox-width tbox) (textbox-height tbox) (textbox-color tbox) (textbox-orColor tbox) (rmv-text (textbox-text tbox) num)
-             (textbox-charLength tbox) (textbox-location tbox) (textbox-active tbox) (textbox-func tbox))))
+    (textbox (textbox-width tbox)
+             (textbox-height tbox)
+             (textbox-color tbox)
+             (textbox-orColor tbox)
+             (rmv-text (textbox-text tbox) num)
+             (textbox-charLength tbox)
+             (textbox-location tbox)
+             (textbox-active tbox)
+             (textbox-func tbox)
+             (textbox-id tbox))))
 
 ;; set-active: textbox -> textbox
 ;; Purpose: Sets a textbox to active
 (define (set-active tbox)
-  (textbox (textbox-width tbox) (textbox-height tbox) (active-color (textbox-orColor tbox)) (textbox-orColor tbox)
-           (textbox-text tbox) (textbox-charLength tbox) (textbox-location tbox) #t (textbox-func tbox)))
+  (textbox (textbox-width tbox)
+           (textbox-height tbox)
+           (active-color (textbox-orColor tbox))
+           (textbox-orColor tbox)
+           (textbox-text tbox)
+           (textbox-charLength tbox)
+           (textbox-location tbox)
+           #t
+           (textbox-func tbox)
+           (textbox-id tbox)))
 
 ;; set-inactive: textbox -> textbox
 ;; Purpose: Sets a textbox to inactive
 (define (set-inactive tbox)
-  (textbox (textbox-width tbox) (textbox-height tbox) (textbox-orColor tbox)
-           (textbox-orColor tbox) (textbox-text tbox) (textbox-charLength tbox) (textbox-location tbox) #f (textbox-func tbox)))
+  (textbox (textbox-width tbox)
+           (textbox-height tbox)
+           (textbox-orColor tbox)
+           (textbox-orColor tbox)
+           (textbox-text tbox)
+           (textbox-charLength tbox)
+           (textbox-location tbox)
+           #f
+           (textbox-func tbox)
+           (textbox-id tbox)))
 
 ;; active-color: color -> color
 ;; Purpose: given a color will shade the color so it becomes active

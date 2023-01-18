@@ -8,10 +8,18 @@
 
 (define getCurRule (lambda (processed-list #:debug [debug #f])
                      (case MACHINE-TYPE
-                       [(pda) (get-pda-rule processed-list debug)]
-                       [(tm) (get-tm-rule processed-list)]
-                       [(tm-language-recognizer) (get-tm-rule processed-list)]
-                       [else (get-dfa-ndfa-rule processed-list)])))
+                       [(pda)
+                        (get-pda-rule processed-list debug)]
+                       [(tm)
+                        (get-tm-rule processed-list)]
+                       [(tm-language-recognizer)
+                        (get-tm-rule processed-list)]
+                       [(mttm)
+                        (get-mttm-rule processed-list debug)]
+                       [(mttm-language-recognizer)
+                        (get-mttm-rule processed-list debug)]
+                       [else
+                        (get-dfa-ndfa-rule processed-list)])))
 
 
 ;;get-dfa-ndfa-rule: Returns the current rule for a dfa/ndfa
@@ -62,6 +70,40 @@
        (list (list cur-state cur-tape-element) (list next-state RIGHT))]
       [else                                   ;;statyed in same posn
        (list (list cur-state cur-tape-element) (list next-state next-tape-element))])))
+
+;; get-mttm-rule processed-list -> mttm-rule
+;; Purpose: Determins if the rule to be made should be empty or a real rule
+(define (get-mttm-rule pl debug)
+  (cond
+    [(< (length pl) 2) '(null null null)]
+    [else (construct-mttm-rule pl debug)]))
+
+;; construct-mttm-rule :: processed-list -> mttm-rule
+;; Purpose: Constructs the current mttm rule based on the processed list
+(define (construct-mttm-rule pl debug)
+  (match-define `(,cur-state ,cur-tapes ...) (cadr pl)) ;; The state that the machine is in
+  (match-define `(,next-state ,next-tapes ...) (car pl)) ;; The next state that the machine is in
+  (define tuple-list (map (match-lambda* [`((,cur-pos ,cur-tape) (,next-pos ,_))
+                                          #:when (< cur-pos next-pos)
+                                          ;; tape incriments so we move Right
+                                          (cons (list-ref cur-tape cur-pos) RIGHT)]
+                                         [`((,cur-pos ,cur-tape) (,next-pos ,_))
+                                          #:when (> cur-pos next-pos)
+                                          ;; tape decriments so we move LEFT
+                                          (cons (list-ref cur-tape cur-pos) LEFT)]
+                                         ;; Otherwise we write to the tape
+                                         [`((,cur-pos ,cur-tape) (,next-pos ,next-tape))
+                                          (cons (list-ref cur-tape cur-pos) (list-ref next-tape next-pos))])
+                          cur-tapes
+                          next-tapes))
+  (when debug
+    (displayln (format "Current: ~s ~s" cur-state cur-tapes))
+    (displayln (format "Next: ~s ~s" next-state next-tapes))
+    (displayln (format "Rule: ~s\n\n" `((,cur-state ,(map car tuple-list)) (,next-state ,(map cdr tuple-list))))))
+  `((,cur-state ,(map car tuple-list)) (,next-state ,(map cdr tuple-list))))
+
+  
+ 
 
 
 ;; get-pda-rule: processed-list -> pda-rule

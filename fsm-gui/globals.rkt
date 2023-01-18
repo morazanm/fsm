@@ -66,8 +66,7 @@ Created by Joshua Schappel on 12/19/19
 (define DEFAULT-BTN-COLOR (make-color 100 200 100)) ;; The default color for a button
 ;; THIS FUNCTION IS JUST A PLACEHOLDER
 ;;  This function is Just a placeholder for biulding out the GUI
-(define NULL-FUNCTION (lambda (w)
-                        w))
+(define NULL-FUNCTION (lambda (w) w))
 
 ;; -- INPUTS --
 (define INPUT-COLOR (make-color 141 144 145)) ;; The color of an input field
@@ -83,6 +82,7 @@ Created by Joshua Schappel on 12/19/19
 (define TRUE-FUNCTION (lambda (v) PLACEHOLDER)) ;; The default function for a state variable
 (define PDA-TRUE-FUNCTION (lambda (v c) PLACEHOLDER)) ;; The default function for a state variable
 (define TM-TRUE-FUNCTION (lambda (v c) PLACEHOLDER))  ;; The default function for a state variable
+(define MTTM-TRUE-FUNCTION (lambda (a r) PLACEHOLDER)) ;; The default function for a state variable
 (define MACHINE-TYPE null) ;; The type of machine (pda, ndfa, ..)
 (define TM-ORIGIONAL-TAPE '()) ;; set-tm-og-tape
 (define TM-ORIGIONAL-TAPE-POSN 0) ;; the initial tape position set by the user. Defualts to 0
@@ -95,10 +95,11 @@ Created by Joshua Schappel on 12/19/19
 
 
 ;; -- Scrollbars --
+(define MTTM-TAPE-INDEX 0) ;; the start of the current tapes to be displayed
 (define TAPE-INDEX-BOTTOM -1) ;; The current tape input that is being used
 (define INIT-INDEX-BOTTOM 0) ;; The initail index of the scrollbar
 (define STACK-INDEX 0) ;; The index of the stack scroll bar. The index is the first item to be rendered
-(define TAPE-INDEX 0) ;; The index of the input scroll bar. The index is the first item to be rendered
+(define TAPE-INDEX 0) ;; The index of the input scroll bar. The index is the first item to be rendered (works for mmtm's as well)
 (define TAPE-RENDER-LIMIT 26) ;; The maximum amount of tape input that can be rendered at a time
 
 
@@ -146,6 +147,9 @@ Created by Joshua Schappel on 12/19/19
 
 
 ;; -- SETTERS --
+(define (set-tape-render-limit value)
+  (set! TAPE-RENDER-LIMIT value))
+
 (define (set-tape-index-bottom value)
   (set! TAPE-INDEX-BOTTOM value))
 
@@ -160,6 +164,9 @@ Created by Joshua Schappel on 12/19/19
 
 (define (set-machine-type type)
   (set! MACHINE-TYPE type))
+
+(define (set-tape-view-scroll-bar index)
+  (set! MTTM-TAPE-INDEX index))
 
 (define (set-stack-index num)
   (set! STACK-INDEX num))

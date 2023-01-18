@@ -1,13 +1,10 @@
 #lang racket
-
-
 #|
 Created by Joshua Schappel on 12/19/19
   This file contains all the functions associated with a button
 |#
-
-
-(require net/sendurl
+(require 
+  net/sendurl
          "../structs/input.rkt"
          "../structs/world.rkt"
          "../structs/state.rkt"
@@ -49,10 +46,12 @@ Created by Joshua Schappel on 12/19/19
  setTapePosn
  setAcceptState
  toggle-display
+ tapeViewScrollUp
+ tapeViewScrollDown
+ tapeViewScrollRight
+ tapeViewScrollLeft
  toggle-display-mttm
  re-render-listener)
-
-;; ------- Button Functions -------
 
 
 ;; addState: world -> world
@@ -474,7 +473,11 @@ Created by Joshua Schappel on 12/19/19
 ;; addSigma: world -> world
 ;; Purpose: adds a letter or group of letters to the sigma list
 (define addSigma (lambda (w)
-                   (letrec ((input-value (string-trim (textbox-text(list-ref (world-input-list w) 7))))
+                   (letrec (
+                            (comparator (lambda (v1) (eq? (textbox-id v1) 'sigma-input)))
+                            (input-idx (index-where (world-input-list w) comparator))
+
+                            (input-value (string-trim (textbox-text (list-ref (world-input-list w) input-idx))))
 
                             ;; string->input-list: string -> list-of-symbols
                             ;; Purpose: Converts the string input into tape input.
@@ -513,9 +516,9 @@ Created by Joshua Schappel on 12/19/19
                                                [(empty? loa) #f]
                                                [(empty? los) #f]
                                                [else (check-lists loa los)]))))
-                            (new-input-list (list-set (world-input-list w) 7 (remove-text (list-ref (world-input-list w) 7) 100))) 
+                            (new-input-list (list-set (world-input-list w) input-idx (remove-text (list-ref (world-input-list w) input-idx) 100)))
                             (sigma-list (reverse (string->input-list input-value))))
-                     
+                   
                      (cond
                        [(equal? (check-alpha (machine-alpha-list (world-fsm-machine w)) sigma-list) #f)
                         (redraw-world-with-msg w "Some of the input is not in the alphabet. Please make sure there is a space between each letter. " "Error" MSG-ERROR)]
@@ -546,14 +549,21 @@ Created by Joshua Schappel on 12/19/19
 ;; clearSigma: world -> world
 ;; Purpose: Removes all elements of the sigma list
 (define clearSigma (lambda (w)
-                     (let ((new-input-list (list-set (world-input-list w) 7 (remove-text (list-ref (world-input-list w) 7) 100))))
+                     (let* ((input-idx (index-where (world-input-list w)
+                                                    (lambda (v1)
+                                                      (eq? (textbox-id v1) 'sigma-input))))
+                            (new-input-list (list-set (world-input-list w) input-idx (remove-text (list-ref (world-input-list w) input-idx) 100))))
                        (cond
                          [(or (equal? MACHINE-TYPE 'tm)
+                              (equal? MACHINE-TYPE 'mttm)
+                              (equal? MACHINE-TYPE 'mttm-language-recognizer)
                               (equal? MACHINE-TYPE 'tm-language-recognizer))
                           (begin
                             (reset-bottom-indices)
                             (set-machine-sigma-list! (world-fsm-machine w) `(,LM))
-                            (reset-tm-machine-tap-index (world-fsm-machine w))
+                            (when (or (equal? MACHINE-TYPE 'tm)
+                                      (equal? MACHINE-TYPE 'tm-language-recognizer))
+                              (reset-tm-machine-tap-index (world-fsm-machine w)))
                             (create-new-world-input-empty w new-input-list))]
                          [else
                           (begin
@@ -611,22 +621,26 @@ Created by Joshua Schappel on 12/19/19
 ;; getScrollBarPosition: list-of-rules rule -> int
 ;; Purpose: Trys to place the currently highlighted rule at the beginning of the scrollbar. If not possiable moves to scrollbar to a position
 ;;      where the rule will be sceen by the user.
-(define getScrollBarPosition (lambda (lor rule)
-                               (let ((ruleIndex (index-of lor rule))
-                                     (rule-num (determine-rule-number MACHINE-TYPE)))
-                                 (cond
-                                   ;; See if there is no current rule. If so return the starting index of the scrollbar
-                                   [(or (equal? rule '(empty empty empty))
-                                        (equal? rule '((empty empty) (empty empty)))
-                                        (equal? rule '((empty empty empty) (empty empty))))
-                                    0]
-                                   ;; If true then we set the scroll index to max
-                                   [(> (+ ruleIndex rule-num) (- (length lor) 1))
-                                    (let* ((i (- (length lor) rule-num)))
-                                      (if (< i 0) 0
-                                          i))]
-                                   ;; Otherwise return the rule index
-                                   [else ruleIndex]))))
+(define (getScrollBarPosition lor rule)
+  ;; mttm types only display the current rule so it will always be 0
+  (if (or (eq? MACHINE-TYPE 'mttm-language-recognizer)
+          (eq? MACHINE-TYPE 'mttm))
+      0
+      (let ([ruleIndex (index-of lor rule)]
+            [rule-num (determine-rule-number MACHINE-TYPE)])
+        (cond
+          ;; See if there is no current rule. If so return the starting index of the scrollbar
+          [(or (equal? rule '(empty empty empty))
+               (equal? rule '((empty empty) (empty empty)))
+               (equal? rule '((empty empty empty) (empty empty))))
+           0]
+          ;; If true then we set the scroll index to max
+          [(> (+ ruleIndex rule-num) (- (length lor) 1))
+           (let* ((i (- (length lor) rule-num)))
+             (if (< i 0) 0
+                 i))]
+          ;; Otherwise return the rule index
+          [else ruleIndex]))))
 
                   
 
@@ -688,6 +702,8 @@ Created by Joshua Schappel on 12/19/19
                                    [(pda) (car nextState)]
                                    [(tm) (car nextState)]
                                    [(tm-language-recognizer) (car nextState)]
+                                   [(mttm) (car nextState)]
+                                   [(mttm-language-recognizer) (car nextState)]
                                    [else (car (cdr nextState))])))
            ;; get-input: Rule -> symbol
            ;; Purpose: determins the input from the given rule
@@ -812,6 +828,8 @@ Created by Joshua Schappel on 12/19/19
                                                              #t)]
                                                    [(tm) (error "Interanl error| buttonFuntions.rkt - showPrev")]
                                                    [(tm-language-recognizer) (error "Interanl error| buttonFuntions.rkt - showPrev")]
+                                                   [(mttm-language-recognizer) (error "Interanl error| buttonFuntions.rkt - showPrev")]
+                                                   [(mttm) (error "Interanl error| buttonFuntions.rkt - showPrev")]
                                                    [else(cadr cur-rule)])))
                               
                               ;; Updates the machine to have the approperate values. This function is only needed for tm, to
@@ -829,6 +847,8 @@ Created by Joshua Schappel on 12/19/19
                                                        [(pda) (car previousState)]
                                                        [(tm) (car previousState)]
                                                        [(tm-language-recognizer) (car previousState)]
+                                                       [(mttm-language-recognizer) (car previousState)]
+                                                       [(mttm) (car previousState)]
                                                        [else (car (cdr previousState))])))
 
                               ;; handles the pda pops
@@ -866,11 +886,12 @@ Created by Joshua Schappel on 12/19/19
                         ;; - dfa/ndfa: world processed and unprocessed lists
                         (begin                     
                           ;; Determine if the tape input should decrease. This does not happen
-                          ;; with tm's and an empty
-                          (if (and (not (equal? 'tm MACHINE-TYPE))
-                                   (not (equal? 'tm-language-recognizer MACHINE-TYPE)))
-                              (determin-tape (input-consumed?))
-                              (void))
+                          ;; with tm's and mttm's and an empty
+                          (when (and (and (not (equal? 'tm MACHINE-TYPE))
+                                          (not (equal? 'mttm MACHINE-TYPE))
+                                          (not (equal? 'mttm-language-recognizer MACHINE-TYPE))
+                                          (not (equal? 'tm-language-recognizer MACHINE-TYPE))))
+                            (determin-tape (input-consumed?)))
                           
 
                           ;; If the machine is a pda we need to push or pop!
@@ -896,34 +917,38 @@ Created by Joshua Schappel on 12/19/19
 
 ;; setTapePosn world -> world
 ;; Purpose: Sets the tape-input for a turing machine
-(define setTapePosn (lambda (w)
-                      (let*((input-value (string-trim (textbox-text(list-ref (world-input-list w) 9))))
-                            (new-input-list (list-set (world-input-list w) 9 (remove-text (list-ref (world-input-list w) 9) 100)))
-                            (all-numbers? (ormap (lambda (letter)
-                                                   (let ((ascii-val (char->integer letter)))
-                                                     (and
-                                                      (>= ascii-val 48)    ;; 0
-                                                      (<= ascii-val 57)))) ;; 9 
-                                                 (string->list input-value))))
-                        (cond
-                          [(equal? "" input-value) w]
-                          [(not all-numbers?)
-                           (redraw-world-with-msg w
-                                                  "Please enter a number greater then -1"
-                                                  "Error"
-                                                  MSG-CAUTION)]
-                          [(< (sub1 (length (machine-sigma-list (world-fsm-machine w))))
-                              (string->number input-value))
-                           (redraw-world-with-msg w
-                                                  "Invalid tape index position. Make sure your tape position is less then or equal to the tape input"
-                                                  "Error"
-                                                  MSG-CAUTION)]
-                          [else
-                           (begin
-                             (reset-bottom-indices)
-                             (set-tm-og-tape-posn (string->number input-value))
-                             (set-tm-machine-tape-posn! (world-fsm-machine w) (string->number input-value))
-                             (create-new-world-input-empty w new-input-list))]))))
+(define (setTapePosn w)
+  (define input-idx (index-where (world-input-list w) (lambda (v1) (eq? (textbox-id v1) 'tapePosnInput))))
+  (define input-value (string-trim (textbox-text (list-ref (world-input-list w) input-idx))))
+  (define new-input-list (list-set (world-input-list w) input-idx (remove-text (list-ref (world-input-list w) input-idx) 100)))
+  (define all-numbers? (ormap (lambda (letter)
+                                (let ((ascii-val (char->integer letter)))
+                                  (and
+                                   (>= ascii-val 48)    ;; 0
+                                   (<= ascii-val 57)))) ;; 9 
+                              (string->list input-value)))
+  (cond
+    [(equal? "" input-value) w]
+    [(not all-numbers?)
+     (redraw-world-with-msg w
+                            "Please enter a number greater then -1"
+                            "Error"
+                            MSG-CAUTION)]
+    [(< (sub1 (length (machine-sigma-list (world-fsm-machine w))))
+        (string->number input-value))
+     (redraw-world-with-msg w
+                            "Invalid tape index position. Make sure your tape position is less then or equal to the tape input"
+                            "Error"
+                            MSG-CAUTION)]
+    [else
+     (begin
+       (reset-bottom-indices)
+       (set-tm-og-tape-posn (string->number input-value))
+       (if (or (equal? MACHINE-TYPE 'tm)
+               (equal? MACHINE-TYPE 'tm-language-recognizer))
+           (set-tm-machine-tape-posn! (world-fsm-machine w) (string->number input-value))
+           (set-mttm-machine-start-tape-posn! (world-fsm-machine w) (string->number input-value)))
+       (create-new-world-input-empty w new-input-list))]))
 
 
 ;; setAcceptState: world -> world
@@ -1074,6 +1099,29 @@ Created by Joshua Schappel on 12/19/19
                                     (set-view-mode 'tape))
                                 w)))
 
+;; tapeViewScrollUp :: world -> world
+;; scrolls up on the scrollBar if possiable
+(define (tapeViewScrollUp w)
+  (when (> MTTM-TAPE-INDEX 0)
+    (set-tape-view-scroll-bar (sub1 MTTM-TAPE-INDEX)))
+  w)
+
+(define (tapeViewScrollDown w)
+  (when (< MTTM-TAPE-INDEX  (- (mttm-machine-num-tapes (world-fsm-machine w)) 5))
+    (set-tape-view-scroll-bar (add1 MTTM-TAPE-INDEX)))
+  w)
+
+(define (tapeViewScrollLeft w)
+  (when (> TAPE-INDEX 0)
+    (set-tape-index (sub1 TAPE-INDEX)))
+  w)
+
+(define (tapeViewScrollRight w)
+  (define input-list (machine-sigma-list (world-fsm-machine w)))
+  (when (< (+ TAPE-INDEX 24) (length input-list))
+    (set-tape-index (add1 TAPE-INDEX)))
+  w)
+
 ;; re-render-listener :: (world -> world) -> (world -> world)
 ;; Converts the given function to a new function that will re-draw the graphql image
 ;; when the current view is the graph-view
@@ -1125,6 +1173,7 @@ Created by Joshua Schappel on 12/19/19
   (cond
     [(empty? args)
      (begin
+       (set-tape-view-scroll-bar 0)
        (set-tape-index-bottom -1)
        (set-tape-index 0)
        (reset-stack)
@@ -1133,6 +1182,7 @@ Created by Joshua Schappel on 12/19/19
     [else
      (begin
        (reset-tm-machine-tap-index (car args))
+       (set-tape-view-scroll-bar 0)
        (set-tape-index-bottom -1)
        (set-tape-index 0)
        (set-init-index-bottom 0))]))
