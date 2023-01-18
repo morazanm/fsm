@@ -5,7 +5,7 @@
 #lang scribble/manual
 
 @(require (for-label racket setup/collects))
-@defmodulelang[fsm]
+@defmodulelang[fsm #:use-sources (fsm)]
 
 @title{FSM}
 @author[(author+email "Marco T. Morazán" "morazanm@shu.edu")]
