@@ -23,7 +23,7 @@
            NULL-REGEXP-STRING EMPTY-REGEXP-STRING
            simplify-regexp
            regexp?
-           gen-regexp-word gen-concat-word generate-ks-word extract-concat-regexps
+           gen-regexp-word gen-concat-word gen-ks-word extract-concat-regexps
            convert-singleton pick-regexp extract-union-regexps
            )
   
@@ -233,7 +233,7 @@
   ;; natnum kleene-star-regexp (regexp --> word) --> word
   ;; Purpose: Generate a word of arbitrary length in [0..reps+1] using
   ;;          given regular expression and the given word-generating function
-  (define (generate-ks-word reps regexp gen-function)     
+  (define (gen-ks-word reps regexp gen-function)     
     (let [(lst-words (filter
                       (λ (w) (not (eq? w EMP)))
                       (flatten
@@ -262,7 +262,7 @@
     (cond [(empty-regexp? rexp) EMP]
           [(singleton-regexp? rexp) (convert-singleton rexp)]
           [(kleenestar-regexp? rexp)
-           (generate-ks-word MAX-KLEENESTAR-REPS rexp gen-regexp-word)]
+           (gen-ks-word MAX-KLEENESTAR-REPS rexp gen-regexp-word)]
           [(union-regexp? rexp) (gen-regexp-word (pick-regexp rexp))]
           [else (gen-concat-word rexp gen-regexp-word)]))
 

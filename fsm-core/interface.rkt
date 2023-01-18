@@ -75,7 +75,7 @@
  convert-singleton
  pick-regexp
  extract-union-regexps
- gen-regexp-word gen-concat-word generate-ks-word 
+ gen-regexp-word gen-concat-word gen-ks-word 
 
  ; regexp transformers
  fsa->regexp
