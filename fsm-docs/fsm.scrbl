@@ -5,16 +5,17 @@
 #lang scribble/manual
 
 @(require (for-label racket setup/collects))
+@defmodulelang[fsm]
 
 @title{FSM}
 @author[(author+email "Marco T. Morazán" "morazanm@shu.edu")]
-@defmodule[fsm]
+
 
 
 A DSL for the Automata Theory Classroom
 
-FSM is a DSL designed to help ungraduate students understand Automata Theory by
-allowing them to construct and minipulate state machines and grammars.
+FSM is a DSL designed to help students understand Automata Theory by
+allowing them to construct and minipulate state machines, grammars, and regular expressions..
 For instructions on how to download the DSL, view the patch notes, or just browse the code, please see either the offical
 FSM readme on @(hyperlink "https://github.com/morazanm/fsm" "Github") or the
 new @(hyperlink "https://morazanm.github.io/fsm/index.html" "FSM website").
