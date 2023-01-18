@@ -262,7 +262,7 @@
     (cond [(empty-regexp? rexp) EMP]
           [(singleton-regexp? rexp) (convert-singleton rexp)]
           [(kleenestar-regexp? rexp)
-           (generate-ks-word MAX-KLEENESTAR-REPS regexp gen-regexp-word)]
+           (generate-ks-word MAX-KLEENESTAR-REPS rexp gen-regexp-word)]
           [(union-regexp? rexp) (gen-regexp-word (pick-regexp rexp))]
           [else (gen-concat-word rexp gen-regexp-word)]))
 
