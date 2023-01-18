@@ -689,8 +689,9 @@ word are returned.
          This includes any nested union-regexps in r.
 
 @defproc[(convert-singleton [r singleton-regexp])
-         symbol]
-         Convert the given singleton-regexp to a symbol or number.
+         word]
+         Convert the given singleton-regexp to a word of length 1
+         containing r's nested symbol or number.
 
 
 
