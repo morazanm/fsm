@@ -50,7 +50,7 @@
    grammar-both-derive grammar-testequiv grammar-test
 
    ; regexp constructors
-   empty-regexp singleton-regexp union-regexp concat-regexp kleenestar-regexp null-regexp
+   empty-regexp singleton-regexp union-regexp concat-regexp kleenestar-regexp null-regexp 
 
    ; regexp observers
    simplify-regexp printable-regexp
@@ -59,7 +59,12 @@
    concat-regexp-r1 concat-regexp-r2
    union-regexp-r1 union-regexp-r2
    kleenestar-regexp-r1
-   word-in-regexp
+   extract-concat-regexps
+   convert-singleton
+   pick-regexp
+   extract-union-regexps
+   gen-regexp-word gen-concat-word generate-ks-word
+   
  
    ; regexp transformers
    fsa->regexp

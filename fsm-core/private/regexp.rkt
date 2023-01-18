@@ -23,7 +23,8 @@
            NULL-REGEXP-STRING EMPTY-REGEXP-STRING
            simplify-regexp
            regexp?
-           word-in-regexp
+           gen-regexp-word gen-concat-word generate-ks-word extract-concat-regexps
+           convert-singleton pick-regexp extract-union-regexps
            )
   
   (define NULL-REGEXP-STRING "()")
@@ -112,64 +113,6 @@
             [(union-regexp? x) (simplify-union x)])))
 
 
-
-
-  ;simplify-union: union --> regexp
-  ;purpose: to simplify a union-regexp
-  ;  (define (simplify-union x)
-  ;    (define d (displayln (format "in simplify-union x: ~s" x)))
-  ;    (local [;simplify the lhs and rhs
-  ;            (define simp-lhs (simplify-regexp (union-regexp-r1 x)))
-  ;            (define simp-rhs (simplify-regexp (union-regexp-r2 x)))
-  ;
-  ;            ;return-compnents: regexp --> (listof regexp)
-  ;            ;purpose: return all the individual components of a regexp
-  ;            (define (return-components x)
-  ;              (cond [(or (empty-regexp? x)
-  ;                         (null-regexp? x))
-  ;                     empty]
-  ;                    [(or (singleton-regexp? x)
-  ;                         (kleenestar-regexp? x)
-  ;                         (concat-regexp? x))
-  ;                     (list x)]
-  ;                    [(union-regexp? x)
-  ;                     (append (return-components (union-regexp-r1 x))
-  ;                             (return-components (union-regexp-r2 x)))]
-  ;                    )
-  ;              )
-  ;
-  ;            ;remove-duplicates: (listof regexp) --> (listof regexp)
-  ;            ;purpose: to remove the duplicates from a list of regular expressions
-  ;            (define (remove-duplicates a-list)
-  ;              (cond [(empty? a-list) empty]
-  ;                    [(or (member (first a-list) (rest a-list))
-  ;                         (ormap (lambda (x) (and (kleenestar-regexp? x)
-  ;                                                 (member (first a-list) (return-components (kleenestar-regexp-r1 x))))) (rest a-list)))                              
-  ;                     (remove-duplicates (rest a-list))]
-  ;                    [(kleenestar-regexp? (first a-list)) (local [(define comps (return-components (kleenestar-regexp-r1 (first a-list))))]
-  ;                                                           (cons (first a-list)
-  ;                                                                 (remove-duplicates (filter (lambda (x) (member x comps)) (rest a-list)))))]
-  ;                    [else (cons (first a-list) (remove-duplicates (rest a-list)))]))
-  ;          
-  ;            ;remove the duplicates from the union
-  ;            (define clean-list (reverse (remove-duplicates (append (return-components simp-lhs)
-  ;                                                                                      (return-components simp-rhs)))))
-  ;
-  ;            ;re-union: (listof regexp) --> regexp
-  ;            ;purpose: to recreate a union-regexp
-  ;            (define (re-union a-list)
-  ;              (cond [(empty? a-list) (empty-regexp)]
-  ;                    [(empty? (rest a-list)) (first a-list)]
-  ;                    [else (union-regexp (first a-list) (re-union (rest a-list)))]))
-  ;
-  ;          
-  ;            ;reunify the cleaned list
-  ;            (define clean-union (re-union clean-list))
-  ;            ]
-  ;      clean-union
-  ;      )
-  ;    )
-
   (define (simplify-union x)
     ;(define d (displayln (format "in simplify-union x: ~s" x)))
     (local [;simplify the lhs and rhs
@@ -219,9 +162,7 @@
             ;reunify the cleaned list
             (define clean-union (re-union clean-list))
             ]
-      clean-union
-      )
-    )
+      clean-union))
   
   ; regexp --> string
   (define (printable-regexp r)
@@ -257,54 +198,79 @@
         (empty-regexp? x)
         (kleenestar-regexp? x)))
 
-  ;; regexp --> word
-  ;; Purpose: Generate a word in the language of the given regexp
-  (define (word-in-regexp rexp)
-
-    (define MAX-REPS 20)
-
-    ;; union-rexp --> (listof regexp)
-    ;; Purpose: Extract the sub-regexps of the given union-regexp
-    (define (extract-union-regexps urexp)
-      (let [(r1 (union-regexp-r1 urexp))
-            (r2 (union-regexp-r2 urexp))]
-        (if (not (union-regexp? r2))
-            (list r1 r2)
-            (cons r1 (extract-union-regexps r2)))))
-
-    ;; concat-rexp --> (listof regexp)
-    ;; Purpose: Extract the sub-regexps of the given concat-regexp
-    (define (extract-concat-regexps crexp)
-      (let [(r1 (concat-regexp-r1 crexp))
-            (r2 (concat-regexp-r2 crexp))]
-        (if (not (concat-regexp? r2))
-            (list r1 r2)
-            (cons r1 (extract-concat-regexps r2)))))
+  ;; union-rexp --> (listof regexp)
+  ;; Purpose: Extract the sub-regexps in the chain for the given union-regexp
+  (define (extract-union-regexps urexp)
+    (let [(r1 (union-regexp-r1 urexp))
+          (r2 (union-regexp-r2 urexp))]
+      (if (not (union-regexp? r2))
+          (list r1 r2)
+          (cons r1 (extract-union-regexps r2)))))
   
+  ;; union-regexp --> regexp
+  ;; Purpose: Return a randomly chosen sub-regexp from the given union-regexp
+  (define (pick-regexp e)
+    (let [(uregexps (extract-union-regexps e))]
+      (list-ref uregexps (random (length uregexps)))))
+
+  ;; singleton-regexp --> symbol or number
+  ;; Purpose: Convert the given singleton-regexp to a symbol or number
+  (define (convert-singleton e)
+    (let [(element (singleton-regexp-a e))]
+      (if (not (string<=? "0" element "9"))
+          (list (string->symbol element))
+          (list (string->number element)))))
+
+  ;; concat-rexp --> (listof regexp)
+  ;; Purpose: Extract the sub-regexps in the chain for the given concat-regexp
+  (define (extract-concat-regexps crexp)
+    (let [(r1 (concat-regexp-r1 crexp))
+          (r2 (concat-regexp-r2 crexp))]
+      (if (not (concat-regexp? r2))
+          (list r1 r2)
+          (cons r1 (extract-concat-regexps r2)))))
+
+  ;; natnum kleene-star-regexp (regexp --> word) --> word
+  ;; Purpose: Generate a word of arbitrary length in [0..reps+1] using
+  ;;          given regular expression and the given word-generating function
+  (define (generate-ks-word reps regexp gen-function)     
+    (let [(lst-words (filter
+                      (λ (w) (not (eq? w EMP)))
+                      (flatten
+                       (build-list
+                        (random (add1 reps))
+                        (λ (i) (gen-function (kleenestar-regexp-r1 regexp)))))))]
+      (if (empty? lst-words) EMP lst-words)))
+
+  ;; concat-regexp (regexp --> word) --> word
+  ;; Purpose: Generate a word by concatenating a words generated
+  ;;          from the sub-regexps in the given concat-regexp using
+  ;;          the given word-generting function
+  (define (gen-concat-word concat-rexp gen-function)
+    (let [(res (filter (λ (w) (not (eq? w EMP)))
+                       (flatten (map gen-function
+                                     (extract-concat-regexps concat-rexp)))))]
+      (if (empty? res) EMP res)))
+
+              
+  ;; regexp [natnum] --> word
+  ;; Purpose: Nondeterministically generate a word in the language
+  ;;          of the given regexp. The maximum repetitions for a Kleene
+  ;;          star is the the given natnum if provided. Otherwise, it is 20
+  (define (gen-regexp-word rexp . reps)
+    (define MAX-KLEENESTAR-REPS (if (null? reps) 20 (first reps)))
     (cond [(empty-regexp? rexp) EMP]
-          [(singleton-regexp? rexp)
-           (let [(element (singleton-regexp-a rexp))]
-             (if (not (string<=? "0" element "9"))
-                 (list (string->symbol element))
-                 (list (string->number element))))]
+          [(singleton-regexp? rexp) (convert-singleton rexp)]
           [(kleenestar-regexp? rexp)
-           (let* [(reps (random MAX-REPS))
-                  (element-list (append-map
-                                 (λ (x) (list x))
-                                 (build-list
-                                  reps
-                                  (λ (i) (word-in-regexp (kleenestar-regexp-r1 rexp))))))]
-             (if (empty? element-list) EMP element-list))]
-          [(union-regexp? rexp)
-           (let* [(uregexps (extract-union-regexps rexp))
-                  (element (list-ref uregexps (random (length uregexps))))]
-             (word-in-regexp element))]
-          [else (let [(cregexps (extract-concat-regexps rexp))]
-                  (filter (λ (w) (not (eq? w EMP)))
-                          (flatten (map word-in-regexp cregexps))))]))
+           (generate-ks-word MAX-KLEENESTAR-REPS regexp gen-regexp-word)]
+          [(union-regexp? rexp) (gen-regexp-word (pick-regexp rexp))]
+          [else (gen-concat-word rexp gen-regexp-word)]))
+
+  
   
  
   ;;; END REGULAR EXPRESSIONS
+
   
   
-  )
+  ) ;; closes module

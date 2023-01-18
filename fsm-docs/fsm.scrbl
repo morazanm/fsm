@@ -605,10 +605,10 @@ word are returned.
 
 
 @defproc[(fsa->regexp [m ndfa])
-         reg-exp]{Returns a regular expression for the language of the given ndfa.}
+         regexp]{Returns a regular expression for the language of the given ndfa.}
 
 @defproc[(simplify-regexp [r regexp])
-         reg-exp]{Performs elementary simplifications on the given regular expression.}
+         regexp]{Performs elementary simplifications on the given regular expression.}
 
 
 @section{Regular Expression Observers}
@@ -652,8 +652,46 @@ word are returned.
 @defproc[(kleenestar-regexp-r1 [r kleenestar-regexp])
          regexp]{Extracts the regular expression in the given kleenestar-regexp.}
 
-@defproc[(word-in-regexp [r regexp])
-         word]{Generates a random word of length at most 20 in the language defined by the given regular expression.}
+@defproc*[([(gen-regexp-word [r regexp]) word]
+           [(gen-regexp-word [r regexp] [n natnum]) word])]
+        Nondeterministically generate a word in the language
+        of the given regexp. The maximum nuber of repetitions
+        for a Kleene star is the the optional natnum if provided.
+        Otherwise, it is 20.
+
+@defproc[(gen-concat-word [r concat-regexp] [f (regexp --> word)])
+         word]
+        Generate a word by concatenating words generated
+        from the sub-regexps in the given concat-regexp using
+        the given word-generating function. This includes any
+        nested concat-regexps in r.
+
+@defproc[(generate-ks-word [n natnum] [r regexp] [f (regexp --> word)])
+         word]
+         Generate a word of arbitrary length in [0..n+1] using
+         given regular expression and the given word-generating function.
+         In essence, a word in the language of a Kleene star regexp
+         that has the given regexp nested is generated.
+
+@defproc[(extract-concat-regexps [r concat-regexp])
+         (listof regexp)]
+         Extract all the nested concatenated sub-regexps in the given
+         concat-regexp. This includes any nested concat-regexps in r.
+
+@defproc[(extract-union-regexps [r union-regexp])
+         (listof regexp)]
+         Extract all the nested unioned sub-regexps in the given
+         union-regexp. This includes any nested union-regexps in r.
+
+@defproc[(pick-regexp [r union-regexp])
+         regexp]
+         Nondeterministically return a nested sub-regexp from the given union-regexp.
+         This includes any nested union-regexps in r.
+
+@defproc[(convert-singleton [r singleton-regexp])
+         symbol]
+         Convert the given singleton-regexp to a symbol or number.
+
 
 
 @section{Some Useful Functions}
