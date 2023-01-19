@@ -239,16 +239,16 @@
                       (flatten
                        (build-list
                         (random (add1 reps))
-                        (λ (i) (gen-function (kleenestar-regexp-r1 regexp)))))))]
+                        (λ (i) (gen-function (kleenestar-regexp-r1 regexp) reps))))))]
       (if (empty? lst-words) EMP lst-words)))
 
   ;; concat-regexp (regexp --> word) --> word
   ;; Purpose: Generate a word by concatenating a words generated
   ;;          from the sub-regexps in the given concat-regexp using
   ;;          the given word-generting function
-  (define (gen-concat-word concat-rexp gen-function)
+  (define (gen-concat-word concat-rexp gen-function reps)
     (let [(res (filter (λ (w) (not (eq? w EMP)))
-                       (flatten (map gen-function
+                       (flatten (map (λ (re) (gen-function re reps))
                                      (extract-concat-regexps concat-rexp)))))]
       (if (empty? res) EMP res)))
 
@@ -263,8 +263,8 @@
           [(singleton-regexp? rexp) (convert-singleton rexp)]
           [(kleenestar-regexp? rexp)
            (gen-ks-word MAX-KLEENESTAR-REPS rexp gen-regexp-word)]
-          [(union-regexp? rexp) (gen-regexp-word (pick-regexp rexp))]
-          [else (gen-concat-word rexp gen-regexp-word)]))
+          [(union-regexp? rexp) (gen-regexp-word (pick-regexp rexp) MAX-KLEENESTAR-REPS)]
+          [else (gen-concat-word rexp gen-regexp-word MAX-KLEENESTAR-REPS)]))
 
   
   

@@ -667,7 +667,7 @@ word are returned.
         the given word-generating function. This includes any
         nested concat-regexps in r.
 
-@defproc[(generate-ks-word [n natnum] [r regexp] [f (regexp --> word)])
+@defproc[(gen-ks-word [n natnum] [r regexp] [f (regexp --> word)])
          word]
          Generate a word of arbitrary length in [0..n+1] using
          given regular expression and the given word-generating function.
