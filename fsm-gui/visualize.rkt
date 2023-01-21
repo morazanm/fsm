@@ -21,7 +21,8 @@
   "./components/inputFields.rkt"
   "./components/buttons.rkt"
   "./components/stateTransitions.rkt"
-  "../fsm-core/interface.rkt")
+  "../fsm-core/interface.rkt"
+  "../fsm-gviz/interface.rkt")
 
 (provide
  visualize
@@ -45,7 +46,7 @@ Initialize World
            (graphviz (if (or (eq? 'mttm-language-recognizer MACHINE-TYPE)
                              (eq? 'mttm MACHINE-TYPE))
                          #f
-                         (system "dot -V")))
+                         (has-dot-executable?)))
            (messageWin (if (null? msg) ;; Determine if a message should be rendered during on create
                            null
                            (car msg)))

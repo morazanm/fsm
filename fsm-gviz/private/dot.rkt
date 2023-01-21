@@ -1,5 +1,6 @@
+#lang racket
 ;; NOTE: this code was coppied from https://github.com/racket/gui/blob/master/gui-lib/mrlib/private/dot.rkt
-(provide find-dot)
+(provide find-dot has-dot-executable?)
 
 ;; these paths are explicitly checked (when find-executable-path
 ;; fails) because starting drracket from the finder (or the dock) 
@@ -12,7 +13,13 @@
 
 (define dot.exe (if (eq? (system-type) 'windows) "dot.exe" "dot"))
 
-(define (find-dot [neato? #f])
+;; has-dot? : boolean
+(define (has-dot-executable?)
+  (path? (find-dot)))
+
+;; find-dot : path | false
+;; looks for the dot path on computer, if exists then returns it otherwise returns false
+(define (find-dot)
   (with-handlers ([(lambda (e) ; may not have permission
                      (and (exn:fail? e)
                           (regexp-match "access denied" (exn-message e))))
@@ -22,6 +29,5 @@
       [dp dp]
       [else
        (ormap (λ (x) (and (file-exists? (build-path x dot.exe))
-                          (file-exists? (build-path x neato.exe))
                           (build-path x dot.exe)))
               dot-paths)])))
