@@ -5,11 +5,10 @@
 #lang scribble/manual
 
 @(require (for-label racket setup/collects))
-@defmodulelang[fsm #:use-sources (fsm)]
 
 @title{FSM}
 @author[(author+email "Marco T. Morazán" "morazanm@shu.edu")]
-
+@defmodulelang[fsm #:use-sources (fsm)]
 
 
 A DSL for the Automata Theory Classroom
