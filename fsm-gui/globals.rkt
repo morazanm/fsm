@@ -124,8 +124,20 @@ Created by Joshua Schappel on 12/19/19
 
 ;; Pops n elements off the stack
 (define (pop-stack num)
+  (define (new-stack-index)
+    (define cur-len (length (drop-right STACK-LIST STACK-INDEX)))
+    (if (< cur-len STACK-LIMIT)
+        (let ((new-posn (- STACK-INDEX (- STACK-LIMIT cur-len))))
+          (if (< new-posn 0) 0 new-posn))
+        STACK-INDEX))
   (cond
-    [(zero? num) '()]
+    [(zero? num)
+     ;; Once all pops have been finished we need to move the stack index so it will
+     ;; always show the STACK-LIMIT number of elements
+     (begin
+       (when (> STACK-INDEX 0)
+         (set! STACK-INDEX (new-stack-index)))
+       '())]
     [(empty? STACK-LIST) (error "There are not any more elements to pop")]
     [else
      (begin

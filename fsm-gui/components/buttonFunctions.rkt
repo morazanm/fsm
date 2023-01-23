@@ -759,7 +759,7 @@ Created by Joshua Schappel on 12/19/19
                                     [(tm-language-recognizer) (update-lang-rec-machine m (cadr nextState) (caddr nextState))]
                                     [else m]))))
 
-         ;; Based on the machien type certin things need to be updated:
+         ;; Based on the machine type certin things need to be updated:
          ;; - pda: stack pushes and pops, world processed and unprocessed lists
          ;; - tm: tape index, world processed and unprocessed lists
          ;; - dfa/ndfa: world processed and unprocessed lists
