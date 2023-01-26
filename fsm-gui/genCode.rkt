@@ -79,7 +79,6 @@
   (call-with-output-file file-path
     #:exists 'append
     (lambda (out)
-      (displayln (file-exists? file-path))
       (when (is-empty-file? file-path)
         (displayln "#lang fsm" out))
       (displayln " " out)

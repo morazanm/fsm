@@ -30,7 +30,7 @@
 
 ;; draw-window: msgWindow scene Scene-width Scene-height -> image
 ;; Purpose: Returns an image that contains the elemets of the msgWindow structure.
-;; IMPORTANT: make sure the widht and the height are the same as the scene's width and height so that the shading effct takes up the whole scene
+;; NOTE: make sure the width and the height are the same as the scene's width and height so that the shading effct takes up the whole scene
 (define (draw-window window scn width height)
   (place-image (create-window-image window width height) (posn-x (msgWindow-location window)) (posn-y (msgWindow-location window)) scn))
 
@@ -81,10 +81,7 @@
 ;; Purpose: Determins if the exit button was pressed
 ;; When given an x and y corrdinate, will determine if that coordinate was inside the exit button. If so returns true
 (define (exit-pressed? mouse-x mouse-y msgWindow scnW scnH)
-  (cond
-    [(and (and (> mouse-x (- (+ (/ scnW 2) (/ WIDTH 2)) 30))
-               (< mouse-x  (+ (/ scnW 2) (/ WIDTH 2))))
-          (and (> mouse-y  (- (/ scnH 2) (/ HEIGHT 2)))
-               (< mouse-y (+ (- (/ scnH 2) (/ HEIGHT 2)) TOP-HEIGHT))))
-     #t]
-    [else #f]))
+  (and (and (> mouse-x (- (+ (/ scnW 2) (/ WIDTH 2)) 30))
+            (< mouse-x  (+ (/ scnW 2) (/ WIDTH 2))))
+       (and (> mouse-y  (- (/ scnH 2) (/ HEIGHT 2)))
+            (< mouse-y (+ (- (/ scnH 2) (/ HEIGHT 2)) TOP-HEIGHT)))))
