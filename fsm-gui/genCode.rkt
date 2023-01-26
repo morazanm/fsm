@@ -1,10 +1,5 @@
 #lang racket
 
-#|
-Created by Joshua Schappel on 4/5/20
-  This file contains all functionality for the GenCode function
-|#
-
 (require racket/date
          "globals.rkt"
          "./structs/machine.rkt"
@@ -15,73 +10,30 @@ Created by Joshua Schappel on 4/5/20
 
 (provide genCode)
 
-;; The name of the file that the code is placed in
-(define FILE-NAME "fsmGUIFunctions.rkt")
+;; genCode: world -> world
+;; Purpose: Writes the current machine in the visualization tool to a specified file location
+(define (genCode world file-path)
+  (define machine (world-fsm-machine world))
+  (define pass? (valid-machine? machine))
+  (begin
+    (write-to-file file-path machine pass?)
+    (if pass?
+        (redraw-world-with-msg world
+                               (format "The machine was sucessfuly built and exported to ~s."
+                                       (path->string file-path))
+                               "Success!"
+                               MSG-SUCCESS)
+        (redraw-world-with-msg world
+                               (format "The machine built with errors! Please see the cmd for more info. The machine was exported to ~s"
+                                       (path->string file-path))
+                               "Error"
+                               MSG-ERROR))))
 
 
-;; gen-code: world -> world
-;; Purpose: Writes the current machine in the visualization tool to a file
-(define (genCode world)
-  (letrec
-      ((fsm-machine (world-fsm-machine world))
-       (state-list (map (lambda (x) (fsm-state-name x)) (machine-state-list (world-fsm-machine world)))))
-    (cond
-      [(valid-machine? fsm-machine state-list)
-       (begin
-         (write-to-file
-          (determine-file-name (world-input-list world))
-          (construct-machine
-           state-list
-           (machine-start-state fsm-machine)
-           (machine-final-state-list fsm-machine)
-           (machine-rule-list fsm-machine)
-           (machine-alpha-list fsm-machine)
-           (machine-type fsm-machine)
-           fsm-machine)
-          #t)
-         (redraw-world-with-msg world (string-append "The machine was sucessfuly built and exported to "
-                                                     FILE-NAME
-                                                     ". This file can be found at: ~n "
-                                                     (path->string (current-directory)))
-                                "Success!" MSG-SUCCESS))]
-      
-      [else
-       (begin
-         (write-to-file
-          FILE-NAME
-          (construct-machine
-           state-list
-           (machine-start-state fsm-machine)
-           (machine-final-state-list fsm-machine)
-           (machine-rule-list fsm-machine)
-           (machine-alpha-list fsm-machine)
-           (machine-type fsm-machine)
-           fsm-machine)
-          #f)
-         (redraw-world-with-msg world (string-append "The machine built with errors! Please see the cmd for more info. ~n ~n The machine was exported to "
-                                                     FILE-NAME
-                                                     ". This file can be found at: ~n "
-                                                     (path->string (current-directory)) "Please fix the erros and press 'Run' again.")
-                                "Error" MSG-ERROR))])))
-
-;; (listOf inputFields) -> String
-;; Purpose: Determines the files name
-(define (determine-file-name input-list)
-  (let ([inputFieldValue (case MACHINE-TYPE
-                           [(pda) (string-trim (textbox-text (list-ref input-list 11)))]
-                           [(tm) (string-trim (textbox-text (list-ref input-list 10)))]
-                           [(tm-language-recognizer) (string-trim (textbox-text (list-ref input-list 11)))]
-                           [else (textbox-text (list-ref input-list 8))])])
-    (cond
-      [(equal? "" inputFieldValue) FILE-NAME]
-      [(and
-        (> (string-length inputFieldValue) 4)
-        (equal? (list->string (take-right (string->list inputFieldValue) 4)) ".rkt")) inputFieldValue]
-      [else (string-append inputFieldValue ".rkt")])))
-
-;; valid-machine?: machine state-list -> boolean
+;; valid-machine?: machine -> boolean
 ;; Purpose: Determins if the given machine is valid
-(define (valid-machine? fsm-machine state-list)
+(define (valid-machine? fsm-machine)
+  (define state-list (map fsm-state-name (machine-state-list fsm-machine)))
   (not (void? (case MACHINE-TYPE
                 [(tm) (check-machine state-list
                                      (machine-alpha-list fsm-machine)
@@ -111,80 +63,211 @@ Created by Joshua Schappel on 4/5/20
                                 (machine-type fsm-machine))]))))
 
 
-;; write-to-file: string string boolean
+;; write-to-file: path machine boolean -> ()
 ;; Purpose: writes the comments and code to create a machine in the specified file.
 ;;   If the file does not exist it will create a file in the users current directory. If the file
 ;;   does exist then it adds the supplied args to the end of the file.
-(define (write-to-file file-name machine status)
-  (letrec
-      ((formatt-date (string-append (number->string (date-month (current-date)))
-                                    "/"
-                                    (number->string (date-year (current-date)))))
-       
-       (formatt-minute (if (< (date-minute (current-date)) 10)
-                           (string-append "0" (number->string (date-minute (current-date))))
-                           (number->string (date-minute (current-date)))))
+(define (write-to-file file-path machine pass?)
+  (define file-comments
+    (format ";; Created by fsm-GUI on: ~a\n;; ~a"
+            (date->string (current-date) #t)
+            (if pass? "This machine passed all tests." "WARNING: this machine failed to build!")))
+  (define (is-empty-file? file-path)
+    (define in (open-input-file file-path))
+    (eof-object? (read-line in)))
 
-       ;; formatt-time: null -> string
-       ;; Purpose: formatts military time into the from hh:mm:am/pm
-       (formatt-time (lambda ()
-                       (cond
-                         [(and (> (date-hour (current-date)) 12) (< (date-hour (current-date)) 24)) (string-append (number->string (- (date-hour (current-date)) 12)) ":" formatt-minute "pm")]
-                         [(equal? (date-hour (current-date)) 12) (string-append (number->string (date-hour (current-date))) ":" formatt-minute "pm")]
-                         [(equal? (date-hour (current-date)) 24) (string-append (number->string (- (date-hour (current-date)) 12)) ":" formatt-minute "am")]
-                         [else (string-append (number->string (date-hour (current-date))) ":" formatt-minute "am")])))
-
-       ;; build-comments: boolean -> string
-       ;; Purpose: constructs the comments that are written to the file
-       (build-comments (lambda (status)
-                         (cond
-                           [status (string-append ";; Created by fsm-GUI on: " formatt-date " at " (formatt-time)"\n;; This machine passed all tests.")]
-                           [else (string-append ";; Created by fsm-GUI on: " formatt-date " at " (formatt-time)"\n;; WARNING: this machine failed to build!")]))))
-    
-    (cond
-      [(file-exists? file-name) (call-with-output-file file-name
-                                  #:exists 'append
-                                  (lambda (out)
-                                    (displayln " " out)
-                                    (displayln (build-comments status) out)
-                                    (displayln machine out)))]
-      [else (call-with-output-file file-name
-              (lambda (out)
-                (displayln "#lang Racket" out)
-                (displayln "(require fsm)" out)
-                (displayln "" out)
-                (displayln (build-comments status) out)
-                (displayln machine out)))])))
+  (call-with-output-file file-path
+    #:exists 'append
+    (lambda (out)
+      (when (is-empty-file? file-path)
+        (displayln "#lang fsm" out))
+      (displayln " " out)
+      (displayln file-comments out)
+      (displayln (machine->fsm-code machine) out))))
 
 
+;; construct-machine: machine -> string
+;; converts a machine to the fsm representation
+;; NOTE: We do not support codegen for mttm's because we don not provide
+;; the gencode button
+(define (machine->fsm-code gui-machine)
+  (match-define (machine state-structs start finals rules _ alpha type) gui-machine)
+  (define states (map fsm-state-name state-structs))
+  (match type
+    [(or 'dfa 'ndfa)
+     (format "(define ~s (make-~s \n\t'~s \n\t'~s \n\t'~s \n\t'~s \n\t'~s))"
+             (gensym)
+             type
+             states
+             alpha
+             start
+             finals
+             rules)]
+    ['pda (format "(define ~s (make-ndpda \n\t'~s \n\t'~s \n\t'~s \n\t'~s \n\t'~s \n\t'~s))"
+                  (gensym)
+                  states
+                  alpha
+                  (pda-machine-stack-alpha-list gui-machine)
+                  start
+                  finals
+                  rules)]
+    ['tm (format "(define ~s (make-tm  \n\t'~s \n\t'~s \n\t'~s \n\t'~s \n\t'~s))"
+                 (gensym)
+                 states
+                 alpha
+                 rules
+                 start
+                 finals)]
+    ['tm-language-recognizer (format "(define ~s (make-tm  \n\t'~s \n\t'~s \n\t'~s \n\t'~s \n\t'~s \n\t'~s))"
+                                     (gensym)
+                                     states
+                                     alpha
+                                     rules
+                                     start
+                                     finals
+                                     (lang-rec-machine-accept-state gui-machine))]
+    [else (error (format "The machine type: ~s, is not currently supported" ) type)]))
 
-;; construct-machine: list-of-states symbol list-of-finals list-of-rules list-of-alpha symbol machine -> String
-;; Purpose: Constructs the code to create the specified machine
-(define (construct-machine states start finals rules alpha type m)
-  (let
-      (;; nameGen: none -> symbol
-       ;; Purpose: generates a random name that consists of one capital letter(A-Z) and one number(1-9)
-       ;;   for the mechine being created.
-       (nameGen (lambda ()
-                  (let ((letter (string (integer->char (random 65 91))))
-                        (number (string (integer->char (random 48 58))))
-                        (number2 (string (integer->char (random 48 58)))))
-                    (string->symbol (string-append letter number number2))))))
-    #|(println `(quote (,@states)))
-    (println `(quote (,@alpha)))
-    (println `(quote (,@rules)))
-    (println `(quote (,@start)))
-    (println `(quote (,@finals)))|#
-    (case type
-      [(dfa) `(define ,(nameGen) (make-dfa (quote (,@states)) (quote (,@alpha)) (quote ,start) (quote ,finals) (quote (,@rules))))]
-      [(ndfa) `(define ,(nameGen) (make-ndfa (quote (,@states)) (quote (,@alpha)) (quote ,start) (quote ,finals) (quote (,@rules))))]
-      [(pda)  `(define ,(nameGen) (make-ndpda (quote (,@states)) (quote (,@alpha)) (quote (,@(pda-machine-stack-alpha-list m))) (quote ,start) (quote ,finals) (quote (,@rules))))]
-      [(tm) `(define ,(nameGen) (make-tm (quote (,@states)) (quote (,@alpha)) (quote (,@rules)) (quote (,@start)) (quote (,@finals))))]
-      [(tm-language-recognizer) `(define ,(nameGen) (make-tm (quote (,@states)) (quote (,@alpha)) (quote (,@rules)) (quote (,@start)) (quote (,@finals))))]
-      [else (error (format "The machine type: ~s, is not currently supported" type))])))
 
-       
-                      
-       
-       
+(module+ test
+  (require rackunit)
+  (define (to-state-struct s) (fsm-state s #f #f))
+  (define dfa-m (machine (map to-state-struct '(S F D))
+                         'S
+                         '(F)
+                         '((S a F) (F a F) (F b F))
+                         '()
+                         '(a b)
+                         'dfa))
 
+  (check-true (string-contains? (machine->fsm-code dfa-m) "'(S F D)"))
+  (check-true (string-contains? (machine->fsm-code dfa-m) "'(a b)"))
+  (check-true (string-contains? (machine->fsm-code dfa-m) "'S"))
+  (check-true (string-contains? (machine->fsm-code dfa-m) "'(F)"))
+  (check-true (string-contains? (machine->fsm-code dfa-m) "'((S a F) (F a F) (F b F))"))
+
+
+
+  (define pda-m (pda-machine (map to-state-struct '(S M F))
+                             'S
+                             '(F)
+                             `(((S ,EMP ,EMP) (M ,EMP))
+                               ((M ,EMP ,EMP) (F ,EMP))
+                               ((M a ,EMP) (M (a)))
+                               ((M b ,EMP) (M (b)))
+                               ((M a (b)) (M ,EMP))
+                               ((M b (a)) (M ,EMP)))
+                             '()
+                             '(a b)
+                             'pda
+                             '(a b)))
+
+
+  (check-true (string-contains? (machine->fsm-code pda-m) "'(S M F)"))
+  (check-true (string-contains? (machine->fsm-code pda-m) "'(a b)"))
+  (check-true (string-contains? (machine->fsm-code pda-m) "'S"))
+  (check-true (string-contains? (machine->fsm-code pda-m) "'(F)"))
+  (check-true (string-contains? (machine->fsm-code pda-m)
+                                (format "~s"
+                                        `(((S ,EMP ,EMP) (M ,EMP))
+                                          ((M ,EMP ,EMP) (F ,EMP))
+                                          ((M a ,EMP) (M (a)))
+                                          ((M b ,EMP) (M (b)))
+                                          ((M a (b)) (M ,EMP))
+                                          ((M b (a)) (M ,EMP))))))
+
+
+  (define tm-m (tm-machine (map to-state-struct '(S H))
+                           'S
+                           '(H)
+                           `(((S ,LM) (S ,RIGHT))
+                             ((S a) (H a))
+                             ((S b) (H a))
+                             ((S ,BLANK) (H a)))
+                           '(,LM)
+                           `(a b ,LM)
+                           'tm
+                           0))
+
+  (check-true (string-contains? (machine->fsm-code tm-m) "'(S H)"))
+  (check-true (string-contains? (machine->fsm-code tm-m) "'(a b @)"))
+  (check-true (string-contains? (machine->fsm-code tm-m) "'S"))
+  (check-true (string-contains? (machine->fsm-code tm-m) "'(H)"))
+  (check-true (string-contains? (machine->fsm-code tm-m)
+                                (format "~s"
+                                        `(((S ,LM) (S ,RIGHT))
+                                          ((S a) (H a))
+                                          ((S b) (H a))
+                                          ((S ,BLANK) (H a))))))
+
+
+  (define lang-rec-m (lang-rec-machine (map to-state-struct '(S B C D E Y N))
+                                       'S
+                                       '(Y N)
+                                       `(((S a) (B z))
+                                         ((S b) (N b))
+                                         ((S c) (N c))
+                                         ((S ,BLANK) (Y ,BLANK))
+                                         ((S z) (N z))
+                                         ((E z) (E ,RIGHT))
+                                         ((E ,BLANK) (Y ,BLANK))
+                                         ((E a) (N a))
+                                         ((E b) (N b))
+                                         ((E c) (N c))
+                                         ((B a) (B ,RIGHT))
+                                         ((B b) (C z))
+                                         ((B c) (N c))
+                                         ((B ,BLANK) (N ,BLANK))
+                                         ((B z) (B ,RIGHT))
+                                         ((C a) (N a))
+                                         ((C b) (C ,RIGHT))
+                                         ((C c) (D z))
+                                         ((C ,BLANK) (N ,BLANK))
+                                         ((C z) (C ,RIGHT))
+                                         ((D a) (S a))
+                                         ((D b) (D ,LEFT))
+                                         ((D c) (D ,LEFT))
+                                         ((D ,BLANK) (N ,BLANK))
+                                         ((D z) (D ,LEFT))
+                                         ((D ,LM) (E R)))
+                                       `(,LM)
+                                       '(a b c z)
+                                       'tm-language-recognizer
+                                       0
+                                       'Y))
+
+
+  (check-true (string-contains? (machine->fsm-code lang-rec-m) "'(S B C D E Y N)"))
+  (check-true (string-contains? (machine->fsm-code lang-rec-m) "'(a b c z)"))
+  (check-true (string-contains? (machine->fsm-code lang-rec-m) "'S"))
+  (check-true (string-contains? (machine->fsm-code lang-rec-m) "'(Y N)"))
+  (check-true (string-contains? (machine->fsm-code lang-rec-m) "'Y"))
+  (check-true (string-contains? (machine->fsm-code lang-rec-m)
+                                (format "~s"
+                                        `(((S a) (B z))
+                                          ((S b) (N b))
+                                          ((S c) (N c))
+                                          ((S ,BLANK) (Y ,BLANK))
+                                          ((S z) (N z))
+                                          ((E z) (E ,RIGHT))
+                                          ((E ,BLANK) (Y ,BLANK))
+                                          ((E a) (N a))
+                                          ((E b) (N b))
+                                          ((E c) (N c))
+                                          ((B a) (B ,RIGHT))
+                                          ((B b) (C z))
+                                          ((B c) (N c))
+                                          ((B ,BLANK) (N ,BLANK))
+                                          ((B z) (B ,RIGHT))
+                                          ((C a) (N a))
+                                          ((C b) (C ,RIGHT))
+                                          ((C c) (D z))
+                                          ((C ,BLANK) (N ,BLANK))
+                                          ((C z) (C ,RIGHT))
+                                          ((D a) (S a))
+                                          ((D b) (D ,LEFT))
+                                          ((D c) (D ,LEFT))
+                                          ((D ,BLANK) (N ,BLANK))
+                                          ((D z) (D ,LEFT))
+                                          ((D ,LM) (E R))))))
+  );; end module+ test

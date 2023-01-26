@@ -1,19 +1,21 @@
 #lang racket
 #|
 Created by Joshua Schappel on 12/19/19
-  This file contains all the functions associated with a button
+This file contains all the functions associated with a button
 |#
 (require 
   net/sendurl
-         "../structs/input.rkt"
-         "../structs/world.rkt"
-         "../structs/state.rkt"
-         "../structs/machine.rkt"
-         "../structs/posn.rkt"
-         "../globals.rkt"
-         "stateTransitions.rkt"
-         "../structs/world.rkt"
-         "../../fsm-core/interface.rkt")
+  racket/gui/base
+  "stateTransitions.rkt"
+  "../structs/input.rkt"
+  "../structs/world.rkt"
+  "../structs/state.rkt"
+  "../structs/machine.rkt"
+  "../structs/posn.rkt"
+  "../globals.rkt"
+  "../genCode.rkt"
+  "../structs/world.rkt"
+  "../../fsm-core/interface.rkt")
 
 (require racket/pretty)
 (provide
@@ -38,6 +40,7 @@ Created by Joshua Schappel on 12/19/19
  scrollbarLeft
  openHelp
  send-url
+ save-machine
  stackScrollUp
  stackScrollDown
  tapeScrollRight
@@ -291,7 +294,7 @@ Created by Joshua Schappel on 12/19/19
                    (let
                        ((start-state (string-trim(textbox-text(list-ref (world-input-list w) 2))))
                         (new-input-list (list-set (world-input-list w) 2 (remove-text (list-ref(world-input-list w) 2) 100))))
-                    
+
                      (cond
                        [(equal? "" start-state) (redraw-world w)]
                        [(and (null? (machine-start-state (world-fsm-machine w))) (ormap (lambda(x) (equal? start-state (symbol->string (fsm-state-name x)))) (machine-state-list (world-fsm-machine w))))
@@ -350,7 +353,7 @@ Created by Joshua Schappel on 12/19/19
                             (new-input-list (list-set (world-input-list w) 2 (remove-text (list-ref (world-input-list w) 2) 100))))
                          (cond
                            [(equal? "" start-state) (redraw-world w)]
-                           
+
                            [(ormap (lambda (x) (equal? (string->symbol start-state)(fsm-state-name x))) (machine-state-list (world-fsm-machine w)))
                             (begin
                               (reset-bottom-indices)
@@ -366,7 +369,7 @@ Created by Joshua Schappel on 12/19/19
                                      (world-error-msg w)
                                      (world-scroll-bar-index w)
                                      (world-graphql-img w)))]
-                           
+
                            [else
                             (begin
                               (reset-bottom-indices)
@@ -403,7 +406,7 @@ Created by Joshua Schappel on 12/19/19
                         (set-machine-state-list! (world-fsm-machine w) (cons (fsm-state (string->symbol end-state) TRUE-FUNCTION (posn 0 0)) (machine-state-list (world-fsm-machine w))))
                         (set-machine-final-state-list! (world-fsm-machine w) (remove-duplicates (cons (string->symbol end-state) (machine-final-state-list (world-fsm-machine w)))))
                         (create-new-world-input-empty w new-input-list))]))))
-                
+
 
 ;; rmvEnd: world -> world
 ;; Purpose: removes a end state from the world-final-state-list
@@ -423,7 +426,7 @@ Created by Joshua Schappel on 12/19/19
                         (reset-bottom-indices)
                         (set-machine-final-state-list! (world-fsm-machine w) (cons (string->symbol end-state) (machine-final-state-list (world-fsm-machine w))))
                         (create-new-world-input-empty w new-input-list))]))))
-                      
+
 
 ;; addAlpha: world -> world
 ;; Purpose: Adds a letter to the worlds alpha-list
@@ -468,7 +471,7 @@ Created by Joshua Schappel on 12/19/19
                                                                                             (machine-alpha-list (world-fsm-machine w)))))
                           (set-machine-rule-list! (world-fsm-machine w) (remove-all (machine-rule-list (world-fsm-machine w)) input-value))
                           (create-new-world-input-empty w new-input-list))]))))
-                   
+
 
 ;; addSigma: world -> world
 ;; Purpose: adds a letter or group of letters to the sigma list
@@ -496,7 +499,7 @@ Created by Joshua Schappel on 12/19/19
                                                                                                (string->symbol (car los))))
                                                                                           accum))]))))
                                                     (convert-list split-string '()))))
-                                                           
+
 
                             
 
@@ -518,7 +521,7 @@ Created by Joshua Schappel on 12/19/19
                                                [else (check-lists loa los)]))))
                             (new-input-list (list-set (world-input-list w) input-idx (remove-text (list-ref (world-input-list w) input-idx) 100)))
                             (sigma-list (reverse (string->input-list input-value))))
-                   
+
                      (cond
                        [(equal? (check-alpha (machine-alpha-list (world-fsm-machine w)) sigma-list) #f)
                         (redraw-world-with-msg w "Some of the input is not in the alphabet. Please make sure there is a space between each letter. " "Error" MSG-ERROR)]
@@ -642,7 +645,7 @@ Created by Joshua Schappel on 12/19/19
           ;; Otherwise return the rule index
           [else ruleIndex]))))
 
-                  
+
 
 ;; showNext: world -> world
 ;; Purpose: shows the next state that the machine is in
@@ -669,7 +672,7 @@ Created by Joshua Schappel on 12/19/19
                           (if (equal? sym (lang-rec-machine-accept-state (world-fsm-machine w)))
                               (redraw-world-with-msg w "The input is accepted." "Success" MSG-SUCCESS)
                               (redraw-world-with-msg w "The input is rejected." "Notice" MSG-CAUTION)))]
-                        
+
 
                        [else
                         (letrec(
@@ -689,7 +692,7 @@ Created by Joshua Schappel on 12/19/19
 
 
 
-                          
+
 ;; go-next: symbol world -> world
 ;; Determins the next state that the machine needs to be in an then updates the world accordingly
 (define (go-next nextState w)
@@ -748,8 +751,8 @@ Created by Joshua Schappel on 12/19/19
                                      (set-tape-index-bottom (- 1 TAPE-INDEX-BOTTOM))]
                                     [else
                                      TAPE-INDEX-BOTTOM]))))
-                                   
-                                                 
+
+
 
                 ;; Updates the machine to have the approperate values. This function is only needed for tm
                 ;;   and tm-language-recognizer to update the tape position on each transition.
@@ -773,8 +776,8 @@ Created by Joshua Schappel on 12/19/19
               TAPE-INDEX-BOTTOM]
              #|
              [(or (equal? 'tm MACHINE-TYPE)
-                  (equal? 'tm-language-recognizer MACHINE-TYPE))
-              (tm-tape-move)]
+             (equal? 'tm-language-recognizer MACHINE-TYPE))
+             (tm-tape-move)]
              |#
              [else
               (set-tape-index-bottom (+ 1 TAPE-INDEX-BOTTOM))])
@@ -839,7 +842,7 @@ Created by Joshua Schappel on 12/19/19
                                                   [(tm) (update-tm-machine m (cadr previousState) (caddr previousState))]
                                                   [(tm-language-recognizer) (update-lang-rec-machine m (cadr previousState) (caddr previousState))]
                                                   [else m])))
-                                                    
+
                               ;; determin-cur-state: none -> symbol
                               ;; Determins the current state that the machine is in
                               (determin-prev-state (lambda ()
@@ -900,7 +903,7 @@ Created by Joshua Schappel on 12/19/19
                             (begin
                               (handle-pop)
                               (handle-push)))
-                             
+
                           ;; finally update the processed and unprocessed lists
                           (world (update-machine (world-fsm-machine w))
                                  (world-tape-position w)
@@ -1131,6 +1134,13 @@ Created by Joshua Schappel on 12/19/19
     (if (equal? VIEW-MODE 'graph)
         (redraw-world-img new-world)
         new-world)))
+
+
+;; save-machine: world -> world
+;; Opens the file explorer and saves the file
+(define (save-machine w)
+  (define file-path (put-file (format "Save Machine: ~s" MACHINE-TYPE)))
+  (if file-path (genCode w file-path) w))
 
 
 

@@ -10,8 +10,7 @@ Created by Joshua Schappel on 12/19/19
   "buttonFunctions.rkt"
   "./runProgram.rkt"
   "../structs/button.rkt"
-  "../globals.rkt"
-  "../genCode.rkt")
+  "../globals.rkt")
 
 (provide
  BUTTON-LIST
@@ -246,11 +245,11 @@ Button Declarations
                               #:fntsize 40
                               #:func (re-render-listener showPrev)))
 
-(define BTN-GENCODE (make-button 95 50 (posn 55 190)
+(define BTN-GENCODE (make-button 95 50 (posn 55 200)
                                  #:text "GEN CODE"
                                  #:color (make-color 240 79 77)
                                  #:fntsize 30
-                                 #:func genCode))
+                                 #:func save-machine))
 
 ;; pda stack scroll btn's
 (define BTN-STACK-UP (make-button STACK-WIDTH 25 (posn (- WIDTH 250) 73)
