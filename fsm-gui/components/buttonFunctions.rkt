@@ -1140,7 +1140,7 @@ This file contains all the functions associated with a button
 ;; Opens the file explorer and saves the file
 (define (save-machine w)
   (define file-path (put-file (format "Save Machine: ~s" MACHINE-TYPE)))
-  (genCode w file-path))
+  (if file-path (genCode w file-path) w))
 
 
 

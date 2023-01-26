@@ -245,7 +245,7 @@ Button Declarations
                               #:fntsize 40
                               #:func (re-render-listener showPrev)))
 
-(define BTN-GENCODE (make-button 95 50 (posn 55 190)
+(define BTN-GENCODE (make-button 95 50 (posn 55 200)
                                  #:text "GEN CODE"
                                  #:color (make-color 240 79 77)
                                  #:fntsize 30
