@@ -36,4 +36,4 @@ jobs:
 
       # Kick off the tests
       - name: Run tests
-        run: xvfb-run raco test fsm-test
+        run: xvfb-run raco test fsm-test fsm-gui fsm-core fsm-gviz

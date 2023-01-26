@@ -100,7 +100,7 @@ WORLD DRAWING FUNCTIONS
              (world-fsm-machine a-world)
              (car args))
          (world-tape-position a-world)
-         (world-cur-rule a-world)
+         CURRENT-RULE
          null
          (world-button-list a-world)
          loi
