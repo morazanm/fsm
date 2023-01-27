@@ -2,12 +2,9 @@
 A Library for the Automata Theory Classroom
 
 
-## Checkout the [FSM Website](https://morazanm.github.io/fsm/)
-
-
 ## Documentation
-The documentation can be found  [here](https://morazanm.github.io/fsm/fsm/index.html).
-
+- [Library docs](https://morazanm.github.io/fsm/fsm/index.html).
+- [Website](https://morazanm.github.io/fsm/)
 
 ## Installation
 - [Installing fsm on your machine](fsm-docs/readmes/fsm_install.md)
