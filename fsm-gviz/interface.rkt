@@ -1,6 +1,7 @@
 #lang racket
 (require "private/adapter.rkt"
          "private/lib.rkt"
+         "private/dot.rkt"
          "../fsm-core/interface.rkt"
          "../fsm-gui/structs/machine.rkt"
          "../fsm-gui/structs/state.rkt")
@@ -15,6 +16,7 @@
 
 (provide
  (except-out (all-from-out "private/lib.rkt") stringify-value)
+ (all-from-out "private/dot.rkt")
  machine->graph ;; Used for testing
  fsa->graph ;; Used for testing
  (contract-out

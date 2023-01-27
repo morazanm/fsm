@@ -1,5 +1,5 @@
 #lang racket
-(require 2htdp/image)
+(require 2htdp/image "dot.rkt")
 
 ;; NOTICE: For more info on the functions and structures of this library please
 ;; read the scribble file
@@ -160,8 +160,11 @@
 ;; Purpose: converts a dot file to a png. The png files in the current directory
 (define (dot->png dot-path)
   (define png-path (path-replace-extension dot-path ".png"))
-  (if (system (format "dot -Tpng ~s -o ~s"  (path->string dot-path) (path->string png-path)))
-      png-path
+  (define dot-exe-path (find-dot))
+  (if (path? dot-exe-path)
+      (begin
+        (system (format "~a -Tpng ~s -o ~s" (path->string dot-exe-path)  (path->string dot-path) (path->string png-path)))
+        png-path)
       (error "Error caused when creating png file. This was probably due to the dot environment variable not existing on the path")))
 
 ;; png->bitmap: path -> string
