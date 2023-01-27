@@ -74,10 +74,13 @@ Initialize World
                                       [else BUTTON-LIST]))))
     ;; mttm's have a smaller tape limit so we will change it if necessary
     ;; mttm's only use the view mode! Nothing else!!!
-    (when (or (equal? type 'mttm-language-recognizer)
-              (equal? type 'mttm))
-      (set-view-mode 'tape)
-      (set-tape-render-limit 24))
+    ;; Otherwise we always boot in the control view
+    (if (or (equal? type 'mttm-language-recognizer)
+            (equal? type 'mttm))
+        (begin
+          (set-view-mode 'tape)
+          (set-tape-render-limit 24))
+        (set-view-mode 'control))
 
     (initialize-world m
                       messageWin
