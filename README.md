@@ -1,62 +1,38 @@
 # FSM   ![Build Status](https://github.com/morazanm/fsm/actions/workflows/build.yml/badge.svg) ![Test Status](https://github.com/morazanm/fsm/actions/workflows/ci.yml/badge.svg) ![Docs](https://github.com/morazanm/fsm/actions/workflows/docs.yml/badge.svg)
-##### FSM Library Version 1.6
 A Library for the Automata Theory Classroom
 
 
 ## Checkout the [FSM Website](https://morazanm.github.io/fsm/)
 
-## Version History
-### 1.6
-- Bug fixes
-- GUI Quality of life improvements
-- New FSM website
-### 1.5
-- Fixed bug for show-transitions for Turing machines
-- Fixed bug in rename-states
-- Fixed bug in consume in tm.rkt for Language Recognizers
-- Fixed rename states for Turing machines and Language Recognizers 
-### 1.4: 
- - Added sm-graph 
- - Added colorblind mode to sm-graph 
- - Minor graphical changes to the visualization tool (new color :blush:)
-### 1.3:
- - Added Turing Machine support to visualization tool
- - Minor bug fixes with the visualization tool
-### 1.2:
- - Added Pushdown Automata support to the visualization tool
- - Added scroll bars to input field for visualization tool
 
 ## Documentation
 The documentation can be found  [here](https://morazanm.github.io/fsm/fsm/index.html).
 
 
 ## Installation
-There are two ways to install fsm onto your machine.
-
-### Using Raco
-
-```bash
-raco pkg install https://github.com/morazanm/fsm.git
-```
-
-### Using DrRacket's Package Manager
-![Racket Package Manager Install](install.gif)
+- [Installing fsm on your machine](fsm-docs/readmes/fsm_install.md)
+- [Installing graphviz on your machine](fsm-gviz/README.md)
 
 
-Once fsm is installed just require the module. 
+## Contributing
+If you wish to contribute to `fsm` please read the [contribution docs](fsm-docs/readmes/contribute.md)
+
+
+## Getting Started
+Once fsm is installed you use one of the following two options
 ```racket
 (require fsm)
 ```
+```racket
+#lang fsm
+```
 
-### GraphViz Installation 
-In order to install GraphViz onto your computer and as an environment variable, check out this [link.](https://github.com/morazanm/fsm/tree/master/GraphViz)
-
-## Basic Usage
+#### Basic Usage
 Below are some basic examples of how to use fsm. For a more in-depth guide please visit the [fsm documentation](https://htmlpreview.github.io/?https://github.com/morazanm/fsm/blob/master/fsm.html).
 
 #### Building a DFA
 ```racket
-(require fsm)
+#lang fsm 
 
 ; L(a*a) = {w | w starts and ends with an a}
 (define a*a (make-dfa '(S F A)       ;the states
@@ -72,7 +48,7 @@ Below are some basic examples of how to use fsm. For a more in-depth guide pleas
 
 #### Building a NDFA
 ```racket
-(require fsm)
+#lang fsm
 
 ; L(KLEENESTAR-abUaba) = (abUaba)*
 (define KLEENESTAR-abUaba (make-ndfa '(Q-0 Q-1 Q-2 Q-3 Q-4 Q-5) ;the states
@@ -89,7 +65,7 @@ Below are some basic examples of how to use fsm. For a more in-depth guide pleas
 ```
 #### Building a PDA
 ```racket
-(require fsm)
+#lang fsm
 
 ; L = {wcw^r | w in {a, b)*}
 (define pda-wcw^r (make-ndpda '(S M N F)                  ;the states
@@ -107,7 +83,7 @@ Below are some basic examples of how to use fsm. For a more in-depth guide pleas
 ```
 #### Building a TM
 ```racket
-(require fsm)
+#lang fsm
 
 ; write "a" on tape
 (define Ma (make-tm '(S H)                  ;the states
@@ -134,7 +110,7 @@ To visualize a dfa or ndfa create a new file and require fsm. Then provide one o
 (sm-visualize a*) ;; See "Building a DFA" for the implementation of a*
 ```
 
-3) sm-visualize &lt;pre-built-machine (state invariant-function)*&gt; To visualize a pre-built fsm machine with associated state invariants. Note that *(state invariant-function)* is a abitrary number of tuples.
+3) sm-visualize &lt;pre-built-machine (state invariant-function)*&gt; To visualize a pre-built fsm machine with associated state invariants. Note that *(state invariant-function)* is a arbitrary number of tuples.
 ```racket
 ;; Invariant functions
 (define INV1 (lambda (v) true))
@@ -144,25 +120,17 @@ To visualize a dfa or ndfa create a new file and require fsm. Then provide one o
 (sm-visualize a* (list 'S INV1) (list 'F INV2))
 ```
 
-## Future Additions
-- [X] Extend the visualization tool to work for pda's
-- [X] Extend the visualization tool to work for turing machines
-- [X] Extend the visualization tool to give the user the option to view the graph represention of a machine
-- [ ] Upgrade the random testing extension
 
 ## Publications
 - [Functional Automata - Formal Languages for Computer Science Students](https://arxiv.org/abs/1412.4878)
 - [FSM Error Messages](https://arxiv.org/abs/1906.11421v1)
 - [Visual Designing and Debugging of Deterministic Finite-State Machines in FSM](https://arxiv.org/abs/2008.09254)
 
-## Contributors
+
+## Current Maintainers
 - [Marco T. Morazán](https://github.com/morazanm)
-- Rosario Antunez
-- [Josephine A. Des Rosiers](https://github.com/josdes)
 - [Joshua Schappel](https://github.com/jschappel)
-- [Sachin Mahashabde](https://github.com/sachinmahashabde)
-- [Sena Karsavran](https://github.com/senakar)
-- [Isabella Felix](https://github.com/felixisa)
+
 
 ## License
 Copyright (c) 2020 by Marco T. Morazan
