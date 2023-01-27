@@ -18,6 +18,12 @@ The documentation can be found  [here](https://morazanm.github.io/fsm/fsm/index.
 If you wish to contribute to `fsm` please read the [contribution docs](fsm-docs/readmes/contribute.md)
 
 
+## Publications
+- [Functional Automata - Formal Languages for Computer Science Students](https://arxiv.org/abs/1412.4878)
+- [FSM Error Messages](https://arxiv.org/abs/1906.11421v1)
+- [Visual Designing and Debugging of Deterministic Finite-State Machines in FSM](https://arxiv.org/abs/2008.09254)
+
+
 ## Getting Started
 Once fsm is installed you use one of the following two options
 ```racket
@@ -27,10 +33,12 @@ Once fsm is installed you use one of the following two options
 #lang fsm
 ```
 
-#### Basic Usage
+
+### Basic Usage
 Below are some basic examples of how to use fsm. For a more in-depth guide please visit the [fsm documentation](https://htmlpreview.github.io/?https://github.com/morazanm/fsm/blob/master/fsm.html).
 
-#### Building a DFA
+
+### Building a DFA
 ```racket
 #lang fsm 
 
@@ -46,7 +54,7 @@ Below are some basic examples of how to use fsm. For a more in-depth guide pleas
                         (A b A))))
 ```
 
-#### Building a NDFA
+### Building a NDFA
 ```racket
 #lang fsm
 
@@ -63,7 +71,7 @@ Below are some basic examples of how to use fsm. For a more in-depth guide pleas
                                        (Q-4 b Q-5)
                                        (Q-5 ,EMP Q-0))))
 ```
-#### Building a PDA
+### Building a PDA
 ```racket
 #lang fsm
 
@@ -81,7 +89,7 @@ Below are some basic examples of how to use fsm. For a more in-depth guide pleas
                                 ((N b (b)) (N ,EMP))
                                 ((N ,EMP ,EMP) (F ,EMP)))))
 ```
-#### Building a TM
+### Building a TM
 ```racket
 #lang fsm
 
@@ -97,7 +105,7 @@ Below are some basic examples of how to use fsm. For a more in-depth guide pleas
 ```
 
 
-#### Visualizing a Machine 
+### Visualizing a Machine 
 To visualize a dfa or ndfa create a new file and require fsm. Then provide one of the follwing options:
 
 1) sm-visualize &lt;machine-type&gt; To visualize a machine from scratch.
@@ -119,13 +127,6 @@ To visualize a dfa or ndfa create a new file and require fsm. Then provide one o
 ;; Visualize the machine 
 (sm-visualize a* (list 'S INV1) (list 'F INV2))
 ```
-
-
-## Publications
-- [Functional Automata - Formal Languages for Computer Science Students](https://arxiv.org/abs/1412.4878)
-- [FSM Error Messages](https://arxiv.org/abs/1906.11421v1)
-- [Visual Designing and Debugging of Deterministic Finite-State Machines in FSM](https://arxiv.org/abs/2008.09254)
-
 
 ## Current Maintainers
 - [Marco T. Morazán](https://github.com/morazanm)
