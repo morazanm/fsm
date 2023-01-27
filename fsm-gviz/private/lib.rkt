@@ -163,7 +163,7 @@
   (define dot-exe-path (find-dot))
   (if (path? dot-exe-path)
       (begin
-        (system (format "~a -Tpng ~s -o ~s" (path->string dot-exe-path)  (path->string dot-path) (path->string png-path)))
+        (system (format "dot -Tpng ~s -o ~s" (path->string dot-path) (path->string png-path)))
         png-path)
       (error "Error caused when creating png file. This was probably due to the dot environment variable not existing on the path")))
 
