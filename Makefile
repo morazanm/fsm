@@ -1,12 +1,11 @@
-# Test directories
-Fsm_dir=test/fsm
-Viz_dir=test/FSM-Visualization
-
-
 install:
-	@racket main.rkt
+	@raco make .
 .PHONY: install
 
 test:
-	@raco test fsm-test
+	@raco test fsm-test fsm-gui fsm-core fsm-gviz
 .PHONY: test
+
+build-doc:
+	@scribble fsm-doc/fsm.scrbl
+.PHONY: build-doc
