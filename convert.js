@@ -54,7 +54,7 @@ function ConvertToTable(array) {
 // coverts an obj to a bootstrap table row
 // NOTE: We only take the 5 most recent
 function createTableRow(obj) {
-    const leadingHTML = `<li class="list-group-item">Version${obj.version}\n<ul>\n`;
+    const leadingHTML = `<li class="list-group-item">Version ${obj.version}\n<ul>\n`;
     const endHTML = `</ul>\n</li>\n`;
     let bodyHTML = "";
     console.log(obj);
