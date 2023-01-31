@@ -41,6 +41,7 @@ Created by Joshua Schappel on 12/19/19
 (define MSG-CAUTION (make-color 252 156 10)) ;; Color of a caution message
 (define OUTLINE-COLOR "blue") ;; The color of the box outlineing
 (define TAPE-HIGHLIGHT-COLOR "red") ;; The color of the failed inv.
+(define TAPE-HIGHLIGHT-COLOR-CB (make-color 123 50 148)) ;; Color for failed invariant for color blind mode
 (define ARROW-RULE-COLOR "red") ;; the color of the rule rendered above the arrow
 (define DEFAULT-ARROW-COLOR "black") ;; the color of the arrow without invariants
 
