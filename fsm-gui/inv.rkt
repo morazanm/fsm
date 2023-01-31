@@ -4,8 +4,28 @@
   "./structs/machine.rkt"
   "./structs/state.rkt")
 
-(provide determin-inv)
+(provide determin-inv determin-mttm-inv)
 
+;; determin-mttm-inv: world -> color | 'none
+(define (determin-mttm-inv tapes cur-state machine)
+  (define true-color (if COLOR-BLIND-MODE TRUE-INV-CB TRUE-INV))
+  (define false-color (if COLOR-BLIND-MODE FALSE-INV-CB FALSE-INV))
+  (define caution-color CAUTION-INV)
+  (if (null? cur-state) 'none
+      (let ((state-function (fsm-state-function
+                             (list-ref (machine-state-list machine)
+                                       (get-state-index (machine-state-list machine)
+                                                        cur-state 0)))))
+        (cond
+          [(state-function tapes) true-color]
+          [(false? (state-function tapes)) false-color]
+          [(equal? PLACEHOLDER (state-function tapes))
+           'none]
+          [else caution-color]))))
+  
+
+
+  
 
 (define (determin-inv machine cur-state #:graphViz[gv false])
   (let* ([state-list (machine-state-list machine)]
@@ -37,8 +57,8 @@
                          (if mode 'fail FALSE-INV-CB)
                          (if mode 'fail FALSE-INV))]
         [caution-color (if COLOR-BLIND-MODE
-                         (if mode 'fail CAUTION-INV)
-                         (if mode 'fail CAUTION-INV))]
+                           (if mode 'fail CAUTION-INV)
+                           (if mode 'fail CAUTION-INV))]
         [non-color (if mode 'none DEFAULT-ARROW-COLOR)])
     (case MACHINE-TYPE
       [(pda)
@@ -71,7 +91,7 @@
            [(equal? #f (func tape tape-posn)) false-color]
            [(equal? PLACEHOLDER (func p-list STACK-LIST)) non-color]
            [else caution-color]))]
-       [(mttm-language-recognizer)
+      [(mttm-language-recognizer)
        (let ((tape-posn #f)
              (tape #t))
          (cond

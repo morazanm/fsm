@@ -209,7 +209,7 @@ Cmd Functions
                   (run-program
                    (build-world
                     (mttm-machine
-                     (map (lambda (x) (fsm-state x TM-TRUE-FUNCTION (posn 0 0))) (sm-states fsm-machine))
+                     (map (lambda (x) (fsm-state x MTTM-TRUE-FUNCTION (posn 0 0))) (sm-states fsm-machine))
                      (sm-start fsm-machine)
                      (sm-finals fsm-machine)
                      (reverse (sm-rules fsm-machine))
@@ -219,9 +219,9 @@ Cmd Functions
                      (sm-numtapes fsm-machine)
                      0
                      '())
-                    'mttm-language-recognizer
+                    'mttm
                     (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation."
-                               "tm" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
+                               "mttm" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
                   (void))]
 
          ['mttm-language-recognizer (begin
@@ -229,7 +229,7 @@ Cmd Functions
                                       (run-program
                                        (build-world
                                         (mttm-lang-rec-machine
-                                         (map (lambda (x) (fsm-state x TM-TRUE-FUNCTION (posn 0 0))) (sm-states fsm-machine))
+                                         (map (lambda (x) (fsm-state x MTTM-TRUE-FUNCTION (posn 0 0))) (sm-states fsm-machine))
                                          (sm-start fsm-machine)
                                          (sm-finals fsm-machine)
                                          (reverse (sm-rules fsm-machine))
@@ -242,7 +242,7 @@ Cmd Functions
                                          (sm-accept fsm-machine))
                                         'mttm-language-recognizer
                                         (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation."
-                                                   "tm" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
+                                                   "mttm-language-recognizer" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
                                       (void))]
          
          ['tm-language-recognizer (begin
@@ -357,9 +357,9 @@ Cmd Functions
                        (sm-numtapes fsm-machine)
                        0
                        '())
-                      'mttm-language-recognizer
+                      'mttm
                       (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation."
-                                 "tm" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
+                                 "mttm" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
                     (void))]
 
            ['mttm-language-recognizer (begin
@@ -383,7 +383,7 @@ Cmd Functions
                                            '()
                                            (sm-accept fsm-machine))
                                           'mttm-language-recognizer
-                                          (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "tm" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
+                                          (msgWindow "The pre-made machine was added to the program. Please add variables to the Tape Input and then press 'Run' to start simulation." "mttm-language-recognizer" (posn (/ WIDTH 2) (/ HEIGHT 2)) MSG-SUCCESS)))
                                         (void))]
 
            ['tm-language-recognizer (begin
@@ -745,7 +745,12 @@ Scene Rendering
           ;;draws the images with an arrow
           (with-arrow (place-image (determin-gui-draw) (- WIDTH 100) (/ HEIGHT 2)
                                    (place-image (create-gui-top (world-fsm-machine w) (world-cur-rule w)) (/ WIDTH 2) (/ TOP 2)
-                                                (place-image (create-gui-bottom (machine-rule-list (world-fsm-machine w)) (world-cur-rule w) (world-scroll-bar-index w) (world-cur-state w) w) (/ WIDTH 2) (- HEIGHT (/ BOTTOM 2))
+                                                (place-image (create-gui-bottom (machine-rule-list (world-fsm-machine w))
+                                                                                (world-cur-rule w) 
+                                                                                (world-scroll-bar-index w)
+                                                                                (world-cur-state w)
+                                                                                w)
+                                                             (/ WIDTH 2) (- HEIGHT (/ BOTTOM 2))
                                                              (draw-button-list (world-button-list w)
                                                                                (draw-input-list (world-input-list w)
                                                                                                 (place-image (case (machine-type machine)
@@ -1117,6 +1122,12 @@ BOTTOM GUI RENDERING
          (rectangle (/ WIDTH 11) BOTTOM "outline" OUTLINE-COLOR))))
 
   (define (make-mttm-bottom cur-rule)
+    (define invariant-color (determin-mttm-inv
+                             (if (empty? (world-processed-config-list w))
+                                 '()
+                                 (cdar (world-processed-config-list w)))
+                             (world-cur-state w)
+                             (world-fsm-machine w)))
     (define prev-rule (getCurRule (world-processed-config-list w)))
     (define mttm-cur-rule-view
       (if cur-rule (overlay
@@ -1136,7 +1147,9 @@ BOTTOM GUI RENDERING
       (overlay (above
                 (overlay
                  (text (if (null? cur-state) "" (stringify-value cur-state)) 24 "black")
-                 (rectangle 100 50 "outline" OUTLINE-COLOR))
+                 (if (eq? invariant-color 'none)
+                     (rectangle 100 50 "outline" OUTLINE-COLOR)
+                     (rectangle 100 50 "solid" invariant-color)))
                 (overlay
                  (text "Current State" 12 "black")
                  (rectangle 100 25 "outline" OUTLINE-COLOR)))
