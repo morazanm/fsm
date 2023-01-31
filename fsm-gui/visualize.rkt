@@ -1026,7 +1026,7 @@ TOP GUI RENDERING
           (list-2-img (cdr los) (add1 accum)))]))
   
     (define (input-box input highlight? fnt-size)
-      (let ((color (if highlight? TAPE-HIGHLIGHT-COLOR "black")))
+      (let ((color (if highlight? (if COLOR-BLIND-MODE TAPE-HIGHLIGHT-COLOR-CB TAPE-HIGHLIGHT-COLOR) "black")))
         (overlay
          (text (symbol->string input) fnt-size color)
          (rectangle rectWidth (* rectHeight .75) "outline" OUTLINE-COLOR))))
