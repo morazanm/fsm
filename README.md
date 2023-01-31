@@ -24,9 +24,6 @@ If you wish to contribute to `fsm` please read the [contribution docs](fsm-docs/
 ## Getting Started
 Once fsm is installed you use one of the following two options
 ```racket
-(require fsm)
-```
-```racket
 #lang fsm
 ```
 
@@ -129,6 +126,12 @@ To visualize a dfa or ndfa create a new file and require fsm. Then provide one o
 - [Marco T. Morazán](https://github.com/morazanm)
 - [Joshua Schappel](https://github.com/jschappel)
 
+## Notable ontributers 
+- [Marco T. Morazán](https://github.com/morazanm)
+- Rosario Antunez
+- [Josephine A. Des Rosiers](https://github.com/josdes)
+- [Joshua Schappel](https://github.com/jschappel)
+- [Sachin Mahashabde](https://github.com/sachinmahashabde)
 
 ## License
 Copyright (c) 2020 by Marco T. Morazan
