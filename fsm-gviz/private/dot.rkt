@@ -8,6 +8,7 @@
 (define dot-paths 
   '("/usr/bin"
     "/bin"
+    "/opt/homebrew/bin"
     "/usr/local/bin"
     "/opt/local/bin/"))
 
