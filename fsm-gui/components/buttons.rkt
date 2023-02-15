@@ -22,7 +22,17 @@ Created by Joshua Schappel on 12/19/19
  BTN-DISPLAY-MTTM)
 
 
+;; os-supported-char: string string -> string
+;; While windows Mac and Linux support UTF-8 characters not all the defualt
+;; system fonts do suport every UTF-8 character. So if we are on linux/Mac
+;; we will use a different character that is supported
+(define (use-os-supported-char-str win mac-lin)
+  (if (eq? (system-type) 'windows) win mac-lin))
 
+(define LEFT-ARROW (use-os-supported-char-str "🠈" "←"))
+(define RIGHT-ARROW (use-os-supported-char-str "🠊" "→"))
+(define UP-ARROW (use-os-supported-char-str "🠉" "↑"))
+(define DOWN-ARROW (use-os-supported-char-str "🠋" "↓"))
 #|
 -----------------------
 Button Declarations
@@ -154,25 +164,25 @@ Button Declarations
                                           #:func (re-render-listener removeRule)))
 
 (define BTN-TAPE-SCROLL-LEFT (make-button 30 TOP (posn 125 30)
-                                          #:text "🠈"
+                                          #:text LEFT-ARROW
                                           #:color CONTROLLER-BUTTON-COLOR
                                           #:fntsize 35
                                           #:func tapeScrollLeft))
 
 (define BTN-TAPE-SCROLL-RIGHT (make-button 30 TOP (posn (- WIDTH 215) 30)
-                                           #:text "🠊"
+                                           #:text RIGHT-ARROW
                                            #:color CONTROLLER-BUTTON-COLOR
                                            #:fntsize 35
                                            #:func tapeScrollRight))
 
 (define BTN-SCROLL-LEFT-RULES (make-button 30 BOTTOM (posn 125 (- HEIGHT 37))
-                                           #:text "🠈"
+                                           #:text LEFT-ARROW
                                            #:color CONTROLLER-BUTTON-COLOR
                                            #:fntsize 35
                                            #:func scrollbarLeft))
 
 (define BTN-SCROLL-RIGHT-RULES (make-button 30 BOTTOM (posn (- WIDTH 215) (- HEIGHT 37))
-                                            #:text "🠊"
+                                            #:text RIGHT-ARROW
                                             #:color CONTROLLER-BUTTON-COLOR
                                             #:fntsize 35
                                             #:func scrollbarRight))
@@ -234,13 +244,13 @@ Button Declarations
                                             #:func toggle-display-mttm))
 
 (define BTN-NEXT (make-button 40 30 (posn 80 140)
-                              #:text "🠊"
+                              #:text RIGHT-ARROW
                               #:color (make-color 116 156 188)
                               #:fntsize 40
                               #:func (re-render-listener showNext)))
 
 (define BTN-PREV (make-button 40 30 (posn 30 140)
-                              #:text "🠈"
+                              #:text LEFT-ARROW
                               #:color (make-color 116 156 188)
                               #:fntsize 40
                               #:func (re-render-listener showPrev)))
@@ -253,13 +263,13 @@ Button Declarations
 
 ;; pda stack scroll btn's
 (define BTN-STACK-UP (make-button STACK-WIDTH 25 (posn (- WIDTH 250) 73)
-                                  #:text "🠉"
+                                  #:text UP-ARROW
                                   #:color STACK-SCROLL-BUTTON-COLOR
                                   #:fntsize 33
                                   #:func stackScrollUp))
 
 (define BTN-STACK-DOWN (make-button STACK-WIDTH 25 (posn (- WIDTH 250) (- HEIGHT 87))
-                                    #:text "🠋"
+                                    #:text DOWN-ARROW
                                     #:color STACK-SCROLL-BUTTON-COLOR
                                     #:fntsize 33
                                     #:func stackScrollDown))
@@ -268,7 +278,7 @@ Button Declarations
                                              (posn
                                               (+ 25 (+ 100 (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2)))
                                               13)
-                                             #:text "🠉"
+                                             #:text UP-ARROW
                                              #:color STACK-SCROLL-BUTTON-COLOR
                                              #:fntsize 33
                                              #:hidden #t
@@ -279,7 +289,7 @@ Button Declarations
                                                (posn
                                                 (+ 25 (+ 100 (/ (+ (/ WIDTH 11) (- WIDTH 200)) 2)))
                                                 (- HEIGHT 87))
-                                               #:text "🠋"
+                                               #:text DOWN-ARROW
                                                #:color STACK-SCROLL-BUTTON-COLOR
                                                #:fntsize 33
                                                #:id 'mttm-down
@@ -291,7 +301,7 @@ Button Declarations
                                                (posn
                                                 (- WIDTH 1030)
                                                 (/ (- HEIGHT BOTTOM) 2))
-                                               #:text "🠈"
+                                               #:text LEFT-ARROW
                                                #:color STACK-SCROLL-BUTTON-COLOR
                                                #:fntsize 33
                                                #:id 'typeview-left
@@ -302,7 +312,7 @@ Button Declarations
                                                 (posn
                                                  (- WIDTH 10)
                                                  (/ (- HEIGHT BOTTOM) 2))
-                                                #:text "🠊"
+                                                #:text RIGHT-ARROW
                                                 #:color STACK-SCROLL-BUTTON-COLOR
                                                 #:fntsize 33
                                                 #:id 'typeview-right

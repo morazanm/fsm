@@ -126,7 +126,7 @@ To visualize a dfa or ndfa create a new file and require fsm. Then provide one o
 - [Marco T. Morazán](https://github.com/morazanm)
 - [Joshua Schappel](https://github.com/jschappel)
 
-## Notable ontributers 
+## Notable Contributers 
 - [Marco T. Morazán](https://github.com/morazanm)
 - Rosario Antunez
 - [Josephine A. Des Rosiers](https://github.com/josdes)

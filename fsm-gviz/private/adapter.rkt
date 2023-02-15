@@ -25,7 +25,7 @@
                          [inv-false hex-string?]
                          [edge-highlight hex-string?])]
   [struct fsa-adapter ([states (listof symbol?)]
-                       [start symbol?]
+                       [start (or/c null? symbol?)]
                        [finals (listof symbol?)]
                        [rules (or/c (listof dfa/ndfa-rule?)
                                     (listof pda/tm-rule?))]
