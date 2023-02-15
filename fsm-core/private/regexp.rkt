@@ -24,7 +24,7 @@
            simplify-regexp
            regexp?
            gen-regexp-word gen-concat-word gen-ks-word extract-concat-regexps
-           convert-singleton pick-regexp extract-union-regexps
+           convert-singleton pick-regexp extract-union-regexps pick-reps
            )
   
   (define NULL-REGEXP-STRING "()")
@@ -212,6 +212,10 @@
   (define (pick-regexp e)
     (let [(uregexps (extract-union-regexps e))]
       (list-ref uregexps (random (length uregexps)))))
+
+  ;; natnum --> natnum
+  ;; Purpose: Randomly pick a natnum in [0..n-1]
+  (define (pick-reps n) (random n))
 
   ;; singleton-regexp --> symbol or number
   ;; Purpose: Convert the given singleton-regexp to a symbol or number

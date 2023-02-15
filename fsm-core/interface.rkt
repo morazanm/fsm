@@ -73,7 +73,7 @@
  kleenestar-regexp-r1
  extract-concat-regexps
  convert-singleton
- pick-regexp
+ pick-regexp pick-reps
  extract-union-regexps
  gen-regexp-word gen-concat-word gen-ks-word 
 
