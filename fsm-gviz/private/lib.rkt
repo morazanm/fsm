@@ -163,7 +163,7 @@
   (define dot-exe-path (find-dot))
   (if (path? dot-exe-path)
       (begin
-        ;; On Mac/Linux we can call bypass having to look at the systems PATH by instead
+        ;; On Mac/Linux we can bypass having to look at the systems PATH by instead
         ;; using the absolute path to the executable. For unknown reasons this does not
         ;; work on Windows so we will still use the PATH to call the dot executable
         (if (eq? (system-type) 'windows)
