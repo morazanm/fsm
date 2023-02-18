@@ -220,10 +220,12 @@
             </div>
             <div class="row justify-content-center pb-5">
 <pre><code class="language-racket">(require fsm)
-(sm-getstart a*a)   ;; Gets starting states
-(sm-getfinals a*a)  ;; Gets final states
-(sm-getrules a*a)   ;; Gets rules 
-(sm-getalpha a*a)   ;; Gets alphabet
+(sm-start a*a)   ;; Gets starting states
+(sm-finals a*a)  ;; Gets final states
+(sm-rules a*a)   ;; Gets rules 
+(sm-alpha a*a)   ;; Gets alphabet
+(sm-type a*a)    ;; Returns a symbol indicating the type of the given machine
+(sm-gamma a*a)   ;; Returns the stack alphabet of the given pushdown automaton
 (sm-apply a*a '(a b a b a))           ;;  Applies a input to a given machine 
 (sm-showtransitions a*a '(a a b b a)) ;;  Shows the transitions for a input to a given machine 
 (sm-test a*a 420)   ;; Tests the machine on n randomly generated inputs
