@@ -1,5 +1,5 @@
 # Contributing Guidelines
-We are always open to accepting pull request and suggestions. If you are find a bug and wish to fix it please create a issue and link your pull request to the issue. If you are looking for ways to contribute please check out the [issues](https://github.com/morazanm/fsm/issues) section. Issues marked `good first issue` are a great way to get started. 
+We are always open to accepting pull requests and suggestions. If you are find a bug and wish to fix it please create a issue and link your pull request to the issue. If you are looking for ways to contribute please check out the [issues](https://github.com/morazanm/fsm/issues) section. Issues marked `good first issue` are a great way to get started. 
 
 
 ## Pull Requests
@@ -22,4 +22,4 @@ When a change is made to the scribble files you can either press the run button 
 scribble fsm.scrbl
 ```
 
-We have a CI tool that will auto deploy scribble file changes to the fsm website when a pull request is merged into the master branch so you do not need to include the scribble generated files in the pull request. **NOTE: Currently we do not have a CI tool step to check for errors when building the scribble file, so mack sure that it compiles before merging into master.**
+We have a CI tool that will auto deploy scribble file changes to the fsm website when a pull request is merged into the master branch so you do not need to include the scribble generated files in the pull request. **NOTE: Currently we do not have a CI tool step to check for errors when building the scribble file, so make sure that it compiles before merging into master.**
