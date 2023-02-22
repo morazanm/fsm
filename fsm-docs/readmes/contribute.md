@@ -13,7 +13,7 @@ To build `fsm` run `raco make .` at the root of the repository. An alternate opt
 ## Running the test suit
 To run the test suit you can run `raco test fsm-test fsm-gviz fsm-core fsm-gui`. If you do not want to run the tests locally we do have a CI tool setup to pull requests that will run the tests for you. All you need to do is create a PR with your branch and they will auto run.
 
-If you want to quickly try out your changes we have a [testing-file.rkt](../../testing-file.rkt) with pre-built machines that you can use to test your code. Just make sure you do not include any changes from this file in your Pull request. 
+If you want to quickly try out your changes we have a [playground.rkt](../../fsm-test/playground.rkt) with pre-built machines that you can use to test your code. Just make sure you do not include any changes from this file in your Pull request. 
 
 
 ## Scribble files
