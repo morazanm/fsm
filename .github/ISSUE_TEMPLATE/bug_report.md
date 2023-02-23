@@ -19,8 +19,10 @@ A clear and concise description of what the bug is.
 A clear and concise description of what you expected to happen.
 
 ## OS Observed On
-The operating system the bug was found on (include as much detail as possiable)
-- On linus just past the result of this command `cat /etc/os-release`
+The operating system the bug was found on
+- On linux just paste the result of this command `cat /etc/os-release`
+- On Mac just paste the result of this command `sw_vers`
+
 
 ## Screenshots
 If applicable, add screenshots to help explain your problem.
