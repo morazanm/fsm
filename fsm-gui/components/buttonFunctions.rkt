@@ -449,17 +449,20 @@ This file contains all the functions associated with a button
 ;; rmvAlpha: world -> world
 ;; Purpose: Removes a letter from the worlds alpha-list
 (define rmvAlpha (lambda (w)
-                   (let ((input-value (string-trim (textbox-text(list-ref (world-input-list w) 1))))
+                   (let* ((input-value (string-trim (textbox-text(list-ref (world-input-list w) 1))))
                          (new-input-list (list-set (world-input-list w) 1 (remove-text (list-ref (world-input-list w) 1) 100)))
-
+                         (to-string (lambda (v) (cond
+                                                  [(symbol? v) (symbol->string v)]
+                                                  [(number? v) (number->string v)]
+                                                  [else (error (format "Can convert value to string. Given ~a" v))])))
                          ;; remove-all: list-of-rules symbol -> list-of-rules
                          ;; Purpose: Removes all rules that are associated with the alpha that is being removed.
                          (remove-all (lambda (lor alpha)
                                        (filter (lambda (x) (case MACHINE-TYPE
                                                              [(tm) #t]
-                                                             [(pda) (not (equal? (symbol->string (cadar x)) alpha))]
                                                              [(tm-language-recognizer) #t]
-                                                             [else (not (equal? (symbol->string (cadr x)) alpha))]))
+                                                             [(pda) (not (equal? (to-string (cadar x)) alpha))]
+                                                             [else (not (equal? (to-string (cadr x)) alpha))]))
                                                lor))))
                      
                      (cond

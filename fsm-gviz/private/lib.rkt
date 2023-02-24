@@ -28,7 +28,7 @@
   [add-node (->* (graph? symbol?)
                  (#:atb (hash/c symbol? any/c))
                  graph?)]
-  [add-edge (->* (graph? (or/c list? symbol?) symbol? symbol?)
+  [add-edge (->* (graph? (or/c list? any/c) symbol? symbol?)
                  (#:atb (hash/c symbol? any/c))
                  graph?)]
   [graph->bitmap (-> graph? path? string? image?)]
@@ -163,7 +163,17 @@
   (define dot-exe-path (find-dot))
   (if (path? dot-exe-path)
       (begin
-        (system (format "dot -Tpng ~s -o ~s" (path->string dot-path) (path->string png-path)))
+        ;; On Mac/Linux we can bypass having to look at the systems PATH by instead
+        ;; using the absolute path to the executable. For unknown reasons this does not
+        ;; work on Windows so we will still use the PATH to call the dot executable
+        (if (eq? (system-type) 'windows)
+            (system (format "dot -Tpng ~s -o ~s"
+                            (path->string dot-path)
+                            (path->string png-path)))
+            (system (format "~a -Tpng ~s -o ~s"
+                            (path->string dot-exe-path)
+                            (path->string dot-path)
+                            (path->string png-path))))
         png-path)
       (error "Error caused when creating png file. This was probably due to the dot environment variable not existing on the path")))
 

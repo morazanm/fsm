@@ -62,7 +62,7 @@
         </div>
           <h4 class="text-center">Building DFAs</h4>
         <div class="row justify-content-center pb-5">
-            <pre><code class="language-racket">(require fsm)
+            <pre><code class="language-racket">#lang fsm
 ; L(a*a) = {w | w starts and ends with an a}
 (define a*a (make-dfa '(S F A)         ;the states
                       '(a b)           ;the alphabet
@@ -78,7 +78,7 @@
         
         <h4 class="text-center">Building NDFAs</h4>
         <div class="row justify-content-center pb-5">
-            <pre><code class="language-racket">(require fsm)
+            <pre><code class="language-racket">#lang fsm
 
 ; L(KLEENESTAR-ab U aba) = (ab U aba)*
 (define KLEENESTAR-abUaba (make-ndfa '(Q-0 Q-1 Q-2 Q-3 Q-4 Q-5) ;the states
@@ -96,7 +96,7 @@
 
         <h4 class="text-center">Building PDAs</h4>
         <div class="row justify-content-center pb-5">
-            <pre><code class="language-racket">(require fsm)
+            <pre><code class="language-racket">#lang fsm
 
     ; L = {wcw^r | w in {a, b)*}
     (define pda-wcw^r (make-ndpda '(S M N F)                  ;the states
@@ -117,7 +117,7 @@
         <h4 class="text-center">Building TMs</h4>
         <h5 class="text-center">Turing Machines</h5>
         <div class="row justify-content-center pb-5">
-            <pre><code class="language-racket">(require fsm)
+            <pre><code class="language-racket">#lang fsm
 
 ; write "a" on tape
 (define Ma (make-tm '(S H)                  ;the states
@@ -131,7 +131,7 @@
         </div>
         <h5 class="text-center">Language Recognizers</h5>
         <div class="row justify-content-center pb-5">
-            <pre><code class="language-racket">(require fsm)
+            <pre><code class="language-racket">#lang fsm
 
 ; All a's on tape
 (define Alla (make-tm '(S Y N)        
@@ -149,7 +149,7 @@
           <p>Here you can find examples of how to visualize state machines in FSM.</p>
         </div>
         <div class="row justify-content-center pb-5">
-          <pre><code class="language-racket">(require fsm)
+          <pre><code class="language-racket">#lang fsm
 ;; All machines can be visualized using the following three formats
 ;; 1)
 ;;    Use the visualization tool to build a machine from scratch
@@ -169,7 +169,7 @@
           <h4>Lets visualize a machine:</h4>
         </div>
         <div class="row justify-content-center pb-2">
-<pre><code class="language-racket">(require fsm)
+<pre><code class="language-racket">#lang fsm
 #| From Scratch |#
 (sm-visualize 'dfa)
 
@@ -186,7 +186,7 @@
 </figure>
 </div>
 <div class="row justify-content-center pb-2">
-<pre><code class="language-racket">(require fsm)
+<pre><code class="language-racket">#lang fsm
 #| With Invariants |#
 (define S-INV empty?)
 
@@ -219,11 +219,13 @@
               <p>Here you can find examples of how to use FSM (See documentation for detailed explanation).</p>
             </div>
             <div class="row justify-content-center pb-5">
-<pre><code class="language-racket">(require fsm)
-(sm-getstart a*a)   ;; Gets starting states
-(sm-getfinals a*a)  ;; Gets final states
-(sm-getrules a*a)   ;; Gets rules 
-(sm-getalpha a*a)   ;; Gets alphabet
+<pre><code class="language-racket">#lang fsm
+(sm-start a*a)   ;; Gets starting states
+(sm-finals a*a)  ;; Gets final states
+(sm-rules a*a)   ;; Gets rules 
+(sm-alpha a*a)   ;; Gets alphabet
+(sm-type a*a)    ;; Returns a symbol indicating the type of the given machine
+(sm-gamma a*a)   ;; Returns the stack alphabet of the given pushdown automaton
 (sm-apply a*a '(a b a b a))           ;;  Applies a input to a given machine 
 (sm-showtransitions a*a '(a a b b a)) ;;  Shows the transitions for a input to a given machine 
 (sm-test a*a 420)   ;; Tests the machine on n randomly generated inputs
