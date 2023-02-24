@@ -28,7 +28,7 @@
   [add-node (->* (graph? symbol?)
                  (#:atb (hash/c symbol? any/c))
                  graph?)]
-  [add-edge (->* (graph? (or/c list? symbol?) symbol? symbol?)
+  [add-edge (->* (graph? (or/c list? any/c) symbol? symbol?)
                  (#:atb (hash/c symbol? any/c))
                  graph?)]
   [graph->bitmap (-> graph? path? string? image?)]
