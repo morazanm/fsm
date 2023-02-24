@@ -214,8 +214,8 @@
       (list-ref uregexps (random (length uregexps)))))
 
   ;; natnum --> natnum
-  ;; Purpose: Randomly pick a natnum in [0..n-1]
-  (define (pick-reps n) (random n))
+  ;; Purpose: Randomly pick a natnum in [0..n]
+  (define (pick-reps n) (random (add1 n)))
 
   ;; singleton-regexp --> symbol or number
   ;; Purpose: Convert the given singleton-regexp to a symbol or number

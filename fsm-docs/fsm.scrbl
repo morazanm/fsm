@@ -688,6 +688,10 @@ word are returned.
          Nondeterministically return a nested sub-regexp from the given union-regexp.
          This includes any nested union-regexps in r.
 
+@defproc[(pick-reps [n natnum])
+         regexp]
+         Nondeterministically return a natural number in [0..n].
+
 @defproc[(convert-singleton [r singleton-regexp])
          word]
          Convert the given singleton-regexp to a word of length 1

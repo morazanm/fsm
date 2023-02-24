@@ -123,6 +123,7 @@
     (define (mk-pdatransitions c w)
       ; pdarule --> pdaconfig
       (define (mk-pdatransition r)
+        
         (mk-pdaconfig (pdarule-tostate r)
                       (if (eq? (pdarule-readsymb r) EMP) (pdaconfig-wi c) (+ (pdaconfig-wi c) 1))
                       (stack-push (pdarule-push r) (stack-pop (pdaconfig-stack c) (pdarule-pop r)))))
