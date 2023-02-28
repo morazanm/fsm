@@ -7,7 +7,7 @@ When creating a pull request clearly specify what you are trying to accomplish a
 
 
 ## Building fsm 
-To build `fsm` run `raco make .` at the root of the repository. An alternate option is to open `main.rkt` in DrRacket and hit the run button. There is also a [Makefile](../../Makefile) to help streamline the build processes.
+To build `fsm` run `raco make main.rkt` at the root of the repository. An alternate option is to open `main.rkt` in DrRacket and hit the run button. There is also a [Makefile](../../Makefile) to help streamline the build processes.
 
 
 ## Running the test suit
