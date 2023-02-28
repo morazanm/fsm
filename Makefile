@@ -1,5 +1,5 @@
 install:
-	@raco make .
+	@raco make main.rkt
 .PHONY: install
 
 test:
