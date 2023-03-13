@@ -125,7 +125,7 @@
   ;; If both inputs are equal then nothing was consumed and EMP is used
   (define consumed-input (if (equal? init-input next-input) EMP (car init-input)))
 
-  ;; determin-pushed: list list -> integer
+  ;; determin-pushed: list list -> list | symbol
   ;; Purpose: Returns the list or elements to be pushed
   (define/match (determin-pushed _init-stack next-stack)
     [(_ '()) EMP]
@@ -133,7 +133,7 @@
     [((list-rest a1 ... b1 _) (list-rest a2 ... b2 _))
      (if (not (equal? b1 b2)) next-stack (determin-pushed a1 a2))])
 
-  ;; determin-poped: list list -> list
+  ;; determin-poped: list list -> list | symbol
   ;; Purpose: Returns the list or elements to be popped
   (define/match (determin-poped init-stack _next-stack)
     [('() _) EMP]
