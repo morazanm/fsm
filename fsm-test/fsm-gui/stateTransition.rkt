@@ -26,7 +26,7 @@
                            (check-equal? (getCurRule '((F (a a a b b b) ()) (S (a a a b b b) ()))
                                                      (list '((S a a) (F a))))
                                          '((S ε ()) (F ()))
-                                         "When the empty rules does exist in the list of rules so we fall back"))
+                                         "When the empty rules does not exist in the list of rules so we fall back"))
 
 
 
