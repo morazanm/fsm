@@ -111,7 +111,7 @@
     [else (construct-pda-rule processed-list rules)]))
 
 
-;; construct-pda-rule: processed-list -> bool -> pda-rule
+;; construct-pda-rule: processed-list  listof(rules) -> pda-rule
 ;; Purpose: Constructes a pda rule from the given processed list
 ;; NOTE: There is no way to distinguish between
 ;; ((S a (y )) (A (y )) and ((S a ,EMP) (A ,EMP))
