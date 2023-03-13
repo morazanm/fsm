@@ -12,14 +12,21 @@
     (test-suite "Tests getCurRule Function"
                 (test-case "PDA"
                            (set-machine-type 'pda)
-                           (check-equal? (getCurRule '((F (a a a b b b) ()) (S (a a a b b b) ()))) '((S ε ε) (F ε)))
                            (check-equal? (getCurRule '((F (a b b b) (c c)) (F (a a b b b) (c)))) '((F a ε) (F (c))))
                            (check-equal? (getCurRule '((F (b) (c)) (F (b b) (c c)))) '((F b (c)) (F ε)))
                            (check-equal? (getCurRule '((F () ()) (F (b) (c)))) '((F b (c)) (F ε)))
                            (check-equal? (getCurRule '((F () ()))) '((empty empty empty) (empty empty)))
-                           (check-equal? (getCurRule '((M (a a b c b a a) ()) (S (a a b c b a a) ()))) '((S ε ε) (M ε)))
                            (check-equal? (getCurRule '((M (b c b a a) (a a)) (M (a b c b a a) (a)))) '((M a ε) (M (a))))
-                           (check-equal? (getCurRule '((M (c b a a) (b a a)) (M (b c b a a) (a a)))) '((M b ε) (M (b)))))
+                           (check-equal? (getCurRule '((M (c b a a) (b a a)) (M (b c b a a) (a a)))) '((M b ε) (M (b))))
+                           ;; Edge Cases below
+                           (check-equal? (getCurRule '((M (a a b c b a a) ()) (S (a a b c b a a) ()))
+                                                     (list '((S ε ε) (M ε))))
+                                         '((S ε ε) (M ε))
+                                         "When the empty rule exists in the list of rules")
+                           (check-equal? (getCurRule '((F (a a a b b b) ()) (S (a a a b b b) ()))
+                                                     (list '((S a a) (F a))))
+                                         '((S ε ()) (F ()))
+                                         "When the empty rules does exist in the list of rules so we fall back"))
 
 
 

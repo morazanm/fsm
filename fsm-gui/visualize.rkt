@@ -564,7 +564,7 @@ Scene Rendering
                                        (cadr (world-cur-rule w)))])))
 
        (determim-prev-rule (lambda (rule)
-                             (let ((c-rule (getCurRule rule)))
+                             (let ((c-rule (getCurRule rule (machine-rule-list (world-fsm-machine w)))))
                                (case MACHINE-TYPE
                                  [(pda) (caar c-rule)]
                                  [(tm) (caar c-rule)]
@@ -1128,7 +1128,8 @@ BOTTOM GUI RENDERING
                                  (cdar (world-processed-config-list w)))
                              (world-cur-state w)
                              (world-fsm-machine w)))
-    (define prev-rule (getCurRule (world-processed-config-list w)))
+    (define prev-rule (getCurRule (world-processed-config-list w)
+                                  (machine-rule-list (world-fsm-machine w))))
     (define mttm-cur-rule-view
       (if cur-rule (overlay
                     (text cur-rule FONT-SIZE "black")
