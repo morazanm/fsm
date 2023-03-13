@@ -116,7 +116,7 @@
 ;; NOTE: There is no way to distinguish between
 ;; ((S a (y )) (A (y )) and ((S a ,EMP) (A ,EMP))
 ;; because both do the same and leave the stack unchanged. Therefore, either can
-;; be picked. When we across this case we will search the rule for which form is
+;; be picked. When we come across this case we will search the rule for which form is
 ;; present and choose that one. If both are present then we will pick the first that
 ;; applies.
 (define (construct-pda-rule pl rules)
@@ -125,7 +125,7 @@
   ;; If both inputs are equal then nothing was consumed and EMP is used
   (define consumed-input (if (equal? init-input next-input) EMP (car init-input)))
 
-  ;; determin-pushed: none -> integer
+  ;; determin-pushed: list list -> integer
   ;; Purpose: Returns the list or elements to be pushed
   (define/match (determin-pushed _init-stack next-stack)
     [(_ '()) EMP]
@@ -133,7 +133,7 @@
     [((list-rest a1 ... b1 _) (list-rest a2 ... b2 _))
      (if (not (equal? b1 b2)) next-stack (determin-pushed a1 a2))])
 
-  ;; determin-poped: list -> list -> list
+  ;; determin-poped: list list -> list
   ;; Purpose: Returns the list or elements to be popped
   (define/match (determin-poped init-stack _next-stack)
     [('() _) EMP]
