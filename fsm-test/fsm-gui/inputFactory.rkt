@@ -1,32 +1,9 @@
 #lang racket
-(require "../../fsm-gui/inputFactory.rkt" "../test-helpers.rkt" 2htdp/image)
-
-
-(define dfa-rules '((A b C) (A a B) (B c A) (ds a ds) (ds b ds) (ds c ds) (A c ds) (B a ds) (B b ds) (C a ds) (C b ds) (C c ds)))
-(define dfa-rules2 (list (list 'A 'a 'B) (list 'B 'b 'B) (list 'A 'b 'A) (list 'A 'b 'A) (list 'A 'b 'A) (list 'A 'b 'A) (list 'A 'b 'A) (list 'A 'a 'B) (list 'C 'b 'B) (list 'C 'a 'A) (list 'A 'a 'B) (list 'C 'c 'B)))
-(define pda-rules (list (list (list 'DS 'a 'DS) (list 'DS 'a)) (list (list 'B 'a (list 'A 'D)) (list 'b 'a)) (list (list 'B 'a (list 'A 'D)) (list 'b 'a)) (list (list 'B 'a (list 'A 'D)) (list 'b 'a))))
-
-#|
-(overlay
-                            (rectangle 830 75 "outline" "blue")
-                            (ruleFactory dfa-rules 'dfa 0 (list 'B 'b 'B)))
-
-
-                           (define dfa-rules2 (list (list 'A 'a 'B) (list 'B 'b 'B) (list 'A 'b 'A) (list 'A 'b 'A) (list 'A 'b 'A) (list 'A 'b 'A) (list 'A 'b 'A) (list 'A 'a 'B) (list 'C 'b 'B) (list 'C 'a 'A) (list 'A 'a 'B) (list 'C 'c 'B)))
-                           (overlay
-                            (rectangle 830 75 "outline" "blue")
-                            (ruleFactory dfa-rules2 'dfa 0 (list 'B 'b 'B)))
-
-
-                           (define pda-rules (list (list (list 'DS 'a 'DS) (list 'DS 'a)) (list (list 'B 'a (list 'A 'D)) (list 'b 'a)) (list (list 'B 'a (list 'A 'D)) (list 'b 'a)) (list (list 'B 'a (list 'A 'D)) (list 'b 'a))))
-                           (overlay
-                            (rectangle 830 75 "outline" "blue")
-                            (ruleFactory pda-rules 'pda 0 (list (list 'A 'a 'B) (list 'b 'a))))
-|#
-
+(require "../../fsm-gui/legacy-gui/inputFactory.rkt"
+         "../test-helpers.rkt")
 
 (module+ test
-  (require rackunit rackunit/gui)
+  (require rackunit)
 
   (define input-rendering
     (test-suite "Checking the inputs for input rendering"

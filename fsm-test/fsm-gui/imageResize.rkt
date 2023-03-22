@@ -1,5 +1,5 @@
 #lang racket
-(require "../../fsm-gui/graphViz/main.rkt"
+(require "../../fsm-gui/legacy-gui/graphViz/main.rkt"
          "../test-helpers.rkt"
          2htdp/image)
 

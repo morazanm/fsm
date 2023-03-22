@@ -3,8 +3,8 @@
          "private/lib.rkt"
          "private/dot.rkt"
          "../fsm-core/interface.rkt"
-         "../fsm-gui/structs/machine.rkt"
-         "../fsm-gui/structs/state.rkt")
+         "../fsm-gui/legacy-gui/structs/machine.rkt"
+         "../fsm-gui/legacy-gui/structs/state.rkt")
 
 ; *Color Blind States*
 ; 0 -> default colors
