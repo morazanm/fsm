@@ -7,7 +7,7 @@ import { Divider, Stack } from '@mui/material';
 import { FSMRule } from './types/machine';
 
 const App = () => {
-  const AddRemoveRuleForm = useAddRemoveRuleForm('dfa');
+  const AddRemoveRuleForm = useAddRemoveRuleForm('tm');
   return (
     <div style={{}}>
       <Stack

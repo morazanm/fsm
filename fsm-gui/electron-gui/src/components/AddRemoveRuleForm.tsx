@@ -65,6 +65,7 @@ function initRule(type: MachineType): FSMRule {
 }
 
 type RuleInputProps = {
+  value: any; //TODO: clean this type up to work with arrays
   label: string;
   onChange: (val: string) => void;
   hasError: boolean;
@@ -78,7 +79,7 @@ const RuleInput = (props: RuleInputProps) => {
   return (
     <FormControl variant="standard" error={!!props.hasError}>
       <InputLabel>{name}</InputLabel>
-      <Input onChange={(e) => props.onChange(e.target.value.trim())} />
+      <Input value={props.value} onChange={(e) => props.onChange(e.target.value.trim())} />
     </FormControl>
   );
 };
@@ -96,6 +97,7 @@ export const useAddRemoveRuleForm = (machineType: MachineType) => {
     const [currentRule, setCurrentRule] = useState(blankRule);
     const [errorMsg, setErrorMsg] = useState(null);
     const resetValues = () => {
+      console.log(blankRule)
       setCurrentRule(blankRule);
       setErrorMsg(null);
     };
@@ -114,6 +116,7 @@ export const useAddRemoveRuleForm = (machineType: MachineType) => {
               <RuleInput
                 key={k}
                 label={k}
+                value={currentRule[k]}
                 hasError={!!errorMsg}
                 onChange={(v) => setCurrentRule({ ...currentRule, [k]: v })}
               />
