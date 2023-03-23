@@ -2,9 +2,12 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import AddRemoveForm from './components/AddRemoveForm';
 import AddRemoveStateForm from './components/AddRemoveStateForm';
+import { useAddRemoveRuleForm } from './components/AddRemoveRuleForm';
 import { Divider, Stack } from '@mui/material';
+import { FSMRule } from './types/machine';
 
 const App = () => {
+  const AddRemoveRuleForm = useAddRemoveRuleForm('tm');
   return (
     <div style={{}}>
       <Stack
@@ -21,6 +24,12 @@ const App = () => {
           onDelete={(_) => false}
           onSubmit={(_) => false}
           validate={(_) => true}
+        />
+        <AddRemoveRuleForm
+          addRule={() => true}
+          removeRule={() => true}
+          rules={[] as FSMRule[]}
+          alphabet={[] as string[]}
         />
       </Stack>
     </div>
