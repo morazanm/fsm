@@ -12,12 +12,11 @@ import {
   FormControlLabel,
   Radio,
 } from '@mui/material';
-
-type StateType = 'start' | 'final' | 'normal';
+import { State, StateType } from '../../types/machine'
 
 type AddRemoveProps = {
-  onDelete: (name: string, kind: StateType) => boolean;
-  onSubmit: (name: string, kind: StateType) => boolean;
+  onDelete: (state: State) => boolean;
+  onSubmit: (state: State) => void;
   // The returned string is the text that is used in the error msg display
   validate: (name: string, kind: StateType) => true | string;
 };
@@ -27,7 +26,7 @@ const AddRemoveStateForm = (props: AddRemoveProps) => {
   const [val, setValue] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [isInValid, setInValid] = useState(false);
-  const [stateType, setType] = useState<StateType>('start');
+  const [stateType, setType] = useState<StateType>('normal');
   const resetValue = () => setValue('');
 
   const validateText = (text: string) => {
@@ -53,7 +52,7 @@ const AddRemoveStateForm = (props: AddRemoveProps) => {
       <Stack spacing={1}>
         <FormControl variant="standard" error={isInValid}>
           <InputLabel>State</InputLabel>
-          <Input onChange={(e) => setValue(e.target.value)} />
+          <Input value={val} onChange={(e) => setValue(e.target.value)} />
           {errorMsg ? (
             <FormHelperText id="component-error-text">
               {errorMsg}
@@ -86,6 +85,14 @@ const AddRemoveStateForm = (props: AddRemoveProps) => {
               label="Final"
             />
             <FormControlLabel
+              value="startFinal"
+              onChange={() => setType('startFinal')}
+              control={
+                <Radio sx={{ '& .MuiSvgIcon-root': { fontSize: 20 } }} />
+              }
+              label="Start & Final"
+            />
+            <FormControlLabel
               value="none"
               onChange={() => setType('normal')}
               control={
@@ -103,7 +110,7 @@ const AddRemoveStateForm = (props: AddRemoveProps) => {
             startIcon={<Add />}
             onClick={(_) => {
               if (validateText(val)) {
-                props.onSubmit(val, stateType);
+                props.onSubmit({name: val, type: stateType});
                 resetValue();
               }
             }}
@@ -117,7 +124,7 @@ const AddRemoveStateForm = (props: AddRemoveProps) => {
             startIcon={<Delete />}
             onClick={(_) => {
               if (validateText(val)) {
-                props.onDelete(val, stateType);
+                props.onDelete({name: val, type: stateType});
                 resetValue();
               }
             }}

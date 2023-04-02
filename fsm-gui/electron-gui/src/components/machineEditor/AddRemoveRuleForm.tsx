@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material';
 import {
   Button,
@@ -16,7 +16,7 @@ import {
   isTmTmLangRecRule,
   isPdaRule,
   isDfaNdfaRule,
-} from '../types/machine';
+} from '../../types/machine';
 
 function validateRule(
   rule: FSMRule,
@@ -79,7 +79,10 @@ const RuleInput = (props: RuleInputProps) => {
   return (
     <FormControl variant="standard" error={!!props.hasError}>
       <InputLabel>{name}</InputLabel>
-      <Input value={props.value} onChange={(e) => props.onChange(e.target.value.trim())} />
+      <Input
+        value={props.value}
+        onChange={(e) => props.onChange(e.target.value.trim())}
+      />
     </FormControl>
   );
 };
@@ -97,7 +100,6 @@ export const useAddRemoveRuleForm = (machineType: MachineType) => {
     const [currentRule, setCurrentRule] = useState(blankRule);
     const [errorMsg, setErrorMsg] = useState(null);
     const resetValues = () => {
-      console.log(blankRule)
       setCurrentRule(blankRule);
       setErrorMsg(null);
     };
@@ -116,7 +118,7 @@ export const useAddRemoveRuleForm = (machineType: MachineType) => {
               <RuleInput
                 key={k}
                 label={k}
-                value={currentRule[k]}
+                value={currentRule[k] as any}
                 hasError={!!errorMsg}
                 onChange={(v) => setCurrentRule({ ...currentRule, [k]: v })}
               />
@@ -147,7 +149,6 @@ export const useAddRemoveRuleForm = (machineType: MachineType) => {
                     props.rules,
                     props.alphabet,
                   );
-                  console.log(msg);
                   if (!msg) {
                     props.addRule(currentRule);
                     resetValues();

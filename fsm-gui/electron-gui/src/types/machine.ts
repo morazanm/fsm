@@ -1,20 +1,27 @@
 export type MachineType = 'dfa' | 'ndfa' | 'pda' | 'tm' | 'tm-lang-rec';
 
-type State = string;
+export type StateName = string;
+export type StateType = 'start' | 'final' | 'startFinal' | 'normal' | 'accept'
+export type State = {
+  name: StateName;
+  type: StateType;
+}
+
+
 export type FSMRule = DfaNdfaRule | PdaRule | TmMttmRule;
-export type DfaNdfaRule = { start: State; input: string; end: State };
+export type DfaNdfaRule = { start: StateName; input: string; end: StateName };
 export type PdaRule = {
-  start: State;
+  start: StateName;
   input: string;
   startStack: string[];
-  end: State;
+  end: StateName;
   endStack: string[];
 };
 
 export type TmMttmRule = {
-  start: State;
+  start: StateName;
   startTape: string[];
-  end: State;
+  end: StateName;
   endTape: string[];
 };
 
