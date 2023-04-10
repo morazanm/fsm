@@ -19,7 +19,7 @@ const InnerCircle = ({
   type: StateType;
   rotate: number;
 }) => {
-  const conterRotate = `${rotate * -1}deg`;
+  const counterRotate = `${rotate * -1}deg`;
   const getCssClass = () => {
     switch (type) {
       case 'final':
@@ -33,10 +33,10 @@ const InnerCircle = ({
   const cssClass = getCssClass();
   return cssClass ? (
     <div className={styles[cssClass]}>
-      <span style={{ rotate: conterRotate }}>{name}</span>
+      <span style={{ rotate: counterRotate }}>{name}</span>
     </div>
   ) : (
-    <span style={{ rotate: conterRotate }}>{name}</span>
+    <span style={{ rotate: counterRotate }}>{name}</span>
   );
 };
 
