@@ -1,10 +1,10 @@
 :root {
     --state-width: 80px;
     --state-height: 80px;
-    --end-state-color: red;
-    --accept-state-color: blue;
-    --start-state-color: green;
-    --normal-state-color: black;
+    --end-state-color: var(--mui-palette-error-light);
+    --accept-state-color: var(--mui-palette-info-light);
+    --start-state-color: var(--mui-palette-success-light);
+    --normal-state-color: vvar(--mui-palette-text-primary);
     --state-border-width: 2px;
 }
 

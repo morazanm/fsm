@@ -4,8 +4,6 @@
 
 .circleMain, .circleBackground {
     border-radius: 50%;
-    width: 50vh;
-    height: 50vh;
 }
 
 .circleMain {

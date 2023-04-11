@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Delete, Add } from '@mui/icons-material';
 import {
   Button,
@@ -12,13 +12,13 @@ import {
   FormControlLabel,
   Radio,
 } from '@mui/material';
-import { State, StateType } from '../../types/machine'
+import { State, StateType } from '../../types/machine';
 
 type AddRemoveProps = {
-  onDelete: (state: State) => boolean;
+  states: State[];
+  onDelete: (state: State) => void;
   onSubmit: (state: State) => void;
-  // The returned string is the text that is used in the error msg display
-  validate: (name: string, kind: StateType) => true | string;
+  toggleSnack: (text: string) => void;
 };
 
 // form for adding and removing adding and removing states from the GUI
@@ -29,16 +29,36 @@ const AddRemoveStateForm = (props: AddRemoveProps) => {
   const [stateType, setType] = useState<StateType>('normal');
   const resetValue = () => setValue('');
 
-  const validateText = (text: string) => {
-    const res = props.validate(text, stateType);
-    if (typeof res === 'string') {
-      setInValid(true);
-      setErrorMsg(res);
-      return false;
+  // State: An uppercase letter (e.g., A) or a symbol comprised of an uppercase letter,
+  // dash, and number (e.g., A-72431).
+  const validateState = (text: string, func: (t: string) => boolean) => {
+    const trimmedText = text.trim();
+    if (trimmedText && trimmedText.split(' ').length === 1) {
+      const hasUpper =
+        trimmedText.charAt(0) === trimmedText.charAt(0).toUpperCase();
+      if (hasUpper && trimmedText.length === 1 && func(trimmedText)) {
+        setInValid(false);
+        setErrorMsg('');
+        return true;
+      }
+      if (hasUpper) {
+        if (trimmedText.length >= 3) {
+          const hasDash = trimmedText.charAt(1) === '-';
+          const hasNumbers = [...trimmedText.substring(2)].reduce(
+            (acc, c) => acc && !isNaN(Number(c)),
+            true,
+          );
+          if (hasDash && hasNumbers && func(trimmedText)) {
+            setInValid(false);
+            setErrorMsg('');
+            return true;
+          }
+        }
+      }
     }
-    setInValid(false);
-    setErrorMsg('');
-    return true;
+    setInValid(true);
+    setErrorMsg('Invalid state name');
+    return false;
   };
 
   return (
@@ -109,9 +129,15 @@ const AddRemoveStateForm = (props: AddRemoveProps) => {
             color="primary"
             startIcon={<Add />}
             onClick={(_) => {
-              if (validateText(val)) {
-                props.onSubmit({name: val, type: stateType});
+              if (
+                validateState(
+                  val,
+                  (t) => !props.states.find((s) => s.name === t),
+                )
+              ) {
+                props.onSubmit({ name: val, type: stateType });
                 resetValue();
+                props.toggleSnack(`State '${val.trim()}' added`);
               }
             }}
           >
@@ -123,9 +149,15 @@ const AddRemoveStateForm = (props: AddRemoveProps) => {
             color="primary"
             startIcon={<Delete />}
             onClick={(_) => {
-              if (validateText(val)) {
-                props.onDelete({name: val, type: stateType});
+              if (
+                validateState(
+                  val,
+                  (t) => !!props.states.find((s) => s.name === t),
+                )
+              ) {
+                props.onDelete({ name: val, type: stateType });
                 resetValue();
+                props.toggleSnack(`State '${val.trim()}' removed`);
               }
             }}
           >
