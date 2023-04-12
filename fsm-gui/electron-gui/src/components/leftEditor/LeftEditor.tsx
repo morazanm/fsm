@@ -68,8 +68,8 @@ const LeftEditor = (props: LeftEditorProps) => {
         </ButtonGroup>
         <Divider orientation="horizontal" flexItem />
         <Stack direction="column" overflow="auto" style={{ maxHeight: '60vh' }}>
-          {props.alpha.map((a) => (
-            <Box sx={{ paddingRight: '10px', paddingLeft: '10px' }}>
+          {props.alpha.map((a, i) => (
+            <Box sx={{ paddingRight: '10px', paddingLeft: '10px' }} key={i}>
               <Typography variant="h6" display="flex" alignItems="center">
                 {a}
               </Typography>

@@ -79,6 +79,7 @@ const RuleComponent = (props: RuleComponentProps) => {
     >
       {props.rules.map((rule, i) => (
         <RuleBox
+          key={i}
           idx={i}
           rule={rule}
           isCurrent={isFSMRuleEqual(rule, props.currentRule)}
