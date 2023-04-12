@@ -18,7 +18,7 @@ const MachineEditorComponent = (props: MachineEditorProps) => {
   const [open, setOpen] = useState(false);
   const toggleModal = () => setOpen(!open);
   return (
-    <Box sx={{marginRight: 1}}>
+    <Box sx={{ marginRight: 1 }}>
       <ButtonGroup size="small" orientation="vertical">
         <Tooltip title="Edit Machine" placement="left-start">
           <IconButton color="primary" onClick={() => toggleModal()}>

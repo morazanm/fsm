@@ -1,8 +1,7 @@
 import { isFSMRuleEqual, ruleToString } from '../../types/machine';
 import { FSMRule } from '../../types/machine';
-import { Stack, Divider, Paper } from '@mui/material';
+import { Stack, Paper } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { borderRight } from '@mui/system';
 
 const Item = styled(Paper)(({ theme }) => ({
   backgroundColor: theme.palette.mode === 'dark' ? '#1A2027' : '#fff',
@@ -36,7 +35,6 @@ const style = {
   boxShadow: 'none',
 };
 
-
 const styleLeft = {
   minWidth: 'fit-content',
   display: 'flex',
@@ -51,7 +49,7 @@ const RuleBox = ({
   rule,
   isCurrent,
 }: {
-  idx: number,
+  idx: number;
   rule: FSMRule;
   isCurrent: boolean;
 }) => {

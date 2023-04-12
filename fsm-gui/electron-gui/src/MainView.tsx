@@ -6,12 +6,10 @@ import RightEditor from './components/rightEditor/MachineEditorComponent';
 import LeftEditor from './components/leftEditor/LeftEditor';
 import RuleComponent from './components/ruleDisplay/rulesComponent';
 
-
 const TMP_RULES = [
   { start: 'A', input: 'a', end: 'B' },
   { start: 'B', input: 'b', end: 'C' },
   { start: 'C', input: 'a', end: 'A' },
-
 ];
 
 const TMP_STATES = [
@@ -111,7 +109,13 @@ const MainView = () => {
             </Grid>
           </Grid>
         </Grid>
-        <Grid item xs={12} display="flex" justifyContent="center" style={{ paddingTop: "0px" }}>
+        <Grid
+          item
+          xs={12}
+          display="flex"
+          justifyContent="center"
+          style={{ paddingTop: '0px' }}
+        >
           <RuleComponent
             rules={rules}
             currentRule={{ start: 'A', input: 'a', end: 'B' }}
@@ -119,9 +123,7 @@ const MainView = () => {
         </Grid>
       </Grid>
     </Paper>
-
   );
-}
+};
 
-
-export default MainView
+export default MainView;
