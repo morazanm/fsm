@@ -8,6 +8,8 @@ export type State = {
   //TODO: Add the invariant function
 };
 
+// A list of numbers or lowercase symbols with a string representation of length one not including EMP
+export type FSMAlpha = string
 export type FSMRule = DfaNdfaRule | PdaRule | TmMttmRule;
 export type DfaNdfaRule = { start: StateName; input: string; end: StateName };
 export type PdaRule = {

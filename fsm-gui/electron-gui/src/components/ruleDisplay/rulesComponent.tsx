@@ -34,13 +34,13 @@ const RuleBox = ({
   const strRule = ruleToString(rule);
   if (isCurrent) {
     return (
-      <CurrentItem key={strRule} style={{ minWidth: 'fit-content' }}>
+      <CurrentItem key={strRule} style={{ minWidth: 'fit-content', display: "flex", alignItems: "center"}}>
         <p>{strRule}</p>
       </CurrentItem>
     );
   } else {
     return (
-      <Item key={strRule} style={{ minWidth: 'fit-content' }}>
+      <Item key={strRule} style={{ minWidth: 'fit-content', display: "flex", alignItems: "center" }}>
         <p>{strRule}</p>
       </Item>
     );

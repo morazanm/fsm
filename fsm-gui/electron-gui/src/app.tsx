@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import { Experimental_CssVarsProvider as CssVarsProvider } from '@mui/material/styles';
 import { Paper, Grid, StyledEngineProvider } from '@mui/material';
-import { State, FSMRule } from './types/machine';
+import { State, FSMRule, FSMAlpha } from './types/machine';
 import ControlView from './components/controlView/view';
-import MachineEditorComponent from './components/machineEditor/MachineEditorComponent';
-import RuleComponent from './components/ruleView/rulesComponent';
+import RightEditor from './components/rightEditor/MachineEditorComponent';
+import LeftEditor from './components/leftEditor/LeftEditor';
+import RuleComponent from './components/ruleDisplay/rulesComponent';
 
 const TMP_RULES = [
   { start: 'A', input: 'a', end: 'B' },
@@ -47,34 +48,92 @@ const TMP_STATES = [
   { name: 'C', type: 'normal' },
 ] as State[];
 
+const TMP_ALPHA = [
+  'a',
+  'b',
+  'c',
+
+  'd',
+  'e',
+  'f',
+  'g',
+  'h',
+  'i',
+  'j',
+  'k',
+  'l',
+  'm',
+  'n',
+  'o',
+];
+
 const App = () => {
   const [states, setStates] = useState<State[]>(TMP_STATES);
   const [rules, setRules] = useState<FSMRule[]>(TMP_RULES);
+  const [alphabet, setAlphabet] = useState<FSMAlpha[]>(TMP_ALPHA);
+  const [machineInput, setMachineInput] = useState<FSMAlpha[]>([]);
+
   const addState = (state: State) => {
     setStates(states.concat([state]));
   };
   const removeState = (incomming: State) => {
-    const newStates = states.filter((s) => s.name !== incomming.name);
-    setStates(newStates);
+    setStates(states.filter((s) => s.name !== incomming.name));
   };
+
+  const addAlpha = (incomming: FSMAlpha) => {
+    setAlphabet([...alphabet, incomming]);
+  };
+  const removeAlpha = (incomming: FSMAlpha[]) => {
+    setAlphabet(alphabet.filter((a) => !incomming.includes(a)));
+  };
+
   return (
     <CssVarsProvider>
-      <Paper sx={{ flexGrow: 1, margin: 'auto' }}>
-        <Grid container direction="row" rowSpacing={2}>
+      <Paper
+        sx={{
+          flexGrow: 1,
+          margin: 'auto',
+          height: '100vh',
+          display: 'flex',
+        }}
+      >
+        <Grid container direction="row" rowSpacing={1}>
           <Grid item xs={12}>
             <p>Input</p>
           </Grid>
           <Grid
             item
             xs={12}
-            style={{ border: '1px solid var(--color-border-grey)' }}
+            style={{
+              border: '1px solid var(--color-border-grey)',
+            }}
           >
-            <Grid container direction="row" spacing={1}>
-              <Grid item xs={11} justifyContent="center" display="flex">
+            <Grid container direction="row" spacing={1} height="100%">
+              <Grid
+                item
+                height="101.2%"
+                xs={1}
+                justifyContent="center"
+                display="flex"
+                style={{ borderRight: '1px solid var(--mui-palette-divider)' }}
+              >
+                <LeftEditor
+                  alpha={alphabet}
+                  addAlpha={addAlpha}
+                  removeAlpha={removeAlpha}
+                />
+              </Grid>
+              <Grid
+                item
+                xs={10}
+                justifyContent="center"
+                alignItems="center"
+                display="flex"
+              >
                 <ControlView states={states} currentRule={rules[0]} />
               </Grid>
-              <Grid item xs={1} justifyContent="center" display="flex">
-                <MachineEditorComponent
+              <Grid item xs={1} justifyContent="end" display="flex">
+                <RightEditor
                   states={states}
                   addState={addState}
                   removeState={removeState}
@@ -82,7 +141,7 @@ const App = () => {
               </Grid>
             </Grid>
           </Grid>
-          <Grid item xs={12}>
+          <Grid item xs={12} display="contents">
             <RuleComponent
               rules={rules}
               currentRule={{ start: 'A', input: 'a', end: 'B' }}
