@@ -2,6 +2,7 @@ import { isFSMRuleEqual, ruleToString } from '../../types/machine';
 import { FSMRule } from '../../types/machine';
 import { Stack, Divider, Paper } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import { borderRight } from '@mui/system';
 
 const Item = styled(Paper)(({ theme }) => ({
   backgroundColor: theme.palette.mode === 'dark' ? '#1A2027' : '#fff',
@@ -24,23 +25,46 @@ type RuleComponentProps = {
   currentRule: FSMRule;
 };
 
+const style = {
+  minWidth: 'fit-content',
+  display: 'flex',
+  alignItems: 'center',
+  marginLeft: '-1px',
+  borderLeft: '1px solid var(--mui-palette-divider)',
+  borderRight: '1px solid var(--mui-palette-divider)',
+  borderRadius: '0px',
+  boxShadow: 'none',
+};
+
+
+const styleLeft = {
+  minWidth: 'fit-content',
+  display: 'flex',
+  alignItems: 'center',
+  borderLeft: '1px solid var(--mui-palette-divider)',
+  borderRadius: '0px',
+  boxShadow: 'none',
+};
+
 const RuleBox = ({
+  idx,
   rule,
   isCurrent,
 }: {
+  idx: number,
   rule: FSMRule;
   isCurrent: boolean;
 }) => {
   const strRule = ruleToString(rule);
   if (isCurrent) {
     return (
-      <CurrentItem key={strRule} style={{ minWidth: 'fit-content', display: "flex", alignItems: "center"}}>
+      <CurrentItem key={strRule} style={idx === 0 ? styleLeft : style}>
         <p>{strRule}</p>
       </CurrentItem>
     );
   } else {
     return (
-      <Item key={strRule} style={{ minWidth: 'fit-content', display: "flex", alignItems: "center" }}>
+      <Item key={strRule} style={idx === 0 ? styleLeft : style}>
         <p>{strRule}</p>
       </Item>
     );
@@ -51,11 +75,13 @@ const RuleComponent = (props: RuleComponentProps) => {
   return (
     <Stack
       direction="row"
+      display="flex"
       overflow="auto"
-      divider={<Divider orientation="vertical" flexItem />}
+      justifyContent="center"
     >
       {props.rules.map((rule, i) => (
         <RuleBox
+          idx={i}
           rule={rule}
           isCurrent={isFSMRuleEqual(rule, props.currentRule)}
         />

@@ -13,7 +13,8 @@ const TMP_RULES = [
   { start: 'B', input: 'b', end: 'C' },
   { start: 'C', input: 'a', end: 'A' },
 
-  { start: 'A', input: 'a', end: 'B' },
+
+
   { start: 'A', input: 'a', end: 'B' },
   { start: 'A', input: 'a', end: 'B' },
   { start: 'A', input: 'a', end: 'B' },
@@ -38,8 +39,7 @@ const TMP_RULES = [
   { start: 'C', input: 'a', end: 'A' },
   { start: 'B', input: 'b', end: 'C' },
   { start: 'C', input: 'a', end: 'A' },
-  { start: 'B', input: 'b', end: 'C' },
-  { start: 'C', input: 'a', end: 'A' },
+
 ];
 
 const TMP_STATES = [
@@ -105,7 +105,7 @@ const App = () => {
             item
             xs={12}
             style={{
-              border: '1px solid var(--color-border-grey)',
+              border: '1px solid var(--mui-palette-divider)',
             }}
           >
             <Grid container direction="row" spacing={1} height="100%">
@@ -141,7 +141,7 @@ const App = () => {
               </Grid>
             </Grid>
           </Grid>
-          <Grid item xs={12} display="contents">
+          <Grid item xs={12} display="flex" justifyContent="center" style={{paddingTop: "0px"}}>
             <RuleComponent
               rules={rules}
               currentRule={{ start: 'A', input: 'a', end: 'B' }}
