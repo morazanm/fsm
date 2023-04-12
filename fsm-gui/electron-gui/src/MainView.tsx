@@ -48,15 +48,15 @@ const MainView = () => {
   const addState = (state: State) => {
     setStates(states.concat([state]));
   };
-  const removeState = (incomming: State) => {
-    setStates(states.filter((s) => s.name !== incomming.name));
+  const removeState = (incoming: State) => {
+    setStates(states.filter((s) => s.name !== incoming.name));
   };
 
-  const addAlpha = (incomming: FSMAlpha) => {
-    setAlphabet([...alphabet, incomming]);
+  const addAlpha = (incoming: FSMAlpha) => {
+    setAlphabet([...alphabet, incoming]);
   };
-  const removeAlpha = (incomming: FSMAlpha[]) => {
-    setAlphabet(alphabet.filter((a) => !incomming.includes(a)));
+  const removeAlpha = (incoming: FSMAlpha[]) => {
+    setAlphabet(alphabet.filter((a) => !incoming.includes(a)));
   };
   return (
     <Paper
