@@ -5,7 +5,6 @@ import { StyledEngineProvider } from '@mui/material';
 import MainView from './MainView'
 
 const App = () => {
-
   return (
     <CssVarsProvider>
       <MainView />
