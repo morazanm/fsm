@@ -10,6 +10,7 @@ import MachineEditorModal from './MachineEditorModal';
 
 type MachineEditorProps = {
   states: State[];
+  toggleTheme: () => void,
   addState: (state: State) => void;
   removeState: (state: State) => void;
 };
@@ -25,8 +26,8 @@ const MachineEditorComponent = (props: MachineEditorProps) => {
             <EditIcon />
           </IconButton>
         </Tooltip>
-        <Tooltip title="Toggle Color Bind Mode" placement="left-start">
-          <IconButton color="primary">
+        <Tooltip title="Toggle Theme" placement="left-start">
+          <IconButton color="primary" onClick={props.toggleTheme}>
             <PaletteIcon />
           </IconButton>
         </Tooltip>

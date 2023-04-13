@@ -47,12 +47,13 @@ type AddAlphaProps = {
 };
 
 export const AddAlphaModal = (props: AddAlphaProps) => {
+  const theme = useTheme(); 
   const [input, setInput] = useState('');
   const [errorMsg, setErrorMsg] = useState(null);
 
   return (
-    <BootstrapDialog open={props.isOpen} onClose={props.onClose}>
-      <DialogTitle sx={{ m: 0, p: 2 }}>Add Alphabet</DialogTitle>
+    <BootstrapDialog open={props.isOpen} onClose={props.onClose} theme={theme}>
+      <DialogTitle sx={{ m: 0, p: 2}}>Add Alphabet</DialogTitle>
       <IconButton
         aria-label="close"
         onClick={props.onClose}
@@ -151,7 +152,7 @@ export const DeleteAlphaModal = (props: DeleteAlphaProps) => {
 
   const handleChange = (event: SelectChangeEvent<typeof selectedAlphas>) => {
     const {
-      target: { value },
+      target: { value, },
     } = event;
     setSelectedAlphas(
       // On autofill we get a stringified value.
@@ -197,7 +198,6 @@ export const DeleteAlphaModal = (props: DeleteAlphaProps) => {
                   <Chip
                     clickable
                     key={value}
-                    value={value}
                     label={value}
                     variant="outlined"
                     color="primary"

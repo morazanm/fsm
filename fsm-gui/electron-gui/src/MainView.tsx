@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Paper, Grid } from '@mui/material';
 import { State, FSMRule, FSMAlpha } from './types/machine';
+import { useTheme } from '@mui/material/styles';
 import ControlView from './components/controlView/view';
 import RightEditor from './components/rightEditor/MachineEditorComponent';
 import LeftEditor from './components/leftEditor/LeftEditor';
@@ -37,7 +38,12 @@ const TMP_ALPHA = [
   'o',
 ];
 
-const MainView = () => {
+type MainViewProps = {
+  toggleTheme: () => void
+}
+
+const MainView = (props: MainViewProps) => {
+  const theme = useTheme();
   const [states, setStates] = useState<State[]>(TMP_STATES);
   const [rules, setRules] = useState<FSMRule[]>(TMP_RULES);
   const [alphabet, setAlphabet] = useState<FSMAlpha[]>(TMP_ALPHA);
@@ -56,13 +62,18 @@ const MainView = () => {
   const removeAlpha = (incoming: FSMAlpha[]) => {
     setAlphabet(alphabet.filter((a) => !incoming.includes(a)));
   };
+
   return (
     <Paper
+      style={{}}
       sx={{
         flexGrow: 1,
         margin: 'auto',
         height: '100vh',
         display: 'flex',
+        borderRadius: 0,
+        bgcolor: theme.palette.background.paper,
+        color: theme.palette.text.primary,
       }}
     >
       <Grid container direction="row" rowSpacing={1}>
@@ -71,10 +82,8 @@ const MainView = () => {
         </Grid>
         <Grid
           item
+          sx={{ border: `1px solid ${theme.palette.divider}` }}
           xs={12}
-          style={{
-            border: '1px solid var(--mui-palette-divider)',
-          }}
         >
           <Grid container direction="row" spacing={1} height="100%">
             <Grid
@@ -83,7 +92,7 @@ const MainView = () => {
               xs={1}
               justifyContent="center"
               display="flex"
-              style={{ borderRight: '1px solid var(--mui-palette-divider)' }}
+              sx={{ borderRight: `1px solid ${theme.palette.divider}` }}
             >
               <LeftEditor
                 alpha={alphabet}
@@ -102,6 +111,7 @@ const MainView = () => {
             </Grid>
             <Grid item xs={1} justifyContent="end" display="flex">
               <RightEditor
+                toggleTheme={props.toggleTheme}
                 states={states}
                 addState={addState}
                 removeState={removeState}

@@ -7,6 +7,8 @@ import {
   IconButton,
   Divider,
   Snackbar,
+  useTheme,
+  Tooltip,
 } from '@mui/material';
 
 import MuiAlert, { AlertProps } from '@mui/material/Alert';
@@ -35,6 +37,11 @@ const Alert = forwardRef<HTMLDivElement, AlertProps>(function Alert(
 });
 
 const LeftEditor = (props: LeftEditorProps) => {
+  const theme = useTheme();
+  const sxTheme = {
+    color: theme.palette.text.primary,
+    bgcolor: theme.palette.background.default,
+  };
   const [openModal, setOpenModal] = useState<OpenModal>(null);
   const [snack, setSnack] = useState<SnackState>({
     msg: undefined,
@@ -49,27 +56,40 @@ const LeftEditor = (props: LeftEditorProps) => {
   return (
     <>
       <Stack direction="column" alignItems="center" overflow="auto">
-        <Typography variant="h5">Σ</Typography>
-        <ButtonGroup variant="outlined">
-          <IconButton
-            aria-label="Add Alphabet"
-            color="primary"
-            onClick={() => setOpenModal('add')}
-          >
-            <AddIcon />
-          </IconButton>
-          <IconButton
-            aria-label="Remove Alphabet"
-            color="primary"
-            onClick={() => setOpenModal('remove')}
-          >
-            <DeleteIcon />
-          </IconButton>
+        <Typography sx={{ ...sxTheme }} variant="h5">
+          Σ
+        </Typography>
+        <ButtonGroup variant="outlined" sx={{ ...sxTheme }}>
+          <Tooltip title="Add Alpha" placement="right-start">
+            <IconButton
+              aria-label="Add Alphabet"
+              color="primary"
+              onClick={() => setOpenModal('add')}
+            >
+              <AddIcon />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Remove Alpha" placement="right-start">
+            <IconButton
+              aria-label="Remove Alphabet"
+              color="primary"
+              onClick={() => setOpenModal('remove')}
+            >
+              <DeleteIcon />
+            </IconButton>
+          </Tooltip>
         </ButtonGroup>
-        <Divider orientation="horizontal" flexItem />
+        <Divider
+          sx={{ ...sxTheme, bgcolor: theme.palette.divider }}
+          orientation="horizontal"
+          flexItem
+        />
         <Stack direction="column" overflow="auto" style={{ maxHeight: '60vh' }}>
           {props.alpha.map((a, i) => (
-            <Box sx={{ paddingRight: '10px', paddingLeft: '10px' }} key={i}>
+            <Box
+              sx={{ paddingRight: '10px', paddingLeft: '10px', ...sxTheme }}
+              key={i}
+            >
               <Typography variant="h6" display="flex" alignItems="center">
                 {a}
               </Typography>

@@ -9,7 +9,6 @@
 .circleMain {
     position: relative;
     background-color: transparent;
-    border: 2px dotted #000000;
 }
 
 .circleBackground {

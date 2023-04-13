@@ -1,10 +1,10 @@
 import { isFSMRuleEqual, ruleToString } from '../../types/machine';
 import { FSMRule } from '../../types/machine';
 import { Stack, Paper } from '@mui/material';
-import { styled } from '@mui/material/styles';
+import { styled, useTheme } from '@mui/material/styles';
 
 const Item = styled(Paper)(({ theme }) => ({
-  backgroundColor: theme.palette.mode === 'dark' ? '#1A2027' : '#fff',
+  backgroundColor: theme.palette.background.default,
   ...theme.typography.body2,
   padding: theme.spacing(1),
   textAlign: 'center',
@@ -12,7 +12,7 @@ const Item = styled(Paper)(({ theme }) => ({
 }));
 
 const CurrentItem = styled(Paper)(({ theme }) => ({
-  backgroundColor: theme.palette.mode === 'dark' ? '#1A2027' : '#fff',
+  backgroundColor: theme.palette.background.default,
   ...theme.typography.body2,
   padding: theme.spacing(1),
   textAlign: 'center',
@@ -24,26 +24,6 @@ type RuleComponentProps = {
   currentRule: FSMRule;
 };
 
-const style = {
-  minWidth: 'fit-content',
-  display: 'flex',
-  alignItems: 'center',
-  marginLeft: '-1px',
-  borderLeft: '1px solid var(--mui-palette-divider)',
-  borderRight: '1px solid var(--mui-palette-divider)',
-  borderRadius: '0px',
-  boxShadow: 'none',
-};
-
-const styleLeft = {
-  minWidth: 'fit-content',
-  display: 'flex',
-  alignItems: 'center',
-  borderLeft: '1px solid var(--mui-palette-divider)',
-  borderRadius: '0px',
-  boxShadow: 'none',
-};
-
 const RuleBox = ({
   idx,
   rule,
@@ -53,16 +33,44 @@ const RuleBox = ({
   rule: FSMRule;
   isCurrent: boolean;
 }) => {
+  const theme = useTheme();
+  const styleRight = {
+    minWidth: 'fit-content',
+    display: 'flex',
+    alignItems: 'center',
+    marginLeft: '-1px',
+    borderLeft: `1px solid ${theme.palette.divider}`,
+    borderRight: `1px solid ${theme.palette.divider}`,
+    borderRadius: '0px',
+    boxShadow: 'none',
+  };
+
+  const styleLeft = {
+    minWidth: 'fit-content',
+    display: 'flex',
+    alignItems: 'center',
+    borderLeft: `1px solid ${theme.palette.divider}`,
+    borderRadius: '0px',
+    boxShadow: 'none',
+  };
   const strRule = ruleToString(rule);
   if (isCurrent) {
     return (
-      <CurrentItem key={strRule} style={idx === 0 ? styleLeft : style}>
+      <CurrentItem
+        key={strRule}
+        style={idx === 0 ? styleLeft : styleRight}
+        theme={theme}
+      >
         <p>{strRule}</p>
       </CurrentItem>
     );
   } else {
     return (
-      <Item key={strRule} style={idx === 0 ? styleLeft : style}>
+      <Item
+        key={strRule}
+        style={idx === 0 ? styleLeft : styleRight}
+        theme={theme}
+      >
         <p>{strRule}</p>
       </Item>
     );
