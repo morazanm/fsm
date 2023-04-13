@@ -64,9 +64,9 @@ export const ruleToString = (rule: FSMRule): string => {
   if (isDfaNdfaRule(rule)) {
     return `(${rule.start}, ${rule.input}, ${rule.end})`;
   } else if (isPdaRule(rule)) {
-    return 'TODO';
+    return 'TODO: finish';
   } else if (isTmTmLangRecRule(rule)) {
-    return 'TODO';
+    return 'TODO: finish';
   }
   throw Error('Invalid rule supplied');
 };

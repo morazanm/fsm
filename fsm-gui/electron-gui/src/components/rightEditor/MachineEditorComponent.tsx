@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Box, Tooltip, ButtonGroup, IconButton } from '@mui/material';
 import {
+  PlayArrow as RunIcon,
   Edit as EditIcon,
   SsidChart as SsidChartIcon,
   Palette as PaletteIcon,
@@ -21,6 +22,11 @@ const MachineEditorComponent = (props: MachineEditorProps) => {
   return (
     <Box sx={{ marginRight: 1 }}>
       <ButtonGroup size="small" orientation="vertical">
+        <Tooltip title="Run Machine" placement="left-start">
+          <IconButton color="primary" disabled>
+            <RunIcon />
+          </IconButton>
+        </Tooltip>
         <Tooltip title="Edit Machine" placement="left-start">
           <IconButton color="primary" onClick={() => toggleModal()}>
             <EditIcon />

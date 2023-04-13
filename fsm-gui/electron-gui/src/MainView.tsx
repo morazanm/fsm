@@ -6,7 +6,7 @@ import ControlView from './components/controlView/view';
 import RightEditor from './components/rightEditor/MachineEditorComponent';
 import LeftEditor from './components/leftEditor/LeftEditor';
 import RuleComponent from './components/ruleDisplay/rulesComponent';
-
+import InputComponent from './components/inputEditor/InputComponent';
 const TMP_RULES = [
   { start: 'A', input: 'a', end: 'B' },
   { start: 'B', input: 'b', end: 'C' },
@@ -19,24 +19,7 @@ const TMP_STATES = [
   { name: 'C', type: 'normal' },
 ] as State[];
 
-const TMP_ALPHA = [
-  'a',
-  'b',
-  'c',
-
-  'd',
-  'e',
-  'f',
-  'g',
-  'h',
-  'i',
-  'j',
-  'k',
-  'l',
-  'm',
-  'n',
-  'o',
-];
+const TMP_ALPHA = ['a', 'b', 'c'];
 
 type MainViewProps = {
   toggleTheme: () => void;
@@ -47,25 +30,19 @@ const MainView = (props: MainViewProps) => {
   const [states, setStates] = useState<State[]>(TMP_STATES);
   const [rules, setRules] = useState<FSMRule[]>(TMP_RULES);
   const [alphabet, setAlphabet] = useState<FSMAlpha[]>(TMP_ALPHA);
-  const [machineInput, setMachineInput] = useState<FSMAlpha[]>([]);
+  const [input, setInput] = useState<FSMAlpha[]>([]);
 
-  const addState = (state: State) => {
-    setStates(states.concat([state]));
-  };
-  const removeState = (incoming: State) => {
+  const addState = (state: State) => setStates(states.concat([state]));
+  const removeState = (incoming: State) =>
     setStates(states.filter((s) => s.name !== incoming.name));
-  };
-
-  const addAlpha = (incoming: FSMAlpha) => {
-    setAlphabet([...alphabet, incoming]);
-  };
-  const removeAlpha = (incoming: FSMAlpha[]) => {
+  const addInput = (incoming: FSMAlpha[]) => setInput(input.concat(incoming));
+  const clearInput = () => setInput([]);
+  const addAlpha = (incoming: FSMAlpha) => setAlphabet([...alphabet, incoming]);
+  const removeAlpha = (incoming: FSMAlpha[]) =>
     setAlphabet(alphabet.filter((a) => !incoming.includes(a)));
-  };
 
   return (
     <Paper
-      style={{}}
       sx={{
         flexGrow: 1,
         margin: 'auto',
@@ -78,11 +55,19 @@ const MainView = (props: MainViewProps) => {
     >
       <Grid container direction="row" rowSpacing={1}>
         <Grid item xs={12}>
-          <p>Input</p>
+          <InputComponent
+            input={input}
+            addInput={addInput}
+            clearInput={clearInput}
+          />
         </Grid>
         <Grid
           item
-          sx={{ border: `1px solid ${theme.palette.divider}` }}
+          sx={{
+            borderRight: `1px solid ${theme.palette.divider}`,
+            borderTop: `1px solid ${theme.palette.divider}`,
+            borderBottom: `1px solid ${theme.palette.divider}`,
+          }}
           xs={12}
         >
           <Grid container direction="row" spacing={1} height="100%">
