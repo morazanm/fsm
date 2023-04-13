@@ -10,7 +10,7 @@ import MachineEditorModal from './MachineEditorModal';
 
 type MachineEditorProps = {
   states: State[];
-  toggleTheme: () => void,
+  toggleTheme: () => void;
   addState: (state: State) => void;
   removeState: (state: State) => void;
 };

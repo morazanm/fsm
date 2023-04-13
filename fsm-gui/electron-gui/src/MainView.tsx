@@ -39,8 +39,8 @@ const TMP_ALPHA = [
 ];
 
 type MainViewProps = {
-  toggleTheme: () => void
-}
+  toggleTheme: () => void;
+};
 
 const MainView = (props: MainViewProps) => {
   const theme = useTheme();
