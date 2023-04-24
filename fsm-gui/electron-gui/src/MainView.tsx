@@ -30,8 +30,8 @@ const MainView = (props: MainViewProps) => {
   const [states, setStates] = useState<State[]>(TMP_STATES);
   const [rules, setRules] = useState<FSMRule[]>(TMP_RULES);
   const [alphabet, setAlphabet] = useState<FSMAlpha[]>(TMP_ALPHA);
-  const [input, setInput] = useState<FSMAlpha[]>([]);
-  const [inputIndex, setInputIndex] = useState(0)
+  const [input, setInput] = useState<FSMAlpha[]>(['a', 'b', 'c', 'a']);
+  const [inputIndex, setInputIndex] = useState(1);
 
   const addState = (state: State) => setStates(states.concat([state]));
   const removeState = (incoming: State) =>

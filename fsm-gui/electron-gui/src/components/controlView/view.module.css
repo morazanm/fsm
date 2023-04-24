@@ -1,36 +1,38 @@
 :root {
-    --arrowHeight: 10px
+  --arrowHeight: 10px;
 }
 
-.circleMain, .circleBackground {
-    border-radius: 50%;
+.circleMain,
+.circleBackground {
+  border-radius: 50%;
 }
 
 .circleMain {
-    position: relative;
-    background-color: transparent;
+  position: relative;
+  background-color: transparent;
 }
 
 .circleBackground {
-    position: absolute;
-    top: 0px;
-    left: 0px;
-    background-color: transparent;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  background-color: transparent;
 }
 
-.currentArrow, .previousArrow {
-    margin: 0px;
-    border: none;
-    position: absolute;
-    top: 50%;
-    transform-origin: center;
+.currentArrow,
+.previousArrow {
+  margin: 0px;
+  border: none;
+  position: absolute;
+  top: 50%;
+  transform-origin: center;
 }
 
 .currentArrow {
-    border-radius: 20px;
-    border-top: var(--arrowHeight) yellow solid;
+  border-radius: 20px;
+  border-top: var(--arrowHeight) yellow solid;
 }
 
 .previousArrow {
-    border-top: var(--arrowHeight) navy dotted;
+  border-top: var(--arrowHeight) navy dotted;
 }

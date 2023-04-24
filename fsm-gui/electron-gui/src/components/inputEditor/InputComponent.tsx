@@ -5,6 +5,7 @@ import {
   ArrowForwardIos as ArrowForwardIosIcon,
 } from '@mui/icons-material';
 import { FSMAlpha } from '../../types/machine';
+import InputRender from './InputRender';
 
 type InputComponentProps = {
   input: FSMAlpha[];
@@ -75,7 +76,15 @@ const InputComponent = (props: InputComponentProps) => {
           </Grid>
         </Grid>
       </Grid>
-      <Grid item xs={11}></Grid>
+      <Grid
+        item
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        xs={11}
+      >
+        <InputRender input={props.input} inputIndex={props.inputIndex} />
+      </Grid>
     </Grid>
   );
 };

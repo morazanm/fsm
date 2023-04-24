@@ -69,7 +69,11 @@ const LeftEditor = (props: LeftEditorProps) => {
               <AddIcon />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Remove Alpha" placement="right-start" disableInteractive>
+          <Tooltip
+            title="Remove Alpha"
+            placement="right-start"
+            disableInteractive
+          >
             <IconButton
               aria-label="Remove Alphabet"
               color="primary"

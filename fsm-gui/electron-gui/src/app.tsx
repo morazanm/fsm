@@ -47,9 +47,9 @@ function ToggleColorMode() {
           MuiButton: {
             styleOverrides: {
               outlined: {
-                minWidth: 10
-              }
-            }
+                minWidth: 10,
+              },
+            },
           },
         },
       }),
