@@ -1,4 +1,7 @@
+
 export type MachineType = 'dfa' | 'ndfa' | 'pda' | 'tm' | 'tm-lang-rec';
+export const isTmType = (type: MachineType) => type == "tm" || type === "tm-lang-rec"
+
 
 export type StateName = string;
 export type StateType = 'start' | 'final' | 'startFinal' | 'normal' | 'accept';
@@ -26,6 +29,7 @@ export type TmMttmRule = {
   end: StateName;
   endTape: string[];
 };
+
 
 export const isTmTmLangRecRule = (rule: FSMRule): rule is TmMttmRule => {
   return (rule as TmMttmRule).startTape !== undefined;

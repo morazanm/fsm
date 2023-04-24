@@ -31,6 +31,7 @@ const MainView = (props: MainViewProps) => {
   const [rules, setRules] = useState<FSMRule[]>(TMP_RULES);
   const [alphabet, setAlphabet] = useState<FSMAlpha[]>(TMP_ALPHA);
   const [input, setInput] = useState<FSMAlpha[]>([]);
+  const [inputIndex, setInputIndex] = useState(0)
 
   const addState = (state: State) => setStates(states.concat([state]));
   const removeState = (incoming: State) =>
@@ -56,6 +57,7 @@ const MainView = (props: MainViewProps) => {
       <Grid container direction="row" rowSpacing={1}>
         <Grid item xs={12}>
           <InputComponent
+            inputIndex={inputIndex}
             input={input}
             addInput={addInput}
             clearInput={clearInput}

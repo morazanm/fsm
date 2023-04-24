@@ -43,6 +43,15 @@ function ToggleColorMode() {
         palette: {
           mode,
         },
+        components: {
+          MuiButton: {
+            styleOverrides: {
+              outlined: {
+                minWidth: 10
+              }
+            }
+          },
+        },
       }),
     [mode],
   );

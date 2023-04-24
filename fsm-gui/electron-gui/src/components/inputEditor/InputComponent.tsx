@@ -1,5 +1,6 @@
-import { Grid, ButtonGroup, Button, useTheme, Typography } from '@mui/material';
+import { Grid, Tooltip, ButtonGroup, Button, useTheme } from '@mui/material';
 import {
+  PlayArrow as RunIcon,
   ArrowBackIosNew as ArrowBackIosNewIcon,
   ArrowForwardIos as ArrowForwardIosIcon,
 } from '@mui/icons-material';
@@ -7,6 +8,7 @@ import { FSMAlpha } from '../../types/machine';
 
 type InputComponentProps = {
   input: FSMAlpha[];
+  inputIndex: number;
   addInput: (input: FSMAlpha[]) => void;
   clearInput: () => void;
 };
@@ -27,25 +29,48 @@ const InputComponent = (props: InputComponentProps) => {
       >
         <Grid
           container
+          display="flex"
           direction="column"
           justifyContent="center"
           alignItems="center"
         >
-          <Grid item xs={6}>
-            <Typography variant="h5">Input:</Typography>
+          <Grid
+            item
+            xs={6}
+            width="inherit"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+          >
+            <Tooltip title="Run Machine" disableInteractive>
+              <Button variant="outlined" color="success" size="small">
+                <RunIcon color="success" />
+              </Button>
+            </Tooltip>
           </Grid>
-          <Grid item xs={6}>
+          <Grid
+            item
+            xs={6}
+            width="inherit"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+          >
             <ButtonGroup
               size="small"
-              variant="outlined"
-              aria-label="outlined button group"
+              variant="text"
+              aria-label="text button group"
             >
-              <Button>
-                <ArrowBackIosNewIcon />
-              </Button>
-              <Button>
-                <ArrowForwardIosIcon />
-              </Button>
+              <Tooltip title="Previous" disableInteractive>
+                <Button>
+                  <ArrowBackIosNewIcon />
+                </Button>
+              </Tooltip>
+              <Tooltip title="Next" disableInteractive>
+                <Button>
+                  <ArrowForwardIosIcon />
+                </Button>
+              </Tooltip>
             </ButtonGroup>
           </Grid>
         </Grid>

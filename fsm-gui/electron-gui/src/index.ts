@@ -11,20 +11,37 @@ if (require('electron-squirrel-startup')) {
 }
 
 const createWindow = (): void => {
+  console.log('READY');
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    height: 600,
-    width: 800,
+    minHeight: 720,
+    minWidth: 1280,
+    show: false,
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
     },
   });
+
+  // create a new `splash`-Window
+  const splash = new BrowserWindow({
+    minHeight: 720,
+    minWidth: 1280,
+    frame: false,
+  });
+  splash.loadURL(`file://${__dirname}/../../src/splash.html`);
+
+  mainWindow.loadURL(`file://${__dirname}/index.html`);
 
   // and load the index.html of the app.
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 
   // Open the DevTools.
   mainWindow.webContents.openDevTools();
+
+  mainWindow.on('ready-to-show', () => {
+    splash.destroy();
+    mainWindow.show();
+  });
 };
 
 // This method will be called when Electron has finished

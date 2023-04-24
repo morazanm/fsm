@@ -60,7 +60,7 @@ const LeftEditor = (props: LeftEditorProps) => {
           Σ
         </Typography>
         <ButtonGroup variant="outlined" sx={{ ...sxTheme }}>
-          <Tooltip title="Add Alpha" placement="right-start">
+          <Tooltip title="Add Alpha" placement="right-start" disableInteractive>
             <IconButton
               aria-label="Add Alphabet"
               color="primary"
@@ -69,7 +69,7 @@ const LeftEditor = (props: LeftEditorProps) => {
               <AddIcon />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Remove Alpha" placement="right-start">
+          <Tooltip title="Remove Alpha" placement="right-start" disableInteractive>
             <IconButton
               aria-label="Remove Alphabet"
               color="primary"
