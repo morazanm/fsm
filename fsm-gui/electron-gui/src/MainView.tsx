@@ -34,9 +34,7 @@ const MainView = (props: MainViewProps) => {
   const [input, setInput] = useState<FSMAlpha[]>(['a', 'b', 'c', 'a']);
   const [inputIndex, setInputIndex] = useState(1);
 
-  const addState = (state: State) => setStates(states.concat([state]));
-  const removeState = (incoming: State) =>
-    setStates(states.filter((s) => s.name !== incoming.name));
+  const setGuiStates = (states: State[]) => setStates(states);
   const addInput = (incoming: FSMAlpha[]) => setInput(input.concat(incoming));
   const clearInput = () => setInput([]);
   const addAlpha = (incoming: FSMAlpha) => setAlphabet([...alphabet, incoming]);
@@ -102,8 +100,7 @@ const MainView = (props: MainViewProps) => {
                 toggleTheme={props.toggleTheme}
                 machineType={machineType}
                 states={states}
-                addState={addState}
-                removeState={removeState}
+                setStates={setGuiStates}
                 input={input}
                 setInput={(incomming: FSMAlpha[]) => setInput(incomming)}
                 alpha={alphabet}

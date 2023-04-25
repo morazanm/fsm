@@ -8,6 +8,8 @@ import {
   SpeedDialAction,
   SpeedDialIcon,
   Backdrop,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -19,8 +21,8 @@ import {
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { State, MachineType, isTmType, FSMAlpha } from '../../types/machine';
-import MachineEditorModal from './MachineEditorModal';
-import InputForm from './Forms/InputForm';
+import InputForm from './forms/InputForm';
+import StateForm from './forms/StateForm';
 
 const StyledSpeedDial = styled(SpeedDial)(({ theme }) => ({
   '& .MuiFab-primary': {
@@ -80,14 +82,13 @@ const useDialActions = (type: MachineType) => {
 };
 
 type MachineEditorProps = {
-  states: State[];
   toggleTheme: () => void;
-  addState: (state: State) => void;
-  removeState: (state: State) => void;
   machineType: MachineType;
+  alpha: FSMAlpha[];
+  states: State[];
+  setStates: (states: State[]) => void;
   input: FSMAlpha[];
   setInput: (incomming: FSMAlpha[]) => void;
-  alpha: FSMAlpha[];
 };
 
 type OpenModal = 'input' | 'state' | 'rule' | 'tapePosn' | null;
@@ -95,8 +96,11 @@ type OpenModal = 'input' | 'state' | 'rule' | 'tapePosn' | null;
 const MachineEditorComponent = (props: MachineEditorProps) => {
   const [openModal, setOpenModal] = useState<OpenModal>(null);
   const [open, setOpen] = useState(false);
-  const toggleModal = () => setOpen(!open);
+  const [snackMsg, setSnackMsg] = useState('');
   const dialActions = useDialActions(props.machineType);
+
+  const resetSnack = () => setSnackMsg('');
+  const toggleSnack = (msg: string) => setSnackMsg(msg);
   return (
     <Box sx={{ marginRight: 1 }}>
       <ButtonGroup size="small" orientation="vertical">
@@ -119,7 +123,8 @@ const MachineEditorComponent = (props: MachineEditorProps) => {
           ariaLabel="SpeedDial"
           direction="down"
           open={open}
-          onOpen={() => setOpen(true)}
+          onMouseEnter={() => setOpen(!open)}
+          onClick={() => setOpen(!open)}
           onClose={() => setOpen(false)}
           sx={{ paddingTop: 1 }}
           icon={<SpeedDialIcon openIcon={<EditIcon />} />}
@@ -130,21 +135,14 @@ const MachineEditorComponent = (props: MachineEditorProps) => {
               icon={i.icon}
               tooltipTitle={i.tooltip}
               onClick={() => {
-                setOpenModal(i.toggle(openModal));
                 setOpen(false);
+                setOpenModal(i.toggle(openModal));
               }}
               sx={{ width: 30, height: 31, minHeight: 31 }}
             />
           ))}
         </StyledSpeedDial>
       </ButtonGroup>
-      <MachineEditorModal
-        isOpen={false}
-        onClose={toggleModal}
-        addState={props.addState}
-        removeState={props.removeState}
-        states={props.states}
-      />
       <InputForm
         isOpen={openModal === 'input'}
         toggle={() => setOpenModal(null)}
@@ -153,6 +151,25 @@ const MachineEditorComponent = (props: MachineEditorProps) => {
         setInput={props.setInput}
         alpha={props.alpha}
       />
+      <StateForm
+        isOpen={openModal === 'state'}
+        toggle={() => setOpenModal(null)}
+        machineType={props.machineType}
+        setStates={props.setStates}
+        states={props.states}
+        toggleSnack={toggleSnack}
+      />
+      {snackMsg && (
+        <Snackbar
+          open={snackMsg !== ''}
+          autoHideDuration={4000}
+          onClose={resetSnack}
+        >
+          <Alert onClose={resetSnack} severity="success" sx={{ width: '100%' }}>
+            {snackMsg}
+          </Alert>
+        </Snackbar>
+      )}
     </Box>
   );
 };
