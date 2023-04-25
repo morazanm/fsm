@@ -6,17 +6,21 @@ export type FSMAlpha = string;
 // dash, and number (e.g., A-72431).
 export type StateName = string;
 
+// string representaion of a racket invariant function
+export type RacketInvariantFunc = string;
+
 // The supported types of machines that the GUI can handle
 export type MachineType = 'dfa' | 'ndfa' | 'pda' | 'tm' | 'tm-lang-rec';
 
 // The types of states can be displayed in the GUI
 export type StateType = 'start' | 'final' | 'startFinal' | 'normal' | 'accept';
 
-// Object representation of a single FSM state.
-//TODO: Add the invariant function
+// Object representation of a single FSM state. The invariant function is optional
+// since not all states are required to have one
 export type State = {
   name: StateName;
   type: StateType;
+  invFunc?: RacketInvariantFunc;
 };
 
 // Supported rule types
@@ -42,6 +46,24 @@ export type TmMttmRule = {
   end: StateName;
   endTape: string[];
 };
+
+// A transition consists for a rule that is used and a boolean to represent
+// if the invariant held. If the invariant is undefined then a invariant function
+// was not supplied
+export type FSMTransition = {
+  rule: FSMRule;
+  invPass: boolean | undefined;
+}
+
+// A object representation of a FSM machine. This object is passed to and from the FSM
+// racket backend
+export type FSMMachine = {
+  states: State[];
+  alphabet: FSMAlpha[];
+  transitions: FSMTransition[];
+  rules: FSMRule[];
+  type: MachineType;
+}
 
 /*
  * Helper Functions below
