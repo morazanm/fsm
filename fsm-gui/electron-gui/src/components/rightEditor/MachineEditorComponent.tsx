@@ -20,9 +20,16 @@ import {
   LocationOn as EditLocationIcon,
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
-import { State, MachineType, isTmType, FSMAlpha } from '../../types/machine';
+import {
+  State,
+  MachineType,
+  isTmType,
+  FSMAlpha,
+  FSMRule,
+} from '../../types/machine';
 import InputForm from './forms/InputForm';
 import StateForm from './forms/StateForm';
+import useRuleForm from './forms/RuleForm';
 
 const StyledSpeedDial = styled(SpeedDial)(({ theme }) => ({
   '& .MuiFab-primary': {
@@ -56,7 +63,7 @@ const useDialActions = (type: MachineType) => {
     {
       icon: <EditIcon />,
       tooltip: isTmType(type) ? 'Tape Input' : 'Input',
-      toggle: (val: OpenModal) => (val === null ? 'input' : null),
+      toggle: (val: OpenModal): OpenModal => (val === null ? 'input' : null),
     },
     {
       icon: <RadioButtonUncheckedIcon />,
@@ -70,7 +77,7 @@ const useDialActions = (type: MachineType) => {
     },
   ];
 
-  if (!isTmType(type)) {
+  if (isTmType(type)) {
     actions.push({
       icon: <EditLocationIcon />,
       tooltip: 'Tape Position',
@@ -89,6 +96,8 @@ type MachineEditorProps = {
   setStates: (states: State[]) => void;
   input: FSMAlpha[];
   setInput: (incomming: FSMAlpha[]) => void;
+  rules: FSMRule[];
+  setRules: (rules: FSMRule[]) => void;
 };
 
 type OpenModal = 'input' | 'state' | 'rule' | 'tapePosn' | null;
@@ -98,6 +107,7 @@ const MachineEditorComponent = (props: MachineEditorProps) => {
   const [open, setOpen] = useState(false);
   const [snackMsg, setSnackMsg] = useState('');
   const dialActions = useDialActions(props.machineType);
+  const RuleForm = useRuleForm(props.machineType);
 
   const resetSnack = () => setSnackMsg('');
   const toggleSnack = (msg: string) => setSnackMsg(msg);
@@ -157,6 +167,16 @@ const MachineEditorComponent = (props: MachineEditorProps) => {
         machineType={props.machineType}
         setStates={props.setStates}
         states={props.states}
+        toggleSnack={toggleSnack}
+      />
+      <RuleForm
+        isOpen={openModal === 'rule'}
+        toggle={() => setOpenModal(null)}
+        machineType={props.machineType}
+        rules={props.rules}
+        setRules={props.setRules}
+        states={props.states}
+        alpha={props.alpha}
         toggleSnack={toggleSnack}
       />
       {snackMsg && (

@@ -9,7 +9,8 @@
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
-    "lint": "eslint --ext .ts,.tsx .",
+    "typecheck": "tsc --noEmit --project ./tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src && prettier --check src && npm run typecheck",
     "format": "prettier --ignore-path .gitignore --write \"**/*.+(js|ts|json|jsx|tsx)\""
   },
   "keywords": [],

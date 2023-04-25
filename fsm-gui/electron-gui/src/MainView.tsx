@@ -32,9 +32,10 @@ const MainView = (props: MainViewProps) => {
   const [rules, setRules] = useState<FSMRule[]>(TMP_RULES);
   const [alphabet, setAlphabet] = useState<FSMAlpha[]>(TMP_ALPHA);
   const [input, setInput] = useState<FSMAlpha[]>(['a', 'b', 'c', 'a']);
-  const [inputIndex, setInputIndex] = useState(1);
+  const [inputIndex, setInputIndex] = useState<number | null>(null);
 
   const setGuiStates = (states: State[]) => setStates(states);
+  const setGuiRules = (rules: FSMRule[]) => setRules(rules);
   const addInput = (incoming: FSMAlpha[]) => setInput(input.concat(incoming));
   const clearInput = () => setInput([]);
   const addAlpha = (incoming: FSMAlpha) => setAlphabet([...alphabet, incoming]);
@@ -104,6 +105,8 @@ const MainView = (props: MainViewProps) => {
                 input={input}
                 setInput={(incomming: FSMAlpha[]) => setInput(incomming)}
                 alpha={alphabet}
+                rules={rules}
+                setRules={setGuiRules}
               />
             </Grid>
           </Grid>
