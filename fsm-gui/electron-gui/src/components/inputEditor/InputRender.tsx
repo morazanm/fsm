@@ -42,11 +42,11 @@ const InputRender = (props: InputRenderProps) => {
     >
       {props.input.map((a, i) => {
         if (i < props.inputIndex) {
-          return <PreviousInput input={a} />;
+          return <PreviousInput key={i} input={a} />;
         } else if (i === props.inputIndex) {
-          return <CurrentInput input={a} />;
+          return <CurrentInput key={i} input={a} />;
         } else {
-          return <RestInput input={a} />;
+          return <RestInput key={i} input={a} />;
         }
       })}
     </Stack>

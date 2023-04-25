@@ -18,9 +18,9 @@ import {
   LocationOn as EditLocationIcon,
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
-import { State, MachineType, isTmType } from '../../types/machine';
+import { State, MachineType, isTmType, FSMAlpha } from '../../types/machine';
 import MachineEditorModal from './MachineEditorModal';
-import { useTheme } from '@mui/system';
+import InputForm from './Forms/InputForm';
 
 const StyledSpeedDial = styled(SpeedDial)(({ theme }) => ({
   '& .MuiFab-primary': {
@@ -43,21 +43,37 @@ const StyledSpeedDial = styled(SpeedDial)(({ theme }) => ({
   },
 }));
 
-const StyledSpeedDialAction = styled(SpeedDialAction)(({ theme }) => ({
+const StyledSpeedDialAction = styled(SpeedDialAction)(() => ({
   '& .MuiSvgIcon-root': {
     fontSize: 17,
   },
 }));
 
 const useDialActions = (type: MachineType) => {
-  let actions = [
-    { icon: <RadioButtonUncheckedIcon />, tooltip: 'State' },
-    { icon: <StraightenIcon />, tooltip: 'Rule' },
-    { icon: <EditIcon />, tooltip: 'State' },
+  const actions = [
+    {
+      icon: <EditIcon />,
+      tooltip: isTmType(type) ? 'Tape Input' : 'Input',
+      toggle: (val: OpenModal) => (val === null ? 'input' : null),
+    },
+    {
+      icon: <RadioButtonUncheckedIcon />,
+      tooltip: 'State',
+      toggle: (val: OpenModal): OpenModal => (val === null ? 'state' : null),
+    },
+    {
+      icon: <StraightenIcon />,
+      tooltip: 'Rule',
+      toggle: (val: OpenModal): OpenModal => (val === null ? 'rule' : null),
+    },
   ];
 
   if (!isTmType(type)) {
-    actions.push({ icon: <EditLocationIcon />, tooltip: 'Tape Position' });
+    actions.push({
+      icon: <EditLocationIcon />,
+      tooltip: 'Tape Position',
+      toggle: (val: OpenModal): OpenModal => (val === null ? 'tapePosn' : null),
+    });
   }
 
   return actions;
@@ -69,10 +85,15 @@ type MachineEditorProps = {
   addState: (state: State) => void;
   removeState: (state: State) => void;
   machineType: MachineType;
+  input: FSMAlpha[];
+  setInput: (incomming: FSMAlpha[]) => void;
+  alpha: FSMAlpha[];
 };
 
+type OpenModal = 'input' | 'state' | 'rule' | 'tapePosn' | null;
+
 const MachineEditorComponent = (props: MachineEditorProps) => {
-  const theme = useTheme();
+  const [openModal, setOpenModal] = useState<OpenModal>(null);
   const [open, setOpen] = useState(false);
   const toggleModal = () => setOpen(!open);
   const dialActions = useDialActions(props.machineType);
@@ -97,6 +118,7 @@ const MachineEditorComponent = (props: MachineEditorProps) => {
         <StyledSpeedDial
           ariaLabel="SpeedDial"
           direction="down"
+          open={open}
           onOpen={() => setOpen(true)}
           onClose={() => setOpen(false)}
           sx={{ paddingTop: 1 }}
@@ -107,6 +129,10 @@ const MachineEditorComponent = (props: MachineEditorProps) => {
               key={i.tooltip}
               icon={i.icon}
               tooltipTitle={i.tooltip}
+              onClick={() => {
+                setOpenModal(i.toggle(openModal));
+                setOpen(false);
+              }}
               sx={{ width: 30, height: 31, minHeight: 31 }}
             />
           ))}
@@ -118,6 +144,14 @@ const MachineEditorComponent = (props: MachineEditorProps) => {
         addState={props.addState}
         removeState={props.removeState}
         states={props.states}
+      />
+      <InputForm
+        isOpen={openModal === 'input'}
+        toggle={() => setOpenModal(null)}
+        machineType={props.machineType}
+        input={props.input}
+        setInput={props.setInput}
+        alpha={props.alpha}
       />
     </Box>
   );

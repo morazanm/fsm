@@ -27,6 +27,7 @@ type MainViewProps = {
 
 const MainView = (props: MainViewProps) => {
   const theme = useTheme();
+  const machineType = 'dfa';
   const [states, setStates] = useState<State[]>(TMP_STATES);
   const [rules, setRules] = useState<FSMRule[]>(TMP_RULES);
   const [alphabet, setAlphabet] = useState<FSMAlpha[]>(TMP_ALPHA);
@@ -99,9 +100,13 @@ const MainView = (props: MainViewProps) => {
             <Grid item xs={1} justifyContent="end" display="flex">
               <RightEditor
                 toggleTheme={props.toggleTheme}
+                machineType={machineType}
                 states={states}
                 addState={addState}
                 removeState={removeState}
+                input={input}
+                setInput={(incomming: FSMAlpha[]) => setInput(incomming)}
+                alpha={alphabet}
               />
             </Grid>
           </Grid>
