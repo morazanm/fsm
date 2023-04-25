@@ -1,12 +1,18 @@
 import { useState } from 'react';
 import { Paper, Grid } from '@mui/material';
-import { State, FSMRule, FSMAlpha } from './types/machine';
+import {
+  State,
+  FSMRule,
+  FSMAlpha,
+  buildFSMInterfacePayload,
+} from './types/machine';
 import { useTheme } from '@mui/material/styles';
 import ControlView from './components/controlView/view';
 import RightEditor from './components/rightEditor/MachineEditorComponent';
 import LeftEditor from './components/leftEditor/LeftEditor';
 import RuleComponent from './components/ruleDisplay/rulesComponent';
 import InputComponent from './components/inputEditor/InputComponent';
+import { sendMachinePayload } from './socket/racketInterface';
 const TMP_RULES = [
   { start: 'A', input: 'a', end: 'B' },
   { start: 'B', input: 'b', end: 'C' },
@@ -42,6 +48,16 @@ const MainView = (props: MainViewProps) => {
   const removeAlpha = (incoming: FSMAlpha[]) =>
     setAlphabet(alphabet.filter((a) => !incoming.includes(a)));
 
+  const run = async () => {
+    const machine = buildFSMInterfacePayload(
+      states,
+      alphabet,
+      rules,
+      machineType,
+    );
+    return sendMachinePayload(machine);
+  };
+
   return (
     <Paper
       sx={{
@@ -61,6 +77,7 @@ const MainView = (props: MainViewProps) => {
             input={input}
             addInput={addInput}
             clearInput={clearInput}
+            runMachine={run}
           />
         </Grid>
         <Grid

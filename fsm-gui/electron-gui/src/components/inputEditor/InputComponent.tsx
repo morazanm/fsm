@@ -4,7 +4,7 @@ import {
   ArrowBackIosNew as ArrowBackIosNewIcon,
   ArrowForwardIos as ArrowForwardIosIcon,
 } from '@mui/icons-material';
-import { FSMAlpha } from '../../types/machine';
+import { FSMAlpha, FSMInterfaceResponse } from '../../types/machine';
 import InputRender from './InputRender';
 
 type InputComponentProps = {
@@ -12,6 +12,7 @@ type InputComponentProps = {
   inputIndex: number;
   addInput: (input: FSMAlpha[]) => void;
   clearInput: () => void;
+  runMachine: () => Promise<FSMInterfaceResponse>;
 };
 
 const InputComponent = (props: InputComponentProps) => {
@@ -44,7 +45,12 @@ const InputComponent = (props: InputComponentProps) => {
             justifyContent="center"
           >
             <Tooltip title="Run Machine" disableInteractive>
-              <Button variant="outlined" color="success" size="small">
+              <Button
+                variant="outlined"
+                color="success"
+                size="small"
+                onClick={props.runMachine}
+              >
                 <RunIcon color="success" />
               </Button>
             </Tooltip>

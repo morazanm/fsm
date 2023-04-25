@@ -53,24 +53,44 @@ export type TmMttmRule = {
 export type FSMTransition = {
   rule: FSMRule;
   invPass: boolean | undefined;
-}
+};
 
-// A object representation of a FSM machine. This object is passed to and from the FSM
-// racket backend
-export type FSMMachine = {
+// A object representation of a GUI machine. This holds all the values that are
+// sent to the FSM racket interface for further processing by fsm-core + fsm-gui
+export type FSMInterfacePayload = {
   states: State[];
   alphabet: FSMAlpha[];
-  transitions: FSMTransition[];
   rules: FSMRule[];
   type: MachineType;
-}
+};
+
+// A object representation of a FSM machine. This object holds are the values are
+// are returned from the FSM racket backend after they are computed by fsm-core + fsm-gui
+export type FSMInterfaceResponse = FSMInterfacePayload & {
+  transitions: FSMTransition[];
+};
 
 /*
  * Helper Functions below
  */
 
+// Builds the payload for the FSM racket interface
+export const buildFSMInterfacePayload = (
+  states: State[],
+  alphabet: FSMAlpha[],
+  rules: FSMRule[],
+  type: MachineType,
+): FSMInterfacePayload => {
+  return {
+    states: states,
+    alphabet: alphabet,
+    rules: rules,
+    type: type,
+  };
+};
+
 // returns true if the machine is a type of turing machine
-export const isTmType = (type: MachineType) =>
+export const isTmType = (type: MachineType): boolean =>
   type == 'tm' || type === 'tm-lang-rec';
 
 // return true if the given rule is a type of turing machine rule
