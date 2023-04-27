@@ -31,9 +31,10 @@
        (define hashed-msg (read-json in))
        (unless (eof-object? hashed-msg)
          (define outgoing-data (handle-request hashed-msg))
+         (displayln outgoing-data)
          (write-json outgoing-data out)
          ;;(loop)
-         (tcp-close listener) ;;HACK: This should be handled on termination
+         ;(tcp-close listener) ;;HACK: This should be handled on termination
          ))))
   (listen-for-input))
 
