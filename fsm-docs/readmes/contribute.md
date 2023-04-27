@@ -7,7 +7,7 @@ When creating a pull request clearly specify what you are trying to accomplish a
 
 
 ## Building fsm 
-To build `fsm` run `raco make .` at the root of the repository. An alternate option is to open `main.rkt` in DrRacket and hit the run button. There is also a [Makefile](../../Makefile) to help streamline the build processes.
+To build `fsm` run `raco make main.rkt` at the root of the repository. An alternate option is to open `main.rkt` in DrRacket and hit the run button. There is also a [Makefile](../../Makefile) to help streamline the build processes.
 
 
 ## Running the test suit
@@ -19,7 +19,7 @@ If you want to quickly try out your changes we have a [playground.rkt](../../fsm
 ## Scribble files
 When a change is made to the scribble files you can either press the run button in DrRacket or run the following from the `fsm-doc` directory:
 ```bash
-scribble fsm.scrbl
+scribble m+ fsm.scrbl
 ```
 
 We have a CI tool that will auto deploy scribble file changes to the fsm website when a pull request is merged into the master branch so you do not need to include the scribble generated files in the pull request. **NOTE: Currently we do not have a CI tool step to check for errors when building the scribble file, so make sure that it compiles before merging into master.**

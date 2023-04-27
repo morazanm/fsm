@@ -1,25 +1,24 @@
 #lang racket
 (require
-  "../structs/world.rkt"
   "../globals.rkt"
   "../../fsm-core/interface.rkt")
 
 (provide getCurRule)
 
-(define getCurRule (lambda (processed-list #:debug [debug #f])
-                     (case MACHINE-TYPE
-                       [(pda)
-                        (get-pda-rule processed-list debug)]
-                       [(tm)
-                        (get-tm-rule processed-list)]
-                       [(tm-language-recognizer)
-                        (get-tm-rule processed-list)]
-                       [(mttm)
-                        (get-mttm-rule processed-list debug)]
-                       [(mttm-language-recognizer)
-                        (get-mttm-rule processed-list debug)]
-                       [else
-                        (get-dfa-ndfa-rule processed-list)])))
+;; getCurRule: processed-list optional(listof rules) -> rule
+;; Determins what the current rule is from the processed-list
+;; The rules arg is only used for PDA's. See contruct-pda-rule for more info
+;; on why this is needed.
+(define (getCurRule processed-list (rules #f))
+  (match MACHINE-TYPE
+    ['pda
+     (get-pda-rule processed-list rules)]
+    [(or 'tm 'tm-language-recognizer)
+     (get-tm-rule processed-list)]
+    [(or 'mttm 'mttm-language-recognizer)
+     (get-mttm-rule processed-list)]
+    [_ ; dfa/ndfa
+     (get-dfa-ndfa-rule processed-list)]))
 
 
 ;;get-dfa-ndfa-rule: Returns the current rule for a dfa/ndfa
@@ -73,113 +72,80 @@
 
 ;; get-mttm-rule processed-list -> mttm-rule
 ;; Purpose: Determins if the rule to be made should be empty or a real rule
-(define (get-mttm-rule pl debug)
+(define (get-mttm-rule pl)
   (cond
     [(< (length pl) 2) '(null null null)]
-    [else (construct-mttm-rule pl debug)]))
+    [else (construct-mttm-rule pl)]))
 
 ;; construct-mttm-rule :: processed-list -> mttm-rule
 ;; Purpose: Constructs the current mttm rule based on the processed list
-(define (construct-mttm-rule pl debug)
+(define (construct-mttm-rule pl)
   (match-define `(,cur-state ,cur-tapes ...) (cadr pl)) ;; The state that the machine is in
   (match-define `(,next-state ,next-tapes ...) (car pl)) ;; The next state that the machine is in
-  (define tuple-list (map (match-lambda* [`((,cur-pos ,cur-tape) (,next-pos ,_))
-                                          #:when (< cur-pos next-pos)
-                                          ;; tape incriments so we move Right
-                                          (cons (list-ref cur-tape cur-pos) RIGHT)]
-                                         [`((,cur-pos ,cur-tape) (,next-pos ,_))
-                                          #:when (> cur-pos next-pos)
-                                          ;; tape decriments so we move LEFT
-                                          (cons (list-ref cur-tape cur-pos) LEFT)]
-                                         ;; Otherwise we write to the tape
-                                         [`((,cur-pos ,cur-tape) (,next-pos ,next-tape))
-                                          (cons (list-ref cur-tape cur-pos) (list-ref next-tape next-pos))])
-                          cur-tapes
-                          next-tapes))
-  (when debug
-    (displayln (format "Current: ~s ~s" cur-state cur-tapes))
-    (displayln (format "Next: ~s ~s" next-state next-tapes))
-    (displayln (format "Rule: ~s\n\n" `((,cur-state ,(map car tuple-list)) (,next-state ,(map cdr tuple-list))))))
+  (define tuple-list
+    (map (match-lambda* [`((,cur-pos ,cur-tape) (,next-pos ,_))
+                         #:when (< cur-pos next-pos)
+                         ;; tape incriments so we move Right
+                         (cons (list-ref cur-tape cur-pos) RIGHT)]
+                        [`((,cur-pos ,cur-tape) (,next-pos ,_))
+                         #:when (> cur-pos next-pos)
+                         ;; tape decriments so we move LEFT
+                         (cons (list-ref cur-tape cur-pos) LEFT)]
+                        ;; Otherwise we write to the tape
+                        [`((,cur-pos ,cur-tape) (,next-pos ,next-tape))
+                         (cons (list-ref cur-tape cur-pos)
+                               (list-ref next-tape next-pos))])
+         cur-tapes
+         next-tapes))
   `((,cur-state ,(map car tuple-list)) (,next-state ,(map cdr tuple-list))))
 
   
  
 
 
-;; get-pda-rule: processed-list -> pda-rule
+;; get-pda-rule: processed-list listof(rules) -> pda-rule
 ;; Purpose: Determins if the rule to be made should be empty or a real rule
-(define (get-pda-rule processed-list debug)
+(define (get-pda-rule processed-list rules)
   (cond
     [(< (length processed-list) 2)  '((empty empty empty) (empty empty))]
-    [else (construct-pda-rule processed-list debug)]))
+    [else (construct-pda-rule processed-list rules)]))
 
-;; construct-pda-rule: processed-list -> bool -> pda-rule
+
+;; construct-pda-rule: processed-list  listof(rules) -> pda-rule
 ;; Purpose: Constructes a pda rule from the given processed list
-(define (construct-pda-rule pl debug)
-  (letrec (
-           (next-state (caar pl)) ;; The initial state that the machine is in
-           (init-state (caadr pl)) ;; The state that the machien ends in
-           (next-input (cadar pl)) ;; The initial state's input
-           (init-input (cadadr pl)) ;; The state that the machine ends in input
-           (next-stack (caddar pl)) ;; The elemetns that are on the next stack
-           (sec (cadr pl))  ;; The second list in the stack
-           (init-stack (caddr sec)) ;; The elements that are on the init stack
+;; NOTE: There is no way to distinguish between
+;; ((S a (y )) (A (y )) and ((S a ,EMP) (A ,EMP))
+;; because both do the same and leave the stack unchanged. Therefore, either can
+;; be picked. When we come across this case we will search the rule for which form is
+;; present and choose that one. If both are present then we will pick the first that
+;; applies.
+(define (construct-pda-rule pl rules)
+  (match-define `(,next-state ,next-input ,next-stack) (car pl))
+  (match-define `(,init-state ,init-input ,init-stack) (cadr pl))
+  ;; If both inputs are equal then nothing was consumed and EMP is used
+  (define consumed-input (if (equal? init-input next-input) EMP (car init-input)))
 
-           ;; take*: Integer List -> List or symbol
-           ;; Purpose: functions the same as Racket's take function except if the list
-           ;;   result of take is the empty list then EMP is returned instead
-           (take* (lambda (num a-list)
-                    (let ((t (take a-list num)))
-                      (if (empty? t) EMP t))))
+  ;; determin-pushed: list list -> list | symbol
+  ;; Purpose: Returns the list or elements to be pushed
+  (define/match (determin-pushed _init-stack next-stack)
+    [(_ '()) EMP]
+    [('() n) n]
+    [((list-rest a1 ... b1 _) (list-rest a2 ... b2 _))
+     (if (not (equal? b1 b2)) next-stack (determin-pushed a1 a2))])
 
-           (num-dif (lambda (l1 l2)
-                      (cond [(empty? l1) 0]
-                            [(equal? (car l1) (car l2)) (num-dif (cdr l1) (cdr l2))]
-                            [else (+ 1 (num-dif (cdr l1) (cdr l2)))])))
+  ;; determin-poped: list list -> list | symbol
+  ;; Purpose: Returns the list or elements to be popped
+  (define/match (determin-poped init-stack _next-stack)
+    [('() _) EMP]
+    [(_ '()) init-stack]
+    [((list-rest a1 ... b1 _) (list-rest a2 ... b2 _))
+     (if (not (equal? b1 b2)) init-stack (determin-poped a1 a2))])
 
-           ;; determine-consumed: none -> symbol
-           ;; Purpose: determins what the input is that is consumed
-           (determin-consumed (lambda ()
-                                (cond
-                                  ;; If both inputs are equal then nothing was consumed
-                                  [(equal? init-input next-input) EMP]
-                                  [else (car init-input)])))
-
-           ;; determin-pushed: none -> integer
-           ;; Purpose: Returns the list or elements to be pushed
-           (determin-pushed (lambda (prev-stack next-stack)
-                              (letrec [(helper
-                                        (lambda (rev-p-stack rev-n-stack)
-                                          (cond
-                                            [(empty? rev-n-stack) EMP]
-                                            [(empty? rev-p-stack) (reverse rev-n-stack)]
-                                            [(not (eq? (car rev-p-stack) (car rev-n-stack))) (reverse rev-n-stack)]
-                                            [else 
-                                             (helper (cdr rev-p-stack) (cdr rev-n-stack))])))]
-                                (helper (reverse prev-stack) (reverse next-stack)))))
-
-           ;; determin-poped: list -> list -> list
-           ;; Purpose: Returns the list or elements to be popped
-           (determin-poped (lambda (prev-stack next-stack)
-                             (letrec [(helper
-                                       (lambda (rev-p-stack rev-n-stack)
-                                         (cond
-                                           [(empty? rev-p-stack) EMP]
-                                           [(empty? rev-n-stack) (reverse rev-p-stack)]
-                                           [(not (eq? (car rev-p-stack) (car rev-n-stack))) (reverse rev-p-stack)]
-                                           [else 
-                                            (helper (cdr rev-p-stack) (cdr rev-n-stack))])))]
-                               (helper (reverse prev-stack) (reverse next-stack))))))
-                                  
-    (when debug
-      (displayln "---Stacks are:---")
-      (displayln init-stack)
-      (displayln next-stack)
-      (displayln "------"))
-    (cond
-      ;; If there is less then 2 elements then we are at the end so return the default
-      [(< (length pl) 2) '((empty empty empty) (empty empty))]
-      [else
-       (list
-        (list init-state (determin-consumed) (determin-poped init-stack next-stack))
-        (list next-state (determin-pushed init-stack  next-stack)))])))
+  (define cur-rule `((,init-state ,consumed-input ,(determin-poped init-stack next-stack))
+                     (,next-state ,(determin-pushed init-stack  next-stack))))
+  (match cur-rule
+    [(list (list _ _ EMP) (list _ EMP))
+     (if (member cur-rule rules)
+         cur-rule
+         `((,init-state ,consumed-input ,init-stack) (,next-state ,next-stack)))]
+    [_ cur-rule]))

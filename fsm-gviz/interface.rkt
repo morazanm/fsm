@@ -14,6 +14,8 @@
 (define (colorblind-opt? n)
   (and (>= n 0) (<= n 2)))
 
+(define SAVE-DIR (find-tmp-dir))
+
 (provide
  (except-out (all-from-out "private/lib.rkt") stringify-value)
  (all-from-out "private/dot.rkt")
@@ -60,7 +62,7 @@
 ;; converts the fsa to a image
 (define (fsa->bitmap fsa color-blind-mode)
   (graph->bitmap (fsa->graph fsa color-blind-mode)
-                 (current-directory)
+                 SAVE-DIR
                  "vizTool"))
 
 
@@ -92,5 +94,5 @@
                   cur-rule
                   cur-state
                   inv-state)
-                 (current-directory)
+                 SAVE-DIR
                  "vizTool"))
