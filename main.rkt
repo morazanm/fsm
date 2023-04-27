@@ -40,7 +40,7 @@
    ; grammar constructors
    make-rg make-cfg make-csg 
    sm->grammar grammar-rename-nts 
-   grammar-union grammar-concat
+   grammar-union grammar-concat grammar-kleenestar
    
    ; grammar observers
    grammar-derive grammar-type
