@@ -13,6 +13,7 @@ import LeftEditor from './components/leftEditor/LeftEditor';
 import RuleComponent from './components/ruleDisplay/rulesComponent';
 import InputComponent from './components/inputEditor/InputComponent';
 import { sendMachinePayload } from './socket/racketInterface';
+import { sendToRacket, Instruction } from './socket/socket';
 const TMP_RULES = [
   { start: 'A', input: 'a', end: 'B' },
   { start: 'B', input: 'b', end: 'C' },
@@ -49,6 +50,7 @@ const MainView = (props: MainViewProps) => {
     setAlphabet(alphabet.filter((a) => !incoming.includes(a)));
 
   const run = async () => {
+    sendToRacket({ text: 'hello' }, Instruction.BUILD);
     const machine = buildFSMInterfacePayload(
       states,
       alphabet,
