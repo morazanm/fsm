@@ -4,7 +4,7 @@ import {
   ArrowBackIosNew as ArrowBackIosNewIcon,
   ArrowForwardIos as ArrowForwardIosIcon,
 } from '@mui/icons-material';
-import { FSMAlpha, FSMInterfaceResponse } from '../../types/machine';
+import { FSMAlpha } from '../../types/machine';
 import InputRender from './InputRender';
 
 type InputComponentProps = {
@@ -12,7 +12,7 @@ type InputComponentProps = {
   inputIndex: number;
   addInput: (input: FSMAlpha[]) => void;
   clearInput: () => void;
-  runMachine: () => Promise<FSMInterfaceResponse>;
+  runMachine: () => void;
 };
 
 const InputComponent = (props: InputComponentProps) => {

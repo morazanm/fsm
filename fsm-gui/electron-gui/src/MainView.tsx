@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Paper, Grid } from '@mui/material';
 import {
   State,
@@ -12,24 +12,29 @@ import RightEditor from './components/rightEditor/MachineEditorComponent';
 import LeftEditor from './components/leftEditor/LeftEditor';
 import RuleComponent from './components/ruleDisplay/rulesComponent';
 import InputComponent from './components/inputEditor/InputComponent';
-import { sendMachinePayload } from './socket/racketInterface';
-import { sendToRacket, Instruction } from './socket/socket';
+import { RacketInterface, Instruction } from "./socket/racketInterface";
+
 const TMP_RULES = [
-  { start: 'A', input: 'a', end: 'B' },
-  { start: 'B', input: 'b', end: 'C' },
-  { start: 'C', input: 'a', end: 'A' },
+  {start: "S", input: "a", end: "F"},
+  {start: "F", input: "a", end: "F"},
+  {start: "S", input: "b", end: "A"},
+  {start: "A", input: "a", end: "F"},
+  {start: "A", input: "b", end: "A"},
 ];
 
 const TMP_STATES = [
-  { name: 'A', type: 'start' },
-  { name: 'B', type: 'final' },
-  { name: 'C', type: 'normal' },
+  { name: 'S', type: 'start' },
+  { name: 'A', type: 'normal' },
+  { name: 'F', type: 'final' },
 ] as State[];
 
-const TMP_ALPHA = ['a', 'b', 'c'];
+const TMP_ALPHA = ['a', 'b'];
+
+const TMP_INPUT = ['a', 'a', 'a', 'a'];
 
 type MainViewProps = {
   toggleTheme: () => void;
+  racketInterface: RacketInterface;
 };
 
 const MainView = (props: MainViewProps) => {
@@ -38,7 +43,7 @@ const MainView = (props: MainViewProps) => {
   const [states, setStates] = useState<State[]>(TMP_STATES);
   const [rules, setRules] = useState<FSMRule[]>(TMP_RULES);
   const [alphabet, setAlphabet] = useState<FSMAlpha[]>(TMP_ALPHA);
-  const [input, setInput] = useState<FSMAlpha[]>(['a', 'b', 'c', 'a']);
+  const [input, setInput] = useState<FSMAlpha[]>(TMP_INPUT);
   const [inputIndex, setInputIndex] = useState<number | null>(null);
 
   const setGuiStates = (states: State[]) => setStates(states);
@@ -49,15 +54,29 @@ const MainView = (props: MainViewProps) => {
   const removeAlpha = (incoming: FSMAlpha[]) =>
     setAlphabet(alphabet.filter((a) => !incoming.includes(a)));
 
-  const run = async () => {
-    sendToRacket({ text: 'hello' }, Instruction.BUILD);
+  useEffect(() => {
+    // If we have a connection then listen for messages
+    // TODO: We can probs abstract this out with a callback
+    if (props.racketInterface.client) {
+      props.racketInterface.client.on('data', (data: any) => {
+        console.log("recieved:")
+        console.log(JSON.parse(data.toString()));
+      });
+      props.racketInterface.client.on('end', () => {
+        console.log('disconnected from server (on end)');
+      });
+    }
+  }, []);
+
+  const run = () => {
     const machine = buildFSMInterfacePayload(
       states,
       alphabet,
       rules,
       machineType,
+      input,
     );
-    return sendMachinePayload(machine);
+    props.racketInterface.sendToRacket(machine, Instruction.BUILD);
   };
 
   return (

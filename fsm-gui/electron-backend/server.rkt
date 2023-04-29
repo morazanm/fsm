@@ -27,7 +27,9 @@
     out))
 
 
-;; handle-request : jsexpr -> jsexpr
+;; handle-request :: jsexpr(a) -> jsexpr(b)
+;; Based off of the instruction that is provideded in the incomming jsexpr, dispatches 
+;; to the approperate mapping function
 (define (handle-request input)
   (match (string->symbol (hash-ref input 'instr))
     ['build_machine (build-machine (hash-ref input 'data))]
@@ -43,8 +45,8 @@
        (define hashed-msg (read-json in))
        (unless (eof-object? hashed-msg)
          (define outgoing-data (handle-request hashed-msg))
-         ;(write-json outgoing-data out)
-         ;(flush-output out)
+         (write-json outgoing-data out)
+         (flush-output out)
          ;;(loop)
          (tcp-close listener) ;;HACK: This should be handled on termination
          ))))
