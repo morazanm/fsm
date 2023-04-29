@@ -62,6 +62,7 @@ export type FSMInterfacePayload = {
   alphabet: FSMAlpha[];
   rules: FSMRule[];
   type: MachineType;
+  input: FSMAlpha[];
 };
 
 // A object representation of a FSM machine. This object holds are the values are
@@ -80,12 +81,14 @@ export const buildFSMInterfacePayload = (
   alphabet: FSMAlpha[],
   rules: FSMRule[],
   type: MachineType,
+  input: FSMAlpha[]
 ): FSMInterfacePayload => {
   return {
     states: states,
     alphabet: alphabet,
     rules: rules,
     type: type,
+    input: input
   };
 };
 

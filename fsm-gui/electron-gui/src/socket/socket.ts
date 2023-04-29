@@ -1,40 +1,64 @@
+import { FSMInterfacePayload } from '../types/machine';
 let net = require('net');
 
 const HOST = '127.0.0.1';
 const PORT = 4000;
 
-const client = net.createConnection({ port: PORT }, () => {
-  // 'connect' listener.
+type SocketReponse<T> = {
+  data: T
+  error: string | null
+}
+
+const client = net.createConnection({ port: PORT, host: HOST }, () => {
   console.log('connected to server!');
 });
 
 client.on('data', (data: any) => {
-  console.log(data.toString());
-  client.end();
+  console.log("recieved:")
+  console.log(JSON.parse(data.toString()));
 });
 
 client.on('end', () => {
-  console.log('disconnected from server');
+  console.log('disconnected from server (on end)');
 });
 
-// const socket = new net.Socket();
+client.on('close', () => {
+  console.log('disconnected from server (on close)');
+});
+
+
 
 enum Instruction {
   BUILD = 'build_machine',
 }
-
-// socket.on('data', (data: any) => {
-//   console.log(data);
-// });
 
 export function sendToRacket<T extends object>(
   data: T,
   instruction: Instruction,
 ) {
   const jsonObj = JSON.stringify({ instr: instruction, data: data });
-  // socket.connect(PORT, HOST, () => {
   client.write(`${jsonObj}\r\n`);
-  // });
 }
 
-sendToRacket({ msg: ['Hellow for Typescript'] }, Instruction.BUILD);
+sendToRacket(
+  {
+    states: [
+      { name: 'S', type: 'start' },
+      { name: 'A', type: 'normal' },
+      { name: 'F', type: 'final' },
+    ],
+    alphabet: ['a', 'b'],
+    type: 'dfa',
+    rules: [
+      {start: "S", input: "a", end: "F"},
+      {start: "F", input: "a", end: "F"},
+      {start: "S", input: "b", end: "A"},
+      {start: "A", input: "a", end: "F"},
+      {start: "A", input: "b", end: "A"},
+    ],
+    input: ["a", "a", "a"]
+  } as FSMInterfacePayload,
+  Instruction.BUILD,
+);
+
+
