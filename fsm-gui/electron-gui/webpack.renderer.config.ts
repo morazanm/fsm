@@ -1,3 +1,4 @@
+//@ts-nocheck
 import type { Configuration } from 'webpack';
 
 import { rules } from './webpack.rules';
@@ -16,4 +17,5 @@ export const rendererConfig: Configuration = {
   resolve: {
     extensions: ['.js', '.ts', '.jsx', '.tsx', '.css'],
   },
+  target: 'electron-renderer',
 };

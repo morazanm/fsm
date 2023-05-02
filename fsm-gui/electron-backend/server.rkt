@@ -1,9 +1,9 @@
 #lang racket
 (require
-  (for-syntax syntax/parse)
-  json
-  racket/tcp
-  "./fsm-functions.rkt")
+ (for-syntax syntax/parse)
+ json
+ racket/tcp
+ "./fsm-functions.rkt")
 
 (define DEBUG_MODE #t)
 (define ADDRESS "127.0.0.1")
@@ -33,6 +33,7 @@
 (define (handle-request input)
   (match (string->symbol (hash-ref input 'instr))
     ['build_machine (build-machine (hash-ref input 'data))]
+    ['shut_down eof] ;; we use eof to denote a shutdown
     [_ (error (format "Invalid instruction given: ~s" (hash-ref input 'instr)))]))
 
 
@@ -43,16 +44,18 @@
    (lambda ()
      (let loop ()
        (define hashed-msg (read-json in))
+       (debug-displayln "Recieved a incomming request")
        (unless (eof-object? hashed-msg)
          (define outgoing-data (handle-request hashed-msg))
-         (write-json outgoing-data out)
-         (flush-output out)
-         ;;(loop)
-         (tcp-close listener) ;;HACK: This should be handled on termination
-         ))))
-  #;(listen-for-input))
+         (debug-displayln outgoing-data)
+         (if (eof-object? outgoing-data)
+             (tcp-close listener)
+             (begin
+               (write-json outgoing-data out)
+               (flush-output out)
+               (loop)
+               ))
+             ))))
+   (listen-for-input))
 
-(listen-for-input)
-
-
-
+  (listen-for-input)

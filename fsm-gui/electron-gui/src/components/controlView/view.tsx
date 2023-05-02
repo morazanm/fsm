@@ -6,7 +6,7 @@ import styles from './view.module.css';
 
 type ControlViewProps = {
   states: State[];
-  currentRule: FSMRule;
+  currentRule: FSMRule | undefined;
 };
 
 const ControlView = (props: ControlViewProps) => {
@@ -69,8 +69,13 @@ const ControlView = (props: ControlViewProps) => {
         className={styles.circleMain}
         style={{ height: `${height}px`, width: `${height}px` }}
       >
-        <Arrow target={props.currentRule.end} isCurrent />
-        <Arrow target={props.currentRule.start} />
+        {' '}
+        {props.currentRule && (
+          <>
+            <Arrow target={props.currentRule.end} isCurrent />
+            <Arrow target={props.currentRule.start} />
+          </>
+        )}
         {props.states.map((state, i) => (
           <StateComponent
             key={i}

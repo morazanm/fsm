@@ -5,6 +5,7 @@ import {
   FSMRule,
   FSMAlpha,
   buildFSMInterfacePayload,
+  FSMTransition,
 } from './types/machine';
 import { useTheme } from '@mui/material/styles';
 import ControlView from './components/controlView/view';
@@ -12,14 +13,18 @@ import RightEditor from './components/rightEditor/MachineEditorComponent';
 import LeftEditor from './components/leftEditor/LeftEditor';
 import RuleComponent from './components/ruleDisplay/rulesComponent';
 import InputComponent from './components/inputEditor/InputComponent';
-import { RacketInterface, Instruction } from "./socket/racketInterface";
-
+import { BuildMachineResponse } from './socket/responseTypes';
+import {
+  RacketInterface,
+  Instruction,
+  SocketResponse,
+} from './socket/racketInterface';
 const TMP_RULES = [
-  {start: "S", input: "a", end: "F"},
-  {start: "F", input: "a", end: "F"},
-  {start: "S", input: "b", end: "A"},
-  {start: "A", input: "a", end: "F"},
-  {start: "A", input: "b", end: "A"},
+  { start: 'S', input: 'a', end: 'F' },
+  { start: 'F', input: 'a', end: 'F' },
+  { start: 'S', input: 'b', end: 'A' },
+  { start: 'A', input: 'a', end: 'F' },
+  { start: 'A', input: 'b', end: 'A' },
 ];
 
 const TMP_STATES = [
@@ -34,7 +39,12 @@ const TMP_INPUT = ['a', 'a', 'a', 'a'];
 
 type MainViewProps = {
   toggleTheme: () => void;
-  racketInterface: RacketInterface;
+  racketBridge: RacketInterface;
+};
+
+type MachineTransitions = {
+  transitions: FSMTransition[];
+  index: number;
 };
 
 const MainView = (props: MainViewProps) => {
@@ -45,6 +55,8 @@ const MainView = (props: MainViewProps) => {
   const [alphabet, setAlphabet] = useState<FSMAlpha[]>(TMP_ALPHA);
   const [input, setInput] = useState<FSMAlpha[]>(TMP_INPUT);
   const [inputIndex, setInputIndex] = useState<number | null>(null);
+  const [machineTransitions, setMachineTransitions] =
+    useState<MachineTransitions>({ transitions: [], index: -1 });
 
   const setGuiStates = (states: State[]) => setStates(states);
   const setGuiRules = (rules: FSMRule[]) => setRules(rules);
@@ -57,12 +69,23 @@ const MainView = (props: MainViewProps) => {
   useEffect(() => {
     // If we have a connection then listen for messages
     // TODO: We can probs abstract this out with a callback
-    if (props.racketInterface.client) {
-      props.racketInterface.client.on('data', (data: any) => {
-        console.log("recieved:")
-        console.log(JSON.parse(data.toString()));
+    if (props.racketBridge.client) {
+      props.racketBridge.client.on('data', (data: any) => {
+        const result: SocketResponse<{}> = JSON.parse(data.toString());
+        console.log(result);
+        if (result.error) {
+          //TODO: Handle error case
+        }
+
+        if (result.responseType === Instruction.BUILD) {
+          const tmp = result as SocketResponse<BuildMachineResponse>;
+          setMachineTransitions({
+            transitions: tmp.data.transitions,
+            index: 0,
+          });
+        }
       });
-      props.racketInterface.client.on('end', () => {
+      props.racketBridge.client.on('end', () => {
         console.log('disconnected from server (on end)');
       });
     }
@@ -76,7 +99,20 @@ const MainView = (props: MainViewProps) => {
       machineType,
       input,
     );
-    props.racketInterface.sendToRacket(machine, Instruction.BUILD);
+    props.racketBridge.sendToRacket(machine, Instruction.BUILD);
+  };
+
+  const getCurrentRule = (): FSMRule | undefined => {
+    if (
+      machineTransitions.index !== -1 &&
+      machineTransitions.transitions !== []
+    ) {
+      console.log(
+        machineTransitions.transitions[machineTransitions.index].rule,
+      );
+      return machineTransitions.transitions[machineTransitions.index].rule;
+    }
+    return undefined;
   };
 
   return (
@@ -132,7 +168,7 @@ const MainView = (props: MainViewProps) => {
               alignItems="center"
               display="flex"
             >
-              <ControlView states={states} currentRule={rules[0]} />
+              <ControlView states={states} currentRule={getCurrentRule()} />
             </Grid>
             <Grid item xs={1} justifyContent="end" display="flex">
               <RightEditor
@@ -156,10 +192,7 @@ const MainView = (props: MainViewProps) => {
           justifyContent="center"
           style={{ paddingTop: '0px' }}
         >
-          <RuleComponent
-            rules={rules}
-            currentRule={{ start: 'A', input: 'a', end: 'B' }}
-          />
+          <RuleComponent rules={rules} currentRule={getCurrentRule()} />
         </Grid>
       </Grid>
     </Paper>

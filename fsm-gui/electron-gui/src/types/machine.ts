@@ -65,12 +65,6 @@ export type FSMInterfacePayload = {
   input: FSMAlpha[];
 };
 
-// A object representation of a FSM machine. This object holds are the values are
-// are returned from the FSM racket backend after they are computed by fsm-core + fsm-gui
-export type FSMInterfaceResponse = FSMInterfacePayload & {
-  transitions: FSMTransition[];
-};
-
 /*
  * Helper Functions below
  */
@@ -81,14 +75,14 @@ export const buildFSMInterfacePayload = (
   alphabet: FSMAlpha[],
   rules: FSMRule[],
   type: MachineType,
-  input: FSMAlpha[]
+  input: FSMAlpha[],
 ): FSMInterfacePayload => {
   return {
     states: states,
     alphabet: alphabet,
     rules: rules,
     type: type,
-    input: input
+    input: input,
   };
 };
 

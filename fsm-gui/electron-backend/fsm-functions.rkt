@@ -48,8 +48,10 @@
   (define fsa (build-fsm-core-machine states start finals alpha rules type))
   (if fsa
       (hash 'data (transitions->jsexpr (sm-showtransitions fsa input) type)
+            'responseType "build_machine"
             'error (json-null))
       (hash 'data (json-null)
+            'responseType "build_machine"
             'error "Failed check-machine function")))
 
 ;; isValidMachine? :: listof(symbol) symbol listof(symbol) listof(symbol) listof(fsm-core-rules) symbol -> fsa | false

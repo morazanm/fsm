@@ -21,7 +21,7 @@ const CurrentItem = styled(Paper)(({ theme }) => ({
 
 type RuleComponentProps = {
   rules: FSMRule[];
-  currentRule: FSMRule;
+  currentRule: FSMRule | undefined;
 };
 
 const RuleBox = ({
@@ -90,7 +90,9 @@ const RuleComponent = (props: RuleComponentProps) => {
           key={i}
           idx={i}
           rule={rule}
-          isCurrent={isFSMRuleEqual(rule, props.currentRule)}
+          isCurrent={
+            props.currentRule && isFSMRuleEqual(rule, props.currentRule)
+          }
         />
       ))}
     </Stack>

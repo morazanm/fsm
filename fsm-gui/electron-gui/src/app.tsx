@@ -7,7 +7,7 @@ import {
   useTheme,
 } from '@mui/material/styles';
 import { StyledEngineProvider } from '@mui/material';
-import { RacketInterface } from "./socket/racketInterface";
+import { RacketInterface } from './socket/racketInterface';
 import MainView from './MainView';
 
 const HOST = '127.0.0.1';
@@ -19,18 +19,18 @@ racketConnection.extablishConnection();
 
 const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
 
-
-
-
 const App = () => {
   const theme = useTheme();
   const colorMode = React.useContext(ColorModeContext);
-  
+
   return (
     <CssVarsProvider>
       <ColorModeContext.Provider value={colorMode}>
         <ThemeProvider theme={theme}>
-          <MainView toggleTheme={colorMode.toggleColorMode} racketInterface={racketConnection}/>
+          <MainView
+            toggleTheme={colorMode.toggleColorMode}
+            racketBridge={racketConnection}
+          />
         </ThemeProvider>
       </ColorModeContext.Provider>
     </CssVarsProvider>

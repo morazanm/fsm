@@ -1,17 +1,23 @@
-import { FSMInterfacePayload } from '../types/machine';
-import net from 'net';
+import * as net from 'net';
 
-type SocketReponse<T> = {
-  data: T
-  error: string | null
-}
+export type SocketResponse<T> = {
+  data: T;
+  responseType: Instruction;
+  error: string | null;
+};
+
+type SocketRequest<T> = {
+  data: T;
+  instr: Instruction;
+};
 
 export enum Instruction {
   BUILD = 'build_machine',
+  CLOSE = 'shut_down',
 }
 
 export class RacketInterface {
-  private port: number
+  private port: number;
   private host: string;
   public client: net.Socket | undefined;
 
@@ -23,25 +29,43 @@ export class RacketInterface {
 
   extablishConnection(): boolean {
     try {
-      console.log("Trying to connect...")
-      this.client = net.createConnection({ port: this.port, host: this.host }, () => {
-        console.log('connected to server!');
-      });
+      console.log('Trying to connect...');
+      this.client = net.createConnection(
+        { port: this.port, host: this.host },
+        () => {
+          console.log('connected to server!');
+        },
+      );
       return true;
-    } catch(_) {
-      console.log("Was not able to connect to server")
+    } catch (e) {
+      console.log('Was not able to connect to server');
       return false;
     }
   }
 
-  sendToRacket<T extends object>(
-    data: T,
-    instruction: Instruction,
-  ) {
-    const jsonObj = JSON.stringify({ instr: instruction, data: data });
+  sendToRacket<T extends object>(data: T, instruction: Instruction) {
+    const request: SocketRequest<T> = {
+      instr: instruction,
+      data: data,
+    };
+    this.send(request);
+  }
+
+  closeConnection() {
+    const request: SocketRequest<{}> = { data: {}, instr: Instruction.CLOSE };
+    this.send(request);
+  }
+
+  // Sends the request object to the racket backend by wrapping it in a json object.
+  // NOTE: we always need to add '\r\n' at the end of a request so racket knows that
+  // this is the end of the data being sent
+  private send<T extends object>(request: SocketRequest<T>): boolean {
+    //TODO: how to handle a broken connection
     if (this.client) {
-      this.client.write(`${jsonObj}\r\n`);
+      this.client.write(`${JSON.stringify(request)}\r\n`);
+      return true;
     }
+    return false;
   }
 }
 
@@ -61,12 +85,6 @@ export class RacketInterface {
 // client.on('close', () => {
 //   console.log('disconnected from server (on close)');
 // });
-
-
-
-
-
-
 
 // sendToRacket(
 //   {
@@ -88,5 +106,3 @@ export class RacketInterface {
 //   } as FSMInterfacePayload,
 //   Instruction.BUILD,
 // );
-
-
