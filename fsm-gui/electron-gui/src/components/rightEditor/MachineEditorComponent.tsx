@@ -95,7 +95,7 @@ type MachineEditorProps = {
   states: State[];
   setStates: (states: State[]) => void;
   input: FSMAlpha[];
-  setInput: (incomming: FSMAlpha[]) => void;
+  setInput: (incoming: FSMAlpha[]) => void;
   rules: FSMRule[];
   setRules: (rules: FSMRule[]) => void;
 };

@@ -31,7 +31,7 @@ const validateState = (incoming: StateName, states: State[]): string => {
   // State: An uppercase letter (e.g., A) or a symbol comprised of an uppercase letter,
   // dash, and number (e.g., A-72431) OR ds.
   const regex = new RegExp(/[A-Z](-\d+)*$/g);
-  if (regex.test(incoming) || incoming == "ds") {
+  if (regex.test(incoming) || incoming == 'ds') {
     return '';
   } else {
     return `The state: "${incoming}" is not in proper form`;

@@ -140,7 +140,7 @@ export const isDfaNdfaRule = (rule: FSMRule): rule is DfaNdfaRule => {
   );
 };
 
-// Given two rules, determins if the rules are equivlent to each other
+// Given two rules, determines if the rules are equivalent to each other
 export const isFSMRuleEqual = (r1: FSMRule, r2: FSMRule): boolean => {
   const checkValsEqual = <T extends object>(obj1: T, obj2: T) =>
     Object.keys(obj1).reduce(

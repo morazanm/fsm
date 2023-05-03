@@ -10,9 +10,9 @@
 (define PORT 4000)
 (define listener (tcp-listen PORT 4 #t ADDRESS))
 
-; debug-displayln is a simple macro that prints debug logs when the DEBUG_MODE variable is 
+; displayln! is a simple macro that prints debug logs when the DEBUG_MODE variable is 
 ; #t. The first arg is the string to be printed. Any additional args are used to format the string
-(define-syntax (debug-displayln stx)
+(define-syntax (displayln! stx)
   (syntax-parse stx
     [(_ s:expr) #`(when DEBUG_MODE (displayln s))]
     [(_ s:expr args:expr ...)
@@ -38,16 +38,16 @@
 
 
 (define (listen-for-input)
-  (debug-displayln "FSM Gui server listenting on ~s on port ~s" PORT ADDRESS)
+  (displayln! "FSM Gui server listenting on ~s on port ~s" PORT ADDRESS)
   (define-values (in out) (tcp-accept listener))
   (thread
    (lambda ()
      (let loop ()
        (define hashed-msg (read-json in))
-       (debug-displayln "Recieved a incomming request")
+       (displayln! "Recieved a incomming request")
        (unless (eof-object? hashed-msg)
          (define outgoing-data (handle-request hashed-msg))
-         (debug-displayln outgoing-data)
+         (displayln! outgoing-data)
          (if (eof-object? outgoing-data)
              (tcp-close listener)
              (begin

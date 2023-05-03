@@ -11,12 +11,12 @@ type InputFormProps = {
   machineType: MachineType;
   toggle: () => void;
   input: FSMAlpha[];
-  setInput: (incomming: FSMAlpha[]) => void;
+  setInput: (incoming: FSMAlpha[]) => void;
   alpha: FSMAlpha[];
 };
 
-const validateInput = (incomming: string[], alpha: FSMAlpha[]) => {
-  const badAlpha = incomming.filter((v) => !alpha.includes(v));
+const validateInput = (incoming: string[], alpha: FSMAlpha[]) => {
+  const badAlpha = incoming.filter((v) => !alpha.includes(v));
   return badAlpha.length > 0
     ? `The following are not in the list of alpha: ${badAlpha}`
     : '';
@@ -27,8 +27,8 @@ export default function InputForm(props: InputFormProps) {
   const [data, setData] = useState('');
   const [error, setError] = useState('');
 
-  const onSubmit = (incomming: string) => {
-    const tmp = incomming.trim().split(/\s+/);
+  const onSubmit = (incoming: string) => {
+    const tmp = incoming.trim().split(/\s+/);
     const msg = validateInput(tmp, props.alpha);
     if (msg != '') {
       setError(msg);
@@ -51,7 +51,7 @@ export default function InputForm(props: InputFormProps) {
     >
       <DialogContent>
         <DialogContentText>
-          Please enter the machine input below. You can use spaces to seperate
+          Please enter the machine input below. You can use spaces to separate
           values.
         </DialogContentText>
         <TextField

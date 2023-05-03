@@ -180,7 +180,7 @@ export const DeleteAlphaModal = (props: DeleteAlphaProps) => {
       </IconButton>
       <DialogContent>
         <DialogContentText>
-          Please seletc the values you wish to delete
+          Please select the values you wish to delete
         </DialogContentText>
 
         <FormControl sx={{ m: 1, width: 300 }} error={!!errorMsg}>

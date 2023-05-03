@@ -114,7 +114,7 @@ export default function useRuleForm(machineType: MachineType) {
         props.setRules([...props.rules, currentRule]);
         resetValues();
         props.toggle();
-        props.toggleSnack('Rule sucessfully added');
+        props.toggleSnack('Rule successfully added');
       } else {
         setError(msg);
       }

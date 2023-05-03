@@ -43,7 +43,7 @@
   (define input (map string->symbol (hash-ref data 'input)))
 
   ;; TODO: Talk to marco about how we want to handle fsm-error msgs. Since they print to the
-  ;; stdio we cant display them in the GUI. Idealy this would just return a string and we
+  ;; stdio we cant display them in the GUI. Ideally this would just return a string and we
   ;; could pass the message over json to the new GUI
   (define fsa (build-fsm-core-machine states start finals alpha rules type))
   (define trans (sm-showtransitions fsa input))
