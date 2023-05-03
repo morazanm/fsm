@@ -13,10 +13,10 @@ import MainView from './MainView';
 const HOST = '127.0.0.1';
 const PORT = 4000;
 
-//TODO: Only put this on inital load?
 const racketConnection = new RacketInterface(PORT, HOST);
-racketConnection.extablishConnection();
+racketConnection.establishConnection();
 
+// eslint-disable-next-line  @typescript-eslint/no-empty-function
 const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
 
 const App = () => {

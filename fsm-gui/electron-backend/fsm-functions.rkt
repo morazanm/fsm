@@ -47,7 +47,7 @@
   ;; could pass the message over json to the new GUI
   (define fsa (build-fsm-core-machine states start finals alpha rules type))
   (if fsa
-      (hash 'data (transitions->jsexpr (sm-showtransitions fsa input) type)
+      (hash 'data (transitions->jsexpr (sm-showtransitions fsa input) type start)
             'responseType "build_machine"
             'error (json-null))
       (hash 'data (json-null)
@@ -94,18 +94,20 @@
                            'input (list "a" "a" "a" "b" "a")))
   (define expected (hash 'data
                          (hash 'transitions (list
+                                             (hash 'start "S"
+                                                   'invPass (json-null))
                                              (hash 'rule (hash 'start "S" 'input "a" 'end "F")
-                                                   'invPass #f)
+                                                   'invPass (json-null))
                                              (hash 'rule (hash 'start "F" 'input "a" 'end "F")
-                                                   'invPass #f)
+                                                   'invPass (json-null))
                                              (hash 'rule (hash 'start "F" 'input "a" 'end "F")
-                                                   'invPass #f)
+                                                   'invPass (json-null))
                                              (hash 'rule (hash 'start "F" 'input "b" 'end "A")
-                                                   'invPass #f)
+                                                   'invPass (json-null))
                                              (hash 'rule (hash 'start "A" 'input "a" 'end "F")
-                                                   'invPass #f)
-                                             (hash 'rule (hash 'start "F" 'input (symbol->string EMP) 'end "accept")
-                                                   'invPass #f)))
+                                                   'invPass (json-null))
+                                             (hash 'end "F"
+                                                   'invPass (json-null))))
                          'error (json-null)))
   (define actual (build-machine a*a-jsexpr))
   (check-equal? (hash-ref actual 'error)

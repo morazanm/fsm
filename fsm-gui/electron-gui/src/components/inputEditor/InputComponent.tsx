@@ -13,6 +13,8 @@ type InputComponentProps = {
   addInput: (input: FSMAlpha[]) => void;
   clearInput: () => void;
   runMachine: () => void;
+  goNext: () => void;
+  goPrev: () => void;
 };
 
 const InputComponent = (props: InputComponentProps) => {
@@ -69,12 +71,12 @@ const InputComponent = (props: InputComponentProps) => {
               aria-label="text button group"
             >
               <Tooltip title="Previous" disableInteractive>
-                <Button>
+                <Button onClick={props.goPrev}>
                   <ArrowBackIosNewIcon />
                 </Button>
               </Tooltip>
               <Tooltip title="Next" disableInteractive>
-                <Button>
+                <Button onClick={props.goNext}>
                   <ArrowForwardIosIcon />
                 </Button>
               </Tooltip>

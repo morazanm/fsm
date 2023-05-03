@@ -27,7 +27,7 @@ export class RacketInterface {
     this.client = undefined;
   }
 
-  extablishConnection(): boolean {
+  establishConnection(): boolean {
     try {
       console.log('Trying to connect...');
       this.client = net.createConnection(
@@ -52,7 +52,10 @@ export class RacketInterface {
   }
 
   closeConnection() {
-    const request: SocketRequest<{}> = { data: {}, instr: Instruction.CLOSE };
+    const request: SocketRequest<object> = {
+      data: {},
+      instr: Instruction.CLOSE,
+    };
     this.send(request);
   }
 
@@ -68,41 +71,3 @@ export class RacketInterface {
     return false;
   }
 }
-
-// const client = net.createConnection({ port: PORT, host: HOST }, () => {
-//   console.log('connected to server!');
-// });
-
-// client.on('data', (data: any) => {
-//   console.log("recieved:")
-//   console.log(JSON.parse(data.toString()));
-// });
-
-// client.on('end', () => {
-//   console.log('disconnected from server (on end)');
-// });
-
-// client.on('close', () => {
-//   console.log('disconnected from server (on close)');
-// });
-
-// sendToRacket(
-//   {
-//     states: [
-//       { name: 'S', type: 'start' },
-//       { name: 'A', type: 'normal' },
-//       { name: 'F', type: 'final' },
-//     ],
-//     alphabet: ['a', 'b'],
-//     type: 'dfa',
-//     rules: [
-//       {start: "S", input: "a", end: "F"},
-//       {start: "F", input: "a", end: "F"},
-//       {start: "S", input: "b", end: "A"},
-//       {start: "A", input: "a", end: "F"},
-//       {start: "A", input: "b", end: "A"},
-//     ],
-//     input: ["a", "a", "a"]
-//   } as FSMInterfacePayload,
-//   Instruction.BUILD,
-// );

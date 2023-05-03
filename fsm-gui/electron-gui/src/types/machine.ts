@@ -6,7 +6,7 @@ export type FSMAlpha = string;
 // dash, and number (e.g., A-72431).
 export type StateName = string;
 
-// string representaion of a racket invariant function
+// string representation of a racket invariant function
 export type RacketInvariantFunc = string;
 
 // The supported types of machines that the GUI can handle
@@ -50,10 +50,22 @@ export type TmMttmRule = {
 // A transition consists for a rule that is used and a boolean to represent
 // if the invariant held. If the invariant is undefined then a invariant function
 // was not supplied
-export type FSMTransition = {
+export type Transition = {
   rule: FSMRule;
-  invPass: boolean | undefined;
+  invPass: boolean | null;
 };
+
+export type StartTransition = {
+  start: StateName;
+  invPass: boolean | null;
+};
+
+export type EndTransition = {
+  end: StateName;
+  invPass: boolean | null;
+};
+
+export type FSMTransition = Transition | StartTransition | EndTransition;
 
 // A object representation of a GUI machine. This holds all the values that are
 // sent to the FSM racket interface for further processing by fsm-core + fsm-gui
@@ -84,6 +96,24 @@ export const buildFSMInterfacePayload = (
     type: type,
     input: input,
   };
+};
+
+export const isNormalTransition = (
+  transition: FSMTransition,
+): transition is Transition => {
+  return (transition as Transition).rule !== undefined;
+};
+
+export const isStartTransition = (
+  transition: FSMTransition,
+): transition is StartTransition => {
+  return (transition as StartTransition).start !== undefined;
+};
+
+export const isEndTransition = (
+  transition: FSMTransition,
+): transition is EndTransition => {
+  return (transition as EndTransition).end !== undefined;
 };
 
 // returns true if the machine is a type of turing machine

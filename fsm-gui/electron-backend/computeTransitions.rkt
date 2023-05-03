@@ -1,32 +1,39 @@
 #lang racket
-(require "../../fsm-core/interface.rkt")
+(require json "../../fsm-core/interface.rkt")
 (provide transitions->jsexpr)
 
 
-;; transitions->jsexpr :: listof(transitions) symbol -> jsexpr(transitions)
+;; transitions->jsexpr :: listof(transitions) symbol -> symbol-> jsexpr(transitions)
 ;; Given the list of fsm-core transitions, computes the jsexpr form of the transitions
-(define (transitions->jsexpr transitions type)
+(define (transitions->jsexpr transitions type start)
   ;; transition->jsexpr :: transition transition type -> jsexpr(transition)
   ;; Computes a single jsexpr(transition) from 2 fsm-core transitions
   (define (transition->jsexpr t1 t2)
     (match type
       [(or 'dfa 'ndfa) (dfa-rule->jsexpr t1 t2)]
       [_ (error "TODO")]))
+  ;; we alyays need to append the start transiton to the front for the gui.
+  ;; EX: (hash 'start "A" 'input (json-null) 'end "start")
+  (define start-transition
+    (match type
+      [(or 'dfa 'ndfa) (hash 'start (symbol->string start)                              
+                             'invPass (json-null))]
+      [_ (error "TODO")]))
+    
   (define (loop transitions)
     (match transitions
       [`(,f ,n ,xs ...) (cons (transition->jsexpr f n)
                               (loop (cons n xs)))]
       [_ '()]))
-  (hash 'transitions (loop transitions)))
+  (hash 'transitions (cons start-transition
+                           (loop transitions))))
 
 ;; dfa-rule->jsexpr :: transition transition -> jsexpr(transition)
 ;; computes the jsexpr(transition) for a dfa given 2 fsm-core transitions
 (define (dfa-rule->jsexpr t1 t2)
   (if (or (equal? t2 'reject) (equal? t2 'accept))
-      (hash 'rule (hash 'start (symbol->string (cadr t1))
-                        'input (symbol->string EMP)
-                        'end (symbol->string t2))
-            'invPass #f)
+      (hash 'end (symbol->string (cadr t1))       
+            'invPass (json-null))
       (match-let ([`(,(and input1 `(,i1 ...)) ,s1) t1]
                   [`(,(and input2 `(,i2 ...)) ,s2) t2])
                    
@@ -38,7 +45,7 @@
                                       EMP 
                                       (car i1)))
                           'end (symbol->string s2))
-              'invPass #f))))
+              'invPass (json-null)))))
 
 ;; getCurRule: processed-list optional(listof rules) -> rule
 ;; Determins what the current rule is from the processed-list
@@ -182,23 +189,25 @@
                           (A b A))))
   
   (define expected (hash 'transitions (list
+                                       (hash 'start "S"
+                                             'invPass (json-null))
                                        (hash 'rule (hash 'start "S" 'input "a" 'end "F")
-                                             'invPass #f)
+                                             'invPass (json-null))
                                        (hash 'rule (hash 'start "F" 'input "a" 'end "F")
-                                             'invPass #f)
+                                             'invPass (json-null))
                                        (hash 'rule (hash 'start "F" 'input "a" 'end "F")
-                                             'invPass #f)
+                                             'invPass (json-null))
                                        (hash 'rule (hash 'start "F" 'input "b" 'end "A")
-                                             'invPass #f)
+                                             'invPass (json-null))
                                        (hash 'rule (hash 'start "A" 'input "b"'end "A")
-                                             'invPass #f)
+                                             'invPass (json-null))
                                        (hash 'rule (hash 'start "A" 'input "b" 'end "A")
-                                             'invPass #f)
+                                             'invPass (json-null))
                                        (hash 'rule (hash 'start "A" 'input "a" 'end "F")
-                                             'invPass #f)
-                                       (hash 'rule (hash 'start "F" 'input (symbol->string EMP) 'end "accept")
-                                             'invPass #f))))
-  (define actual (transitions->jsexpr (sm-showtransitions a*a '(a a a b b b a)) 'dfa))
+                                             'invPass (json-null))
+                                       (hash 'end "F"
+                                             'invPass (json-null)))))
+  (define actual (transitions->jsexpr (sm-showtransitions a*a '(a a a b b b a)) 'dfa (sm-start a*a)))
   (check-equal? actual expected  "A*A compute all transitions")
   
 

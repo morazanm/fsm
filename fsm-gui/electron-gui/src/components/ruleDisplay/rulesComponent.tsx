@@ -1,4 +1,9 @@
-import { isFSMRuleEqual, ruleToString } from '../../types/machine';
+import {
+  FSMTransition,
+  isFSMRuleEqual,
+  isNormalTransition,
+  ruleToString,
+} from '../../types/machine';
 import { FSMRule } from '../../types/machine';
 import { Stack, Paper } from '@mui/material';
 import { styled, useTheme } from '@mui/material/styles';
@@ -21,7 +26,7 @@ const CurrentItem = styled(Paper)(({ theme }) => ({
 
 type RuleComponentProps = {
   rules: FSMRule[];
-  currentRule: FSMRule | undefined;
+  currentTransition: FSMTransition | undefined;
 };
 
 const RuleBox = ({
@@ -91,7 +96,9 @@ const RuleComponent = (props: RuleComponentProps) => {
           idx={i}
           rule={rule}
           isCurrent={
-            props.currentRule && isFSMRuleEqual(rule, props.currentRule)
+            props.currentTransition &&
+            isNormalTransition(props.currentTransition) &&
+            isFSMRuleEqual(rule, props.currentTransition.rule)
           }
         />
       ))}

@@ -6,6 +6,11 @@ import {
   FSMAlpha,
   buildFSMInterfacePayload,
   FSMTransition,
+  isPdaRule,
+  isDfaNdfaRule,
+  isEndTransition,
+  isStartTransition,
+  isNormalTransition,
 } from './types/machine';
 import { useTheme } from '@mui/material/styles';
 import ControlView from './components/controlView/view';
@@ -45,7 +50,10 @@ type MainViewProps = {
 type MachineTransitions = {
   transitions: FSMTransition[];
   index: number;
+  inputIndex: number;
 };
+
+
 
 const MainView = (props: MainViewProps) => {
   const theme = useTheme();
@@ -54,9 +62,12 @@ const MainView = (props: MainViewProps) => {
   const [rules, setRules] = useState<FSMRule[]>(TMP_RULES);
   const [alphabet, setAlphabet] = useState<FSMAlpha[]>(TMP_ALPHA);
   const [input, setInput] = useState<FSMAlpha[]>(TMP_INPUT);
-  const [inputIndex, setInputIndex] = useState<number | null>(null);
   const [machineTransitions, setMachineTransitions] =
-    useState<MachineTransitions>({ transitions: [], index: -1 });
+    useState<MachineTransitions>({
+      transitions: [],
+      index: -1,
+      inputIndex: -1,
+    });
 
   const setGuiStates = (states: State[]) => setStates(states);
   const setGuiRules = (rules: FSMRule[]) => setRules(rules);
@@ -68,13 +79,12 @@ const MainView = (props: MainViewProps) => {
 
   useEffect(() => {
     // If we have a connection then listen for messages
-    // TODO: We can probs abstract this out with a callback
+    // TODO: We can probably abstract this out with a callback
     if (props.racketBridge.client) {
-      props.racketBridge.client.on('data', (data: any) => {
-        const result: SocketResponse<{}> = JSON.parse(data.toString());
-        console.log(result);
+      props.racketBridge.client.on('data', (data: JSON) => {
+        const result: SocketResponse<object> = JSON.parse(data.toString());
         if (result.error) {
-          //TODO: Handle error case
+          //TODO: Handle error case by displaying message in the GUI
         }
 
         if (result.responseType === Instruction.BUILD) {
@@ -82,10 +92,13 @@ const MainView = (props: MainViewProps) => {
           setMachineTransitions({
             transitions: tmp.data.transitions,
             index: 0,
+            inputIndex: -1,
           });
         }
       });
       props.racketBridge.client.on('end', () => {
+        //TODO: render something on the screen to indicate that the
+        //the server was shut down
         console.log('disconnected from server (on end)');
       });
     }
@@ -101,16 +114,37 @@ const MainView = (props: MainViewProps) => {
     );
     props.racketBridge.sendToRacket(machine, Instruction.BUILD);
   };
+1
+  // Handles visualizing the next transition
+  const goNext = () => {
+    if (machineTransitions.index < machineTransitions.transitions.length - 1) {
+      setMachineTransitions({
+        transitions: machineTransitions.transitions,
+        index: machineTransitions.index + 1,
+        inputIndex: machineTransitions.inputIndex + 1
+      });
+    }
+    //TODO: create End of machine popup with accept or reject message
+  };
 
-  const getCurrentRule = (): FSMRule | undefined => {
+  // // Handles visualizing the previous transition
+  const goPrev = () => {
+    if (machineTransitions.index > 0) {
+      setMachineTransitions({
+        transitions: machineTransitions.transitions,
+        index: machineTransitions.index - 1,
+        inputIndex: machineTransitions.inputIndex - 1
+      });
+    }
+    //TODO: create Beginning of machine popup
+  };
+
+  const getCurrentTransition = (): FSMTransition | undefined => {
     if (
       machineTransitions.index !== -1 &&
-      machineTransitions.transitions !== []
+      machineTransitions.transitions.length !== 0
     ) {
-      console.log(
-        machineTransitions.transitions[machineTransitions.index].rule,
-      );
-      return machineTransitions.transitions[machineTransitions.index].rule;
+      return machineTransitions.transitions[machineTransitions.index];
     }
     return undefined;
   };
@@ -130,11 +164,13 @@ const MainView = (props: MainViewProps) => {
       <Grid container direction="row" rowSpacing={1}>
         <Grid item xs={12}>
           <InputComponent
-            inputIndex={inputIndex}
+            inputIndex={machineTransitions.inputIndex}
             input={input}
             addInput={addInput}
             clearInput={clearInput}
             runMachine={run}
+            goNext={goNext}
+            goPrev={goPrev}
           />
         </Grid>
         <Grid
@@ -168,7 +204,10 @@ const MainView = (props: MainViewProps) => {
               alignItems="center"
               display="flex"
             >
-              <ControlView states={states} currentRule={getCurrentRule()} />
+              <ControlView
+                states={states}
+                currentTransition={getCurrentTransition()}
+              />
             </Grid>
             <Grid item xs={1} justifyContent="end" display="flex">
               <RightEditor
@@ -177,7 +216,7 @@ const MainView = (props: MainViewProps) => {
                 states={states}
                 setStates={setGuiStates}
                 input={input}
-                setInput={(incomming: FSMAlpha[]) => setInput(incomming)}
+                setInput={(incoming: FSMAlpha[]) => setInput(incoming)}
                 alpha={alphabet}
                 rules={rules}
                 setRules={setGuiRules}
@@ -192,7 +231,10 @@ const MainView = (props: MainViewProps) => {
           justifyContent="center"
           style={{ paddingTop: '0px' }}
         >
-          <RuleComponent rules={rules} currentRule={getCurrentRule()} />
+          <RuleComponent
+            rules={rules}
+            currentTransition={getCurrentTransition()}
+          />
         </Grid>
       </Grid>
     </Paper>

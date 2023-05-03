@@ -6,10 +6,7 @@ import FormControl from '@mui/material/FormControl';
 import GenericForm from './GenericForm';
 import {
   MachineType,
-  isTmType,
   State,
-  StateName,
-  StateType,
   FSMRule,
   FSMAlpha,
   isTmTmLangRecRule,
