@@ -24,17 +24,17 @@ type InputFormProps = {
   setStates: (states: State[]) => void;
 };
 
-const validateState = (incomming: StateName, states: State[]): string => {
-  if (states.find((s) => s.name === incomming)) {
-    return `State "${incomming}" already exists`;
+const validateState = (incoming: StateName, states: State[]): string => {
+  if (states.find((s) => s.name === incoming)) {
+    return `State "${incoming}" already exists`;
   }
   // State: An uppercase letter (e.g., A) or a symbol comprised of an uppercase letter,
-  // dash, and number (e.g., A-72431).
+  // dash, and number (e.g., A-72431) OR ds.
   const regex = new RegExp(/[A-Z](-\d+)*$/g);
-  if (regex.test(incomming)) {
+  if (regex.test(incoming) || incoming == "ds") {
     return '';
   } else {
-    return `The state: "${incomming}" is not in propper form`;
+    return `The state: "${incoming}" is not in proper form`;
   }
 };
 
@@ -50,29 +50,29 @@ export default function StateForm(props: InputFormProps) {
   };
 
   const addState = () => {
-    const incomming = state.trim();
-    const msg = validateState(incomming, props.states);
+    const incoming = state.trim();
+    const msg = validateState(incoming, props.states);
     if (msg != '') {
       setError(msg);
     } else {
-      props.setStates([...props.states, { name: incomming, type: type }]);
+      props.setStates([...props.states, { name: incoming, type: type }]);
       setError('');
       props.toggle();
-      props.toggleSnack(`State: "${incomming}" was added`);
+      props.toggleSnack(`State: "${incoming}" was added`);
       resetValues();
     }
   };
 
   const deleteState = () => {
-    const incomming = state.trim();
-    if (props.states.find((s) => s.name === incomming)) {
-      props.setStates(props.states.filter((s) => s.name !== incomming));
+    const incoming = state.trim();
+    if (props.states.find((s) => s.name === incoming)) {
+      props.setStates(props.states.filter((s) => s.name !== incoming));
       setError('');
       props.toggle();
-      props.toggleSnack(`State: "${incomming}"" was deleted`);
+      props.toggleSnack(`State: "${incoming}"" was deleted`);
       resetValues();
     } else {
-      setError(`State "${incomming}" does not currenly exist`);
+      setError(`State "${incoming}" does not currently exist`);
     }
   };
   return (
