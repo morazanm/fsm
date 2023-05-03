@@ -118,6 +118,7 @@
                                              (hash 'rule (hash 'start "A" 'input "a" 'end "F")
                                                    'invPass (json-null))
                                              (hash 'end "F"
+                                                   'action "accept"
                                                    'invPass (json-null))))
                          'error (json-null)))
   (define actual (build-machine a*a-jsexpr))
