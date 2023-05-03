@@ -3,7 +3,7 @@
 (provide transitions->jsexpr)
 
 
-;; transitions->jsexpr :: listof(transitions) symbol -> symbol-> jsexpr(transitions)
+;; transitions->jsexpr :: listof(transitions) symbol -> symbol-> listof(jsexpr(transition))
 ;; Given the list of fsm-core transitions, computes the jsexpr form of the transitions
 (define (transitions->jsexpr transitions type start)
   ;; transition->jsexpr :: transition transition type -> jsexpr(transition)
@@ -25,14 +25,14 @@
       [`(,f ,n ,xs ...) (cons (transition->jsexpr f n)
                               (loop (cons n xs)))]
       [_ '()]))
-  (hash 'transitions (cons start-transition
-                           (loop transitions))))
+  (cons start-transition (loop transitions)))
 
 ;; dfa-rule->jsexpr :: transition transition -> jsexpr(transition)
 ;; computes the jsexpr(transition) for a dfa given 2 fsm-core transitions
 (define (dfa-rule->jsexpr t1 t2)
   (if (or (equal? t2 'reject) (equal? t2 'accept))
-      (hash 'end (symbol->string (cadr t1))       
+      (hash 'end (symbol->string (cadr t1))
+            'action (symbol->string t2)
             'invPass (json-null))
       (match-let ([`(,(and input1 `(,i1 ...)) ,s1) t1]
                   [`(,(and input2 `(,i2 ...)) ,s2) t2])
@@ -188,25 +188,26 @@
                           (A a F)
                           (A b A))))
   
-  (define expected (hash 'transitions (list
-                                       (hash 'start "S"
-                                             'invPass (json-null))
-                                       (hash 'rule (hash 'start "S" 'input "a" 'end "F")
-                                             'invPass (json-null))
-                                       (hash 'rule (hash 'start "F" 'input "a" 'end "F")
-                                             'invPass (json-null))
-                                       (hash 'rule (hash 'start "F" 'input "a" 'end "F")
-                                             'invPass (json-null))
-                                       (hash 'rule (hash 'start "F" 'input "b" 'end "A")
-                                             'invPass (json-null))
-                                       (hash 'rule (hash 'start "A" 'input "b"'end "A")
-                                             'invPass (json-null))
-                                       (hash 'rule (hash 'start "A" 'input "b" 'end "A")
-                                             'invPass (json-null))
-                                       (hash 'rule (hash 'start "A" 'input "a" 'end "F")
-                                             'invPass (json-null))
-                                       (hash 'end "F"
-                                             'invPass (json-null)))))
+  (define expected (list
+                    (hash 'start "S"
+                          'invPass (json-null))
+                    (hash 'rule (hash 'start "S" 'input "a" 'end "F")
+                          'invPass (json-null))
+                    (hash 'rule (hash 'start "F" 'input "a" 'end "F")
+                          'invPass (json-null))
+                    (hash 'rule (hash 'start "F" 'input "a" 'end "F")
+                          'invPass (json-null))
+                    (hash 'rule (hash 'start "F" 'input "b" 'end "A")
+                          'invPass (json-null))
+                    (hash 'rule (hash 'start "A" 'input "b"'end "A")
+                          'invPass (json-null))
+                    (hash 'rule (hash 'start "A" 'input "b" 'end "A")
+                          'invPass (json-null))
+                    (hash 'rule (hash 'start "A" 'input "a" 'end "F")
+                          'invPass (json-null))
+                    (hash 'end "F"
+                          'action "accept"
+                          'invPass (json-null))))
   (define actual (transitions->jsexpr (sm-showtransitions a*a '(a a a b b b a)) 'dfa (sm-start a*a)))
   (check-equal? actual expected  "A*A compute all transitions")
   

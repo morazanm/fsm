@@ -43,6 +43,12 @@ export default function StateForm(props: InputFormProps) {
   const [type, setType] = useState<StateType>('normal');
   const [error, setError] = useState('');
 
+  const resetValues = () => {
+    setType('normal');
+    setError('');
+    setState('');
+  };
+
   const addState = () => {
     const incomming = state.trim();
     const msg = validateState(incomming, props.states);
@@ -53,6 +59,7 @@ export default function StateForm(props: InputFormProps) {
       setError('');
       props.toggle();
       props.toggleSnack(`State: "${incomming}" was added`);
+      resetValues();
     }
   };
 
@@ -63,6 +70,7 @@ export default function StateForm(props: InputFormProps) {
       setError('');
       props.toggle();
       props.toggleSnack(`State: "${incomming}"" was deleted`);
+      resetValues();
     } else {
       setError(`State "${incomming}" does not currenly exist`);
     }

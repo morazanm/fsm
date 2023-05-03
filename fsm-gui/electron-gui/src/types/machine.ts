@@ -62,6 +62,7 @@ export type StartTransition = {
 
 export type EndTransition = {
   end: StateName;
+  action: 'accept' | 'reject';
   invPass: boolean | null;
 };
 

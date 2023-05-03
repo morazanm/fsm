@@ -46,13 +46,22 @@
   ;; stdio we cant display them in the GUI. Idealy this would just return a string and we
   ;; could pass the message over json to the new GUI
   (define fsa (build-fsm-core-machine states start finals alpha rules type))
-  (if fsa
-      (hash 'data (transitions->jsexpr (sm-showtransitions fsa input) type start)
-            'responseType "build_machine"
-            'error (json-null))
-      (hash 'data (json-null)
-            'responseType "build_machine"
-            'error "Failed check-machine function")))
+  (define trans (sm-showtransitions fsa input))
+  (cond
+    [(equal? trans 'reject)
+     (hash 'data (json-null)
+           'responseType "build_machine"
+           'error "The given input for the machine was rejected")]
+    [fsa
+     (hash 'data (hash 'transitions (transitions->jsexpr (sm-showtransitions fsa input) type start)
+                       ;; since fsm sometimes adds states (ds) we will return the list of states,
+                       ;; so the gui can update accordingly
+                       'states (map symbol->string (sm-states fsa)))
+           'responseType "build_machine"
+           'error (json-null))]
+    [else (hash 'data (json-null)
+                'responseType "build_machine"
+                'error "Failed check-machine function")]))
 
 ;; isValidMachine? :: listof(symbol) symbol listof(symbol) listof(symbol) listof(fsm-core-rules) symbol -> fsa | false
 ;; returns a fsm-core fsa if the machine passes the fsm-core error messages check. If there is an error the
@@ -93,7 +102,9 @@
                                         (hash 'start "A" 'input "b" 'end "A"))
                            'input (list "a" "a" "a" "b" "a")))
   (define expected (hash 'data
-                         (hash 'transitions (list
+                         (hash
+                          'states '("ds" "S" "A" "F")
+                          'transitions (list
                                              (hash 'start "S"
                                                    'invPass (json-null))
                                              (hash 'rule (hash 'start "S" 'input "a" 'end "F")

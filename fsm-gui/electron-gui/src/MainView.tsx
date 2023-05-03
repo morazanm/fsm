@@ -1,16 +1,22 @@
 import { useState, useEffect } from 'react';
-import { Paper, Grid } from '@mui/material';
+import {
+  Paper,
+  Grid,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+} from '@mui/material';
 import {
   State,
   FSMRule,
   FSMAlpha,
   buildFSMInterfacePayload,
   FSMTransition,
-  isPdaRule,
-  isDfaNdfaRule,
-  isEndTransition,
   isStartTransition,
-  isNormalTransition,
+  isEndTransition,
 } from './types/machine';
 import { useTheme } from '@mui/material/styles';
 import ControlView from './components/controlView/view';
@@ -24,6 +30,15 @@ import {
   Instruction,
   SocketResponse,
 } from './socket/racketInterface';
+
+// dummy object to symbolize a machine that has not been set to
+// fsm-core for verification
+const EMPTY_TRANSITIONS = {
+  transitions: [] as FSMTransition[],
+  index: -1,
+  inputIndex: -1,
+};
+
 const TMP_RULES = [
   { start: 'S', input: 'a', end: 'F' },
   { start: 'F', input: 'a', end: 'F' },
@@ -53,29 +68,72 @@ type MachineTransitions = {
   inputIndex: number;
 };
 
+type BasicDialogProps = {
+  onClose: () => void;
+  open: boolean;
+  title: string;
+  body: string;
+  bodyStyle?: object;
+};
 
+// Popup for beginning and end of machine transitions
+const BasicDialog = (props: BasicDialogProps) => {
+  return (
+    <Dialog
+      open={props.open}
+      onClose={props.onClose}
+      aria-labelledby="alert-dialog-title"
+      aria-describedby="alert-dialog-description"
+    >
+      <DialogTitle id="alert-dialog-title">{props.title}</DialogTitle>
+      <DialogContent>
+        <DialogContentText
+          id="alert-dialog-description"
+          style={props.bodyStyle}
+        >
+          {props.body}
+        </DialogContentText>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={props.onClose}>Close</Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
 
 const MainView = (props: MainViewProps) => {
   const theme = useTheme();
   const machineType = 'dfa';
+  const [openDialog, setOpenDialog] = useState<'start' | 'end' | null>(null);
   const [states, setStates] = useState<State[]>(TMP_STATES);
   const [rules, setRules] = useState<FSMRule[]>(TMP_RULES);
   const [alphabet, setAlphabet] = useState<FSMAlpha[]>(TMP_ALPHA);
   const [input, setInput] = useState<FSMAlpha[]>(TMP_INPUT);
   const [machineTransitions, setMachineTransitions] =
-    useState<MachineTransitions>({
-      transitions: [],
-      index: -1,
-      inputIndex: -1,
-    });
+    useState<MachineTransitions>(EMPTY_TRANSITIONS);
 
-  const setGuiStates = (states: State[]) => setStates(states);
-  const setGuiRules = (rules: FSMRule[]) => setRules(rules);
-  const addInput = (incoming: FSMAlpha[]) => setInput(input.concat(incoming));
-  const clearInput = () => setInput([]);
-  const addAlpha = (incoming: FSMAlpha) => setAlphabet([...alphabet, incoming]);
-  const removeAlpha = (incoming: FSMAlpha[]) =>
+  const resetMachine = () => setMachineTransitions(EMPTY_TRANSITIONS);
+
+  const setGuiStates = (states: State[]) => {
+    resetMachine();
+    setStates(states);
+  };
+  const setGuiRules = (rules: FSMRule[]) => {
+    resetMachine();
+    setRules(rules);
+  };
+  const updateInput = (input: FSMAlpha[]) => {
+    resetMachine();
+    setInput(input);
+  };
+  const addAlpha = (incoming: FSMAlpha) => {
+    resetMachine();
+    setAlphabet([...alphabet, incoming]);
+  };
+  const removeAlpha = (incoming: FSMAlpha[]) => {
+    resetMachine();
     setAlphabet(alphabet.filter((a) => !incoming.includes(a)));
+  };
 
   useEffect(() => {
     // If we have a connection then listen for messages
@@ -85,15 +143,23 @@ const MainView = (props: MainViewProps) => {
         const result: SocketResponse<object> = JSON.parse(data.toString());
         if (result.error) {
           //TODO: Handle error case by displaying message in the GUI
-        }
-
-        if (result.responseType === Instruction.BUILD) {
+        } else if (result.responseType === Instruction.BUILD) {
           const tmp = result as SocketResponse<BuildMachineResponse>;
           setMachineTransitions({
             transitions: tmp.data.transitions,
             index: 0,
             inputIndex: -1,
           });
+          const new_states = tmp.data.states.filter(
+            (s) => !states.find((st) => st.name === s),
+          );
+          if (new_states) {
+            setStates(
+              states.concat(
+                new_states.map((s) => ({ name: s, type: 'normal' } as State)),
+              ),
+            );
+          }
         }
       });
       props.racketBridge.client.on('end', () => {
@@ -114,17 +180,18 @@ const MainView = (props: MainViewProps) => {
     );
     props.racketBridge.sendToRacket(machine, Instruction.BUILD);
   };
-1
+
   // Handles visualizing the next transition
   const goNext = () => {
     if (machineTransitions.index < machineTransitions.transitions.length - 1) {
       setMachineTransitions({
         transitions: machineTransitions.transitions,
         index: machineTransitions.index + 1,
-        inputIndex: machineTransitions.inputIndex + 1
+        inputIndex: machineTransitions.inputIndex + 1,
       });
+    } else {
+      setOpenDialog('end');
     }
-    //TODO: create End of machine popup with accept or reject message
   };
 
   // // Handles visualizing the previous transition
@@ -133,10 +200,11 @@ const MainView = (props: MainViewProps) => {
       setMachineTransitions({
         transitions: machineTransitions.transitions,
         index: machineTransitions.index - 1,
-        inputIndex: machineTransitions.inputIndex - 1
+        inputIndex: machineTransitions.inputIndex - 1,
       });
+    } else {
+      setOpenDialog('start');
     }
-    //TODO: create Beginning of machine popup
   };
 
   const getCurrentTransition = (): FSMTransition | undefined => {
@@ -148,7 +216,7 @@ const MainView = (props: MainViewProps) => {
     }
     return undefined;
   };
-
+  const currentTransition = getCurrentTransition();
   return (
     <Paper
       sx={{
@@ -166,8 +234,6 @@ const MainView = (props: MainViewProps) => {
           <InputComponent
             inputIndex={machineTransitions.inputIndex}
             input={input}
-            addInput={addInput}
-            clearInput={clearInput}
             runMachine={run}
             goNext={goNext}
             goPrev={goPrev}
@@ -206,7 +272,7 @@ const MainView = (props: MainViewProps) => {
             >
               <ControlView
                 states={states}
-                currentTransition={getCurrentTransition()}
+                currentTransition={currentTransition}
               />
             </Grid>
             <Grid item xs={1} justifyContent="end" display="flex">
@@ -216,7 +282,7 @@ const MainView = (props: MainViewProps) => {
                 states={states}
                 setStates={setGuiStates}
                 input={input}
-                setInput={(incoming: FSMAlpha[]) => setInput(incoming)}
+                setInput={updateInput}
                 alpha={alphabet}
                 rules={rules}
                 setRules={setGuiRules}
@@ -231,12 +297,31 @@ const MainView = (props: MainViewProps) => {
           justifyContent="center"
           style={{ paddingTop: '0px' }}
         >
-          <RuleComponent
-            rules={rules}
-            currentTransition={getCurrentTransition()}
-          />
+          <RuleComponent rules={rules} currentTransition={currentTransition} />
         </Grid>
       </Grid>
+      {openDialog === 'start' && isStartTransition(currentTransition) && (
+        <BasicDialog
+          open
+          onClose={() => setOpenDialog(null)}
+          title="Beginning of Machine"
+          body="You have reached the beginning of the machines transitions"
+        />
+      )}
+      {openDialog === 'end' && isEndTransition(currentTransition) && (
+        <BasicDialog
+          open
+          onClose={() => setOpenDialog(null)}
+          title="End of Machine"
+          body={`The input was ${currentTransition.action}ed.`}
+          bodyStyle={{
+            color:
+              currentTransition.action === 'accept'
+                ? theme.palette.success.main
+                : theme.palette.error.main,
+          }}
+        />
+      )}
     </Paper>
   );
 };

@@ -10,8 +10,6 @@ import InputRender from './InputRender';
 type InputComponentProps = {
   input: FSMAlpha[];
   inputIndex: number;
-  addInput: (input: FSMAlpha[]) => void;
-  clearInput: () => void;
   runMachine: () => void;
   goNext: () => void;
   goPrev: () => void;

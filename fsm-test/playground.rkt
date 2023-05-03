@@ -11,6 +11,19 @@
                (F a F))
              'nodead))
 
+(define tmp
+  (make-ndfa '(S A F)     
+             '(a b)     
+             'S        
+             '(F)       
+             '((S a F)
+               (F a F)
+               (S b A)
+               (A a F)
+               (A b A))
+             'nodead))
+
+
 
 (define (SS-INV ci) (empty? ci))
 

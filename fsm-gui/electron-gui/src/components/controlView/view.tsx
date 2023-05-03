@@ -6,7 +6,6 @@ import {
   isNormalTransition,
   StateName,
   isStartTransition,
-  isEndTransition,
 } from '../../types/machine';
 import StateComponent from './state';
 import styles from './view.module.css';
