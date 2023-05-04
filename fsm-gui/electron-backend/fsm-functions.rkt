@@ -11,6 +11,7 @@
 ;; takes the electron-gui machine json-expr, unparses it and runs it in fsm-core. It then
 ;; returns the machine or the error msg if it fails to build
 (define (build-machine data)
+  (define (json-null? v) (equal? v (json-null)))
   ;; find-finals :: jsexpr -> listof(symbol)
   ;; returns the final states as a list of symbols
   (define (find-finals states) 
@@ -39,6 +40,10 @@
   (define alpha (map string->symbol (hash-ref data 'alphabet)))
   (define type (string->symbol (hash-ref data 'type)))
   (define states (map (lambda (s) (string->symbol (hash-ref s 'name))) un-parsed-states))
+  (define invariants (map (lambda (s) (cons (string->symbol (hash-ref s 'name))
+                                            (hash-ref s 'invFunc)))
+                          (filter (lambda (s) (not (json-null? (hash-ref s 'invFunc))))
+                                  un-parsed-states)))
   (define start (find-start un-parsed-states))
   (define finals (find-finals un-parsed-states))
   (define rules (parse-rules (hash-ref data 'rules) type))
@@ -55,10 +60,14 @@
            'responseType "build_machine"
            'error "The given input for the machine was rejected")]
     [fsa
-     (hash 'data (hash 'transitions (transitions->jsexpr (sm-showtransitions fsa input) type start)
+     (hash 'data (hash 'transitions (transitions->jsexpr (sm-showtransitions fsa input)
+                                                         type
+                                                         start
+                                                         invariants
+                                                         input)
                        ;; since fsm sometimes adds states (ds) we will return the list of states,
                        ;; so the gui can update accordingly
-                       'states (map (lambda (s) (state->jsexpr s fsa)) (sm-states fsa))
+                       'states (map (lambda (s) (state->jsexpr s fsa invariants)) (sm-states fsa))
                        ;; same with rules.
                        'rules (map rule->jsexpr (sm-rules fsa)))
            'responseType "build_machine"
@@ -100,9 +109,9 @@
   (define build-machine-tests
     (test-suite "build-machine tests"
                 (test-case "build-machine for dfa"
-                  (define a*a-jsexpr (hash 'states (list (hash 'name "S" 'type "start")
-                                                         (hash 'name "A" 'type "normal")
-                                                         (hash 'name "F" 'type "final"))
+                  (define a*a-jsexpr (hash 'states (list (hash 'name "S" 'type "start" 'invFunc "(lambda (v) #t)")
+                                                         (hash 'name "A" 'type "normal" 'invFunc (json-null))
+                                                         (hash 'name "F" 'type "final" 'invFunc (json-null)))
                                            'alphabet (list "a" "b")
                                            'type "dfa"
                                            'rules (list (hash 'start "S" 'input "a" 'end "F")
@@ -116,7 +125,7 @@
                   (define expected (hash 'data
                                          (hash
                                           'states (list (hash 'name "ds" 'type "normal" 'invFunc (json-null))
-                                                        (hash 'name "S" 'type "start" 'invFunc (json-null))
+                                                        (hash 'name "S" 'type "start" 'invFunc "(lambda (v) #t)")
                                                         (hash 'name "A" 'type "normal" 'invFunc (json-null))
                                                         (hash 'name "F" 'type "final" 'invFunc (json-null)))
                                           'rules (list
@@ -132,7 +141,7 @@
                                           'transitions (list
 
                                                         (hash 'start "S"
-                                                              'invPass (json-null))
+                                                              'invPass #t)
                                                         (hash 'rule (hash 'start "S" 'input "a" 'end "F")
                                                               'invPass (json-null))
                                                         (hash 'rule (hash 'start "F" 'input "a" 'end "F")

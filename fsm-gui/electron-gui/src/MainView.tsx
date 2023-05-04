@@ -212,6 +212,7 @@ const MainView = (props: MainViewProps) => {
           const response = result as SocketResponse<PrebuiltMachineResponse>;
           resetMachineAndSet({
             ...machineState,
+            input: [],
             states: response.data.states,
             alphabet: response.data.alpha,
             rules: response.data.rules,
@@ -236,6 +237,7 @@ const MainView = (props: MainViewProps) => {
   }, [machineState]);
 
   const run = () => {
+    console.log("Sending", machineState.states)
     props.racketBridge.sendToRacket(
       { ...machineState } as FSMBuildMachineRequest,
       Instruction.BUILD,

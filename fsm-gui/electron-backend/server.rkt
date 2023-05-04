@@ -100,7 +100,7 @@
 
 (define invariants (list (cons 'S "(lambda (consumed-input) #t)")
                          (cons 'F "(lambda (consumed-input) #f)")
-                         (cons 'D "(lambda (consumed-input) #t)")))
+                         (cons 'D (json-null))))
 
 ;(run-without-prebuilt)
-;(run-with-prebuilt a*a invariants)
+(run-with-prebuilt a*a invariants)

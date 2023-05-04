@@ -1,4 +1,4 @@
-#| This Module containes functions for converting parts for a fsa to a jsexpr|#
+#| This Module containes functions for converting parts for a fsa to a jsexpr |#
 #lang racket
 (require json "../../fsm-core/interface.rkt")
 (provide fsa->jsexpr
@@ -48,21 +48,21 @@
   [(_) (error "TODO")])
 
 
-;; transitions->jsexpr :: listof(transitions) symbol -> symbol-> listof(jsexpr(transition))
+;; transitions->jsexpr :: listof(transitions) symbol -> symbol listof(cons symbol string) listof(symbol-> listof(jsexpr(transition))
 ;; Given the list of fsm-core transitions, computes the jsexpr form of the transitions
-(define (transitions->jsexpr transitions type start)
+(define (transitions->jsexpr transitions type start invariants full-input)
   ;; transition->jsexpr :: transition transition type -> jsexpr(transition)
   ;; Computes a single jsexpr(transition) from 2 fsm-core transitions
   (define (transition->jsexpr t1 t2)
     (match type
-      [(or 'dfa 'ndfa) (dfa-transition->jsexpr t1 t2)]
+      [(or 'dfa 'ndfa) (dfa-transition->jsexpr t1 t2 invariants full-input)]
       [_ (error "TODO")]))
   ;; we alyays need to append the start transiton to the front for the gui.
   ;; EX: (hash 'start "A" 'input (json-null) 'end "start")
   (define start-transition
     (match type
       [(or 'dfa 'ndfa) (hash 'start (symbol->string start)                              
-                             'invPass (json-null))]
+                             'invPass (compute-inv start invariants '()))]
       [_ (error "TODO")]))
 
   (define (loop transitions)
@@ -72,17 +72,16 @@
       [_ '()]))
   (cons start-transition (loop transitions)))
 
-;; dfa-transition->jsexpr :: transition transition -> jsexpr(transition)
+;; dfa-transition->jsexpr :: transition transition listof(cons symbol string) listof(symbol) -> jsexpr(transition)
 ;; computes the jsexpr(transition) for a dfa given 2 fsm-core transitions
-(define (dfa-transition->jsexpr t1 t2)
+(define (dfa-transition->jsexpr t1 t2 invariants full-input)
   (if (or (equal? t2 'reject) (equal? t2 'accept))
       (hash 'end (symbol->string (cadr t1))
             'action (symbol->string t2)
-            'invPass (json-null))
-      (match-let ([`(,(and input1 `(,i1 ...)) ,s1) t1]
-                  [`(,(and input2 `(,i2 ...)) ,s2) t2])
-
-
+            'invPass (compute-inv (cadr t1) invariants full-input))
+      (match-let* ([`(,(and input1 `(,i1 ...)) ,s1) t1]
+                   [`(,(and input2 `(,i2 ...)) ,s2) t2]
+                   [consumed-input (drop-right full-input (length input2))])
         (hash 'rule (hash 'start (symbol->string s1)
                           'input (symbol->string
                                   (if (equal? (length input1) (length input2))
@@ -90,7 +89,27 @@
                                       EMP 
                                       (car i1)))
                           'end (symbol->string s2))
-              'invPass (json-null)))))
+              'invPass (compute-inv s2 invariants consumed-input)))))
+
+;; compute-inv :: symbol listof(cons symbol string) list(symbol) -> boolean | json-null
+;; computes the invariant and returns the result. If there is not a invariant associated
+;; with the state then json-null is returned
+(define (compute-inv state invariants consumed-input)
+  (define inv (findf (lambda (i) (equal? (car i) state)) invariants))
+  (if inv
+      (let ([res (run-invariant (cdr inv) consumed-input)])
+        (if (string? res) #f res))
+      (json-null)))
+
+;; run-invariant :: string  listof(symbol)-> boolean | string
+;; runs the invariant. If there is a syntax error then the error
+;; message is returned
+(define (run-invariant invariant consumed-input)
+  (define ns (make-base-namespace))
+  (with-handlers ([exn:fail? (lambda (e) (displayln e)(exn-message e))])
+    (define result (eval `(,(read (open-input-string invariant))
+                           ',consumed-input) ns))
+    (if result #t #f)))
 
 ;; getCurRule: processed-list optional(listof rules) -> rule
 ;; Determins what the current rule is from the processed-list
@@ -244,13 +263,13 @@
 
                   (define expected (list
                                     (hash 'start "S"
-                                          'invPass (json-null))
+                                          'invPass #t)
                                     (hash 'rule (hash 'start "S" 'input "a" 'end "F")
-                                          'invPass (json-null))
+                                          'invPass #f)
                                     (hash 'rule (hash 'start "F" 'input "a" 'end "F")
-                                          'invPass (json-null))
+                                          'invPass #f)
                                     (hash 'rule (hash 'start "F" 'input "a" 'end "F")
-                                          'invPass (json-null))
+                                          'invPass #f)
                                     (hash 'rule (hash 'start "F" 'input "b" 'end "A")
                                           'invPass (json-null))
                                     (hash 'rule (hash 'start "A" 'input "b"'end "A")
@@ -258,11 +277,19 @@
                                     (hash 'rule (hash 'start "A" 'input "b" 'end "A")
                                           'invPass (json-null))
                                     (hash 'rule (hash 'start "A" 'input "a" 'end "F")
-                                          'invPass (json-null))
+                                          'invPass #f)
                                     (hash 'end "F"
                                           'action "accept"
-                                          'invPass (json-null))))
-                  (define actual (transitions->jsexpr (sm-showtransitions a*a '(a a a b b b a)) 'dfa (sm-start a*a)))
+                                          'invPass #f)))
+
+                  (define invariants (list (cons 'S "(lambda (v) #t)")
+                                           (cons 'F "(lambda (v) #f)")))
+                  (define actual (transitions->jsexpr
+                                  (sm-showtransitions a*a '(a a a b b b a))
+                                  'dfa
+                                  (sm-start a*a)
+                                  invariants
+                                  '(a a a b b b a)))
                   (check-equal? actual expected  "A*A compute all transitions"))))
 
   (run-tests transition->jsexpr-tests)
