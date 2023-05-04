@@ -82,23 +82,6 @@ export type FSMInterfacePayload = {
  * Helper Functions below
  */
 
-// Builds the payload for the FSM racket interface
-export const buildFSMInterfacePayload = (
-  states: State[],
-  alphabet: FSMAlpha[],
-  rules: FSMRule[],
-  type: MachineType,
-  input: FSMAlpha[],
-): FSMInterfacePayload => {
-  return {
-    states: states,
-    alphabet: alphabet,
-    rules: rules,
-    type: type,
-    input: input,
-  };
-};
-
 export const isNormalTransition = (
   transition: FSMTransition,
 ): transition is Transition => {

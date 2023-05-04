@@ -14,6 +14,7 @@ type SocketRequest<T> = {
 export enum Instruction {
   BUILD = 'build_machine',
   CLOSE = 'shut_down',
+  PREBUILT = 'prebuilt_machine',
 }
 
 export class RacketInterface {

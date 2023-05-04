@@ -1,9 +1,10 @@
 #lang racket
 (require
-  json
-  "./computeTransitions.rkt"
-  "../../fsm-core/interface.rkt")
+ json
+ "./jsexpr-converters.rkt"
+ "../../fsm-core/interface.rkt")
 (provide
+ fsa->jsexpr
  build-machine)
 
 ;; build-machine :: jsexpr -> jsexpr
@@ -56,7 +57,9 @@
      (hash 'data (hash 'transitions (transitions->jsexpr (sm-showtransitions fsa input) type start)
                        ;; since fsm sometimes adds states (ds) we will return the list of states,
                        ;; so the gui can update accordingly
-                       'states (map symbol->string (sm-states fsa)))
+                       'states (map (lambda (s) (state->jsexpr s fsa)) (sm-states fsa))
+                       ;; same with rules.
+                       'rules (map rule->jsexpr (sm-rules fsa)))
            'responseType "build_machine"
            'error (json-null))]
     [else (hash 'data (json-null)
@@ -84,51 +87,70 @@
 
 
 
+
+
+
 (module+ test
-  (require rackunit)
-  ;; ---------------
-  ;; DFA/NDFA tests
-  ;; ---------------
-  (define a*a-jsexpr (hash 'states (list (hash 'name "S" 'type "start")
-                                         (hash 'name "A" 'type "normal")
-                                         (hash 'name "F" 'type "final"))
-                           'alphabet (list "a" "b")
-                           'type "dfa"
-                           'rules (list (hash 'start "S" 'input "a" 'end "F")
-                                        (hash 'start "F" 'input "a" 'end "F")
-                                        (hash 'start "F" 'input "b" 'end "A")
-                                        (hash 'start "S" 'input "b" 'end "A")
-                                        (hash 'start "A" 'input "a" 'end "F")
-                                        (hash 'start "A" 'input "b" 'end "A"))
-                           'input (list "a" "a" "a" "b" "a")))
-  (define expected (hash 'data
-                         (hash
-                          'states '("ds" "S" "A" "F")
-                          'transitions (list
-                                             (hash 'start "S"
-                                                   'invPass (json-null))
-                                             (hash 'rule (hash 'start "S" 'input "a" 'end "F")
-                                                   'invPass (json-null))
-                                             (hash 'rule (hash 'start "F" 'input "a" 'end "F")
-                                                   'invPass (json-null))
-                                             (hash 'rule (hash 'start "F" 'input "a" 'end "F")
-                                                   'invPass (json-null))
-                                             (hash 'rule (hash 'start "F" 'input "b" 'end "A")
-                                                   'invPass (json-null))
-                                             (hash 'rule (hash 'start "A" 'input "a" 'end "F")
-                                                   'invPass (json-null))
-                                             (hash 'end "F"
-                                                   'action "accept"
-                                                   'invPass (json-null))))
-                         'error (json-null)))
-  (define actual (build-machine a*a-jsexpr))
-  (check-equal? (hash-ref actual 'error)
-                (hash-ref expected 'error)
-                "Error msg field for a*a should be null for a valid machine")
-  (check-equal? (hash-ref actual 'data)
-                (hash-ref expected 'data)
-                "Data for a*a should be the propper json values")
+  (require rackunit
+           rackunit/text-ui)
 
+  (define build-machine-tests
+    (test-suite "build-machine tests"
+                (test-case "build-machine for dfa"
+                  (define a*a-jsexpr (hash 'states (list (hash 'name "S" 'type "start")
+                                                         (hash 'name "A" 'type "normal")
+                                                         (hash 'name "F" 'type "final"))
+                                           'alphabet (list "a" "b")
+                                           'type "dfa"
+                                           'rules (list (hash 'start "S" 'input "a" 'end "F")
+                                                        (hash 'start "F" 'input "a" 'end "F")
+                                                        (hash 'start "F" 'input "b" 'end "A")
+                                                        (hash 'start "S" 'input "b" 'end "A")
+                                                        (hash 'start "A" 'input "a" 'end "F")
+                                                        (hash 'start "A" 'input "b" 'end "A"))
+                                           'input (list "a" "a" "a" "b" "a")))
+                  (define expected (hash 'data
+                                         (hash
+                                          'states (list (hash 'name "ds" 'type "normal" 'invFunc (json-null))
+                                                        (hash 'name "S" 'type "start" 'invFunc (json-null))
+                                                        (hash 'name "A" 'type "normal" 'invFunc (json-null))
+                                                        (hash 'name "F" 'type "final" 'invFunc (json-null)))
+                                          'rules (list
+                                                  (hash 'start "S" 'input "a" 'end "F")
+                                                  (hash 'start "F" 'input "a" 'end "F")
+                                                  (hash 'start "F" 'input "b" 'end "A")
+                                                  (hash 'start "S" 'input "b" 'end "A")
+                                                  (hash 'start "A" 'input "a" 'end "F")
+                                                  (hash 'start "A" 'input "b" 'end "A")
+                                                  (hash 'start "ds" 'input "a" 'end "ds")
+                                                  (hash 'start "ds" 'input "b" 'end "ds"))
+
+                                          'transitions (list
+
+                                                        (hash 'start "S"
+                                                              'invPass (json-null))
+                                                        (hash 'rule (hash 'start "S" 'input "a" 'end "F")
+                                                              'invPass (json-null))
+                                                        (hash 'rule (hash 'start "F" 'input "a" 'end "F")
+                                                              'invPass (json-null))
+                                                        (hash 'rule (hash 'start "F" 'input "a" 'end "F")
+                                                              'invPass (json-null))
+                                                        (hash 'rule (hash 'start "F" 'input "b" 'end "A")
+                                                              'invPass (json-null))
+                                                        (hash 'rule (hash 'start "A" 'input "a" 'end "F")
+                                                              'invPass (json-null))
+                                                        (hash 'end "F"
+                                                              'action "accept"
+                                                              'invPass (json-null))))
+                                         'error (json-null)))
+                  (define actual (build-machine a*a-jsexpr))
+                  (check-equal? (hash-ref actual 'error)
+                                (hash-ref expected 'error)
+                                "Error msg field for a*a should be null for a valid machine")
+                  (check-equal? (hash-ref actual 'data)
+                                (hash-ref expected 'data)
+                                "Data for a*a should be the propper json values"))))
+
+  (run-tests build-machine-tests)
   
-
   ) ;; end module test
