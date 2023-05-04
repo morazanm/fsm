@@ -5,10 +5,11 @@
          "./fsm-functions.rkt"
          "../../fsm-core/interface.rkt")
 
+(provide run-with-prebuilt run-without-prebuilt)
+
 (define DEBUG_MODE #t)
 (define ADDRESS "127.0.0.1")
 (define PORT 4000)
-(define listener (tcp-listen PORT 4 #t ADDRESS))
 
 ; displayln! is a simple macro that prints debug logs when the DEBUG_MODE variable is 
 ; #t. The first arg is the string to be printed. Any additional args are used to format the string
@@ -37,10 +38,10 @@
     [_ (error (format "Invalid instruction given: ~s" (hash-ref input 'instr)))]))
 
 
-;; listen-for-input :: optional(jsexpr)
+;; listen-for-input :: TCP-listener optional(jsexpr)
 ;; listens on the specified socket for incomming connections
 ;; if data is supplied then it is sent when the connection is first established
-(define (listen-for-input [data '()])
+(define (listen-for-input listener [data '()])
   (define-values (in out) (tcp-accept listener))
   (when (not (null? data))
     (displayln! "Sending prebuilt machine")
@@ -60,15 +61,27 @@
                (write-json outgoing-data out)
                (flush-output out)
                (loop)))))))
-  (listen-for-input data))
+  (listen-for-input listener data))
 
 
+;; run-with-prebuilt :: fsa listof(cons symbol string)
+;; Runs the TCP server and sends the prebuild machine to the
+;; GUI.
 (define (run-with-prebuilt fsa invariants)
+  (define listener (tcp-listen PORT 4 #t ADDRESS))
   (displayln! "FSM Gui server listenting on ~s on port ~s" PORT ADDRESS)
   (define data-to-send (hash 'data (fsa->jsexpr fsa invariants)
                              'error (json-null)
                              'responseType "prebuilt_machine"))
-  (listen-for-input data-to-send))
+  (listen-for-input listener data-to-send))
+
+;; run-without-prebuilt
+;; Runs the TCP server without sending a prebuilt machine to
+;; the GUI
+(define (run-without-prebuilt)
+  (define listener (tcp-listen PORT 4 #t ADDRESS))
+  (displayln! "FSM Gui server listenting on ~s on port ~s" PORT ADDRESS)
+  (listen-for-input listener))
 
 
 (define a*a (make-dfa '(S A F D)     
@@ -88,5 +101,6 @@
 (define invariants (list (cons 'S "(lambda (consumed-input) #t)")
                          (cons 'F "(lambda (consumed-input) #f)")
                          (cons 'D "(lambda (consumed-input) #t)")))
-  
-(run-with-prebuilt a*a invariants)
+
+;(run-without-prebuilt)
+;(run-with-prebuilt a*a invariants)
