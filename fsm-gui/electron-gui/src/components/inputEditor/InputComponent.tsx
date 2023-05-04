@@ -4,11 +4,12 @@ import {
   ArrowBackIosNew as ArrowBackIosNewIcon,
   ArrowForwardIos as ArrowForwardIosIcon,
 } from '@mui/icons-material';
-import { FSMAlpha } from '../../types/machine';
+import { FSMAlpha, FSMTransition } from '../../types/machine';
 import InputRender from './InputRender';
 
 type InputComponentProps = {
   input: FSMAlpha[];
+  transitions: FSMTransition[]
   inputIndex: number;
   runMachine: () => void;
   goNext: () => void;
@@ -44,15 +45,23 @@ const InputComponent = (props: InputComponentProps) => {
             alignItems="center"
             justifyContent="center"
           >
-            <Tooltip title="Run Machine" disableInteractive>
-              <Button
-                variant="outlined"
-                color="success"
-                size="small"
-                onClick={props.runMachine}
-              >
-                <RunIcon color="success" />
-              </Button>
+            <Tooltip
+              title={
+                props.input.length === 0 ? 'Add Input to Run' : 'Run Machine'
+              }
+              disableInteractive
+            >
+              <span>
+                <Button
+                  variant="outlined"
+                  color="success"
+                  size="small"
+                  onClick={props.runMachine}
+                  disabled={props.input.length === 0}
+                >
+                  <RunIcon color="success" />
+                </Button>
+              </span>
             </Tooltip>
           </Grid>
           <Grid
@@ -69,12 +78,12 @@ const InputComponent = (props: InputComponentProps) => {
               aria-label="text button group"
             >
               <Tooltip title="Previous" disableInteractive>
-                <Button onClick={props.goPrev}>
+                <Button onClick={props.goPrev} disabled={props.transitions.length === 0}>
                   <ArrowBackIosNewIcon />
                 </Button>
               </Tooltip>
               <Tooltip title="Next" disableInteractive>
-                <Button onClick={props.goNext}>
+                <Button onClick={props.goNext} disabled={props.transitions.length === 0}>
                   <ArrowForwardIosIcon />
                 </Button>
               </Tooltip>

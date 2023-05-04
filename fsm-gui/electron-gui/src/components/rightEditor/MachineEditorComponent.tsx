@@ -10,16 +10,19 @@ import {
   Backdrop,
   Snackbar,
   Alert,
+  Switch,
 } from '@mui/material';
 import {
   Edit as EditIcon,
   SsidChart as SsidChartIcon,
   Palette as PaletteIcon,
+  RssFeed as RssFeedIcon,
   RadioButtonUnchecked as RadioButtonUncheckedIcon,
+  Loop as LoopIcon,
   Straighten as StraightenIcon,
   LocationOn as EditLocationIcon,
 } from '@mui/icons-material';
-import { styled } from '@mui/material/styles';
+import { styled, useTheme } from '@mui/material/styles';
 import {
   State,
   MachineType,
@@ -30,6 +33,7 @@ import {
 import InputForm from './forms/InputForm';
 import StateForm from './forms/StateForm';
 import useRuleForm from './forms/RuleForm';
+import { Connection } from '../../socket/racketInterface';
 
 const StyledSpeedDial = styled(SpeedDial)(({ theme }) => ({
   '& .MuiFab-primary': {
@@ -92,12 +96,16 @@ type MachineEditorProps = {
   toggleTheme: () => void;
   machineType: MachineType;
   alpha: FSMAlpha[];
+  nodead: boolean;
+  connection: Connection;
+  toggleDead: () => void;
   states: State[];
   setStates: (states: State[]) => void;
   input: FSMAlpha[];
   setInput: (incoming: FSMAlpha[]) => void;
   rules: FSMRule[];
   setRules: (rules: FSMRule[]) => void;
+  reconnect: () => void;
 };
 
 type OpenModal = 'input' | 'state' | 'rule' | 'tapePosn' | null;
@@ -114,6 +122,30 @@ const MachineEditorComponent = (props: MachineEditorProps) => {
   return (
     <Box sx={{ marginRight: 1 }}>
       <ButtonGroup size="small" orientation="vertical">
+        {!props.connection.connected && (
+          <Tooltip
+            title={
+              props.connection.status === 'attempting'
+                ? 'Trying to Connect'
+                : 'Disconnected from Racket'
+            }
+            placement="left-start"
+            disableInteractive
+          >
+            <IconButton
+              color={
+                props.connection.status === 'attempting' ? 'primary' : 'error'
+              }
+              onClick={props.reconnect}
+            >
+              {props.connection.status === 'done' ? (
+                <RssFeedIcon />
+              ) : (
+                <LoopIcon />
+              )}
+            </IconButton>
+          </Tooltip>
+        )}
         <Tooltip title="Toggle Theme" placement="left-start" disableInteractive>
           <IconButton color="primary" onClick={props.toggleTheme}>
             <PaletteIcon />
@@ -127,6 +159,13 @@ const MachineEditorComponent = (props: MachineEditorProps) => {
           <IconButton color="primary">
             <SsidChartIcon />
           </IconButton>
+        </Tooltip>
+        <Tooltip
+          title="Use Dead State"
+          placement="left-start"
+          disableInteractive
+        >
+          <Switch checked={!props.nodead} onClick={props.toggleDead} />
         </Tooltip>
         <Backdrop open={open} />
         <StyledSpeedDial

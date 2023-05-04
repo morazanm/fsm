@@ -11,6 +11,11 @@ type SocketRequest<T> = {
   instr: Instruction;
 };
 
+export type Connection = {
+  connected: boolean;
+  status: 'done' | 'attempting';
+};
+
 export enum Instruction {
   BUILD = 'build_machine',
   CLOSE = 'shut_down',
@@ -20,28 +25,31 @@ export enum Instruction {
 export class RacketInterface {
   private port: number;
   private host: string;
-  public client: net.Socket | undefined;
+  public connected: boolean;
+  public client: net.Socket;
 
   constructor(port: number, host: string) {
     this.port = port;
     this.host = host;
-    this.client = undefined;
+    this.connected = false;
+    this.client = new net.Socket();
   }
 
-  establishConnection(): boolean {
-    try {
-      console.log('Trying to connect...');
-      this.client = net.createConnection(
-        { port: this.port, host: this.host },
-        () => {
+  establishConnection(): Promise<boolean> {
+    return new Promise((resolve) => {
+      if (this.connected) return resolve(true);
+      this.client
+        .connect({ port: this.port, host: this.host }, () => {
           console.log('connected to server!');
-        },
-      );
-      return true;
-    } catch (e) {
-      console.log('Was not able to connect to server');
-      return false;
-    }
+          this.connected = true;
+          return resolve(true);
+        })
+        .on('error', () => {
+          console.log('error while connecting to server');
+          this.connected = false;
+          return resolve(false);
+        });
+    });
   }
 
   sendToRacket<T extends object>(data: T, instruction: Instruction) {
@@ -53,11 +61,8 @@ export class RacketInterface {
   }
 
   closeConnection() {
-    const request: SocketRequest<object> = {
-      data: {},
-      instr: Instruction.CLOSE,
-    };
-    this.send(request);
+    this.client.end();
+    this.connected = false;
   }
 
   // Sends the request object to the racket backend by wrapping it in a json object.
@@ -65,7 +70,7 @@ export class RacketInterface {
   // this is the end of the data being sent
   private send<T extends object>(request: SocketRequest<T>): boolean {
     //TODO: how to handle a broken connection
-    if (this.client) {
+    if (this.connected) {
       this.client.write(`${JSON.stringify(request)}\r\n`);
       return true;
     }

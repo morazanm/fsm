@@ -42,7 +42,7 @@
 ;; if data is supplied then it is sent when the connection is first established
 (define (listen-for-input [data '()])
   (define-values (in out) (tcp-accept listener))
-  (when data
+  (when (not (null? data))
     (displayln! "Sending prebuilt machine")
     (displayln data)
     (write-json-and-flush data out))

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import {
   Experimental_CssVarsProvider as CssVarsProvider,
@@ -21,6 +21,7 @@ const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
 
 const App = () => {
   const theme = useTheme();
+
   const colorMode = React.useContext(ColorModeContext);
 
   return (

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Paper,
   Grid,
@@ -33,6 +33,7 @@ import {
   RacketInterface,
   Instruction,
   SocketResponse,
+  Connection,
 } from './socket/racketInterface';
 import { FSMBuildMachineRequest } from './socket/requestTypes';
 
@@ -83,6 +84,11 @@ const BasicDialog = (props: BasicDialogProps) => {
   );
 };
 
+type InfoDialog = {
+  title: string;
+  message: string;
+};
+
 type MachineState = {
   states: State[];
   rules: FSMRule[];
@@ -90,6 +96,7 @@ type MachineState = {
   input: FSMAlpha[];
   transitions: MachineTransitions;
   type: MachineType;
+  nodead: boolean;
 };
 
 type MainViewProps = {
@@ -100,7 +107,14 @@ type MainViewProps = {
 const MainView = (props: MainViewProps) => {
   const theme = useTheme();
   const machineType = 'dfa';
-  const [openDialog, setOpenDialog] = useState<'start' | 'end' | null>(null);
+  const infoDialog = useRef<InfoDialog | null>(null);
+  const [connected, setConnected] = useState<Connection>({
+    connected: props.racketBridge.connected,
+    status: 'done',
+  });
+  const [openDialog, setOpenDialog] = useState<'start' | 'end' | 'info' | null>(
+    null,
+  );
   const [machineState, setMachineState] = useState<MachineState>({
     states: [],
     rules: [],
@@ -108,6 +122,7 @@ const MainView = (props: MainViewProps) => {
     input: [],
     transitions: EMPTY_TRANSITIONS,
     type: 'dfa',
+    nodead: true,
   } as MachineState);
 
   const resetMachineAndSet = (obj: Partial<MachineState>) =>
@@ -116,6 +131,17 @@ const MainView = (props: MainViewProps) => {
       ...obj,
       transitions: EMPTY_TRANSITIONS,
     });
+
+  const openInfoDialog = (title: string, msg: string) => {
+    infoDialog.current = {
+      title: title,
+      message: msg,
+    };
+    setOpenDialog('info');
+  };
+
+  const toggleDead = () =>
+    setMachineState({ ...machineState, nodead: !machineState.nodead });
 
   const setGuiStates = (states: State[]) => {
     resetMachineAndSet({ states: states });
@@ -135,6 +161,17 @@ const MainView = (props: MainViewProps) => {
     });
   };
 
+  const attemptToReconnect = () => {
+    setConnected({ ...connected, status: 'attempting' });
+    props.racketBridge.establishConnection().then((res) => {
+      setConnected({ connected: res, status: 'done' });
+    });
+  };
+
+  useEffect(() => {
+    setConnected({ connected: props.racketBridge.connected, status: 'done' });
+  }, [props.racketBridge.connected]);
+
   useEffect(() => {
     // If we have a connection then listen for messages
     // TODO: We can probably abstract this out with a callback
@@ -151,6 +188,7 @@ const MainView = (props: MainViewProps) => {
               (s) => !machineState.states.find((st) => st.name === s.name),
             ),
           );
+
           const new_rules = machineState.rules.concat(
             response.data.rules.filter(
               (r) => !machineState.rules.find((mr) => isFSMRuleEqual(r, mr)),
@@ -166,6 +204,10 @@ const MainView = (props: MainViewProps) => {
               inputIndex: -1,
             },
           });
+          openInfoDialog(
+            'Machine Successfully Built',
+            'The machine was successfully built. You may now use the next and prev buttons to visualize the machine.',
+          );
         } else if (result.responseType === Instruction.PREBUILT) {
           const response = result as SocketResponse<PrebuiltMachineResponse>;
           resetMachineAndSet({
@@ -175,19 +217,27 @@ const MainView = (props: MainViewProps) => {
             rules: response.data.rules,
             type: response.data.type,
           });
+          openInfoDialog(
+            'Prebuilt Machine Loaded',
+            'The Prebuilt machine was successfully loaded.',
+          );
         }
       });
       props.racketBridge.client.on('end', () => {
         //TODO: render something on the screen to indicate that the
         //the server was shut down
-        console.log('disconnected from server (on end)');
+        openInfoDialog(
+          'Disconnected from Server',
+          'The Racket backend interface was disconnected. Please try running (sm-visualize) in the REPL to reconnect.',
+        );
+        props.racketBridge.closeConnection();
       });
     }
   }, [machineState]);
 
   const run = () => {
     props.racketBridge.sendToRacket(
-      {...machineState, nodead: true  } as FSMBuildMachineRequest,
+      { ...machineState } as FSMBuildMachineRequest,
       Instruction.BUILD,
     );
   };
@@ -210,6 +260,7 @@ const MainView = (props: MainViewProps) => {
       setOpenDialog('end');
     }
   };
+
 
   // // Handles visualizing the previous transition
   const goPrev = () => {
@@ -259,6 +310,7 @@ const MainView = (props: MainViewProps) => {
             runMachine={run}
             goNext={goNext}
             goPrev={goPrev}
+            transitions={machineState.transitions.transitions}
           />
         </Grid>
         <Grid
@@ -308,6 +360,10 @@ const MainView = (props: MainViewProps) => {
                 alpha={machineState.alphabet}
                 rules={machineState.rules}
                 setRules={setGuiRules}
+                nodead={machineState.nodead}
+                toggleDead={toggleDead}
+                connection={connected}
+                reconnect={attemptToReconnect}
               />
             </Grid>
           </Grid>
@@ -345,6 +401,17 @@ const MainView = (props: MainViewProps) => {
                 ? theme.palette.success.main
                 : theme.palette.error.main,
           }}
+        />
+      )}
+      {openDialog === 'info' && infoDialog.current && (
+        <BasicDialog
+          open
+          onClose={() => {
+            infoDialog.current = null;
+            setOpenDialog(null);
+          }}
+          title={infoDialog.current.title}
+          body={infoDialog.current.message}
         />
       )}
     </Paper>
