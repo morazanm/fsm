@@ -20,7 +20,7 @@
                  states)))
   ;; find-start :: jsexpr -> symbol | false
   ;; returns the symbol of the start state if it exists otherwise returns #f
-  (define/match (find-start states) 
+  (define/match (find-start _states)
     [('()) #f]
     [(`(,(hash-table ('name n) ('type t)) ,xs ...))
      (if (or (equal? "start" t) (equal? "startfinal" t)) (string->symbol n) (find-start xs))])
@@ -34,6 +34,7 @@
                        ['pda "TODO"]
                        [(or 'tm 'tm-language-recognizer) "TODO"]))
          rules))
+  (define no-dead (hash-ref data 'nodead))
   (define un-parsed-states (hash-ref data 'states))
   (define alpha (map string->symbol (hash-ref data 'alphabet)))
   (define type (string->symbol (hash-ref data 'type)))
@@ -46,7 +47,7 @@
   ;; TODO: Talk to marco about how we want to handle fsm-error msgs. Since they print to the
   ;; stdio we cant display them in the GUI. Ideally this would just return a string and we
   ;; could pass the message over json to the new GUI
-  (define fsa (build-fsm-core-machine states start finals alpha rules type))
+  (define fsa (build-fsm-core-machine states start finals alpha rules type no-dead))
   (define trans (sm-showtransitions fsa input))
   (cond
     [(equal? trans 'reject)
@@ -66,10 +67,10 @@
                 'responseType "build_machine"
                 'error "Failed check-machine function")]))
 
-;; isValidMachine? :: listof(symbol) symbol listof(symbol) listof(symbol) listof(fsm-core-rules) symbol -> fsa | false
+;; isValidMachine? :: listof(symbol) symbol listof(symbol) listof(symbol) listof(fsm-core-rules) symbol boolean -> fsa | false
 ;; returns a fsm-core fsa if the machine passes the fsm-core error messages check. If there is an error the
 ;; error is printed to stdio
-(define (build-fsm-core-machine states start finals alpha rules type)
+(define (build-fsm-core-machine states start finals alpha rules type no-dead)
   (define has-error? (match type
                        ['pda (check-machine states alpha finals rules start type #f #;(pda-machine-stack-alpha-list fsm-machine))]
                        [(or 'tm 'tm-language-recognizer)
@@ -79,7 +80,9 @@
   (if (not (boolean? has-error?))
       #f
       (match type
-        ['dfa (make-dfa states alpha start finals rules)]
+        ['dfa (if no-dead
+                  (make-dfa states alpha start finals rules 'nodead)
+                  (make-dfa states alpha start finals rules))]
         ['ndfa (make-ndfa states start finals alpha rules)]
         ['pda "TODO"]
         [(or 'tm 'tm-language-recognizer) "TODO"])))
@@ -108,7 +111,8 @@
                                                         (hash 'start "S" 'input "b" 'end "A")
                                                         (hash 'start "A" 'input "a" 'end "F")
                                                         (hash 'start "A" 'input "b" 'end "A"))
-                                           'input (list "a" "a" "a" "b" "a")))
+                                           'input (list "a" "a" "a" "b" "a")
+                                           'nodead false))
                   (define expected (hash 'data
                                          (hash
                                           'states (list (hash 'name "ds" 'type "normal" 'invFunc (json-null))

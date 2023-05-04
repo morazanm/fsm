@@ -41,10 +41,10 @@
 ;; listens on the specified socket for incomming connections
 ;; if data is supplied then it is sent when the connection is first established
 (define (listen-for-input [data '()])
-  (displayln! "FSM Gui server listenting on ~s on port ~s" PORT ADDRESS)
   (define-values (in out) (tcp-accept listener))
   (when data
     (displayln! "Sending prebuilt machine")
+    (displayln data)
     (write-json-and-flush data out))
   (thread
    (lambda ()
@@ -60,10 +60,11 @@
                (write-json outgoing-data out)
                (flush-output out)
                (loop)))))))
-  (listen-for-input))
+  (listen-for-input data))
 
 
 (define (run-with-prebuilt fsa invariants)
+  (displayln! "FSM Gui server listenting on ~s on port ~s" PORT ADDRESS)
   (define data-to-send (hash 'data (fsa->jsexpr fsa invariants)
                              'error (json-null)
                              'responseType "prebuilt_machine"))

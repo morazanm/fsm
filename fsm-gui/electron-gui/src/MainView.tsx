@@ -17,10 +17,9 @@ import {
   isStartTransition,
   isEndTransition,
   MachineType,
-  FSMInterfacePayload,
   isFSMRuleEqual,
 } from './types/machine';
-import { alpha, useTheme } from '@mui/material/styles';
+import { useTheme } from '@mui/material/styles';
 import ControlView from './components/controlView/view';
 import RightEditor from './components/rightEditor/MachineEditorComponent';
 import LeftEditor from './components/leftEditor/LeftEditor';
@@ -35,6 +34,7 @@ import {
   Instruction,
   SocketResponse,
 } from './socket/racketInterface';
+import { FSMBuildMachineRequest } from './socket/requestTypes';
 
 // dummy object to symbolize a machine that has not been set to
 // fsm-core for verification
@@ -43,28 +43,6 @@ const EMPTY_TRANSITIONS = {
   index: -1,
   inputIndex: -1,
 };
-
-const TMP_RULES = [
-  { start: 'S', input: 'a', end: 'F' },
-  { start: 'F', input: 'a', end: 'F' },
-  { start: 'S', input: 'b', end: 'A' },
-  { start: 'A', input: 'a', end: 'F' },
-  { start: 'A', input: 'b', end: 'A' },
-  { start: 'F', input: 'b', end: 'D' },
-  { start: 'D', input: 'a', end: 'D' },
-  { start: 'D', input: 'b', end: 'D' },
-];
-
-const TMP_STATES = [
-  { name: 'S', type: 'start' },
-  { name: 'A', type: 'normal' },
-  { name: 'F', type: 'final' },
-  { name: 'D', type: 'normal' },
-] as State[];
-
-const TMP_ALPHA = ['a', 'b'];
-
-const TMP_INPUT = ['a', 'a', 'a', 'a'];
 
 type MachineTransitions = {
   transitions: FSMTransition[];
@@ -190,7 +168,6 @@ const MainView = (props: MainViewProps) => {
           });
         } else if (result.responseType === Instruction.PREBUILT) {
           const response = result as SocketResponse<PrebuiltMachineResponse>;
-
           resetMachineAndSet({
             ...machineState,
             states: response.data.states,
@@ -206,11 +183,11 @@ const MainView = (props: MainViewProps) => {
         console.log('disconnected from server (on end)');
       });
     }
-  }, []);
+  }, [machineState]);
 
   const run = () => {
     props.racketBridge.sendToRacket(
-      machineState as FSMInterfacePayload,
+      {...machineState, nodead: true  } as FSMBuildMachineRequest,
       Instruction.BUILD,
     );
   };

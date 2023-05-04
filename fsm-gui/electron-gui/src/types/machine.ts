@@ -68,16 +68,6 @@ export type EndTransition = {
 
 export type FSMTransition = Transition | StartTransition | EndTransition;
 
-// A object representation of a GUI machine. This holds all the values that are
-// sent to the FSM racket interface for further processing by fsm-core + fsm-gui
-export type FSMInterfacePayload = {
-  states: State[];
-  alphabet: FSMAlpha[];
-  rules: FSMRule[];
-  type: MachineType;
-  input: FSMAlpha[];
-};
-
 /*
  * Helper Functions below
  */
