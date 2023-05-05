@@ -182,12 +182,12 @@
 ;; dot->png: path -> path
 ;; Purpose: converts a dot file to a png. The png file is saved in the directory
 ;; of the provided path
-(define dot->png ((curry dot->output-fmt 'png)))
+(define dot->png (curry dot->output-fmt 'png))
 
 ;; dot->svg: path -> path
 ;; Purpose: converts a dot file to a svg. The svg file is saved in the directory
 ;; of the provided path
-(define dot->svg ((curry dot->output-fmt 'svg)))
+(define dot->svg (curry dot->output-fmt 'svg))
 
 
 ;; png->bitmap: path -> string
