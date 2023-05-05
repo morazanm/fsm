@@ -1,8 +1,6 @@
 #lang racket
 (require 2htdp/image "dot.rkt")
-
-;; NOTICE: For more info on the functions and structures of this library please
-;; read the scribble file
+#| This file handles converting graphs to the dot file equivalent |#
 
 (provide
  stringify-value
@@ -63,14 +61,14 @@
               [end-node]
               [atb #:mutable]) #:transparent)
 
-;; node->str: node -> hash -> string
+;; node->str: node hash -> string
 ;; returns the graphviz representation of a node as a string
 (define (node->str node fmtr)
   (format "    ~s [~a];\n"
           (node-name node)
           (hash->str (node-atb node) fmtr)))
 
-;; edge->str: edge -> hash -> string
+;; edge->str: edge hash -> string
 ;; returns the graphviz representation of a edge as a string
 (define (edge->str edge fmtr)
   (format "    ~s -> ~s [~a];\n"
@@ -102,7 +100,7 @@
   (graph name '() '() fmtrs atb))
 
 
-;; add-node: graph -> string -> Optional(hash-map) -> graph
+;; add-node: graph string Optional(hash-map) -> graph
 ;; Purpose: adds a node to the given graph
 (define (add-node g name #:atb [atb DEFAULT-NODE])
   (graph
@@ -114,9 +112,9 @@
    (graph-fmtrs g)
    (graph-atb g)))
 
-;; add-edge: graph -> symbol -> symbol -> symbol -> Optional(hash-map) -> graph
+;; add-edge: graph symbol symbol symbol Optional(hash-map) -> graph
 ;; Purpose: adds an edge to the graph
-;; IMPORTANT: This function assumes that the node exists in the graph structure
+;; NOTE: This function assumes that the node exists in the graph structure
 (define (add-edge g val start-node end-node #:atb [atb DEFAULT-EDGE])
   (define start (remove-dashes start-node))
   (define end (remove-dashes end-node))
@@ -143,11 +141,11 @@
          (graph-atb g)))
 
 ; remove-dashes: symbol -> symbol
-; Purpose: Remove dashes
+; Purpose: Remove dashes from the given symbol
 (define (remove-dashes s)
   (string->symbol (string-replace (stringify-value s) "-" "")))
 
-;; graph->dot: graph -> path -> string -> path
+;; graph->dot: graph path string -> path
 ;; Purpose: writes graph to the specified file
 (define (graph->dot graph save-dir filename)
   (define dot-path (build-path save-dir (format "~a.dot" filename)))
@@ -157,8 +155,9 @@
       (displayln (graph->str graph) out)))
   dot-path)
 
-;; dot->png: symbolof(file-format) path -> path
-;; Purpose: converts a dot file to a png. The png files in the current directory
+;; dot->output-fmt: symbolof(file-format) path -> path
+;; Purpose: converts a dot file to the specified output. The new file is saved in directory
+;; of the provided file. The name of the new file is the same as input with a different extension
 ;; NOTE: For possiable formats see: https://graphviz.org/docs/outputs/svg/
 (define (dot->output-fmt fmt dot-path)
   (define png-path (path-replace-extension dot-path (format ".~s" fmt)))
@@ -205,7 +204,7 @@
 (define (graph->svg graph save-dir filename)
   ((compose1 dot->svg graph->dot) graph save-dir filename))
  
-;; hash->str: hash -> hash -> Optional(string) -> string
+;; hash->str: hash hash Optional(string) -> string
 ;; Purpose: converts the hash to a graphviz string
 (define (hash->str hash fmtr (spacer ", "))
   (define (key-val->string key value)
