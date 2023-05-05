@@ -32,6 +32,7 @@
                  (#:atb (hash/c symbol? any/c))
                  graph?)]
   [graph->bitmap (-> graph? path? string? image?)]
+  [graph->svg (-> graph? path? string? path?)]
   [graph->dot (-> graph? path? string? path?)]
   [graph->str (-> graph? string?)]))
 
@@ -156,34 +157,53 @@
       (displayln (graph->str graph) out)))
   dot-path)
 
-;; dot->png: path -> path
+;; dot->png: symbolof(file-format) path -> path
 ;; Purpose: converts a dot file to a png. The png files in the current directory
-(define (dot->png dot-path)
-  (define png-path (path-replace-extension dot-path ".png"))
-  (define dot-exe-path (find-dot))
-  (if (path? dot-exe-path)
-      (begin
-        ;; On Mac/Linux we can bypass having to look at the systems PATH by instead
-        ;; using the absolute path to the executable. For unknown reasons this does not
-        ;; work on Windows so we will still use the PATH to call the dot executable
-        (if (eq? (system-type) 'windows)
-            (system (format "dot -Tpng ~s -o ~s"
-                            (path->string dot-path)
-                            (path->string png-path)))
-            (system (format "~a -Tpng ~s -o ~s"
-                            (path->string dot-exe-path)
-                            (path->string dot-path)
-                            (path->string png-path))))
-        png-path)
-      (error "Error caused when creating png file. This was probably due to the dot environment variable not existing on the path")))
+;; NOTE: For possiable formats see: https://graphviz.org/docs/outputs/svg/
+(define (dot->output-fmt fmt dot-path)
+  (define png-path (path-replace-extension dot-path (format ".~s" fmt)))
+  (define dot-executable-path (find-dot))
+  (unless (path? dot-executable-path)
+    (error "Error caused when creating png file. This was probably due to the dot environment variable not existing on the path"))
+  (system (format "~a -T~s ~s -o ~s"
+                  ;; On Mac/Linux we can bypass having to look at the systems PATH by instead
+                  ;; using the absolute path to the executable. For unknown reasons this does not
+                  ;; work on Windows so we will still use the PATH to call the dot executable
+                  (if (equal? (system-type) 'windows)
+                      "dot"
+                      (path->string dot-executable-path))
+                  fmt
+                  (path->string dot-path)
+                  (path->string png-path)))
+
+  png-path)
+
+
+;; dot->png: path -> path
+;; Purpose: converts a dot file to a png. The png file is saved in the directory
+;; of the provided path
+(define dot->png ((curry dot->output-fmt 'png)))
+
+;; dot->svg: path -> path
+;; Purpose: converts a dot file to a svg. The svg file is saved in the directory
+;; of the provided path
+(define dot->svg ((curry dot->output-fmt 'svg)))
+
 
 ;; png->bitmap: path -> string
+;; Function alias to htdp2-lib function
 (define png->bitmap bitmap/file)
 
 ;; graph->bitmap: graph string string -> image
 ;; Converts a graph to an image
 (define (graph->bitmap graph save-dir filename)
   ((compose1 png->bitmap dot->png graph->dot) graph save-dir filename))
+
+
+;; graph->svg: graph string string -> path
+;; Converts a graph to a svg and returns the path to the svg image
+(define (graph->svg graph save-dir filename)
+  ((compose1 dot->svg graph->dot) graph save-dir filename))
  
 ;; hash->str: hash -> hash -> Optional(string) -> string
 ;; Purpose: converts the hash to a graphviz string
