@@ -106,7 +106,6 @@ type MainViewProps = {
 
 const MainView = (props: MainViewProps) => {
   const theme = useTheme();
-  const machineType = 'dfa';
   const infoDialog = useRef<InfoDialog | null>(null);
   const [connected, setConnected] = useState<Connection>({
     connected: props.racketBridge.connected,
@@ -237,7 +236,7 @@ const MainView = (props: MainViewProps) => {
   }, [machineState]);
 
   const run = () => {
-    console.log("Sending", machineState.states)
+    console.log('Sending', machineState.states);
     props.racketBridge.sendToRacket(
       { ...machineState } as FSMBuildMachineRequest,
       Instruction.BUILD,
@@ -262,7 +261,6 @@ const MainView = (props: MainViewProps) => {
       setOpenDialog('end');
     }
   };
-
 
   // // Handles visualizing the previous transition
   const goPrev = () => {
@@ -354,7 +352,7 @@ const MainView = (props: MainViewProps) => {
             <Grid item xs={1} justifyContent="end" display="flex">
               <RightEditor
                 toggleTheme={props.toggleTheme}
-                machineType={machineType}
+                machineType={machineState.type}
                 states={machineState.states}
                 setStates={setGuiStates}
                 input={machineState.input}

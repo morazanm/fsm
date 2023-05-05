@@ -22,7 +22,7 @@ import {
   Straighten as StraightenIcon,
   LocationOn as EditLocationIcon,
 } from '@mui/icons-material';
-import { styled, useTheme } from '@mui/material/styles';
+import { styled } from '@mui/material/styles';
 import {
   State,
   MachineType,

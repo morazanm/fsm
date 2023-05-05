@@ -9,7 +9,7 @@ import InputRender from './InputRender';
 
 type InputComponentProps = {
   input: FSMAlpha[];
-  transitions: FSMTransition[]
+  transitions: FSMTransition[];
   inputIndex: number;
   runMachine: () => void;
   goNext: () => void;
@@ -78,12 +78,18 @@ const InputComponent = (props: InputComponentProps) => {
               aria-label="text button group"
             >
               <Tooltip title="Previous" disableInteractive>
-                <Button onClick={props.goPrev} disabled={props.transitions.length === 0}>
+                <Button
+                  onClick={props.goPrev}
+                  disabled={props.transitions.length === 0}
+                >
                   <ArrowBackIosNewIcon />
                 </Button>
               </Tooltip>
               <Tooltip title="Next" disableInteractive>
-                <Button onClick={props.goNext} disabled={props.transitions.length === 0}>
+                <Button
+                  onClick={props.goNext}
+                  disabled={props.transitions.length === 0}
+                >
                   <ArrowForwardIosIcon />
                 </Button>
               </Tooltip>

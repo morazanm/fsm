@@ -20,6 +20,7 @@ import { FormHelperText, Input, InputLabel } from '@mui/material';
 function validateRule(
   rule: FSMRule,
   rules: FSMRule[],
+  states: State[],
   alpha: string[],
 ): string {
   const fmtMsgs = (msgs: string[]) => msgs.filter((m) => m !== '').join('. ');
@@ -33,15 +34,18 @@ function validateRule(
     throw Error('TODO: Validate pda rule');
   } else if (isDfaNdfaRule(rule)) {
     const dfaNdfaRules = rules as DfaNdfaRule[]; //HACK: we can assume the rules are the same as the machine type so we will just cast
+    if (dfaNdfaRules.find((r) => isFSMRuleEqual(r, rule))) {
+      return 'Rule already exists in the list of rules';
+    }
     const alphaMsg = alpha.includes(rule.input)
       ? ''
       : `'${rule.input}' is not in the alphabet`;
-    const startMsg = dfaNdfaRules.find((r) => r.start === rule.start)
+    const startMsg = states.find((s) => s.name === rule.start)
       ? ''
-      : `'${rule.start}' is not in the list of rules`;
-    const endMsg = dfaNdfaRules.find((r) => r.end === rule.end)
+      : `'${rule.start}' is not currently a state`;
+    const endMsg = states.find((s) => s.name === rule.end)
       ? ''
-      : `'${rule.end}' is not in the list of rules`;
+      : `'${rule.end}' is not currently a state`;
     return fmtMsgs([startMsg, alphaMsg, endMsg]);
   } else {
     throw Error(`Unable to determine rule type ${rule}`);
@@ -109,7 +113,12 @@ export default function useRuleForm(machineType: MachineType) {
     };
 
     const addRule = () => {
-      const msg = validateRule(currentRule, props.rules, props.alpha);
+      const msg = validateRule(
+        currentRule,
+        props.rules,
+        props.states,
+        props.alpha,
+      );
       if (!msg) {
         props.setRules([...props.rules, currentRule]);
         resetValues();
@@ -121,7 +130,12 @@ export default function useRuleForm(machineType: MachineType) {
     };
 
     const removeRule = () => {
-      const msg = validateRule(currentRule, props.rules, props.alpha);
+      const msg = validateRule(
+        currentRule,
+        props.rules,
+        props.states,
+        props.alpha,
+      );
       if (msg) {
         setError(msg);
       } else if (props.rules.find((r) => isFSMRuleEqual(r, currentRule))) {
@@ -138,7 +152,7 @@ export default function useRuleForm(machineType: MachineType) {
 
     return (
       <GenericForm
-        title={'Add/Remove State'}
+        title={'Add/Remove Rule'}
         isOpen={props.isOpen}
         onClose={() => {
           setError('');

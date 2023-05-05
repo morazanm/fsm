@@ -33,10 +33,12 @@ const RuleBox = ({
   idx,
   rule,
   isCurrent,
+  singleElement,
 }: {
   idx: number;
   rule: FSMRule;
   isCurrent: boolean;
+  singleElement: boolean;
 }) => {
   const theme = useTheme();
   const styleRight = {
@@ -44,6 +46,16 @@ const RuleBox = ({
     display: 'flex',
     alignItems: 'center',
     marginLeft: '-1px',
+    borderLeft: `1px solid ${theme.palette.divider}`,
+    borderRight: `1px solid ${theme.palette.divider}`,
+    borderRadius: '0px',
+    boxShadow: 'none',
+  };
+
+  const styleSingle = {
+    minWidth: 'fit-content',
+    display: 'flex',
+    alignItems: 'center',
     borderLeft: `1px solid ${theme.palette.divider}`,
     borderRight: `1px solid ${theme.palette.divider}`,
     borderRadius: '0px',
@@ -58,24 +70,22 @@ const RuleBox = ({
     borderRadius: '0px',
     boxShadow: 'none',
   };
+  const activeStyle = singleElement
+    ? styleSingle
+    : idx === 0
+    ? styleLeft
+    : styleRight;
+
   const strRule = ruleToString(rule);
   if (isCurrent) {
     return (
-      <CurrentItem
-        key={strRule}
-        style={idx === 0 ? styleLeft : styleRight}
-        theme={theme}
-      >
+      <CurrentItem key={strRule} style={activeStyle} theme={theme}>
         <p>{strRule}</p>
       </CurrentItem>
     );
   } else {
     return (
-      <Item
-        key={strRule}
-        style={idx === 0 ? styleLeft : styleRight}
-        theme={theme}
-      >
+      <Item key={strRule} style={activeStyle} theme={theme}>
         <p>{strRule}</p>
       </Item>
     );
@@ -83,6 +93,7 @@ const RuleBox = ({
 };
 
 const RuleComponent = (props: RuleComponentProps) => {
+  const hasOneEle = props.rules.length === 1;
   return (
     <Stack
       direction="row"
@@ -95,6 +106,7 @@ const RuleComponent = (props: RuleComponentProps) => {
           key={i}
           idx={i}
           rule={rule}
+          singleElement={hasOneEle}
           isCurrent={
             props.currentTransition &&
             isNormalTransition(props.currentTransition) &&
