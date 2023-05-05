@@ -95,21 +95,21 @@
 ;; computes the invariant and returns the result. If there is not a invariant associated
 ;; with the state then json-null is returned
 (define (compute-inv state invariants consumed-input)
+  ;; run-invariant :: string  listof(symbol)-> boolean | string
+  ;; runs the invariant. If there is a syntax error then the error
+  ;; message is returned
+  (define (run-invariant invariant consumed-input)
+    (define ns (make-base-namespace))
+    (with-handlers ([exn:fail? (lambda (e) (displayln e)(exn-message e))])
+      (define result (eval `(,(read (open-input-string invariant))
+                             ',consumed-input) ns))
+      (not (false? result))))
   (define inv (findf (lambda (i) (equal? (car i) state)) invariants))
   (if inv
       (let ([res (run-invariant (cdr inv) consumed-input)])
         (if (string? res) #f res))
       (json-null)))
 
-;; run-invariant :: string  listof(symbol)-> boolean | string
-;; runs the invariant. If there is a syntax error then the error
-;; message is returned
-(define (run-invariant invariant consumed-input)
-  (define ns (make-base-namespace))
-  (with-handlers ([exn:fail? (lambda (e) (displayln e)(exn-message e))])
-    (define result (eval `(,(read (open-input-string invariant))
-                           ',consumed-input) ns))
-    (if result #t #f)))
 
 ;; getCurRule: processed-list optional(listof rules) -> rule
 ;; Determins what the current rule is from the processed-list
@@ -251,112 +251,112 @@
   (define transition->jsexpr-tests
     (test-suite "Tests for function transition->jsexpr"
                 (test-case "dfa"
-                  (define a*a (make-dfa '(S F A)
-                                        '(a b)
-                                        'S
-                                        '(F)
-                                        '((S a F)
-                                          (F a F)
-                                          (F b A)
-                                          (A a F)
-                                          (A b A))))
+                           (define a*a (make-dfa '(S F A)
+                                                 '(a b)
+                                                 'S
+                                                 '(F)
+                                                 '((S a F)
+                                                   (F a F)
+                                                   (F b A)
+                                                   (A a F)
+                                                   (A b A))))
 
-                  (define expected (list
-                                    (hash 'start "S"
-                                          'invPass #t)
-                                    (hash 'rule (hash 'start "S" 'input "a" 'end "F")
-                                          'invPass #f)
-                                    (hash 'rule (hash 'start "F" 'input "a" 'end "F")
-                                          'invPass #f)
-                                    (hash 'rule (hash 'start "F" 'input "a" 'end "F")
-                                          'invPass #f)
-                                    (hash 'rule (hash 'start "F" 'input "b" 'end "A")
-                                          'invPass (json-null))
-                                    (hash 'rule (hash 'start "A" 'input "b"'end "A")
-                                          'invPass (json-null))
-                                    (hash 'rule (hash 'start "A" 'input "b" 'end "A")
-                                          'invPass (json-null))
-                                    (hash 'rule (hash 'start "A" 'input "a" 'end "F")
-                                          'invPass #f)
-                                    (hash 'end "F"
-                                          'action "accept"
-                                          'invPass #f)))
+                           (define expected (list
+                                             (hash 'start "S"
+                                                   'invPass #t)
+                                             (hash 'rule (hash 'start "S" 'input "a" 'end "F")
+                                                   'invPass #f)
+                                             (hash 'rule (hash 'start "F" 'input "a" 'end "F")
+                                                   'invPass #f)
+                                             (hash 'rule (hash 'start "F" 'input "a" 'end "F")
+                                                   'invPass #f)
+                                             (hash 'rule (hash 'start "F" 'input "b" 'end "A")
+                                                   'invPass (json-null))
+                                             (hash 'rule (hash 'start "A" 'input "b"'end "A")
+                                                   'invPass (json-null))
+                                             (hash 'rule (hash 'start "A" 'input "b" 'end "A")
+                                                   'invPass (json-null))
+                                             (hash 'rule (hash 'start "A" 'input "a" 'end "F")
+                                                   'invPass #f)
+                                             (hash 'end "F"
+                                                   'action "accept"
+                                                   'invPass #f)))
 
-                  (define invariants (list (cons 'S "(lambda (v) #t)")
-                                           (cons 'F "(lambda (v) #f)")))
-                  (define actual (transitions->jsexpr
-                                  (sm-showtransitions a*a '(a a a b b b a))
-                                  'dfa
-                                  (sm-start a*a)
-                                  invariants
-                                  '(a a a b b b a)))
-                  (check-equal? actual expected  "A*A compute all transitions"))))
+                           (define invariants (list (cons 'S "(lambda (v) #t)")
+                                                    (cons 'F "(lambda (v) #f)")))
+                           (define actual (transitions->jsexpr
+                                           (sm-showtransitions a*a '(a a a b b b a))
+                                           'dfa
+                                           (sm-start a*a)
+                                           invariants
+                                           '(a a a b b b a)))
+                           (check-equal? actual expected  "A*A compute all transitions"))))
 
   (run-tests transition->jsexpr-tests)
 
   (define fsa->jsexpr-tests
     (test-suite "tests for function fsa->jsexpr"
                 (test-case "dfa"
-                  (define a*a (make-dfa '(S A F D)
-                                        '(a b)
-                                        'S
-                                        '(F)
-                                        '((S a F)
-                                          (F a F)
-                                          (S b A)
-                                          (A a F)
-                                          (A b A)
-                                          ;; rules to dead state D
-                                          (F b D)
-                                          (D a D)
-                                          (D b D))'nodead))
-                  (define invariants (list (cons 'S (inv->string! (lambda (consumed-input) 1)))
-                                           (cons 'F (inv->string! (lambda (consumed-input) 2)))
-                                           (cons 'D (inv->string! (lambda (consumed-input) 3)))))
-                  (check-equal? (fsa->jsexpr a*a invariants)
-                                (hash 'states (list (hash 'name "S" 'type "start" 'invFunc "(lambda (consumed-input) 1)")
-                                                    (hash 'name "A" 'type "normal" 'invFunc (json-null))
-                                                    (hash 'name "F" 'type "final" 'invFunc "(lambda (consumed-input) 2)")
-                                                    (hash 'name "D" 'type "normal" 'invFunc "(lambda (consumed-input) 3)"))
-                                      'alpha '("a" "b")
-                                      'rules (list (hash 'start "S" 'input "a" 'end "F")
-                                                   (hash 'start "F" 'input "a" 'end "F")
-                                                   (hash 'start "S" 'input "b" 'end "A")
-                                                   (hash 'start "A" 'input "a" 'end "F")
-                                                   (hash 'start "A" 'input "b" 'end "A")
-                                                   (hash 'start "F" 'input "b" 'end "D")
-                                                   (hash 'start "D" 'input "a" 'end "D")
-                                                   (hash 'start "D" 'input "b" 'end "D"))
-                                      'type "dfa")))
+                           (define a*a (make-dfa '(S A F D)
+                                                 '(a b)
+                                                 'S
+                                                 '(F)
+                                                 '((S a F)
+                                                   (F a F)
+                                                   (S b A)
+                                                   (A a F)
+                                                   (A b A)
+                                                   ;; rules to dead state D
+                                                   (F b D)
+                                                   (D a D)
+                                                   (D b D))'nodead))
+                           (define invariants (list (cons 'S (inv->string! (lambda (consumed-input) 1)))
+                                                    (cons 'F (inv->string! (lambda (consumed-input) 2)))
+                                                    (cons 'D (inv->string! (lambda (consumed-input) 3)))))
+                           (check-equal? (fsa->jsexpr a*a invariants)
+                                         (hash 'states (list (hash 'name "S" 'type "start" 'invFunc "(lambda (consumed-input) 1)")
+                                                             (hash 'name "A" 'type "normal" 'invFunc (json-null))
+                                                             (hash 'name "F" 'type "final" 'invFunc "(lambda (consumed-input) 2)")
+                                                             (hash 'name "D" 'type "normal" 'invFunc "(lambda (consumed-input) 3)"))
+                                               'alpha '("a" "b")
+                                               'rules (list (hash 'start "S" 'input "a" 'end "F")
+                                                            (hash 'start "F" 'input "a" 'end "F")
+                                                            (hash 'start "S" 'input "b" 'end "A")
+                                                            (hash 'start "A" 'input "a" 'end "F")
+                                                            (hash 'start "A" 'input "b" 'end "A")
+                                                            (hash 'start "F" 'input "b" 'end "D")
+                                                            (hash 'start "D" 'input "a" 'end "D")
+                                                            (hash 'start "D" 'input "b" 'end "D"))
+                                               'type "dfa")))
                 (test-case "ndfa"
-                  (define KLEENESTAR-abUaba (make-ndfa '(Q-0 Q-1 Q-2 Q-3 Q-4 Q-5)
-                                                       '(a b)
-                                                       'Q-0
-                                                       '(Q-0)
-                                                       `((Q-0 a Q-1)
-                                                         (Q-1 b Q-2)
-                                                         (Q-2 a Q-3)
-                                                         (Q-3 ,EMP Q-0)
-                                                         (Q-0 a Q-4)
-                                                         (Q-4 b Q-5)
-                                                         (Q-5 ,EMP Q-0))))
+                           (define KLEENESTAR-abUaba (make-ndfa '(Q-0 Q-1 Q-2 Q-3 Q-4 Q-5)
+                                                                '(a b)
+                                                                'Q-0
+                                                                '(Q-0)
+                                                                `((Q-0 a Q-1)
+                                                                  (Q-1 b Q-2)
+                                                                  (Q-2 a Q-3)
+                                                                  (Q-3 ,EMP Q-0)
+                                                                  (Q-0 a Q-4)
+                                                                  (Q-4 b Q-5)
+                                                                  (Q-5 ,EMP Q-0))))
 
-                  (check-equal? (fsa->jsexpr KLEENESTAR-abUaba)
-                                (hash 'states (list (hash 'name "Q-0" 'type "startfinal" 'invFunc (json-null))
-                                                    (hash 'name "Q-1" 'type "normal" 'invFunc (json-null))
-                                                    (hash 'name "Q-2" 'type "normal" 'invFunc (json-null))
-                                                    (hash 'name "Q-3" 'type "normal" 'invFunc (json-null))
-                                                    (hash 'name "Q-4" 'type "normal" 'invFunc (json-null))
-                                                    (hash 'name "Q-5" 'type "normal" 'invFunc (json-null)))
-                                      'alpha '("a" "b")
-                                      'rules (list (hash 'start "Q-0" 'input "a" 'end "Q-1")
-                                                   (hash 'start "Q-1" 'input "b" 'end "Q-2")
-                                                   (hash 'start "Q-2" 'input "a" 'end "Q-3")
-                                                   (hash 'start "Q-3" 'input (symbol->string EMP) 'end "Q-0")
-                                                   (hash 'start "Q-0" 'input "a" 'end "Q-4")
-                                                   (hash 'start "Q-4" 'input "b" 'end "Q-5")
-                                                   (hash 'start "Q-5" 'input (symbol->string EMP) 'end "Q-0"))
-                                      'type "ndfa")))))
+                           (check-equal? (fsa->jsexpr KLEENESTAR-abUaba)
+                                         (hash 'states (list (hash 'name "Q-0" 'type "startfinal" 'invFunc (json-null))
+                                                             (hash 'name "Q-1" 'type "normal" 'invFunc (json-null))
+                                                             (hash 'name "Q-2" 'type "normal" 'invFunc (json-null))
+                                                             (hash 'name "Q-3" 'type "normal" 'invFunc (json-null))
+                                                             (hash 'name "Q-4" 'type "normal" 'invFunc (json-null))
+                                                             (hash 'name "Q-5" 'type "normal" 'invFunc (json-null)))
+                                               'alpha '("a" "b")
+                                               'rules (list (hash 'start "Q-0" 'input "a" 'end "Q-1")
+                                                            (hash 'start "Q-1" 'input "b" 'end "Q-2")
+                                                            (hash 'start "Q-2" 'input "a" 'end "Q-3")
+                                                            (hash 'start "Q-3" 'input (symbol->string EMP) 'end "Q-0")
+                                                            (hash 'start "Q-0" 'input "a" 'end "Q-4")
+                                                            (hash 'start "Q-4" 'input "b" 'end "Q-5")
+                                                            (hash 'start "Q-5" 'input (symbol->string EMP) 'end "Q-0"))
+                                               'type "ndfa")))))
   (run-tests fsa->jsexpr-tests)
   
 
