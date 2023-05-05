@@ -127,7 +127,7 @@ const MachineEditorComponent = (props: MachineEditorProps) => {
             title={
               props.connection.status === 'attempting'
                 ? 'Trying to Connect'
-                : 'Disconnected from Racket'
+                : 'Disconnected from FSM'
             }
             placement="left-start"
             disableInteractive

@@ -12,7 +12,6 @@ import {
   isTmTmLangRecRule,
   isPdaRule,
   isDfaNdfaRule,
-  DfaNdfaRule,
   isFSMRuleEqual,
 } from '../../../types/machine';
 import { FormHelperText, Input, InputLabel } from '@mui/material';
@@ -23,6 +22,20 @@ function validateRule(
   states: State[],
   alpha: string[],
 ): string {
+  const isValidState = (state: string): string =>
+    states.find((s) => s.name === state)
+      ? ''
+      : `'${state}' is not currently a state`;
+
+  const validAlpha = (a: FSMAlpha): boolean => alpha.includes(a) || a === 'ε';
+  const isValidAlpha = (a: FSMAlpha) =>
+    validAlpha(a) ? '' : `'${a}' is not in the alphabet`;
+  const isValidStack = (s: FSMAlpha[]): string => {
+    const inValidAlphas = [...new Set(s.filter((a) => !validAlpha(a)))];
+    return inValidAlphas.length > 0
+      ? `'${inValidAlphas}' are not in the alphabet`
+      : '';
+  };
   const fmtMsgs = (msgs: string[]) => msgs.filter((m) => m !== '').join('. ');
 
   if (Object.values(rule).filter((v) => v === '').length > 0) {
@@ -31,22 +44,27 @@ function validateRule(
   if (isTmTmLangRecRule(rule)) {
     throw Error('TODO: Validate tm rule');
   } else if (isPdaRule(rule)) {
-    throw Error('TODO: Validate pda rule');
-  } else if (isDfaNdfaRule(rule)) {
-    const dfaNdfaRules = rules as DfaNdfaRule[]; //HACK: we can assume the rules are the same as the machine type so we will just cast
-    if (dfaNdfaRules.find((r) => isFSMRuleEqual(r, rule))) {
+    rule.startStack = rule.startStack.filter((r) => r !== '');
+    rule.endStack = rule.endStack.filter((r) => r !== '');
+    if (rules.find((r) => isFSMRuleEqual(r, rule))) {
       return 'Rule already exists in the list of rules';
     }
-    const alphaMsg = alpha.includes(rule.input)
-      ? ''
-      : `'${rule.input}' is not in the alphabet`;
-    const startMsg = states.find((s) => s.name === rule.start)
-      ? ''
-      : `'${rule.start}' is not currently a state`;
-    const endMsg = states.find((s) => s.name === rule.end)
-      ? ''
-      : `'${rule.end}' is not currently a state`;
-    return fmtMsgs([startMsg, alphaMsg, endMsg]);
+    return fmtMsgs([
+      isValidState(rule.start),
+      isValidAlpha(rule.input),
+      isValidStack(rule.startStack),
+      isValidState(rule.end),
+      isValidStack(rule.endStack),
+    ]);
+  } else if (isDfaNdfaRule(rule)) {
+    if (rules.find((r) => isFSMRuleEqual(r, rule))) {
+      return 'Rule already exists in the list of rules';
+    }
+    return fmtMsgs([
+      isValidAlpha(rule.input),
+      isValidState(rule.start),
+      isValidState(rule.end),
+    ]);
   } else {
     throw Error(`Unable to determine rule type ${rule}`);
   }
@@ -68,7 +86,7 @@ function initRule(type: MachineType): FSMRule {
 }
 
 type RuleInputProps = {
-  value: any; //TODO: clean this type up to work with arrays
+  value: string;
   label: string;
   onChange: (val: string) => void;
   hasError: boolean;
@@ -79,15 +97,33 @@ const RuleInput = (props: RuleInputProps) => {
     .split(/(?=[A-Z])/)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
+
   return (
     <FormControl variant="standard" error={!!props.hasError}>
       <InputLabel>{name}</InputLabel>
       <Input
         value={props.value}
-        onChange={(e) => props.onChange(e.target.value.trim())}
+        onChange={(e) => props.onChange(e.target.value)}
       />
     </FormControl>
   );
+};
+
+const parseEMP = (val: string) => (val === 'EMP' ? 'ε' : val);
+
+const parseValueAsArray = (value: string): string[] => {
+  return value
+    .split(' ')
+    .filter((e) => e !== ' ')
+    .map((e) => parseEMP(e));
+};
+
+const unParseValue = (values: string | string[]): string => {
+  return Array.isArray(values) ? values.join(' ') : values;
+};
+
+const parseValueAsString = (value: string): string => {
+  return parseEMP(value.trim());
 };
 
 type RuleFormProps = {
@@ -111,7 +147,6 @@ export default function useRuleForm(machineType: MachineType) {
       setCurrentRule(blankRule);
       setError('');
     };
-
     const addRule = () => {
       const msg = validateRule(
         currentRule,
@@ -169,15 +204,23 @@ export default function useRuleForm(machineType: MachineType) {
           </DialogContentText>
           <Stack spacing={1}>
             <Stack spacing={1} direction="row">
-              {Object.keys(currentRule).map((k: keyof FSMRule) => (
-                <RuleInput
-                  key={k}
-                  label={k}
-                  value={currentRule[k]}
-                  hasError={!!error}
-                  onChange={(v) => setCurrentRule({ ...currentRule, [k]: v })}
-                />
-              ))}
+              {Object.keys(currentRule).map((k: keyof FSMRule) => {
+                const parseFunc = Array.isArray(currentRule[k])
+                  ? parseValueAsArray
+                  : parseValueAsString;
+
+                return (
+                  <RuleInput
+                    key={k}
+                    label={k}
+                    value={unParseValue(currentRule[k])}
+                    hasError={!!error}
+                    onChange={(v) =>
+                      setCurrentRule({ ...currentRule, [k]: parseFunc(v) })
+                    }
+                  />
+                );
+              })}
             </Stack>
             <FormControl variant="standard" error={!!error}>
               {error && (

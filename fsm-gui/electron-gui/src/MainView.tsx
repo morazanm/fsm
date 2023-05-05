@@ -120,7 +120,7 @@ const MainView = (props: MainViewProps) => {
     alphabet: [],
     input: [],
     transitions: EMPTY_TRANSITIONS,
-    type: 'dfa',
+    type: 'pda',
     nodead: true,
   } as MachineState);
 
@@ -224,11 +224,9 @@ const MainView = (props: MainViewProps) => {
         }
       });
       props.racketBridge.client.on('end', () => {
-        //TODO: render something on the screen to indicate that the
-        //the server was shut down
         openInfoDialog(
-          'Disconnected from Server',
-          'The Racket backend interface was disconnected. Please try running (sm-visualize) in the REPL to reconnect.',
+          'Disconnected from FSM',
+          'The FSM backend was disconnected. Please try running (sm-visualize) in the REPL to reconnect.',
         );
         props.racketBridge.closeConnection();
       });

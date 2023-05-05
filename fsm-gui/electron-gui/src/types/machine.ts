@@ -113,19 +113,24 @@ export const isDfaNdfaRule = (rule: FSMRule): rule is DfaNdfaRule => {
   );
 };
 
+type FSMRuleKeys = keyof FSMRule;
+type FSMValues = FSMRule[FSMRuleKeys];
 // Given two rules, determines if the rules are equivalent to each other
 export const isFSMRuleEqual = (r1: FSMRule, r2: FSMRule): boolean => {
-  const checkValsEqual = <T extends object>(obj1: T, obj2: T) =>
-    Object.keys(obj1).reduce(
-      (acc, key) => acc && obj1[key as keyof T] === obj2[key as keyof T],
-      true,
-    );
+  const cmpArrays = <T>(a1: T[], a2: T[]) =>
+    a1.length === a2.length && a1.every((v, i) => v === a2[i]);
+
   if (isDfaNdfaRule(r1) && isDfaNdfaRule(r2)) {
-    return checkValsEqual(r1, r2);
+    return r1.start === r2.start && r1.end === r2.end && r1.input === r2.input;
   } else if (isPdaRule(r1) && isPdaRule(r2)) {
-    return checkValsEqual(r1, r2);
+    return (
+      r1.start === r2.start &&
+      r1.end === r2.end &&
+      cmpArrays(r1.startStack, r2.startStack) &&
+      cmpArrays(r1.endStack, r2.endStack)
+    );
   } else if (isTmTmLangRecRule(r1) && isTmTmLangRecRule(r2)) {
-    return checkValsEqual(r1, r2);
+    return false;
   } else {
     return false;
   }
@@ -133,10 +138,17 @@ export const isFSMRuleEqual = (r1: FSMRule, r2: FSMRule): boolean => {
 
 // Returns the string representation for a rule
 export const ruleToString = (rule: FSMRule): string => {
+  const arrayToString = (array: string[]) => {
+    return array.length === 1 && array[0] === 'ε'
+      ? 'ε'
+      : `(${array.join(' ')})`;
+  };
   if (isDfaNdfaRule(rule)) {
-    return `(${rule.start}, ${rule.input}, ${rule.end})`;
+    return `(${rule.start} ${rule.input} ${rule.end})`;
   } else if (isPdaRule(rule)) {
-    return 'TODO: finish';
+    return `((${rule.start} ${rule.input} ${arrayToString(rule.startStack)}) (${
+      rule.end
+    } ${arrayToString(rule.endStack)}))`;
   } else if (isTmTmLangRecRule(rule)) {
     return 'TODO: finish';
   }
