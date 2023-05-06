@@ -69,7 +69,6 @@ export class RacketInterface {
   // NOTE: we always need to add '\r\n' at the end of a request so racket knows that
   // this is the end of the data being sent
   private send<T extends object>(request: SocketRequest<T>): boolean {
-    //TODO: how to handle a broken connection
     if (this.connected) {
       this.client.write(`${JSON.stringify(request)}\r\n`);
       return true;

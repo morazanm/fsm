@@ -290,7 +290,22 @@
                                            (sm-start a*a)
                                            invariants
                                            '(a a a b b b a)))
-                           (check-equal? actual expected  "A*A compute all transitions"))))
+                           (check-equal? actual expected  "A*A compute all transitions"))
+
+                (test-case "pda"
+                  (define pda-numa=numb (make-ndpda '(S M F)
+                                                    '(a b)
+                                                    '(a b)
+                                                    'S
+                                                    '(F)
+                                                    `(((S ,EMP ,EMP) (M ,EMP))
+                                                      ((M ,EMP ,EMP) (F ,EMP))
+                                                      ((M a ,EMP) (M (a)))
+                                                      ((M b ,EMP) (M (b)))
+                                                      ((M a (b)) (M ,EMP))
+                                                      ((M b (a)) (M ,EMP)))))
+
+                  (check-equal? #t #t))))
 
   (run-tests transition->jsexpr-tests)
 

@@ -1,6 +1,12 @@
 // A object representation of a GUI machine. This holds all the values that are
 
-import { FSMAlpha, FSMRule, MachineType, State } from '../types/machine';
+import {
+  FSMAlpha,
+  FSMRule,
+  FSMStackAlpha,
+  MachineType,
+  State,
+} from '../types/machine';
 
 // send to the FSM racket interface for further processing by fsm-core + fsm-gui
 export type FSMBuildMachineRequest = {
@@ -10,4 +16,5 @@ export type FSMBuildMachineRequest = {
   type: MachineType;
   input: FSMAlpha[];
   nodead: boolean;
+  stackAlpha: FSMStackAlpha[] | undefined; // undefined when not a pda
 };

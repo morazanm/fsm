@@ -48,11 +48,12 @@
   (define finals (find-finals un-parsed-states))
   (define rules (parse-rules (hash-ref data 'rules) type))
   (define input (map string->symbol (hash-ref data 'input)))
+  (define stack-alpha (if (equal? type 'pda) (hash-ref data 'stackAlpha) #f)
 
   ;; TODO: Talk to marco about how we want to handle fsm-error msgs. Since they print to the
   ;; stdio we cant display them in the GUI. Ideally this would just return a string and we
   ;; could pass the message over json to the new GUI
-  (define fsa (build-fsm-core-machine states start finals alpha rules type no-dead))
+  (define fsa (build-fsm-core-machine states start finals alpha rules type stack-alpha no-dead))
   (define trans (sm-showtransitions fsa input))
   (cond
     [(equal? trans 'reject)
@@ -76,12 +77,12 @@
                 'responseType "build_machine"
                 'error "Failed check-machine function")]))
 
-;; isValidMachine? :: listof(symbol) symbol listof(symbol) listof(symbol) listof(fsm-core-rules) symbol boolean -> fsa | false
+;; isValidMachine? :: listof(symbol) symbol listof(symbol) listof(symbol) listof(fsm-core-rules) symbol listof(symbol) | false boolean -> fsa | false
 ;; returns a fsm-core fsa if the machine passes the fsm-core error messages check. If there is an error the
 ;; error is printed to stdio
-(define (build-fsm-core-machine states start finals alpha rules type no-dead)
+(define (build-fsm-core-machine states start finals alpha rules type stack-alpha no-dead)
   (define has-error? (match type
-                       ['pda (check-machine states alpha finals rules start type #f #;(pda-machine-stack-alpha-list fsm-machine))]
+                       ['pda (check-machine states alpha finals rules start type stack-alpha)]
                        [(or 'tm 'tm-language-recognizer)
                         (check-machine states alpha finals rules start type)]
                        [(or 'dfa 'ndfa)
@@ -92,8 +93,12 @@
         ['dfa (if no-dead
                   (make-dfa states alpha start finals rules 'nodead)
                   (make-dfa states alpha start finals rules))]
-        ['ndfa (make-ndfa states start finals alpha rules)]
-        ['pda "TODO"]
+        ['ndfa (if no-dead
+                   (make-ndfa states start finals alpha rules 'nodead)
+                   (make-ndfa states start finals alpha rules))]
+        ['pda (if no-dead
+                  (make-ndpda states alpha stack-alpha start finals rules 'nodead)
+                  (make-ndpda states alpha stack-alpha start finals rules))]
         [(or 'tm 'tm-language-recognizer) "TODO"])))
 
 

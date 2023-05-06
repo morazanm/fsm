@@ -117,8 +117,6 @@ export const isDfaNdfaRule = (rule: FSMRule): rule is DfaNdfaRule => {
   );
 };
 
-type FSMRuleKeys = keyof FSMRule;
-type FSMValues = FSMRule[FSMRuleKeys];
 // Given two rules, determines if the rules are equivalent to each other
 export const isFSMRuleEqual = (r1: FSMRule, r2: FSMRule): boolean => {
   const cmpArrays = <T>(a1: T[], a2: T[]) =>

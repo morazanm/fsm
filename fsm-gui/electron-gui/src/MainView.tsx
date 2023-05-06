@@ -46,12 +46,6 @@ const EMPTY_TRANSITIONS = {
   inputIndex: -1,
 };
 
-type MachineTransitions = {
-  transitions: FSMTransition[];
-  index: number;
-  inputIndex: number;
-};
-
 type BasicDialogProps = {
   onClose: () => void;
   open: boolean;
@@ -83,6 +77,12 @@ const BasicDialog = (props: BasicDialogProps) => {
       </DialogActions>
     </Dialog>
   );
+};
+
+type MachineTransitions = {
+  transitions: FSMTransition[];
+  index: number;
+  inputIndex: number;
 };
 
 type InfoDialog = {
@@ -189,7 +189,7 @@ const MainView = (props: MainViewProps) => {
               (s) => !machineState.states.find((st) => st.name === s.name),
             ),
           );
-
+          // See if fsm-core added any rules, if so then add them
           const new_rules = machineState.rules.concat(
             response.data.rules.filter(
               (r) => !machineState.rules.find((mr) => isFSMRuleEqual(r, mr)),
@@ -204,6 +204,8 @@ const MainView = (props: MainViewProps) => {
               index: 0,
               inputIndex: -1,
             },
+            stackAlpha:
+              machineState.type === 'pda' ? machineState.stackAlpha : undefined,
           });
           openInfoDialog(
             'Machine Successfully Built',
@@ -218,6 +220,7 @@ const MainView = (props: MainViewProps) => {
             alphabet: response.data.alpha,
             rules: response.data.rules,
             type: response.data.type,
+            stackAlpha: response.data.type === "pda" ? response.data.stackAlpha : []
           });
           openInfoDialog(
             'Prebuilt Machine Loaded',
