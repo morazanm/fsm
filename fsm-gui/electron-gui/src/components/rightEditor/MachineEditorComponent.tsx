@@ -14,6 +14,8 @@ import {
 } from '@mui/material';
 import {
   Edit as EditIcon,
+  Abc as AbcIcon,
+  TableRows as TableRowIcons,
   SsidChart as SsidChartIcon,
   Palette as PaletteIcon,
   RssFeed as RssFeedIcon,
@@ -29,7 +31,9 @@ import {
   isTmType,
   FSMAlpha,
   FSMRule,
+  FSMStackAlpha,
 } from '../../types/machine';
+import { AlphaModal, GammaModal } from './forms/AlphaModals';
 import InputForm from './forms/InputForm';
 import StateForm from './forms/StateForm';
 import useRuleForm from './forms/RuleForm';
@@ -79,6 +83,11 @@ const useDialActions = (type: MachineType) => {
       tooltip: 'Rule',
       toggle: (val: OpenModal): OpenModal => (val === null ? 'rule' : null),
     },
+    {
+      icon: <AbcIcon />,
+      tooltip: 'Alpha',
+      toggle: (val: OpenModal): OpenModal => (val === null ? 'alpha' : null),
+    },
   ];
 
   if (isTmType(type)) {
@@ -89,6 +98,14 @@ const useDialActions = (type: MachineType) => {
     });
   }
 
+  if (type === 'pda') {
+    actions.push({
+      icon: <TableRowIcons />,
+      tooltip: 'Gamma',
+      toggle: (val: OpenModal): OpenModal => (val === null ? 'gamma' : null),
+    });
+  }
+
   return actions;
 };
 
@@ -96,6 +113,9 @@ type MachineEditorProps = {
   toggleTheme: () => void;
   machineType: MachineType;
   alpha: FSMAlpha[];
+  setAlpha: (alpha: FSMAlpha[]) => void;
+  stackAlpha: FSMStackAlpha[];
+  setStackAlpha: (stackAlpha: FSMStackAlpha[]) => void;
   nodead: boolean;
   connection: Connection;
   toggleDead: () => void;
@@ -108,7 +128,14 @@ type MachineEditorProps = {
   reconnect: () => void;
 };
 
-type OpenModal = 'input' | 'state' | 'rule' | 'tapePosn' | null;
+type OpenModal =
+  | 'input'
+  | 'state'
+  | 'rule'
+  | 'tapePosn'
+  | 'alpha'
+  | 'gamma'
+  | null;
 
 const MachineEditorComponent = (props: MachineEditorProps) => {
   const [openModal, setOpenModal] = useState<OpenModal>(null);
@@ -218,6 +245,22 @@ const MachineEditorComponent = (props: MachineEditorProps) => {
         alpha={props.alpha}
         toggleSnack={toggleSnack}
       />
+      <AlphaModal
+        isOpen={openModal === 'alpha'}
+        toggle={() => setOpenModal(null)}
+        alpha={props.alpha}
+        setAlpha={props.setAlpha}
+        toggleSnack={toggleSnack}
+      />
+
+      <GammaModal
+        isOpen={openModal === 'gamma'}
+        toggle={() => setOpenModal(null)}
+        stackAlpha={props.stackAlpha}
+        setStackAlpha={props.setStackAlpha}
+        toggleSnack={toggleSnack}
+      />
+
       {snackMsg && (
         <Snackbar
           open={snackMsg !== ''}

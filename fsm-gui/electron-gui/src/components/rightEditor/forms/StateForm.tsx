@@ -69,7 +69,7 @@ export default function StateForm(props: InputFormProps) {
       props.setStates(props.states.filter((s) => s.name !== incoming));
       setError('');
       props.toggle();
-      props.toggleSnack(`State: "${incoming}"" was deleted`);
+      props.toggleSnack(`State: "${incoming}" was deleted`);
       resetValues();
     } else {
       setError(`State "${incoming}" does not currently exist`);

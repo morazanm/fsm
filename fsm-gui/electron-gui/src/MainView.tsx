@@ -18,6 +18,7 @@ import {
   isEndTransition,
   MachineType,
   isFSMRuleEqual,
+  FSMStackAlpha,
 } from './types/machine';
 import { useTheme } from '@mui/material/styles';
 import ControlView from './components/controlView/view';
@@ -93,6 +94,7 @@ type MachineState = {
   states: State[];
   rules: FSMRule[];
   alphabet: FSMAlpha[];
+  stackAlpha: FSMStackAlpha[]; // only used for pda's
   input: FSMAlpha[];
   transitions: MachineTransitions;
   type: MachineType;
@@ -118,6 +120,7 @@ const MainView = (props: MainViewProps) => {
     states: [],
     rules: [],
     alphabet: [],
+    stackAlpha: [],
     input: [],
     transitions: EMPTY_TRANSITIONS,
     type: 'pda',
@@ -151,13 +154,12 @@ const MainView = (props: MainViewProps) => {
   const updateInput = (input: FSMAlpha[]) => {
     resetMachineAndSet({ input: input });
   };
-  const addAlpha = (incoming: FSMAlpha) => {
-    resetMachineAndSet({ alphabet: [...machineState.alphabet, incoming] });
+  const setAlpha = (alpha: FSMAlpha[]) => {
+    resetMachineAndSet({ alphabet: alpha });
   };
-  const removeAlpha = (incoming: FSMAlpha[]) => {
-    resetMachineAndSet({
-      alphabet: machineState.alphabet.filter((a) => !incoming.includes(a)),
-    });
+
+  const setStackAlpha = (stackAlpha: FSMStackAlpha[]) => {
+    resetMachineAndSet({ stackAlpha: stackAlpha });
   };
 
   const attemptToReconnect = () => {
@@ -331,8 +333,8 @@ const MainView = (props: MainViewProps) => {
             >
               <LeftEditor
                 alpha={machineState.alphabet}
-                addAlpha={addAlpha}
-                removeAlpha={removeAlpha}
+                stackAlpha={machineState.stackAlpha}
+                type={machineState.type}
               />
             </Grid>
             <Grid
@@ -356,12 +358,15 @@ const MainView = (props: MainViewProps) => {
                 input={machineState.input}
                 setInput={updateInput}
                 alpha={machineState.alphabet}
+                stackAlpha={machineState.stackAlpha}
+                setStackAlpha={setStackAlpha}
                 rules={machineState.rules}
                 setRules={setGuiRules}
                 nodead={machineState.nodead}
                 toggleDead={toggleDead}
                 connection={connected}
                 reconnect={attemptToReconnect}
+                setAlpha={setAlpha}
               />
             </Grid>
           </Grid>

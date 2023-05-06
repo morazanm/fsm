@@ -2,6 +2,10 @@
 // one not including EMP
 export type FSMAlpha = string;
 
+// A list of numbers or lowercase symbols with a string representation of length
+// one not including EMP
+export type FSMStackAlpha = string;
+
 // State: An uppercase letter (e.g., A) or a symbol comprised of an uppercase letter,
 // dash, and number (e.g., A-72431).
 export type StateName = string;
