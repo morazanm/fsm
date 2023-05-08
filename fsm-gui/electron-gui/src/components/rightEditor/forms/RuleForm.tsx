@@ -44,17 +44,17 @@ function validateRule(
   if (isTmTmLangRecRule(rule)) {
     throw Error('TODO: Validate tm rule');
   } else if (isPdaRule(rule)) {
-    rule.startStack = rule.startStack.filter((r) => r !== '');
-    rule.endStack = rule.endStack.filter((r) => r !== '');
+    rule.popped = rule.popped.filter((r) => r !== '');
+    rule.pushed = rule.pushed.filter((r) => r !== '');
     if (rules.find((r) => isFSMRuleEqual(r, rule))) {
       return 'Rule already exists in the list of rules';
     }
     return fmtMsgs([
       isValidState(rule.start),
       isValidAlpha(rule.input),
-      isValidStack(rule.startStack),
+      isValidStack(rule.popped),
       isValidState(rule.end),
-      isValidStack(rule.endStack),
+      isValidStack(rule.pushed),
     ]);
   } else if (isDfaNdfaRule(rule)) {
     if (rules.find((r) => isFSMRuleEqual(r, rule))) {
@@ -77,7 +77,7 @@ function initRule(type: MachineType): FSMRule {
     case 'ndfa':
       return { start: '', input: '', end: '' };
     case 'pda':
-      return { start: '', input: '', startStack: [], end: '', endStack: [] };
+      return { start: '', input: '', popped: [], end: '', pushed: [] };
     case 'tm':
       return { start: '', startTape: [], end: '', endTape: [] };
     case 'tm-lang-rec':

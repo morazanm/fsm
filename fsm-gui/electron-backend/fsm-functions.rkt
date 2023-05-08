@@ -48,7 +48,7 @@
   (define finals (find-finals un-parsed-states))
   (define rules (parse-rules (hash-ref data 'rules) type))
   (define input (map string->symbol (hash-ref data 'input)))
-  (define stack-alpha (if (equal? type 'pda) (hash-ref data 'stackAlpha) #f)
+  (define stack-alpha (if (equal? type 'pda) (hash-ref data 'stackAlpha) #f))
 
   ;; TODO: Talk to marco about how we want to handle fsm-error msgs. Since they print to the
   ;; stdio we cant display them in the GUI. Ideally this would just return a string and we

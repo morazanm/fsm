@@ -1,6 +1,8 @@
 #| This Module containes functions for converting parts for a fsa to a jsexpr |#
 #lang racket
-(require json "../../fsm-core/interface.rkt")
+(require json
+         "../../fsm-core/interface.rkt")
+
 (provide fsa->jsexpr
          state->jsexpr
          rule->jsexpr
@@ -11,7 +13,6 @@
 ;; converts a fsm-core fsa to a jsexpr to be sent to the GUI
 ;; NOTE: invariants are a pair of a symbol representing the state name
 ;; and the invarinat function as a string.
-;; call the `eval` function on it at runtime.
 (define (fsa->jsexpr fsa [invariants '()])
   (hash 'states (map (lambda (s) (state->jsexpr s fsa invariants)) (sm-states fsa))
         'alpha (map symbol->string (sm-sigma fsa))
@@ -23,7 +24,6 @@
 ;; state type and string representation of the invariant
 ;; NOTE: invariants are a pair of a symbol representing the state name
 ;; and the invarinat function as a string.
-;; call the `eval` function on it at runtime.
 (define (state->jsexpr state fsa [invariants '()])
   (define inv-state (findf (match-lambda [(cons s f) (equal? s state)]) invariants))
   (hash 'name (symbol->string state)
@@ -41,96 +41,171 @@
 
 ;; rule->jsexpr :: rule -> jsexpr(rule)
 ;; converts a fsm-core rule to a jsexpr
-(define/match (rule->jsexpr rule)
-  [(`(,s ,i ,e)) (hash 'start (symbol->string s)
-                       'input (symbol->string i)
-                       'end (symbol->string e))]
+(define/match (rule->jsexpr _rule)
+  [(`(,s ,i ,e))
+   (hash 'start (symbol->string s)
+         'input (symbol->string i)
+         'end (symbol->string e))]
+  [(`((,s ,i ,stack1) (,e ,stack2)))
+   (hash
+    'start (symbol->string s)
+    'input (symbol->string i)
+    'popped (if (list? stack1) (map symbol->string stack1) (symbol->string stack1))
+    'end (symbol->string e)
+    'pushed (if (list? stack2) (map symbol->string stack2) (symbol->string stack2)))]
   [(_) (error "TODO")])
 
 
-;; transitions->jsexpr :: listof(transitions) symbol -> symbol listof(cons symbol string) listof(symbol-> listof(jsexpr(transition))
+;; transitions->jsexpr :: fsa listof(cons symbol string) listof(string) -> jsexpr(transitons) | string
+;; Given an fsa computes the jsexpr form of the transitions. If there is an error then a string
+;; containing the error is returned
+(define (transitions->jsexpr fsa invariants input)
+  (define trans (sm-showtransitions fsa input))
+  (define type (sm-type fsa))
+  (match/values (values type trans)
+    [(_ 'reject) "The given input for the machine was rejected"]
+    [((or 'dfa 'ndfa) _)
+     (dfa-transitions->jsexpr trans (sm-start fsa) invariants input)]
+    [('pda _) (pda-transitions->jsexpr trans (sm-start fsa) invariants input (sm-rules fsa))]))
+
+
+;; dfa-transitions->jsexpr :: listof(transitions) symbol listof(cons symbol string) listof(symbol-> listof(jsexpr(transition))
 ;; Given the list of fsm-core transitions, computes the jsexpr form of the transitions
-(define (transitions->jsexpr transitions type start invariants full-input)
-  ;; transition->jsexpr :: transition transition type -> jsexpr(transition)
-  ;; Computes a single jsexpr(transition) from 2 fsm-core transitions
-  (define (transition->jsexpr t1 t2)
-    (match type
-      [(or 'dfa 'ndfa) (dfa-transition->jsexpr t1 t2 invariants full-input)]
-      [_ (error "TODO")]))
+(define (dfa-transitions->jsexpr transitions start invariants full-input)
+  ;; dfa-transition->jsexpr :: transition transition listof(cons symbol string) listof(symbol) -> jsexpr(transition)
+  ;; computes the jsexpr(transition) for a dfa given 2 fsm-core transitions
+  (define (dfa-transition->jsexpr t1 t2 invariants full-input)
+    (if (or (equal? t2 'reject) (equal? t2 'accept))
+        (hash 'end (symbol->string (cadr t1))
+              'action (symbol->string t2)
+              'invPass (compute-inv (cadr t1) invariants (reverse full-input)))
+        (match-let* ([`(,(and input1 `(,i1 ...)) ,s1) t1]
+                     [`(,(and input2 `(,i2 ...)) ,s2) t2]
+                     [consumed-input (reverse (drop-right full-input (length input2)))])
+          (hash 'rule (hash 'start (symbol->string s1)
+                            'input (symbol->string
+                                    (if (equal? (length input1) (length input2))
+                                        ;; if the inputs are the same then nothing was consumed
+                                        EMP
+                                        (car i1)))
+                            'end (symbol->string s2))
+                'invPass (compute-inv s2 invariants consumed-input)))))
   ;; we alyays need to append the start transiton to the front for the gui.
   ;; EX: (hash 'start "A" 'input (json-null) 'end "start")
-  (define start-transition
-    (match type
-      [(or 'dfa 'ndfa) (hash 'start (symbol->string start)                              
-                             'invPass (compute-inv start invariants '()))]
-      [_ (error "TODO")]))
-
+  (define start-transition (hash 'start (symbol->string start)
+                                 'invPass (compute-inv start invariants)))
   (define (loop transitions)
     (match transitions
-      [`(,f ,n ,xs ...) (cons (transition->jsexpr f n)
+      [`(,f ,n ,xs ...) (cons (dfa-transition->jsexpr f n invariants full-input)
                               (loop (cons n xs)))]
       [_ '()]))
   (cons start-transition (loop transitions)))
 
-;; dfa-transition->jsexpr :: transition transition listof(cons symbol string) listof(symbol) -> jsexpr(transition)
-;; computes the jsexpr(transition) for a dfa given 2 fsm-core transitions
-(define (dfa-transition->jsexpr t1 t2 invariants full-input)
-  (if (or (equal? t2 'reject) (equal? t2 'accept))
-      (hash 'end (symbol->string (cadr t1))
-            'action (symbol->string t2)
-            'invPass (compute-inv (cadr t1) invariants full-input))
-      (match-let* ([`(,(and input1 `(,i1 ...)) ,s1) t1]
-                   [`(,(and input2 `(,i2 ...)) ,s2) t2]
-                   [consumed-input (drop-right full-input (length input2))])
-        (hash 'rule (hash 'start (symbol->string s1)
-                          'input (symbol->string
-                                  (if (equal? (length input1) (length input2))
-                                      ;; if the inputs are the same then nothing was consumed
-                                      EMP 
-                                      (car i1)))
-                          'end (symbol->string s2))
-              'invPass (compute-inv s2 invariants consumed-input)))))
 
-;; compute-inv :: symbol listof(cons symbol string) list(symbol) -> boolean | json-null
+
+
+;; pda-transitions->jsexpr :: listof(transitions) symbol listof(cons symbol string) listof(symbol) listof(rules) -> listof(jsexpr(transition))
+;; Given the list of fsm-core transitions, computes the jsexpr form of the transitions
+(define (pda-transitions->jsexpr transitions start invariants input rules)
+  ;; pda-transition->jsexpr: transition transition listof(rules) listof(cons symbol string) listof(symbol) listof(symbol) -> values(pda-rule stack)
+  ;; Purpose: Constructes a pda rule from the given transitions
+  ;; NOTE: There is no way to distinguish between
+  ;; ((S a (y )) (A (y )) and ((S a ,EMP) (A ,EMP))
+  ;; because both do the same and leave the stack unchanged. Therefore, either can
+  ;; be picked. When we come across this case we will search the rule for which form is
+  ;; present and choose that one. If both are present then we will pick the first that
+  ;; applies.
+  (define (pda-transition->jsexpr t1 t2 rules invariants full-input current-stack)
+    (cond
+      [(or (equal? t2 'accept) (equal? t2 'reject))
+       (values (hash 'end (symbol->string (car t1))
+                     'action (symbol->string t2)
+                     'invPass (compute-inv (car t1) invariants (reverse full-input) current-stack))
+               current-stack)]
+      [else
+       (match-define `(,next-state ,next-input ,next-stack) t2)
+       (match-define `(,init-state ,init-input ,init-stack) t1)
+
+       ;; If both inputs are equal then nothing was consumed and EMP is used
+       (define consumed-input (if (equal? init-input next-input) EMP (car init-input)))
+
+       ;; determin-pushed: list list -> list | symbol
+       ;; Purpose: Returns the list or elements to be pushed
+       (define/match (determin-pushed _init-stack next-stack)
+         [(_ '()) EMP]
+         [('() n) n]
+         [((list-rest a1 ... b1 _) (list-rest a2 ... b2 _))
+          (if (not (equal? b1 b2)) next-stack (determin-pushed a1 a2))])
+
+       ;; determin-poped: list list -> list | symbol
+       ;; Purpose: Returns the list or elements to be popped
+       (define/match (determin-poped init-stack _next-stack)
+         [('() _) EMP]
+         [(_ '()) init-stack]
+         [((list-rest a1 ... b1 _) (list-rest a2 ... b2 _))
+          (if (not (equal? b1 b2)) init-stack (determin-poped a1 a2))])
+
+       ;; What is pushed on the stack
+       (define pushed (determin-pushed init-stack next-stack))
+       (define pushed-as-list (if (symbol? pushed) '() pushed))
+       ;; What is popped off the stack
+       (define popped (determin-poped init-stack next-stack))
+       (define popped-as-list (if (symbol? popped) '() popped))
+       ;; The current rule based off the 2 transitions
+       (define cur-rule `((,init-state ,consumed-input ,popped) (,next-state ,pushed)))
+       ;; What the stack looks like after the rule
+       (define new-stack (append pushed-as-list (drop current-stack (length popped-as-list))))
+       (values (hash 'rule (rule->jsexpr (match cur-rule
+                                           [(list (list _ _ EMP) (list _ EMP))
+                                            (if (member cur-rule rules)
+                                                cur-rule
+                                                `((,init-state ,consumed-input ,init-stack)
+                                                  (,next-state ,next-stack)))]
+                                           [_ cur-rule]))
+                     'invPass (compute-inv next-state
+                                           invariants
+                                           (reverse (drop-right full-input (length next-input)))
+                                           new-stack)
+                     'stack (map symbol->string new-stack))
+               new-stack)]))
+
+
+  ;; we alyays need to append the start transiton to the front for the gui.
+  ;; EX: (hash 'start "A" 'input (json-null) 'end "start")
+  (define start-transition (hash 'start (symbol->string start)
+                                 'invPass (compute-inv start invariants '() '())))
+  (define (loop transitions current-stack)
+    (match transitions
+      [`(,f ,n ,xs ...)
+       (let-values (((jsexpr stack) (pda-transition->jsexpr f n rules invariants input current-stack)))
+         (cons jsexpr (loop (cons n xs) stack)))]
+      [_ '()]))
+  (cons start-transition (loop transitions '())))
+
+
+;; compute-inv :: symbol listof(cons symbol string) vargs(any) -> boolean | json-null
 ;; computes the invariant and returns the result. If there is not a invariant associated
 ;; with the state then json-null is returned
-(define (compute-inv state invariants consumed-input)
-  ;; run-invariant :: string  listof(symbol)-> boolean | string
+(define (compute-inv state invariants . args)
+  ;; run-racket-code :: string -> boolean | string
   ;; runs the invariant. If there is a syntax error then the error
   ;; message is returned
-  (define (run-invariant invariant consumed-input)
+  ;; TODO: Document this more once I have a better understanding of racket macro namespaces https://stackoverflow.com/questions/57927786/how-to-obtain-namespace-of-a-custom-lang-in-racket
+  (define (run-racket-code invariant)
     (define ns (make-base-namespace))
-    (with-handlers ([exn:fail? (lambda (e) (displayln e)(exn-message e))])
-      (define result (eval `(,(read (open-input-string invariant))
-                             ',consumed-input) ns))
-      (not (false? result))))
+    (namespace-attach-module (current-namespace) 'racket ns)
+    (parameterize ([current-namespace (make-base-namespace)])
+      (namespace-require 'racket)
+      (with-handlers ([exn:fail? (lambda (e)
+                                   (displayln (format "[FSM Internal Error @ (invariant check)]: ~s" (exn-message e)))
+                                   (exn-message e))])
+        (not (false? (apply (eval (read (open-input-string invariant)))
+                            (if (null? args) (list null) args)))))))
   (define inv (findf (lambda (i) (equal? (car i) state)) invariants))
   (if inv
-      (let ([res (run-invariant (cdr inv) consumed-input)])
+      (let ([res (run-racket-code (cdr inv))])
         (if (string? res) #f res))
       (json-null)))
-
-
-;; getCurRule: processed-list optional(listof rules) -> rule
-;; Determins what the current rule is from the processed-list
-;; The rules arg is only used for PDA's. See contruct-pda-rule for more info
-;; on why this is needed.
-(define (getCurRule processed-list (rules #f))
-  (match 'dfa
-    ['pda
-     (get-pda-rule processed-list rules)]
-    [(or 'tm 'tm-language-recognizer)
-     (get-tm-rule processed-list)]
-    [(or 'mttm 'mttm-language-recognizer)
-     (get-mttm-rule processed-list)]))
-
-
-;; get-tm-rule processed-list -> tm-rule
-;; Purpose: Determins if the rule to be made should be empty or a real rule
-(define (get-tm-rule processed-list)
-  (cond
-    [(< (length processed-list) 2) '((empty empty) (empty empty))]
-    [else (construct-tm-rule processed-list)]))
 
 
 ;; construct-tm-rule: processed-list -> tm-rule
@@ -139,9 +214,9 @@
   (let* ( (cur-trans (cadr pl))  ;; The current transiton
           (next-trans (car pl))  ;; The next transition
           (cur-state (car cur-trans)) ;; The current state the machine is in
-          (cur-tape-index (cadr cur-trans)) ;; The tape index the machine is in 
+          (cur-tape-index (cadr cur-trans)) ;; The tape index the machine is in
           (cur-tape (caddr cur-trans)) ;; The input the machine has
-          (next-state (car next-trans)) ;; The next state the machine goes to 
+          (next-state (car next-trans)) ;; The next state the machine goes to
           (next-tape-index (cadr next-trans)) ;; The new tape index the machine goes to
           (next-tape (caddr next-trans)) ;; The new tape the machine has
 
@@ -187,56 +262,6 @@
 
 
 
-
-
-;; get-pda-rule: processed-list listof(rules) -> pda-rule
-;; Purpose: Determins if the rule to be made should be empty or a real rule
-(define (get-pda-rule processed-list rules)
-  (cond
-    [(< (length processed-list) 2)  '((empty empty empty) (empty empty))]
-    [else (construct-pda-rule processed-list rules)]))
-
-
-;; construct-pda-rule: processed-list  listof(rules) -> pda-rule
-;; Purpose: Constructes a pda rule from the given processed list
-;; NOTE: There is no way to distinguish between
-;; ((S a (y )) (A (y )) and ((S a ,EMP) (A ,EMP))
-;; because both do the same and leave the stack unchanged. Therefore, either can
-;; be picked. When we come across this case we will search the rule for which form is
-;; present and choose that one. If both are present then we will pick the first that
-;; applies.
-(define (construct-pda-rule pl rules)
-  (match-define `(,next-state ,next-input ,next-stack) (car pl))
-  (match-define `(,init-state ,init-input ,init-stack) (cadr pl))
-  ;; If both inputs are equal then nothing was consumed and EMP is used
-  (define consumed-input (if (equal? init-input next-input) EMP (car init-input)))
-
-  ;; determin-pushed: list list -> list | symbol
-  ;; Purpose: Returns the list or elements to be pushed
-  (define/match (determin-pushed _init-stack next-stack)
-    [(_ '()) EMP]
-    [('() n) n]
-    [((list-rest a1 ... b1 _) (list-rest a2 ... b2 _))
-     (if (not (equal? b1 b2)) next-stack (determin-pushed a1 a2))])
-
-  ;; determin-poped: list list -> list | symbol
-  ;; Purpose: Returns the list or elements to be popped
-  (define/match (determin-poped init-stack _next-stack)
-    [('() _) EMP]
-    [(_ '()) init-stack]
-    [((list-rest a1 ... b1 _) (list-rest a2 ... b2 _))
-     (if (not (equal? b1 b2)) init-stack (determin-poped a1 a2))])
-
-  (define cur-rule `((,init-state ,consumed-input ,(determin-poped init-stack next-stack))
-                     (,next-state ,(determin-pushed init-stack  next-stack))))
-  (match cur-rule
-    [(list (list _ _ EMP) (list _ EMP))
-     (if (member cur-rule rules)
-         cur-rule
-         `((,init-state ,consumed-input ,init-stack) (,next-state ,next-stack)))]
-    [_ cur-rule]))
-
-
 (module+ test
   (require (for-syntax syntax/parse)
            rackunit
@@ -251,130 +276,199 @@
   (define transition->jsexpr-tests
     (test-suite "Tests for function transition->jsexpr"
                 (test-case "dfa"
-                           (define a*a (make-dfa '(S F A)
-                                                 '(a b)
-                                                 'S
-                                                 '(F)
-                                                 '((S a F)
-                                                   (F a F)
-                                                   (F b A)
-                                                   (A a F)
-                                                   (A b A))))
+                  (define a*a (make-dfa '(S F A)
+                                        '(a b)
+                                        'S
+                                        '(F)
+                                        '((S a F)
+                                          (F a F)
+                                          (F b A)
+                                          (A a F)
+                                          (A b A))))
 
-                           (define expected (list
-                                             (hash 'start "S"
-                                                   'invPass #t)
-                                             (hash 'rule (hash 'start "S" 'input "a" 'end "F")
-                                                   'invPass #f)
-                                             (hash 'rule (hash 'start "F" 'input "a" 'end "F")
-                                                   'invPass #f)
-                                             (hash 'rule (hash 'start "F" 'input "a" 'end "F")
-                                                   'invPass #f)
-                                             (hash 'rule (hash 'start "F" 'input "b" 'end "A")
-                                                   'invPass (json-null))
-                                             (hash 'rule (hash 'start "A" 'input "b"'end "A")
-                                                   'invPass (json-null))
-                                             (hash 'rule (hash 'start "A" 'input "b" 'end "A")
-                                                   'invPass (json-null))
-                                             (hash 'rule (hash 'start "A" 'input "a" 'end "F")
-                                                   'invPass #f)
-                                             (hash 'end "F"
-                                                   'action "accept"
-                                                   'invPass #f)))
+                  (define expected (list
+                                    (hash 'start "S"
+                                          'invPass #t)
+                                    (hash 'rule (hash 'start "S" 'input "a" 'end "F")
+                                          'invPass #f)
+                                    (hash 'rule (hash 'start "F" 'input "a" 'end "F")
+                                          'invPass #f)
+                                    (hash 'rule (hash 'start "F" 'input "a" 'end "F")
+                                          'invPass #f)
+                                    (hash 'rule (hash 'start "F" 'input "b" 'end "A")
+                                          'invPass (json-null))
+                                    (hash 'rule (hash 'start "A" 'input "b"'end "A")
+                                          'invPass (json-null))
+                                    (hash 'rule (hash 'start "A" 'input "b" 'end "A")
+                                          'invPass (json-null))
+                                    (hash 'rule (hash 'start "A" 'input "a" 'end "F")
+                                          'invPass #f)
+                                    (hash 'end "F"
+                                          'action "accept"
+                                          'invPass #f)))
 
-                           (define invariants (list (cons 'S "(lambda (v) #t)")
-                                                    (cons 'F "(lambda (v) #f)")))
-                           (define actual (transitions->jsexpr
-                                           (sm-showtransitions a*a '(a a a b b b a))
-                                           'dfa
-                                           (sm-start a*a)
-                                           invariants
-                                           '(a a a b b b a)))
-                           (check-equal? actual expected  "A*A compute all transitions"))
+                  (define invariants (list (cons 'S "(lambda (v) #t)")
+                                           (cons 'F "(lambda (v) #f)")))
+                  (define actual (transitions->jsexpr
+                                  a*a
+                                  invariants
+                                  '(a a a b b b a)))
+                  (check-equal? actual expected  "A*A compute all transitions"))
 
                 (test-case "pda"
-                  (define pda-numa=numb (make-ndpda '(S M F)
-                                                    '(a b)
-                                                    '(a b)
-                                                    'S
-                                                    '(F)
-                                                    `(((S ,EMP ,EMP) (M ,EMP))
-                                                      ((M ,EMP ,EMP) (F ,EMP))
-                                                      ((M a ,EMP) (M (a)))
-                                                      ((M b ,EMP) (M (b)))
-                                                      ((M a (b)) (M ,EMP))
-                                                      ((M b (a)) (M ,EMP)))))
+                  (define pda=2ba (make-ndpda '(S M1 F)
+                                              '(a b)
+                                              '(a b)
+                                              'S
+                                              '(F)
+                                              `(((S ,EMP ,EMP) (M1 ,EMP))
+                                                ((M1 a ,EMP) (M1 (a a)))
+                                                ((M1 b ,EMP) (M1 (b)))
+                                                ((M1 a (b)) (M1 (a)))
+                                                ((M1 a (b b)) (M1 ,EMP))
+                                                ((M1 b (a)) (M1 ,EMP))
+                                                ((M1 ,EMP ,EMP) (F ,EMP)))))
+                  (define EMP-str (symbol->string EMP))
 
-                  (check-equal? #t #t))))
+                  (define expected (list
+                                    (hash 'start "S"
+                                          'invPass #t)
+                                    (hash 'rule (hash 'start "S" 'input EMP-str 'popped EMP-str 'end "M1" 'pushed EMP-str)
+                                          'invPass #t
+                                          'stack (list))
+                                    (hash 'rule (hash 'start "M1" 'input "b" 'popped EMP-str 'end "M1" 'pushed (list "b"))
+                                          'invPass #t
+                                          'stack (list "b"))
+                                    (hash 'rule (hash 'start "M1" 'input "b" 'popped EMP-str 'end "M1" 'pushed (list "b"))
+                                          'invPass #t
+                                          'stack (list "b" "b"))
+                                    (hash 'rule (hash 'start "M1" 'input "a" 'popped (list "b" "b") 'end "M1" 'pushed EMP-str)
+                                          'invPass #t
+                                          'stack (list))
+                                    (hash 'rule (hash 'start "M1" 'input EMP-str 'popped EMP-str 'end "F" 'pushed EMP-str)
+                                          'invPass #t
+                                          'stack (list))
+                                    (hash 'end "F"
+                                          'action "accept"
+                                          'invPass #t)))
+
+                  (define invariants (list (cons 'S (inv->string! (lambda (i s)
+                                                                    (and (empty? s) (empty? i)))))
+                                           (cons 'M1 (inv->string! (lambda (i s)
+                                                                     (if (not (empty? i))
+                                                                         (if (equal? (first i) 'a)
+                                                                             (let ((as (length (filter (lambda (v) (equal? v 'a)) i)))
+                                                                                   (bs (length (filter (lambda (v) (equal? v 'b)) i))))
+                                                                               (equal? (length s) (- (* 2 as) bs)))
+                                                                             (or (empty? s) (equal? (first s) 'b)))
+                                                                         #t))))
+
+                                           (cons 'F (inv->string! (lambda (i s)
+                                                                    (define as (length (filter (lambda (v) (equal? v 'a)) i)))
+                                                                    (define bs (length (filter (lambda (v) (equal? v 'b)) i)))
+                                                                    (and (equal? bs (* 2 as))
+                                                                         (empty? s)))))))
+                  (check-equal? (transitions->jsexpr pda=2ba invariants '(b b a)) expected))))
 
   (run-tests transition->jsexpr-tests)
 
   (define fsa->jsexpr-tests
     (test-suite "tests for function fsa->jsexpr"
                 (test-case "dfa"
-                           (define a*a (make-dfa '(S A F D)
-                                                 '(a b)
-                                                 'S
-                                                 '(F)
-                                                 '((S a F)
-                                                   (F a F)
-                                                   (S b A)
-                                                   (A a F)
-                                                   (A b A)
-                                                   ;; rules to dead state D
-                                                   (F b D)
-                                                   (D a D)
-                                                   (D b D))'nodead))
-                           (define invariants (list (cons 'S (inv->string! (lambda (consumed-input) 1)))
-                                                    (cons 'F (inv->string! (lambda (consumed-input) 2)))
-                                                    (cons 'D (inv->string! (lambda (consumed-input) 3)))))
-                           (check-equal? (fsa->jsexpr a*a invariants)
-                                         (hash 'states (list (hash 'name "S" 'type "start" 'invFunc "(lambda (consumed-input) 1)")
-                                                             (hash 'name "A" 'type "normal" 'invFunc (json-null))
-                                                             (hash 'name "F" 'type "final" 'invFunc "(lambda (consumed-input) 2)")
-                                                             (hash 'name "D" 'type "normal" 'invFunc "(lambda (consumed-input) 3)"))
-                                               'alpha '("a" "b")
-                                               'rules (list (hash 'start "S" 'input "a" 'end "F")
-                                                            (hash 'start "F" 'input "a" 'end "F")
-                                                            (hash 'start "S" 'input "b" 'end "A")
-                                                            (hash 'start "A" 'input "a" 'end "F")
-                                                            (hash 'start "A" 'input "b" 'end "A")
-                                                            (hash 'start "F" 'input "b" 'end "D")
-                                                            (hash 'start "D" 'input "a" 'end "D")
-                                                            (hash 'start "D" 'input "b" 'end "D"))
-                                               'type "dfa")))
+                  (define a*a (make-dfa '(S A F D)
+                                        '(a b)
+                                        'S
+                                        '(F)
+                                        '((S a F)
+                                          (F a F)
+                                          (S b A)
+                                          (A a F)
+                                          (A b A)
+                                          ;; rules to dead state D
+                                          (F b D)
+                                          (D a D)
+                                          (D b D))'nodead))
+                  (define invariants (list (cons 'S (inv->string! (lambda (consumed-input) 1)))
+                                           (cons 'F (inv->string! (lambda (consumed-input) 2)))
+                                           (cons 'D (inv->string! (lambda (consumed-input) 3)))))
+                  (check-equal? (fsa->jsexpr a*a invariants)
+                                (hash 'states (list (hash 'name "S" 'type "start" 'invFunc "(lambda (consumed-input) 1)")
+                                                    (hash 'name "A" 'type "normal" 'invFunc (json-null))
+                                                    (hash 'name "F" 'type "final" 'invFunc "(lambda (consumed-input) 2)")
+                                                    (hash 'name "D" 'type "normal" 'invFunc "(lambda (consumed-input) 3)"))
+                                      'alpha '("a" "b")
+                                      'rules (list (hash 'start "S" 'input "a" 'end "F")
+                                                   (hash 'start "F" 'input "a" 'end "F")
+                                                   (hash 'start "S" 'input "b" 'end "A")
+                                                   (hash 'start "A" 'input "a" 'end "F")
+                                                   (hash 'start "A" 'input "b" 'end "A")
+                                                   (hash 'start "F" 'input "b" 'end "D")
+                                                   (hash 'start "D" 'input "a" 'end "D")
+                                                   (hash 'start "D" 'input "b" 'end "D"))
+                                      'type "dfa")))
                 (test-case "ndfa"
-                           (define KLEENESTAR-abUaba (make-ndfa '(Q-0 Q-1 Q-2 Q-3 Q-4 Q-5)
-                                                                '(a b)
-                                                                'Q-0
-                                                                '(Q-0)
-                                                                `((Q-0 a Q-1)
-                                                                  (Q-1 b Q-2)
-                                                                  (Q-2 a Q-3)
-                                                                  (Q-3 ,EMP Q-0)
-                                                                  (Q-0 a Q-4)
-                                                                  (Q-4 b Q-5)
-                                                                  (Q-5 ,EMP Q-0))))
+                  (define KLEENESTAR-abUaba (make-ndfa '(Q-0 Q-1 Q-2 Q-3 Q-4 Q-5)
+                                                       '(a b)
+                                                       'Q-0
+                                                       '(Q-0)
+                                                       `((Q-0 a Q-1)
+                                                         (Q-1 b Q-2)
+                                                         (Q-2 a Q-3)
+                                                         (Q-3 ,EMP Q-0)
+                                                         (Q-0 a Q-4)
+                                                         (Q-4 b Q-5)
+                                                         (Q-5 ,EMP Q-0))))
 
-                           (check-equal? (fsa->jsexpr KLEENESTAR-abUaba)
-                                         (hash 'states (list (hash 'name "Q-0" 'type "startfinal" 'invFunc (json-null))
-                                                             (hash 'name "Q-1" 'type "normal" 'invFunc (json-null))
-                                                             (hash 'name "Q-2" 'type "normal" 'invFunc (json-null))
-                                                             (hash 'name "Q-3" 'type "normal" 'invFunc (json-null))
-                                                             (hash 'name "Q-4" 'type "normal" 'invFunc (json-null))
-                                                             (hash 'name "Q-5" 'type "normal" 'invFunc (json-null)))
-                                               'alpha '("a" "b")
-                                               'rules (list (hash 'start "Q-0" 'input "a" 'end "Q-1")
-                                                            (hash 'start "Q-1" 'input "b" 'end "Q-2")
-                                                            (hash 'start "Q-2" 'input "a" 'end "Q-3")
-                                                            (hash 'start "Q-3" 'input (symbol->string EMP) 'end "Q-0")
-                                                            (hash 'start "Q-0" 'input "a" 'end "Q-4")
-                                                            (hash 'start "Q-4" 'input "b" 'end "Q-5")
-                                                            (hash 'start "Q-5" 'input (symbol->string EMP) 'end "Q-0"))
-                                               'type "ndfa")))))
+                  (check-equal? (fsa->jsexpr KLEENESTAR-abUaba)
+                                (hash 'states (list (hash 'name "Q-0" 'type "startfinal" 'invFunc (json-null))
+                                                    (hash 'name "Q-1" 'type "normal" 'invFunc (json-null))
+                                                    (hash 'name "Q-2" 'type "normal" 'invFunc (json-null))
+                                                    (hash 'name "Q-3" 'type "normal" 'invFunc (json-null))
+                                                    (hash 'name "Q-4" 'type "normal" 'invFunc (json-null))
+                                                    (hash 'name "Q-5" 'type "normal" 'invFunc (json-null)))
+                                      'alpha '("a" "b")
+                                      'rules (list (hash 'start "Q-0" 'input "a" 'end "Q-1")
+                                                   (hash 'start "Q-1" 'input "b" 'end "Q-2")
+                                                   (hash 'start "Q-2" 'input "a" 'end "Q-3")
+                                                   (hash 'start "Q-3" 'input (symbol->string EMP) 'end "Q-0")
+                                                   (hash 'start "Q-0" 'input "a" 'end "Q-4")
+                                                   (hash 'start "Q-4" 'input "b" 'end "Q-5")
+                                                   (hash 'start "Q-5" 'input (symbol->string EMP) 'end "Q-0"))
+                                      'type "ndfa")))
+
+
+
+                (test-case "pda"
+                  (define pda=2ba (make-ndpda '(S M1 F)
+                                              '(a b)
+                                              '(a b)
+                                              'S
+                                              '(F)
+                                              `(((S ,EMP ,EMP) (M1 ,EMP))
+                                                ((M1 a ,EMP) (M1 (a a)))
+                                                ((M1 b ,EMP) (M1 (b)))
+                                                ((M1 a (b)) (M1 (a)))
+                                                ((M1 a (b b)) (M1 ,EMP))
+                                                ((M1 b (a)) (M1 ,EMP))
+                                                ((M1 ,EMP ,EMP) (F ,EMP)))))
+                  (define EMP-str (symbol->string EMP))
+
+                  (check-equal? (fsa->jsexpr pda=2ba)
+                                (hash 'states (list (hash 'name "S" 'type "start" 'invFunc (json-null))
+                                                    (hash 'name "M1" 'type "normal" 'invFunc (json-null))
+                                                    (hash 'name "F" 'type "final" 'invFunc (json-null)))
+                                      'alpha '("a" "b")
+                                      'rules (list (hash 'start "S" 'input EMP-str 'popped EMP-str 'end "M1" 'pushed EMP-str)
+                                                   (hash 'start "M1" 'input "a" 'popped EMP-str 'end "M1" 'pushed (list "a" "a"))
+                                                   (hash 'start "M1" 'input "b" 'popped EMP-str 'end "M1" 'pushed (list "b"))
+                                                   (hash 'start "M1" 'input "a" 'popped (list "b") 'end "M1" 'pushed (list "a"))
+                                                   (hash 'start "M1" 'input "a" 'popped (list "b" "b") 'end "M1" 'pushed EMP-str)
+                                                   (hash 'start "M1" 'input "b" 'popped (list "a") 'end "M1" 'pushed EMP-str)
+                                                   (hash 'start "M1" 'input EMP-str 'popped EMP-str 'end "F" 'pushed EMP-str))
+                                      'type "pda")))))
   (run-tests fsa->jsexpr-tests)
-  
 
-  
+
+
 
   ) ;;end module test

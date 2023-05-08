@@ -37,9 +37,9 @@ export type DfaNdfaRule = { start: StateName; input: string; end: StateName };
 export type PdaRule = {
   start: StateName;
   input: string;
-  startStack: string[];
+  popped: string[];
   end: StateName;
-  endStack: string[];
+  pushed: string[];
 };
 
 // Object representation of a turing machine rule
@@ -57,6 +57,7 @@ export type TmMttmRule = {
 export type Transition = {
   rule: FSMRule;
   invPass: boolean | null;
+  stack: FSMStackAlpha[] | undefined; // undefined when not pda
 };
 
 export type StartTransition = {
@@ -105,7 +106,7 @@ export const isTmTmLangRecRule = (rule: FSMRule): rule is TmMttmRule => {
 
 // return true if the given rule is a pda rule
 export const isPdaRule = (rule: FSMRule): rule is PdaRule => {
-  return (rule as PdaRule).endStack !== undefined;
+  return (rule as PdaRule).popped !== undefined;
 };
 
 // return true if the given rule is a ndfa or dfa rule
@@ -128,8 +129,8 @@ export const isFSMRuleEqual = (r1: FSMRule, r2: FSMRule): boolean => {
     return (
       r1.start === r2.start &&
       r1.end === r2.end &&
-      cmpArrays(r1.startStack, r2.startStack) &&
-      cmpArrays(r1.endStack, r2.endStack)
+      cmpArrays(r1.popped, r2.popped) &&
+      cmpArrays(r1.pushed, r2.pushed)
     );
   } else if (isTmTmLangRecRule(r1) && isTmTmLangRecRule(r2)) {
     return false;
@@ -148,9 +149,9 @@ export const ruleToString = (rule: FSMRule): string => {
   if (isDfaNdfaRule(rule)) {
     return `(${rule.start} ${rule.input} ${rule.end})`;
   } else if (isPdaRule(rule)) {
-    return `((${rule.start} ${rule.input} ${arrayToString(rule.startStack)}) (${
+    return `((${rule.start} ${rule.input} ${arrayToString(rule.popped)}) (${
       rule.end
-    } ${arrayToString(rule.endStack)}))`;
+    } ${arrayToString(rule.pushed)}))`;
   } else if (isTmTmLangRecRule(rule)) {
     return 'TODO: finish';
   }
