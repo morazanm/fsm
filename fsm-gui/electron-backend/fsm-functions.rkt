@@ -32,7 +32,14 @@
                        [(or 'dfa 'ndfa) (list (string->symbol (hash-ref r 'start))
                                               (string->symbol (hash-ref r 'input))
                                               (string->symbol (hash-ref r 'end)))]
-                       ['pda "TODO"]
+                       ['pda
+                        (define popped (hash-ref r 'popped))
+                        (define pushed (hash-ref r 'pushed))
+                        (list (list (string->symbol (hash-ref r 'start))
+                                    (string->symbol (hash-ref r 'input))
+                                    (if (list? popped) (map string->symbol popped) (string->symbol popped)))
+                              (list (string->symbol (hash-ref r 'end))
+                                    (if (list? pushed) (map string->symbol pushed) (string->symbol pushed))))]
                        [(or 'tm 'tm-language-recognizer) "TODO"]))
          rules))
   (define no-dead (hash-ref data 'nodead))
@@ -48,7 +55,7 @@
   (define finals (find-finals un-parsed-states))
   (define rules (parse-rules (hash-ref data 'rules) type))
   (define input (map string->symbol (hash-ref data 'input)))
-  (define stack-alpha (if (equal? type 'pda) (hash-ref data 'stackAlpha) #f))
+  (define stack-alpha (if (equal? type 'pda) (map string->symbol (hash-ref data 'stackAlpha)) #f))
 
   ;; TODO: Talk to marco about how we want to handle fsm-error msgs. Since they print to the
   ;; stdio we cant display them in the GUI. Ideally this would just return a string and we
@@ -61,11 +68,7 @@
            'responseType "build_machine"
            'error "The given input for the machine was rejected")]
     [fsa
-     (hash 'data (hash 'transitions (transitions->jsexpr (sm-showtransitions fsa input)
-                                                         type
-                                                         start
-                                                         invariants
-                                                         input)
+     (hash 'data (hash 'transitions (transitions->jsexpr fsa invariants input)
                        ;; since fsm sometimes adds states (ds) we will return the list of states,
                        ;; so the gui can update accordingly
                        'states (map (lambda (s) (state->jsexpr s fsa invariants)) (sm-states fsa))
@@ -113,7 +116,7 @@
 
   (define build-machine-tests
     (test-suite "build-machine tests"
-                (test-case "build-machine for dfa"
+                (test-case "dfa"
                   (define a*a-jsexpr (hash 'states (list (hash 'name "S" 'type "start" 'invFunc "(lambda (v) #t)")
                                                          (hash 'name "A" 'type "normal" 'invFunc (json-null))
                                                          (hash 'name "F" 'type "final" 'invFunc (json-null)))
@@ -133,33 +136,29 @@
                                                         (hash 'name "S" 'type "start" 'invFunc "(lambda (v) #t)")
                                                         (hash 'name "A" 'type "normal" 'invFunc (json-null))
                                                         (hash 'name "F" 'type "final" 'invFunc (json-null)))
-                                          'rules (list
-                                                  (hash 'start "S" 'input "a" 'end "F")
-                                                  (hash 'start "F" 'input "a" 'end "F")
-                                                  (hash 'start "F" 'input "b" 'end "A")
-                                                  (hash 'start "S" 'input "b" 'end "A")
-                                                  (hash 'start "A" 'input "a" 'end "F")
-                                                  (hash 'start "A" 'input "b" 'end "A")
-                                                  (hash 'start "ds" 'input "a" 'end "ds")
-                                                  (hash 'start "ds" 'input "b" 'end "ds"))
-
-                                          'transitions (list
-
-                                                        (hash 'start "S"
-                                                              'invPass #t)
-                                                        (hash 'rule (hash 'start "S" 'input "a" 'end "F")
-                                                              'invPass (json-null))
-                                                        (hash 'rule (hash 'start "F" 'input "a" 'end "F")
-                                                              'invPass (json-null))
-                                                        (hash 'rule (hash 'start "F" 'input "a" 'end "F")
-                                                              'invPass (json-null))
-                                                        (hash 'rule (hash 'start "F" 'input "b" 'end "A")
-                                                              'invPass (json-null))
-                                                        (hash 'rule (hash 'start "A" 'input "a" 'end "F")
-                                                              'invPass (json-null))
-                                                        (hash 'end "F"
-                                                              'action "accept"
-                                                              'invPass (json-null))))
+                                          'rules (list (hash 'start "S" 'input "a" 'end "F")
+                                                       (hash 'start "F" 'input "a" 'end "F")
+                                                       (hash 'start "F" 'input "b" 'end "A")
+                                                       (hash 'start "S" 'input "b" 'end "A")
+                                                       (hash 'start "A" 'input "a" 'end "F")
+                                                       (hash 'start "A" 'input "b" 'end "A")
+                                                       (hash 'start "ds" 'input "a" 'end "ds")
+                                                       (hash 'start "ds" 'input "b" 'end "ds"))
+                                          'transitions (list (hash 'start "S"
+                                                                   'invPass #t)
+                                                             (hash 'rule (hash 'start "S" 'input "a" 'end "F")
+                                                                   'invPass (json-null))
+                                                             (hash 'rule (hash 'start "F" 'input "a" 'end "F")
+                                                                   'invPass (json-null))
+                                                             (hash 'rule (hash 'start "F" 'input "a" 'end "F")
+                                                                   'invPass (json-null))
+                                                             (hash 'rule (hash 'start "F" 'input "b" 'end "A")
+                                                                   'invPass (json-null))
+                                                             (hash 'rule (hash 'start "A" 'input "a" 'end "F")
+                                                                   'invPass (json-null))
+                                                             (hash 'end "F"
+                                                                   'action "accept"
+                                                                   'invPass (json-null))))
                                          'error (json-null)))
                   (define actual (build-machine a*a-jsexpr))
                   (check-equal? (hash-ref actual 'error)
@@ -167,8 +166,67 @@
                                 "Error msg field for a*a should be null for a valid machine")
                   (check-equal? (hash-ref actual 'data)
                                 (hash-ref expected 'data)
-                                "Data for a*a should be the propper json values"))))
+                                "Data for a*a should be the propper json values"))
 
-  (run-tests build-machine-tests)
-  
-  ) ;; end module test
+                (test-case "pda"
+                  (define EMP-str (symbol->string EMP))
+                  (define pda=2ba-jsexpr (hash 'states (list (hash 'name "S" 'type "start" 'invFunc (json-null))
+                                                             (hash 'name "M1" 'type "normal" 'invFunc (json-null))
+                                                             (hash 'name "F" 'type "final" 'invFunc (json-null)))
+                                               'alphabet '("a" "b")
+                                               'stackAlpha '("a" "b")
+                                               'rules (list (hash 'start "S" 'input EMP-str 'popped EMP-str 'end "M1" 'pushed EMP-str)
+                                                            (hash 'start "M1" 'input "a" 'popped EMP-str 'end "M1" 'pushed (list "a" "a"))
+                                                            (hash 'start "M1" 'input "b" 'popped EMP-str 'end "M1" 'pushed (list "b"))
+                                                            (hash 'start "M1" 'input "a" 'popped (list "b") 'end "M1" 'pushed (list "a"))
+                                                            (hash 'start "M1" 'input "a" 'popped (list "b" "b") 'end "M1" 'pushed EMP-str)
+                                                            (hash 'start "M1" 'input "b" 'popped (list "a") 'end "M1" 'pushed EMP-str)
+                                                            (hash 'start "M1" 'input EMP-str 'popped EMP-str 'end "F" 'pushed EMP-str))
+                                               'input '("b" "b" "a")
+                                               'nodead false
+                                               'type "pda"))
+                  (define expected (hash 'data
+                                         (hash
+                                          'states (list (hash 'name "S" 'type "start" 'invFunc (json-null))
+                                                        (hash 'name "M1" 'type "normal" 'invFunc (json-null))
+                                                        (hash 'name "F" 'type "final" 'invFunc (json-null)))
+                                          'rules (list (hash 'start "S" 'input EMP-str 'popped EMP-str 'end "M1" 'pushed EMP-str)
+                                                       (hash 'start "M1" 'input "a" 'popped EMP-str 'end "M1" 'pushed (list "a" "a"))
+                                                       (hash 'start "M1" 'input "b" 'popped EMP-str 'end "M1" 'pushed (list "b"))
+                                                       (hash 'start "M1" 'input "a" 'popped (list "b") 'end "M1" 'pushed (list "a"))
+                                                       (hash 'start "M1" 'input "a" 'popped (list "b" "b") 'end "M1" 'pushed EMP-str)
+                                                       (hash 'start "M1" 'input "b" 'popped (list "a") 'end "M1" 'pushed EMP-str)
+                                                       (hash 'start "M1" 'input EMP-str 'popped EMP-str 'end "F" 'pushed EMP-str))
+                                          'transitions (list
+                                                        (hash 'start "S"
+                                                              'invPass (json-null))
+                                                        (hash 'rule (hash 'start "S" 'input EMP-str 'popped EMP-str 'end "M1" 'pushed EMP-str)
+                                                              'invPass (json-null)
+                                                              'stack (list))
+                                                        (hash 'rule (hash 'start "M1" 'input "b" 'popped EMP-str 'end "M1" 'pushed (list "b"))
+                                                              'invPass (json-null)
+                                                              'stack (list "b"))
+                                                        (hash 'rule (hash 'start "M1" 'input "b" 'popped EMP-str 'end "M1" 'pushed (list "b"))
+                                                              'invPass (json-null)
+                                                              'stack (list "b" "b"))
+                                                        (hash 'rule (hash 'start "M1" 'input "a" 'popped (list "b" "b") 'end "M1" 'pushed EMP-str)
+                                                              'invPass (json-null)
+                                                              'stack (list))
+                                                        (hash 'rule (hash 'start "M1" 'input EMP-str 'popped EMP-str 'end "F" 'pushed EMP-str)
+                                                              'invPass (json-null)
+                                                              'stack (list))
+                                                        (hash 'end "F"
+                                                              'action "accept"
+                                                              'invPass (json-null))))
+                                          'error (json-null)))
+                    (define actual (build-machine pda=2ba-jsexpr))
+                    (check-equal? (hash-ref actual 'error)
+                                  (hash-ref expected 'error)
+                                  "Error msg field for a*a should be null for a valid machine")
+                    (check-equal? (hash-ref actual 'data)
+                                  (hash-ref expected 'data)
+                                  "Data for a*a should be the propper json values"))))
+
+    (run-tests build-machine-tests)
+
+    ) ;; end module test
