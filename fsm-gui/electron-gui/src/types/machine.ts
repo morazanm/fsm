@@ -37,9 +37,9 @@ export type DfaNdfaRule = { start: StateName; input: string; end: StateName };
 export type PdaRule = {
   start: StateName;
   input: string;
-  popped: string[];
+  popped: string[]; // empty array is displayed as EMP
   end: StateName;
-  pushed: string[];
+  pushed: string[]; // empty array is displayed as EMP
 };
 
 // Object representation of a turing machine rule
@@ -57,7 +57,10 @@ export type TmMttmRule = {
 export type Transition = {
   rule: FSMRule;
   invPass: boolean | null;
-  stack: FSMStackAlpha[] | undefined; // undefined when not pda
+};
+
+export type PdaTransition = Transition & {
+  stack: FSMStackAlpha[];
 };
 
 export type StartTransition = {
@@ -71,11 +74,21 @@ export type EndTransition = {
   invPass: boolean | null;
 };
 
-export type FSMTransition = Transition | StartTransition | EndTransition;
+export type FSMTransition =
+  | Transition
+  | PdaTransition
+  | StartTransition
+  | EndTransition;
 
 /*
  * Helper Functions below
  */
+
+export const isPdaTransition = (
+  transition: FSMTransition,
+): transition is PdaTransition => {
+  return (transition as PdaTransition).stack !== undefined;
+};
 
 export const isNormalTransition = (
   transition: FSMTransition,
@@ -142,9 +155,7 @@ export const isFSMRuleEqual = (r1: FSMRule, r2: FSMRule): boolean => {
 // Returns the string representation for a rule
 export const ruleToString = (rule: FSMRule): string => {
   const arrayToString = (array: string[]) => {
-    return array.length === 1 && array[0] === 'ε'
-      ? 'ε'
-      : `(${array.join(' ')})`;
+    return array.length === 0 ? 'ε' : `(${array.join(' ')})`;
   };
   if (isDfaNdfaRule(rule)) {
     return `(${rule.start} ${rule.input} ${rule.end})`;

@@ -14,10 +14,15 @@
 ;; NOTE: invariants are a pair of a symbol representing the state name
 ;; and the invarinat function as a string.
 (define (fsa->jsexpr fsa [invariants '()])
-  (hash 'states (map (lambda (s) (state->jsexpr s fsa invariants)) (sm-states fsa))
+  (define base-hash (hash 'states (map (lambda (s) (state->jsexpr s fsa invariants)) (sm-states fsa))
         'alpha (map symbol->string (sm-sigma fsa))
         'rules (map rule->jsexpr (sm-rules fsa))
         'type (symbol->string (sm-type fsa))))
+  (match (sm-type fsa)
+    [(or 'dfa 'ndfa) base-hash]
+    ['pda (hash-set base-hash 'stackAlpha (map symbol->string (sm-gamma fsa)))]
+    [(or 'tm 'tm-langauge-recognizer) "TODO"]
+    [ _ (error (format "[FSM Internal error]: invalid machine type: ~s" (sm-type fsa)))]))
 
 ;; state->jsexpr :: symbol fsa optional(listof(cons symbol string))-> jsexpr(state)
 ;; converts the fsm-core state to a jsexpr that containes the state name
@@ -50,9 +55,9 @@
    (hash
     'start (symbol->string s)
     'input (symbol->string i)
-    'popped (if (list? stack1) (map symbol->string stack1) (symbol->string stack1))
+    'popped (if (list? stack1) (map symbol->string stack1) '())
     'end (symbol->string e)
-    'pushed (if (list? stack2) (map symbol->string stack2) (symbol->string stack2)))]
+    'pushed (if (list? stack2) (map symbol->string stack2) '()))]
   [(_) (error "TODO")])
 
 
@@ -156,8 +161,8 @@
        ;; What the stack looks like after the rule
        (define new-stack (append pushed-as-list (drop current-stack (length popped-as-list))))
        (values (hash 'rule (rule->jsexpr (match cur-rule
-                                           [(list (list _ _ EMP) (list _ EMP))
-                                            (if (member cur-rule rules)
+                                           [(list (list a b '()) (list c '()))
+                                            (if (member (list (list a b EMP) (list c EMP)) rules)
                                                 cur-rule
                                                 `((,init-state ,consumed-input ,init-stack)
                                                   (,next-state ,next-stack)))]
@@ -333,19 +338,19 @@
                   (define expected (list
                                     (hash 'start "S"
                                           'invPass #t)
-                                    (hash 'rule (hash 'start "S" 'input EMP-str 'popped EMP-str 'end "M1" 'pushed EMP-str)
+                                    (hash 'rule (hash 'start "S" 'input EMP-str 'popped '() 'end "M1" 'pushed '())
                                           'invPass #t
                                           'stack (list))
-                                    (hash 'rule (hash 'start "M1" 'input "b" 'popped EMP-str 'end "M1" 'pushed (list "b"))
+                                    (hash 'rule (hash 'start "M1" 'input "b" 'popped '() 'end "M1" 'pushed (list "b"))
                                           'invPass #t
                                           'stack (list "b"))
-                                    (hash 'rule (hash 'start "M1" 'input "b" 'popped EMP-str 'end "M1" 'pushed (list "b"))
+                                    (hash 'rule (hash 'start "M1" 'input "b" 'popped '() 'end "M1" 'pushed (list "b"))
                                           'invPass #t
                                           'stack (list "b" "b"))
-                                    (hash 'rule (hash 'start "M1" 'input "a" 'popped (list "b" "b") 'end "M1" 'pushed EMP-str)
+                                    (hash 'rule (hash 'start "M1" 'input "a" 'popped (list "b" "b") 'end "M1" 'pushed '())
                                           'invPass #t
                                           'stack (list))
-                                    (hash 'rule (hash 'start "M1" 'input EMP-str 'popped EMP-str 'end "F" 'pushed EMP-str)
+                                    (hash 'rule (hash 'start "M1" 'input EMP-str 'popped '() 'end "F" 'pushed '())
                                           'invPass #t
                                           'stack (list))
                                     (hash 'end "F"
@@ -458,13 +463,14 @@
                                                     (hash 'name "M1" 'type "normal" 'invFunc (json-null))
                                                     (hash 'name "F" 'type "final" 'invFunc (json-null)))
                                       'alpha '("a" "b")
-                                      'rules (list (hash 'start "S" 'input EMP-str 'popped EMP-str 'end "M1" 'pushed EMP-str)
-                                                   (hash 'start "M1" 'input "a" 'popped EMP-str 'end "M1" 'pushed (list "a" "a"))
-                                                   (hash 'start "M1" 'input "b" 'popped EMP-str 'end "M1" 'pushed (list "b"))
+                                      'stackAlpha '("a" "b")
+                                      'rules (list (hash 'start "S" 'input EMP-str 'popped '() 'end "M1" 'pushed '())
+                                                   (hash 'start "M1" 'input "a" 'popped '() 'end "M1" 'pushed (list "a" "a"))
+                                                   (hash 'start "M1" 'input "b" 'popped '() 'end "M1" 'pushed (list "b"))
                                                    (hash 'start "M1" 'input "a" 'popped (list "b") 'end "M1" 'pushed (list "a"))
-                                                   (hash 'start "M1" 'input "a" 'popped (list "b" "b") 'end "M1" 'pushed EMP-str)
-                                                   (hash 'start "M1" 'input "b" 'popped (list "a") 'end "M1" 'pushed EMP-str)
-                                                   (hash 'start "M1" 'input EMP-str 'popped EMP-str 'end "F" 'pushed EMP-str))
+                                                   (hash 'start "M1" 'input "a" 'popped (list "b" "b") 'end "M1" 'pushed '())
+                                                   (hash 'start "M1" 'input "b" 'popped (list "a") 'end "M1" 'pushed '())
+                                                   (hash 'start "M1" 'input EMP-str 'popped '() 'end "F" 'pushed '()))
                                       'type "pda")))))
   (run-tests fsa->jsexpr-tests)
 

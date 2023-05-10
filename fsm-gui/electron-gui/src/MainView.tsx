@@ -26,6 +26,7 @@ import RightEditor from './components/rightEditor/MachineEditorComponent';
 import LeftEditor from './components/leftEditor/LeftEditor';
 import RuleComponent from './components/ruleDisplay/rulesComponent';
 import InputComponent from './components/inputEditor/InputComponent';
+import Stack from './components/stack/Stack';
 import {
   BuildMachineResponse,
   PrebuiltMachineResponse,
@@ -180,7 +181,7 @@ const MainView = (props: MainViewProps) => {
       props.racketBridge.client.on('data', (data: JSON) => {
         const result: SocketResponse<object> = JSON.parse(data.toString());
         if (result.error) {
-          //TODO: Handle error case by displaying message in the GUI
+          openInfoDialog('Error Building Machine', `${result.error}`);
         } else if (result.responseType === Instruction.BUILD) {
           const response = result as SocketResponse<BuildMachineResponse>;
           // See if fsm-core added any states, if so then add them
@@ -220,7 +221,8 @@ const MainView = (props: MainViewProps) => {
             alphabet: response.data.alpha,
             rules: response.data.rules,
             type: response.data.type,
-            stackAlpha: response.data.type === "pda" ? response.data.stackAlpha : []
+            stackAlpha:
+              response.data.type === 'pda' ? response.data.stackAlpha : [],
           });
           openInfoDialog(
             'Prebuilt Machine Loaded',
@@ -239,7 +241,6 @@ const MainView = (props: MainViewProps) => {
   }, [machineState]);
 
   const run = () => {
-    console.log('Sending', machineState.states);
     props.racketBridge.sendToRacket(
       { ...machineState } as FSMBuildMachineRequest,
       Instruction.BUILD,
@@ -340,9 +341,22 @@ const MainView = (props: MainViewProps) => {
                 type={machineState.type}
               />
             </Grid>
+            {machineState.type === 'pda' && (
+              <Grid
+                item
+                height="101.2%"
+                xs={1}
+                justifyContent="center"
+                display="flex"
+                style={{ paddingLeft: '0px' }}
+                sx={{ borderRight: `1px solid ${theme.palette.divider}` }}
+              >
+                <Stack currentTransition={currentTransition} />
+              </Grid>
+            )}
             <Grid
               item
-              xs={10}
+              xs={machineState.type === 'pda' ? 9 : 10}
               justifyContent="center"
               alignItems="center"
               display="flex"

@@ -37,9 +37,9 @@
                         (define pushed (hash-ref r 'pushed))
                         (list (list (string->symbol (hash-ref r 'start))
                                     (string->symbol (hash-ref r 'input))
-                                    (if (list? popped) (map string->symbol popped) (string->symbol popped)))
+                                    (if (empty? popped) EMP (map string->symbol popped)))
                               (list (string->symbol (hash-ref r 'end))
-                                    (if (list? pushed) (map string->symbol pushed) (string->symbol pushed))))]
+                                    (if (empty? pushed) EMP (map string->symbol pushed))))]
                        [(or 'tm 'tm-language-recognizer) "TODO"]))
          rules))
   (define no-dead (hash-ref data 'nodead))
@@ -99,9 +99,8 @@
         ['ndfa (if no-dead
                    (make-ndfa states start finals alpha rules 'nodead)
                    (make-ndfa states start finals alpha rules))]
-        ['pda (if no-dead
-                  (make-ndpda states alpha stack-alpha start finals rules 'nodead)
-                  (make-ndpda states alpha stack-alpha start finals rules))]
+        ;; pda's dont use the dead-state
+        ['pda (make-ndpda states alpha stack-alpha start finals rules)]
         [(or 'tm 'tm-language-recognizer) "TODO"])))
 
 
@@ -175,13 +174,13 @@
                                                              (hash 'name "F" 'type "final" 'invFunc (json-null)))
                                                'alphabet '("a" "b")
                                                'stackAlpha '("a" "b")
-                                               'rules (list (hash 'start "S" 'input EMP-str 'popped EMP-str 'end "M1" 'pushed EMP-str)
-                                                            (hash 'start "M1" 'input "a" 'popped EMP-str 'end "M1" 'pushed (list "a" "a"))
-                                                            (hash 'start "M1" 'input "b" 'popped EMP-str 'end "M1" 'pushed (list "b"))
+                                               'rules (list (hash 'start "S" 'input EMP-str 'popped '() 'end "M1" 'pushed '())
+                                                            (hash 'start "M1" 'input "a" 'popped '() 'end "M1" 'pushed (list "a" "a"))
+                                                            (hash 'start "M1" 'input "b" 'popped '() 'end "M1" 'pushed (list "b"))
                                                             (hash 'start "M1" 'input "a" 'popped (list "b") 'end "M1" 'pushed (list "a"))
-                                                            (hash 'start "M1" 'input "a" 'popped (list "b" "b") 'end "M1" 'pushed EMP-str)
-                                                            (hash 'start "M1" 'input "b" 'popped (list "a") 'end "M1" 'pushed EMP-str)
-                                                            (hash 'start "M1" 'input EMP-str 'popped EMP-str 'end "F" 'pushed EMP-str))
+                                                            (hash 'start "M1" 'input "a" 'popped (list "b" "b") 'end "M1" 'pushed '())
+                                                            (hash 'start "M1" 'input "b" 'popped (list "a") 'end "M1" 'pushed '())
+                                                            (hash 'start "M1" 'input EMP-str 'popped '() 'end "F" 'pushed '()))
                                                'input '("b" "b" "a")
                                                'nodead false
                                                'type "pda"))
@@ -190,29 +189,29 @@
                                           'states (list (hash 'name "S" 'type "start" 'invFunc (json-null))
                                                         (hash 'name "M1" 'type "normal" 'invFunc (json-null))
                                                         (hash 'name "F" 'type "final" 'invFunc (json-null)))
-                                          'rules (list (hash 'start "S" 'input EMP-str 'popped EMP-str 'end "M1" 'pushed EMP-str)
-                                                       (hash 'start "M1" 'input "a" 'popped EMP-str 'end "M1" 'pushed (list "a" "a"))
-                                                       (hash 'start "M1" 'input "b" 'popped EMP-str 'end "M1" 'pushed (list "b"))
+                                          'rules (list (hash 'start "S" 'input EMP-str 'popped '() 'end "M1" 'pushed '())
+                                                       (hash 'start "M1" 'input "a" 'popped '() 'end "M1" 'pushed (list "a" "a"))
+                                                       (hash 'start "M1" 'input "b" 'popped '() 'end "M1" 'pushed (list "b"))
                                                        (hash 'start "M1" 'input "a" 'popped (list "b") 'end "M1" 'pushed (list "a"))
-                                                       (hash 'start "M1" 'input "a" 'popped (list "b" "b") 'end "M1" 'pushed EMP-str)
-                                                       (hash 'start "M1" 'input "b" 'popped (list "a") 'end "M1" 'pushed EMP-str)
-                                                       (hash 'start "M1" 'input EMP-str 'popped EMP-str 'end "F" 'pushed EMP-str))
+                                                       (hash 'start "M1" 'input "a" 'popped (list "b" "b") 'end "M1" 'pushed '())
+                                                       (hash 'start "M1" 'input "b" 'popped (list "a") 'end "M1" 'pushed '())
+                                                       (hash 'start "M1" 'input EMP-str 'popped '() 'end "F" 'pushed '()))
                                           'transitions (list
                                                         (hash 'start "S"
                                                               'invPass (json-null))
-                                                        (hash 'rule (hash 'start "S" 'input EMP-str 'popped EMP-str 'end "M1" 'pushed EMP-str)
+                                                        (hash 'rule (hash 'start "S" 'input EMP-str 'popped '() 'end "M1" 'pushed '())
                                                               'invPass (json-null)
                                                               'stack (list))
-                                                        (hash 'rule (hash 'start "M1" 'input "b" 'popped EMP-str 'end "M1" 'pushed (list "b"))
+                                                        (hash 'rule (hash 'start "M1" 'input "b" 'popped '() 'end "M1" 'pushed (list "b"))
                                                               'invPass (json-null)
                                                               'stack (list "b"))
-                                                        (hash 'rule (hash 'start "M1" 'input "b" 'popped EMP-str 'end "M1" 'pushed (list "b"))
+                                                        (hash 'rule (hash 'start "M1" 'input "b" 'popped '() 'end "M1" 'pushed (list "b"))
                                                               'invPass (json-null)
                                                               'stack (list "b" "b"))
-                                                        (hash 'rule (hash 'start "M1" 'input "a" 'popped (list "b" "b") 'end "M1" 'pushed EMP-str)
+                                                        (hash 'rule (hash 'start "M1" 'input "a" 'popped (list "b" "b") 'end "M1" 'pushed '())
                                                               'invPass (json-null)
                                                               'stack (list))
-                                                        (hash 'rule (hash 'start "M1" 'input EMP-str 'popped EMP-str 'end "F" 'pushed EMP-str)
+                                                        (hash 'rule (hash 'start "M1" 'input EMP-str 'popped '() 'end "F" 'pushed '())
                                                               'invPass (json-null)
                                                               'stack (list))
                                                         (hash 'end "F"
@@ -222,10 +221,10 @@
                     (define actual (build-machine pda=2ba-jsexpr))
                     (check-equal? (hash-ref actual 'error)
                                   (hash-ref expected 'error)
-                                  "Error msg field for a*a should be null for a valid machine")
+                                  "Error msg field for pda=2ba should be null for a valid machine")
                     (check-equal? (hash-ref actual 'data)
                                   (hash-ref expected 'data)
-                                  "Data for a*a should be the propper json values"))))
+                                  "Data for pda=2ba should be the propper json values"))))
 
     (run-tests build-machine-tests)
 

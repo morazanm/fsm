@@ -21,5 +21,5 @@ export type PrebuiltMachineResponse = {
   alpha: FSMAlpha[];
   rules: FSMRule[];
   type: MachineType;
-  stackAlpha: FSMStackAlpha[] | undefined, // undefined when not a pda
+  stackAlpha: FSMStackAlpha[] | undefined; // undefined when not a pda
 };

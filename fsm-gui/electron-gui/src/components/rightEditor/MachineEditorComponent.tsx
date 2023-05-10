@@ -187,13 +187,15 @@ const MachineEditorComponent = (props: MachineEditorProps) => {
             <SsidChartIcon />
           </IconButton>
         </Tooltip>
-        <Tooltip
-          title="Use Dead State"
-          placement="left-start"
-          disableInteractive
-        >
-          <Switch checked={!props.nodead} onClick={props.toggleDead} />
-        </Tooltip>
+        {props.machineType !== 'pda' && (
+          <Tooltip
+            title="Use Dead State"
+            placement="left-start"
+            disableInteractive
+          >
+            <Switch checked={!props.nodead} onClick={props.toggleDead} />
+          </Tooltip>
+        )}
         <Backdrop open={open} />
         <StyledSpeedDial
           ariaLabel="SpeedDial"

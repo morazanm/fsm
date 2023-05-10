@@ -155,6 +155,14 @@ export default function useRuleForm(machineType: MachineType) {
         props.alpha,
       );
       if (!msg) {
+        // If we have pda then we want EMP to be a empty array
+        if (isPdaRule(currentRule)) {
+          currentRule.popped = currentRule.popped.filter((v) => v !== 'ε');
+          currentRule.pushed = currentRule.pushed.filter((v) => v !== 'ε');
+        }
+
+        console.log(currentRule);
+
         props.setRules([...props.rules, currentRule]);
         resetValues();
         props.toggle();
