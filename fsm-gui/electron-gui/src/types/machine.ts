@@ -24,7 +24,7 @@ export type StateType = 'start' | 'final' | 'startFinal' | 'normal' | 'accept';
 export type State = {
   name: StateName;
   type: StateType;
-  invFunc?: RacketInvariantFunc;
+  invFunc: RacketInvariantFunc | null;
 };
 
 // Supported rule types

@@ -118,4 +118,4 @@
                          (cons 'D (json-null))))
 
 ;(run-without-prebuilt)
-(run-with-prebuilt pda=2ba invariants)
+(run-with-prebuilt a*a invariants)

@@ -55,7 +55,10 @@ export default function StateForm(props: InputFormProps) {
     if (msg != '') {
       setError(msg);
     } else {
-      props.setStates([...props.states, { name: incoming, type: type }]);
+      props.setStates([
+        ...props.states,
+        { name: incoming, type: type, invFunc: null },
+      ]);
       setError('');
       props.toggle();
       props.toggleSnack(`State: "${incoming}" was added`);

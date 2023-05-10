@@ -21,6 +21,7 @@ function validateRule(
   rules: FSMRule[],
   states: State[],
   alpha: string[],
+  checkExists = true,
 ): string {
   const isValidState = (state: string): string =>
     states.find((s) => s.name === state)
@@ -46,7 +47,7 @@ function validateRule(
   } else if (isPdaRule(rule)) {
     rule.popped = rule.popped.filter((r) => r !== '');
     rule.pushed = rule.pushed.filter((r) => r !== '');
-    if (rules.find((r) => isFSMRuleEqual(r, rule))) {
+    if (checkExists && rules.find((r) => isFSMRuleEqual(r, rule))) {
       return 'Rule already exists in the list of rules';
     }
     return fmtMsgs([
@@ -57,7 +58,7 @@ function validateRule(
       isValidStack(rule.pushed),
     ]);
   } else if (isDfaNdfaRule(rule)) {
-    if (rules.find((r) => isFSMRuleEqual(r, rule))) {
+    if (checkExists && rules.find((r) => isFSMRuleEqual(r, rule))) {
       return 'Rule already exists in the list of rules';
     }
     return fmtMsgs([
@@ -160,9 +161,6 @@ export default function useRuleForm(machineType: MachineType) {
           currentRule.popped = currentRule.popped.filter((v) => v !== 'ε');
           currentRule.pushed = currentRule.pushed.filter((v) => v !== 'ε');
         }
-
-        console.log(currentRule);
-
         props.setRules([...props.rules, currentRule]);
         resetValues();
         props.toggle();
@@ -178,10 +176,15 @@ export default function useRuleForm(machineType: MachineType) {
         props.rules,
         props.states,
         props.alpha,
+        false,
       );
       if (msg) {
         setError(msg);
       } else if (props.rules.find((r) => isFSMRuleEqual(r, currentRule))) {
+        if (isPdaRule(currentRule)) {
+          currentRule.popped = currentRule.popped.filter((v) => v !== 'ε');
+          currentRule.pushed = currentRule.pushed.filter((v) => v !== 'ε');
+        }
         props.setRules(
           props.rules.filter((r) => !isFSMRuleEqual(r, currentRule)),
         );

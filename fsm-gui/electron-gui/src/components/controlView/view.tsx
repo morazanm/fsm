@@ -6,6 +6,9 @@ import {
   isNormalTransition,
   StateName,
   isStartTransition,
+  FSMAlpha,
+  isDfaNdfaRule,
+  isPdaRule,
 } from '../../types/machine';
 import StateComponent from './state';
 import styles from './view.module.css';
@@ -19,6 +22,7 @@ type CurrentTransition = {
   start: StateName | null;
   end: StateName | null;
   invPass: boolean | null;
+  input: FSMAlpha | null;
 };
 
 const getCurrentStateAndInv = (
@@ -30,11 +34,21 @@ const getCurrentStateAndInv = (
       start: trans.rule.start,
       end: trans.rule.end,
       invPass: trans.invPass,
+      input: isDfaNdfaRule(trans.rule)
+        ? trans.rule.input
+        : isPdaRule(trans.rule)
+        ? trans.rule.input
+        : null,
     };
   else if (isStartTransition(trans))
-    return { start: null, end: trans.start, invPass: trans.invPass };
+    return {
+      start: null,
+      end: trans.start,
+      invPass: trans.invPass,
+      input: null,
+    };
   else {
-    return { start: null, end: trans.end, invPass: trans.invPass };
+    return { start: null, end: trans.end, invPass: trans.invPass, input: null };
   }
 };
 
@@ -49,10 +63,12 @@ const ControlView = (props: ControlViewProps) => {
     target,
     isCurrent,
     invPass,
+    input,
   }: {
     target: string;
     isCurrent?: boolean;
     invPass?: boolean | null;
+    input?: string;
   }) => {
     const style = isCurrent ? 'currentArrow' : 'previousArrow';
     const arrowColor =
@@ -66,6 +82,8 @@ const ControlView = (props: ControlViewProps) => {
     if (stateIndex !== -1) {
       const rotation = (360 / props.states.length) * stateIndex;
       const center = height / 2 - 5;
+      const useBottom = rotation > 90 && rotation < 270;
+      console.log(useBottom);
       return (
         <div
           className={styles.circleBackground}
@@ -75,18 +93,31 @@ const ControlView = (props: ControlViewProps) => {
             width: `${height}px`,
           }}
         >
-          <hr
-            className={styles[style]}
+          <div
             style={{
-              borderTop: `10px ${
-                style === 'previousArrow'
-                  ? theme.palette.text.disabled
-                  : arrowColor
-              } ${arrowStyle}`,
+              transform: `translateY(${center - 60}px) translateX(${center}px)`,
               width: `${height / 2 - 20}px`,
-              transform: `translateY(-5px) translateX(${center}px)`,
+              height: '60px',
+              textAlign: 'center',
             }}
-          ></hr>
+          >
+            <hr
+              className={styles[style]}
+              style={{
+                borderTop: `10px ${
+                  style === 'previousArrow'
+                    ? theme.palette.text.disabled
+                    : arrowColor
+                } ${arrowStyle}`,
+                width: `${height / 2 - 20}px`,
+              }}
+            ></hr>
+            <p
+              style={{ rotate: `${useBottom ? 180 : 0}deg`, fontSize: '30px' }}
+            >
+              {input ? input : ''}
+            </p>
+          </div>
         </div>
       );
     }
@@ -122,6 +153,7 @@ const ControlView = (props: ControlViewProps) => {
               <Arrow
                 target={currentTrans.end}
                 invPass={currentTrans.invPass}
+                input={currentTrans.input}
                 isCurrent
               />
             )}

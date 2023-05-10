@@ -40,7 +40,7 @@ const Stack = (props: StackProps) => {
         <MUIStack
           direction="column"
           overflow="auto"
-          style={{ maxHeight: '73vh' }}
+          style={{ maxHeight: '68vh' }}
         >
           {stackElements.map((a, i) => (
             <Box
