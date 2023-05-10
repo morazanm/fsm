@@ -35,7 +35,7 @@
   (match (string->symbol (hash-ref input 'instr))
     ['build_machine (build-machine (hash-ref input 'data))]
     ['shut_down eof] ;; we use eof to denote a shutdown
-    [_ (error (format "Invalid instruction given: ~s" (hash-ref input 'instr)))]))
+    [_ (error 'handle-request "Invalid instruction given: ~a" (hash-ref input 'instr))]))
 
 
 ;; listen-for-input :: TCP-listener optional(jsexpr)
@@ -45,7 +45,6 @@
   (define-values (in out) (tcp-accept listener))
   (when (not (null? data))
     (displayln! "Sending prebuilt machine")
-    (displayln data)
     (write-json-and-flush data out))
   (thread
    (lambda ()

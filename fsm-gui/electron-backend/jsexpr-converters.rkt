@@ -22,7 +22,7 @@
     [(or 'dfa 'ndfa) base-hash]
     ['pda (hash-set base-hash 'stackAlpha (map symbol->string (sm-gamma fsa)))]
     [(or 'tm 'tm-langauge-recognizer) "TODO"]
-    [ _ (error (format "[FSM Internal error]: invalid machine type: ~s" (sm-type fsa)))]))
+    [ _ (error 'fsa->jsexpr "invalid machine type: ~a" (sm-type fsa))]))
 
 ;; state->jsexpr :: symbol fsa optional(listof(cons symbol string))-> jsexpr(state)
 ;; converts the fsm-core state to a jsexpr that containes the state name
@@ -236,12 +236,6 @@
       [else                                   ;;statyed in same posn
        (list (list cur-state cur-tape-element) (list next-state next-tape-element))])))
 
-;; get-mttm-rule processed-list -> mttm-rule
-;; Purpose: Determins if the rule to be made should be empty or a real rule
-(define (get-mttm-rule pl)
-  (cond
-    [(< (length pl) 2) '(null null null)]
-    [else (construct-mttm-rule pl)]))
 
 ;; construct-mttm-rule :: processed-list -> mttm-rule
 ;; Purpose: Constructs the current mttm rule based on the processed list

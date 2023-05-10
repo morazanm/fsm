@@ -91,6 +91,8 @@ type InfoDialog = {
   message: string;
 };
 
+type DialogType = 'start' | 'end' | 'info' | 'error' | null;
+
 type MachineState = {
   states: State[];
   rules: FSMRule[];
@@ -114,9 +116,7 @@ const MainView = (props: MainViewProps) => {
     connected: props.racketBridge.connected,
     status: 'done',
   });
-  const [openDialog, setOpenDialog] = useState<'start' | 'end' | 'info' | null>(
-    null,
-  );
+  const [openDialog, setOpenDialog] = useState<DialogType>(null);
   const [machineState, setMachineState] = useState<MachineState>({
     states: [],
     rules: [],
@@ -135,12 +135,16 @@ const MainView = (props: MainViewProps) => {
       transitions: EMPTY_TRANSITIONS,
     });
 
-  const openInfoDialog = (title: string, msg: string) => {
+  const openInfoDialog = (
+    title: string,
+    msg: string,
+    type: DialogType = 'info',
+  ) => {
     infoDialog.current = {
       title: title,
       message: msg,
     };
-    setOpenDialog('info');
+    setOpenDialog(type);
   };
 
   const toggleDead = () =>
@@ -181,7 +185,7 @@ const MainView = (props: MainViewProps) => {
       props.racketBridge.client.on('data', (data: JSON) => {
         const result: SocketResponse<object> = JSON.parse(data.toString());
         if (result.error) {
-          openInfoDialog('Error Building Machine', `${result.error}`);
+          openInfoDialog('Error Building Machine', `${result.error}`, 'error');
         } else if (result.responseType === Instruction.BUILD) {
           const response = result as SocketResponse<BuildMachineResponse>;
           // See if fsm-core added any states, if so then add them
@@ -432,6 +436,20 @@ const MainView = (props: MainViewProps) => {
           }}
           title={infoDialog.current.title}
           body={infoDialog.current.message}
+        />
+      )}
+      {openDialog === 'error' && infoDialog.current && (
+        <BasicDialog
+          open
+          onClose={() => {
+            infoDialog.current = null;
+            setOpenDialog(null);
+          }}
+          title={infoDialog.current.title}
+          body={infoDialog.current.message}
+          bodyStyle={{
+            color: theme.palette.error.main,
+          }}
         />
       )}
     </Paper>
