@@ -42,7 +42,7 @@ export type PdaRule = {
   pushed: string[]; // empty array is displayed as EMP
 };
 
-type TmAction = 'R' | 'L' | '_';
+type TmAction = 'R' | 'L' | '_' | "@";
 // Object representation of a turing machine rule
 export type TmMttmRule = {
   start: StateName;

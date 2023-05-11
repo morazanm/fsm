@@ -21,7 +21,7 @@
   (match (sm-type fsa)
     [(or 'dfa 'ndfa) base-hash]
     ['pda (hash-set base-hash 'stackAlpha (map symbol->string (sm-gamma fsa)))]
-    [(or 'tm 'tm-langauge-recognizer) base-hash]
+    [(or 'tm 'tm-language-recognizer) base-hash]
     [ _ (error 'fsa->jsexpr "invalid machine type: ~a" (sm-type fsa))]))
 
 ;; state->jsexpr :: symbol fsa optional(listof(cons symbol string))-> jsexpr(state)
@@ -33,8 +33,8 @@
   (define inv-state (findf (match-lambda [(cons s f) (equal? s state)]) invariants))
   (hash 'name (symbol->string state)
         'type (cond
-                [(and (equal? 'tm-language-recognizer (sm-type fsa)))
-                      (equal? state (sm-accept fsa)) "accept"]
+                [(and (equal? 'tm-language-recognizer (sm-type fsa))
+                      (equal? state (sm-accept fsa))) "accept"]
                 [(and (member state (sm-finals fsa))
                       (equal? state (sm-start fsa))) "startfinal"]
                 [(equal? state (sm-start fsa)) "start"]
@@ -59,11 +59,15 @@
     'end (symbol->string e)
     'pushed (if (list? stack2) (map symbol->string stack2) '()))]
   [(`((,s ,i1) (,e ,i2)))
+   ;; we keep tm actions as string but the rest as a list. This helps with logic for the GUI
+   (define (transform s) (if (member s (list LM LEFT RIGHT BLANK))
+                       (symbol->string s)
+                       (list (symbol->string s))))
    (hash
     'start (symbol->string s)
-    'startTape (if (list? i1) (map symbol->string i1) (symbol->string i1))
+    'startTape (if (list? i1) (map symbol->string i1) (transform i1))
     'end (symbol->string e)
-    'endTape (if (list? i2) (map symbol->string i2) (symbol->string i2)))]
+    'endTape (if (list? i2) (map symbol->string i2) (transform i2)))]
   [(_) (error 'rule->jsexpr "Invalid rule supplied ~a" rule)])
 
 
@@ -487,10 +491,85 @@
                                                     (hash 'name "H" 'type "final" 'invFunc (json-null)))
                                       'alpha '("a" "b" "@")
                                       'rules (list (hash 'start "S" 'startTape "@" 'end "S" 'endTape "R")
-                                                   (hash 'start "S" 'startTape "a" 'end "H" 'endTape "a")
-                                                   (hash 'start "S" 'startTape "b" 'end "H" 'endTape "a")
-                                                   (hash 'start "S" 'startTape "_" 'end "H" 'endTape "a"))
-                                      'type "tm")))))
+                                                   (hash 'start "S" 'startTape '("a") 'end "H" 'endTape '("a"))
+                                                   (hash 'start "S" 'startTape '("b") 'end "H" 'endTape '("a"))
+                                                   (hash 'start "S" 'startTape "_" 'end "H" 'endTape '("a")))
+                                      'type "tm")))
+
+                (test-case "tm-language-recognizer"
+                  ;; write a on tape
+                  (define a^nb^nc^n (make-tm '(S B C D E Y N)
+                                             '(a b c z)
+                                             `(((S a) (B z))
+                                               ((S b) (N b))
+                                               ((S c) (N c))
+                                               ((S ,BLANK) (Y ,BLANK))
+                                               ((S z) (N z))
+                                               ((E z) (E ,RIGHT))
+                                               ((E ,BLANK) (Y ,BLANK))
+                                               ((E a) (N a))
+                                               ((E b) (N b))
+                                               ((E c) (N c))
+                                               ((B a) (B ,RIGHT))
+                                               ((B b) (C z))
+                                               ((B c) (N c))
+                                               ((B ,BLANK) (N ,BLANK))
+                                               ((B z) (B ,RIGHT))
+                                               ((C a) (N a))
+                                               ((C b) (C ,RIGHT))
+                                               ((C c) (D z))
+                                               ((C ,BLANK) (N ,BLANK))
+                                               ((C z) (C ,RIGHT))
+                                               ((D a) (S a))
+                                               ((D b) (D ,LEFT))
+                                               ((D c) (D ,LEFT))
+                                               ((D ,BLANK) (N ,BLANK))
+                                               ((D z) (D ,LEFT))
+                                               ((D ,LM) (E R)))
+                                             'S
+                                             '(Y N)
+                                             'Y))
+                  (check-equal? (fsa->jsexpr a^nb^nc^n)
+                                (hash 'states (list (hash 'name "S" 'type "start" 'invFunc (json-null))
+                                                    (hash 'name "B" 'type "normal" 'invFunc (json-null))
+                                                    (hash 'name "C" 'type "normal" 'invFunc (json-null))
+                                                    (hash 'name "D" 'type "normal" 'invFunc (json-null))
+                                                    (hash 'name "E" 'type "normal" 'invFunc (json-null))
+                                                    (hash 'name "Y" 'type "accept" 'invFunc (json-null))
+                                                    (hash 'name "N" 'type "final" 'invFunc (json-null)))
+                                      'alpha '("@" "a" "b" "c" "z")
+                                      'rules (list (hash 'start "S" 'startTape "@" 'end "S" 'endTape "R")
+                                                   (hash 'start "B" 'startTape "@" 'end "B" 'endTape "R")
+                                                   (hash 'start "C" 'startTape "@" 'end "C" 'endTape "R")
+                                                   (hash 'start "D" 'startTape "@" 'end "D" 'endTape "R")
+                                                   (hash 'start "E" 'startTape "@" 'end "E" 'endTape "R")
+                                                   (hash 'start "S" 'startTape '("a") 'end "B" 'endTape '("z"))
+                                                   (hash 'start "S" 'startTape '("b") 'end "N" 'endTape '("b"))
+                                                   (hash 'start "S" 'startTape '("c") 'end "N" 'endTape '("c"))
+                                                   (hash 'start "S" 'startTape "_" 'end "Y" 'endTape "_")
+                                                   (hash 'start "S" 'startTape '("z") 'end "N" 'endTape '("z"))
+                                                   (hash 'start "E" 'startTape '("z") 'end "E" 'endTape "R")
+                                                   (hash 'start "E" 'startTape "_" 'end "Y" 'endTape "_")
+                                                   (hash 'start "E" 'startTape '("a") 'end "N" 'endTape '("a"))
+                                                   (hash 'start "E" 'startTape '("b") 'end "N" 'endTape '("b"))
+                                                   (hash 'start "E" 'startTape '("c") 'end "N" 'endTape '("c"))
+                                                   (hash 'start "B" 'startTape '("a") 'end "B" 'endTape "R")
+                                                   (hash 'start "B" 'startTape '("b") 'end "C" 'endTape '("z"))
+                                                   (hash 'start "B" 'startTape '("c") 'end "N" 'endTape '("c"))
+                                                   (hash 'start "B" 'startTape "_" 'end "N" 'endTape "_")
+                                                   (hash 'start "B" 'startTape '("z") 'end "B" 'endTape "R")
+                                                   (hash 'start "C" 'startTape '("a") 'end "N" 'endTape '("a"))
+                                                   (hash 'start "C" 'startTape '("b") 'end "C" 'endTape "R")
+                                                   (hash 'start "C" 'startTape '("c") 'end "D" 'endTape '("z"))
+                                                   (hash 'start "C" 'startTape "_" 'end "N" 'endTape "_")
+                                                   (hash 'start "C" 'startTape '("z") 'end "C" 'endTape "R")
+                                                   (hash 'start "D" 'startTape '("a") 'end "S" 'endTape '("a"))
+                                                   (hash 'start "D" 'startTape '("b") 'end "D" 'endTape "L")
+                                                   (hash 'start "D" 'startTape '("c") 'end "D" 'endTape "L")
+                                                   (hash 'start "D" 'startTape "_" 'end "N" 'endTape "_")
+                                                   (hash 'start "D" 'startTape '("z") 'end "D" 'endTape "L")
+                                                   (hash 'start "D" 'startTape "@" 'end "E" 'endTape "R"))
+                                      'type "tm-language-recognizer")))))
   (run-tests fsa->jsexpr-tests)
 
 
