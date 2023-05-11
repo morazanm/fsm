@@ -102,6 +102,8 @@ type MachineState = {
   transitions: MachineTransitions;
   type: MachineType;
   nodead: boolean;
+  initialTapePosition: number; // only used by tm and tm-lang-rec
+  accept: State | null; // only used by tm-lang-rec
 };
 
 type MainViewProps = {
@@ -120,12 +122,14 @@ const MainView = (props: MainViewProps) => {
   const [machineState, setMachineState] = useState<MachineState>({
     states: [],
     rules: [],
-    alphabet: [],
+    alphabet: ['@'],
     stackAlpha: [],
-    input: [],
+    input: ['@'],
     transitions: EMPTY_TRANSITIONS,
-    type: 'pda',
+    type: 'tm',
     nodead: true,
+    accept: null,
+    initialTapePosition: 0,
   } as MachineState);
 
   const resetMachineAndSet = (obj: Partial<MachineState>) =>
@@ -135,23 +139,31 @@ const MainView = (props: MainViewProps) => {
       transitions: EMPTY_TRANSITIONS,
     });
 
-  const openInfoDialog = (
-    title: string,
-    msg: string,
-    type: DialogType = 'info',
-  ) => {
+  const openInfoDialog = (title: string, msg: string) => {
     infoDialog.current = {
       title: title,
       message: msg,
     };
-    setOpenDialog(type);
+    setOpenDialog('info');
+  };
+
+  const openErrorDialog = (title: string, msg: string) => {
+    infoDialog.current = {
+      title: title,
+      message: msg,
+    };
+    setOpenDialog('error');
   };
 
   const toggleDead = () =>
     setMachineState({ ...machineState, nodead: !machineState.nodead });
-
   const setGuiStates = (states: State[]) => {
     resetMachineAndSet({ states: states });
+  };
+  const setInitialTapePosition = (position: number) => {
+    resetMachineAndSet({
+      initialTapePosition: 0,
+    });
   };
   const setGuiRules = (rules: FSMRule[]) => {
     resetMachineAndSet({ rules: rules });
@@ -162,7 +174,6 @@ const MainView = (props: MainViewProps) => {
   const setAlpha = (alpha: FSMAlpha[]) => {
     resetMachineAndSet({ alphabet: alpha });
   };
-
   const setStackAlpha = (stackAlpha: FSMStackAlpha[]) => {
     resetMachineAndSet({ stackAlpha: stackAlpha });
   };
@@ -185,7 +196,7 @@ const MainView = (props: MainViewProps) => {
       props.racketBridge.client.on('data', (data: JSON) => {
         const result: SocketResponse<object> = JSON.parse(data.toString());
         if (result.error) {
-          openInfoDialog('Error Building Machine', `${result.error}`, 'error');
+          openErrorDialog('Error Building Machine', `${result.error}`);
         } else if (result.responseType === Instruction.BUILD) {
           const response = result as SocketResponse<BuildMachineResponse>;
           // See if fsm-core added any states, if so then add them
@@ -319,6 +330,7 @@ const MainView = (props: MainViewProps) => {
             goNext={goNext}
             goPrev={goPrev}
             transitions={machineState.transitions.transitions}
+            type={machineState.type}
           />
         </Grid>
         <Grid
@@ -388,6 +400,8 @@ const MainView = (props: MainViewProps) => {
                 connection={connected}
                 reconnect={attemptToReconnect}
                 setAlpha={setAlpha}
+                tapePosition={machineState.initialTapePosition}
+                setTapePosition={setInitialTapePosition}
               />
             </Grid>
           </Grid>

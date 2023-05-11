@@ -17,6 +17,7 @@ import {
   Abc as AbcIcon,
   TableRows as TableRowIcons,
   SsidChart as SsidChartIcon,
+  Check as CheckIcon,
   Palette as PaletteIcon,
   RssFeed as RssFeedIcon,
   RadioButtonUnchecked as RadioButtonUncheckedIcon,
@@ -36,6 +37,7 @@ import {
 import { AlphaModal, GammaModal } from './forms/AlphaModals';
 import InputForm from './forms/InputForm';
 import StateForm from './forms/StateForm';
+import TapeForm from './forms/TapePosition';
 import useRuleForm from './forms/RuleForm';
 import { Connection } from '../../socket/racketInterface';
 
@@ -98,6 +100,14 @@ const useDialActions = (type: MachineType) => {
     });
   }
 
+  if (type === 'tm-lang-rec') {
+    actions.push({
+      icon: <CheckIcon />,
+      tooltip: 'Accept State',
+      toggle: (val: OpenModal): OpenModal => (val === null ? 'accept' : null),
+    });
+  }
+
   if (type === 'pda') {
     actions.push({
       icon: <TableRowIcons />,
@@ -126,6 +136,8 @@ type MachineEditorProps = {
   rules: FSMRule[];
   setRules: (rules: FSMRule[]) => void;
   reconnect: () => void;
+  tapePosition: number;
+  setTapePosition: (position: number) => void;
 };
 
 type OpenModal =
@@ -135,6 +147,7 @@ type OpenModal =
   | 'tapePosn'
   | 'alpha'
   | 'gamma'
+  | 'accept'
   | null;
 
 const MachineEditorComponent = (props: MachineEditorProps) => {
@@ -261,6 +274,15 @@ const MachineEditorComponent = (props: MachineEditorProps) => {
         stackAlpha={props.stackAlpha}
         setStackAlpha={props.setStackAlpha}
         toggleSnack={toggleSnack}
+      />
+
+      <TapeForm
+        isOpen={openModal === 'tapePosn'}
+        toggle={() => setOpenModal(null)}
+        tapePosition={props.tapePosition}
+        setTapePosition={props.setTapePosition}
+        toggleSnack={toggleSnack}
+        input={props.input}
       />
 
       {snackMsg && (

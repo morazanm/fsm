@@ -95,6 +95,8 @@ export const AlphaModal = (props: AlphaModalProps) => {
             );
             if (invalid_alpha.length > 0) {
               setErrorMsg(`"${invalid_alpha}" are not in the alphabet`);
+            } else if (values.includes('@')) {
+              setErrorMsg('@ is not allowed to be removed from the alphabet');
             } else {
               const new_alpha = props.alpha.filter((a) => !values.includes(a));
               props.setAlpha(new_alpha);
@@ -200,6 +202,8 @@ export const GammaModal = (props: GammaModalProps) => {
             );
             if (invalid_alpha.length > 0) {
               setErrorMsg(`"${invalid_alpha}" are not in the stack alphabet`);
+            } else if (values.includes('@')) {
+              setErrorMsg('@ can not be removed from the alpha');
             } else {
               const new_alpha = props.stackAlpha.filter(
                 (a) => !values.includes(a),

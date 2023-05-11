@@ -15,11 +15,31 @@ type InputFormProps = {
   alpha: FSMAlpha[];
 };
 
+const isReserved = (s: string): boolean => {
+  return s === '@' || s === '_';
+};
+
 const validateInput = (incoming: string[], alpha: FSMAlpha[]) => {
-  const badAlpha = incoming.filter((v) => !alpha.includes(v));
+  console.log(incoming);
+  const badAlpha = incoming.filter((v) => !alpha.includes(v) && !isReserved(v));
   return badAlpha.length > 0
     ? `The following are not in the list of alpha: ${badAlpha}`
     : '';
+};
+
+const parseData = (data: string) => {
+  const tmp = data.split(' ');
+  return tmp
+    .map((v) => {
+      if (v == 'BLANK') {
+        return '_';
+      } else if (v === 'LM') {
+        return '@';
+      } else {
+        return v;
+      }
+    })
+    .join(' ');
 };
 
 export default function InputForm(props: InputFormProps) {
@@ -55,6 +75,7 @@ export default function InputForm(props: InputFormProps) {
           values.
         </DialogContentText>
         <TextField
+          value={data}
           autoFocus
           error={error !== ''}
           margin="dense"
@@ -64,12 +85,20 @@ export default function InputForm(props: InputFormProps) {
           fullWidth
           variant="standard"
           helperText={error}
-          onChange={(e) => setData(e.target.value)}
+          onChange={(e) =>
+            isTmType(props.machineType)
+              ? setData(parseData(e.target.value))
+              : setData(e.target.value)
+          }
         />
         <Button
           variant="outlined"
           onClick={() => {
-            props.setInput([]);
+            if (isTmType(props.machineType)) {
+              props.setInput(['@']);
+            } else {
+              props.setInput([]);
+            }
           }}
           color="error"
           sx={{ marginTop: 3 }}

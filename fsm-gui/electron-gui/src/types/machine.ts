@@ -42,32 +42,42 @@ export type PdaRule = {
   pushed: string[]; // empty array is displayed as EMP
 };
 
+type TmAction = 'R' | 'L' | '_';
 // Object representation of a turing machine rule
-// TODO: should mttm be in the name?
 export type TmMttmRule = {
   start: StateName;
-  startTape: string[];
+  startTape: string[] | TmAction;
   end: StateName;
-  endTape: string[];
+  endTape: string[] | TmAction;
 };
 
-// A transition consists for a rule that is used and a boolean to represent
-// if the invariant held. If the invariant is undefined then a invariant function
-// was not supplied
-export type Transition = {
+// A BasicTransition is used in all types of machines. It consists of a rule that is used
+// and a boolean to represent if the invariant held for the transition. If the invariant
+// is null then a invariant function was not supplied by the user.
+export type BasicTransition = {
   rule: FSMRule;
   invPass: boolean | null;
 };
 
-export type PdaTransition = Transition & {
+// A PdaTransition also includes what the stack holds at the transition
+export type PdaTransition = BasicTransition & {
   stack: FSMStackAlpha[];
 };
 
+// A TmMttmTransition also includes the index of the current place on the tape that the
+// turing machine is at.
+export type TmMttmTransition = BasicTransition & {
+  tapeIndex: number;
+};
+
+// StartTransition is the initial transition for the machine. It just contains a invariant and
+// a state state.
 export type StartTransition = {
   start: StateName;
   invPass: boolean | null;
 };
 
+// EndTransition is the last transition for the machine.  It either accepts or rejects the input.
 export type EndTransition = {
   end: StateName;
   action: 'accept' | 'reject';
@@ -75,8 +85,9 @@ export type EndTransition = {
 };
 
 export type FSMTransition =
-  | Transition
+  | BasicTransition
   | PdaTransition
+  | TmMttmTransition
   | StartTransition
   | EndTransition;
 
@@ -90,10 +101,16 @@ export const isPdaTransition = (
   return (transition as PdaTransition).stack !== undefined;
 };
 
+export const isTmMttmTransition = (
+  transition: FSMTransition,
+): transition is TmMttmTransition => {
+  return (transition as TmMttmTransition).tapeIndex !== undefined;
+};
+
 export const isNormalTransition = (
   transition: FSMTransition,
-): transition is Transition => {
-  return (transition as Transition).rule !== undefined;
+): transition is BasicTransition => {
+  return (transition as BasicTransition).rule !== undefined;
 };
 
 export const isStartTransition = (

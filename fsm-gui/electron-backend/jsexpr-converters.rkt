@@ -15,13 +15,13 @@
 ;; and the invarinat function as a string.
 (define (fsa->jsexpr fsa [invariants '()])
   (define base-hash (hash 'states (map (lambda (s) (state->jsexpr s fsa invariants)) (sm-states fsa))
-        'alpha (map symbol->string (sm-sigma fsa))
-        'rules (map rule->jsexpr (sm-rules fsa))
-        'type (symbol->string (sm-type fsa))))
+                          'alpha (map symbol->string (sm-sigma fsa))
+                          'rules (map rule->jsexpr (sm-rules fsa))
+                          'type (symbol->string (sm-type fsa))))
   (match (sm-type fsa)
     [(or 'dfa 'ndfa) base-hash]
     ['pda (hash-set base-hash 'stackAlpha (map symbol->string (sm-gamma fsa)))]
-    [(or 'tm 'tm-langauge-recognizer) "TODO"]
+    [(or 'tm 'tm-langauge-recognizer) base-hash]
     [ _ (error 'fsa->jsexpr "invalid machine type: ~a" (sm-type fsa))]))
 
 ;; state->jsexpr :: symbol fsa optional(listof(cons symbol string))-> jsexpr(state)
@@ -33,9 +33,8 @@
   (define inv-state (findf (match-lambda [(cons s f) (equal? s state)]) invariants))
   (hash 'name (symbol->string state)
         'type (cond
-                [(and (or (equal? 'tm (sm-type fsa))
-                          (equal? 'tm-language-recognizer (sm-type fsa)))
-                      (equal? state (sm-accept fsa))) "accept"]
+                [(and (equal? 'tm-language-recognizer (sm-type fsa)))
+                      (equal? state (sm-accept fsa)) "accept"]
                 [(and (member state (sm-finals fsa))
                       (equal? state (sm-start fsa))) "startfinal"]
                 [(equal? state (sm-start fsa)) "start"]
@@ -46,11 +45,12 @@
 
 ;; rule->jsexpr :: rule -> jsexpr(rule)
 ;; converts a fsm-core rule to a jsexpr
-(define/match (rule->jsexpr _rule)
+(define/match (rule->jsexpr rule)
   [(`(,s ,i ,e))
-   (hash 'start (symbol->string s)
-         'input (symbol->string i)
-         'end (symbol->string e))]
+   (hash
+    'start (symbol->string s)
+    'input (symbol->string i)
+    'end (symbol->string e))]
   [(`((,s ,i ,stack1) (,e ,stack2)))
    (hash
     'start (symbol->string s)
@@ -58,7 +58,13 @@
     'popped (if (list? stack1) (map symbol->string stack1) '())
     'end (symbol->string e)
     'pushed (if (list? stack2) (map symbol->string stack2) '()))]
-  [(_) (error "TODO")])
+  [(`((,s ,i1) (,e ,i2)))
+   (hash
+    'start (symbol->string s)
+    'startTape (if (list? i1) (map symbol->string i1) (symbol->string i1))
+    'end (symbol->string e)
+    'endTape (if (list? i2) (map symbol->string i2) (symbol->string i2)))]
+  [(_) (error 'rule->jsexpr "Invalid rule supplied ~a" rule)])
 
 
 ;; transitions->jsexpr :: fsa listof(cons symbol string) listof(string) -> jsexpr(transitons) | string
@@ -465,7 +471,26 @@
                                                    (hash 'start "M1" 'input "a" 'popped (list "b" "b") 'end "M1" 'pushed '())
                                                    (hash 'start "M1" 'input "b" 'popped (list "a") 'end "M1" 'pushed '())
                                                    (hash 'start "M1" 'input EMP-str 'popped '() 'end "F" 'pushed '()))
-                                      'type "pda")))))
+                                      'type "pda")))
+                (test-case "tm"
+                  ;; write a on tape
+                  (define Ma (make-tm '(S H)
+                                      `(a b ,LM)
+                                      `(((S a) (H a))
+                                        ((S b) (H a))
+                                        ((S ,BLANK) (H a)))
+                                      'S
+                                      '(H)))
+
+                  (check-equal? (fsa->jsexpr Ma)
+                                (hash 'states (list (hash 'name "S" 'type "start" 'invFunc (json-null))
+                                                    (hash 'name "H" 'type "final" 'invFunc (json-null)))
+                                      'alpha '("a" "b" "@")
+                                      'rules (list (hash 'start "S" 'startTape "@" 'end "S" 'endTape "R")
+                                                   (hash 'start "S" 'startTape "a" 'end "H" 'endTape "a")
+                                                   (hash 'start "S" 'startTape "b" 'end "H" 'endTape "a")
+                                                   (hash 'start "S" 'startTape "_" 'end "H" 'endTape "a"))
+                                      'type "tm")))))
   (run-tests fsa->jsexpr-tests)
 
 

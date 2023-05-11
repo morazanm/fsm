@@ -4,7 +4,12 @@ import {
   ArrowBackIosNew as ArrowBackIosNewIcon,
   ArrowForwardIos as ArrowForwardIosIcon,
 } from '@mui/icons-material';
-import { FSMAlpha, FSMTransition } from '../../types/machine';
+import {
+  FSMAlpha,
+  FSMTransition,
+  MachineType,
+  isTmType,
+} from '../../types/machine';
 import InputRender from './InputRender';
 
 type InputComponentProps = {
@@ -14,6 +19,7 @@ type InputComponentProps = {
   runMachine: () => void;
   goNext: () => void;
   goPrev: () => void;
+  type: MachineType;
 };
 
 const InputComponent = (props: InputComponentProps) => {
@@ -100,11 +106,15 @@ const InputComponent = (props: InputComponentProps) => {
       <Grid
         item
         display="flex"
-        justifyContent="center"
+        justifyContent={isTmType(props.type) ? 'left' : 'center'}
         alignItems="center"
         xs={11}
       >
-        <InputRender input={props.input} inputIndex={props.inputIndex} />
+        <InputRender
+          input={props.input}
+          inputIndex={props.inputIndex}
+          type={props.type}
+        />
       </Grid>
     </Grid>
   );
