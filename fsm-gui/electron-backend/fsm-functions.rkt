@@ -25,6 +25,10 @@
     [('()) #f]
     [(`(,(hash-table ('name n) ('type t)) ,xs ...))
      (if (or (equal? "start" t) (equal? "startfinal" t)) (string->symbol n) (find-start xs))])
+  (define/match (find-accept _states)
+    [('()) #f]
+    [(`(,(hash-table ('name n) ('type t)) ,xs ...))
+     (if (equal? "accept" t) (string->symbol n) (find-accept xs))])
   ;; parse-rules :: jsexpr symbol -> listof(fsm-core-rules)
   ;; Converts the jsexpr into the fsm-core representation of rules
   (define (parse-rules rules type)
@@ -56,11 +60,15 @@
   (define rules (parse-rules (hash-ref data 'rules) type))
   (define input (map string->symbol (hash-ref data 'input)))
   (define stack-alpha (if (equal? type 'pda) (map string->symbol (hash-ref data 'stackAlpha)) #f))
+  (define tape-index (if (or (equal? type 'tm) (equal? type 'tm-language-recognizer))
+                         (hash-ref data 'tapeIndex)
+                         #f))
+  (define accept-state (if (equal? type 'tm-langauge-recognizer) (find-accept un-parsed-states) #f))
 
   ;; TODO: Talk to marco about how we want to handle fsm-error msgs. Since they print to the
   ;; stdio we cant display them in the GUI. Ideally this would just return a string and we
   ;; could pass the message over json to the new GUI
-  (define fsa (build-fsm-core-machine states start finals alpha rules type stack-alpha no-dead))
+  (define fsa (build-fsm-core-machine states start finals alpha rules type stack-alpha accept-state no-dead))
   (define trans (sm-showtransitions fsa input))
   (cond
     [(equal? trans 'reject)
@@ -68,7 +76,7 @@
            'responseType "build_machine"
            'error "The given input for the machine was rejected")]
     [fsa
-     (hash 'data (hash 'transitions (transitions->jsexpr fsa invariants input)
+     (hash 'data (hash 'transitions (transitions->jsexpr fsa invariants input tape-index)
                        ;; since fsm sometimes adds states (ds) we will return the list of states,
                        ;; so the gui can update accordingly
                        'states (map (lambda (s) (state->jsexpr s fsa invariants)) (sm-states fsa))
@@ -83,13 +91,13 @@
 ;; isValidMachine? :: listof(symbol) symbol listof(symbol) listof(symbol) listof(fsm-core-rules) symbol listof(symbol) | false boolean -> fsa | false
 ;; returns a fsm-core fsa if the machine passes the fsm-core error messages check. If there is an error the
 ;; error is printed to stdio
-(define (build-fsm-core-machine states start finals alpha rules type stack-alpha no-dead)
+(define (build-fsm-core-machine states start finals alpha rules type stack-alpha accept no-dead)
   (define has-error? (match type
                        ['pda (check-machine states alpha finals rules start type stack-alpha)]
-                       [(or 'tm 'tm-language-recognizer)
-                        (check-machine states alpha finals rules start type)]
                        [(or 'dfa 'ndfa)
-                        (check-machine states alpha finals rules start type)]))
+                        (check-machine states alpha finals rules start type)]
+                       [(or 'tm 'tm-language-recognizer)
+                        (check-machine states alpha finals rules start 'tm)]))
   (if (not (boolean? has-error?))
       #f
       (match type
@@ -101,7 +109,8 @@
                    (make-ndfa states start finals alpha rules))]
         ;; pda's dont use the dead-state
         ['pda (make-ndpda states alpha stack-alpha start finals rules)]
-        [(or 'tm 'tm-language-recognizer) "TODO"])))
+        ['tm-language-recognizer (make-tm states alpha rules start finals accept)]
+        ['tm (make-tm states alpha rules start finals)])))
 
 
 

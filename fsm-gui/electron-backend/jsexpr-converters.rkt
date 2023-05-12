@@ -61,8 +61,8 @@
   [(`((,s ,i1) (,e ,i2)))
    ;; we keep tm actions as string but the rest as a list. This helps with logic for the GUI
    (define (transform s) (if (member s (list LM LEFT RIGHT BLANK))
-                       (symbol->string s)
-                       (list (symbol->string s))))
+                             (symbol->string s)
+                             (list (symbol->string s))))
    (hash
     'start (symbol->string s)
     'startTape (if (list? i1) (map symbol->string i1) (transform i1))
@@ -71,20 +71,67 @@
   [(_) (error 'rule->jsexpr "Invalid rule supplied ~a" rule)])
 
 
-;; transitions->jsexpr :: fsa listof(cons symbol string) listof(string) -> jsexpr(transitons) | string
+;; transitions->jsexpr :: fsa listof(cons symbol string) listof(string) number -> jsexpr(transitons) | string
 ;; Given an fsa computes the jsexpr form of the transitions. If there is an error then a string
 ;; containing the error is returned
-(define (transitions->jsexpr fsa invariants input)
-  (define trans (sm-showtransitions fsa input))
+(define (transitions->jsexpr fsa invariants input (tape-index 0))
   (define type (sm-type fsa))
+  (define trans (if (or (equal? type 'tm) (equal? type 'tm-language-recpgnizer))
+                    (sm-showtransitions fsa input tape-index)
+                    (sm-showtransitions fsa input)))
   (match/values (values type trans)
     [(_ 'reject) "The given input for the machine was rejected"]
     [((or 'dfa 'ndfa) _)
      (dfa-transitions->jsexpr trans (sm-start fsa) invariants input)]
-    [('pda _) (pda-transitions->jsexpr trans (sm-start fsa) invariants input (sm-rules fsa))]))
+    [('pda _) (pda-transitions->jsexpr trans (sm-start fsa) invariants input (sm-rules fsa))]
+    [((or 'tm 'tm-language-recognizer) _) (tm-transitions->jsexpr trans (sm-start fsa) invariants input tape-index)]
+    [(_ _) (error 'transitions->jsexpr "Invalid machine type: ~a" type)]))
+
+;; tm-transitions->jsexpr :: listof(transitions) symbol listof(cons symbol string) listof(symbol) number -> listof(jsexpr(transition))
+;; Given the list of fsm-core transitions, computes the jsexpr form of the transitions
+(define (tm-transitions->jsexpr transitions start invariants initial-tape tape-start-index)
+  ;; tm-transition->jsexpr :: transition transition listof(cons symbol string) -> jsexpr(transition)
+  ;; computes the jsexpr(transition) for a tm/lang-rec given 2 fsm-core transitions
+  (define (tm-transition->jsexpr t1 t2)
+    (match-define `(,cur-state ,cur-pos ,cur-tape) t1)
+    (match-define `(,next-state ,next-pos ,next-tape) t2)
+    (define-values (cur-action next-action) (cond
+                                              [(< cur-pos next-pos)
+                                               ;; tape incriments so we move Right
+                                               (values (list-ref cur-tape cur-pos) RIGHT)]
+                                              [(> cur-pos next-pos)
+                                               ;; tape decriments so we move LEFT
+                                               (values (list-ref cur-tape cur-pos) LEFT)]
+                                              ;; Otherwise we write to the tape
+                                              [else
+                                               (values (list-ref cur-tape cur-pos)
+                                                       (list-ref next-tape next-pos))]))
+    (hash 'rule (rule->jsexpr `((,cur-state ,cur-action) (,next-state ,next-action)))
+          'tapeIndex next-pos
+          'tape next-tape
+          'invPass (compute-inv next-state invariants next-tape next-pos)))
+  ;; we alyays need to append the start transiton to the front for the gui.
+  ;; EX: (hash 'start "A" 'input (json-null) 'end "start")
+  (define start-transition (hash 'start (symbol->string start)
+                                 'tapeIndex tape-start-index
+                                 'tape initial-tape
+                                 'invPass (compute-inv start invariants initial-tape tape-start-index)))
+  ;; if a tm builds then input always halts
+  (define end-transition (hash 'end (symbol->string (first (last transitions)))
+                               'tapeIndex (second (last transitions))
+                               'tape (third (last transitions))
+                               'invPass (compute-inv (first (last transitions))
+                                                     invariants
+                                                     (third (last transitions))
+                                                     (second (last transitions)))))
+  (define (loop transitions)
+    (match transitions
+      [`(,f ,n ,xs ...) (cons (tm-transition->jsexpr f n) (loop (cons n xs)))]
+      [_ '()]))
+  (append (list start-transition) (loop transitions) (list end-transition)))
 
 
-;; dfa-transitions->jsexpr :: listof(transitions) symbol listof(cons symbol string) listof(symbol-> listof(jsexpr(transition))
+;; dfa-transitions->jsexpr :: listof(transitions) symbol listof(cons symbol string) listof(symbol)-> listof(jsexpr(transition))
 ;; Given the list of fsm-core transitions, computes the jsexpr form of the transitions
 (define (dfa-transitions->jsexpr transitions start invariants full-input)
   ;; dfa-transition->jsexpr :: transition transition listof(cons symbol string) listof(symbol) -> jsexpr(transition)
@@ -223,53 +270,6 @@
       (json-null)))
 
 
-;; construct-tm-rule: processed-list -> tm-rule
-;; Purpose: Constructs the current tm rule based on the processed list
-(define (construct-tm-rule pl)
-  (let* ( (cur-trans (cadr pl))  ;; The current transiton
-          (next-trans (car pl))  ;; The next transition
-          (cur-state (car cur-trans)) ;; The current state the machine is in
-          (cur-tape-index (cadr cur-trans)) ;; The tape index the machine is in
-          (cur-tape (caddr cur-trans)) ;; The input the machine has
-          (next-state (car next-trans)) ;; The next state the machine goes to
-          (next-tape-index (cadr next-trans)) ;; The new tape index the machine goes to
-          (next-tape (caddr next-trans)) ;; The new tape the machine has
-
-          (cur-tape-element (list-ref cur-tape cur-tape-index)) ;; The currently highlights element
-          (next-tape-element (list-ref next-tape next-tape-index))) ;; The next highlighted element
-
-    (cond
-      [(cur-tape-index . > . next-tape-index) ;; moved to left
-       (list (list cur-state cur-tape-element) (list next-state LEFT))]
-      [(cur-tape-index . < . next-tape-index) ;; moved to right
-       (list (list cur-state cur-tape-element) (list next-state RIGHT))]
-      [else                                   ;;statyed in same posn
-       (list (list cur-state cur-tape-element) (list next-state next-tape-element))])))
-
-
-;; construct-mttm-rule :: processed-list -> mttm-rule
-;; Purpose: Constructs the current mttm rule based on the processed list
-(define (construct-mttm-rule pl)
-  (match-define `(,cur-state ,cur-tapes ...) (cadr pl)) ;; The state that the machine is in
-  (match-define `(,next-state ,next-tapes ...) (car pl)) ;; The next state that the machine is in
-  (define tuple-list
-    (map (match-lambda* [`((,cur-pos ,cur-tape) (,next-pos ,_))
-                         #:when (< cur-pos next-pos)
-                         ;; tape incriments so we move Right
-                         (cons (list-ref cur-tape cur-pos) RIGHT)]
-                        [`((,cur-pos ,cur-tape) (,next-pos ,_))
-                         #:when (> cur-pos next-pos)
-                         ;; tape decriments so we move LEFT
-                         (cons (list-ref cur-tape cur-pos) LEFT)]
-                        ;; Otherwise we write to the tape
-                        [`((,cur-pos ,cur-tape) (,next-pos ,next-tape))
-                         (cons (list-ref cur-tape cur-pos)
-                               (list-ref next-tape next-pos))])
-         cur-tapes
-         next-tapes))
-  `((,cur-state ,(map car tuple-list)) (,next-state ,(map cdr tuple-list))))
-
-
 
 (module+ test
   (require (for-syntax syntax/parse)
@@ -377,7 +377,135 @@
                                                                     (define bs (length (filter (lambda (v) (equal? v 'b)) i)))
                                                                     (and (equal? bs (* 2 as))
                                                                          (empty? s)))))))
-                  (check-equal? (transitions->jsexpr pda=2ba invariants '(b b a)) expected))))
+                  (check-equal? (transitions->jsexpr pda=2ba invariants '(b b a)) expected))
+
+
+                (test-case "tm"
+                  ;; write a on tape
+                  (define Ma (make-tm '(S H)
+                                      `(a b ,LM)
+                                      `(((S a) (H a))
+                                        ((S b) (H a))
+                                        ((S ,BLANK) (H a)))
+                                      'S
+                                      '(H)))
+
+                  (define invariants '())
+
+                  (check-equal? (transitions->jsexpr Ma invariants '(b b) 0)
+                                (list (hash 'start "S"
+                                            'tapeIndex 0
+                                            'tape '(b b)
+                                            'invPass (json-null))
+                                      (hash 'rule (hash 'start "S" 'startTape '("b") 'end "H" 'endTape '("a"))
+                                            'tapeIndex 0
+                                            'tape '(a b)
+                                            'invPass (json-null))
+                                      (hash 'end "H"
+                                            'tapeIndex 0
+                                            'tape '(a b)
+                                            'invPass (json-null)))))
+
+                (test-case "tm-language-recognizer"
+                  ;; write a on tape
+                  (define a^nb^nc^n (make-tm '(S B C D E Y N)
+                                             '(a b c z)
+                                             `(((S a) (B z))
+                                               ((S b) (N b))
+                                               ((S c) (N c))
+                                               ((S ,BLANK) (Y ,BLANK))
+                                               ((S z) (N z))
+                                               ((E z) (E ,RIGHT))
+                                               ((E ,BLANK) (Y ,BLANK))
+                                               ((E a) (N a))
+                                               ((E b) (N b))
+                                               ((E c) (N c))
+                                               ((B a) (B ,RIGHT))
+                                               ((B b) (C z))
+                                               ((B c) (N c))
+                                               ((B ,BLANK) (N ,BLANK))
+                                               ((B z) (B ,RIGHT))
+                                               ((C a) (N a))
+                                               ((C b) (C ,RIGHT))
+                                               ((C c) (D z))
+                                               ((C ,BLANK) (N ,BLANK))
+                                               ((C z) (C ,RIGHT))
+                                               ((D a) (S a))
+                                               ((D b) (D ,LEFT))
+                                               ((D c) (D ,LEFT))
+                                               ((D ,BLANK) (N ,BLANK))
+                                               ((D z) (D ,LEFT))
+                                               ((D ,LM) (E R)))
+                                             'S
+                                             '(Y N)
+                                             'Y))
+                  (define invariants '())
+
+                  (check-equal? (transitions->jsexpr a^nb^nc^n invariants '(@ a b c) 0)
+                                (list (hash 'start "S"
+                                            'tapeIndex 0
+                                            'tape '(@ a b c)
+                                            'invPass (json-null))
+                                      (hash 'rule (hash 'start "S" 'startTape "@" 'end "S" 'endTape "R")
+                                            'tapeIndex 1
+                                            'tape '(@ a b c)
+                                            'invPass (json-null))
+                                      (hash 'rule (hash 'start "S" 'startTape '("a") 'end "B" 'endTape '("z"))
+                                            'tapeIndex 1
+                                            'tape '(@ z b c)
+                                            'invPass (json-null))
+                                      (hash 'rule (hash 'start "B" 'startTape '("z") 'end "B" 'endTape "R")
+                                            'tapeIndex 2
+                                            'tape '(@ z b c)
+                                            'invPass (json-null))
+                                      (hash 'rule (hash 'start "B" 'startTape '("b") 'end "C" 'endTape '("z"))
+                                            'tape '(@ z z c)
+                                            'tapeIndex 2
+                                            'invPass (json-null))
+                                      (hash 'rule (hash 'start "C" 'startTape '("z") 'end "C" 'endTape "R")
+                                            'tape '(@ z z c)
+                                            'tapeIndex 3
+                                            'invPass (json-null))
+                                      (hash 'rule (hash 'start "C" 'startTape '("c") 'end "D" 'endTape '("z"))
+                                            'tape '(@ z z z)
+                                            'tapeIndex 3
+                                            'invPass (json-null))
+                                      (hash 'rule (hash 'start "D" 'startTape '("z") 'end "D" 'endTape "L")
+                                            'tape '(@ z z z)
+                                            'tapeIndex 2
+                                            'invPass (json-null))
+                                      (hash 'rule (hash 'start "D" 'startTape '("z") 'end "D" 'endTape "L")
+                                            'tape '(@ z z z)
+                                            'tapeIndex 1
+                                            'invPass (json-null))
+                                      (hash 'rule (hash 'start "D" 'startTape '("z") 'end "D" 'endTape "L")
+                                            'tape '(@ z z z)
+                                            'tapeIndex 0
+                                            'invPass (json-null))
+                                      (hash 'rule (hash 'start "D" 'startTape "@" 'end "E" 'endTape "R")
+                                            'tape '(@ z z z)
+                                            'tapeIndex 1
+                                            'invPass (json-null))
+                                      (hash 'rule (hash 'start "E" 'startTape '("z") 'end "E" 'endTape "R")
+                                            'tape '(@ z z z)
+                                            'tapeIndex 2
+                                            'invPass (json-null))
+                                      (hash 'rule (hash 'start "E" 'startTape '("z") 'end "E" 'endTape "R")
+                                            'tape '(@ z z z)
+                                            'tapeIndex 3
+                                            'invPass (json-null))
+                                      (hash 'rule (hash 'start "E" 'startTape '("z") 'end "E" 'endTape "R")
+                                            'tape '(@ z z z _)
+                                            'tapeIndex 4
+                                            'invPass (json-null))
+                                      (hash 'rule (hash 'start "E" 'startTape "_" 'end "Y" 'endTape "_")
+                                            'tape '(@ z z z _)
+                                            'tapeIndex 4
+                                            'invPass (json-null))
+                                      (hash 'end "Y"
+                                            'tape '(@ z z z _)
+                                            'tapeIndex 4
+                                            'invPass (json-null)))))))
 
   (run-tests transition->jsexpr-tests)
 

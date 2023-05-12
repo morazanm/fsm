@@ -42,7 +42,7 @@ export type PdaRule = {
   pushed: string[]; // empty array is displayed as EMP
 };
 
-type TmAction = 'R' | 'L' | '_' | "@";
+type TmAction = 'R' | 'L' | '_' | '@';
 // Object representation of a turing machine rule
 export type TmMttmRule = {
   start: StateName;
@@ -65,9 +65,10 @@ export type PdaTransition = BasicTransition & {
 };
 
 // A TmMttmTransition also includes the index of the current place on the tape that the
-// turing machine is at.
+// turing machine is at and the new tape after the transition
 export type TmMttmTransition = BasicTransition & {
   tapeIndex: number;
+  tape: FSMAlpha[];
 };
 
 // StartTransition is the initial transition for the machine. It just contains a invariant and
@@ -77,6 +78,11 @@ export type StartTransition = {
   invPass: boolean | null;
 };
 
+export type TmStartTransition = StartTransition & {
+  tapeIndex: number;
+  tape: FSMAlpha[];
+};
+
 // EndTransition is the last transition for the machine.  It either accepts or rejects the input.
 export type EndTransition = {
   end: StateName;
@@ -84,12 +90,19 @@ export type EndTransition = {
   invPass: boolean | null;
 };
 
+export type TmEndTransition = EndTransition & {
+  tapeIndex: number;
+  tape: FSMAlpha[];
+};
+
 export type FSMTransition =
   | BasicTransition
   | PdaTransition
   | TmMttmTransition
   | StartTransition
-  | EndTransition;
+  | EndTransition
+  | TmStartTransition
+  | TmEndTransition;
 
 /*
  * Helper Functions below
@@ -111,6 +124,24 @@ export const isNormalTransition = (
   transition: FSMTransition,
 ): transition is BasicTransition => {
   return (transition as BasicTransition).rule !== undefined;
+};
+
+export const isTmStartTransition = (
+  transition: FSMTransition,
+): transition is TmStartTransition => {
+  return (
+    isStartTransition(transition) &&
+    (transition as TmStartTransition).tapeIndex != undefined
+  );
+};
+
+export const isTmEndTransition = (
+  transition: FSMTransition,
+): transition is TmEndTransition => {
+  return (
+    isEndTransition(transition) &&
+    (transition as TmEndTransition).tapeIndex != undefined
+  );
 };
 
 export const isStartTransition = (

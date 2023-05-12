@@ -8,12 +8,14 @@ import {
   FSMAlpha,
   FSMTransition,
   MachineType,
+  State,
   isTmType,
 } from '../../types/machine';
 import InputRender from './InputRender';
 
 type InputComponentProps = {
   input: FSMAlpha[];
+  states: State[];
   transitions: FSMTransition[];
   inputIndex: number;
   runMachine: () => void;
@@ -24,6 +26,22 @@ type InputComponentProps = {
 
 const InputComponent = (props: InputComponentProps) => {
   const theme = useTheme();
+
+  const disableButton = (): [boolean, string] => {
+    if (
+      props.type === 'tm-lang-rec' &&
+      props.states.find((s: State) => s.type === 'accept') === undefined
+    ) {
+      return [true, 'Must add accept state'];
+    }
+    if (props.input.length === 0) {
+      [true, 'Add Input to run'];
+    }
+    return [false, 'Run Machine'];
+  };
+
+  const [disable, msg] = disableButton();
+
   return (
     <Grid container direction="row" spacing={1} height="100%">
       <Grid
@@ -51,19 +69,14 @@ const InputComponent = (props: InputComponentProps) => {
             alignItems="center"
             justifyContent="center"
           >
-            <Tooltip
-              title={
-                props.input.length === 0 ? 'Add Input to Run' : 'Run Machine'
-              }
-              disableInteractive
-            >
+            <Tooltip title={msg} disableInteractive>
               <span>
                 <Button
                   variant="outlined"
                   color="success"
                   size="small"
                   onClick={props.runMachine}
-                  disabled={props.input.length === 0}
+                  disabled={disable}
                 >
                   <RunIcon color="success" />
                 </Button>

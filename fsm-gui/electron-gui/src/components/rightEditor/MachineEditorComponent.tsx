@@ -200,7 +200,7 @@ const MachineEditorComponent = (props: MachineEditorProps) => {
             <SsidChartIcon />
           </IconButton>
         </Tooltip>
-        {props.machineType !== 'pda' && (
+        {(props.machineType === 'dfa' || props.machineType === 'ndfa') && (
           <Tooltip
             title="Use Dead State"
             placement="left-start"

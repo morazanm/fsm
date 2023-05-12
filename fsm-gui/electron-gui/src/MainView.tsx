@@ -324,6 +324,7 @@ const MainView = (props: MainViewProps) => {
       <Grid container direction="row" rowSpacing={1}>
         <Grid item xs={12}>
           <InputComponent
+            states={machineState.states}
             inputIndex={machineState.transitions.inputIndex}
             input={machineState.input}
             runMachine={run}
