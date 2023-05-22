@@ -2,15 +2,19 @@
 (require
  json
  "./jsexpr-converters.rkt"
- "../../fsm-core/interface.rkt")
+ "../../fsm-core/interface.rkt"
+ "../../fsm-gviz/interface.rkt")
 (provide
  fsa->jsexpr
  build-machine)
 
-;; build-machine :: jsexpr -> jsexpr
+;; build-machine :: jsexpr optional(boolean) -> jsexpr
 ;; takes the electron-gui machine json-expr, unparses it and runs it in fsm-core. It then
 ;; returns the machine or the error msg if it fails to build
-(define (build-machine data)
+;;
+;; The optional arg when set to true will not build the graphviz graph. This should be set
+;; to true when using this function in tests
+(define (build-machine data (test-mode #f))
   (define (json-null? v) (equal? v (json-null)))
   ;; find-finals :: jsexpr -> listof(symbol)
   ;; returns the final states as a list of symbols
@@ -44,7 +48,17 @@
                                     (if (empty? popped) EMP (map string->symbol popped)))
                               (list (string->symbol (hash-ref r 'end))
                                     (if (empty? pushed) EMP (map string->symbol pushed))))]
-                       [(or 'tm 'tm-language-recognizer) "TODO"]))
+                       [(or 'tm 'tm-language-recognizer)
+                        (define start-tape (hash-ref r 'startTape))
+                        (define end-tape (hash-ref r 'endTape))
+                        ;; NOTE: We represent TM-actions (LM, _, @,) as a string, but a input as a single
+                        ;; value in a list for parsing reason on the GUI end. Ideally this should be cleaned
+                        ;; up at a later date.
+                        (list (list (string->symbol (hash-ref r 'start))
+                                    (string->symbol (if (list? start-tape) (list-ref start-tape 0) start-tape)))
+                              (list (string->symbol (hash-ref r 'end))
+                                    (string->symbol (if (list? end-tape) (list-ref end-tape 0) end-tape))))]
+                       [_ (error 'parse-rules "Unsupported machine type ~a" type)]))
          rules))
   (define no-dead (hash-ref data 'nodead))
   (define un-parsed-states (hash-ref data 'states))
@@ -70,13 +84,26 @@
   ;; could pass the message over json to the new GUI
   (define fsa (build-fsm-core-machine states start finals alpha rules type stack-alpha accept-state no-dead))
   (define trans (sm-showtransitions fsa input))
+
+  ;; append-gviz-svgs :: listof(jsexpr-transition) -> listof(jsexpr-transitions)
+  ;; computes the graphviz images for each of the transitions
+  (define (append-gviz-svgs trans)
+    (map (lambda (t i)
+           (hash-set t
+                     'filepath
+                     (path->string (electron-machine->svg states start finals rules type t accept-state 0 i))))
+         trans
+         (range (length trans))))
   (cond
     [(equal? trans 'reject)
      (hash 'data (json-null)
            'responseType "build_machine"
            'error "The given input for the machine was rejected")]
     [fsa
-     (hash 'data (hash 'transitions (transitions->jsexpr fsa invariants input tape-index)
+     (define jsexpr-trans (transitions->jsexpr fsa invariants input tape-index))
+     (hash 'data (hash 'transitions (if (or test-mode (not (has-dot-executable?)))
+                                        jsexpr-trans
+                                        (append-gviz-svgs jsexpr-trans))
                        ;; since fsm sometimes adds states (ds) we will return the list of states,
                        ;; so the gui can update accordingly
                        'states (map (lambda (s) (state->jsexpr s fsa invariants)) (sm-states fsa))
@@ -97,7 +124,8 @@
                        [(or 'dfa 'ndfa)
                         (check-machine states alpha finals rules start type)]
                        [(or 'tm 'tm-language-recognizer)
-                        (check-machine states alpha finals rules start 'tm)]))
+                        (check-machine states alpha finals rules start 'tm)]
+                       [_ (error 'build-fsm-core-machine "Unsupported machine type ~a" type)]))
   (if (not (boolean? has-error?))
       #f
       (match type
@@ -110,7 +138,8 @@
         ;; pda's dont use the dead-state
         ['pda (make-ndpda states alpha stack-alpha start finals rules)]
         ['tm-language-recognizer (make-tm states alpha rules start finals accept)]
-        ['tm (make-tm states alpha rules start finals)])))
+        ['tm (make-tm states alpha rules start finals)]
+        [_ (error 'build-fsm-core-machine "Unsupported machine type ~a" type)])))
 
 
 
@@ -168,7 +197,7 @@
                                                                    'action "accept"
                                                                    'invPass (json-null))))
                                          'error (json-null)))
-                  (define actual (build-machine a*a-jsexpr))
+                  (define actual (build-machine a*a-jsexpr #t))
                   (check-equal? (hash-ref actual 'error)
                                 (hash-ref expected 'error)
                                 "Error msg field for a*a should be null for a valid machine")
@@ -227,13 +256,54 @@
                                                               'action "accept"
                                                               'invPass (json-null))))
                                           'error (json-null)))
-                    (define actual (build-machine pda=2ba-jsexpr))
+                    (define actual (build-machine pda=2ba-jsexpr #t))
                     (check-equal? (hash-ref actual 'error)
                                   (hash-ref expected 'error)
                                   "Error msg field for pda=2ba should be null for a valid machine")
                     (check-equal? (hash-ref actual 'data)
                                   (hash-ref expected 'data)
-                                  "Data for pda=2ba should be the propper json values"))))
+                                  "Data for pda=2ba should be the propper json values"))
+
+                (test-case "tm"
+                  (define Ma-jsexpr (hash 'states (list (hash 'name "S" 'type "start" 'invFunc "(lambda (v k) #t)")
+                                                        (hash 'name "H" 'type "final" 'invFunc (json-null)))
+                                           'alphabet (list "a" "b" "@")
+                                           'type "tm"
+                                           'rules (list (hash 'start "S" 'startTape "@" 'end "S" 'endTape "R")
+                                                        (hash 'start "S" 'startTape '("a") 'end "H" 'endTape '("a"))
+                                                        (hash 'start "S" 'startTape '("b") 'end "H" 'endTape '("a"))
+                                                        (hash 'start "S" 'startTape "_" 'end "H" 'endTape '("a")))
+                                           'input (list "@" "b" "b")
+                                           'tapeIndex 1
+                                           'nodead false))
+                  (define expected (hash 'data
+                                         (hash
+                                          'states (list (hash 'name "S" 'type "start" 'invFunc "(lambda (v k) #t)")
+                                                        (hash 'name "H" 'type "final" 'invFunc (json-null)))
+                                          'rules (list (hash 'start "S" 'startTape "@" 'end "S" 'endTape "R")
+                                                       (hash 'start "S" 'startTape '("a") 'end "H" 'endTape '("a"))
+                                                       (hash 'start "S" 'startTape '("b") 'end "H" 'endTape '("a"))
+                                                       (hash 'start "S" 'startTape "_" 'end "H" 'endTape '("a")))
+                                          'transitions (list (hash 'start "S"
+                                                                   'tapeIndex 1
+                                                                   'tape `(,LM b b)
+                                                                   'invPass #t)
+                                                             (hash 'rule (hash 'start "S" 'startTape '("b") 'end "H" 'endTape '("a"))
+                                                                   'tapeIndex 1
+                                                                   'tape `(,LM a b)
+                                                                   'invPass (json-null))
+                                                             (hash 'end "H"
+                                                                   'tapeIndex 1
+                                                                   'tape `(,LM a b)
+                                                                   'invPass (json-null))))
+                                         'error (json-null)))
+                  (define actual (build-machine Ma-jsexpr #t))
+                  (check-equal? (hash-ref actual 'error)
+                                (hash-ref expected 'error)
+                                "Error msg field for Ma should be null for a valid machine")
+                  (check-equal? (hash-ref actual 'data)
+                                (hash-ref expected 'data)
+                                "Data for Ma should be the propper json values"))))
 
     (run-tests build-machine-tests)
 

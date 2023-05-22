@@ -57,6 +57,10 @@ export type TmMttmRule = {
 export type BasicTransition = {
   rule: FSMRule;
   invPass: boolean | null;
+
+  // When the filepath key does not exist then that means that graphViz is not installed
+  // on the users computer
+  filepath?: string
 };
 
 // A PdaTransition also includes what the stack holds at the transition
@@ -76,6 +80,10 @@ export type TmMttmTransition = BasicTransition & {
 export type StartTransition = {
   start: StateName;
   invPass: boolean | null;
+
+  // When the filepath key does not exist then that means that graphViz is not installed
+  // on the users computer
+  filepath?: string
 };
 
 export type TmStartTransition = StartTransition & {
@@ -88,6 +96,10 @@ export type EndTransition = {
   end: StateName;
   action: 'accept' | 'reject';
   invPass: boolean | null;
+
+  // When the filepath key does not exist then that means that graphViz is not installed
+  // on the users computer
+  filepath?: string
 };
 
 export type TmEndTransition = EndTransition & {

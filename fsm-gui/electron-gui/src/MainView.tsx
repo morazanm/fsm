@@ -8,6 +8,7 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  Box,
 } from '@mui/material';
 import {
   State,
@@ -93,6 +94,8 @@ type InfoDialog = {
 
 type DialogType = 'start' | 'end' | 'info' | 'error' | null;
 
+export type View = 'control' | 'graphViz';
+
 type MachineState = {
   states: State[];
   rules: FSMRule[];
@@ -104,6 +107,7 @@ type MachineState = {
   nodead: boolean;
   initialTapePosition: number; // only used by tm and tm-lang-rec
   accept: State | null; // only used by tm-lang-rec
+  graphVizImage: string | null;
 };
 
 type MainViewProps = {
@@ -118,7 +122,9 @@ const MainView = (props: MainViewProps) => {
     connected: props.racketBridge.connected,
     status: 'done',
   });
+  const graphVizImage = useRef();
   const [openDialog, setOpenDialog] = useState<DialogType>(null);
+  const [view, setView] = useState<View>('control');
   const [machineState, setMachineState] = useState<MachineState>({
     states: [],
     rules: [],
@@ -155,6 +161,12 @@ const MainView = (props: MainViewProps) => {
     setOpenDialog('error');
   };
 
+  const setGuiView = (newView: View) => {
+    if (newView !== view) {
+      setView(newView);
+    }
+  };
+
   const toggleDead = () =>
     setMachineState({ ...machineState, nodead: !machineState.nodead });
   const setGuiStates = (states: State[]) => {
@@ -188,7 +200,6 @@ const MainView = (props: MainViewProps) => {
   useEffect(() => {
     setConnected({ connected: props.racketBridge.connected, status: 'done' });
   }, [props.racketBridge.connected]);
-
   useEffect(() => {
     // If we have a connection then listen for messages
     // TODO: We can probably abstract this out with a callback
@@ -211,6 +222,7 @@ const MainView = (props: MainViewProps) => {
               (r) => !machineState.rules.find((mr) => isFSMRuleEqual(r, mr)),
             ),
           );
+          console.log(response.data.transitions)
           setMachineState({
             ...machineState,
             states: new_states,
@@ -238,6 +250,7 @@ const MainView = (props: MainViewProps) => {
             type: response.data.type,
             stackAlpha:
               response.data.type === 'pda' ? response.data.stackAlpha : [],
+            graphVizImage: response.data.filepath ?? null,
           });
           openInfoDialog(
             'Prebuilt Machine Loaded',
@@ -377,11 +390,29 @@ const MainView = (props: MainViewProps) => {
               justifyContent="center"
               alignItems="center"
               display="flex"
+              sx={{ height: '70vh' }}
             >
-              <ControlView
-                states={machineState.states}
-                currentTransition={currentTransition}
-              />
+              {view === 'control' ? (
+                <ControlView
+                  states={machineState.states}
+                  currentTransition={currentTransition}
+                />
+              ) : (
+                <Box
+                  sx={{
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    display: 'flex',
+                    height: '100%',
+                    width: '100%',
+                  }}
+                >
+                  <img
+                    src={`file://${machineState.graphVizImage}`}
+                    style={{ width: '90%' }}
+                  />
+                </Box>
+              )}
             </Grid>
             <Grid item xs={1} justifyContent="end" display="flex">
               <RightEditor
@@ -403,6 +434,8 @@ const MainView = (props: MainViewProps) => {
                 setAlpha={setAlpha}
                 tapePosition={machineState.initialTapePosition}
                 setTapePosition={setInitialTapePosition}
+                setView={setGuiView}
+                currentView={view}
               />
             </Grid>
           </Grid>

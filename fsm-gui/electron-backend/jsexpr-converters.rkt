@@ -1,7 +1,9 @@
 #| This Module containes functions for converting parts for a fsa to a jsexpr |#
 #lang racket
 (require json
-         "../../fsm-core/interface.rkt")
+         racket/hash
+         "../../fsm-core/interface.rkt"
+         "../../fsm-gviz/interface.rkt")
 
 (provide fsa->jsexpr
          state->jsexpr
@@ -13,16 +15,18 @@
 ;; converts a fsm-core fsa to a jsexpr to be sent to the GUI
 ;; NOTE: invariants are a pair of a symbol representing the state name
 ;; and the invarinat function as a string.
-(define (fsa->jsexpr fsa [invariants '()])
+(define (fsa->jsexpr fsa invariants (test-mode #f))
   (define base-hash (hash 'states (map (lambda (s) (state->jsexpr s fsa invariants)) (sm-states fsa))
                           'alpha (map symbol->string (sm-sigma fsa))
                           'rules (map rule->jsexpr (sm-rules fsa))
                           'type (symbol->string (sm-type fsa))))
-  (match (sm-type fsa)
-    [(or 'dfa 'ndfa) base-hash]
-    ['pda (hash-set base-hash 'stackAlpha (map symbol->string (sm-gamma fsa)))]
-    [(or 'tm 'tm-language-recognizer) base-hash]
-    [ _ (error 'fsa->jsexpr "invalid machine type: ~a" (sm-type fsa))]))
+  (hash-union
+   (if (or test-mode (not (has-dot-executable?))) (hash) (hash 'filepath (path->string (fsa->svg fsa 0))))
+   (match (sm-type fsa)
+     [(or 'dfa 'ndfa) base-hash]
+     ['pda (hash-set base-hash 'stackAlpha (map symbol->string (sm-gamma fsa)))]
+     [(or 'tm 'tm-language-recognizer) base-hash]
+     [ _ (error 'fsa->jsexpr "invalid machine type: ~a" (sm-type fsa))])))
 
 ;; state->jsexpr :: symbol fsa optional(listof(cons symbol string))-> jsexpr(state)
 ;; converts the fsm-core state to a jsexpr that containes the state name
@@ -528,7 +532,7 @@
                   (define invariants (list (cons 'S (inv->string! (lambda (consumed-input) 1)))
                                            (cons 'F (inv->string! (lambda (consumed-input) 2)))
                                            (cons 'D (inv->string! (lambda (consumed-input) 3)))))
-                  (check-equal? (fsa->jsexpr a*a invariants)
+                  (check-equal? (fsa->jsexpr a*a invariants #t)
                                 (hash 'states (list (hash 'name "S" 'type "start" 'invFunc "(lambda (consumed-input) 1)")
                                                     (hash 'name "A" 'type "normal" 'invFunc (json-null))
                                                     (hash 'name "F" 'type "final" 'invFunc "(lambda (consumed-input) 2)")
@@ -556,7 +560,7 @@
                                                          (Q-4 b Q-5)
                                                          (Q-5 ,EMP Q-0))))
 
-                  (check-equal? (fsa->jsexpr KLEENESTAR-abUaba)
+                  (check-equal? (fsa->jsexpr KLEENESTAR-abUaba '() #t)
                                 (hash 'states (list (hash 'name "Q-0" 'type "startfinal" 'invFunc (json-null))
                                                     (hash 'name "Q-1" 'type "normal" 'invFunc (json-null))
                                                     (hash 'name "Q-2" 'type "normal" 'invFunc (json-null))
@@ -590,7 +594,7 @@
                                                 ((M1 ,EMP ,EMP) (F ,EMP)))))
                   (define EMP-str (symbol->string EMP))
 
-                  (check-equal? (fsa->jsexpr pda=2ba)
+                  (check-equal? (fsa->jsexpr pda=2ba '() #t)
                                 (hash 'states (list (hash 'name "S" 'type "start" 'invFunc (json-null))
                                                     (hash 'name "M1" 'type "normal" 'invFunc (json-null))
                                                     (hash 'name "F" 'type "final" 'invFunc (json-null)))
@@ -614,7 +618,7 @@
                                       'S
                                       '(H)))
 
-                  (check-equal? (fsa->jsexpr Ma)
+                  (check-equal? (fsa->jsexpr Ma '() #t)
                                 (hash 'states (list (hash 'name "S" 'type "start" 'invFunc (json-null))
                                                     (hash 'name "H" 'type "final" 'invFunc (json-null)))
                                       'alpha '("a" "b" "@")
@@ -657,7 +661,7 @@
                                              'S
                                              '(Y N)
                                              'Y))
-                  (check-equal? (fsa->jsexpr a^nb^nc^n)
+                  (check-equal? (fsa->jsexpr a^nb^nc^n '() #t)
                                 (hash 'states (list (hash 'name "S" 'type "start" 'invFunc (json-null))
                                                     (hash 'name "B" 'type "normal" 'invFunc (json-null))
                                                     (hash 'name "C" 'type "normal" 'invFunc (json-null))

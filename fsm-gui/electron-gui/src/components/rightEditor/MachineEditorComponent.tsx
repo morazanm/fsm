@@ -24,6 +24,7 @@ import {
   Loop as LoopIcon,
   Straighten as StraightenIcon,
   LocationOn as EditLocationIcon,
+  AccessTime as AccessTimeIcon,
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import {
@@ -40,6 +41,7 @@ import StateForm from './forms/StateForm';
 import TapeForm from './forms/TapePosition';
 import useRuleForm from './forms/RuleForm';
 import { Connection } from '../../socket/racketInterface';
+import { View } from '../../MainView';
 
 const StyledSpeedDial = styled(SpeedDial)(({ theme }) => ({
   '& .MuiFab-primary': {
@@ -119,6 +121,20 @@ const useDialActions = (type: MachineType) => {
   return actions;
 };
 
+type ViewButtonType = {
+  title: string;
+  view: View;
+  icon: JSX.Element;
+};
+
+const useViewButtons = (currentView: View): ViewButtonType[] => {
+  const views: ViewButtonType[] = [
+    { title: 'Control View', view: 'control', icon: <AccessTimeIcon /> },
+    { title: 'Graph View', view: 'graphViz', icon: <SsidChartIcon /> },
+  ];
+  return views.filter((v) => v.view !== currentView);
+};
+
 type MachineEditorProps = {
   toggleTheme: () => void;
   machineType: MachineType;
@@ -138,6 +154,8 @@ type MachineEditorProps = {
   reconnect: () => void;
   tapePosition: number;
   setTapePosition: (position: number) => void;
+  setView: (view: View) => void;
+  currentView: View;
 };
 
 type OpenModal =
@@ -156,6 +174,7 @@ const MachineEditorComponent = (props: MachineEditorProps) => {
   const [snackMsg, setSnackMsg] = useState('');
   const dialActions = useDialActions(props.machineType);
   const RuleForm = useRuleForm(props.machineType);
+  const views = useViewButtons(props.currentView);
 
   const resetSnack = () => setSnackMsg('');
   const toggleSnack = (msg: string) => setSnackMsg(msg);
@@ -191,18 +210,22 @@ const MachineEditorComponent = (props: MachineEditorProps) => {
             <PaletteIcon />
           </IconButton>
         </Tooltip>
-        <Tooltip
-          title="Toggle Graph View"
-          placement="left-start"
-          disableInteractive
-        >
-          <IconButton color="primary">
-            <SsidChartIcon />
-          </IconButton>
-        </Tooltip>
+        {views.map((v) => {
+          return (
+            <Tooltip
+              title={`Toggle ${v.title}`}
+              placement="left-start"
+              disableInteractive
+            >
+              <IconButton color="primary" onClick={() => props.setView(v.view)}>
+                {v.icon}
+              </IconButton>
+            </Tooltip>
+          );
+        })}
         {(props.machineType === 'dfa' || props.machineType === 'ndfa') && (
           <Tooltip
-            title="Use Dead State"
+            title={`Use Dead State: ${props.nodead ? 'Off' : 'On'}`}
             placement="left-start"
             disableInteractive
           >

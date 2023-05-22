@@ -20,6 +20,11 @@ const createWindow = (): void => {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
       nodeIntegration: true,
       contextIsolation: false,
+      // NOTE: This is needed to allow us to import local files into the gui. Currently
+      // this is ok because our app does not access the web at all. However using a
+      // custom protocol would be better. See:
+      // https://www.electronjs.org/docs/latest/api/protocol#protocolinterceptfileprotocolscheme-handler
+      webSecurity: false,
     },
   });
 

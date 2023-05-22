@@ -22,4 +22,8 @@ export type PrebuiltMachineResponse = {
   rules: FSMRule[];
   type: MachineType;
   stackAlpha: FSMStackAlpha[] | undefined; // undefined when not a pda
+
+  // The absolute path to the graphViz image. If this field does not exist then
+  // that means that graphViz is not on the users computer
+  filepath?: string;
 };

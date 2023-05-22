@@ -130,6 +130,9 @@ const ControlView = (props: ControlViewProps) => {
     };
     handleResize();
     window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
   });
 
   const currentTrans = getCurrentStateAndInv(props.currentTransition);
