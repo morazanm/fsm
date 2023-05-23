@@ -68,8 +68,7 @@ variable to abstract over the currently read symbol.
 
 
 
-@defidform[alphabet] A list of numbers or lowercase symbols with a string representation
-of length one not including EMP.
+@defidform[alphabet] A list of numbers or symbols representing lowercase letters in the Roman alphabet.
 
 @defidform[word]{
  A @italic{(listof symbol)}. Each symbol is a member of the same alphabet.}
@@ -233,7 +232,7 @@ A LABEL is a natnum.
                      [delta (listof pda-rule)])
          ndpda]{Builds a nondeterministic pushdown automaton from the
  given list of states, alphabet, list of stack symbols,
- statr state, list of final states, and list of
+ start state, list of final states, and list of
  pda-rule. @italic{delta} is a transition relation.}
 
 @defproc*[([(make-tm    [sts (listof state)] 
