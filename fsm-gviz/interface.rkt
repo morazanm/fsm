@@ -34,7 +34,7 @@
   (match opt
     (0 (color-palette "forestgreen" "#00ab037F" "#f523147F" "#215dde"))
     (1 (color-palette "#ede209" "#7b32947F" "#ffea037F" "#215dde"))
-    (2 (color-palette "#d48217" "TODO" "TODO" "TODO"))
+    (2 (color-palette "#ac8421" "#ac8421" "#8f6d00" "#0090ee"))
     (_ (error "Invalid color blind option supplied"))))
 
 
