@@ -1,5 +1,5 @@
 #lang racket
-(require 2htdp/image "dot.rkt")
+(require 2htdp/image racket/hash "dot.rkt")
 #| This file handles converting graphs to the dot file equivalent |#
 
 (provide
@@ -13,6 +13,8 @@
                 (atb (hash/c symbol? any/c)))]
   [struct edge ((start-node symbol?)
                 (end-node symbol?)
+                ;; NOTE: a edges label atb is a list since we squash all edges
+                ;; between the same nodes into a single edge
                 (atb (hash/c symbol? any/c)))]
   [struct graph ((name symbol?)
                  (node-list (listof node?))
@@ -39,11 +41,16 @@
 (define DEFAULT-GRAPH (hash 'rankdir "LR"))
 (define DEFAULT-EDGE (hash 'fontsize 15))
 (define DEFAULT-NODE (hash 'color "black" 'shape "circle"))
+(define (DEFAULT-EDGE-LABEL-FMTR lst)
+  (string-join (map (lambda (v) (format "~a" v)) (reverse lst)) ", "))
 
 ;; formatters contain custom formatting functions for attributes
 (struct formatters (graph node edge))
 
-(define DEFAULT-FORMATTERS (formatters (hash) (hash) (hash)))
+(define DEFAULT-FORMATTERS (formatters
+                            (hash)
+                            (hash)
+                            (hash 'label DEFAULT-EDGE-LABEL-FMTR)))
 
 ; A structure the represents a digraph in the dot language
 (struct graph ([name]
@@ -97,7 +104,18 @@
 ;; name: The name of the graph
 ;; Purpose: Creates a Graph with the given name
 (define (create-graph name #:fmtrs(fmtrs DEFAULT-FORMATTERS) #:atb [atb DEFAULT-GRAPH])
-  (graph name '() '() fmtrs atb))
+  (define (combine v1 v2) (hash-union v1 v2 #:combine/key (lambda (_k v1 _v2) v1)))
+  (graph name
+         '()
+         '()
+         (formatters
+          (combine (formatters-graph fmtrs)
+                   (formatters-graph DEFAULT-FORMATTERS))
+          (combine (formatters-node fmtrs)
+                   (formatters-node DEFAULT-FORMATTERS))
+          (combine (formatters-edge fmtrs)
+                   (formatters-edge DEFAULT-FORMATTERS)))
+         atb))
 
 
 ;; add-node: graph string Optional(hash-map) -> graph
@@ -115,6 +133,8 @@
 ;; add-edge: graph symbol symbol symbol Optional(hash-map) -> graph
 ;; Purpose: adds an edge to the graph
 ;; NOTE: This function assumes that the node exists in the graph structure
+;; NOTE: a edges label is a list since we squash all edges between the same nodes
+;; into a single edge
 (define (add-edge g val start-node end-node #:atb [atb DEFAULT-EDGE])
   (define start (remove-dashes start-node))
   (define end (remove-dashes end-node))
@@ -211,7 +231,7 @@
     (define fmtr-fun (hash-ref fmtr key #f))
     (if fmtr-fun
         (format "~s=~s" key (fmtr-fun value))
-        (format "~s=~s" key value)))
+        (format "~s=~s" key (if (equal? key 'label) (format "~a" value) value))))
   (string-join (hash-map hash key-val->string) spacer))
 
 ;; Helper function to convert a value to a string
