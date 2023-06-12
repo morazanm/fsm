@@ -13,13 +13,14 @@ A library for creating Graphviz graphs that can be converted to the Dot Language
 @table-of-contents[]
 
 
+@section[#:tag "design"]{Overall Design}
 The graphviz library is designed to be its own entity. This means that both @emph{fsm-core} and @emph{fsm-gui}
 can work without the graphviz library. Below is a diagram of how the library interfaces with the rest of fsm.
 
 @centered{@image[#:suffixes @list[".png"]]{scribImgs/gvizInterface}}
 
-@section[#:tag "design"]{Overall Design}
 @section[#:tag "functions"]{Library Functions}
+Below are all the expoted library functions from @racket["interface.rkt"].
 @subsection{Creating Graphs}
 @defproc[(create-graph [name string?]
                        [#:fmtrs custom-formatters formatters? DEFAULT-FORMATTERS]
