@@ -20,7 +20,7 @@ can work without the graphviz library. Below is a diagram of how the library int
 @centered{@image[#:suffixes @list[".png"]]{scribImgs/gvizInterface}}
 
 @section[#:tag "functions"]{Library Functions}
-Below are all the expoted library functions from @racket["interface.rkt"].
+Below are all the exported library functions from @racket["interface.rkt"].
 @subsection{Creating Graphs}
 @defproc[(create-graph [name string?]
                        [#:fmtrs custom-formatters formatters? DEFAULT-FORMATTERS]
