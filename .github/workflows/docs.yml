@@ -31,6 +31,7 @@ jobs:
         shell: "bash"
         run: | 
           cd fsm-docs
+          scribble +m --redirect-main http://pkg-build.racket-lang.org/doc/ --htmls --dest ../docs ./dev.scrbl
           scribble +m --redirect-main http://pkg-build.racket-lang.org/doc/ --htmls --dest ../docs ./fsm.scrbl
       - name: push to gh-pages
         uses: JamesIves/github-pages-deploy-action@4.1.4 # more info at: https://github.com/JamesIves/github-pages-deploy-action

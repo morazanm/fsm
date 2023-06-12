@@ -1,6 +1,5 @@
 ; FSM Version 1.0
 ; Copyright (C) 202- by Marco T. Morazan 
-; @include-section["../Graphviz/scribblings/gviz.scrbl"]
 
 #lang scribble/manual
 
@@ -730,6 +729,3 @@ Names in no paticular order:
           @item{Rosario Antunez}
           @item{Josephine A. Des Rosiers}
           @item{Joshua Schappel}]
-
-
-
