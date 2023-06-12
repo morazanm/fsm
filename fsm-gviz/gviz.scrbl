@@ -63,18 +63,64 @@ can work without the graphviz library. Below is a diagram of how the library int
 }
 
 
+
+@defproc[(add-nodes [graph graph?]
+                    [names (listof symbol?)]
+                    [#:atb node-attributes (hash/c symbol? any/c) DEFAULT-NODE])
+                    graph?]{
+ Adds the list of nodes to the provided @racket[graph] where each value in the @racket[names] is the name of the generated @emph{DOT} node and sets
+ the nodes label attribute to the name. Note: Since the @emph{DOT} language does not allow @racket{-} characters
+ for node names the dashes are omitted, but are still provided for the label.
+
+ @racket[node-attributes] are a hash where the key is a symbol representing a @hyperlink["https://graphviz.org/docs/nodes/"]{node attribute}
+ and the value is the value for that attribute. They are applied to each of the nodes in the list. The @racket[DEFAULT-NODE] attributes are:
+ @codeblock{
+ (hash 'color "black" 'shape "circle")
+}
+Example usage:
+@codeblock{
+(add-nodes (create-graph 'test) '(A B C D E-1))
+}
+}
+
+
 @defproc[(add-edge [graph graph?]
+                   [value any/c]
                    [start-node symbol?]
                    [end-node symbol?]
                    [#:atb edge-attributes (hash/c symbol? any/c) (hash 'fontsize 15)])
                    graph?]{
 
- Adds a edge to the provided @racket[graph] with a directional arrow from the @racket[start-node] to the @racket[end-node].
+ Adds a edge to the provided @racket[graph] with a directional arrow from the @racket[start-node] to the @racket[end-node]. The
+ lable for the arrow is the @racket[value] that is supplied. The edge structure stores the @racket[value] as a list since we squash
+ all edges between the same nodes into a single edge.
  @bold{Note}: Since the @emph{DOT} language does not allow @racket{-} characters for node names the dashes are omitted, but
  are still provided for the label.
 
  @racket[edge-attributes] are a hash where the key is a symbol representing a @hyperlink["https://graphviz.org/docs/edges/"]{edge attribute}
  and the value is the value for that attribute.
+}
+
+
+@defproc[(add-edges [graph graph?]
+                    [edges (list/c symbol? symbol? any/c)]
+                    [#:atb edge-attributes (hash/c symbol? any/c) (hash 'fontsize 15)])
+                    graph?]{
+
+ Adds this list of edges to the provided @racket[graph] with a directional arrow from the @racket[start-node] to the @racket[end-node].
+ @bold{Note}: Since the @emph{DOT} language does not allow @racket{-} characters for node names the dashes are omitted, but
+ are still provided for the label.
+
+ @racket[edges] is a list of triples with the structure @racket[(list start-ndoe end-node value)]
+
+ @racket[edge-attributes] are a hash where the key is a symbol representing a @hyperlink["https://graphviz.org/docs/edges/"]{edge attribute}
+ and the value is the value for that attribute. It is applied to evey value in the list.
+
+Example usage:
+@codeblock{
+(add-edges (add-nodes (create-graph 'test) '(A B C D))
+           '((A B a) (B B b) (B D c-1)))
+}
 }
 
 
