@@ -102,7 +102,7 @@ const useDialActions = (type: MachineType) => {
     });
   }
 
-  if (type === 'tm-lang-rec') {
+  if (type === 'tm-language-recognizer') {
     actions.push({
       icon: <CheckIcon />,
       tooltip: 'Accept State',
@@ -210,9 +210,10 @@ const MachineEditorComponent = (props: MachineEditorProps) => {
             <PaletteIcon />
           </IconButton>
         </Tooltip>
-        {views.map((v) => {
+        {views.map((v, i) => {
           return (
             <Tooltip
+              key={i}
               title={`Toggle ${v.title}`}
               placement="left-start"
               disableInteractive

@@ -34,13 +34,17 @@ const RuleBox = ({
   rule,
   isCurrent,
   singleElement,
+  len
 }: {
   idx: number;
   rule: FSMRule;
   isCurrent: boolean;
   singleElement: boolean;
+  len: number;
 }) => {
   const theme = useTheme();
+  const styleFirst = { marginLeft: "auto" };
+  const styleLast = {marginRight: "auto"}
   const styleRight = {
     minWidth: 'fit-content',
     display: 'flex',
@@ -77,15 +81,27 @@ const RuleBox = ({
     : styleRight;
 
   const strRule = ruleToString(rule);
+  // reasoning behind this logic: https://bhch.github.io/posts/2021/04/centring-flex-items-and-allowing-overflow-scroll/
+  const setSpecialStyle = (idx: number, len: number) => {
+    let res = {}
+    if (idx === 0) {
+      res = { ...res, ...styleFirst }
+    }
+    if (idx === (len - 1)) {
+      res = { ...res, ...styleLast }
+    }
+    return res;
+  }
+  const tmpStyle = setSpecialStyle(idx, len)
   if (isCurrent) {
     return (
-      <CurrentItem key={strRule} style={activeStyle} theme={theme}>
+      <CurrentItem key={strRule} style={{...activeStyle, ...tmpStyle}} theme={theme}>
         <p>{strRule}</p>
       </CurrentItem>
     );
   } else {
     return (
-      <Item key={strRule} style={activeStyle} theme={theme}>
+      <Item key={strRule} style={{...activeStyle, ...tmpStyle}} theme={theme}>
         <p>{strRule}</p>
       </Item>
     );
@@ -99,12 +115,12 @@ const RuleComponent = (props: RuleComponentProps) => {
       direction="row"
       display="flex"
       overflow="auto"
-      justifyContent="center"
     >
       {props.rules.map((rule, i) => (
         <RuleBox
           key={i}
           idx={i}
+          len={props.rules.length}
           rule={rule}
           singleElement={hasOneEle}
           isCurrent={

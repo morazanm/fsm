@@ -21,6 +21,7 @@
   (define (find-finals states) 
     (map (lambda (s) (string->symbol (hash-ref s 'name)))
          (filter (lambda (s) (or (equal? "startfinal" (hash-ref s 'type))
+                                 (equal? "accept" (hash-ref s 'type))
                                  (equal? "final" (hash-ref s 'type))))
                  states)))
   ;; find-start :: jsexpr -> symbol | false
@@ -77,7 +78,7 @@
   (define tape-index (if (or (equal? type 'tm) (equal? type 'tm-language-recognizer))
                          (hash-ref data 'tapeIndex)
                          #f))
-  (define accept-state (if (equal? type 'tm-langauge-recognizer) (find-accept un-parsed-states) #f))
+  (define accept-state (if (equal? type 'tm-language-recognizer) (find-accept un-parsed-states) #f))
 
   ;; TODO: Talk to marco about how we want to handle fsm-error msgs. Since they print to the
   ;; stdio we cant display them in the GUI. Ideally this would just return a string and we
@@ -286,15 +287,15 @@
                                                        (hash 'start "S" 'startTape "_" 'end "H" 'endTape '("a")))
                                           'transitions (list (hash 'start "S"
                                                                    'tapeIndex 1
-                                                                   'tape `(,LM b b)
+                                                                   'tape (list (symbol->string LM) "b" "b")
                                                                    'invPass #t)
                                                              (hash 'rule (hash 'start "S" 'startTape '("b") 'end "H" 'endTape '("a"))
                                                                    'tapeIndex 1
-                                                                   'tape `(,LM a b)
+                                                                   'tape (list (symbol->string LM) "a" "b")
                                                                    'invPass (json-null))
                                                              (hash 'end "H"
                                                                    'tapeIndex 1
-                                                                   'tape `(,LM a b)
+                                                                   'tape (list (symbol->string LM) "a" "b")
                                                                    'invPass (json-null))))
                                          'error (json-null)))
                   (define actual (build-machine Ma-jsexpr #t))

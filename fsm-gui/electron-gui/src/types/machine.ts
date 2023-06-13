@@ -14,7 +14,7 @@ export type StateName = string;
 export type RacketInvariantFunc = string;
 
 // The supported types of machines that the GUI can handle
-export type MachineType = 'dfa' | 'ndfa' | 'pda' | 'tm' | 'tm-lang-rec';
+export type MachineType = 'dfa' | 'ndfa' | 'pda' | 'tm' | 'tm-language-recognizer';
 
 // The types of states can be displayed in the GUI
 export type StateType = 'start' | 'final' | 'startFinal' | 'normal' | 'accept';
@@ -170,7 +170,7 @@ export const isEndTransition = (
 
 // returns true if the machine is a type of turing machine
 export const isTmType = (type: MachineType): boolean =>
-  type == 'tm' || type === 'tm-lang-rec';
+  type == 'tm' || type === 'tm-language-recognizer';
 
 // return true if the given rule is a type of turing machine rule
 export const isTmTmLangRecRule = (rule: FSMRule): rule is TmMttmRule => {
@@ -224,7 +224,7 @@ export const ruleToString = (rule: FSMRule): string => {
       rule.end
     } ${arrayToString(rule.pushed)}))`;
   } else if (isTmTmLangRecRule(rule)) {
-    return 'TODO: finish';
+    return `((${rule.start} ${rule.startTape}) (${rule.end} ${rule.endTape}))`;
   }
   throw Error('Invalid rule supplied');
 };

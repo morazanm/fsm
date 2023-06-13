@@ -13,8 +13,29 @@ import {
   isPdaRule,
   isDfaNdfaRule,
   isFSMRuleEqual,
+  isTmType,
+  TmMttmRule,
 } from '../../../types/machine';
 import { FormHelperText, Input, InputLabel } from '@mui/material';
+
+function parseData(data: string, type: MachineType) {
+  if (isTmType(type)) {
+    const v = data.trim();
+    if (v == 'BLANK') {
+      return '_';
+    } else if (v === 'LM') {
+      return '@';
+    } else if (v === "LEFT") {
+      return "L";
+    } else if (v === "RIGHT") {
+      return "R";
+    } else {
+      return v;
+    }
+  } else {
+    return data;
+  }
+}
 
 function validateRule(
   rule: FSMRule,
@@ -43,7 +64,13 @@ function validateRule(
     return 'Please fill in all the rules inputs';
   }
   if (isTmTmLangRecRule(rule)) {
-    throw Error('TODO: Validate tm rule');
+    //NOTE: All TM-Actions are valid
+    return fmtMsgs([
+      isValidState(rule.start),
+      Array.isArray(rule.startTape) ? isValidAlpha(rule.startTape[0]) : '',
+      isValidState(rule.end),
+      Array.isArray(rule.endTape) ? isValidAlpha(rule.endTape[0]) : '',
+    ])
   } else if (isPdaRule(rule)) {
     rule.popped = rule.popped.filter((r) => r !== '');
     rule.pushed = rule.pushed.filter((r) => r !== '');
@@ -81,8 +108,10 @@ function initRule(type: MachineType): FSMRule {
       return { start: '', input: '', popped: [], end: '', pushed: [] };
     case 'tm':
       return { start: '', startTape: [], end: '', endTape: [] };
-    case 'tm-lang-rec':
+    case 'tm-language-recognizer':
       return { start: '', startTape: [], end: '', endTape: [] };
+    default:
+      console.log("OH NO", type)
   }
 }
 
@@ -216,18 +245,33 @@ export default function useRuleForm(machineType: MachineType) {
           <Stack spacing={1}>
             <Stack spacing={1} direction="row">
               {Object.keys(currentRule).map((k: keyof FSMRule) => {
-                const parseFunc = Array.isArray(currentRule[k])
-                  ? parseValueAsArray
-                  : parseValueAsString;
-
+                const parseFunc = (v:string) => {
+                  if (isTmType(props.machineType)) {
+                    if (v === "R" || v === "L" || v === "@" || v === "_") {
+                      return parseValueAsString;
+                    } else if ((k as keyof TmMttmRule) === "startTape" || (k as keyof TmMttmRule) === "endTape") {
+                      return parseValueAsArray;
+                    } else {
+                      return parseValueAsString
+                    }
+                  } else {
+                    if (Array.isArray(currentRule[k])) {
+                      return parseValueAsArray;
+                    } else {
+                      return parseValueAsString;
+                    }
+                  }
+                } 
                 return (
                   <RuleInput
                     key={k}
                     label={k}
                     value={unParseValue(currentRule[k])}
                     hasError={!!error}
-                    onChange={(v) =>
-                      setCurrentRule({ ...currentRule, [k]: parseFunc(v) })
+                    onChange={(v) => {
+                      const value = parseData(v, props.machineType)
+                      setCurrentRule({ ...currentRule, [k]: parseFunc(value)(value)})
+                    }
                     }
                   />
                 );

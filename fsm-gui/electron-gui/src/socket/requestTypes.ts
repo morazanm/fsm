@@ -16,5 +16,6 @@ export type FSMBuildMachineRequest = {
   type: MachineType;
   input: FSMAlpha[];
   nodead: boolean;
+  tapeIndex: number | undefined; // Only defined for TM's
   stackAlpha: FSMStackAlpha[] | undefined; // undefined when not a pda
 };

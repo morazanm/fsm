@@ -19,14 +19,6 @@
     [(_ s:expr args:expr ...)
      #`(when DEBUG_MODE (displayln (format s args ...)))]))
 
-;; write-json-and-flush :: jsexpr out-port -> out->port
-;; Write the json expr to the out-port, then flushes the port and returns it
-(define (write-json-and-flush jsexpr out)
-  (begin
-    (write-json jsexpr out)
-    (flush-output out)
-    out))
-
 
 ;; handle-request :: jsexpr(a) -> jsexpr(b)
 ;; Based off of the instruction that is provideded in the incomming jsexpr, dispatches 
@@ -37,6 +29,11 @@
     ['shut_down eof] ;; we use eof to denote a shutdown
     [_ (error 'handle-request "Invalid instruction given: ~a" (hash-ref input 'instr))]))
 
+(define (send-fsm-protocal data out)
+  (displayln! "Sending Data:\n ~s" data)
+  (write-json data out)
+  (write eof out)
+  (flush-output out))
 
 ;; listen-for-input :: TCP-listener optional(jsexpr)
 ;; listens on the specified socket for incomming connections
@@ -45,7 +42,7 @@
   (define-values (in out) (tcp-accept listener))
   (when (not (null? data))
     (displayln! "Sending prebuilt machine")
-    (write-json-and-flush data out))
+    (send-fsm-protocal data out))
   (thread
    (lambda ()
      (let loop ()
@@ -53,12 +50,11 @@
        (displayln! "Recieved a incomming request")
        (unless (eof-object? hashed-msg)
          (define outgoing-data (handle-request hashed-msg))
-         (displayln! outgoing-data)
+         ;(displayln! outgoing-data)
          (if (eof-object? outgoing-data)
              (tcp-close listener)
              (begin
-               (write-json outgoing-data out)
-               (flush-output out)
+               (send-fsm-protocal outgoing-data out)
                (loop)))))))
   (listen-for-input listener data))
 
@@ -116,5 +112,52 @@
                          (cons 'F "(lambda (consumed-input) #f)")
                          (cons 'D (json-null))))
 
+
+(define a^nb^nc^n2 (make-tm '(S B C D E Y N)
+                            '(a b c z x y)
+                            `(((S a) (B z))
+                              ((S b) (N b))
+                              ((S c) (N c))
+                              ((S ,BLANK) (Y ,BLANK))
+                              ((S z) (N z))
+                              ((S x) (N x))
+                              ((S y) (N y))
+
+                              ((E z) (E ,RIGHT))
+                              ((E x) (E ,RIGHT))
+                              ((E y) (E ,RIGHT))
+                              ((E ,BLANK) (Y ,BLANK))
+                              ((E a) (N a))
+                              ((E b) (N b))
+                              ((E c) (N c))
+
+                              ((B a) (B ,RIGHT))
+                              ((B b) (C x))
+                              ((B c) (N c))
+                              ((B ,BLANK) (N ,BLANK))
+                              ((B z) (B ,RIGHT))
+                              ((B x) (B ,RIGHT))
+                              ((B y) (B ,RIGHT))
+
+                              ((C a) (N a))
+                              ((C b) (C ,RIGHT))
+                              ((C c) (D y))
+                              ((C ,BLANK) (N ,BLANK))
+                              ((C z) (C ,RIGHT))
+                              ((C x) (C ,RIGHT))
+                              ((C y) (C ,RIGHT))
+
+                              ((D a) (S a))
+                              ((D b) (D ,LEFT))
+                              ((D c) (D ,LEFT))
+                              ((D ,BLANK) (N ,BLANK))
+                              ((D z) (D ,LEFT))
+                              ((D x) (D ,LEFT))
+                              ((D y) (D ,LEFT))
+                              ((D ,LM) (E R)))
+                            'S
+                            '(Y N)
+                            'Y))
+
 ;(run-without-prebuilt)
-(run-with-prebuilt a*a invariants)
+(run-with-prebuilt a^nb^nc^n2 '())

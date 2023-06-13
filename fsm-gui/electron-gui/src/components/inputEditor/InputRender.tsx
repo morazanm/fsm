@@ -8,25 +8,51 @@ type InputRenderProps = {
 };
 
 const commonStyle = { fontSize: 32, marginBottom: '0px', marginTop: '0px' };
+const gridItemCSS = {
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+};
 
 const useRenderers = (type: MachineType) => {
   const theme = useTheme();
   if (isTmType(type)) {
     const TMInput = (color: string) => {
       return ({ input, index }: { input: FSMAlpha; index: number }) => (
-        <Grid
-          container
-          direction="column"
-          justifyContent="center"
-          alignItems="center"
+        <div
+          style={{
+            justifyContent: 'center',
+            alignItems: 'center',
+            textAlign: 'center',
+            border: `solid ${theme.palette.divider}`,
+            borderWidth: '0px 1px 0px 0px',
+            height: 'inherit',
+            display: 'grid',
+            gridTemplateRows: '1fr 20px',
+            paddingLeft: '5px',
+            paddingRight: '5px',
+          }}
         >
-          <Grid item xs={10}>
-            <p style={{ ...commonStyle, color: color }}>{input}</p>
-          </Grid>
-          <Grid item xs={2} sx={{ paddingTop: '10px' }}>
+          <div
+            style={{
+              ...gridItemCSS,
+              borderBottom: '1px solid black',
+              height: '100%',
+            }}
+          >
+            <p
+              style={{
+                ...commonStyle,
+                color: color,
+              }}
+            >
+              {input}
+            </p>
+          </div>
+          <div style={{ ...gridItemCSS }}>
             <p>{index}</p>
-          </Grid>
-        </Grid>
+          </div>
+        </div>
       );
     };
 
@@ -66,12 +92,16 @@ const useRenderers = (type: MachineType) => {
 
 const InputRender = (props: InputRenderProps) => {
   const [CurrentInput, PreviousInput, RestInput] = useRenderers(props.type);
+  const customStyle = isTmType(props.type)
+    ? { height: '98%', paddingTop: '0px' }
+    : {};
   return (
     <Stack
       justifyContent="left"
       alignItems="center"
       direction="row"
-      spacing={2}
+      spacing={isTmType(props.type) ? 0 : 2}
+      style={{ ...customStyle, overflowY: 'hidden', overflowX: 'auto' }}
     >
       {props.input.map((a, i) => {
         if (i < props.inputIndex) {

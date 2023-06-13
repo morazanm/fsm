@@ -83,7 +83,6 @@ const ControlView = (props: ControlViewProps) => {
       const rotation = (360 / props.states.length) * stateIndex;
       const center = height / 2 - 5;
       const useBottom = rotation > 90 && rotation < 270;
-      console.log(useBottom);
       return (
         <div
           className={styles.circleBackground}

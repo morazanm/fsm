@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+const buffer = require("buffer");
 import {
   Paper,
   Grid,
@@ -20,6 +21,7 @@ import {
   MachineType,
   isFSMRuleEqual,
   FSMStackAlpha,
+  isTmType,
 } from './types/machine';
 import { useTheme } from '@mui/material/styles';
 import ControlView from './components/controlView/view';
@@ -174,7 +176,7 @@ const MainView = (props: MainViewProps) => {
   };
   const setInitialTapePosition = (position: number) => {
     resetMachineAndSet({
-      initialTapePosition: 0,
+      initialTapePosition: position,
     });
   };
   const setGuiRules = (rules: FSMRule[]) => {
@@ -196,7 +198,6 @@ const MainView = (props: MainViewProps) => {
       setConnected({ connected: res, status: 'done' });
     });
   };
-
   useEffect(() => {
     setConnected({ connected: props.racketBridge.connected, status: 'done' });
   }, [props.racketBridge.connected]);
@@ -204,12 +205,13 @@ const MainView = (props: MainViewProps) => {
     // If we have a connection then listen for messages
     // TODO: We can probably abstract this out with a callback
     if (props.racketBridge.client) {
-      props.racketBridge.client.on('data', (data: JSON) => {
-        const result: SocketResponse<object> = JSON.parse(data.toString());
+      props.racketBridge.subscribeListener((data: string) => {
+        const result: SocketResponse<object> = JSON.parse(data);
         if (result.error) {
           openErrorDialog('Error Building Machine', `${result.error}`);
         } else if (result.responseType === Instruction.BUILD) {
           const response = result as SocketResponse<BuildMachineResponse>;
+          console.log(response.data)
           // See if fsm-core added any states, if so then add them
           const new_states = machineState.states.concat(
             response.data.states.filter(
@@ -222,7 +224,6 @@ const MainView = (props: MainViewProps) => {
               (r) => !machineState.rules.find((mr) => isFSMRuleEqual(r, mr)),
             ),
           );
-          console.log(response.data.transitions)
           setMachineState({
             ...machineState,
             states: new_states,
@@ -243,11 +244,12 @@ const MainView = (props: MainViewProps) => {
           const response = result as SocketResponse<PrebuiltMachineResponse>;
           resetMachineAndSet({
             ...machineState,
-            input: [],
+            input: isTmType(response.data.type) ? ['@'] : [],
             states: response.data.states,
             alphabet: response.data.alpha,
             rules: response.data.rules,
             type: response.data.type,
+            accept: response.data.states.find((s) => s.type === "accept"),
             stackAlpha:
               response.data.type === 'pda' ? response.data.stackAlpha : [],
             graphVizImage: response.data.filepath ?? null,
@@ -266,11 +268,11 @@ const MainView = (props: MainViewProps) => {
         props.racketBridge.closeConnection();
       });
     }
-  }, [machineState]);
+  }, []);
 
   const run = () => {
     props.racketBridge.sendToRacket(
-      { ...machineState } as FSMBuildMachineRequest,
+      { ...machineState, tapeIndex: machineState.initialTapePosition } as FSMBuildMachineRequest,
       Instruction.BUILD,
     );
   };
@@ -322,6 +324,15 @@ const MainView = (props: MainViewProps) => {
     return undefined;
   };
   const currentTransition = getCurrentTransition();
+
+  const determineInputOrTapeIndex = () => {
+    if (isTmType(machineState.type)) {
+      return machineState.initialTapePosition;
+      //TODO: Add logic to see if machine was ran, if so use the transitions...
+    } else {
+      return machineState.transitions.inputIndex;
+    }
+  }
   return (
     <Paper
       sx={{
@@ -338,7 +349,7 @@ const MainView = (props: MainViewProps) => {
         <Grid item xs={12}>
           <InputComponent
             states={machineState.states}
-            inputIndex={machineState.transitions.inputIndex}
+            inputIndex={determineInputOrTapeIndex()}
             input={machineState.input}
             runMachine={run}
             goNext={goNext}
@@ -466,7 +477,8 @@ const MainView = (props: MainViewProps) => {
           open
           onClose={() => setOpenDialog(null)}
           title="End of Machine"
-          body={`The input was ${currentTransition.action}ed.`}
+          body={`The input was ${machineState.type === "tm-language-recognizer" ? 
+          "accept" : currentTransition.action}ed.`}
           bodyStyle={{
             color:
               currentTransition.action === 'accept'

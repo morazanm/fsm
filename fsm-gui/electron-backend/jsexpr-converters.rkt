@@ -11,7 +11,7 @@
          transitions->jsexpr)
 
 
-;; fsa->jsexpr :: fsa optional(listof(cons symbol string)) -> jsexpr(fsa)
+;; fsa->jsexpr :: fsa listof(cons symbol string) -> jsexpr(fsa)
 ;; converts a fsm-core fsa to a jsexpr to be sent to the GUI
 ;; NOTE: invariants are a pair of a symbol representing the state name
 ;; and the invarinat function as a string.
@@ -94,6 +94,7 @@
 ;; tm-transitions->jsexpr :: listof(transitions) symbol listof(cons symbol string) listof(symbol) number -> listof(jsexpr(transition))
 ;; Given the list of fsm-core transitions, computes the jsexpr form of the transitions
 (define (tm-transitions->jsexpr transitions start invariants initial-tape tape-start-index)
+  (define (symbol-list->string lst) (map (lambda (s) (symbol->string s)) lst))
   ;; tm-transition->jsexpr :: transition transition listof(cons symbol string) -> jsexpr(transition)
   ;; computes the jsexpr(transition) for a tm/lang-rec given 2 fsm-core transitions
   (define (tm-transition->jsexpr t1 t2)
@@ -112,18 +113,18 @@
                                                        (list-ref next-tape next-pos))]))
     (hash 'rule (rule->jsexpr `((,cur-state ,cur-action) (,next-state ,next-action)))
           'tapeIndex next-pos
-          'tape next-tape
+          'tape (symbol-list->string next-tape)
           'invPass (compute-inv next-state invariants next-tape next-pos)))
   ;; we alyays need to append the start transiton to the front for the gui.
   ;; EX: (hash 'start "A" 'input (json-null) 'end "start")
   (define start-transition (hash 'start (symbol->string start)
                                  'tapeIndex tape-start-index
-                                 'tape initial-tape
+                                 'tape (symbol-list->string initial-tape)
                                  'invPass (compute-inv start invariants initial-tape tape-start-index)))
   ;; if a tm builds then input always halts
   (define end-transition (hash 'end (symbol->string (first (last transitions)))
                                'tapeIndex (second (last transitions))
-                               'tape (third (last transitions))
+                               'tape (symbol-list->string (third (last transitions)))
                                'invPass (compute-inv (first (last transitions))
                                                      invariants
                                                      (third (last transitions))
@@ -281,6 +282,9 @@
            rackunit/text-ui
            syntax/to-string)
 
+
+  (define (symbol-list->string lst) (map (lambda (s) (symbol->string s)) lst))
+
   (define-syntax (inv->string! stx)
     (syntax-parse stx
       [(_ a)
@@ -399,15 +403,15 @@
                   (check-equal? (transitions->jsexpr Ma invariants '(b b) 0)
                                 (list (hash 'start "S"
                                             'tapeIndex 0
-                                            'tape '(b b)
+                                            'tape '("b" "b")
                                             'invPass (json-null))
                                       (hash 'rule (hash 'start "S" 'startTape '("b") 'end "H" 'endTape '("a"))
                                             'tapeIndex 0
-                                            'tape '(a b)
+                                            'tape '("a" "b")
                                             'invPass (json-null))
                                       (hash 'end "H"
                                             'tapeIndex 0
-                                            'tape '(a b)
+                                            'tape '("a" "b")
                                             'invPass (json-null)))))
 
                 (test-case "tm-language-recognizer"
@@ -448,66 +452,66 @@
                   (check-equal? (transitions->jsexpr a^nb^nc^n invariants '(@ a b c) 0)
                                 (list (hash 'start "S"
                                             'tapeIndex 0
-                                            'tape '(@ a b c)
+                                            'tape '("@" "a" "b" "c")
                                             'invPass (json-null))
                                       (hash 'rule (hash 'start "S" 'startTape "@" 'end "S" 'endTape "R")
                                             'tapeIndex 1
-                                            'tape '(@ a b c)
+                                            'tape '("@" "a" "b" "c")
                                             'invPass (json-null))
                                       (hash 'rule (hash 'start "S" 'startTape '("a") 'end "B" 'endTape '("z"))
                                             'tapeIndex 1
-                                            'tape '(@ z b c)
+                                            'tape '("@" "z" "b" "c")
                                             'invPass (json-null))
                                       (hash 'rule (hash 'start "B" 'startTape '("z") 'end "B" 'endTape "R")
                                             'tapeIndex 2
-                                            'tape '(@ z b c)
+                                            'tape '("@" "z" "b" "c")
                                             'invPass (json-null))
                                       (hash 'rule (hash 'start "B" 'startTape '("b") 'end "C" 'endTape '("z"))
-                                            'tape '(@ z z c)
+                                            'tape '("@" "z" "z" "c")
                                             'tapeIndex 2
                                             'invPass (json-null))
                                       (hash 'rule (hash 'start "C" 'startTape '("z") 'end "C" 'endTape "R")
-                                            'tape '(@ z z c)
+                                            'tape '("@" "z" "z" "c")
                                             'tapeIndex 3
                                             'invPass (json-null))
                                       (hash 'rule (hash 'start "C" 'startTape '("c") 'end "D" 'endTape '("z"))
-                                            'tape '(@ z z z)
+                                            'tape '("@" "z" "z" "z")
                                             'tapeIndex 3
                                             'invPass (json-null))
                                       (hash 'rule (hash 'start "D" 'startTape '("z") 'end "D" 'endTape "L")
-                                            'tape '(@ z z z)
+                                            'tape '("@" "z" "z" "z")
                                             'tapeIndex 2
                                             'invPass (json-null))
                                       (hash 'rule (hash 'start "D" 'startTape '("z") 'end "D" 'endTape "L")
-                                            'tape '(@ z z z)
+                                            'tape '("@" "z" "z" "z")
                                             'tapeIndex 1
                                             'invPass (json-null))
                                       (hash 'rule (hash 'start "D" 'startTape '("z") 'end "D" 'endTape "L")
-                                            'tape '(@ z z z)
+                                            'tape '("@" "z" "z" "z")
                                             'tapeIndex 0
                                             'invPass (json-null))
                                       (hash 'rule (hash 'start "D" 'startTape "@" 'end "E" 'endTape "R")
-                                            'tape '(@ z z z)
+                                            'tape '("@" "z" "z" "z")
                                             'tapeIndex 1
                                             'invPass (json-null))
                                       (hash 'rule (hash 'start "E" 'startTape '("z") 'end "E" 'endTape "R")
-                                            'tape '(@ z z z)
+                                            'tape '("@" "z" "z" "z")
                                             'tapeIndex 2
                                             'invPass (json-null))
                                       (hash 'rule (hash 'start "E" 'startTape '("z") 'end "E" 'endTape "R")
-                                            'tape '(@ z z z)
+                                            'tape '("@" "z" "z" "z")
                                             'tapeIndex 3
                                             'invPass (json-null))
                                       (hash 'rule (hash 'start "E" 'startTape '("z") 'end "E" 'endTape "R")
-                                            'tape '(@ z z z _)
+                                            'tape '("@" "z" "z" "z" "_")
                                             'tapeIndex 4
                                             'invPass (json-null))
                                       (hash 'rule (hash 'start "E" 'startTape "_" 'end "Y" 'endTape "_")
-                                            'tape '(@ z z z _)
+                                            'tape '("@" "z" "z" "z" "_")
                                             'tapeIndex 4
                                             'invPass (json-null))
                                       (hash 'end "Y"
-                                            'tape '(@ z z z _)
+                                            'tape '("@" "z" "z" "z" "_")
                                             'tapeIndex 4
                                             'invPass (json-null)))))))
 

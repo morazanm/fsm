@@ -1,5 +1,7 @@
 import * as net from 'net';
 
+const END_OF_MSG = "#<eof>"
+
 export type SocketResponse<T> = {
   data: T;
   responseType: Instruction;
@@ -27,17 +29,20 @@ export class RacketInterface {
   private host: string;
   public connected: boolean;
   public client: net.Socket;
+  private callbacks: ((data:string) => void)[];;
 
   constructor(port: number, host: string) {
     this.port = port;
     this.host = host;
     this.connected = false;
     this.client = new net.Socket();
+    this.callbacks = []; 
   }
 
   establishConnection(): Promise<boolean> {
     return new Promise((resolve) => {
       if (this.connected) return resolve(true);
+      let chunks: Buffer[] = [];
       this.client
         .connect({ port: this.port, host: this.host }, () => {
           console.log('connected to server!');
@@ -48,8 +53,24 @@ export class RacketInterface {
           console.log('error while connecting to server');
           this.connected = false;
           return resolve(false);
-        });
+        })
+        .on('data', (data: Buffer) => {
+            const termArg = data.subarray(data.byteLength - 6, data.byteLength)
+            if (termArg.toString() === END_OF_MSG) {
+              chunks.push(data.subarray(0, data.byteLength - 6));
+              const tmp = Buffer.concat(chunks).toString()
+              this.callbacks.forEach((cb) => cb(tmp))
+              chunks = [];
+            } else {
+              chunks.push(data)
+            }
+        })
     });
+  }
+
+  subscribeListener(cb: (data: string) => void): void {
+    this.callbacks.push(cb)
+    console.log("subscribed", this.callbacks.length)
   }
 
   sendToRacket<T extends object>(data: T, instruction: Instruction) {
