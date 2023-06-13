@@ -7,7 +7,7 @@
 
 @defmodule["interface.rkt"]
 
-A library for creating Graphviz graphs that can be converted to the Dot Language and supported image types.
+A library for creating Graphviz graphs that can be converted to the Dot Language or supported image types.
 
 
 @table-of-contents[]
@@ -133,7 +133,7 @@ Example usage:
 Converts the provided @racket[graph] to a bitmap using @emph{htdp2-lib}'s @hyperlink["https://docs.racket-lang.org/teachpack/2htdpimage.html#%28def._%28%28lib._2htdp%2Fimage..rkt%29._bitmap%2Ffile%29%29"]{bitmap/file} function. The file is saved in the provided
 @racket[save-directory] using the provided @racket[filename].
 
-In order for the function to work one must have the @emph{DOT Complier} downloaded on their machine and have a like to the @emph{DOT} executable
+In order for the function to work one must have the @emph{DOT Complier} downloaded on their machine and have a link to the @emph{DOT} executable
 on there PATH.
 }
 
@@ -145,7 +145,7 @@ on there PATH.
 Converts the provided @racket[graph] to a svg file and returns the path the newly created file.
 The file is saved in the provided @racket[save-directory] using the provided @racket[filename].
 
-In order for the function to work one must have the @emph{DOT Complier} downloaded on their machine and have a like to the @emph{DOT} executable
+In order for the function to work one must have the @emph{DOT Complier} downloaded on their machine and have a link to the @emph{DOT} executable
 on there PATH.
 }
 
@@ -157,7 +157,7 @@ on there PATH.
 Converts the provided @racket[graph] to a png file and returns the path the newly created file.
 The file is saved in the provided @racket[save-directory] using the provided @racket[filename].
 
-In order for the function to work one must have the @emph{DOT Complier} downloaded on their machine and have a like to the @emph{DOT} executable
+In order for the function to work one must have the @emph{DOT Complier} downloaded on their machine and have a link to the @emph{DOT} executable
 on there PATH.
 }
 
@@ -237,7 +237,7 @@ Boolean to a string.
 @section[#:tag "executable"]{Dealing with the DOT executable}
 
 @deftogether[(@defproc[(find-dot-executable) path?]
-              @defproc[(hash-dot-executable?) boolean?])]{
+              @defproc[(has-dot-executable?) boolean?])]{
 Looks for the @emph{DOT} executable on the system by looking at the PATH (Windows, MacOS, Linux) and specified
 directories (MacOS, Linux). If the executable is found, then the path to the executable is returned. The specified
 directories are:
