@@ -82,9 +82,9 @@ const root = ReactDOM.createRoot(
 );
 
 root.render(
-  <React.StrictMode>
-    <StyledEngineProvider injectFirst>
-      <ToggleColorMode />
-    </StyledEngineProvider>
-  </React.StrictMode>,
+  // <React.StrictMode>
+  <StyledEngineProvider injectFirst>
+    <ToggleColorMode />
+  </StyledEngineProvider>,
+  // </React.StrictMode>,
 );

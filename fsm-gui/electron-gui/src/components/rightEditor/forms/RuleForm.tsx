@@ -25,10 +25,10 @@ function parseData(data: string, type: MachineType) {
       return '_';
     } else if (v === 'LM') {
       return '@';
-    } else if (v === "LEFT") {
-      return "L";
-    } else if (v === "RIGHT") {
-      return "R";
+    } else if (v === 'LEFT') {
+      return 'L';
+    } else if (v === 'RIGHT') {
+      return 'R';
     } else {
       return v;
     }
@@ -70,7 +70,7 @@ function validateRule(
       Array.isArray(rule.startTape) ? isValidAlpha(rule.startTape[0]) : '',
       isValidState(rule.end),
       Array.isArray(rule.endTape) ? isValidAlpha(rule.endTape[0]) : '',
-    ])
+    ]);
   } else if (isPdaRule(rule)) {
     rule.popped = rule.popped.filter((r) => r !== '');
     rule.pushed = rule.pushed.filter((r) => r !== '');
@@ -111,7 +111,7 @@ function initRule(type: MachineType): FSMRule {
     case 'tm-language-recognizer':
       return { start: '', startTape: [], end: '', endTape: [] };
     default:
-      console.log("OH NO", type)
+      console.log('OH NO', type);
   }
 }
 
@@ -245,14 +245,17 @@ export default function useRuleForm(machineType: MachineType) {
           <Stack spacing={1}>
             <Stack spacing={1} direction="row">
               {Object.keys(currentRule).map((k: keyof FSMRule) => {
-                const parseFunc = (v:string) => {
+                const parseFunc = (v: string) => {
                   if (isTmType(props.machineType)) {
-                    if (v === "R" || v === "L" || v === "@" || v === "_") {
+                    if (v === 'R' || v === 'L' || v === '@' || v === '_') {
                       return parseValueAsString;
-                    } else if ((k as keyof TmMttmRule) === "startTape" || (k as keyof TmMttmRule) === "endTape") {
+                    } else if (
+                      (k as keyof TmMttmRule) === 'startTape' ||
+                      (k as keyof TmMttmRule) === 'endTape'
+                    ) {
                       return parseValueAsArray;
                     } else {
-                      return parseValueAsString
+                      return parseValueAsString;
                     }
                   } else {
                     if (Array.isArray(currentRule[k])) {
@@ -261,7 +264,7 @@ export default function useRuleForm(machineType: MachineType) {
                       return parseValueAsString;
                     }
                   }
-                } 
+                };
                 return (
                   <RuleInput
                     key={k}
@@ -269,10 +272,12 @@ export default function useRuleForm(machineType: MachineType) {
                     value={unParseValue(currentRule[k])}
                     hasError={!!error}
                     onChange={(v) => {
-                      const value = parseData(v, props.machineType)
-                      setCurrentRule({ ...currentRule, [k]: parseFunc(value)(value)})
-                    }
-                    }
+                      const value = parseData(v, props.machineType);
+                      setCurrentRule({
+                        ...currentRule,
+                        [k]: parseFunc(value)(value),
+                      });
+                    }}
                   />
                 );
               })}

@@ -20,7 +20,6 @@ const isReserved = (s: string): boolean => {
 };
 
 const validateInput = (incoming: string[], alpha: FSMAlpha[]) => {
-  console.log(incoming);
   const badAlpha = incoming.filter((v) => !alpha.includes(v) && !isReserved(v));
   return badAlpha.length > 0
     ? `The following are not in the list of alpha: ${badAlpha}`

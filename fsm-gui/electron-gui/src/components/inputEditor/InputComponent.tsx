@@ -122,7 +122,9 @@ const InputComponent = (props: InputComponentProps) => {
         justifyContent={isTmType(props.type) ? 'left' : 'center'}
         alignItems="center"
         xs={11}
-        style={isTmType(props.type) ? {paddingTop: "0px", paddingLeft: '0px'} : {}}
+        style={
+          isTmType(props.type) ? { paddingTop: '0px', paddingLeft: '0px' } : {}
+        }
       >
         <InputRender
           input={props.input}

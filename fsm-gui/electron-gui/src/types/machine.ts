@@ -14,7 +14,12 @@ export type StateName = string;
 export type RacketInvariantFunc = string;
 
 // The supported types of machines that the GUI can handle
-export type MachineType = 'dfa' | 'ndfa' | 'pda' | 'tm' | 'tm-language-recognizer';
+export type MachineType =
+  | 'dfa'
+  | 'ndfa'
+  | 'pda'
+  | 'tm'
+  | 'tm-language-recognizer';
 
 // The types of states can be displayed in the GUI
 export type StateType = 'start' | 'final' | 'startFinal' | 'normal' | 'accept';
@@ -60,7 +65,7 @@ export type BasicTransition = {
 
   // When the filepath key does not exist then that means that graphViz is not installed
   // on the users computer
-  filepath?: string
+  filepath?: string;
 };
 
 // A PdaTransition also includes what the stack holds at the transition
@@ -83,7 +88,7 @@ export type StartTransition = {
 
   // When the filepath key does not exist then that means that graphViz is not installed
   // on the users computer
-  filepath?: string
+  filepath?: string;
 };
 
 export type TmStartTransition = StartTransition & {
@@ -99,7 +104,7 @@ export type EndTransition = {
 
   // When the filepath key does not exist then that means that graphViz is not installed
   // on the users computer
-  filepath?: string
+  filepath?: string;
 };
 
 export type TmEndTransition = EndTransition & {
@@ -206,7 +211,15 @@ export const isFSMRuleEqual = (r1: FSMRule, r2: FSMRule): boolean => {
       cmpArrays(r1.pushed, r2.pushed)
     );
   } else if (isTmTmLangRecRule(r1) && isTmTmLangRecRule(r2)) {
-    return false;
+    const tmp1 =
+      Array.isArray(r1.startTape) && Array.isArray(r2.startTape)
+        ? r1.startTape[0] === r2.startTape[0]
+        : r1.startTape === r2.startTape;
+    const tmp2 =
+      Array.isArray(r1.endTape) && Array.isArray(r2.endTape)
+        ? r1.endTape[0] === r2.endTape[0]
+        : r1.endTape === r2.endTape;
+    return r1.start === r2.start && r1.end === r2.end && tmp1 && tmp2;
   } else {
     return false;
   }

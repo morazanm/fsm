@@ -21,7 +21,6 @@ const Stack = (props: StackProps) => {
     color: theme.palette.text.primary,
     bgcolor: theme.palette.background.default,
   };
-  console.log(props.currentTransition);
   const stackElements =
     props.currentTransition && isPdaTransition(props.currentTransition)
       ? (props.currentTransition as PdaTransition).stack

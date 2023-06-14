@@ -1,4 +1,4 @@
-import { Stack, Grid, useTheme } from '@mui/material';
+import { Stack, useTheme } from '@mui/material';
 import { FSMAlpha, MachineType, isTmType } from '../../types/machine';
 
 type InputRenderProps = {

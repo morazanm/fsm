@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-const buffer = require("buffer");
 import {
   Paper,
   Grid,
@@ -10,6 +9,8 @@ import {
   DialogContentText,
   DialogActions,
   Box,
+  Backdrop,
+  CircularProgress,
 } from '@mui/material';
 import {
   State,
@@ -19,9 +20,9 @@ import {
   isStartTransition,
   isEndTransition,
   MachineType,
-  isFSMRuleEqual,
   FSMStackAlpha,
   isTmType,
+  isTmMttmTransition,
 } from './types/machine';
 import { useTheme } from '@mui/material/styles';
 import ControlView from './components/controlView/view';
@@ -30,17 +31,14 @@ import LeftEditor from './components/leftEditor/LeftEditor';
 import RuleComponent from './components/ruleDisplay/rulesComponent';
 import InputComponent from './components/inputEditor/InputComponent';
 import Stack from './components/stack/Stack';
-import {
-  BuildMachineResponse,
-  PrebuiltMachineResponse,
-} from './socket/responseTypes';
+
 import {
   RacketInterface,
   Instruction,
-  SocketResponse,
   Connection,
 } from './socket/racketInterface';
 import { FSMBuildMachineRequest } from './socket/requestTypes';
+import { parseDataResponse } from './responseParser';
 
 // dummy object to symbolize a machine that has not been set to
 // fsm-core for verification
@@ -94,11 +92,11 @@ type InfoDialog = {
   message: string;
 };
 
-type DialogType = 'start' | 'end' | 'info' | 'error' | null;
+export type DialogType = 'start' | 'end' | 'info' | 'error' | null;
 
 export type View = 'control' | 'graphViz';
 
-type MachineState = {
+export type MachineState = {
   states: State[];
   rules: FSMRule[];
   alphabet: FSMAlpha[];
@@ -124,7 +122,7 @@ const MainView = (props: MainViewProps) => {
     connected: props.racketBridge.connected,
     status: 'done',
   });
-  const graphVizImage = useRef();
+  const [waitingForResponse, setWaitingForResponse] = useState(false);
   const [openDialog, setOpenDialog] = useState<DialogType>(null);
   const [view, setView] = useState<View>('control');
   const [machineState, setMachineState] = useState<MachineState>({
@@ -139,6 +137,8 @@ const MainView = (props: MainViewProps) => {
     accept: null,
     initialTapePosition: 0,
   } as MachineState);
+
+  const machineStateRef = useRef(machineState);
 
   const resetMachineAndSet = (obj: Partial<MachineState>) =>
     setMachineState({
@@ -198,83 +198,62 @@ const MainView = (props: MainViewProps) => {
       setConnected({ connected: res, status: 'done' });
     });
   };
+
   useEffect(() => {
     setConnected({ connected: props.racketBridge.connected, status: 'done' });
   }, [props.racketBridge.connected]);
+
+  useEffect(() => {
+    machineStateRef.current = machineState;
+  }, [machineState]);
+
   useEffect(() => {
     // If we have a connection then listen for messages
     // TODO: We can probably abstract this out with a callback
     if (props.racketBridge.client) {
-      props.racketBridge.subscribeListener((data: string) => {
-        const result: SocketResponse<object> = JSON.parse(data);
-        if (result.error) {
-          openErrorDialog('Error Building Machine', `${result.error}`);
-        } else if (result.responseType === Instruction.BUILD) {
-          const response = result as SocketResponse<BuildMachineResponse>;
-          console.log(response.data)
-          // See if fsm-core added any states, if so then add them
-          const new_states = machineState.states.concat(
-            response.data.states.filter(
-              (s) => !machineState.states.find((st) => st.name === s.name),
-            ),
-          );
-          // See if fsm-core added any rules, if so then add them
-          const new_rules = machineState.rules.concat(
-            response.data.rules.filter(
-              (r) => !machineState.rules.find((mr) => isFSMRuleEqual(r, mr)),
-            ),
-          );
-          setMachineState({
-            ...machineState,
-            states: new_states,
-            rules: new_rules,
-            transitions: {
-              transitions: response.data.transitions,
-              index: 0,
-              inputIndex: -1,
-            },
-            stackAlpha:
-              machineState.type === 'pda' ? machineState.stackAlpha : undefined,
-          });
-          openInfoDialog(
-            'Machine Successfully Built',
-            'The machine was successfully built. You may now use the next and prev buttons to visualize the machine.',
-          );
-        } else if (result.responseType === Instruction.PREBUILT) {
-          const response = result as SocketResponse<PrebuiltMachineResponse>;
-          resetMachineAndSet({
-            ...machineState,
-            input: isTmType(response.data.type) ? ['@'] : [],
-            states: response.data.states,
-            alphabet: response.data.alpha,
-            rules: response.data.rules,
-            type: response.data.type,
-            accept: response.data.states.find((s) => s.type === "accept"),
-            stackAlpha:
-              response.data.type === 'pda' ? response.data.stackAlpha : [],
-            graphVizImage: response.data.filepath ?? null,
-          });
-          openInfoDialog(
-            'Prebuilt Machine Loaded',
-            'The Prebuilt machine was successfully loaded.',
-          );
+      props.racketBridge.subscribeListener('data', (response) => {
+        setWaitingForResponse(false);
+        const { data, instruction } = parseDataResponse(
+          response,
+          machineStateRef.current,
+        );
+        if (typeof data === 'string') {
+          openErrorDialog('Error Building Machine', data);
+        } else {
+          if (instruction === Instruction.PREBUILT) {
+            resetMachineAndSet(data);
+            openInfoDialog(
+              'Prebuilt Machine Loaded',
+              'The Prebuilt machine was successfully loaded.',
+            );
+          } else if (instruction === Instruction.BUILD) {
+            console.log(data);
+            setMachineState(data);
+            openInfoDialog(
+              'Machine Successfully Built',
+              'The machine was successfully built. You may now use the next and prev buttons to visualize the machine.',
+            );
+          }
         }
       });
-      props.racketBridge.client.on('end', () => {
+      props.racketBridge.subscribeListener('end', () => {
         openInfoDialog(
           'Disconnected from FSM',
           'The FSM backend was disconnected. Please try running (sm-visualize) in the REPL to reconnect.',
         );
-        props.racketBridge.closeConnection();
       });
     }
   }, []);
 
   const run = () => {
     props.racketBridge.sendToRacket(
-      { ...machineState, tapeIndex: machineState.initialTapePosition } as FSMBuildMachineRequest,
+      {
+        ...machineState,
+        tapeIndex: machineState.initialTapePosition,
+      } as FSMBuildMachineRequest,
       Instruction.BUILD,
     );
+    setWaitingForResponse(true);
   };
 
   // Handles visualizing the next transition
@@ -312,6 +291,13 @@ const MainView = (props: MainViewProps) => {
     }
   };
 
+  const pathToGraphvizImage = () => {
+    if (currentTransition && currentTransition.filepath) {
+      return `file://${currentTransition.filepath}`;
+    }
+    return `file://${machineState.graphVizImage}`;
+  };
+
   const getCurrentTransition = (): FSMTransition | undefined => {
     if (
       machineState.transitions.index !== -1 &&
@@ -327,12 +313,24 @@ const MainView = (props: MainViewProps) => {
 
   const determineInputOrTapeIndex = () => {
     if (isTmType(machineState.type)) {
+      if (currentTransition && isTmMttmTransition(currentTransition)) {
+        return currentTransition.tapeIndex;
+      }
       return machineState.initialTapePosition;
       //TODO: Add logic to see if machine was ran, if so use the transitions...
     } else {
       return machineState.transitions.inputIndex;
     }
-  }
+  };
+  // For Tm's we use the transitions if the machine was ran,
+  // otherwise use the machineState.input
+  const getTapeInput = () => {
+    if (currentTransition && isTmMttmTransition(currentTransition)) {
+      return currentTransition.tape;
+    }
+    return machineState.input;
+  };
+
   return (
     <Paper
       sx={{
@@ -350,7 +348,7 @@ const MainView = (props: MainViewProps) => {
           <InputComponent
             states={machineState.states}
             inputIndex={determineInputOrTapeIndex()}
-            input={machineState.input}
+            input={getTapeInput()}
             runMachine={run}
             goNext={goNext}
             goPrev={goPrev}
@@ -418,10 +416,7 @@ const MainView = (props: MainViewProps) => {
                     width: '100%',
                   }}
                 >
-                  <img
-                    src={`file://${machineState.graphVizImage}`}
-                    style={{ width: '90%' }}
-                  />
+                  <img src={pathToGraphvizImage()} style={{ width: '90%' }} />
                 </Box>
               )}
             </Grid>
@@ -477,11 +472,15 @@ const MainView = (props: MainViewProps) => {
           open
           onClose={() => setOpenDialog(null)}
           title="End of Machine"
-          body={`The input was ${machineState.type === "tm-language-recognizer" ? 
-          "accept" : currentTransition.action}ed.`}
+          body={`The input was ${
+            machineState.type === 'tm-language-recognizer'
+              ? 'accept'
+              : currentTransition.action
+          }ed.`}
           bodyStyle={{
             color:
-              currentTransition.action === 'accept'
+              currentTransition.action === 'accept' ||
+              machineState.type === 'tm-language-recognizer'
                 ? theme.palette.success.main
                 : theme.palette.error.main,
           }}
@@ -511,6 +510,16 @@ const MainView = (props: MainViewProps) => {
             color: theme.palette.error.main,
           }}
         />
+      )}
+      {waitingForResponse && (
+        <div>
+          <Backdrop
+            sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+            open={waitingForResponse}
+          >
+            <CircularProgress color="inherit" />
+          </Backdrop>
+        </div>
       )}
     </Paper>
   );
