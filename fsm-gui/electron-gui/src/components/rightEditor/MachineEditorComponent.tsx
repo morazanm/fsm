@@ -41,7 +41,7 @@ import StateForm from './forms/StateForm';
 import TapeForm from './forms/TapePosition';
 import useRuleForm from './forms/RuleForm';
 import { Connection } from '../../socket/racketInterface';
-import { View } from '../../MainView';
+import { View } from '../../view/MainView';
 
 const StyledSpeedDial = styled(SpeedDial)(({ theme }) => ({
   '& .MuiFab-primary': {

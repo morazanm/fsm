@@ -23,24 +23,24 @@ import {
   FSMStackAlpha,
   isTmType,
   isTmMttmTransition,
-} from './types/machine';
+} from '../types/machine';
 import { useTheme } from '@mui/material/styles';
-import ControlView from './components/controlView/view';
-import RightEditor from './components/rightEditor/MachineEditorComponent';
-import LeftEditor from './components/leftEditor/LeftEditor';
-import RuleComponent from './components/ruleDisplay/rulesComponent';
-import InputComponent from './components/inputEditor/InputComponent';
-import Stack from './components/stack/Stack';
+import ControlView from '../components/controlView/view';
+import RightEditor from '../components/rightEditor/MachineEditorComponent';
+import LeftEditor from '../components/leftEditor/LeftEditor';
+import RuleComponent from '../components/ruleDisplay/rulesComponent';
+import InputComponent from '../components/inputEditor/InputComponent';
+import Stack from '../components/stack/Stack';
 
 import {
   RacketInterface,
   Instruction,
   Connection,
-} from './socket/racketInterface';
+} from '../socket/racketInterface';
 import {
   FSMBuildMachineRequest,
   RedrawnGraphvizImageRequest,
-} from './socket/requestTypes';
+} from '../socket/requestTypes';
 import { parseDataResponse } from './responseParser';
 
 // dummy object to symbolize a machine that has not been set to

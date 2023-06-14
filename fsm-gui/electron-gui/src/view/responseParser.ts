@@ -1,11 +1,11 @@
-import { Instruction, SocketResponse } from './socket/racketInterface';
+import { Instruction, SocketResponse } from '../socket/racketInterface';
 import { MachineState } from './MainView';
 import {
   BuildMachineResponse,
   PrebuiltMachineResponse,
   RedrawnGraphvizImageResponse,
-} from './socket/responseTypes';
-import { isFSMRuleEqual, isTmType } from './types/machine';
+} from '../socket/responseTypes';
+import { isFSMRuleEqual, isTmType } from '../types/machine';
 
 type Result = {
   data: MachineState | string;

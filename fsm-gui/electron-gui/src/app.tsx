@@ -8,7 +8,7 @@ import {
 } from '@mui/material/styles';
 import { StyledEngineProvider } from '@mui/material';
 import { RacketInterface } from './socket/racketInterface';
-import MainView from './MainView';
+import MainView from './view/MainView';
 
 const HOST = '127.0.0.1';
 const PORT = 4000;
