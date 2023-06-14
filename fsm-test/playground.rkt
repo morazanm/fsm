@@ -33,7 +33,7 @@
        (andmap (λ (s) (or (eq? s 'a) (eq? s 'b)))
                (rest ci))))
   ans)
-(sm-visualize  a-aUb* (list 'S SS-INV) (list 'F FF-INV))
+(sm-visualize  a-aUb*)
 
 ;;---- DFA ----
 (define a*

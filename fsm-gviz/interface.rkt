@@ -24,7 +24,7 @@
  electron-machine->svg
  (contract-out
   [fsa->bitmap (-> any/c colorblind-opt? image?)]
-  [fsa->svg (-> any/c colorblind-opt? path?)]
+  [fsa->svg (->* (any/c colorblind-opt?) (string?) path?)]
   [machine->bitmap (-> machine?
                        colorblind-opt?
                        (or/c dfa/ndfa-rule? pda/tm-rule? boolean?)
@@ -65,10 +65,10 @@
 (define (fsa->bitmap fsa color-blind-mode)
   (graph->bitmap (fsa->graph fsa color-blind-mode) SAVE-DIR "vizTool"))
 
-;; fsa-graph :: fsa -> filepath
+;; fsa-graph :: fsa number optional(string) -> filepath
 ;; returns the filepath the the svg image
-(define (fsa->svg fsa color-blind-mode)
-  (graph->svg (fsa->graph fsa color-blind-mode) SAVE-DIR "vizTool"))
+(define (fsa->svg fsa color-blind-mode (filename "vizTool"))
+  (graph->svg (fsa->graph fsa color-blind-mode) SAVE-DIR filename))
 
 ;; machine->graph :: machine -> symbol -> symbol -> symbol -> graph
 ;; converts the machine to a graphviz graph
@@ -101,6 +101,9 @@
                  SAVE-DIR
                  "vizTool"))
 
+;; electron-machine->svg :: listof(symbol) symbol listof(symbol) listof(rules) symbol hash symbol number number | string -> path
+;; Creates the graphviz image and returns the filepath to the image. If index is of type string then
+;; then the string is used as the filename
 (define (electron-machine->svg states start finals rules type t accept cb-mode index)
   ;; converts the hash to a fsm-core representation of a rule
   (define (hash-rule->fsa-rule r)
@@ -119,7 +122,7 @@
       [(or 'tm 'tm-language-recognizer)
        (define start-tape (hash-ref r 'startTape))
        (define end-tape (hash-ref r 'endTape))
-       ;; NOTE: We represent TM-actions (LM, _, @,) as a string, but a input as a single
+       ;; NOTE: We represent TM-actions (LM, _, @, R, L) as a string, but a input as a single
        ;; value in a list for parsing reason on the GUI end. Ideally this should be cleaned
        ;; up at a later date.
        (list (list (string->symbol (hash-ref r 'start))
@@ -131,7 +134,7 @@
   (define cur-state (if (hash-has-key? t 'rule)
                         (hash-ref (hash-ref t 'rule) 'end)
                         (hash-ref t 'start (hash-ref t 'end #f))))
-  (define inv-pass (match (hash-ref t 'invPass)
+  (define inv-pass (match (hash-ref t 'invPass 'none)
                      [#t 'pass]
                      [#f 'fail]
                      [_ 'none]))
@@ -142,8 +145,9 @@
                    rules
                    type
                    accept
-                   (string->symbol cur-state)
+                   (if cur-state (string->symbol cur-state) #f)
                    (if cur-rule (hash-rule->fsa-rule cur-rule) cur-rule)
                    inv-pass
                    (make-color-palette cb-mode)))
-  (graph->svg (fsa-adapter->graph adaptor) SAVE-DIR (format "viztool_~a" index)))
+  (define file-name (if (number? index) (format "viztool_~a" index) index))
+  (graph->svg (fsa-adapter->graph adaptor) SAVE-DIR file-name))

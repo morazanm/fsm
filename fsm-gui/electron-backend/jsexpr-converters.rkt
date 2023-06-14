@@ -21,7 +21,7 @@
                           'rules (map rule->jsexpr (sm-rules fsa))
                           'type (symbol->string (sm-type fsa))))
   (hash-union
-   (if (or test-mode (not (has-dot-executable?))) (hash) (hash 'filepath (path->string (fsa->svg fsa 0))))
+   (if (or test-mode (not (has-dot-executable?))) (hash) (hash 'filepath (path->string (fsa->svg fsa 0 "vizTool_electron1"))))
    (match (sm-type fsa)
      [(or 'dfa 'ndfa) base-hash]
      ['pda (hash-set base-hash 'stackAlpha (map symbol->string (sm-gamma fsa)))]

@@ -3,6 +3,7 @@ import { MachineState } from './MainView';
 import {
   BuildMachineResponse,
   PrebuiltMachineResponse,
+  RedrawnGraphvizImageResponse,
 } from './socket/responseTypes';
 import { isFSMRuleEqual, isTmType } from './types/machine';
 
@@ -65,6 +66,12 @@ export function parseDataResponse(
         graphVizImage: response.data.filepath ?? null,
       },
       instruction: response.responseType,
+    };
+  } else if (result.responseType === Instruction.REDRAW) {
+    const response = result as SocketResponse<RedrawnGraphvizImageResponse>;
+    return {
+      instruction: response.responseType,
+      data: response.data.filepath,
     };
   } else {
     return {

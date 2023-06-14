@@ -22,6 +22,7 @@ export enum Instruction {
   BUILD = 'build_machine',
   CLOSE = 'shut_down',
   PREBUILT = 'prebuilt_machine',
+  REDRAW = 'redraw',
 }
 
 type SocketEvent = 'data' | 'error' | 'end';

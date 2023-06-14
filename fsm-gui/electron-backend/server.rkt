@@ -25,12 +25,13 @@
 ;; to the approperate mapping function
 (define (handle-request input)
   (match (string->symbol (hash-ref input 'instr))
+    ['redraw (regenerate-graph (hash-ref input 'data))]
     ['build_machine (build-machine (hash-ref input 'data))]
     ['shut_down eof] ;; we use eof to denote a shutdown
     [_ (error 'handle-request "Invalid instruction given: ~a" (hash-ref input 'instr))]))
 
 (define (send-fsm-protocal data out)
-  (displayln! "Sending Data:\n ~s" data)
+  (displayln! "\n****Sending Data:****\n ~s" data)
   (write-json data out)
   (write eof out)
   (flush-output out))
@@ -47,7 +48,8 @@
    (lambda ()
      (let loop ()
        (define hashed-msg (read-json in))
-       (displayln! "Recieved a incomming request")
+       (displayln! "\n----Recieved a incomming request: ~s ----" (hash-ref hashed-msg 'instr))
+       (displayln! hashed-msg)
        (unless (eof-object? hashed-msg)
          (define outgoing-data (handle-request hashed-msg))
          ;(displayln! outgoing-data)
@@ -160,4 +162,4 @@
                             'Y))
 
 ;(run-without-prebuilt)
-(run-with-prebuilt a^nb^nc^n2 '())
+(run-with-prebuilt a*a '())

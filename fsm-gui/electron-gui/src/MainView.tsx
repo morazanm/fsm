@@ -37,7 +37,10 @@ import {
   Instruction,
   Connection,
 } from './socket/racketInterface';
-import { FSMBuildMachineRequest } from './socket/requestTypes';
+import {
+  FSMBuildMachineRequest,
+  RedrawnGraphvizImageRequest,
+} from './socket/requestTypes';
 import { parseDataResponse } from './responseParser';
 
 // dummy object to symbolize a machine that has not been set to
@@ -122,6 +125,7 @@ const MainView = (props: MainViewProps) => {
     connected: props.racketBridge.connected,
     status: 'done',
   });
+  const [skipRedraw, setSkipRedraw] = useState(false);
   const [waitingForResponse, setWaitingForResponse] = useState(false);
   const [openDialog, setOpenDialog] = useState<DialogType>(null);
   const [view, setView] = useState<View>('control');
@@ -136,6 +140,7 @@ const MainView = (props: MainViewProps) => {
     nodead: true,
     accept: null,
     initialTapePosition: 0,
+    graphVizImage: null,
   } as MachineState);
 
   const machineStateRef = useRef(machineState);
@@ -169,6 +174,24 @@ const MainView = (props: MainViewProps) => {
     }
   };
 
+  const redrawnGraph = () => {
+    props.racketBridge.sendToRacket(
+      {
+        ...machineState,
+        currentFilepath: machineState.graphVizImage,
+      } as RedrawnGraphvizImageRequest,
+      Instruction.REDRAW,
+    );
+  };
+
+  useEffect(() => {
+    if (!skipRedraw) {
+      redrawnGraph();
+    } else {
+      setSkipRedraw(false);
+    }
+  }, [machineState.states, machineState.rules]);
+
   const toggleDead = () =>
     setMachineState({ ...machineState, nodead: !machineState.nodead });
   const setGuiStates = (states: State[]) => {
@@ -199,6 +222,13 @@ const MainView = (props: MainViewProps) => {
     });
   };
 
+  const pathToGraphvizImage = () => {
+    if (currentTransition && currentTransition.filepath) {
+      return `file://${currentTransition.filepath}`;
+    }
+    return `file://${machineState.graphVizImage}`;
+  };
+
   useEffect(() => {
     setConnected({ connected: props.racketBridge.connected, status: 'done' });
   }, [props.racketBridge.connected]);
@@ -218,16 +248,24 @@ const MainView = (props: MainViewProps) => {
           machineStateRef.current,
         );
         if (typeof data === 'string') {
-          openErrorDialog('Error Building Machine', data);
+          if (instruction === Instruction.REDRAW) {
+            setMachineState({
+              ...machineStateRef.current,
+              graphVizImage: data,
+            });
+          } else {
+            openErrorDialog('Error Building Machine', data);
+          }
         } else {
           if (instruction === Instruction.PREBUILT) {
+            setSkipRedraw(true);
             resetMachineAndSet(data);
             openInfoDialog(
               'Prebuilt Machine Loaded',
               'The Prebuilt machine was successfully loaded.',
             );
           } else if (instruction === Instruction.BUILD) {
-            console.log(data);
+            setSkipRedraw(true);
             setMachineState(data);
             openInfoDialog(
               'Machine Successfully Built',
@@ -289,13 +327,6 @@ const MainView = (props: MainViewProps) => {
     } else {
       setOpenDialog('start');
     }
-  };
-
-  const pathToGraphvizImage = () => {
-    if (currentTransition && currentTransition.filepath) {
-      return `file://${currentTransition.filepath}`;
-    }
-    return `file://${machineState.graphVizImage}`;
   };
 
   const getCurrentTransition = (): FSMTransition | undefined => {

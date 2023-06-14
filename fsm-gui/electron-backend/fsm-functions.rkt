@@ -2,11 +2,13 @@
 (require
  json
  "./jsexpr-converters.rkt"
+ "./parsers.rkt"
  "../../fsm-core/interface.rkt"
  "../../fsm-gviz/interface.rkt")
 (provide
  fsa->jsexpr
- build-machine)
+ build-machine
+ regenerate-graph)
 
 ;; build-machine :: jsexpr optional(boolean) -> jsexpr
 ;; takes the electron-gui machine json-expr, unparses it and runs it in fsm-core. It then
@@ -15,70 +17,21 @@
 ;; The optional arg when set to true will not build the graphviz graph. This should be set
 ;; to true when using this function in tests
 (define (build-machine data (test-mode #f))
-  (define (json-null? v) (equal? v (json-null)))
-  ;; find-finals :: jsexpr -> listof(symbol)
-  ;; returns the final states as a list of symbols
-  (define (find-finals states) 
-    (map (lambda (s) (string->symbol (hash-ref s 'name)))
-         (filter (lambda (s) (or (equal? "startfinal" (hash-ref s 'type))
-                                 (equal? "accept" (hash-ref s 'type))
-                                 (equal? "final" (hash-ref s 'type))))
-                 states)))
-  ;; find-start :: jsexpr -> symbol | false
-  ;; returns the symbol of the start state if it exists otherwise returns #f
-  (define/match (find-start _states)
-    [('()) #f]
-    [(`(,(hash-table ('name n) ('type t)) ,xs ...))
-     (if (or (equal? "start" t) (equal? "startfinal" t)) (string->symbol n) (find-start xs))])
-  (define/match (find-accept _states)
-    [('()) #f]
-    [(`(,(hash-table ('name n) ('type t)) ,xs ...))
-     (if (equal? "accept" t) (string->symbol n) (find-accept xs))])
-  ;; parse-rules :: jsexpr symbol -> listof(fsm-core-rules)
-  ;; Converts the jsexpr into the fsm-core representation of rules
-  (define (parse-rules rules type)
-    (map (lambda (r) (match type
-                       [(or 'dfa 'ndfa) (list (string->symbol (hash-ref r 'start))
-                                              (string->symbol (hash-ref r 'input))
-                                              (string->symbol (hash-ref r 'end)))]
-                       ['pda
-                        (define popped (hash-ref r 'popped))
-                        (define pushed (hash-ref r 'pushed))
-                        (list (list (string->symbol (hash-ref r 'start))
-                                    (string->symbol (hash-ref r 'input))
-                                    (if (empty? popped) EMP (map string->symbol popped)))
-                              (list (string->symbol (hash-ref r 'end))
-                                    (if (empty? pushed) EMP (map string->symbol pushed))))]
-                       [(or 'tm 'tm-language-recognizer)
-                        (define start-tape (hash-ref r 'startTape))
-                        (define end-tape (hash-ref r 'endTape))
-                        ;; NOTE: We represent TM-actions (LM, _, @,) as a string, but a input as a single
-                        ;; value in a list for parsing reason on the GUI end. Ideally this should be cleaned
-                        ;; up at a later date.
-                        (list (list (string->symbol (hash-ref r 'start))
-                                    (string->symbol (if (list? start-tape) (list-ref start-tape 0) start-tape)))
-                              (list (string->symbol (hash-ref r 'end))
-                                    (string->symbol (if (list? end-tape) (list-ref end-tape 0) end-tape))))]
-                       [_ (error 'parse-rules "Unsupported machine type ~a" type)]))
-         rules))
   (define no-dead (hash-ref data 'nodead))
   (define un-parsed-states (hash-ref data 'states))
-  (define alpha (map string->symbol (hash-ref data 'alphabet)))
-  (define type (string->symbol (hash-ref data 'type)))
-  (define states (map (lambda (s) (string->symbol (hash-ref s 'name))) un-parsed-states))
-  (define invariants (map (lambda (s) (cons (string->symbol (hash-ref s 'name))
-                                            (hash-ref s 'invFunc)))
-                          (filter (lambda (s) (not (json-null? (hash-ref s 'invFunc))))
-                                  un-parsed-states)))
-  (define start (find-start un-parsed-states))
-  (define finals (find-finals un-parsed-states))
+  (define alpha (parse-alpha data))
+  (define type (parse-type data))
+  (define states (parse-states un-parsed-states))
+  (define invariants (parse-invariants un-parsed-states))
+  (define start (parse-start un-parsed-states))
+  (define finals (parse-finals un-parsed-states))
   (define rules (parse-rules (hash-ref data 'rules) type))
-  (define input (map string->symbol (hash-ref data 'input)))
-  (define stack-alpha (if (equal? type 'pda) (map string->symbol (hash-ref data 'stackAlpha)) #f))
+  (define input (parse-input data))
+  (define stack-alpha (parse-stack-alpha data type))
   (define tape-index (if (or (equal? type 'tm) (equal? type 'tm-language-recognizer))
                          (hash-ref data 'tapeIndex)
                          #f))
-  (define accept-state (if (equal? type 'tm-language-recognizer) (find-accept un-parsed-states) #f))
+  (define accept-state (if (equal? type 'tm-language-recognizer) (parse-accept un-parsed-states) #f))
 
   ;; TODO: Talk to marco about how we want to handle fsm-error msgs. Since they print to the
   ;; stdio we cant display them in the GUI. Ideally this would just return a string and we
@@ -143,7 +96,36 @@
         [_ (error 'build-fsm-core-machine "Unsupported machine type ~a" type)])))
 
 
-
+;; regenerate-graph :: jsexpr -> jsexpr
+;; rebuilds the graphviz image and returns the filepath to where the image was saved
+;; HACK: The electron browser caches the image once it is loaded. This means that if we update the
+;; image and supply the same filepath then the browser will not realize that the image was updated.
+;; The current workaround is to ping-pong between two image file paths to force the browser to update
+;; the image. The current 2 filenames are:
+;; - vizTool_electron1
+;; - vizTool_electron2
+(define (regenerate-graph data)
+  (define un-parsed-states (hash-ref data 'states))
+  (define current-filename (path->string (file-name-from-path (path-replace-extension
+                                                               (string->path (hash-ref data 'currentFilepath))
+                                                               ""))))
+  (define new-file-name (regexp-replace #rx"1|2" current-filename (lambda (v) (if (equal? "1" v) "2" "1"))))
+  (define type (parse-type data))
+  (hash 'data (hash 'filepath
+                    (if (not (has-dot-executable?))
+                        (json-null)
+                        (path->string (electron-machine->svg
+                                       (parse-states un-parsed-states)
+                                       (parse-start un-parsed-states)
+                                       (parse-finals un-parsed-states)
+                                       (parse-rules (hash-ref data 'rules) type)
+                                       type
+                                       (hash)
+                                       (parse-accept un-parsed-states)
+                                       0
+                                       new-file-name))))
+        'responseType "redraw"
+        'error (json-null)))
 
 
 

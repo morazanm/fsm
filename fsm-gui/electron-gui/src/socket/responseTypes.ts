@@ -25,5 +25,11 @@ export type PrebuiltMachineResponse = {
 
   // The absolute path to the graphViz image. If this field does not exist then
   // that means that graphViz is not on the users computer
-  filepath?: string;
+  filepath: string | null;
+};
+
+export type RedrawnGraphvizImageResponse = {
+  // The absolute path to the graphViz image. If this field does not exist then
+  // that means that graphViz is not on the users computer
+  filepath: string | null;
 };

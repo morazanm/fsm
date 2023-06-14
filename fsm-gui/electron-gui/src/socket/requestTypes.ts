@@ -19,3 +19,10 @@ export type FSMBuildMachineRequest = {
   tapeIndex: number | undefined; // Only defined for TM's
   stackAlpha: FSMStackAlpha[] | undefined; // undefined when not a pda
 };
+// Send to fsm to redraw the current machine's graphviz image
+export type RedrawnGraphvizImageRequest = {
+  states: State[];
+  rules: FSMRule[];
+  type: MachineType;
+  currentFilepath: string;
+};
