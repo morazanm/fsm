@@ -1,8 +1,8 @@
 {
-  "name": "electron-gui",
-  "productName": "electron-gui",
+  "name": "fsm-gui",
+  "productName": "fsm-gui",
   "version": "1.0.0",
-  "description": "My Electron application description",
+  "description": "FSM Graphical User Interface",
   "main": ".webpack/main",
   "scripts": {
     "start": "electron-forge start",
@@ -51,6 +51,7 @@
     "typescript": "~4.5.4"
   },
   "dependencies": {
+    "@electron-forge/maker-dmg": "^6.1.1",
     "@emotion/react": "^11.10.6",
     "@emotion/styled": "^11.10.6",
     "@mui/icons-material": "^5.11.11",

@@ -12,10 +12,18 @@ const config: ForgeConfig = {
   packagerConfig: {},
   rebuildConfig: {},
   makers: [
-    new MakerSquirrel({}),
-    new MakerZIP({}, ['darwin']),
-    new MakerRpm({}),
-    new MakerDeb({}),
+    {
+      name: '@electron-forge/maker-dmg',
+      config: {},
+    },
+    {
+      name: '@electron-forge/maker-squirrel',
+      config: {},
+    },
+    {
+      name: '@electron-forge/maker-deb',
+      config: {},
+    },
   ],
   plugins: [
     new WebpackPlugin({
@@ -31,6 +39,11 @@ const config: ForgeConfig = {
             preload: {
               js: './src/preload.ts',
             },
+          },
+          {
+            html: './src/splash.html',
+            js: './src/renderer2.ts',
+            name: 'splash_window',
           },
         ],
       },
