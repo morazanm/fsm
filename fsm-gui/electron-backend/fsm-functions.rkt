@@ -109,6 +109,7 @@
       (path->string
        (file-name-from-path
         (path-replace-extension (string->path (hash-ref data 'currentFilepath)) "")))))
+  (displayln (format "File ~a" current-filename))
   (define new-file-name (regexp-replace #rx"1|2" current-filename (lambda (v) (if (equal? "1" v) "2" "1"))))
   (define type (parse-type data))
   (hash 'data (hash 'filepath

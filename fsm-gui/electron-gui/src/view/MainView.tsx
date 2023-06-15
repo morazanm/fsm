@@ -128,7 +128,7 @@ const MainView = (props: MainViewProps) => {
     connected: props.racketBridge.connected,
     status: 'done',
   });
-  const [skipRedraw, setSkipRedraw] = useState(false);
+  const skipRedraw = useRef(true);
   const [waitingForResponse, setWaitingForResponse] = useState(false);
   const [openDialog, setOpenDialog] = useState<DialogType>(null);
   const [view, setView] = useState<View>('control');
@@ -190,17 +190,20 @@ const MainView = (props: MainViewProps) => {
   // We only need to remake the graphViz image when the states or
   // rules change.
   useEffect(() => {
-    if (!skipRedraw) {
+    if (!skipRedraw.current) {
       redrawnGraph();
-    } else {
-      setSkipRedraw(false);
     }
+    skipRedraw.current = false;
   }, [machineState.states, machineState.rules]);
 
   const toggleDead = () =>
     setMachineState({ ...machineState, nodead: !machineState.nodead });
   const setGuiStates = (states: State[]) => {
-    resetMachineAndSet({ states: states });
+    const stateNames = states.map(s => s.name)
+    const new_rules = machineStateRef.current.rules.filter((rule) => 
+      stateNames.includes(rule.start) && stateNames.includes(rule.end)
+    )
+    resetMachineAndSet({ states: states, rules: new_rules });
   };
   const setInitialTapePosition = (position: number) => {
     resetMachineAndSet({
@@ -263,20 +266,25 @@ const MainView = (props: MainViewProps) => {
           }
         } else {
           if (instruction === Instruction.PREBUILT) {
-            setSkipRedraw(true);
+            skipRedraw.current = true;
             resetMachineAndSet(data);
             openInfoDialog(
               'Prebuilt Machine Loaded',
               'The Prebuilt machine was successfully loaded.',
             );
           } else if (instruction === Instruction.BUILD) {
-            setSkipRedraw(true);
+            skipRedraw.current = true;
             setMachineState(data);
             openInfoDialog(
               'Machine Successfully Built',
               'The machine was successfully built. You may now use the next and prev buttons to visualize the machine.',
             );
           }
+          // Add files to track for clean up
+          const filesToTrack = data.transitions.transitions.map(t => t.filepath)
+          filesToTrack.push(data.graphVizImage)
+          ipcRenderer.send(channels.TRACK_FILE, filesToTrack)
+
         }
       });
       props.racketBridge.subscribeListener('end', () => {

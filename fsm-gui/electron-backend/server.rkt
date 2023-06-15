@@ -48,7 +48,8 @@
    (lambda ()
      (let loop ()
        (define hashed-msg (read-json in))
-       (displayln! "\n----Recieved a incomming request: ~s ----" (hash-ref hashed-msg 'instr))
+       (displayln! "\n----Recieved a incomming request: ~s ----"
+                   (if (eof-object? hashed-msg) "eof" (hash-ref hashed-msg 'instr)))
        (displayln! hashed-msg)
        (unless (eof-object? hashed-msg)
          (define outgoing-data (handle-request hashed-msg))
@@ -161,14 +162,5 @@
                             '(Y N)
                             'Y))
 
-
-(define m-2338 (make-tm
-                '(S B C D E Y N)
-                '(@ a b c z x y)
-                '(((S @) (S R)) ((B @) (B R)) ((C @) (C R)) ((D @) (D R)) ((E @) (E R)) ((S a) (B z)) ((S b) (N b)) ((S c) (N c)) ((S _) (Y _)) ((S z) (N z)) ((S x) (N x)) ((S y) (N y)) ((E z) (E R)) ((E x) (E R)) ((E y) (E R)) ((E _) (Y _)) ((E a) (N a)) ((E b) (N b)) ((E c) (N c)) ((B a) (B R)) ((B b) (C x)) ((B c) (N c)) ((B _) (N _)) ((B z) (B R)) ((B x) (B R)) ((B y) (B R)) ((C a) (N a)) ((C b) (C R)) ((C c) (D y)) ((C _) (N _)) ((C z) (C R)) ((C x) (C R)) ((C y) (C R)) ((D a) (S a)) ((D b) (D L)) ((D c) (D L)) ((D _) (N _)) ((D z) (D L)) ((D x) (D L)) ((D y) (D L)) ((D @) (E R)))
-                'S
-                '(Y N)
-                'Y))
-
 ;(run-without-prebuilt)
-(run-with-prebuilt m-2338 '())
+(run-with-prebuilt a*a '())
