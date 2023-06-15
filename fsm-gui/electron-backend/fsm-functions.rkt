@@ -1,10 +1,9 @@
 #lang racket
-(require
- json
- "./jsexpr-converters.rkt"
- "./parsers.rkt"
- "../../fsm-core/interface.rkt"
- "../../fsm-gviz/interface.rkt")
+(require json
+         "./jsexpr-converters.rkt"
+         "./parsers.rkt"
+         "../../fsm-core/interface.rkt"
+         "../../fsm-gviz/interface.rkt")
 (provide
  fsa->jsexpr
  build-machine
@@ -17,6 +16,15 @@
 ;; The optional arg when set to true will not build the graphviz graph. This should be set
 ;; to true when using this function in tests
 (define (build-machine data (test-mode #f))
+  ;; append-gviz-svgs :: listof(jsexpr-transition) -> listof(jsexpr-transitions)
+  ;; computes the graphviz images for each of the transitions
+  (define (append-gviz-svgs trans)
+    (map (lambda (t i)
+           (hash-set t
+                     'filepath
+                     (path->string (electron-machine->svg states start finals rules type t accept-state 0 i))))
+         trans
+         (range (length trans))))
   (define no-dead (hash-ref data 'nodead))
   (define un-parsed-states (hash-ref data 'states))
   (define alpha (parse-alpha data))
@@ -37,17 +45,7 @@
   ;; stdio we cant display them in the GUI. Ideally this would just return a string and we
   ;; could pass the message over json to the new GUI
   (define fsa (build-fsm-core-machine states start finals alpha rules type stack-alpha accept-state no-dead))
-  (define trans (sm-showtransitions fsa input))
-
-  ;; append-gviz-svgs :: listof(jsexpr-transition) -> listof(jsexpr-transitions)
-  ;; computes the graphviz images for each of the transitions
-  (define (append-gviz-svgs trans)
-    (map (lambda (t i)
-           (hash-set t
-                     'filepath
-                     (path->string (electron-machine->svg states start finals rules type t accept-state 0 i))))
-         trans
-         (range (length trans))))
+  (define trans (if fsa (sm-showtransitions fsa input) #f))
   (cond
     [(equal? trans 'reject)
      (hash 'data (json-null)
@@ -106,9 +104,11 @@
 ;; - vizTool_electron2
 (define (regenerate-graph data)
   (define un-parsed-states (hash-ref data 'states))
-  (define current-filename (path->string (file-name-from-path (path-replace-extension
-                                                               (string->path (hash-ref data 'currentFilepath))
-                                                               ""))))
+  (define current-filename
+    (with-handlers ([exn:fail:contract:blame (lambda (_a _b _c) "vizTool_electron1")])
+      (path->string
+       (file-name-from-path
+        (path-replace-extension (string->path (hash-ref data 'currentFilepath)) "")))))
   (define new-file-name (regexp-replace #rx"1|2" current-filename (lambda (v) (if (equal? "1" v) "2" "1"))))
   (define type (parse-type data))
   (hash 'data (hash 'filepath

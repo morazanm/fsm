@@ -43,7 +43,7 @@ import {
 } from '../socket/requestTypes';
 import { parseDataResponse } from './responseParser';
 
-// dummy object to symbolize a machine that has not been set to
+// dummy object to symbolize a machine that has not been sent to
 // fsm-core for verification
 const EMPTY_TRANSITIONS = {
   transitions: [] as FSMTransition[],
@@ -184,6 +184,8 @@ const MainView = (props: MainViewProps) => {
     );
   };
 
+  // We only need to remake the graphViz image when the states or
+  // rules change.
   useEffect(() => {
     if (!skipRedraw) {
       redrawnGraph();
@@ -237,6 +239,7 @@ const MainView = (props: MainViewProps) => {
     machineStateRef.current = machineState;
   }, [machineState]);
 
+  console.log(JSON.stringify(machineState));
   useEffect(() => {
     // If we have a connection then listen for messages
     // TODO: We can probably abstract this out with a callback
@@ -313,7 +316,7 @@ const MainView = (props: MainViewProps) => {
     }
   };
 
-  // // Handles visualizing the previous transition
+  // Handles visualizing the previous transition
   const goPrev = () => {
     if (machineState.transitions.index > 0) {
       setMachineState({

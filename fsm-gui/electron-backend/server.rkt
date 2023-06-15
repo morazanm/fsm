@@ -66,7 +66,7 @@
 ;; GUI.
 (define (run-with-prebuilt fsa invariants)
   (define listener (tcp-listen PORT 4 #t ADDRESS))
-  (displayln! "FSM Gui server listenting on ~s on port ~s" PORT ADDRESS)
+  (displayln! "FSM Gui server listenting at ~s on port ~s" ADDRESS PORT)
   (define data-to-send (hash 'data (fsa->jsexpr fsa invariants)
                              'error (json-null)
                              'responseType "prebuilt_machine"))
@@ -77,7 +77,7 @@
 ;; the GUI
 (define (run-without-prebuilt)
   (define listener (tcp-listen PORT 4 #t ADDRESS))
-  (displayln! "FSM Gui server listenting on ~s on port ~s" PORT ADDRESS)
+  (displayln! "FSM Gui server listenting at ~s on port ~s" ADDRESS PORT)
   (listen-for-input listener))
 
 
@@ -162,4 +162,4 @@
                             'Y))
 
 ;(run-without-prebuilt)
-(run-with-prebuilt a*a '())
+(run-with-prebuilt a^nb^nc^n2 '())
