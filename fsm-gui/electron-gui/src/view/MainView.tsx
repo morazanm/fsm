@@ -199,10 +199,11 @@ const MainView = (props: MainViewProps) => {
   const toggleDead = () =>
     setMachineState({ ...machineState, nodead: !machineState.nodead });
   const setGuiStates = (states: State[]) => {
-    const stateNames = states.map(s => s.name)
-    const new_rules = machineStateRef.current.rules.filter((rule) => 
-      stateNames.includes(rule.start) && stateNames.includes(rule.end)
-    )
+    const stateNames = states.map((s) => s.name);
+    const new_rules = machineStateRef.current.rules.filter(
+      (rule) =>
+        stateNames.includes(rule.start) && stateNames.includes(rule.end),
+    );
     resetMachineAndSet({ states: states, rules: new_rules });
   };
   const setInitialTapePosition = (position: number) => {
@@ -281,10 +282,16 @@ const MainView = (props: MainViewProps) => {
             );
           }
           // Add files to track for clean up
-          const filesToTrack = data.transitions.transitions.map(t => t.filepath)
-          filesToTrack.push(data.graphVizImage)
-          ipcRenderer.send(channels.TRACK_FILE, filesToTrack)
-
+          const filesToTrack = data.transitions.transitions.map(
+            (t) => t.filepath,
+          );
+          //HACK: vizTool_electron1 needs to stay so the server and stay up and still send
+          // the image if a new instance of the GUI is spun up.
+          //TODO: Once all files are unique named this will not a problem
+          if (data.graphVizImage !== '/var/tmp/vizTool_electron1.svg') {
+            filesToTrack.push(data.graphVizImage);
+          }
+          ipcRenderer.send(channels.TRACK_FILE, filesToTrack);
         }
       });
       props.racketBridge.subscribeListener('end', () => {
@@ -480,7 +487,10 @@ const MainView = (props: MainViewProps) => {
                     width: '100%',
                   }}
                 >
-                  <img src={pathToGraphvizImage()} style={{ width: '90%' }} />
+                  <img
+                    src={pathToGraphvizImage()}
+                    style={{ width: '85%', maxHeight: '95%' }}
+                  />
                 </Box>
               )}
             </Grid>

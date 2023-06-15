@@ -163,4 +163,4 @@
                             'Y))
 
 ;(run-without-prebuilt)
-(run-with-prebuilt a*a '())
+(run-with-prebuilt a^nb^nc^n2 '())
