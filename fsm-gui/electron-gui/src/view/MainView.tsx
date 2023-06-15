@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { ipcRenderer } from 'electron';
 import {
   Paper,
   Grid,
@@ -42,6 +43,8 @@ import {
   RedrawnGraphvizImageRequest,
 } from '../socket/requestTypes';
 import { parseDataResponse } from './responseParser';
+import { channels } from '../shared/constants';
+import { saveMachine } from './saveMachine';
 
 // dummy object to symbolize a machine that has not been sent to
 // fsm-core for verification
@@ -239,7 +242,6 @@ const MainView = (props: MainViewProps) => {
     machineStateRef.current = machineState;
   }, [machineState]);
 
-  console.log(JSON.stringify(machineState));
   useEffect(() => {
     // If we have a connection then listen for messages
     // TODO: We can probably abstract this out with a callback
@@ -283,6 +285,26 @@ const MainView = (props: MainViewProps) => {
           'The FSM backend was disconnected. Please try running (sm-visualize) in the REPL to reconnect.',
         );
       });
+
+      // Handle calls the to the main process
+      ipcRenderer.on(channels.SAVE_FILE, (event, filepath) => {
+        if (saveMachine(filepath, machineStateRef.current)) {
+          openInfoDialog(
+            'Save Machine',
+            `Successfully saved machine to:\n ${filepath}`,
+          );
+        } else {
+          openErrorDialog(
+            'Save Error',
+            'Unable to save machine. Check file/directory permissions',
+          );
+        }
+      });
+
+      // Clean up all listeners
+      return () => {
+        ipcRenderer.removeAllListeners(channels.SAVE_FILE);
+      };
     }
   }, []);
 

@@ -105,7 +105,7 @@
 (define (regenerate-graph data)
   (define un-parsed-states (hash-ref data 'states))
   (define current-filename
-    (with-handlers ([exn:fail:contract:blame (lambda (_a _b _c) "vizTool_electron1")])
+    (with-handlers ([exn:fail (lambda () "vizTool_electron1")])
       (path->string
        (file-name-from-path
         (path-replace-extension (string->path (hash-ref data 'currentFilepath)) "")))))
