@@ -1,6 +1,0 @@
-digraph TG {
-    rankdir="LR";
-    F [color="red", shape="doublecircle", label="F"];
-    S [color="green", label="S"];
-    S -> F [color="blue", label=(a)];
-}
