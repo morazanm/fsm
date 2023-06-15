@@ -14,21 +14,6 @@
     "format": "prettier --ignore-path .gitignore --write \"**/*.+(js|ts|json|jsx|tsx)\"",
     "test": "jest"
   },
-  "config": {
-    "forge": {
-      "publishers": [
-        {
-          "name": "@electron-forge/publisher-github",
-          "config": {
-            "repository": {
-              "owner": "morazanm",
-              "name": "fsm-gui-build"
-            }
-          }
-        }
-      ]
-    }
-  },
   "keywords": [],
   "author": {
     "name": "jschappel",
