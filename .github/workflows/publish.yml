@@ -11,10 +11,10 @@ jobs:
         node-version: 16
     - name: install dependencies
       run: npm install
-      working-directory: fsm-gui/electron-gui]
+      working-directory: ./fsm-gui/electron-gui
     - name: build
       run: npm run make
-      working-directory: fsm-gui/electron-gui]
+      working-directory: ./fsm-gui/electron-gui
 
   build_on_mac:
     runs-on: macos-latest
@@ -25,10 +25,10 @@ jobs:
         node-version: 16
     - name: install dependencies
       run: npm install
-      working-directory: fsm-gui/electron-gui]
+      working-directory: ./fsm-gui/electron-gui
     - name: build
       run: npm run make
-      working-directory: fsm-gui/electron-gui]
+      working-directory: ./fsm-gui/electron-gui
 
   build_on_win:
     runs-on: windows-latest
@@ -39,7 +39,7 @@ jobs:
         node-version: 16
     - name: install dependencies
       run: npm install
-      working-directory: fsm-gui/electron-gui]
+      working-directory: ./fsm-gui/electron-gui
     - name: build
       run: npm run make
-      working-directory: fsm-gui/electron-gui]
+      working-directory: ./fsm-gui/electron-gui
