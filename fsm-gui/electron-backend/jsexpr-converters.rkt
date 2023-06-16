@@ -11,7 +11,7 @@
          transitions->jsexpr)
 
 
-;; fsa->jsexpr :: fsa listof(cons symbol string) -> jsexpr(fsa)
+;; fsa->jsexpr :: fsa listof(cons symbol string | proc) -> jsexpr(fsa)
 ;; converts a fsm-core fsa to a jsexpr to be sent to the GUI
 ;; NOTE: invariants are a pair of a symbol representing the state name
 ;; and the invarinat function as a string.
@@ -28,7 +28,7 @@
      [(or 'tm 'tm-language-recognizer) base-hash]
      [ _ (error 'fsa->jsexpr "invalid machine type: ~a" (sm-type fsa))])))
 
-;; state->jsexpr :: symbol fsa optional(listof(cons symbol string))-> jsexpr(state)
+;; state->jsexpr :: symbol fsa optional(listof(cons symbol string | proc))-> jsexpr(state)
 ;; converts the fsm-core state to a jsexpr that containes the state name
 ;; state type and string representation of the invariant
 ;; NOTE: invariants are a pair of a symbol representing the state name
@@ -75,7 +75,7 @@
   [(_) (error 'rule->jsexpr "Invalid rule supplied ~a" rule)])
 
 
-;; transitions->jsexpr :: fsa listof(cons symbol string) listof(string) number -> jsexpr(transitons) | string
+;; transitions->jsexpr :: fsa listof(cons symbol string | proc) listof(string) number -> jsexpr(transitons) | string
 ;; Given an fsa computes the jsexpr form of the transitions. If there is an error then a string
 ;; containing the error is returned
 (define (transitions->jsexpr fsa invariants input (tape-index 0))
@@ -91,11 +91,11 @@
     [((or 'tm 'tm-language-recognizer) _) (tm-transitions->jsexpr trans (sm-start fsa) invariants input tape-index)]
     [(_ _) (error 'transitions->jsexpr "Invalid machine type: ~a" type)]))
 
-;; tm-transitions->jsexpr :: listof(transitions) symbol listof(cons symbol string) listof(symbol) number -> listof(jsexpr(transition))
+;; tm-transitions->jsexpr :: listof(transitions) symbol listof(cons symbol string | proc) listof(symbol) number -> listof(jsexpr(transition))
 ;; Given the list of fsm-core transitions, computes the jsexpr form of the transitions
 (define (tm-transitions->jsexpr transitions start invariants initial-tape tape-start-index)
   (define (symbol-list->string lst) (map (lambda (s) (symbol->string s)) lst))
-  ;; tm-transition->jsexpr :: transition transition listof(cons symbol string) -> jsexpr(transition)
+  ;; tm-transition->jsexpr :: transition transition listof(cons symbol string | proc) -> jsexpr(transition)
   ;; computes the jsexpr(transition) for a tm/lang-rec given 2 fsm-core transitions
   (define (tm-transition->jsexpr t1 t2)
     (match-define `(,cur-state ,cur-pos ,cur-tape) t1)
@@ -136,10 +136,10 @@
   (append (list start-transition) (loop transitions) (list end-transition)))
 
 
-;; dfa-transitions->jsexpr :: listof(transitions) symbol listof(cons symbol string) listof(symbol)-> listof(jsexpr(transition))
+;; dfa-transitions->jsexpr :: listof(transitions) symbol listof(cons symbol string | proc) listof(symbol)-> listof(jsexpr(transition))
 ;; Given the list of fsm-core transitions, computes the jsexpr form of the transitions
 (define (dfa-transitions->jsexpr transitions start invariants full-input)
-  ;; dfa-transition->jsexpr :: transition transition listof(cons symbol string) listof(symbol) -> jsexpr(transition)
+  ;; dfa-transition->jsexpr :: transition transition listof(cons symbol string | proc) listof(symbol) -> jsexpr(transition)
   ;; computes the jsexpr(transition) for a dfa given 2 fsm-core transitions
   (define (dfa-transition->jsexpr t1 t2 invariants full-input)
     (if (or (equal? t2 'reject) (equal? t2 'accept))
@@ -171,10 +171,10 @@
 
 
 
-;; pda-transitions->jsexpr :: listof(transitions) symbol listof(cons symbol string) listof(symbol) listof(rules) -> listof(jsexpr(transition))
+;; pda-transitions->jsexpr :: listof(transitions) symbol listof(cons symbol string | proc) listof(symbol) listof(rules) -> listof(jsexpr(transition))
 ;; Given the list of fsm-core transitions, computes the jsexpr form of the transitions
 (define (pda-transitions->jsexpr transitions start invariants input rules)
-  ;; pda-transition->jsexpr: transition transition listof(rules) listof(cons symbol string) listof(symbol) listof(symbol) -> values(pda-rule stack)
+  ;; pda-transition->jsexpr: transition transition listof(rules) listof(cons symbol string | proc) listof(symbol) listof(symbol) -> values(pda-rule stack)
   ;; Purpose: Constructes a pda rule from the given transitions
   ;; NOTE: There is no way to distinguish between
   ;; ((S a (y )) (A (y )) and ((S a ,EMP) (A ,EMP))
@@ -250,13 +250,13 @@
   (cons start-transition (loop transitions '())))
 
 
-;; compute-inv :: symbol listof(cons symbol string) vargs(any) -> boolean | json-null
+;; compute-inv :: symbol listof(cons symbol string | proc) vargs(any) -> boolean | json-null
 ;; computes the invariant and returns the result. If there is not a invariant associated
 ;; with the state then json-null is returned
+;; TODO: Handle error messages
 (define (compute-inv state invariants . args)
   ;; run-racket-code :: string -> boolean | string
-  ;; runs the invariant. If there is a syntax error then the error
-  ;; message is returned
+  ;; runs the invariant. If there is a syntax error then the error message is returned
   ;; TODO: Document this more once I have a better understanding of racket macro namespaces https://stackoverflow.com/questions/57927786/how-to-obtain-namespace-of-a-custom-lang-in-racket
   (define (run-racket-code invariant)
     (define ns (make-base-namespace))
@@ -269,10 +269,16 @@
         (not (false? (apply (eval (read (open-input-string invariant)))
                             (if (null? args) (list null) args)))))))
   (define inv (findf (lambda (i) (equal? (car i) state)) invariants))
-  (if inv
-      (let ([res (run-racket-code (cdr inv))])
-        (if (string? res) #f res))
-      (json-null)))
+  (match inv
+    ;; for hot realoading code
+    [(cons _ (? string?))
+     (define res (run-racket-code (cdr inv)))
+     (if (string? res) #f res)]
+    ;; classic way for computing invariants
+    [(cons _ (? procedure?))
+     (with-handlers ([exn:fail? (lambda (e) #f)])
+       (apply (cdr inv) (if (null? args) (list null) args)))]
+    [_ (json-null)]))
 
 
 

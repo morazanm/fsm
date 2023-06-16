@@ -5,7 +5,9 @@
          "./fsm-functions.rkt"
          "../../fsm-core/interface.rkt")
 
-(provide run-with-prebuilt run-without-prebuilt)
+(provide run-with-prebuilt
+         run-without-prebuilt
+         run-with-prebuilt-hotload)
 
 (define DEBUG_MODE #t)
 (define ADDRESS "127.0.0.1")
@@ -20,15 +22,6 @@
      #`(when DEBUG_MODE (displayln (format s args ...)))]))
 
 
-;; handle-request :: jsexpr(a) -> jsexpr(b)
-;; Based off of the instruction that is provideded in the incomming jsexpr, dispatches 
-;; to the approperate mapping function
-(define (handle-request input)
-  (match (string->symbol (hash-ref input 'instr))
-    ['redraw (regenerate-graph (hash-ref input 'data))]
-    ['build_machine (build-machine (hash-ref input 'data))]
-    ['shut_down eof] ;; we use eof to denote a shutdown
-    [_ (error 'handle-request "Invalid instruction given: ~a" (hash-ref input 'instr))]))
 
 (define (send-fsm-protocal data out)
   (displayln! "\n****Sending Data:****\n ~s" data)
@@ -36,10 +29,21 @@
   (write eof out)
   (flush-output out))
 
-;; listen-for-input :: TCP-listener optional(jsexpr)
+;; listen-for-input :: TCP-listener optional(hash)
 ;; listens on the specified socket for incomming connections
 ;; if data is supplied then it is sent when the connection is first established
-(define (listen-for-input listener [data '()])
+(define (listen-for-input listener [data-hash (hash 'pre-inv '())])
+  (define-values (invariants data)  (values (hash-ref data-hash 'pre-inv '())
+                                            (hash-ref data-hash 'data '())))
+  ;; handle-request :: jsexpr(a) -> jsexpr(b)
+  ;; Based off of the instruction that is provideded in the incomming jsexpr, dispatches
+  ;; to the approperate mapping function
+  (define (handle-request input)
+    (match (string->symbol (hash-ref input 'instr))
+      ['redraw (regenerate-graph (hash-ref input 'data))]
+      ['build_machine (build-machine (hash-ref input 'data) invariants)]
+      ['shut_down eof] ;; we use eof to denote a shutdown
+      [_ (error 'handle-request "Invalid instruction given: ~a" (hash-ref input 'instr))]))
   (define-values (in out) (tcp-accept listener))
   (when (not (null? data))
     (displayln! "Sending prebuilt machine")
@@ -59,21 +63,31 @@
              (begin
                (send-fsm-protocal outgoing-data out)
                (loop)))))))
-  (listen-for-input listener data))
+  (listen-for-input listener data-hash))
 
 
-;; run-with-prebuilt :: fsa listof(cons symbol string)
-;; Runs the TCP server and sends the prebuild machine to the
-;; GUI.
-(define (run-with-prebuilt fsa invariants)
+;; run-with-prebuilt-hotload :: fsa listof(cons symbol string) -> ()
+;; Runs the TCP server and sends the prebuild machine to the GUI.
+(define (run-with-prebuilt-hotload fsa invariants)
   (define listener (tcp-listen PORT 4 #t ADDRESS))
   (displayln! "FSM Gui server listenting at ~s on port ~s" ADDRESS PORT)
   (define data-to-send (hash 'data (fsa->jsexpr fsa invariants)
                              'error (json-null)
                              'responseType "prebuilt_machine"))
-  (listen-for-input listener data-to-send))
+  (listen-for-input listener (hash 'data data-to-send)))
 
-;; run-without-prebuilt
+
+;; run-with-prebuilt :: fsa inv-function -> ()
+;; Runs the TCP server and sends the prebuild machine to the GUI.
+(define (run-with-prebuilt fsa invariants)
+  (define listener (tcp-listen PORT 4 #t ADDRESS))
+  (displayln! "FSM Gui server listenting at ~s on port ~s" ADDRESS PORT)
+  (define data-to-send (hash 'data (fsa->jsexpr fsa '())
+                             'error (json-null)
+                             'responseType "prebuilt_machine"))
+  (listen-for-input listener (hash 'data data-to-send 'pre-inv invariants)))
+
+;; run-without-prebuilt :: ()
 ;; Runs the TCP server without sending a prebuilt machine to
 ;; the GUI
 (define (run-without-prebuilt)
@@ -163,4 +177,4 @@
                             'Y))
 
 ;(run-without-prebuilt)
-(run-with-prebuilt a^nb^nc^n2 '())
+;(run-with-prebuilt a^nb^nc^n2 '())

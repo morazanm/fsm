@@ -9,13 +9,16 @@
  build-machine
  regenerate-graph)
 
-;; build-machine :: jsexpr optional(boolean) -> jsexpr
+;; build-machine :: jsexpr optional(listof(cons symbol func) optional(boolean) -> jsexpr
 ;; takes the electron-gui machine json-expr, unparses it and runs it in fsm-core. It then
 ;; returns the machine or the error msg if it fails to build
 ;;
+;; If pre-computed-invariants is supplied then they are used instead of the invarint string
+;; from the json file
+;;
 ;; The optional arg when set to true will not build the graphviz graph. This should be set
 ;; to true when using this function in tests
-(define (build-machine data (test-mode #f))
+(define (build-machine data (pre-computed-invariants '()) #:test (test-mode #f))
   ;; append-gviz-svgs :: listof(jsexpr-transition) -> listof(jsexpr-transitions)
   ;; computes the graphviz images for each of the transitions
   (define (append-gviz-svgs trans)
@@ -30,7 +33,7 @@
   (define alpha (parse-alpha data))
   (define type (parse-type data))
   (define states (parse-states un-parsed-states))
-  (define invariants (parse-invariants un-parsed-states))
+  (define invariants (if (null? pre-computed-invariants) (parse-invariants un-parsed-states) pre-computed-invariants))
   (define start (parse-start un-parsed-states))
   (define finals (parse-finals un-parsed-states))
   (define rules (parse-rules (hash-ref data 'rules) type))
@@ -58,7 +61,8 @@
                                         (append-gviz-svgs jsexpr-trans))
                        ;; since fsm sometimes adds states (ds) we will return the list of states,
                        ;; so the gui can update accordingly
-                       'states (map (lambda (s) (state->jsexpr s fsa invariants)) (sm-states fsa))
+                       'states (map (lambda (s) (state->jsexpr s fsa (if (null? pre-computed-invariants) invariants '())))
+                                    (sm-states fsa))
                        ;; same with rules.
                        'rules (map rule->jsexpr (sm-rules fsa)))
            'responseType "build_machine"
@@ -109,7 +113,6 @@
       (path->string
        (file-name-from-path
         (path-replace-extension (string->path (hash-ref data 'currentFilepath)) "")))))
-  (displayln (format "File ~a" current-filename))
   (define new-file-name (regexp-replace #rx"1|2" current-filename (lambda (v) (if (equal? "1" v) "2" "1"))))
   (define type (parse-type data))
   (hash 'data (hash 'filepath
@@ -181,7 +184,7 @@
                                                                    'action "accept"
                                                                    'invPass (json-null))))
                                          'error (json-null)))
-                  (define actual (build-machine a*a-jsexpr #t))
+                  (define actual (build-machine a*a-jsexpr #:test #t))
                   (check-equal? (hash-ref actual 'error)
                                 (hash-ref expected 'error)
                                 "Error msg field for a*a should be null for a valid machine")
@@ -240,7 +243,7 @@
                                                               'action "accept"
                                                               'invPass (json-null))))
                                           'error (json-null)))
-                    (define actual (build-machine pda=2ba-jsexpr #t))
+                    (define actual (build-machine pda=2ba-jsexpr #:test #t))
                     (check-equal? (hash-ref actual 'error)
                                   (hash-ref expected 'error)
                                   "Error msg field for pda=2ba should be null for a valid machine")
@@ -281,7 +284,7 @@
                                                                    'tape (list (symbol->string LM) "a" "b")
                                                                    'invPass (json-null))))
                                          'error (json-null)))
-                  (define actual (build-machine Ma-jsexpr #t))
+                  (define actual (build-machine Ma-jsexpr #:test #t))
                   (check-equal? (hash-ref actual 'error)
                                 (hash-ref expected 'error)
                                 "Error msg field for Ma should be null for a valid machine")

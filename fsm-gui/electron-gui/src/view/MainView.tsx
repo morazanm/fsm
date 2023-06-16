@@ -1,18 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { ipcRenderer } from 'electron';
-import {
-  Paper,
-  Grid,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-  Box,
-  Backdrop,
-  CircularProgress,
-} from '@mui/material';
+import { Paper, Grid, Box, Backdrop, CircularProgress } from '@mui/material';
 import {
   State,
   FSMRule,
@@ -26,6 +14,7 @@ import {
   isTmMttmTransition,
 } from '../types/machine';
 import { useTheme } from '@mui/material/styles';
+import { BasicDialog, IncomingMachineDialog } from './dialog';
 import ControlView from '../components/controlView/view';
 import RightEditor from '../components/rightEditor/MachineEditorComponent';
 import LeftEditor from '../components/leftEditor/LeftEditor';
@@ -54,51 +43,22 @@ const EMPTY_TRANSITIONS = {
   inputIndex: -1,
 };
 
-type BasicDialogProps = {
-  onClose: () => void;
-  open: boolean;
-  title: string;
-  body: string;
-  bodyStyle?: object;
-};
-
-// Popup for beginning and end of machine transitions
-const BasicDialog = (props: BasicDialogProps) => {
-  return (
-    <Dialog
-      open={props.open}
-      onClose={props.onClose}
-      aria-labelledby="alert-dialog-title"
-      aria-describedby="alert-dialog-description"
-    >
-      <DialogTitle id="alert-dialog-title">{props.title}</DialogTitle>
-      <DialogContent>
-        <DialogContentText
-          id="alert-dialog-description"
-          style={props.bodyStyle}
-        >
-          {props.body}
-        </DialogContentText>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={props.onClose}>Close</Button>
-      </DialogActions>
-    </Dialog>
-  );
-};
-
 type MachineTransitions = {
   transitions: FSMTransition[];
   index: number;
   inputIndex: number;
 };
 
-type InfoDialog = {
-  title: string;
-  message: string;
+//HACK: this should be reworked to hold the type and the JSX component. This
+// will remove the need to the extra data fields
+type DialogData = {
+  openDialog: 'start' | 'end' | 'info' | 'error' | 'incoming-machine' | 'none';
+  title?: string;
+  message?: string;
+  accept?: () => void;
+  reject?: () => void;
+  type?: MachineType;
 };
-
-export type DialogType = 'start' | 'end' | 'info' | 'error' | null;
 
 export type View = 'control' | 'graphViz';
 
@@ -123,14 +83,15 @@ type MainViewProps = {
 
 const MainView = (props: MainViewProps) => {
   const theme = useTheme();
-  const infoDialog = useRef<InfoDialog | null>(null);
+  const [openDialog, setOpenDialog] = useState<DialogData>({
+    openDialog: 'none',
+  });
   const [connected, setConnected] = useState<Connection>({
     connected: props.racketBridge.connected,
     status: 'done',
   });
   const skipRedraw = useRef(true);
   const [waitingForResponse, setWaitingForResponse] = useState(false);
-  const [openDialog, setOpenDialog] = useState<DialogType>(null);
   const [view, setView] = useState<View>('control');
   const [machineState, setMachineState] = useState<MachineState>({
     states: [],
@@ -155,20 +116,12 @@ const MainView = (props: MainViewProps) => {
       transitions: EMPTY_TRANSITIONS,
     });
 
-  const openInfoDialog = (title: string, msg: string) => {
-    infoDialog.current = {
-      title: title,
-      message: msg,
-    };
-    setOpenDialog('info');
+  const openInfoDialog = (title: string, message: string) => {
+    setOpenDialog({ openDialog: 'info', title, message });
   };
 
-  const openErrorDialog = (title: string, msg: string) => {
-    infoDialog.current = {
-      title: title,
-      message: msg,
-    };
-    setOpenDialog('error');
+  const openErrorDialog = (title: string, message: string) => {
+    setOpenDialog({ openDialog: 'error', title, message });
   };
 
   const setGuiView = (newView: View) => {
@@ -267,12 +220,20 @@ const MainView = (props: MainViewProps) => {
           }
         } else {
           if (instruction === Instruction.PREBUILT) {
-            skipRedraw.current = true;
-            resetMachineAndSet(data);
-            openInfoDialog(
-              'Prebuilt Machine Loaded',
-              'The Prebuilt machine was successfully loaded.',
-            );
+            const acceptFunction = () => {
+              skipRedraw.current = true;
+              resetMachineAndSet(data);
+              setOpenDialog({ openDialog: 'none' });
+            };
+            setOpenDialog({
+              openDialog: 'incoming-machine',
+              accept: acceptFunction,
+              type: data.type,
+            });
+            // openInfoDialog(
+            //   'Prebuilt Machine Loaded',
+            //   'The Prebuilt machine was successfully loaded.',
+            // );
           } else if (instruction === Instruction.BUILD) {
             skipRedraw.current = true;
             setMachineState(data);
@@ -349,7 +310,7 @@ const MainView = (props: MainViewProps) => {
         },
       });
     } else {
-      setOpenDialog('end');
+      setOpenDialog({ openDialog: 'end' });
     }
   };
 
@@ -365,7 +326,7 @@ const MainView = (props: MainViewProps) => {
         },
       });
     } else {
-      setOpenDialog('start');
+      setOpenDialog({ openDialog: 'start' });
     }
   };
 
@@ -533,56 +494,68 @@ const MainView = (props: MainViewProps) => {
           />
         </Grid>
       </Grid>
-      {openDialog === 'start' && isStartTransition(currentTransition) && (
-        <BasicDialog
-          open
-          onClose={() => setOpenDialog(null)}
-          title="Beginning of Machine"
-          body="You have reached the beginning of the machines transitions"
-        />
-      )}
-      {openDialog === 'end' && isEndTransition(currentTransition) && (
-        <BasicDialog
-          open
-          onClose={() => setOpenDialog(null)}
-          title="End of Machine"
-          body={`The input was ${
-            machineState.type === 'tm-language-recognizer'
-              ? 'accept'
-              : currentTransition.action
-          }ed.`}
-          bodyStyle={{
-            color:
-              currentTransition.action === 'accept' ||
+      {openDialog.openDialog === 'start' &&
+        isStartTransition(currentTransition) && (
+          <BasicDialog
+            open
+            onClose={() => setOpenDialog({ openDialog: 'none' })}
+            title="Beginning of Machine"
+            body="You have reached the beginning of the machines transitions"
+          />
+        )}
+      {openDialog.openDialog === 'end' &&
+        isEndTransition(currentTransition) && (
+          <BasicDialog
+            open
+            onClose={() => setOpenDialog({ openDialog: 'none' })}
+            title="End of Machine"
+            body={`The input was ${
               machineState.type === 'tm-language-recognizer'
-                ? theme.palette.success.main
-                : theme.palette.error.main,
-          }}
-        />
-      )}
-      {openDialog === 'info' && infoDialog.current && (
-        <BasicDialog
+                ? 'accept'
+                : currentTransition.action
+            }ed.`}
+            bodyStyle={{
+              color:
+                currentTransition.action === 'accept' ||
+                machineState.type === 'tm-language-recognizer'
+                  ? theme.palette.success.main
+                  : theme.palette.error.main,
+            }}
+          />
+        )}
+      {openDialog.openDialog === 'info' &&
+        openDialog.message &&
+        openDialog.title && (
+          <BasicDialog
+            open
+            onClose={() => {
+              setOpenDialog({ openDialog: 'none' });
+            }}
+            title={openDialog.title}
+            body={openDialog.message}
+          />
+        )}
+      {openDialog.openDialog === 'error' &&
+        openDialog.message &&
+        openDialog.title && (
+          <BasicDialog
+            open
+            onClose={() => {
+              setOpenDialog({ openDialog: 'none' });
+            }}
+            title={openDialog.title}
+            body={openDialog.message}
+            bodyStyle={{
+              color: theme.palette.error.main,
+            }}
+          />
+        )}
+      {openDialog.openDialog === 'incoming-machine' && openDialog.accept && (
+        <IncomingMachineDialog
           open
-          onClose={() => {
-            infoDialog.current = null;
-            setOpenDialog(null);
-          }}
-          title={infoDialog.current.title}
-          body={infoDialog.current.message}
-        />
-      )}
-      {openDialog === 'error' && infoDialog.current && (
-        <BasicDialog
-          open
-          onClose={() => {
-            infoDialog.current = null;
-            setOpenDialog(null);
-          }}
-          title={infoDialog.current.title}
-          body={infoDialog.current.message}
-          bodyStyle={{
-            color: theme.palette.error.main,
-          }}
+          incomingType={openDialog.type}
+          accept={openDialog.accept}
+          reject={() => setOpenDialog({ openDialog: 'none' })}
         />
       )}
       {waitingForResponse && (

@@ -33,7 +33,7 @@
        (andmap (λ (s) (or (eq? s 'a) (eq? s 'b)))
                (rest ci))))
   ans)
-(sm-visualize  a-aUb*)
+;(sm-visualize  a-aUb*)
 
 ;;---- DFA ----
 (define a*
@@ -46,7 +46,7 @@
               (F b F))
             'nodead))
 
-(sm-visualize a* (list 'S (lambda (v) true))
+(sm-visualize2 a* (list 'S (lambda (v) true))
             (list 'F (lambda (v) false)))
 
 #;(define pda-numa=numb (make-ndpda '(S M F)

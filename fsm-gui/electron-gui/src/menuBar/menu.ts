@@ -26,7 +26,9 @@ export function createMenu(window: BrowserWindow) {
               ],
             };
             dialog.showSaveDialog(null, options).then(({ filePath }) => {
-              window.webContents.send(channels.SAVE_FILE, filePath);
+              if (filePath) {
+                window.webContents.send(channels.SAVE_FILE, filePath);
+              }
             });
           },
         },
