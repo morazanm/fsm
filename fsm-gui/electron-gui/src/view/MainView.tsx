@@ -1,6 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { ipcRenderer } from 'electron';
-import { Paper, Grid, Box, Backdrop, CircularProgress } from '@mui/material';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import {
+  Paper,
+  Grid,
+  Box,
+  Backdrop,
+  CircularProgress,
+  Typography,
+} from '@mui/material';
 import {
   State,
   FSMRule,
@@ -54,7 +63,7 @@ type MachineTransitions = {
 type DialogData = {
   openDialog: 'start' | 'end' | 'info' | 'error' | 'incoming-machine' | 'none';
   title?: string;
-  message?: string;
+  message?: string | JSX.Element;
   accept?: () => void;
   reject?: () => void;
   type?: MachineType;
@@ -116,7 +125,7 @@ const MainView = (props: MainViewProps) => {
       transitions: EMPTY_TRANSITIONS,
     });
 
-  const openInfoDialog = (title: string, message: string) => {
+  const openInfoDialog = (title: string, message: string | JSX.Element) => {
     setOpenDialog({ openDialog: 'info', title, message });
   };
 
@@ -200,6 +209,16 @@ const MainView = (props: MainViewProps) => {
   }, [machineState]);
 
   useEffect(() => {
+    openInfoDialog(
+      'Disconnected from FSM',
+      <Typography>
+        The FSM backend was disconnected. You can still save and edit your
+        machine, but you will not be able to rebuild it. To reconnect Please try running in the Racket REPL:
+        <SyntaxHighlighter language="racket" style={oneLight}>
+          (sm-visualize2 ...)
+        </SyntaxHighlighter>
+      </Typography>,
+    );
     // If we have a connection then listen for messages
     // TODO: We can probably abstract this out with a callback
     if (props.racketBridge.client) {
@@ -230,10 +249,6 @@ const MainView = (props: MainViewProps) => {
               accept: acceptFunction,
               type: data.type,
             });
-            // openInfoDialog(
-            //   'Prebuilt Machine Loaded',
-            //   'The Prebuilt machine was successfully loaded.',
-            // );
           } else if (instruction === Instruction.BUILD) {
             skipRedraw.current = true;
             setMachineState(data);
@@ -258,7 +273,15 @@ const MainView = (props: MainViewProps) => {
       props.racketBridge.subscribeListener('end', () => {
         openInfoDialog(
           'Disconnected from FSM',
-          'The FSM backend was disconnected. Please try running (sm-visualize) in the REPL to reconnect.',
+          <Typography>
+            The FSM backend was disconnected. You can still save and edit your
+            machine, but you will not be able to rebuild it.
+            <br />
+            To reconnect Please try running in the Racket REPL:
+            <SyntaxHighlighter language="racket">
+              (sm-visualize2 ...)
+            </SyntaxHighlighter>
+          </Typography>,
         );
       });
 

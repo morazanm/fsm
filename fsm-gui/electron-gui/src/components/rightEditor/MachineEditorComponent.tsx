@@ -17,6 +17,7 @@ import {
   Abc as AbcIcon,
   TableRows as TableRowIcons,
   SsidChart as SsidChartIcon,
+  Map as MapIcon,
   Check as CheckIcon,
   Palette as PaletteIcon,
   RssFeed as RssFeedIcon,
@@ -208,6 +209,11 @@ const MachineEditorComponent = (props: MachineEditorProps) => {
         <Tooltip title="Toggle Theme" placement="left-start" disableInteractive>
           <IconButton color="primary" onClick={props.toggleTheme}>
             <PaletteIcon />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Map View" placement="left-start" disableInteractive>
+          <IconButton color="primary" onClick={props.toggleTheme}>
+            <MapIcon />
           </IconButton>
         </Tooltip>
         {views.map((v, i) => {

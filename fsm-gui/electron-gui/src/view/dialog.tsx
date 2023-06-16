@@ -14,7 +14,7 @@ type BasicDialogProps = {
   onClose: () => void;
   open: boolean;
   title: string;
-  body: string;
+  body: string | JSX.Element;
   bodyStyle?: object;
 };
 
