@@ -1,8 +1,4 @@
 import type { ForgeConfig } from '@electron-forge/shared-types';
-import { MakerSquirrel } from '@electron-forge/maker-squirrel';
-import { MakerZIP } from '@electron-forge/maker-zip';
-import { MakerDeb } from '@electron-forge/maker-deb';
-import { MakerRpm } from '@electron-forge/maker-rpm';
 import { WebpackPlugin } from '@electron-forge/plugin-webpack';
 
 import { mainConfig } from './webpack.main.config';
@@ -12,14 +8,17 @@ const config: ForgeConfig = {
   packagerConfig: {},
   rebuildConfig: {},
   makers: [
+    // Debian Based Systems
     {
       name: '@electron-forge/maker-dmg',
       config: {},
     },
+    // Windows
     {
       name: '@electron-forge/maker-squirrel',
       config: {},
     },
+    // MacOS
     {
       name: '@electron-forge/maker-deb',
       config: {},
@@ -51,6 +50,7 @@ const config: ForgeConfig = {
               js: './src/preload.ts',
             },
           },
+          // Bundle the loading screen
           {
             html: './src/splash.html',
             js: './src/renderer2.ts',
