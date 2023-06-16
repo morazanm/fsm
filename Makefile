@@ -9,7 +9,7 @@ test:
 .PHONY: test
 
 docs:
-	cd fsm-docs; scribble +m ./fsm.scrbl
+	cd fsm-docs; scribble +m ./fsm.scrbl; scribble +m ./dev.scrbl
 .PHONY: docs
 
 clean:

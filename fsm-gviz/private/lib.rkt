@@ -1,5 +1,5 @@
 #lang racket
-(require 2htdp/image "dot.rkt")
+(require 2htdp/image racket/hash "dot.rkt")
 #| This file handles converting graphs to the dot file equivalent |#
 
 (provide
@@ -13,6 +13,8 @@
                 (atb (hash/c symbol? any/c)))]
   [struct edge ((start-node symbol?)
                 (end-node symbol?)
+                ;; NOTE: a edges label atb is a list since we squash all edges
+                ;; between the same nodes into a single edge
                 (atb (hash/c symbol? any/c)))]
   [struct graph ((name symbol?)
                  (node-list (listof node?))
@@ -26,9 +28,16 @@
   [add-node (->* (graph? symbol?)
                  (#:atb (hash/c symbol? any/c))
                  graph?)]
+  [add-nodes (->* (graph? (listof symbol?))
+                 (#:atb (hash/c symbol? any/c))
+                 graph?)]
   [add-edge (->* (graph? (or/c list? any/c) symbol? symbol?)
                  (#:atb (hash/c symbol? any/c))
                  graph?)]
+
+  [add-edges (->* (graph? (list/c symbol? symbol? (or/c list? any/c)))
+                  (#:atb (hash/c symbol? any/c))
+                  graph?)]
   [graph->bitmap (-> graph? path? string? image?)]
   [graph->svg (-> graph? path? string? path?)]
   [graph->dot (-> graph? path? string? path?)]
@@ -39,11 +48,16 @@
 (define DEFAULT-GRAPH (hash 'rankdir "LR"))
 (define DEFAULT-EDGE (hash 'fontsize 15))
 (define DEFAULT-NODE (hash 'color "black" 'shape "circle"))
+(define (DEFAULT-EDGE-LABEL-FMTR lst)
+  (string-join (map (lambda (v) (format "~a" v)) (reverse lst)) ", "))
 
 ;; formatters contain custom formatting functions for attributes
-(struct formatters (graph node edge))
+(struct formatters (graph node edge) #:transparent)
 
-(define DEFAULT-FORMATTERS (formatters (hash) (hash) (hash)))
+(define DEFAULT-FORMATTERS (formatters
+                            (hash)
+                            (hash)
+                            (hash 'label DEFAULT-EDGE-LABEL-FMTR)))
 
 ; A structure the represents a digraph in the dot language
 (struct graph ([name]
@@ -97,7 +111,18 @@
 ;; name: The name of the graph
 ;; Purpose: Creates a Graph with the given name
 (define (create-graph name #:fmtrs(fmtrs DEFAULT-FORMATTERS) #:atb [atb DEFAULT-GRAPH])
-  (graph name '() '() fmtrs atb))
+  (define (combine v1 v2) (hash-union v1 v2 #:combine/key (lambda (_k v1 _v2) v1)))
+  (graph name
+         '()
+         '()
+         (formatters
+          (combine (formatters-graph fmtrs)
+                   (formatters-graph DEFAULT-FORMATTERS))
+          (combine (formatters-node fmtrs)
+                   (formatters-node DEFAULT-FORMATTERS))
+          (combine (formatters-edge fmtrs)
+                   (formatters-edge DEFAULT-FORMATTERS)))
+         atb))
 
 
 ;; add-node: graph string Optional(hash-map) -> graph
@@ -112,9 +137,25 @@
    (graph-fmtrs g)
    (graph-atb g)))
 
+
+;; add-nodes: graph listof(symbol) Optional(hash-map) -> graph
+;; Purpose: adds the list of nodes to the given graph
+(define (add-nodes g names #:atb [atb DEFAULT-NODE])
+  (define nodes-to-add (map (lambda (n) (node (remove-dashes n)
+                                              (hash-set atb 'label (stringify-value n))))
+                            names))
+  (graph
+   (graph-name g)
+   (append nodes-to-add (graph-node-list g))
+   (graph-edge-list g)
+   (graph-fmtrs g)
+   (graph-atb g)))
+
 ;; add-edge: graph symbol symbol symbol Optional(hash-map) -> graph
 ;; Purpose: adds an edge to the graph
 ;; NOTE: This function assumes that the node exists in the graph structure
+;; NOTE: a edges label is a list since we squash all edges between the same nodes
+;; into a single edge
 (define (add-edge g val start-node end-node #:atb [atb DEFAULT-EDGE])
   (define start (remove-dashes start-node))
   (define end (remove-dashes end-node))
@@ -139,6 +180,17 @@
                                        (cons val (hash-ref (edge-atb e) 'label)))))))
          (graph-fmtrs g)
          (graph-atb g)))
+
+
+;; add-edges: graph listof(symbol symbol any/c) Optional(hash-map) -> graph
+;; Purpose: adds this list of edges to the graph
+;; NOTE: This function assumes that the node exists in the graph structure
+;; NOTE: a edges label is a list since we squash all edges between the same nodes
+;; into a single edge
+(define (add-edges g edgs #:atb [atb DEFAULT-EDGE])
+  (foldl (lambda (e a)
+           (match-define (list start end val) e)
+           (add-edge a val start end #:atb atb)) g edgs))
 
 ; remove-dashes: symbol -> symbol
 ; Purpose: Remove dashes from the given symbol
@@ -211,7 +263,7 @@
     (define fmtr-fun (hash-ref fmtr key #f))
     (if fmtr-fun
         (format "~s=~s" key (fmtr-fun value))
-        (format "~s=~s" key value)))
+        (format "~s=~s" key (if (equal? key 'label) (format "~a" value) value))))
   (string-join (hash-map hash key-val->string) spacer))
 
 ;; Helper function to convert a value to a string
@@ -220,3 +272,45 @@
         [(string? input) input]
         [[symbol? input] (symbol->string input)]
         [else (error "Graphviz internal error: Unable to convert to string")]))
+
+
+
+(module+ test
+  (require rackunit)
+
+  (check-equal? (add-nodes (create-graph 'test) '(A B C D E-1))
+                (graph
+                 'test
+                 (list
+                  (node 'A #hash((color . "black") (label . "A") (shape . "circle")))
+                  (node 'B #hash((color . "black") (label . "B") (shape . "circle")))
+                  (node 'C #hash((color . "black") (label . "C") (shape . "circle")))
+                  (node 'D #hash((color . "black") (label . "D") (shape . "circle")))
+                  (node 'E1 #hash((color . "black") (label . "E-1") (shape . "circle"))))
+                 '()
+                 DEFAULT-FORMATTERS
+                 DEFAULT-GRAPH))
+
+
+  (check-equal? (add-edges (add-nodes (create-graph 'test) '(A B C D))
+                           '((A B a) (B B b) (B D c-1)))
+                (graph
+                 'test
+                 (list
+                  (node 'A #hash((color . "black") (label . "A") (shape . "circle")))
+                  (node 'B #hash((color . "black") (label . "B") (shape . "circle")))
+                  (node 'C #hash((color . "black") (label . "C") (shape . "circle")))
+                  (node 'D #hash((color . "black") (label . "D") (shape . "circle"))))
+                 (list
+                  (edge 'B 'D #hash((fontsize . 15) (label . (c-1))))
+                  (edge 'B 'B #hash((fontsize . 15) (label . (b))))
+                  (edge 'A 'B #hash((fontsize . 15) (label . (a)))))
+                 DEFAULT-FORMATTERS
+                 DEFAULT-GRAPH))
+
+
+
+
+
+
+  ) ;; end module+ test
