@@ -35,6 +35,8 @@ import {
   FSMAlpha,
   FSMRule,
   FSMStackAlpha,
+  FSMTransition,
+  MachineTransitions,
 } from '../../types/machine';
 import { AlphaModal, GammaModal } from './forms/AlphaModals';
 import InputForm from './forms/InputForm';
@@ -43,6 +45,7 @@ import TapeForm from './forms/TapePosition';
 import useRuleForm from './forms/RuleForm';
 import { Connection } from '../../socket/racketInterface';
 import { View } from '../../view/MainView';
+import { MapView } from './forms/MapViewForm';
 
 const StyledSpeedDial = styled(SpeedDial)(({ theme }) => ({
   '& .MuiFab-primary': {
@@ -62,6 +65,25 @@ const StyledSpeedDial = styled(SpeedDial)(({ theme }) => ({
   '& .MuiSpeedDialIcon-root': {
     alignItems: 'center',
     display: 'flex',
+  },
+}));
+
+const StyledRssFeed = styled(RssFeedIcon)(({ theme }) => ({
+  animation: 'pulse 10s infinite',
+  borderRadius: '10px',
+  '@keyframes pulse': {
+    '0%': {
+      transform: 'scale(0.95)',
+      boxShadow: `0 0 0 0 ${theme.palette.error.main}`,
+    },
+    '20%': {
+      transform: 'scale(1)',
+      boxShadow: '0 0 0 5px rgba(0, 0, 0, 0)',
+    },
+    '100%': {
+      transform: 'scale(0.95)',
+      boxShadow: '0 0 0 0 rgba(0, 0, 0, 0)',
+    },
   },
 }));
 
@@ -157,6 +179,8 @@ type MachineEditorProps = {
   setTapePosition: (position: number) => void;
   setView: (view: View) => void;
   currentView: View;
+  transitions: MachineTransitions;
+  currentTransition: FSMTransition;
 };
 
 type OpenModal =
@@ -167,6 +191,7 @@ type OpenModal =
   | 'alpha'
   | 'gamma'
   | 'accept'
+  | 'map-view'
   | null;
 
 const MachineEditorComponent = (props: MachineEditorProps) => {
@@ -199,7 +224,7 @@ const MachineEditorComponent = (props: MachineEditorProps) => {
               onClick={props.reconnect}
             >
               {props.connection.status === 'done' ? (
-                <RssFeedIcon />
+                <StyledRssFeed />
               ) : (
                 <LoopIcon />
               )}
@@ -212,7 +237,7 @@ const MachineEditorComponent = (props: MachineEditorProps) => {
           </IconButton>
         </Tooltip>
         <Tooltip title="Map View" placement="left-start" disableInteractive>
-          <IconButton color="primary" onClick={props.toggleTheme}>
+          <IconButton color="primary" onClick={() => setOpenModal('map-view')}>
             <MapIcon />
           </IconButton>
         </Tooltip>
@@ -326,6 +351,12 @@ const MachineEditorComponent = (props: MachineEditorProps) => {
           </Alert>
         </Snackbar>
       )}
+      <MapView
+        open={openModal === 'map-view'}
+        onClose={() => setOpenModal(null)}
+        transitions={props.transitions.transitions}
+        currentTransition={props.currentTransition}
+      />
     </Box>
   );
 };

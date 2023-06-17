@@ -112,6 +112,12 @@ export type TmEndTransition = EndTransition & {
   tape: FSMAlpha[];
 };
 
+export type MachineTransitions = {
+  transitions: FSMTransition[];
+  index: number;
+  inputIndex: number;
+};
+
 export type FSMTransition =
   | BasicTransition
   | PdaTransition
@@ -238,6 +244,17 @@ export const ruleToString = (rule: FSMRule): string => {
     } ${arrayToString(rule.pushed)}))`;
   } else if (isTmTmLangRecRule(rule)) {
     return `((${rule.start} ${rule.startTape}) (${rule.end} ${rule.endTape}))`;
+  }
+  throw Error('Invalid rule supplied');
+};
+
+export const extractInputFromRule = (rule: FSMRule): string => {
+  if (isDfaNdfaRule(rule)) {
+    return rule.input;
+  } else if (isPdaRule(rule)) {
+    return rule.input;
+  } else if (isTmTmLangRecRule(rule)) {
+    return 'TODO: what to put?';
   }
   throw Error('Invalid rule supplied');
 };

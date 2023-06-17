@@ -89,8 +89,8 @@
                   (make-dfa states alpha start finals rules 'nodead)
                   (make-dfa states alpha start finals rules))]
         ['ndfa (if no-dead
-                   (make-ndfa states start finals alpha rules 'nodead)
-                   (make-ndfa states start finals alpha rules))]
+                   (make-ndfa states alpha start finals rules 'nodead)
+                   (make-ndfa states alpha start finals rules))]
         ;; pda's dont use the dead-state
         ['pda (make-ndpda states alpha stack-alpha start finals rules)]
         ['tm-language-recognizer (make-tm states alpha rules start finals accept)]

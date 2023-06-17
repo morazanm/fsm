@@ -52,12 +52,10 @@ export class RacketInterface {
       let chunks: Buffer[] = [];
       this.client
         .connect({ port: this.port, host: this.host }, () => {
-          console.log('connected to server!');
           this.connected = true;
           return resolve(true);
         })
         .on('error', () => {
-          console.log('error while connecting to server');
           this.connected = false;
           return resolve(false);
         })
@@ -88,7 +86,6 @@ export class RacketInterface {
     const tmp = this.subscribers.get(event);
     tmp.push(cb);
     this.subscribers.set(event, tmp);
-    console.log('subscribed', this.subscribers.get(event).length);
   }
 
   sendToRacket<T extends object>(data: T, instruction: Instruction) {

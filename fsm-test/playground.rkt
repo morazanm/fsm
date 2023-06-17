@@ -1,6 +1,15 @@
 #lang racket
 
-(require "../main.rkt")
+(require (for-syntax syntax/parse)
+         syntax/to-string
+         "../main.rkt")
+
+
+(define-syntax (inv->string! stx)
+  (syntax-parse stx
+    [(_ a)
+     #`(syntax->string #'(a))]))
+
 
 (define a-aUb*
   (make-ndfa '(S F)     ;; the states
@@ -33,7 +42,15 @@
        (andmap (λ (s) (or (eq? s 'a) (eq? s 'b)))
                (rest ci))))
   ans)
-;(sm-visualize  a-aUb*)
+;(sm-visualize a-aUb* (list 'S SS-INV) (list 'F FF-INV))
+(sm-visualize3 a-aUb*
+               (list 'F (inv->string!
+                         (lambda (ci)
+                           (and (not (empty? ci))
+                                (eq? (first ci) 'a)
+                                (andmap (λ (s) (or (eq? s 'a) (eq? s 'b)))
+                                        (rest ci))))))
+               (list 'S (inv->string! (lambda (ci) (empty? ci)))))
 
 ;;---- DFA ----
 (define a*
@@ -46,7 +63,7 @@
               (F b F))
             'nodead))
 
-(sm-visualize2 a* (list 'S (lambda (v) true))
+#;(sm-visualize2 a* (list 'S (lambda (v) true))
             (list 'F (lambda (v) false)))
 
 #;(define pda-numa=numb (make-ndpda '(S M F)

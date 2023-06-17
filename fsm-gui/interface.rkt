@@ -1,7 +1,8 @@
 #lang racket
 
-(require "legacy-gui/visualize.rkt")
-(require "electron-backend/server.rkt")
+(require "legacy-gui/visualize.rkt"
+         "electron-backend/server.rkt")
+
 (provide (rename-out (visualize sm-visualize))
          sm-visualize2
          sm-visualize3)
@@ -22,3 +23,4 @@
   (define parsed-invariants (map (lambda (i) (cons (first i) (second i)))
                                  invariants))
   (run-with-prebuilt-hotload fsa parsed-invariants))
+

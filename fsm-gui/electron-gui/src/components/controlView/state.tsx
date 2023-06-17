@@ -46,6 +46,7 @@ const State = (props: StateProps) => {
     <div
       className={styles[props.stateType]}
       style={{ ...props.style, rotate: `${rotation}deg` }}
+      onClick={() => console.log(`${props.stateName} clicked`)}
     >
       <InnerCircle
         name={props.stateName}

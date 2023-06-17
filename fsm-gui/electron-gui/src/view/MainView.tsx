@@ -21,6 +21,7 @@ import {
   FSMStackAlpha,
   isTmType,
   isTmMttmTransition,
+  MachineTransitions,
 } from '../types/machine';
 import { useTheme } from '@mui/material/styles';
 import { BasicDialog, IncomingMachineDialog } from './dialog';
@@ -50,12 +51,6 @@ const EMPTY_TRANSITIONS = {
   transitions: [] as FSMTransition[],
   index: -1,
   inputIndex: -1,
-};
-
-type MachineTransitions = {
-  transitions: FSMTransition[];
-  index: number;
-  inputIndex: number;
 };
 
 //HACK: this should be reworked to hold the type and the JSX component. This
@@ -197,7 +192,9 @@ const MainView = (props: MainViewProps) => {
     if (currentTransition && currentTransition.filepath) {
       return `file://${currentTransition.filepath}`;
     }
-    return `file://${machineState.graphVizImage}`;
+    return machineState.graphVizImage
+      ? `file://${machineState.graphVizImage}`
+      : '';
   };
 
   useEffect(() => {
@@ -209,16 +206,6 @@ const MainView = (props: MainViewProps) => {
   }, [machineState]);
 
   useEffect(() => {
-    openInfoDialog(
-      'Disconnected from FSM',
-      <Typography>
-        The FSM backend was disconnected. You can still save and edit your
-        machine, but you will not be able to rebuild it. To reconnect Please try running in the Racket REPL:
-        <SyntaxHighlighter language="racket" style={oneLight}>
-          (sm-visualize2 ...)
-        </SyntaxHighlighter>
-      </Typography>,
-    );
     // If we have a connection then listen for messages
     // TODO: We can probably abstract this out with a callback
     if (props.racketBridge.client) {
@@ -500,6 +487,8 @@ const MainView = (props: MainViewProps) => {
                 setTapePosition={setInitialTapePosition}
                 setView={setGuiView}
                 currentView={view}
+                transitions={machineState.transitions}
+                currentTransition={currentTransition}
               />
             </Grid>
           </Grid>
