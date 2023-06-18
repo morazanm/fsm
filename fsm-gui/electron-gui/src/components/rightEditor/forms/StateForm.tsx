@@ -24,7 +24,7 @@ type InputFormProps = {
   setStates: (states: State[]) => void;
 };
 
-const validateState = (incoming: StateName, states: State[]): string => {
+export const validateState = (incoming: StateName, states: State[]): string => {
   if (states.find((s) => s.name === incoming)) {
     return `State "${incoming}" already exists`;
   }

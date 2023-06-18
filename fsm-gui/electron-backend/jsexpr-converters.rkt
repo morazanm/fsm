@@ -40,7 +40,7 @@
                 [(and (equal? 'tm-language-recognizer (sm-type fsa))
                       (equal? state (sm-accept fsa))) "accept"]
                 [(and (member state (sm-finals fsa))
-                      (equal? state (sm-start fsa))) "startfinal"]
+                      (equal? state (sm-start fsa))) "startFinal"]
                 [(equal? state (sm-start fsa)) "start"]
                 [(member state (sm-finals fsa)) "final"]
                 [else "normal"])
@@ -571,7 +571,7 @@
                                                          (Q-5 ,EMP Q-0))))
 
                   (check-equal? (fsa->jsexpr KLEENESTAR-abUaba '() #t)
-                                (hash 'states (list (hash 'name "Q-0" 'type "startfinal" 'invFunc (json-null))
+                                (hash 'states (list (hash 'name "Q-0" 'type "startFinal" 'invFunc (json-null))
                                                     (hash 'name "Q-1" 'type "normal" 'invFunc (json-null))
                                                     (hash 'name "Q-2" 'type "normal" 'invFunc (json-null))
                                                     (hash 'name "Q-3" 'type "normal" 'invFunc (json-null))

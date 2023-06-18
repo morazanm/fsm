@@ -12,10 +12,10 @@
 
 
 (define a-aUb*
-  (make-ndfa '(S F)     ;; the states
+  (make-ndfa '(S F J)     ;; the states
              '(a b)     ;; the input alphabet
              'S         ;; the staring state
-             '(F)       ;; the set of final states
+             '(F J S)       ;; the set of final states
              '((S a F)  ;; the transition functions
                (F a F))
              'nodead))
@@ -42,7 +42,7 @@
        (andmap (λ (s) (or (eq? s 'a) (eq? s 'b)))
                (rest ci))))
   ans)
-;(sm-visualize a-aUb* (list 'S SS-INV) (list 'F FF-INV))
+(sm-visualize a-aUb* (list 'S SS-INV) (list 'F FF-INV))
 (sm-visualize3 a-aUb*
                (list 'F (inv->string!
                          (lambda (ci)

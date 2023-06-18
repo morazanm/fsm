@@ -35,7 +35,7 @@ const InputComponent = (props: InputComponentProps) => {
       return [true, 'Must add accept state'];
     }
     if (props.input.length === 0) {
-      [true, 'Add Input to run'];
+      return [true, 'Add Input to run'];
     }
     return [false, 'Run Machine'];
   };

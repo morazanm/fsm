@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { ipcRenderer } from 'electron';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import {
   Paper,
   Grid,
@@ -373,6 +372,16 @@ const MainView = (props: MainViewProps) => {
     return machineState.input;
   };
 
+  const getConsumedInput = () => {
+    if (currentTransition) {
+      return machineState.input.slice(
+        0,
+        machineState.transitions.inputIndex + 1,
+      );
+    }
+    return undefined;
+  };
+
   return (
     <Paper
       sx={{
@@ -447,6 +456,14 @@ const MainView = (props: MainViewProps) => {
                 <ControlView
                   states={machineState.states}
                   currentTransition={currentTransition}
+                  resetMachineAndSet={resetMachineAndSet}
+                  consumedInput={
+                    isTmType(machineState.type)
+                      ? getTapeInput()
+                      : getConsumedInput()
+                  }
+                  rules={machineState.rules}
+                  machineType={machineState.type}
                 />
               ) : (
                 <Box

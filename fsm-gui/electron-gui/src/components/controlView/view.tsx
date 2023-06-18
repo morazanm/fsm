@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Box, useTheme } from '@mui/material';
+import { Alert, Box, Snackbar, useTheme } from '@mui/material';
 import {
   State,
   FSMTransition,
@@ -9,13 +9,20 @@ import {
   FSMAlpha,
   isDfaNdfaRule,
   isPdaRule,
+  FSMRule,
+  MachineType,
 } from '../../types/machine';
 import StateComponent from './state';
 import styles from './view.module.css';
+import { MachineState } from '../../view/MainView';
 
 type ControlViewProps = {
   states: State[];
+  rules: FSMRule[];
+  machineType: MachineType;
+  consumedInput: FSMAlpha[] | undefined;
   currentTransition: FSMTransition | null;
+  resetMachineAndSet: (machine: Partial<MachineState>) => void;
 };
 
 type CurrentTransition = {
@@ -54,6 +61,7 @@ const getCurrentStateAndInv = (
 
 const ControlView = (props: ControlViewProps) => {
   const theme = useTheme();
+  const [snack, setSnack] = useState({ open: false, msg: '' });
   const [height, setHeight] = useState(0);
   const ref = useRef(null);
   // In order to create the to and from arrows we render a transparent circle over the
@@ -165,13 +173,34 @@ const ControlView = (props: ControlViewProps) => {
         {props.states.map((state, i) => (
           <StateComponent
             key={i}
-            stateName={state.name}
-            stateType={state.type}
+            state={state}
+            states={props.states}
+            rules={props.rules}
+            currentTransition={props.currentTransition}
+            consumedInput={props.consumedInput}
+            onSubmit={(msg: string) => {
+              setSnack({ open: true, msg });
+            }}
+            machineType={props.machineType}
+            resetMachineAndSet={props.resetMachineAndSet}
             rotate={(360 / props.states.length) * i}
             style={{ transform: `translateX(${height / 2}px)` }}
           />
         ))}
       </div>
+      <Snackbar
+        open={snack.open}
+        autoHideDuration={6000}
+        onClose={() => setSnack({ open: false, msg: '' })}
+      >
+        <Alert
+          onClose={() => setSnack({ open: false, msg: '' })}
+          severity="success"
+          sx={{ width: '100%' }}
+        >
+          {snack.msg}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
