@@ -1,6 +1,6 @@
 #lang racket
 (require "lib.rkt")
-(require fsm "lib.rkt")
+(require "../../main.rkt" "lib.rkt")
 
 #|
 
