@@ -1,6 +1,6 @@
 
 (module mttm racket
-  (require "constants.rkt" "misc.rkt" "word.rkt")
+  (require "../constants.rkt" "../misc.rkt" "../word.rkt")
   (provide make-mttm
            mttm-get-states
            mttm-get-sigma
