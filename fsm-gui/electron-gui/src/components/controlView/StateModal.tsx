@@ -32,6 +32,7 @@ import {
   isStartTransition,
   isEndTransition,
   FSMAlpha,
+  isPdaTransition,
 } from '../../types/machine';
 import { useState } from 'react';
 import { validateState } from '../../components/rightEditor/forms/StateForm';
@@ -48,6 +49,112 @@ function updateRules(
     return { ...r, start: newStart, end: newEnd };
   });
 }
+
+type InvariantDetailsProps = {
+  machineType: MachineType;
+  currentTransition: FSMTransition | undefined;
+  consumedInput: FSMAlpha[] | undefined;
+};
+
+const InvariantDetails = (props: InvariantDetailsProps) => {
+  const theme = useTheme();
+  const formatInvariant = (status: boolean | null): string => {
+    if (status === null) return 'None';
+    return status ? 'Passing' : 'Failing';
+  };
+
+  const invariantColor = (status: boolean | null): string => {
+    if (status === null) return theme.palette.secondary.main;
+    return status ? theme.palette.success.main : theme.palette.error.main;
+  };
+
+  const pdaStack = props.currentTransition && isPdaTransition(props.currentTransition) ? props.currentTransition.stack : []
+
+  return (
+    <Grid
+      alignItems="center"
+      container
+      spacing={2}
+      wrap="nowrap"
+      sx={{ overflow: 'auto' }}
+    >
+      <Grid item xs={7}>
+      <Stack>
+        <div
+          style={{
+            width: '100%',
+            height: '100%',
+            display: 'inline-flex',
+          }}
+        >
+          <p
+            style={{
+              paddingRight: '2px',
+            }}
+          >
+            {isTmType(props.machineType) ? 'Tape: ' : 'Consumed Input:'}
+          </p>
+          <p>
+            [
+            <span
+              style={{
+                overflow: 'auto',
+                whiteSpace: 'nowrap',
+                color: theme.palette.primary.main,
+              }}
+            >
+              {props.consumedInput.join(', ') ?? ' '}
+            </span>
+            ]
+          </p>
+        </div>
+        {props.currentTransition && props.machineType === "pda" && (
+            <div
+            style={{
+              width: '100%',
+              height: '100%',
+              display: 'inline-flex',
+            }}
+          >
+            <p
+              style={{
+                paddingRight: '2px',
+              }}
+            >
+            Stack: 
+            </p>
+            <p>
+              [
+              <span
+                style={{
+                  overflow: 'auto',
+                  whiteSpace: 'nowrap',
+                  color: theme.palette.primary.main,
+                }}
+              >
+                {pdaStack.join(', ') ?? ' '}
+              </span>
+              ]
+            </p>
+          </div>
+        )}
+        </Stack>
+      </Grid>
+      <Grid item xs={5}>
+        <Typography>
+          Status:{' '}
+          <span
+            style={{
+              color: invariantColor(props.currentTransition.invPass),
+            }}
+          >
+            {formatInvariant(props.currentTransition.invPass)}
+          </span>
+        </Typography>
+      </Grid>
+    </Grid>
+  );
+};
 
 type StateModalProps = {
   open: boolean;
@@ -77,16 +184,6 @@ export const StateModal = (props: StateModalProps) => {
       return isValid === '';
     }
     return true;
-  };
-
-  const formatInvariant = (status: boolean | null): string => {
-    if (status === null) return 'None';
-    return status ? 'Passing' : 'Failing';
-  };
-
-  const invariantColor = (status: boolean | null): string => {
-    if (status === null) return theme.palette.secondary.main;
-    return status ? theme.palette.success.main : theme.palette.error.main;
   };
 
   const showInvDetails = (t: FSMTransition | undefined): boolean => {
@@ -160,58 +257,11 @@ export const StateModal = (props: StateModalProps) => {
           <Stack spacing={2} sx={{ paddingTop: 2 }}>
             <Typography variant="h6">Invariant:</Typography>
             {showInvDetails(props.currentTransition) && (
-              <Grid
-                alignItems="center"
-                container
-                spacing={2}
-                wrap="nowrap"
-                sx={{ overflow: 'auto' }}
-              >
-                <Grid item xs={8}>
-                  <div
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      display: 'inline-flex',
-                    }}
-                  >
-                    <p
-                      style={{
-                        paddingRight: '2px',
-                      }}
-                    >
-                      {isTmType(props.machineType)
-                        ? 'Tape: '
-                        : 'Consumed Input:'}
-                    </p>
-                    <p>
-                      [
-                      <span
-                        style={{
-                          overflow: 'auto',
-                          whiteSpace: 'nowrap',
-                          color: theme.palette.primary.main,
-                        }}
-                      >
-                        {props.consumedInput.join(', ') ?? ' '}
-                      </span>
-                      ]
-                    </p>
-                  </div>
-                </Grid>
-                <Grid item xs={4}>
-                  <Typography>
-                    Status:{' '}
-                    <span
-                      style={{
-                        color: invariantColor(props.currentTransition.invPass),
-                      }}
-                    >
-                      {formatInvariant(props.currentTransition.invPass)}
-                    </span>
-                  </Typography>
-                </Grid>
-              </Grid>
+              <InvariantDetails
+                consumedInput={props.consumedInput}
+                currentTransition={props.currentTransition}
+                machineType={props.machineType}
+              />
             )}
             {props.state.invFunc ? (
               <SyntaxHighlighter language="racket">

@@ -42,8 +42,8 @@
        (andmap (λ (s) (or (eq? s 'a) (eq? s 'b)))
                (rest ci))))
   ans)
-(sm-visualize a-aUb* (list 'S SS-INV) (list 'F FF-INV))
-(sm-visualize3 a-aUb*
+#;(sm-visualize a-aUb* (list 'S SS-INV) (list 'F FF-INV))
+#;(sm-visualize3 a-aUb*
                (list 'F (inv->string!
                          (lambda (ci)
                            (and (not (empty? ci))
@@ -66,7 +66,7 @@
 #;(sm-visualize2 a* (list 'S (lambda (v) true))
             (list 'F (lambda (v) false)))
 
-#;(define pda-numa=numb (make-ndpda '(S M F)
+(define pda-numa=numb (make-ndpda '(S M F)
                                   '(a b)
                                   '(a b)
                                   'S
@@ -77,6 +77,11 @@
                                     ((M b ,EMP) (M (b)))
                                     ((M a (b)) (M ,EMP))
                                     ((M b (a)) (M ,EMP)))))
+
+(sm-visualize3 pda-numa=numb
+               (list 'S "(lambda (v s) #t)")
+               (list 'F "(lambda (v s) #f)")
+               (list 'M "(lambda (v s) #t)"))
 #|
 ;;---- NDFA ----
 ;; valid input: aaabbb 
