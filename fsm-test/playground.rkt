@@ -12,12 +12,13 @@
 
 
 (define a-aUb*
-  (make-ndfa '(S F J)     ;; the states
+  (make-ndfa '(S F)     ;; the states
              '(a b)     ;; the input alphabet
              'S         ;; the staring state
-             '(F J S)       ;; the set of final states
+             '(F)       ;; the set of final states
              '((S a F)  ;; the transition functions
-               (F a F))
+               (F a F)
+               (F b F))
              'nodead))
 
 (define tmp
@@ -43,7 +44,7 @@
                (rest ci))))
   ans)
 #;(sm-visualize a-aUb* (list 'S SS-INV) (list 'F FF-INV))
-#;(sm-visualize3 a-aUb*
+(sm-visualize3 a-aUb*
                (list 'F (inv->string!
                          (lambda (ci)
                            (and (not (empty? ci))
@@ -372,7 +373,7 @@
 
 
 
-(sm-visualize3 a^nb^nc^n2
+#;(sm-visualize3 a^nb^nc^n2
                (list 'S (inv->string! (lambda (tape posn)
                                         (let ((list-of-xyz (filter (lambda (input) (or (equal? input 'x)
                                                                                        (equal? input 'y)

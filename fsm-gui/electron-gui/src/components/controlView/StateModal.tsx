@@ -1,10 +1,8 @@
 import {
-  Alert,
   Button,
   Dialog,
   DialogActions,
   DialogContent,
-  DialogContentText,
   DialogTitle,
   FormControl,
   Grid,
@@ -16,7 +14,6 @@ import {
   MenuItem,
   Select,
   SelectChangeEvent,
-  Snackbar,
   Stack,
   TextField,
   Typography,
@@ -209,7 +206,6 @@ export const StateModal = (props: StateModalProps) => {
   const filterRules = props.rules.filter(
     (r) => r.start === props.state.name || r.end === props.state.name,
   );
-
   const theme = useTheme();
   return (
     <Dialog

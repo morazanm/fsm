@@ -54,6 +54,7 @@ export default function InputForm(props: InputFormProps) {
     } else {
       props.setInput(props.input.concat(tmp));
       setError('');
+      setData('');
       props.toggle();
     }
   };
@@ -84,6 +85,11 @@ export default function InputForm(props: InputFormProps) {
           fullWidth
           variant="standard"
           helperText={error}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              onSubmit(data);
+            }
+          }}
           onChange={(e) =>
             isTmType(props.machineType)
               ? setData(parseData(e.target.value))
