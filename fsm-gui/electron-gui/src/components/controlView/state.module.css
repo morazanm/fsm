@@ -4,7 +4,7 @@
   --end-state-color: var(--mui-palette-error-light);
   --accept-state-color: var(--mui-palette-info-light);
   --start-state-color: var(--mui-palette-success-light);
-  --normal-state-color: vvar(--mui-palette-text-primary);
+  --normal-state-color: var(--mui-palette-text-primary);
   --state-border-width: 2px;
 }
 
@@ -25,6 +25,7 @@
   display: flex;
   width: var(--state-width);
   height: var(--state-height);
+  transition: 2s;
 }
 
 .normal {
@@ -72,4 +73,12 @@
   border-color: var(--start-state-color);
   border-style: solid;
   border-width: var(--state-border-width);
+}
+
+.test {
+  transition: 2s;
+}
+
+.test:hover {
+  background-color: red;
 }

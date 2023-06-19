@@ -184,7 +184,7 @@ const ControlView = (props: ControlViewProps) => {
             machineType={props.machineType}
             resetMachineAndSet={props.resetMachineAndSet}
             rotate={(360 / props.states.length) * i}
-            style={{ transform: `translateX(${height / 2}px)` }}
+            transform={`translateX(${height / 2}px)`}
           />
         ))}
       </div>

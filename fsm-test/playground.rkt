@@ -78,7 +78,7 @@
                                     ((M a (b)) (M ,EMP))
                                     ((M b (a)) (M ,EMP)))))
 
-(sm-visualize3 pda-numa=numb
+#;(sm-visualize3 pda-numa=numb
                (list 'S "(lambda (v s) #t)")
                (list 'F "(lambda (v s) #f)")
                (list 'M "(lambda (v s) #t)"))
@@ -361,13 +361,68 @@
                    (= (modulo (length list-of-xyz) 3) 0)))))
 
 
-(sm-visualize a^nb^nc^n2 (list 'S S-INV)
+#;(sm-visualize a^nb^nc^n2 (list 'S S-INV)
               (list 'B B-INV)
               (list 'C C-INV)
               (list 'D D-INV)
               (list 'E E-INV)
               (list 'N N-INV)
               (list 'Y Y-INV))
+
+
+
+
+(sm-visualize3 a^nb^nc^n2
+               (list 'S (inv->string! (lambda (tape posn)
+                                        (let ((list-of-xyz (filter (lambda (input) (or (equal? input 'x)
+                                                                                       (equal? input 'y)
+                                                                                       (equal? input 'z)))
+                                                                   tape)))
+                                          (and (equal? 0 (modulo (length list-of-xyz) 3))
+                                               (or
+                                                (let ((num-of-a (get-num-of-x tape 'a)))
+                                                  (implies (or (eq? (list-ref tape posn) 'c)
+                                                               (eq? (list-ref tape posn) 'b))
+                                                           (or (< num-of-a
+                                                                  (get-num-of-x tape 'b))
+                                                               (< num-of-a
+                                                                  (get-num-of-x tape 'c)))))
+
+                                                (implies (equal? (list-ref tape posn) BLANK)
+                                                         (equal? tape `(,LM ,BLANK)))))))))
+               (list 'B (inv->string! (lambda (tape posn)
+                                        (let ((num-z (get-num-of-x tape 'z)))
+                                          (and (> num-z (get-num-of-x tape 'x))
+                                               (> num-z (get-num-of-x tape 'y)))))))
+               (list 'C (inv->string! (lambda (tape posn)
+                                        (let ((num-x (get-num-of-x tape 'x)))
+                                          (and (= num-x (get-num-of-x tape 'z))
+                                               (> num-x (get-num-of-x tape 'y)))))))
+               (list 'D (inv->string! (lambda (tape posn)
+                                        (let ((num-y (get-num-of-x tape 'y)))
+                                          (and (= num-y (get-num-of-x tape 'z))
+                                               (= num-y (get-num-of-x tape 'x)))))))
+               (list 'E (inv->string! (lambda (tape posn)
+                                        (let ((list-of-xyz (filter (lambda (input) (or (equal? input 'x)
+                                                                                       (equal? input 'y)
+                                                                                       (equal? input 'z)))
+                                                                   tape)))
+                                          (= (modulo (length list-of-xyz) 3) 0)))))
+               (list 'N (inv->string! (lambda (tape posn)
+                                        (let ((list-of-xyz (filter (lambda (input) (or (equal? input 'x)
+                                                                                       (equal? input 'y)
+                                                                                       (equal? input 'z)))
+                                                                   tape)))
+                                          (not (= (length list-of-xyz)
+                                                  (sub1 (length tape))))))))
+               (list 'Y (inv->string! (lambda (tape posn)
+                                        (let ((list-of-xyz (filter (lambda (input) (or (equal? input 'x)
+                                                                                       (equal? input 'y)
+                                                                                       (equal? input 'z)))
+                                                                   tape)))
+                                          (and
+                                           (= (length list-of-xyz) (- (length tape) 2))
+                                           (= (modulo (length list-of-xyz) 3) 0)))))))
 
 #|
 (define LB (make-tm '(S H)

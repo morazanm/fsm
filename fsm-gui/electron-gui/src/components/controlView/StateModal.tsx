@@ -10,6 +10,9 @@ import {
   Grid,
   IconButton,
   InputLabel,
+  List,
+  ListItem,
+  ListItemText,
   MenuItem,
   Select,
   SelectChangeEvent,
@@ -33,6 +36,7 @@ import {
   isEndTransition,
   FSMAlpha,
   isPdaTransition,
+  ruleToString,
 } from '../../types/machine';
 import { useState } from 'react';
 import { validateState } from '../../components/rightEditor/forms/StateForm';
@@ -68,7 +72,10 @@ const InvariantDetails = (props: InvariantDetailsProps) => {
     return status ? theme.palette.success.main : theme.palette.error.main;
   };
 
-  const pdaStack = props.currentTransition && isPdaTransition(props.currentTransition) ? props.currentTransition.stack : []
+  const pdaStack =
+    props.currentTransition && isPdaTransition(props.currentTransition)
+      ? props.currentTransition.stack
+      : [];
 
   return (
     <Grid
@@ -77,39 +84,11 @@ const InvariantDetails = (props: InvariantDetailsProps) => {
       spacing={2}
       wrap="nowrap"
       sx={{ overflow: 'auto' }}
+      style={{ marginTop: '0px' }}
     >
       <Grid item xs={7}>
-      <Stack>
-        <div
-          style={{
-            width: '100%',
-            height: '100%',
-            display: 'inline-flex',
-          }}
-        >
-          <p
-            style={{
-              paddingRight: '2px',
-            }}
-          >
-            {isTmType(props.machineType) ? 'Tape: ' : 'Consumed Input:'}
-          </p>
-          <p>
-            [
-            <span
-              style={{
-                overflow: 'auto',
-                whiteSpace: 'nowrap',
-                color: theme.palette.primary.main,
-              }}
-            >
-              {props.consumedInput.join(', ') ?? ' '}
-            </span>
-            ]
-          </p>
-        </div>
-        {props.currentTransition && props.machineType === "pda" && (
-            <div
+        <Stack>
+          <div
             style={{
               width: '100%',
               height: '100%',
@@ -121,7 +100,7 @@ const InvariantDetails = (props: InvariantDetailsProps) => {
                 paddingRight: '2px',
               }}
             >
-            Stack: 
+              {isTmType(props.machineType) ? 'Tape: ' : 'Consumed Input:'}
             </p>
             <p>
               [
@@ -132,12 +111,41 @@ const InvariantDetails = (props: InvariantDetailsProps) => {
                   color: theme.palette.primary.main,
                 }}
               >
-                {pdaStack.join(', ') ?? ' '}
+                {props.consumedInput.join(', ') ?? ' '}
               </span>
               ]
             </p>
           </div>
-        )}
+          {props.currentTransition && props.machineType === 'pda' && (
+            <div
+              style={{
+                width: '100%',
+                height: '100%',
+                display: 'inline-flex',
+              }}
+            >
+              <p
+                style={{
+                  paddingRight: '2px',
+                }}
+              >
+                Stack:
+              </p>
+              <p>
+                [
+                <span
+                  style={{
+                    overflow: 'auto',
+                    whiteSpace: 'nowrap',
+                    color: theme.palette.primary.main,
+                  }}
+                >
+                  {pdaStack.join(', ') ?? ' '}
+                </span>
+                ]
+              </p>
+            </div>
+          )}
         </Stack>
       </Grid>
       <Grid item xs={5}>
@@ -198,11 +206,15 @@ export const StateModal = (props: StateModalProps) => {
     return false;
   };
 
+  const filterRules = props.rules.filter(
+    (r) => r.start === props.state.name || r.end === props.state.name,
+  );
+
   const theme = useTheme();
   return (
     <Dialog
       open={props.open}
-      keepMounted
+      fullWidth
       maxWidth="md"
       onClose={props.onClose}
       aria-describedby="alert-dialog-slide-description"
@@ -254,6 +266,7 @@ export const StateModal = (props: StateModalProps) => {
               )}
             </Select>
           </FormControl>
+          <hr />
           <Stack spacing={2} sx={{ paddingTop: 2 }}>
             <Typography variant="h6">Invariant:</Typography>
             {showInvDetails(props.currentTransition) && (
@@ -274,6 +287,17 @@ export const StateModal = (props: StateModalProps) => {
                 associated with this state to view the invariant here.
               </Typography>
             )}
+          </Stack>
+          <hr />
+          <Stack spacing={2} sx={{ paddingTop: 2 }}>
+            <Typography variant="h6">Rules:</Typography>
+            <List dense={true} style={{ marginTop: '0px' }}>
+              {filterRules.map((r) => (
+                <ListItem>
+                  <ListItemText primary={ruleToString(r)} />
+                </ListItem>
+              ))}
+            </List>
           </Stack>
         </div>
       </DialogContent>
