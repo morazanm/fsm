@@ -1,13 +1,10 @@
 #lang racket
 (require (for-syntax
-          racket/syntax
-          syntax/stx
           syntax/parse
           racket/bool
           racket/list
-          racket/string
-          syntax/to-string
-          racket/match))
+          racket/match
+          syntax/to-string))
 
 (begin-for-syntax
   ;; member-stx :: syntax -> [syntax] -> boolean
@@ -76,53 +73,91 @@
   (define (invalid-alpha-name? stx)
     (match (stx->char-list stx)
       [`(,c) #:when (char-lower-case? c) #f]
-      [_ stx])))
+      [_ stx]))
+
+  (define (invalid-lostx? stx pred)
+    (or (ormap pred (syntax->list stx))
+        (not (equal? (remove-duplicates (syntax->list stx))
+                     (syntax->list stx))))
+    )
+
+  (define (construct-error-message pred name-of-list stx)
+    (string-append
+     (let ([duplicates (return-all-duplicates (syntax->list stx))])
+       (if (empty? duplicates)
+           ""
+           (format "\n\tDuplicates in list: ~s " duplicates)))
+     (let ([invalids (foldr (λ (s acc) (if (pred s)
+                                           (cons (syntax->datum s) acc)
+                                           acc))
+                            empty
+                            (map (lambda (x) (datum->syntax stx x))
+                                 (remove-duplicates
+                                  (map syntax->datum (syntax->list stx))
+                                  )
+                                 )
+                            )])
+       (if (empty? invalids)
+           ""
+           (format "\n\tInvalid ~a elements: ~s" name-of-list invalids)) 
+       )))
+  
+  (define (return-all-duplicates los)
+    (define (helper list-of-symbols duplicates)
+      (cond [(empty? list-of-symbols) duplicates]
+            [(member (car list-of-symbols) (cdr list-of-symbols))
+             (helper (cdr list-of-symbols)
+                     (cons (car list-of-symbols) duplicates))]
+            [else (helper (cdr list-of-symbols)
+                          duplicates)]))
+    (remove-duplicates (helper (map syntax->datum los) '()))
+    )
+  )
 
 (define-syntax (make-dfa stx)
-
   ;; syntax class for a single state 
   (define-syntax-class state
-    #:description "A single state of the machine"
+    #:description "a single state of the machine"
     (pattern field:id
-      #:fail-when (invalid-state-name? #'field)
-      "Invalid state name"))
+             #:fail-when (invalid-state-name? #'field)
+             "Invalid state name"))
 
   ;; syntax class for a single alphabet
   (define-syntax-class alpha
-    #:description "A single alphabet for the machine"
+    #:description "a single alphabet for the machine"
     (pattern field:id
-      #:fail-when (invalid-alpha-name? #'field)
-      "Invalid alphabet name"))
+             ;#:fail-when (invalid-alpha-name? #'field)
+             #;"Alphabet member is not a single lowercase letter."))
   
   ;; syntax class for a list of states
   (define-syntax-class states
-    #:description "The states that the machine can transition to"
-    (pattern '(fields:state ...)        
-      #:fail-when (check-duplicate-identifier (syntax->list #'(fields ...)))
-                   
-      "Duplicate state name or invalid state name"))
+    #:description "the states that the machine can transition to"
+    (pattern '(fields ...)
+             #:fail-when (invalid-lostx? #'(fields ...) invalid-state-name?)
+             (construct-error-message invalid-state-name? "states" #'(fields ...))))
+
 
   ;; syntax class for a list of alphabet
   (define-syntax-class alphas
-    #:description "The alphabet that the machine accepts"
-    (pattern '(fields:alpha ...)
-      #:fail-when  (check-duplicate-identifier (syntax->list #'(fields ...)))
-                   
-      "Duplicate state name or invalid state name"))
+    #:description "the input alphabet:"
+    (pattern '(fields ...)
+             #:fail-when (invalid-lostx? #'(fields ...) invalid-alpha-name?)
+             (construct-error-message invalid-alpha-name? "alphabet" #'(fields ...))))
+
 
   ;; syntax class for start state
   (define-syntax-class start
     #:description "The starting state of the machine"
     (pattern `field:id
-      #:fail-when (invalid-state-name? #'field)
-      "Invalid start state name"))
+             #:fail-when (invalid-state-name? #'field)
+             "Invalid start state name"))
 
   ;; syntax class for a list of finals 
   (define-syntax-class finals
     #:description "The final states of the machine"
     (pattern '(fields:state ...)
-      #:fail-when (check-duplicate-identifier (syntax->list #'(fields ...)))
-      "Duplicate or invalid final state name"))
+             #:fail-when (check-duplicate-identifier (syntax->list #'(fields ...)))
+             "Duplicate or invalid final state name"))
 
   ;; syntax class for a list of rules
   (define-syntax-class rules
@@ -149,8 +184,11 @@
 
 
 (make-dfa '(A B-1 C)
-          '(a b c)
-          'A
-          '(A B-1 C)
-          '((A a C)
-            (B-1 a A)))
+          '(a)
+          'D
+          '(A C)
+          '(
+            (A a C)
+            (B-1 a A)
+            )
+          )
