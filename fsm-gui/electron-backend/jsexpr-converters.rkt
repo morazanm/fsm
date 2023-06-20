@@ -259,6 +259,7 @@
   ;; runs the invariant. If there is a syntax error then the error message is returned
   ;; TODO: Document this more once I have a better understanding of racket macro namespaces https://stackoverflow.com/questions/57927786/how-to-obtain-namespace-of-a-custom-lang-in-racket
   (define (run-racket-code invariant)
+    (define (truthy? x) (not (false? x)))
     (define ns (make-base-namespace))
     (namespace-attach-module (current-namespace) 'racket ns)
     (parameterize ([current-namespace (make-base-namespace)])
@@ -266,8 +267,17 @@
       (with-handlers ([exn:fail? (lambda (e)
                                    (displayln (format "[FSM Internal Error @ (invariant check)]: ~s" (exn-message e)))
                                    (exn-message e))])
-        (not (false? (apply (eval (read (open-input-string invariant)))
-                            (if (null? args) (list null) args)))))))
+        (define res (eval (read (open-input-string invariant))))
+        (define inv-args (if (null? args) (list null) args))
+        (truthy? (match res
+                   ;; if res is void then its in the form (define (...) ...) so we need to apply the name
+                   [(? void?)
+                    (define f-name (regexp-replace
+                                    #px"\\(define *\\([\\s]*"
+                                    (first (regexp-match #px"\\(define *\\([\\s]*[A-z]*" invariant))
+                                    ""))
+                    (apply (eval (string->symbol f-name)) inv-args)]
+                   [_ (apply res inv-args)])))))
   (define inv (findf (lambda (i) (equal? (car i) state)) invariants))
   (match inv
     ;; for hot realoading code
@@ -330,7 +340,7 @@
                                           'action "accept"
                                           'invPass #f)))
 
-                  (define invariants (list (cons 'S "(lambda (v) #t)")
+                  (define invariants (list (cons 'S "(define (test v) #t)")
                                            (cons 'F "(lambda (v) #f)")))
                   (define actual (transitions->jsexpr
                                   a*a
@@ -539,11 +549,11 @@
                                           (F b D)
                                           (D a D)
                                           (D b D))'nodead))
-                  (define invariants (list (cons 'S (inv->string! (lambda (consumed-input) 1)))
+                  (define invariants (list (cons 'S (inv->string! (define (test consumed-input) 1)))
                                            (cons 'F (inv->string! (lambda (consumed-input) 2)))
                                            (cons 'D (inv->string! (lambda (consumed-input) 3)))))
                   (check-equal? (fsa->jsexpr a*a invariants #t)
-                                (hash 'states (list (hash 'name "S" 'type "start" 'invFunc "(lambda (consumed-input) 1)")
+                                (hash 'states (list (hash 'name "S" 'type "start" 'invFunc "(define (test consumed-input) 1)")
                                                     (hash 'name "A" 'type "normal" 'invFunc (json-null))
                                                     (hash 'name "F" 'type "final" 'invFunc "(lambda (consumed-input) 2)")
                                                     (hash 'name "D" 'type "normal" 'invFunc "(lambda (consumed-input) 3)"))
