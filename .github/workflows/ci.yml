@@ -7,8 +7,6 @@ on:
     branches: [ master ]
 
 jobs:
-  build:
-  # This workflow contains a single job called "build"
   test:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
