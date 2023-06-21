@@ -4,7 +4,8 @@
           racket/bool
           racket/list
           racket/match
-          syntax/to-string))
+          syntax/to-string
+          syntax/stx))
 
 (begin-for-syntax
   ;; member-stx :: syntax -> [syntax] -> boolean
@@ -44,8 +45,8 @@
   ;; If there is invalid form then the invalid syntax is returned to racket can
   ;; highlight the appropriate syntax to error on
   (define (invalid-rules? rule-starts rule-alphas rule-ends alphas states)
-    (define rule-states (remove-duplicates (append  rule-starts
-                                                    rule-ends)))
+    (define rule-states (remove-duplicates (append rule-starts
+                                                   rule-ends)))
     (define check1 (lists-eq-error rule-states states))
     (if (false? check1)
         (let ([check2 (lists-eq-error rule-alphas alphas)])
@@ -135,24 +136,38 @@
                           duplicates)]))
     (remove-duplicates (helper (map syntax->datum los) '()))
     )
-  (define (define-pairs s-list a-list)
-    (define (make-pairs state-list alpha-list acc)
-      (cond [(empty? state-list) acc]
-            [else (make-pairs (cdr state-list)
-                              alpha-list
-                              (append
-                               (pair-alpha (car state-list)
-                                           alpha-list
-                                           '())
-                               acc))]))
-    (make-pairs s-list a-list '()))
-  (define (pair-alpha state alpha-list acc)
-    (cond [(empty? alpha-list) acc]
-          [else (pair-alpha
-                 state
-                 (cdr alpha-list)
-                 (cons (list state (car alpha-list))
-                       acc))]))
+
+  ;takes in (list of (pair of syntax for symbols))
+  (define (return-duplicate-rules lor)
+    (define no-duplicates (remove-duplicates lor compare-rule-start))
+    (foldr (lambda (x y) (if (member x no-duplicates)
+                             y
+                             (cons x y))) '() lor)
+    )
+
+  
+  (define (compare-rule-start rule1 rule2)
+    (equal? (list (syntax-e (car rule1))
+                  (syntax-e (car (cdr rule1))))
+            (list (syntax-e (car rule2))
+                  (syntax-e (car (cdr rule2))))))
+  
+  (define (check-functional rule-list state-list alpha-list)
+    (define rule-start-list (map (lambda (x) (list (car x) (car (cdr x)))) rule-list))
+    (define duplicate-rules (return-duplicate-rules rule-start-list))
+    (if (empty? duplicate-rules)
+        #f
+        ;(check-included rule-start-list (cartesian-product state-list alpha-list))
+        duplicate-rules)
+    )
+
+  (define (check-included rule-list pair-list)
+    (define leftovers (foldr (lambda (x y) (if (member-stx? x rule-list)
+                                               y
+                                               (cons x y))) '() pair-list))
+    (if (empty? leftovers) #f
+        (format "Must have rules for state/alphabet pairs ~s" leftovers)))
+    
   )
 
 
@@ -230,16 +245,26 @@
                                   (syntax->list #`(a.fields ...))
                                   (syntax->list #`(sts.fields ...)))
      "Invalid rules supplied:"
+     ;error?: syntax or #f
+     #:with error? (check-functional (stx-map syntax-e #`((r.s1 r.a r.s2) ...))
+                                     (syntax->list #`(sts.fields ...))
+                                     (syntax->list #`(a.fields ...)))
+     #:fail-when (if (syntax-e #'error?)
+                     #'r
+                     #f)
+     (format "State/alphabet pair ~s is duplicated in rules" (syntax-e #'error?))
+     
      (begin
        #`(void))]))
 
-(make-dfa '(A B-1 R C D)
-          '(a b e)
+(make-dfa '(A B C)
+          '(a)
           'A
-          '(A C)
+          '(A)
           '(
-            (A a C)
-            (B-1 a A)
+            (A a B)
+            (B a B)
+            (B a C)
             )
           'no-dead
           )
