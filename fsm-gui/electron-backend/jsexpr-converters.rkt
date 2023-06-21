@@ -145,10 +145,10 @@
     (if (or (equal? t2 'reject) (equal? t2 'accept))
         (hash 'end (symbol->string (cadr t1))
               'action (symbol->string t2)
-              'invPass (compute-inv (cadr t1) invariants (reverse full-input)))
+              'invPass (compute-inv (cadr t1) invariants full-input))
         (match-let* ([`(,(and input1 `(,i1 ...)) ,s1) t1]
                      [`(,(and input2 `(,i2 ...)) ,s2) t2]
-                     [consumed-input (reverse (drop-right full-input (length input2)))])
+                     [consumed-input (drop-right full-input (length input2))])
           (hash 'rule (hash 'start (symbol->string s1)
                             'input (symbol->string
                                     (if (equal? (length input1) (length input2))
@@ -187,7 +187,7 @@
       [(or (equal? t2 'accept) (equal? t2 'reject))
        (values (hash 'end (symbol->string (car t1))
                      'action (symbol->string t2)
-                     'invPass (compute-inv (car t1) invariants (reverse full-input) current-stack))
+                     'invPass (compute-inv (car t1) invariants full-input current-stack))
                current-stack)]
       [else
        (match-define `(,next-state ,next-input ,next-stack) t2)
@@ -231,7 +231,7 @@
                                            [_ cur-rule]))
                      'invPass (compute-inv next-state
                                            invariants
-                                           (reverse (drop-right full-input (length next-input)))
+                                           (drop-right full-input (length next-input))
                                            new-stack)
                      'stack (map symbol->string new-stack))
                new-stack)]))
