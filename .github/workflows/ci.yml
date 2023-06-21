@@ -1,4 +1,4 @@
-name: Test FSM Library
+name: Build and Test FSM Library
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
@@ -14,7 +14,7 @@ jobs:
       matrix:
         racket-variant: ["CS"]  
         racket-version: ["stable"]
-    name: Run Library Tests on ${{ matrix.racket-variant }} Racket
+    name: Runs on ${{ matrix.racket-variant }} Racket
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       - name: Checkout 
@@ -27,8 +27,7 @@ jobs:
           distribution: 'full' # or: 'minimal'
           variant: ${{ matrix.racket-variant }} # Taken from `racket-variant: ["CS"]`
           version: ${{ matrix.racket-version }} # Taken from `racket-version: ["stable"]`
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      # - uses: actions/checkout@v2
+      # Build FSM
       - name: Build FSM Library
         run: xvfb-run raco pkg install
       # Kick off the tests
