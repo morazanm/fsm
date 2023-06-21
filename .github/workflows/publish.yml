@@ -2,8 +2,12 @@ name: Build_Electron_GUI
   # Triggers the workflow on push or pull request events but only for the master branch
 on:
   push:
+    paths:
+      - 'fsm-gui/electron-gui/**'
     branches: [ master ]
   pull_request:
+    paths:
+      - 'fsm-gui/electron-gui/**'
     branches: [ master ]
 # Script taken from:
 # https://dev.to/erikhofer/build-and-publish-a-multi-platform-electron-app-on-github-3lnd
