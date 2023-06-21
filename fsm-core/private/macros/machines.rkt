@@ -26,6 +26,18 @@
                                                                     stx-list)]
       [else (car target-stx-list)]))
 
+  (define (check-finals stxlist slist)
+    (define (helper stx-list state-list acc)
+      (cond [(empty? stx-list) (if (empty? acc) #f acc)]
+            [(member-stx? (car stx-list) state-list) (helper (cdr stx-list)
+                                                             state-list
+                                                             acc)]
+            [else (helper (cdr stx-list)
+                          state-list
+                          (cons (car stx-list) acc))]))
+    (helper stxlist slist '())
+    )
+
 
   ;; invalid-rules? :: [syntax] -> [syntax] ->  [syntax] ->  [syntax] ->  [syntax] ->  syntax | boolean
   ;; returns false if all rule start, ends, and alphas are vaild for the machine.
@@ -49,6 +61,8 @@
   (define (stx->char-list stx)
     ((compose string->list symbol->string syntax-e) stx))
 
+  
+
   ;; invalid-state-name? :: syntax -> boolean | syntax
   ;; Determies if the given syntax is a valid state name. If there is invalid form
   ;; then the invalid syntax is returned to racket can highlight the appropriate syntax to error on
@@ -57,14 +71,15 @@
   ;; - Number
   ;; - The character `-`
   (define (invalid-state-name? stx)
-    (define (helper c-list)
-      (cond
-        [(empty? c-list) #f]
-        [(not (or (char-upper-case? (car c-list))
-                  (char-numeric? (car c-list))
-                  (eq? (car c-list) #\-))) stx]
-        [else (helper (cdr c-list))]))
-    (helper (stx->char-list stx)))
+    (define (valid-state-name? state-name)
+      (define regex-pattern #px"^[A-Z](?:-[0-9]+)?$")
+      (regexp-match regex-pattern state-name))
+    (define state-name (syntax->datum stx))
+    (if (or (not (symbol? state-name))
+            (false? (valid-state-name? (symbol->string state-name))))
+        stx
+        #f)
+    )
 
   ;; invalid-alpha-name? :: syntax -> boolean | syntax
   ;; Determies if the given syntax is a valid alpha name. If there is invalid form
@@ -76,10 +91,18 @@
       [_ stx]))
 
   (define (invalid-lostx? stx pred)
-    (or (ormap pred (syntax->list stx))
-        (not (equal? (remove-duplicates (syntax->list stx))
-                     (syntax->list stx))))
-    )
+    (define failing-list
+      (foldl (lambda (x y) (if (pred x)
+                               (cons x y)
+                               y))
+             '()
+             (syntax->list stx)))
+    (define duplicates (return-all-duplicates (syntax->list stx)))
+    (if (and (empty? failing-list)
+             (empty? duplicates)) #f
+                                  (if (empty? failing-list) duplicates
+                                      failing-list)))
+        
 
   (define (construct-error-message pred name-of-list stx)
     (string-append
@@ -112,7 +135,26 @@
                           duplicates)]))
     (remove-duplicates (helper (map syntax->datum los) '()))
     )
+  (define (define-pairs s-list a-list)
+    (define (make-pairs state-list alpha-list acc)
+      (cond [(empty? state-list) acc]
+            [else (make-pairs (cdr state-list)
+                              alpha-list
+                              (append
+                               (pair-alpha (car state-list)
+                                           alpha-list
+                                           '())
+                               acc))]))
+    (make-pairs s-list a-list '()))
+  (define (pair-alpha state alpha-list acc)
+    (cond [(empty? alpha-list) acc]
+          [else (pair-alpha
+                 state
+                 (cdr alpha-list)
+                 (cons (list state (car alpha-list))
+                       acc))]))
   )
+
 
 (define-syntax (make-dfa stx)
   ;; syntax class for a single state 
@@ -131,8 +173,11 @@
   
   ;; syntax class for a list of states
   (define-syntax-class states
-    #:description "the states that the machine can transition to"
+    #:description "the machine's states"
     (pattern '(fields ...)
+             #:fail-when (invalid-lostx? #'(fields ...) invalid-state-name?)
+             (construct-error-message invalid-state-name? "states" #'(fields ...)))
+    (pattern (list fields ...)
              #:fail-when (invalid-lostx? #'(fields ...) invalid-state-name?)
              (construct-error-message invalid-state-name? "states" #'(fields ...))))
 
@@ -147,14 +192,14 @@
 
   ;; syntax class for start state
   (define-syntax-class start
-    #:description "The starting state of the machine"
-    (pattern `field:id
+    #:description "the starting state of the machine"
+    (pattern `field
              #:fail-when (invalid-state-name? #'field)
-             "Invalid start state name"))
+             (format "~s is an invalid start state name" (syntax->datum #'field))))
 
   ;; syntax class for a list of finals 
   (define-syntax-class finals
-    #:description "The final states of the machine"
+    #:description "the final states of the machine"
     (pattern '(fields:state ...)
              #:fail-when (check-duplicate-identifier (syntax->list #'(fields ...)))
              "Duplicate or invalid final state name"))
@@ -165,13 +210,19 @@
     (pattern '((s1:state a:alpha s2:state) ...)))
   
   (syntax-parse stx
-    [(_ sts:states a:alphas s:start f:finals r:rules)
+    [(_ sts:states a:alphas s:start f:finals r:rules (~optional (~var no-dead)))
      ;; Make sure the start state is in the list of states
      #:fail-when (false? (member-stx? #`s.field (syntax->list #`(sts.fields ...))))
-     (raise-syntax-error #f "Start state must be in the list of states" #`s)
+     (raise-syntax-error 'make-dfa
+                         (format "Start state must be in the list of states ~s" (syntax->datum #`(sts.fields ...)))
+                         #'s)
      ;; Make sure the final states are in the list of states
-     #:fail-when (lists-eq-error (syntax->list #`(f.fields ...)) (syntax->list #`(sts.fields ...)))
-     "Final state must be in the list of states"
+     #:with failing-finals (check-finals (syntax->list #`(f.fields ...)) (syntax->list #`(sts.fields ...)))
+     #:fail-when (if (boolean? (syntax-e #'failing-finals)) #f #`f)
+     (format "final states ~s must be in the list of states ~s"
+             (syntax->datum #'failing-finals)
+             (syntax->datum #`(sts.fields ...))
+             )
      ;; Make sure the rules checkout
      #:fail-when (invalid-rules?  (syntax->list #`(r.s1 ...))
                                   (syntax->list #`(r.a ...))
@@ -182,13 +233,62 @@
      (begin
        #`(void))]))
 
+(make-dfa '(A B-1 R C D)
+          '(a b e)
+          'A
+          '(A C)
+          '(
+            (A a C)
+            (B-1 a A)
+            )
+          'no-dead
+          )
 
-(make-dfa '(A B-1 C)
-          '(a)
-          'D
+(make-dfa '(A B-1 R C D)
+          '(a b e)
+          'A
           '(A C)
           '(
             (A a C)
             (B-1 a A)
             )
           )
+
+(make-dfa (list A B-1 R C D)
+          '(a b e)
+          'A
+          '(A C)
+          '(
+            (A a C)
+            (B-1 a A)
+            )
+          )
+
+(make-dfa '(A B-1 R C D)
+          '(a b e)
+          'A
+          '(A C)
+          '(
+            (A a C)
+            (B-1 a A)
+            )
+          )
+
+(make-dfa '(A B-1 R C D)
+          '(a b e)
+          'R
+          '(A C)
+          '(
+            (A a C)
+            (B-1 a A)
+            )
+          )
+
+(make-dfa '(A B-1 R C D)
+          '(a b e)
+          'D
+          '(A C)
+          '(
+            (A a C)
+            (B-1 a A)
+            ))
