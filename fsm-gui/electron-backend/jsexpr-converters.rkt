@@ -274,7 +274,7 @@
                    [(? void?)
                     (define f-name (regexp-replace
                                     #px"\\(define *\\([\\s]*"
-                                    (first (regexp-match #px"\\(define *\\([\\s]*[A-z]*" invariant))
+                                    (first (regexp-match #px"\\(define *\\([\\s]*[^ ]*" invariant))
                                     ""))
                     (apply (eval (string->symbol f-name)) inv-args)]
                    [_ (apply res inv-args)])))))
@@ -340,7 +340,7 @@
                                           'action "accept"
                                           'invPass #f)))
 
-                  (define invariants (list (cons 'S "(define (test v) #t)")
+                  (define invariants (list (cons 'S "(define (test-1 v) #t)")
                                            (cons 'F "(lambda (v) #f)")))
                   (define actual (transitions->jsexpr
                                   a*a

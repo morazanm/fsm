@@ -13,8 +13,7 @@ docs:
 .PHONY: docs
 
 clean:
+	find . -type d -name compiled | xargs rm -rfv
 	rm -vf fsm-docs/*.{html,js,png,css}
 
-rebuild:
-	find . -type d -name compiled | xargs rm -rf
 .PHONY: clean
