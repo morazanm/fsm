@@ -235,7 +235,7 @@
     #:description "The transition rules thae the machine must follow"
     (pattern '((s1:state a:alpha s2:state) ...)
              #:with duplicates (check-functional (build-rules-from-lists #`(s1 ...) #`(a ...) #`(s2 ...)))
-             #:fail-when (if #'duplicates #`duplicates #f)
+             #:fail-when (if #'duplicates (build-rules-from-lists #`(s1 ...) #`(a ...) #`(s2 ...)) #f)
              (format "~s duplicate as a state/alphabet pairs in your list of rules" (syntax->datum #'duplicates))
              ))
   
