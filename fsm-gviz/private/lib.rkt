@@ -130,7 +130,7 @@
 (define (add-node g name #:atb [atb DEFAULT-NODE])
   (graph
    (graph-name g)
-   (cons (node (remove-dashes name)
+   (cons (node (clean-string name)
                (hash-set atb 'label (stringify-value name)))
          (graph-node-list g))
    (graph-edge-list g)
@@ -141,7 +141,7 @@
 ;; add-nodes: graph listof(symbol) Optional(hash-map) -> graph
 ;; Purpose: adds the list of nodes to the given graph
 (define (add-nodes g names #:atb [atb DEFAULT-NODE])
-  (define nodes-to-add (map (lambda (n) (node (remove-dashes n)
+  (define nodes-to-add (map (lambda (n) (node (clean-string n)
                                               (hash-set atb 'label (stringify-value n))))
                             names))
   (graph
@@ -157,16 +157,16 @@
 ;; NOTE: a edges label is a list since we squash all edges between the same nodes
 ;; into a single edge
 (define (add-edge g val start-node end-node #:atb [atb DEFAULT-EDGE])
-  (define start (remove-dashes start-node))
-  (define end (remove-dashes end-node))
+  (define start (clean-string start-node))
+  (define end (clean-string end-node))
   (define (edge-eq? e) (and (equal? start (edge-start-node e))
                             (equal? end (edge-end-node e))))      
   (define edge-index (index-where (graph-edge-list g) edge-eq?))
   (graph (graph-name g)
          (graph-node-list g)
          (if (equal? #f edge-index)
-             (cons (edge (remove-dashes start-node)
-                         (remove-dashes end-node)
+             (cons (edge (clean-string start-node)
+                         (clean-string end-node)
                          (hash-set atb 'label (list val)))
                    (graph-edge-list g))
              (list-update (graph-edge-list g)
@@ -192,10 +192,11 @@
            (match-define (list start end val) e)
            (add-edge a val start end #:atb atb)) g edgs))
 
-; remove-dashes: symbol -> symbol
-; Purpose: Remove dashes from the given symbol
-(define (remove-dashes s)
-  (string->symbol (string-replace (stringify-value s) "-" "")))
+; clean-string: symbol -> symbol
+; Purpose: cleans the string to only have valid dot language id symbols
+; https://graphviz.org/doc/info/lang.html
+(define (clean-string s)
+  (string->symbol (string-replace (string-replace (stringify-value s) "-" "") " " "__")))
 
 ;; graph->dot: graph path string -> path
 ;; Purpose: writes graph to the specified file
@@ -278,11 +279,11 @@
 (module+ test
   (require rackunit)
 
-  (check-equal? (add-nodes (create-graph 'test) '(A B C D E-1))
+  (check-equal? (add-nodes (create-graph 'test) '(|A A| B C D E-1))
                 (graph
                  'test
                  (list
-                  (node 'A #hash((color . "black") (label . "A") (shape . "circle")))
+                  (node 'A__A #hash((color . "black") (label . "A A") (shape . "circle")))
                   (node 'B #hash((color . "black") (label . "B") (shape . "circle")))
                   (node 'C #hash((color . "black") (label . "C") (shape . "circle")))
                   (node 'D #hash((color . "black") (label . "D") (shape . "circle")))
