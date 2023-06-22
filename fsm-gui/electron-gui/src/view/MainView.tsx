@@ -95,15 +95,16 @@ const MainView = (props: MainViewProps) => {
   });
   const skipRedraw = useRef(true);
   const [waitingForResponse, setWaitingForResponse] = useState(false);
+  const waitingForResponseRef = useRef(waitingForResponse);
   const [view, setView] = useState<View>('control');
   const [machineState, setMachineState] = useState<MachineState>({
     states: [],
     rules: [],
-    alphabet: ['@'],
+    alphabet: [],
     stackAlpha: [],
-    input: ['@'],
+    input: [],
     transitions: EMPTY_TRANSITIONS,
-    type: 'tm',
+    type: 'dfa',
     nodead: true,
     accept: null,
     initialTapePosition: 0,
@@ -195,6 +196,28 @@ const MainView = (props: MainViewProps) => {
       ? `file://${machineState.graphVizImage}`
       : '';
   };
+
+  useEffect(() => {
+    setTimeout(() => {
+      if(waitingForResponseRef.current) {
+        openInfoDialog(
+          'FSM Server Timeout',
+          <Typography>
+            FSM backend timeout. Please make sure the backend is connected.
+            <br />
+            To reconnect Please try running in the Racket REPL:
+            <SyntaxHighlighter language="racket">
+              (sm-visualize2 ...)
+            </SyntaxHighlighter>
+          </Typography>,
+        );
+        setWaitingForResponse(false)
+      }
+    }, 10_000)
+
+    waitingForResponseRef.current = waitingForResponse;
+
+  }, [waitingForResponse])
 
   useEffect(() => {
     setConnected({ connected: props.racketBridge.connected, status: 'done' });

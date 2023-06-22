@@ -89,7 +89,7 @@ export const AlphaModal = (props: AlphaModalProps) => {
       <DialogActions>
         <Button
           onClick={() => {
-            const values = input.trim().split(' ');
+            const values = [...new Set(input.trim().split(' '))];
             const invalid_alpha = values.filter(
               (v) => !props.alpha.includes(v),
             );
@@ -111,7 +111,7 @@ export const AlphaModal = (props: AlphaModalProps) => {
         </Button>
         <Button
           onClick={() => {
-            const values = input.trim().split(' ');
+            const values = [...new Set(input.trim().split(' '))];
             const alpha_to_add = values.filter((v) => !props.alpha.includes(v));
             const is_valid = alpha_to_add.reduce(
               (a, v) => a && validateText(v),
@@ -196,7 +196,7 @@ export const GammaModal = (props: GammaModalProps) => {
       <DialogActions>
         <Button
           onClick={() => {
-            const values = input.trim().split(' ');
+            const values = [...new Set(input.trim().split(' '))];
             const invalid_alpha = values.filter(
               (v) => !props.stackAlpha.includes(v),
             );
@@ -220,7 +220,7 @@ export const GammaModal = (props: GammaModalProps) => {
         </Button>
         <Button
           onClick={() => {
-            const values = input.trim().split(' ');
+            const values = [...new Set(input.trim().split(' '))];
             const alpha_to_add = values.filter(
               (v) => !props.stackAlpha.includes(v),
             );

@@ -69,7 +69,6 @@
 ;; run-with-prebuilt-hotload :: fsa listof(cons symbol string) -> ()
 ;; Runs the TCP server and sends the prebuild machine to the GUI.
 (define (run-with-prebuilt-hotload fsa invariants)
-  (println invariants)
   (define listener (tcp-listen PORT 4 #t ADDRESS))
   (displayln! "FSM Gui server listenting at ~s on port ~s" ADDRESS PORT)
   (define data-to-send (hash 'data (fsa->jsexpr fsa invariants)
