@@ -254,15 +254,15 @@
      #:fail-when (if (syntax-e #'error?)
                      #'r
                      #f)
-     (format "State/alphabet pair ~s is duplicated in rules" (syntax-e #'error?))
+     (format "State/alphabet pairs ~s is duplicated in rules" (map syntax->datum (syntax-e #'error?)))
      
-     #:with error(check-included (stx-map syntax-e #`((r.s1 r.a r.s2) ...))
+     #:with error (check-included (stx-map syntax-e #`((r.s1 r.a r.s2) ...))
                                  (cartesian-product (syntax->list #`(sts.fields ...))
                                                     (syntax->list #`(a.fields ...))))
      #:fail-when (if (syntax-e #'error)
                      #'r
                      #f)
-     (format "Must have rules for state/alphabet pair ~s" (syntax-e #'error))
+     (format "Must have rules for state/alphabet pairs: ~s" (map syntax->datum (syntax-e #'error)))
      
      (begin
        #`(void))]))
@@ -273,58 +273,58 @@
           '(A)
           '(
             (A a B)
-            (A a C)
+            (B a B)
+            (A a B)
             (B a A)
-            (B a C)
             )
           'no-dead
           )
 
-(make-dfa '(A B-1 R C D)
-          '(a b e)
-          'A
-          '(A C)
-          '(
-            (A a C)
-            (B-1 a A)
-            )
-          )
-
-(make-dfa (list A B-1 R C D)
-          '(a b e)
-          'A
-          '(A C)
-          '(
-            (A a C)
-            (B-1 a A)
-            )
-          )
-
-(make-dfa '(A B-1 R C D)
-          '(a b e)
-          'A
-          '(A C)
-          '(
-            (A a C)
-            (B-1 a A)
-            )
-          )
-
-(make-dfa '(A B-1 R C D)
-          '(a b e)
-          'R
-          '(A C)
-          '(
-            (A a C)
-            (B-1 a A)
-            )
-          )
-
-(make-dfa '(A B-1 R C D)
-          '(a b e)
-          'D
-          '(A C)
-          '(
-            (A a C)
-            (B-1 a A)
-            ))
+;(make-dfa '(A B-1 R C D)
+;          '(a b e)
+;          'A
+;          '(A C)
+;          '(
+;            (A a C)
+;            (B-1 a A)
+;            )
+;          )
+;
+;(make-dfa (list A B-1 R C D)
+;          '(a b e)
+;          'A
+;          '(A C)
+;          '(
+;            (A a C)
+;            (B-1 a A)
+;            )
+;          )
+;
+;(make-dfa '(A B-1 R C D)
+;          '(a b e)
+;          'A
+;          '(A C)
+;          '(
+;            (A a C)
+;            (B-1 a A)
+;            )
+;          )
+;
+;(make-dfa '(A B-1 R C D)
+;          '(a b e)
+;          'R
+;          '(A C)
+;          '(
+;            (A a C)
+;            (B-1 a A)
+;            )
+;          )
+;
+;(make-dfa '(A B-1 R C D)
+;          '(a b e)
+;          'D
+;          '(A C)
+;          '(
+;            (A a C)
+;            (B-1 a A)
+;            ))
