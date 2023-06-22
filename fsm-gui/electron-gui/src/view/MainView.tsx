@@ -135,6 +135,17 @@ const MainView = (props: MainViewProps) => {
     }
   };
 
+  const setTransIndex = (idx: number) => {
+    setMachineState({
+      ...machineState,
+      transitions: {
+        transitions: machineState.transitions.transitions,
+        inputIndex: idx,
+        index: idx,
+      },
+    });
+  };
+
   const redrawnGraph = () => {
     props.racketBridge.sendToRacket(
       {
@@ -530,7 +541,8 @@ const MainView = (props: MainViewProps) => {
                 setView={setGuiView}
                 currentView={view}
                 transitions={machineState.transitions}
-                currentTransition={currentTransition}
+                currentTransIndex={machineState.transitions.index}
+                setTransIndex={setTransIndex}
               />
             </Grid>
           </Grid>

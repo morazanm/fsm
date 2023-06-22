@@ -258,3 +258,16 @@ export const extractInputFromRule = (rule: FSMRule): string => {
   }
   throw Error('Invalid rule supplied');
 };
+
+export function isTransitionsEqual(
+  t1: FSMTransition,
+  t2: FSMTransition,
+): boolean {
+  if (isEndTransition(t1) && isEndTransition(t2)) return t1.end === t2.end;
+  if (isStartTransition(t1) && isStartTransition(t2))
+    return t1.start === t2.start;
+  if (isNormalTransition(t1) && isNormalTransition(t2)) {
+    return ruleToString(t1.rule) === ruleToString(t2.rule);
+  }
+  return false;
+}

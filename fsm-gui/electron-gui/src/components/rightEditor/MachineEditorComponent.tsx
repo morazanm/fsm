@@ -180,7 +180,8 @@ type MachineEditorProps = {
   setView: (view: View) => void;
   currentView: View;
   transitions: MachineTransitions;
-  currentTransition: FSMTransition;
+  currentTransIndex: number;
+  setTransIndex: (isx: number) => void;
 };
 
 type OpenModal =
@@ -355,7 +356,8 @@ const MachineEditorComponent = (props: MachineEditorProps) => {
         open={openModal === 'map-view'}
         onClose={() => setOpenModal(null)}
         transitions={props.transitions.transitions}
-        currentTransition={props.currentTransition}
+        currentTransIndex={props.currentTransIndex}
+        setTransIndex={props.setTransIndex}
       />
     </Box>
   );

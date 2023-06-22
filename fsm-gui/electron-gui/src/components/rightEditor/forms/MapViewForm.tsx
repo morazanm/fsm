@@ -14,7 +14,7 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { Close as CloseIcon } from '@mui/icons-material';
+import { Close as CloseIcon, CurrencyBitcoin } from '@mui/icons-material';
 import { TransitionProps } from '@mui/material/transitions';
 import {
   BasicTransition,
@@ -24,6 +24,7 @@ import {
   isEndTransition,
   isNormalTransition,
   isStartTransition,
+  isTransitionsEqual,
   ruleToString,
 } from '../../../types/machine';
 
@@ -38,14 +39,12 @@ const Transition = React.forwardRef(function Transition(
 
 type CustomStepperProps = {
   transitions: FSMTransition[];
-  currentTransition: FSMTransition;
+  index: number;
+  setTransIndex: (isx: number) => void;
 };
 const CustomStepper = (props: CustomStepperProps) => {
   const theme = useTheme();
-  // const filteredTransitions: (BasicTransition | EndTransition)[] =
-  //   props.transitions.filter(
-  //     (t) => isNormalTransition(t) || isEndTransition(t),
-  //   ) as (BasicTransition | EndTransition)[];
+  const jumpToTransition = () => {};
 
   const transToString = (trans: FSMTransition): string => {
     if (isNormalTransition(trans)) {
@@ -67,8 +66,16 @@ const CustomStepper = (props: CustomStepperProps) => {
           ? theme.palette.success.main
           : theme.palette.error.main;
         return (
-          <Step key={index} completed={false} expanded={true}>
-            <StepButton color="inherit" onClick={() => console.log('Hi')}>
+          <Step
+            key={index}
+            completed={false}
+            expanded={true}
+            active={index === props.index}
+          >
+            <StepButton
+              color="inherit"
+              onClick={() => props.setTransIndex(index)}
+            >
               {transToString(trans)}
             </StepButton>
             {trans.invPass !== null && (
@@ -92,7 +99,8 @@ type MapViewProps = {
   open: boolean;
   onClose: () => void;
   transitions: FSMTransition[];
-  currentTransition: FSMTransition;
+  currentTransIndex: number;
+  setTransIndex: (isx: number) => void;
 };
 
 export const MapView = (props: MapViewProps) => {
@@ -130,7 +138,8 @@ export const MapView = (props: MapViewProps) => {
             </DialogContentText>
             <CustomStepper
               transitions={props.transitions}
-              currentTransition={props.currentTransition}
+              index={props.currentTransIndex}
+              setTransIndex={props.setTransIndex}
             />
           </>
         ) : (
