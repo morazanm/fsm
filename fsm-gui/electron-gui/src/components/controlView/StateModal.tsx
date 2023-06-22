@@ -288,9 +288,9 @@ export const StateModal = (props: StateModalProps) => {
           <Stack spacing={2} sx={{ paddingTop: 2 }}>
             <Typography variant="h6">Rules:</Typography>
             <List dense={true} style={{ marginTop: '0px' }}>
-              {filterRules.map((r) => (
-                <ListItem>
-                  <ListItemText primary={ruleToString(r)} />
+              {filterRules.map((r, i) => (
+                <ListItem key={i}>
+                  <ListItemText key={i} primary={ruleToString(r)} />
                 </ListItem>
               ))}
             </List>

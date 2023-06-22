@@ -60,6 +60,7 @@ export function parseDataResponse(
         alphabet: response.data.alpha,
         rules: response.data.rules,
         type: response.data.type,
+        hotReload: response.data.hotReload,
         accept: response.data.states.find((s) => s.type === 'accept'),
         stackAlpha:
           response.data.type === 'pda' ? response.data.stackAlpha : [],

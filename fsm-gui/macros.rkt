@@ -33,10 +33,11 @@
 (define-syntax (sm-visualize! stx)
   (syntax-parse stx
     [(_ fsa:id invs:invariant ...)
-     #`(run-with-prebuilt fsa #,@(stx-map (lambda (state func)
-                                            `(cons ',state ,func))
-                                          #`(invs.s-name ...)
-                                          #`(invs.func ...)))]))
+     #:with (inv-name ...) #`(invs.s-name ...)
+     #:with (inv-func ...) #`(invs.func ...)
+     #:with (str-inv-name ...) (stx-map (lambda (s) (format-id common-ctx ID-STR (syntax-e s)))
+                                   #`(invs.func ...))
+     #`(run-with-prebuilt fsa (list (list 'inv-name str-inv-name inv-func) ...))]))
 
 (define-syntax (sm-visualize!! stx)
   (syntax-parse stx
@@ -44,8 +45,7 @@
      #:with (inv-name ...) #`(invs.s-name ...)
      #:with (str-inv-name ...) (stx-map (lambda (s) (format-id common-ctx ID-STR (syntax-e s)))
                                    #`(invs.func ...))
-     #`(run-with-prebuilt-hotload fsa
-                                  (list (cons 'inv-name str-inv-name) ...))]))
+     #`(run-with-prebuilt-hotload fsa (list (cons 'inv-name str-inv-name) ...))]))
 
 
 (module+ test

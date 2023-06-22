@@ -86,7 +86,7 @@ export default function InputForm(props: InputFormProps) {
           variant="standard"
           helperText={error}
           onKeyDown={(event) => {
-            if (event.key === "Enter") {
+            if (event.key === 'Enter') {
               onSubmit(data);
             }
           }}

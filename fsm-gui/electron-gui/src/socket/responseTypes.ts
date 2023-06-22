@@ -22,6 +22,7 @@ export type PrebuiltMachineResponse = {
   rules: FSMRule[];
   type: MachineType;
   stackAlpha: FSMStackAlpha[] | undefined; // undefined when not a pda
+  hotReload: boolean; //when set to true, invariants can be edited in the GUI
 
   // The absolute path to the graphViz image. If this field does not exist then
   // that means that graphViz is not on the users computer

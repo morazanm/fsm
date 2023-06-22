@@ -2,8 +2,7 @@
 (require (for-syntax syntax/parse)
          json
          racket/tcp
-         "./fsm-functions.rkt"
-         "../../fsm-core/interface.rkt")
+         "./fsm-functions.rkt")
 
 (provide run-with-prebuilt
          run-without-prebuilt
@@ -71,21 +70,25 @@
 (define (run-with-prebuilt-hotload fsa invariants)
   (define listener (tcp-listen PORT 4 #t ADDRESS))
   (displayln! "FSM Gui server listenting at ~s on port ~s" ADDRESS PORT)
-  (define data-to-send (hash 'data (fsa->jsexpr fsa invariants)
+  (define data-to-send (hash 'data (hash-set (fsa->jsexpr fsa invariants)
+                                             'hotReload #t)
                              'error (json-null)
                              'responseType "prebuilt_machine"))
-  (listen-for-input listener (hash 'data data-to-send)))
+  (listen-for-input listener (hash 'data data-to-send 'hotload #t)))
 
 
-;; run-with-prebuilt :: fsa inv-function -> ()
+;; run-with-prebuilt :: fsa listof(symbol string inv-func) -> ()
 ;; Runs the TCP server and sends the prebuild machine to the GUI.
 (define (run-with-prebuilt fsa invariants)
+  (define inv-strings (map (match-lambda [`(,n ,s ,_) (cons n s)]) invariants))
+  (define inv-funcs (map (match-lambda [`(,n ,_ ,f) (cons n f)]) invariants))
   (define listener (tcp-listen PORT 4 #t ADDRESS))
   (displayln! "FSM Gui server listenting at ~s on port ~s" ADDRESS PORT)
-  (define data-to-send (hash 'data (fsa->jsexpr fsa '())
+  (define data-to-send (hash 'data (hash-set (fsa->jsexpr fsa inv-strings)
+                                             'hotReload #f)
                              'error (json-null)
                              'responseType "prebuilt_machine"))
-  (listen-for-input listener (hash 'data data-to-send 'pre-inv invariants)))
+  (listen-for-input listener (hash 'data data-to-send 'pre-inv inv-funcs)))
 
 ;; run-without-prebuilt :: ()
 ;; Runs the TCP server without sending a prebuilt machine to
@@ -94,87 +97,3 @@
   (define listener (tcp-listen PORT 4 #t ADDRESS))
   (displayln! "FSM Gui server listenting at ~s on port ~s" ADDRESS PORT)
   (listen-for-input listener))
-
-
-
-
-(define pda=2ba (make-ndpda '(S M1 F)
-                            '(a b)
-                            '(a b)
-                            'S
-                            '(F)
-                            `(((S ,EMP ,EMP) (M1 ,EMP))
-                              ((M1 a ,EMP) (M1 (a a)))
-                              ((M1 b ,EMP) (M1 (b)))
-                              ((M1 a (b)) (M1 (a)))
-                              ((M1 a (b b)) (M1 ,EMP))
-                              ((M1 b (a)) (M1 ,EMP))
-                              ((M1 ,EMP ,EMP) (F ,EMP)))))
-
-(define a*a (make-dfa '(S A F D)     
-                      '(a b)     
-                      'S        
-                      '(F)       
-                      '((S a F)
-                        (F a F)
-                        (S b A)
-                        (A a F)
-                        (A b A)
-                        ;; rules to dead state D
-                        (F b D)
-                        (D a D)
-                        (D b D))'nodead))
-
-(define invariants (list (cons 'S "(lambda (consumed-input) #t)")
-                         (cons 'F "(lambda (consumed-input) #f)")
-                         (cons 'D (json-null))))
-
-
-(define a^nb^nc^n2 (make-tm '(S B C D E Y N)
-                            '(a b c z x y)
-                            `(((S a) (B z))
-                              ((S b) (N b))
-                              ((S c) (N c))
-                              ((S ,BLANK) (Y ,BLANK))
-                              ((S z) (N z))
-                              ((S x) (N x))
-                              ((S y) (N y))
-
-                              ((E z) (E ,RIGHT))
-                              ((E x) (E ,RIGHT))
-                              ((E y) (E ,RIGHT))
-                              ((E ,BLANK) (Y ,BLANK))
-                              ((E a) (N a))
-                              ((E b) (N b))
-                              ((E c) (N c))
-
-                              ((B a) (B ,RIGHT))
-                              ((B b) (C x))
-                              ((B c) (N c))
-                              ((B ,BLANK) (N ,BLANK))
-                              ((B z) (B ,RIGHT))
-                              ((B x) (B ,RIGHT))
-                              ((B y) (B ,RIGHT))
-
-                              ((C a) (N a))
-                              ((C b) (C ,RIGHT))
-                              ((C c) (D y))
-                              ((C ,BLANK) (N ,BLANK))
-                              ((C z) (C ,RIGHT))
-                              ((C x) (C ,RIGHT))
-                              ((C y) (C ,RIGHT))
-
-                              ((D a) (S a))
-                              ((D b) (D ,LEFT))
-                              ((D c) (D ,LEFT))
-                              ((D ,BLANK) (N ,BLANK))
-                              ((D z) (D ,LEFT))
-                              ((D x) (D ,LEFT))
-                              ((D y) (D ,LEFT))
-                              ((D ,LM) (E R)))
-                            'S
-                            '(Y N)
-                            'Y))
-
-;(run-without-prebuilt)
-;(run-with-prebuilt a^nb^nc^n2 '())

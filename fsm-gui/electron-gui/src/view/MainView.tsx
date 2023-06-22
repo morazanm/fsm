@@ -77,6 +77,7 @@ export type MachineState = {
   initialTapePosition: number; // only used by tm and tm-lang-rec
   accept: State | null; // only used by tm-lang-rec
   graphVizImage: string | null;
+  hotReload: boolean;
 };
 
 type MainViewProps = {
@@ -109,10 +110,10 @@ const MainView = (props: MainViewProps) => {
     accept: null,
     initialTapePosition: 0,
     graphVizImage: null,
+    hotReload: false,
   } as MachineState);
 
   const machineStateRef = useRef(machineState);
-
   const resetMachineAndSet = (obj: Partial<MachineState>) =>
     setMachineState({
       ...machineState,
@@ -199,7 +200,7 @@ const MainView = (props: MainViewProps) => {
 
   useEffect(() => {
     setTimeout(() => {
-      if(waitingForResponseRef.current) {
+      if (waitingForResponseRef.current) {
         openInfoDialog(
           'FSM Server Timeout',
           <Typography>
@@ -211,13 +212,12 @@ const MainView = (props: MainViewProps) => {
             </SyntaxHighlighter>
           </Typography>,
         );
-        setWaitingForResponse(false)
+        setWaitingForResponse(false);
       }
-    }, 10_000)
+    }, 10_000);
 
     waitingForResponseRef.current = waitingForResponse;
-
-  }, [waitingForResponse])
+  }, [waitingForResponse]);
 
   useEffect(() => {
     setConnected({ connected: props.racketBridge.connected, status: 'done' });
@@ -282,15 +282,17 @@ const MainView = (props: MainViewProps) => {
       props.racketBridge.subscribeListener('end', () => {
         openInfoDialog(
           'Disconnected from FSM',
-          <Typography>
-            The FSM backend was disconnected. You can still save and edit your
-            machine, but you will not be able to rebuild it.
-            <br />
-            To reconnect Please try running in the Racket REPL:
+          <div>
+            <Typography component={'span'}>
+              The FSM backend was disconnected. You can still save and edit your
+              machine, but you will not be able to rebuild it.
+              <br />
+              To reconnect Please try running in the Racket REPL:
+            </Typography>
             <SyntaxHighlighter language="racket">
               (sm-visualize2 ...)
             </SyntaxHighlighter>
-          </Typography>,
+          </div>,
         );
       });
 

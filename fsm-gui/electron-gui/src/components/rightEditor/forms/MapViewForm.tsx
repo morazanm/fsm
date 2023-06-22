@@ -23,6 +23,8 @@ import {
   extractInputFromRule,
   isEndTransition,
   isNormalTransition,
+  isStartTransition,
+  ruleToString,
 } from '../../../types/machine';
 
 const Transition = React.forwardRef(function Transition(
@@ -39,44 +41,49 @@ type CustomStepperProps = {
   currentTransition: FSMTransition;
 };
 const CustomStepper = (props: CustomStepperProps) => {
-  const filteredTransitions: (BasicTransition | EndTransition)[] =
-    props.transitions.filter(
-      (t) => isNormalTransition(t) || isEndTransition(t),
-    ) as (BasicTransition | EndTransition)[];
+  const theme = useTheme();
+  // const filteredTransitions: (BasicTransition | EndTransition)[] =
+  //   props.transitions.filter(
+  //     (t) => isNormalTransition(t) || isEndTransition(t),
+  //   ) as (BasicTransition | EndTransition)[];
 
-  const getStateNameFromTransition = (
-    t: BasicTransition | EndTransition,
-  ): string => {
-    if (isNormalTransition(t)) {
-      return t.rule.start;
+  const transToString = (trans: FSMTransition): string => {
+    if (isNormalTransition(trans)) {
+      return ruleToString(trans.rule);
+    } else if (isStartTransition(trans)) {
+      return trans.start;
+    } else if (isEndTransition(trans)) {
+      return trans.end;
+    } else {
+      //Unreachable
+      return '';
     }
-    return t.end;
   };
 
   return (
     <Stepper nonLinear orientation="vertical">
-      {filteredTransitions.map((trans, index) => (
-        <Step key={index} completed={false} expanded={true}>
-          <StepButton color="inherit" onClick={() => console.log('Hi')}>
-            {getStateNameFromTransition(trans)}
-          </StepButton>
-          {isNormalTransition(trans) && (
-            <StepContent>
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <Typography>{extractInputFromRule(trans.rule)}</Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <DialogContentText hidden={index !== 0}>
-                    Consumed Input: a
-                  </DialogContentText>
-                </Grid>
-              </Grid>
-              <br />
-            </StepContent>
-          )}
-        </Step>
-      ))}
+      {props.transitions.map((trans, index) => {
+        const invColor = trans.invPass
+          ? theme.palette.success.main
+          : theme.palette.error.main;
+        return (
+          <Step key={index} completed={false} expanded={true}>
+            <StepButton color="inherit" onClick={() => console.log('Hi')}>
+              {transToString(trans)}
+            </StepButton>
+            {trans.invPass !== null && (
+              <StepContent>
+                <Typography component={'span'}>
+                  Invariant Status:{' '}
+                  <span style={{ color: invColor }}>
+                    {trans.invPass ? 'pass' : 'fail'}
+                  </span>
+                </Typography>
+              </StepContent>
+            )}
+          </Step>
+        );
+      })}
     </Stepper>
   );
 };
