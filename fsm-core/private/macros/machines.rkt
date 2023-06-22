@@ -170,6 +170,14 @@
                                                (cons x y))) '() pair-list))
     (if (empty? leftovers) #f
         leftovers))
+
+  (define (build-rules-from-lists s1 a s2)
+    (define (helper starts middles ends)
+      (map (lambda (x y z) (list x y z)) starts middles ends))
+    (helper (syntax->list s1)
+            (syntax->list a)
+            (syntax->list s2))
+    )
     
   )
 
@@ -225,7 +233,11 @@
   ;; syntax class for a list of rules
   (define-syntax-class rules
     #:description "The transition rules thae the machine must follow"
-    (pattern '((s1:state a:alpha s2:state) ...)))
+    (pattern '((s1:state a:alpha s2:state) ...)
+             #:with duplicates (check-functional (build-rules-from-lists #`(s1 ...) #`(a ...) #`(s2 ...)))
+             #:fail-when (if #'duplicates #`duplicates #f)
+             (format "~s duplicate as a state/alphabet pairs in your list of rules" (syntax->datum #'duplicates))
+             ))
   
   (syntax-parse stx
     [(_ sts:states a:alphas s:start f:finals r:rules (~optional (~var no-dead)))
@@ -248,13 +260,12 @@
                                   (syntax->list #`(a.fields ...))
                                   (syntax->list #`(sts.fields ...)))
      "Invalid rules supplied:"
-     ;bring this part into the rules syntax class
      ;error?: syntax or #f
-     #:with error? (check-functional (stx-map syntax-e #`((r.s1 r.a r.s2) ...)))
-     #:fail-when (if (syntax-e #'error?)
-                     #'r
-                     #f)
-     (format "State/alphabet pairs ~s is duplicated in rules" (map syntax->datum (syntax-e #'error?)))
+;     #:with error? (check-functional (stx-map syntax-e #`((r.s1 r.a r.s2) ...)))
+;     #:fail-when (if (syntax-e #'error?)
+;                     #'r
+;                     #f)
+;     (format "State/alphabet pairs ~s are duplicated in rules" (map syntax->datum (syntax-e #'error?)))
      
      #:with error (check-included (stx-map syntax-e #`((r.s1 r.a r.s2) ...))
                                  (cartesian-product (syntax->list #`(sts.fields ...))
@@ -273,9 +284,9 @@
           '(A)
           '(
             (A a B)
-            (B a B)
-            (A a B)
             (B a A)
+            (C a B)
+            (C a B)
             )
           'no-dead
           )
