@@ -151,22 +151,25 @@
                   (syntax-e (car (cdr rule1))))
             (list (syntax-e (car rule2))
                   (syntax-e (car (cdr rule2))))))
+
+  (define (rule-member? rule rule-list)
+    (ormap (lambda (x) (compare-rule-start rule x)) rule-list))
   
-  (define (check-functional rule-list state-list alpha-list)
+  (define (check-functional rule-list)
     (define rule-start-list (map (lambda (x) (list (car x) (car (cdr x)))) rule-list))
     (define duplicate-rules (return-duplicate-rules rule-start-list))
     (if (empty? duplicate-rules)
         #f
-        ;(check-included rule-start-list (cartesian-product state-list alpha-list))
         duplicate-rules)
     )
 
   (define (check-included rule-list pair-list)
-    (define leftovers (foldr (lambda (x y) (if (member-stx? x rule-list)
+    (define rule-start-list (map (lambda (x) (list (car x) (car (cdr x)))) rule-list))
+    (define leftovers (foldr (lambda (x y) (if (rule-member? x rule-start-list)
                                                y
                                                (cons x y))) '() pair-list))
     (if (empty? leftovers) #f
-        (format "Must have rules for state/alphabet pairs ~s" leftovers)))
+        leftovers))
     
   )
 
@@ -245,14 +248,21 @@
                                   (syntax->list #`(a.fields ...))
                                   (syntax->list #`(sts.fields ...)))
      "Invalid rules supplied:"
+     ;bring this part into the rules syntax class
      ;error?: syntax or #f
-     #:with error? (check-functional (stx-map syntax-e #`((r.s1 r.a r.s2) ...))
-                                     (syntax->list #`(sts.fields ...))
-                                     (syntax->list #`(a.fields ...)))
+     #:with error? (check-functional (stx-map syntax-e #`((r.s1 r.a r.s2) ...)))
      #:fail-when (if (syntax-e #'error?)
                      #'r
                      #f)
      (format "State/alphabet pair ~s is duplicated in rules" (syntax-e #'error?))
+     
+     #:with error(check-included (stx-map syntax-e #`((r.s1 r.a r.s2) ...))
+                                 (cartesian-product (syntax->list #`(sts.fields ...))
+                                                    (syntax->list #`(a.fields ...))))
+     #:fail-when (if (syntax-e #'error)
+                     #'r
+                     #f)
+     (format "Must have rules for state/alphabet pair ~s" (syntax-e #'error))
      
      (begin
        #`(void))]))
@@ -263,7 +273,8 @@
           '(A)
           '(
             (A a B)
-            (B a B)
+            (A a C)
+            (B a A)
             (B a C)
             )
           'no-dead
