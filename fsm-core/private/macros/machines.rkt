@@ -4,7 +4,6 @@
           racket/bool
           racket/list
           racket/match
-          syntax/to-string
           syntax/stx))
 
 (begin-for-syntax
@@ -267,64 +266,121 @@
      (begin
        #`(void))]))
 
-(make-dfa '(A B C)
-          '(a)
-          'A
-          '(A)
-          '(
-            (A a B)
-            (B a B)
-            (A a B)
-            (B a A)
-            )
-          'no-dead
-          )
 
-;(make-dfa '(A B-1 R C D)
-;          '(a b e)
-;          'A
-;          '(A C)
-;          '(
-;            (A a C)
-;            (B-1 a A)
-;            )
-;          )
-;
-;(make-dfa (list A B-1 R C D)
-;          '(a b e)
-;          'A
-;          '(A C)
-;          '(
-;            (A a C)
-;            (B-1 a A)
-;            )
-;          )
-;
-;(make-dfa '(A B-1 R C D)
-;          '(a b e)
-;          'A
-;          '(A C)
-;          '(
-;            (A a C)
-;            (B-1 a A)
-;            )
-;          )
-;
-;(make-dfa '(A B-1 R C D)
-;          '(a b e)
-;          'R
-;          '(A C)
-;          '(
-;            (A a C)
-;            (B-1 a A)
-;            )
-;          )
-;
-;(make-dfa '(A B-1 R C D)
-;          '(a b e)
-;          'D
-;          '(A C)
-;          '(
-;            (A a C)
-;            (B-1 a A)
-;            ))
+(module+ test
+  (require rackunit syntax/macro-testing)
+
+  (define-syntax (check-exn! stx)
+    (syntax-parse stx
+      [(_ msg:expr exn-msg:expr machine:expr)
+       #`(check-exn exn-msg
+                    (lambda () (convert-compile-time-error machine))
+                    msg)]
+      [(_ exn-msg:expr machine:expr)
+       #`(check-exn exn-msg
+                    (lambda () (convert-compile-time-error machine)))]
+      [_ (error 'check-exn! "Invalid syntax")]))
+
+
+
+  (check-exn! "Fails when there are invalid states"
+              #rx"Invalid states elements: \\(a D\\-a\\)"
+              (make-dfa '(a B-1 R C D-a)
+                        '(a b e)
+                        'D
+                        '(A C)
+                        '((A a C)
+                          (B-1 a A))))
+
+
+  (check-exn! "Fails when there are duplicate states"
+              #rx"Duplicates in list: \\(D A\\)"
+              (make-dfa '(A A B-1 R C D D)
+                        '(a b e)
+                        'D
+                        '(A C)
+                        '((A a C)
+                          (B-1 a A))))
+
+
+  (check-exn! "Fails when there are invalid alpha"
+              #rx"Invalid alphabet elements: \\(D a\\-1\\)"
+              (make-dfa '(A B-1 R C D)
+                        '(a b e D a-1)
+                        'D
+                        '(A C)
+                        '((A a C)
+                          (B-1 a A))))
+
+
+  (check-exn! "Fails when there are duplicate alpha"
+              #rx"Duplicates in list: \\(a\\)"
+              (make-dfa '(A B-1 R C D)
+                        '(a b e a)
+                        'D
+                        '(A C)
+                        '((A a C)
+                          (B-1 a A))))
+
+  (check-exn! "Fails when start state is not in the list of states"
+              #rx"Start state must be in the list of states \\(A B\\-1 R C D\\)"
+              (make-dfa '(A B-1 R C D)
+                        '(a b e)
+                        'F
+                        '(A C)
+                        '((A a C)
+                          (B-1 a A))))
+
+
+  (check-exn! "Fails when start state is a invalid state"
+              #rx"a is an invalid start state name"
+              (make-dfa '(A B-1 R C D)
+                        '(a b e)
+                        'a
+                        '(A C)
+                        '((A a C)
+                          (B-1 a A))))
+
+
+  (check-exn! "Fails when Final states are not in list of states"
+              #rx"final states \\(Z Y X\\) must be in the list of states \\(A B\\-1 R C D\\)"
+              (make-dfa '(A B-1 R C D)
+                        '(a b e)
+                        'A
+                        '(X Y Z)
+                        '((A a C)
+                          (B-1 a A))))
+
+
+  (check-exn! "Fails when Final states are invalid states"
+              #rx"Invalid state name\n  at: X\\-a"
+              (make-dfa '(A B-1 R C D)
+                        '(a b e)
+                        'A
+                        '(X-a)
+                        '((A a C)
+                          (B-1 a A))))
+
+
+  (check-exn! "Fails when duplicate rules are provided"
+              #rx"State\\/alphabet pairs \\(\\(A a\\) \\(B-1 a\\)\\) is duplicated in rules"
+              (make-dfa '(A B-1 R C D)
+                        '(a b e)
+                        'A
+                        '(B-1)
+                        '((A a C)
+                          (A a C)
+                          (B-1 a A)
+                          (B-1 a A))))
+
+
+  (check-exn! "Fails when duplicate rules are provided"
+              #rx"Must have rules for state\\/alphabet pairs: \\(\\(A b\\) \\(A e\\) \\(B-1 b\\) \\(B-1 e\\) \\(R a\\) \\(R b\\) \\(R e\\) \\(C a\\) \\(C b\\) \\(C e\\) \\(D a\\) \\(D b\\) \\(D e\\)\\)"
+              (make-dfa '(A B-1 R C D)
+                        '(a b e)
+                        'D
+                        '(A C)
+                        '((A a C)
+                          (B-1 a A))))
+
+  ) ;;end module+ test
