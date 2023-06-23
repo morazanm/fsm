@@ -24,7 +24,7 @@ const config: ForgeConfig = {
       config: {},
     },
   ],
-  publishers: {
+  publishers: [{
     //@ts-ignore
     name: '@electron-forge/publisher-github',
     config: {
@@ -34,7 +34,7 @@ const config: ForgeConfig = {
       },
       prerelease: true,
     },
-  },
+  }],
   plugins: [
     new WebpackPlugin({
       devContentSecurityPolicy: "connect-src 'self' * 'unsafe-eval'",

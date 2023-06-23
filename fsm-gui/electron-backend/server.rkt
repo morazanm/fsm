@@ -8,7 +8,7 @@
          run-without-prebuilt
          run-with-prebuilt-hotload)
 
-(define DEBUG_MODE #t)
+(define DEBUG_MODE #f)
 (define ADDRESS "127.0.0.1")
 (define PORT 4000)
 
@@ -68,8 +68,8 @@
 ;; run-with-prebuilt-hotload :: fsa listof(cons symbol string) -> ()
 ;; Runs the TCP server and sends the prebuild machine to the GUI.
 (define (run-with-prebuilt-hotload fsa invariants)
+  (displayln (format "FSM Gui server listenting at ~s on port ~s" ADDRESS PORT))
   (define listener (tcp-listen PORT 4 #t ADDRESS))
-  (displayln! "FSM Gui server listenting at ~s on port ~s" ADDRESS PORT)
   (define data-to-send (hash 'data (hash-set (fsa->jsexpr fsa invariants)
                                              'hotReload #t)
                              'error (json-null)
@@ -80,10 +80,10 @@
 ;; run-with-prebuilt :: fsa listof(symbol string inv-func) -> ()
 ;; Runs the TCP server and sends the prebuild machine to the GUI.
 (define (run-with-prebuilt fsa invariants)
+  (displayln (format "FSM Gui server listenting at ~s on port ~s" ADDRESS PORT))
   (define inv-strings (map (match-lambda [`(,n ,s ,_) (cons n s)]) invariants))
   (define inv-funcs (map (match-lambda [`(,n ,_ ,f) (cons n f)]) invariants))
   (define listener (tcp-listen PORT 4 #t ADDRESS))
-  (displayln! "FSM Gui server listenting at ~s on port ~s" ADDRESS PORT)
   (define data-to-send (hash 'data (hash-set (fsa->jsexpr fsa inv-strings)
                                              'hotReload #f)
                              'error (json-null)
@@ -94,6 +94,6 @@
 ;; Runs the TCP server without sending a prebuilt machine to
 ;; the GUI
 (define (run-without-prebuilt)
+  (displayln (format "FSM Gui server listenting at ~s on port ~s" ADDRESS PORT))
   (define listener (tcp-listen PORT 4 #t ADDRESS))
-  (displayln! "FSM Gui server listenting at ~s on port ~s" ADDRESS PORT)
   (listen-for-input listener))

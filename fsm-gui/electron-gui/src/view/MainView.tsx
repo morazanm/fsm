@@ -225,7 +225,7 @@ const MainView = (props: MainViewProps) => {
         );
         setWaitingForResponse(false);
       }
-    }, 10_000);
+    }, 20_000);
 
     waitingForResponseRef.current = waitingForResponse;
   }, [waitingForResponse]);

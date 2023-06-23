@@ -19,21 +19,75 @@
 ;; The optional arg when set to true will not build the graphviz graph. This should be set
 ;; to true when using this function in tests
 (define (build-machine data (pre-computed-invariants '()) #:test (test-mode #f))
-  ;; append-gviz-svgs :: listof(jsexpr-transition) -> listof(jsexpr-transitions)
+  ;; generate-graphviz-images :: listof(jsexpr-transition) -> listof(jsexpr-transitions)
   ;; computes the graphviz images for each of the transitions
-  (define (append-gviz-svgs trans)
-    (map (lambda (t i)
-           (hash-set t
-                     'filepath
-                     (path->string (electron-machine->svg states start finals rules type t accept-state 0 i))))
-         trans
-         (range (length trans))))
+  (define (generate-graphviz-images trans)
+    (define start-time (current-seconds))
+    (define res (map (lambda (t i)
+                       (hash-set t
+                                 'filepath
+                                 (path->string (electron-machine->svg states start finals rules type t accept-state 0 i))))
+                     trans
+                     (range (length trans))))
+    (define end-time (current-seconds))
+    (displayln (format "Time to generate g-viz imgs: ~a" (- end-time start-time)))
+    res)
+
+  ;; generate-graphviz-images :: listof(jsexpr-transition) -> listof(jsexpr-transitions)
+  ;; computes the graphviz images for each of the transtions using threads
+  (define (generate-graphviz-images-threaded transitions)
+    (define start-time (current-seconds))
+    (define (make-graphviz-img-thread)
+      (thread (lambda ()
+                (let loop ()
+                  (match (thread-receive)
+                    [(list states start finals rules type transition accept-state i res-thread)
+                     (thread-send
+                      res-thread
+                      (cons i (path->string (electron-machine->svg states
+                                                                   start
+                                                                   finals
+                                                                   rules
+                                                                   type
+                                                                   transition
+                                                                   accept-state 0 i))))
+                     (loop)])))))
+
+    (begin
+      (define workers (vector (make-graphviz-img-thread)
+                              (make-graphviz-img-thread)
+                              (make-graphviz-img-thread)))
+      ;; start thread tasks
+      (for ([tran transitions]
+            [i (length transitions)])
+        (thread-send (vector-ref workers (modulo i (vector-length workers)))
+                     (list states start finals rules type tran accept-state i (current-thread))))
+
+      ;; handle thread results
+      (define data (for/hash ([trans transitions]
+                              [i (length transitions)])
+                     (define res (thread-receive))
+                     (values (car res) (cdr res))))
+
+      ;; clean up the threads
+      (for ([worker workers])
+        (kill-thread worker))
+
+      (define return-data  (map (lambda (t i)
+                                  (hash-set t 'filepath (hash-ref data i)))
+                                transitions
+                                (range (length transitions))))
+      (displayln (format "Time to create gviz imgs: ~s" (- (current-seconds) start-time)))
+      return-data))
+
   (define no-dead (hash-ref data 'nodead))
   (define un-parsed-states (hash-ref data 'states))
   (define alpha (parse-alpha data))
   (define type (parse-type data))
   (define states (parse-states un-parsed-states))
-  (define invariants (if (null? pre-computed-invariants) (parse-invariants un-parsed-states) pre-computed-invariants))
+  (define invariants (if (null? pre-computed-invariants)
+                         (parse-invariants un-parsed-states)
+                         pre-computed-invariants))
   (define start (parse-start un-parsed-states))
   (define finals (parse-finals un-parsed-states))
   (define rules (parse-rules (hash-ref data 'rules) type))
@@ -58,7 +112,7 @@
      (define jsexpr-trans (transitions->jsexpr fsa invariants input tape-index))
      (hash 'data (hash 'transitions (if (or test-mode (not (has-dot-executable?)))
                                         jsexpr-trans
-                                        (append-gviz-svgs jsexpr-trans))
+                                        (generate-graphviz-images-threaded jsexpr-trans))
                        ;; since fsm sometimes adds states (ds) we will return the list of states,
                        ;; so the gui can update accordingly
                        'states (map (lambda (s) (state->jsexpr s fsa (if (null? pre-computed-invariants) invariants '())))
@@ -70,6 +124,7 @@
     [else (hash 'data (json-null)
                 'responseType "build_machine"
                 'error "Failed check-machine function")]))
+
 
 ;; isValidMachine? :: listof(symbol) symbol listof(symbol) listof(symbol) listof(fsm-core-rules) symbol listof(symbol) | false boolean -> fsa | false
 ;; returns a fsm-core fsa if the machine passes the fsm-core error messages check. If there is an error the
