@@ -22,12 +22,16 @@ type InputComponentProps = {
   goNext: () => void;
   goPrev: () => void;
   type: MachineType;
+  isConnected: boolean;
 };
 
 const InputComponent = (props: InputComponentProps) => {
   const theme = useTheme();
 
   const disableButton = (): [boolean, string] => {
+    if (!props.isConnected) {
+      return [true, "Disconnected from Racket Backend"]
+    }
     if (
       props.type === 'tm-language-recognizer' &&
       props.states.find((s: State) => s.type === 'accept') === undefined
