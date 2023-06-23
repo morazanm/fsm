@@ -156,9 +156,9 @@
 
 ;; The convert implementation
 
-;; (listof states) alphabet state (listof state) (listof ndfa-rule) -> dfa
-;; Purpose: Create a dfa from the given ndfa components
-(define (convert states sigma start finals rules)
+;; (listof states) alphabet state (listof state) (listof ndfa-rule) -> dfa rules
+;; Purpose: Creates a list of dfa rules for the given ndfa
+(define (convert-rules-only states sigma start finals rules)
   (let* [(empties (compute-empties-tbl states rules))
          (ss-dfa-rules
           (compute-ss-dfa-rules (list (extract-empties start empties))
@@ -184,18 +184,57 @@
                      ss-dfa-rules)
                 'no-dead)))
 
+;; (listof states) alphabet state (listof state) (listof ndfa-rule) -> dfa
+;; Purpose: Creates a dfa from the given ndfa
+(define (convert-finals-only states sigma start finals rules)
+  (let* [(empties (compute-empties-tbl states rules))
+         (ss-dfa-rules
+          (compute-ss-dfa-rules (list (extract-empties start empties))
+                                sigma
+                                empties
+                                rules
+                                '()))
+         (super-states (remove-duplicates
+                        (append-map (λ (r) (list (first r) (third r)))
+                                    ss-dfa-rules)))
+         (ss-name-tbl (compute-ss-name-tbl super-states))]
+    (filter (λ (ss) (ormap (λ (s) (member s finals)) ss))
+            super-states)))
+
+
+;; ndfa -> dfa rules
+;; Purpose: Convert the given ndfa to an equivalent dfa (only outputs rules)
+(define (ndfa2dfa-rules-only M)
+  (if (eq? (sm-type M) 'dfa)
+      M
+      (convert-rules-only (sm-states M)
+                          (sm-sigma M)
+                          (sm-start M)
+                          (sm-finals M)
+                          (sm-rules M))))
+
+;; ndfa -> dfa
+;; Purpose: Convert the given ndfa to an equivalent dfa
+(define (ndfa2dfa-finals-only M)
+  (if (eq? (sm-type M) 'dfa)
+      M
+      (convert-finals-only (sm-states M)
+                           (sm-sigma M)
+                           (sm-start M)
+                           (sm-finals M)
+                           (sm-rules M))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
+
 ;; a world is a structure that consists of
-;; cgraph - created graph
+;; cgraph - created dfa graph of a given ndfa
 ;; up-edges - unprocessed edges, edges that are yet to be drawn
 ;; ad-edges - already drawn edges
 ;; incl-nodes - states that are already drawn on the graph
-(define-struct world (cgraph up-edges ad-edges incl-nodes))
-
-
+;; M - a given ndfa
+(define-struct world (cgraph up-edges ad-edges incl-nodes M))
 
 
 ;; add-included-node
@@ -226,18 +265,41 @@
   (string->symbol (helper los)))
 
 
-;; (listof rules) -> graph
+;; contains-final-state?
+;; state (listof states) -> Boolean
+(define (contains-final-state? sss sm-finals)
+  (ormap (λ (s) (equal? sss s)) sm-finals))
+
+
+
+;; (listof rules) graph (listof states) -> graph
 ;; Purpose: To create a graph of nodes from the given list of rules
-(define (node-graph cgraph los)
-  (foldl (λ (state result) (add-node result
-                                     (if (equal? state '())
-                                         'ds  
-                                         (los2symb state))
-                                     #:atb (hash 'color 'black 'shape 'circle 'label
-                                                 (if (equal? state '())
-                                                     'ds
-                                                     (los2symb state))
-                                                 'fontcolor 'black)))
+(define (node-graph cgraph los finals)
+  (foldl (λ (state result)  (if  (contains-final-state? state finals)
+                                 (add-node
+                                  result
+                                  (los2symb state)
+                                  #:atb (hash 'color (if (equal? state (last los))
+                                                         'green
+                                                         'red)
+                                              'shape 'doublecircle
+                                              'label (if (equal? state '())
+                                                         'ds  
+                                                         (los2symb state))
+                                              'fontcolor 'black))
+                                 (add-node
+                                  result
+                                  (if (equal? state '())
+                                      'ds  
+                                      (los2symb state))
+                                  #:atb (hash 'color (if (equal? state (last los))
+                                                         'green
+                                                         'black)
+                                              'shape 'circle
+                                              'label (if (equal? state '())
+                                                         'ds  
+                                                         (los2symb state))
+                                              'fontcolor 'black))))
          cgraph
          los))
 
@@ -262,8 +324,8 @@
 
 ;; (listof rules) -> graph
 ;; Purpose: To create a dfa graph from a given ndfa
-(define (create-cgraph lor los)
-  (edge-graph (node-graph (create-graph 'cgraph #:atb (hash 'rankdir "LR")) los)
+(define (create-cgraph lor los finals)
+  (edge-graph (node-graph (create-graph 'cgraph #:atb (hash 'rankdir "LR")) los finals)
               lor))
       
 
@@ -279,10 +341,11 @@
                                         (world-ad-edges a-world)))
                     (new-incl-nodes (add-included-node (world-incl-nodes a-world)
                                                        (first new-ad-edges)))]
-               (make-world (create-cgraph new-ad-edges new-incl-nodes)                       
+               (make-world (create-cgraph new-ad-edges new-incl-nodes (ndfa2dfa-finals-only (world-M a-world)))                       
                            new-up-edges                       
                            new-ad-edges
-                           new-incl-nodes)))]
+                           new-incl-nodes
+                           (world-M a-world))))]
         [(key=? "left" a-key)
          (if (empty? (world-ad-edges a-world))
              a-world
@@ -292,41 +355,71 @@
                     (new-incl-nodes (remove-included-node (world-incl-nodes a-world)
                                                           (first (world-ad-edges a-world))
                                                           new-ad-edges))]
-               (make-world (create-cgraph new-ad-edges new-incl-nodes)                       
+               (make-world (create-cgraph new-ad-edges new-incl-nodes (ndfa2dfa-finals-only (world-M a-world)))                       
                            new-up-edges                       
                            new-ad-edges
-                           new-incl-nodes)))]
+                           new-incl-nodes
+                           (world-M a-world))))]
         [else a-world]))
 
-;; ndfa -> dfa
-;; Purpose: Convert the given ndfa to an equivalent dfa
-(define (ndfa2dfa M)
-  (if (eq? (sm-type M) 'dfa)
-      M
-      (convert (sm-states M)
-               (sm-sigma M)
-               (sm-start M)
-               (sm-finals M)
-               (sm-rules M))))
-
-;; contains-final-state?
-;; state (listof states) -> Boolean
-(define (contains-final-state? sss sm-finals)
-  (ormap (λ (s) (equal? sss s)) sm-finals))
 
 
 (define E-SCENE (empty-scene 700 700))
+
+
+
+;; (listof symbols) -> graph
+;; Purpose: To create a graph of nodes from the given list of rules
+(define (ndfa-node-graph cgraph M)
+  (foldl (λ (state result) (if (contains-final-state? state (sm-finals M))
+                               (add-node
+                                result
+                                state
+                                #:atb (hash 'color 'red
+                                            'shape 'doublecircle
+                                            'label state
+                                            'fontcolor 'black))
+                               (add-node
+                                result
+                                state
+                                #:atb (hash 'color 'black
+                                            'shape 'circle
+                                            'label state
+                                            'fontcolor 'black))))
+         cgraph
+         (sm-states M)))
+
+
+;; (listof rules) -> graph
+;; Purpose: To create a graph of edges from the given list of rules
+(define (ndfa-edge-graph cgraph lor) ;; more input, ss that i'm adding and a lor from ndfa
+  (foldl (λ (rule result) (add-edge result
+                                    (second rule)
+                                    (first rule)
+                                    (third rule)
+                                    #:atb (hash 'fontsize 20 'style 'solid)))
+         cgraph
+         lor))
+
+;; make-ndfa-graph
+;; Purpose: To make an ndfa-graph from the given ndfa
+(define (make-ndfa-graph M)
+  (ndfa-edge-graph (ndfa-node-graph (create-graph 'ndfagraph #:atb (hash 'rankdir "LR")) M)
+                   (sm-rules M)))
 
 
 ;; draw-world
 ;; world -> img
 ;; Purpose: To draw a world image
 (define (draw-world a-world)
-  (overlay
-   (graph->bitmap (world-cgraph a-world) (current-directory) "fsm")
-   E-SCENE))
+  (scale 0.5
+         (above (graph->bitmap (make-ndfa-graph (world-M a-world)) (current-directory) "fsm")
+                (overlay
+                 (graph->bitmap (world-cgraph a-world) (current-directory) "fsm")
+                 E-SCENE))))
 
-(define AT-LEAST-ONE-MISSING (make-ndfa '(S A B C) '(a b c)
+(define AT-LEAST-ONE-MISSING (make-ndfa '(S A B C)
+                                        '(a b c)
                                         'S
                                         '(A B C)
                                         `((S ,EMP A)
@@ -339,18 +432,23 @@
                                           (C a C)
                                           (C b C))))
 
+;; contains-final-state-run?
+;; symbol (listof symbols)
+(define (contains-final-state-run? sss sm-finals)
+  (ormap (λ (s) (member s sm-finals)) sss))
+
 
 ;; ndfa --> world
 (define (run M)
-  (let* [(ss-edges (ndfa2dfa M))
+  (let* [(ss-edges (ndfa2dfa-rules-only M))
          (super-start-state (first (first ss-edges)))
          (cgraph (create-graph 'cgraph
                                #:atb (hash 'rankdir "LR")))
-         (init-graph (if (contains-final-state? super-start-state (sm-finals M))
+         (init-graph (if (contains-final-state-run? super-start-state (sm-finals M))
                          (add-node
                           cgraph
                           (los2symb super-start-state)
-                          #:atb (hash 'color 'red
+                          #:atb (hash 'color 'green
                                       'shape 'doublecircle
                                       'label (los2symb super-start-state)
                                       'fontcolor 'black))
@@ -365,12 +463,11 @@
         (make-world init-graph
                     ss-edges
                     '()
-                    (list (first (first ss-edges))))
+                    (list (first (first ss-edges)))
+                    M)
                 
       [on-draw draw-world]
       [on-key process-key]
       [name 'visualization])))
 
 (run AT-LEAST-ONE-MISSING)
-
-
