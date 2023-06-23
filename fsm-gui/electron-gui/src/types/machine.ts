@@ -248,17 +248,6 @@ export const ruleToString = (rule: FSMRule): string => {
   throw Error('Invalid rule supplied');
 };
 
-export const extractInputFromRule = (rule: FSMRule): string => {
-  if (isDfaNdfaRule(rule)) {
-    return rule.input;
-  } else if (isPdaRule(rule)) {
-    return rule.input;
-  } else if (isTmTmLangRecRule(rule)) {
-    return 'TODO: what to put?';
-  }
-  throw Error('Invalid rule supplied');
-};
-
 export function isTransitionsEqual(
   t1: FSMTransition,
   t2: FSMTransition,

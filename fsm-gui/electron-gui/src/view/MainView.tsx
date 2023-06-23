@@ -218,7 +218,6 @@ const MainView = (props: MainViewProps) => {
 
   useEffect(() => {
     // If we have a connection then listen for messages
-    // TODO: We can probably abstract this out with a callback
     if (props.racketBridge.client) {
       props.racketBridge.subscribeListener('data', (response) => {
         setWaitingForResponse(false);

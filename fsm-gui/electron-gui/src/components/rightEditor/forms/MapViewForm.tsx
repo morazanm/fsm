@@ -4,7 +4,6 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
-  Grid,
   IconButton,
   Slide,
   Step,
@@ -14,17 +13,13 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { Close as CloseIcon, CurrencyBitcoin } from '@mui/icons-material';
+import { Close as CloseIcon } from '@mui/icons-material';
 import { TransitionProps } from '@mui/material/transitions';
 import {
-  BasicTransition,
-  EndTransition,
   FSMTransition,
-  extractInputFromRule,
   isEndTransition,
   isNormalTransition,
   isStartTransition,
-  isTransitionsEqual,
   ruleToString,
 } from '../../../types/machine';
 
@@ -44,7 +39,6 @@ type CustomStepperProps = {
 };
 const CustomStepper = (props: CustomStepperProps) => {
   const theme = useTheme();
-  const jumpToTransition = () => {};
 
   const transToString = (trans: FSMTransition): string => {
     if (isNormalTransition(trans)) {

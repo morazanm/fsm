@@ -8,11 +8,10 @@ import {
   StateName,
   StateType,
 } from '../../types/machine';
-import styled, { keyframes, css } from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import { StateModal } from './StateModal';
 import styles from './state.module.css';
 import { MachineState } from '../../view/MainView';
-import { Keyframes } from 'styled-components/dist/types';
 
 const fadeIn = (transform: string) => keyframes`
 from {

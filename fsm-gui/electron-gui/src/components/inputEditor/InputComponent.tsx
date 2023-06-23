@@ -30,7 +30,7 @@ const InputComponent = (props: InputComponentProps) => {
 
   const disableButton = (): [boolean, string] => {
     if (!props.isConnected) {
-      return [true, "Disconnected from Racket Backend"]
+      return [true, 'Disconnected from Racket Backend'];
     }
     if (
       props.type === 'tm-language-recognizer' &&

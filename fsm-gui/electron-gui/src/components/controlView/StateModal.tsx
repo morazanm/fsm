@@ -45,8 +45,8 @@ function updateRules(
   rules: FSMRule[],
 ): FSMRule[] {
   return rules.map((r) => {
-    let newStart = r.start === oldName ? newName : r.start;
-    let newEnd = r.end === oldName ? newName : r.end;
+    const newStart = r.start === oldName ? newName : r.start;
+    const newEnd = r.end === oldName ? newName : r.end;
     return { ...r, start: newStart, end: newEnd };
   });
 }

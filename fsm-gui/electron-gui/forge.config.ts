@@ -24,17 +24,19 @@ const config: ForgeConfig = {
       config: {},
     },
   ],
-  publishers: [{
-    //@ts-ignore
-    name: '@electron-forge/publisher-github',
-    config: {
-      repository: {
-        owner: 'morazanm',
-        name: 'fsm-gui',
+  publishers: [
+    {
+      //@ts-ignore
+      name: '@electron-forge/publisher-github',
+      config: {
+        repository: {
+          owner: 'morazanm',
+          name: 'fsm-gui',
+        },
+        prerelease: true,
       },
-      prerelease: true,
     },
-  }],
+  ],
   plugins: [
     new WebpackPlugin({
       devContentSecurityPolicy: "connect-src 'self' * 'unsafe-eval'",

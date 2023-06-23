@@ -35,7 +35,6 @@ import {
   FSMAlpha,
   FSMRule,
   FSMStackAlpha,
-  FSMTransition,
   MachineTransitions,
 } from '../../types/machine';
 import { AlphaModal, GammaModal } from './forms/AlphaModals';
