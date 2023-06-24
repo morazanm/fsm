@@ -126,8 +126,10 @@
            (format "\n\tInvalid ~a elements: ~s" name-of-list invalids)) 
        )))
 
-  ;los: (list of x)
+  ;stx should contain a symbol
+  ;los: (list of stx)
   ;returns: (list of x) where x was duplicated in the los
+  ;LOS IS A LIST OF STX
   (define (return-all-duplicates los)
     (define (helper list-of-symbols duplicates)
       (cond [(empty? list-of-symbols) duplicates]
@@ -139,23 +141,13 @@
     (remove-duplicates (helper (map syntax->datum los) '()))
     )
 
-  ;stx should contain a symbol
-  ;lor: (list (list stx stx ...) ...)
-  ;returns --> (list (list stx stx ...) ...) where list elements were repeated
-  ;USES: pred "compare-rule-start"
-  (define (return-duplicate-rules lor)
-    (define no-duplicates (remove-duplicates lor compare-rule-start))
-    (foldr (lambda (x y) (if (member x no-duplicates)
-                             y
-                             (cons x y))) '() lor)
-    )
 
   ;stx should contain a symbol
   ;rule-list: (list (list stx stx...) ...)
   ;returns --> (list (list stx stx...))
   ;  returns the duplicated state/alphabet pairs
   ;       OR #f if the list is functional
-  ;USES: "return-duplicate-rules"
+  ;USES: "return-duplicate-rules" so must use stx
   (define (check-functional rule-list)
     (define rule-start-list (map (lambda (x) (list (car x) (car (cdr x)))) rule-list))
     (define duplicate-rules (return-duplicate-rules rule-start-list))
@@ -165,12 +157,23 @@
     )
 
   ;stx should contain a symbol
+  ;lor: (list (list stx stx ...) ...)
+  ;returns --> (list (list stx stx ...) ...) where list elements were repeated
+  ;USES: pred "compare-rule-start" so must use stx
+  (define (return-duplicate-rules lor)
+    (define no-duplicates (remove-duplicates lor compare-rule-start))
+    (foldr (lambda (x y) (if (member x no-duplicates)
+                             y
+                             (cons x y))) '() lor)
+    )
+
+  ;stx should contain a symbol
   ;rule-list: (list (list stx stx...) ...)
   ;pair-list: (list (list stx stx...) ...)
   ;returns --> (list (list stx stx...))
   ;  returns the lists from the second list that arent included in the first list
   ;       OR #f if the list is functional
-  ;USES: the predicate "rule-member"
+  ;USES: the predicate "rule-member?" so must be stx
   (define (check-included rule-list pair-list)
     (define rule-start-list (map (lambda (x) (list (car x) (car (cdr x)))) rule-list))
     (define leftovers (foldr (lambda (x y) (if (rule-member? x rule-start-list)
@@ -193,6 +196,14 @@
     )
 
   ;stx should contain a symbol
+  ;rule-list: (list (list stx stx...) ...)
+  ;rule: (list stx stx ...)
+  ;returns --> a boolean
+  ;USES: "compare-rule-start" so must use syntax
+  (define (rule-member? rule rule-list)
+    (ormap (lambda (x) (compare-rule-start rule x)) rule-list))
+
+  ;stx should contain a symbol
   ;rule1: (list stx stx ...)
   ;rule2: (list stx stx ...)
   ;returns --> boolean
@@ -202,15 +213,10 @@
                   (syntax-e (car (cdr rule1))))
             (list (syntax-e (car rule2))
                   (syntax-e (car (cdr rule2))))))
+
   
-  ;stx should contain a symbol
-  ;rule-list: (list (list stx stx...) ...)
-  ;rule: (list stx stx ...)
-  ;returns --> a boolean
-  ;USES: compare-rule-start
-  (define (rule-member? rule rule-list)
-    (ormap (lambda (x) (compare-rule-start rule x)) rule-list))
-    
+  ;THIS IS AN IMPORTANT PARENTHESIS, DO NOT REMOVE THIS
+  ;CODE ALL CODE ABOVE THIS PAREN 
   )
 
 
