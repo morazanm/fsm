@@ -15,6 +15,23 @@ import {
 import StateComponent from './state';
 import styles from './view.module.css';
 import { MachineState } from '../../view/MainView';
+import { styled } from 'styled-components';
+
+const StyledCurrentArrow = styled.hr<{ color: string }>`
+  &:after {
+    content: '';
+    width: 0;
+    height: 0;
+    border-top: 20px solid transparent;
+    border-bottom: 20px solid transparent;
+    border-left: 30px solid ${(p) => p.color};
+    position: absolute;
+    position: fixed;
+    display: inline-block;
+    right: 8px;
+    top: 15px;
+  }
+`;
 
 type ControlViewProps = {
   states: State[];
@@ -103,22 +120,29 @@ const ControlView = (props: ControlViewProps) => {
           <div
             style={{
               transform: `translateY(${center - 60}px) translateX(${center}px)`,
-              width: `${height / 2 - 20}px`,
+              width: `${height / 2 - 30}px`,
               height: '60px',
               textAlign: 'center',
             }}
           >
-            <hr
-              className={styles[style]}
-              style={{
-                borderTop: `10px ${
-                  style === 'previousArrow'
-                    ? theme.palette.text.disabled
-                    : arrowColor
-                } ${arrowStyle}`,
-                width: `${height / 2 - 20}px`,
-              }}
-            ></hr>
+            {style === 'previousArrow' ? (
+              <hr
+                className={styles[style]}
+                style={{
+                  borderTop: `10px ${theme.palette.text.disabled} ${arrowStyle}`,
+                  width: `${height / 2 - 40}px`,
+                }}
+              ></hr>
+            ) : (
+              <StyledCurrentArrow
+                color={arrowColor}
+                className={styles[style]}
+                style={{
+                  borderTop: `10px ${arrowColor} ${arrowStyle}`,
+                  width: `${height / 2 - 60}px`,
+                }}
+              ></StyledCurrentArrow>
+            )}
             <p
               style={{ rotate: `${useBottom ? 180 : 0}deg`, fontSize: '30px' }}
             >

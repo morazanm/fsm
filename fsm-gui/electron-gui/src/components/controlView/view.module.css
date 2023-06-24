@@ -30,7 +30,7 @@
 }
 
 .currentArrow {
-  border-radius: 20px;
+  border-radius: 20px 0px 0px 20px;
   border-top: var(--arrowHeight) yellow solid;
 }
 
