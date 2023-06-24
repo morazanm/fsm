@@ -142,6 +142,7 @@
   ;stx should contain a symbol
   ;lor: (list (list stx stx ...) ...)
   ;returns --> (list (list stx stx ...) ...) where list elements were repeated
+  ;USES: pred "compare-rule-start"
   (define (return-duplicate-rules lor)
     (define no-duplicates (remove-duplicates lor compare-rule-start))
     (foldr (lambda (x y) (if (member x no-duplicates)
@@ -154,7 +155,7 @@
   ;returns --> (list (list stx stx...))
   ;  returns the duplicated state/alphabet pairs
   ;       OR #f if the list is functional
-  ;USES: return-duplicate-rules
+  ;USES: "return-duplicate-rules"
   (define (check-functional rule-list)
     (define rule-start-list (map (lambda (x) (list (car x) (car (cdr x)))) rule-list))
     (define duplicate-rules (return-duplicate-rules rule-start-list))
