@@ -204,23 +204,24 @@
     (pattern '(st:state ...)
              #:with duplicate-lst (remove-duplicates (extract-duplicates #'(st ...)))
              #:fail-when (has-duplicates? #'(st ...))
-             (format "Duplicate states: ~s\n"
-                     (map syntax-e (syntax->list #'duplicate-lst))))
+             (format "Duplicate states: ~s\n" (map syntax-e (syntax->list #'duplicate-lst)))))
 
   ;; syntax class for a single alphabet
   (define-syntax-class alpha
-    #:description "a single alphabet for the machine"
+    #:description "a single alphabet member"
     (pattern field:id
-             ;#:fail-when (invalid-alpha-name? #'field)
-             #;"Alphabet member is not a single lowercase letter."))
+             #:fail-when (invalid-alpha-name? #'field)
+             "Alphabet member is not a single lowercase letter."))
 
 
   ;; syntax class for a list of alphabet
   (define-syntax-class alphas
     #:description "the input alphabet:"
-    (pattern '(fields ...)
-             #:fail-when (invalid-lostx? #'(fields ...) invalid-alpha-name?)
-             (construct-error-message invalid-alpha-name? "alphabet" #'(fields ...))))
+    (pattern '(an-alpha:alpha ...)
+             #:with duplicate-lst (remove-duplicates (extract-duplicates #'(an-alpha ...)))
+             #:fail-when (has-duplicates? #'(an-alpha ...))
+             (format "Duplicate alphabet members: ~s\n"
+                     (map syntax-e (syntax->list #'duplicate-lst)))))
 
 
   ;; syntax class for start state
@@ -260,7 +261,7 @@
      #:fail-when (invalid-rules?  (syntax->list #`(r.s1 ...))
                                   (syntax->list #`(r.a ...))
                                   (syntax->list #`(r.s2 ...))
-                                  (syntax->list #`(a.fields ...))
+                                  (syntax->list #`(a.an-alpha ...))
                                   (syntax->list #`(sts.st ...)))
      "Invalid rules supplied:"
      ;bring this part into the rules syntax class
@@ -273,7 +274,7 @@
      
      #:with error (check-included (stx-map syntax-e #`((r.s1 r.a r.s2) ...))
                                   (cartesian-product (syntax->list #`(sts.st ...))
-                                                     (syntax->list #`(a.fields ...))))
+                                                     (syntax->list #`(a.an-alpha ...))))
      #:fail-when (if (syntax-e #'error)
                      #'r
                      #f)
