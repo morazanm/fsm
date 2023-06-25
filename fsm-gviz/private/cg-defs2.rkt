@@ -17,6 +17,7 @@
 
  ;; pda stucis
  pda-stuci pda-stuci? pda-stuci-state pda-stuci-ui pda-stuci-stack pda-stuci-int
+ pda-stucis-equal?
  
  ;; Edges
  pda-edge  pda-edge?  pda-edge-fromst  pda-edge-read  pda-edge-pop pda-edge-tost pda-edge-push
@@ -289,6 +290,23 @@
 (check-equal? (pda-Edges-equal? (pda-spedge 'S 'ε 'ε 'ds 'ε) (pda-edge 'S 'ε 'ε 'Q '(S))) #f)
 (check-equal? (pda-Edges-equal? (cutoff-edge 'Q 'ε '(S) 'Q '(b)) (cutoff-spedge 'Q 'ε '(S) 'Q '(A b A))) #f)
 (check-equal? (pda-Edges-equal? (cutoff-spedge 'Q 'ε '(S) 'Q '(A b A)) (pda-spedge 'Q 'ε '(S) 'Q '(A b A))) #t)
+
+;.................................................
+
+;; pda-stuci pda-stuci -> Boolean
+;; Purpose: Determines if the two given pda-stucis are equal
+(define (pda-stucis-equal? s1 s2)
+  (and (eq? (pda-stuci-state s1) (pda-stuci-state s2))
+       (equal? (pda-stuci-ui s1) (pda-stuci-ui s2))
+       (equal? (pda-stuci-stack s1) (pda-stuci-stack s2))))
+
+;; Tests for pda-stucis-equal?
+(check-equal? (pda-stucis-equal? (pda-stuci 'S '(a b) '(a) 0) (pda-stuci 'S '(a) '(a) 0)) #f)
+(check-equal? (pda-stucis-equal? (pda-stuci 'S '() '(b) 0) (pda-stuci 'S '() '() 1)) #f)
+(check-equal? (pda-stucis-equal? (pda-stuci 'Q '() '(b) 0) (pda-stuci 'S '() '(b) 1)) #f)
+(check-equal? (pda-stucis-equal? (pda-stuci 'S '(a b) '() 0) (pda-stuci 'S '(a b) '() 10)) #t)
+(check-equal? (pda-stucis-equal? (pda-stuci 'R '(a b) '(a) 0) (pda-stuci 'R '(a b) '(a) 10)) #t)
+(check-equal? (pda-stucis-equal? (pda-stuci 'S '() '() 0) (pda-stuci 'S '() '() 1)) #t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; pda-rule auxiliary functions
