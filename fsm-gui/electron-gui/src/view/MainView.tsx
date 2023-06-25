@@ -478,6 +478,7 @@ const MainView = (props: MainViewProps) => {
                   }
                   rules={machineState.rules}
                   machineType={machineState.type}
+                  isConnectedToBackend={props.racketBridge.connected}
                 />
               ) : (
                 <Box

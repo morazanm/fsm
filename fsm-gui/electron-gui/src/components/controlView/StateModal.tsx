@@ -1,5 +1,6 @@
 import {
   Button,
+  ButtonGroup,
   Dialog,
   DialogActions,
   DialogContent,
@@ -16,11 +17,18 @@ import {
   SelectChangeEvent,
   Stack,
   TextField,
+  Tooltip,
   Typography,
   useTheme,
 } from '@mui/material';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { Close as CloseIcon } from '@mui/icons-material';
+import CodeEditor from 'react-simple-code-editor';
+import {
+  Close as CloseIcon,
+  Save as SaveIcon,
+  Edit as EditIcon,
+  Undo as UndoIcon,
+} from '@mui/icons-material';
 import {
   StateType,
   State,
@@ -38,6 +46,10 @@ import {
 import { useState } from 'react';
 import { validateState } from '../../components/rightEditor/forms/StateForm';
 import { MachineState } from '../../view/MainView';
+import Prisma from 'prismjs';
+import 'prismjs/components/prism-scheme';
+import 'prismjs/components/prism-racket';
+import 'prismjs/themes/prism.css';
 
 function updateRules(
   oldName: string,
@@ -172,16 +184,21 @@ type StateModalProps = {
   resetMachineAndSet: (machine: Partial<MachineState>) => void;
   currentTransition: FSMTransition | undefined;
   consumedInput: FSMAlpha[] | undefined;
+  isConnectedToBackend: boolean;
 };
 
 export const StateModal = (props: StateModalProps) => {
+  const theme = useTheme();
   const [type, setType] = useState<StateType>(props.state.type);
   const [stateName, setStateName] = useState(props.state.name);
   const [stateNameHelperText, setStateNameHelperText] = useState('');
+  const [editInv, setEditInv] = useState(false);
+  const [invCode, setInvCode] = useState(props.state.invFunc);
 
   const showUpdateButton = () => {
     return type !== props.state.type || stateName !== props.state.name;
   };
+
   const formValidation = () => {
     if (stateName !== props.state.name) {
       const isValid = validateState(stateName, props.states);
@@ -206,7 +223,6 @@ export const StateModal = (props: StateModalProps) => {
   const filterRules = props.rules.filter(
     (r) => r.start === props.state.name || r.end === props.state.name,
   );
-  const theme = useTheme();
   return (
     <Dialog
       open={props.open}
@@ -264,7 +280,63 @@ export const StateModal = (props: StateModalProps) => {
           </FormControl>
           <hr />
           <Stack spacing={2} sx={{ paddingTop: 2 }}>
-            <Typography variant="h6">Invariant:</Typography>
+            <Grid container>
+              <Grid item xs={10}>
+                <Typography variant="h6">Invariant:</Typography>
+              </Grid>
+              <Grid item xs={2}>
+                <ButtonGroup variant="text">
+                  <Tooltip
+                    title={
+                      !props.isConnectedToBackend
+                        ? 'Must Be connected to Racket to edit invariants'
+                        : editInv
+                        ? 'Disable Editing'
+                        : 'Enable Editing'
+                    }
+                    disableInteractive
+                  >
+                    <IconButton
+                      disabled={!props.isConnectedToBackend}
+                      aria-label="edit"
+                      style={{
+                        color: !props.isConnectedToBackend
+                          ? theme.palette.action.disabled
+                          : editInv
+                          ? theme.palette.warning.light
+                          : theme.palette.primary.main,
+                      }}
+                      onClick={() => setEditInv(!editInv)}
+                    >
+                      <EditIcon />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Undo Changes" disableInteractive>
+                    <IconButton
+                      aria-label="undo changes"
+                      color="primary"
+                      disabled={invCode === props.state.invFunc}
+                      onClick={() => setInvCode(props.state.invFunc)}
+                    >
+                      <UndoIcon />
+                    </IconButton>
+                  </Tooltip>
+                  {props.state.invFunc !== invCode && (
+                    <Tooltip title="Save Changes" disableInteractive>
+                      <IconButton
+                        aria-label="save"
+                        color="primary"
+                        onClick={() => {
+                          setEditInv(false);
+                        }}
+                      >
+                        <SaveIcon />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                </ButtonGroup>
+              </Grid>
+            </Grid>
             {showInvDetails(props.currentTransition) && (
               <InvariantDetails
                 consumedInput={props.consumedInput}
@@ -273,9 +345,30 @@ export const StateModal = (props: StateModalProps) => {
               />
             )}
             {props.state.invFunc ? (
-              <SyntaxHighlighter language="racket">
-                {props.state.invFunc}
-              </SyntaxHighlighter>
+              editInv ? (
+                <CodeEditor
+                  autoFocus={editInv}
+                  value={invCode}
+                  onValueChange={(code: string) => setInvCode(code)}
+                  highlight={(code: string) =>
+                    Prisma.highlight(code, Prisma.languages.racket, 'racket')
+                  }
+                  padding="1em"
+                  style={{
+                    fontFamily:
+                      '"Consolas", "Monaco", "Andale Mono", "Ubuntu Mono", "monospace"',
+                    fontSize: '1em',
+                    backgroundColor: 'rgb(245, 242, 240)',
+                    lineHeight: '1.5',
+                    margin: '0.5em 0px',
+                    boxShadow: `0 0 2px 2px ${theme.palette.warning.light}`,
+                  }}
+                />
+              ) : (
+                <SyntaxHighlighter language="racket">
+                  {props.state.invFunc}
+                </SyntaxHighlighter>
+              )
             ) : (
               <Typography>
                 There does not appear to be an invariant function associated

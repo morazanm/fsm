@@ -76,6 +76,7 @@ type StateProps = {
   resetMachineAndSet: (machine: Partial<MachineState>) => void;
   consumedInput: FSMAlpha[] | undefined;
   transform?: string;
+  isConnectedToBackend: boolean;
 };
 
 const State = (props: StateProps) => {
@@ -128,6 +129,7 @@ const State = (props: StateProps) => {
         machineType={props.machineType}
         resetMachineAndSet={props.resetMachineAndSet}
         states={props.states}
+        isConnectedToBackend={props.isConnectedToBackend}
       />
     </>
   );

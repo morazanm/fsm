@@ -40,6 +40,7 @@ type ControlViewProps = {
   consumedInput: FSMAlpha[] | undefined;
   currentTransition: FSMTransition | null;
   resetMachineAndSet: (machine: Partial<MachineState>) => void;
+  isConnectedToBackend: boolean;
 };
 
 type CurrentTransition = {
@@ -209,6 +210,7 @@ const ControlView = (props: ControlViewProps) => {
             resetMachineAndSet={props.resetMachineAndSet}
             rotate={(360 / props.states.length) * i}
             transform={`translateX(${height / 2}px)`}
+            isConnectedToBackend={props.isConnectedToBackend}
           />
         ))}
       </div>
