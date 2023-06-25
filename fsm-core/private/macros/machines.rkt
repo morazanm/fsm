@@ -19,9 +19,7 @@
   (define/contract (valid-state-name? stx)
     (-> syntax? (or/c boolean? (listof string?)))
     (define regex-pattern #px"^[A-Z](?:-[0-9]+)?$")
-    (or (regexp-match regex-pattern (symbol->string (syntax->datum stx)))
-        (equal? 'DEAD (syntax->datum stx))
-        )
+    (regexp-match regex-pattern (symbol->string (syntax->datum stx)))
     )
 
   ;; valid-alphabet-letter?: syntax -> boolean | syntax
@@ -109,8 +107,8 @@
     (find-first-duplicate (syntax->list rules-stx)))
 
   (define/contract (not-dead-state state)
-    (-> symbol? boolean?)
-    (not (equal? state 'DEAD)))
+    (-> (or/c symbol? list?) boolean?)
+    (not (equal? state ',DEAD)))
 
   ;; missing-state-letter-pairs: syntax -> syntax -> syntax -> [(state letter)]
   ;; Purpose: Given syntax representing the list of machine rules, syntax
@@ -130,13 +128,20 @@
            (syntax->list rules-stx)))
     (filter (lambda (pair) (not (member pair existing-pairs))) all-pairs)
     )
-    
+
+  (define/contract (find-duplicate-state machine-states-stx)
+    (-> syntax? (or/c syntax? boolean?))
+    (define datums (map syntax->datum (syntax->list machine-states-stx)))
+    (if (check-duplicates datums)
+        machine-states-stx
+        #f)
+    )
   )
 
 (define-syntax (make-dfa2 stx)
   ;; state: Syntax class representing a single machine state.
   ;; Description: A state is an identifier that can either be:
-  ;; 1. The constant symbol 'DEAD
+  ;; 1. The variable DEAD
   ;; 2. A single upper-case character [A-Z]
   ;; 3. A single upper-case character followed by a dash and at least one digit.
   (define-syntax-class state
@@ -145,10 +150,25 @@
       #:fail-unless (valid-state-name? #'name)
       "state name must be a single upper-case letter (e.g. A), or an uppercase letter followed by a dash and at least one digit (e.g. B-1234)")
     )
+  ;; syntax class for a quoted state 
+  (define-syntax-class qstate
+    #:description "a quoted state"
+    (pattern 'field:id
+      #:fail-unless (valid-state-name? #'field)
+      "Invalid state name")
+    )
+  (define-syntax-class quasiquoted-state
+    #:description "an unquoted state or DEAD"
+    (pattern s:state)
+    (pattern ,DEAD))
   ;; machine-states: Syntax class representing the set of machine states.
   (define-syntax-class machine-states
     #:description "the set of machine states"
-    (pattern (~or* '(s:state ...) (list s:state ...))
+    (pattern `(s:quasiquoted-state ...)
+      #:with error? (find-duplicate-state #`(s ...))
+      #:fail-when (syntax-e #'error?)
+      "machine states cannot contain duplicates.")
+    (pattern (~or* '(s:state ...) (list s:qstate ...))
       #:fail-when (check-duplicate-identifier (syntax->list #`(s ...)))
       "machine states cannot contain duplicates.")
     )
@@ -180,7 +200,10 @@
   ;;              list of machine-states.
   (define-syntax-class final-states
     #:description "the set of machine final states"
-    (pattern (~or* '(s:state ...) (list s:state ...))
+    (pattern '(s:state ...)
+      #:fail-when (check-duplicate-identifier (syntax->list #`(s ...)))
+      "machine final states cannot contain duplicates.")
+    (pattern (list `s:state ...)
       #:fail-when (check-duplicate-identifier (syntax->list #`(s ...)))
       "machine final states cannot contain duplicates."))
   ;; rule: Syntax class representing a single machine rule.
@@ -215,10 +238,21 @@
      #`(void)])
   )
 
-(make-dfa2 '(S F A DEAD)
+(make-dfa2 `(S F A F ,DEAD)
            '(a b)
            'S
-           '(F)
+           (list 'F 'A)
+           `((S a F)
+             (S b DEAD)
+             (F a F)
+             (F b A)
+             (A a F)
+             (A b A)))
+
+(make-dfa2 (list 'S 'F 'A DEAD)
+           '(a b)
+           'S
+           (list 'F 'A)
            '((S a F)
              (S b DEAD)
              (F a F)
