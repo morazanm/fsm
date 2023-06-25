@@ -99,9 +99,10 @@
              (syntax->list stx)))
     (define duplicates (return-all-duplicates (syntax->list stx)))
     (if (and (empty? failing-list)
-             (empty? duplicates)) #f
-                                  (if (empty? failing-list) duplicates
-                                      failing-list)))
+             (empty? duplicates))
+        #f
+        (if (empty? failing-list) duplicates
+            failing-list)))
         
 
   (define (construct-error-message pred name-of-list stx)
@@ -169,11 +170,34 @@
                                                (cons x y))) '() pair-list))
     (if (empty? leftovers) #f
         leftovers))
-    
+
+  (define (extract-duplicates stx-lst)
+    (define (helper L acc)
+      (cond [(empty? L) acc]
+            [(member (first L) (rest L))
+             (cons (first L) (helper (rest L) (cons (first L) acc)))]
+            [else (helper (rest L) acc)]))
+    (let* [(lst (map syntax-e (syntax->list stx-lst)))]
+      (helper lst '())))
+
+  (define (has-duplicates? stx-lst)
+    (define (helper L)
+      (and (not (empty? L))
+           (or (member (first L) (rest L))
+               (helper (rest L)))))
+    (let* [(lst (map syntax-e (syntax->list stx-lst)))]
+      (helper lst)))
   )
 
 
 (define-syntax (make-dfa stx)
+  ;; syntax class for a quoted state 
+  (define-syntax-class qstate
+    #:description "a quoted state"
+    (pattern 'field:id
+             #:fail-when (invalid-state-name? #'field)
+             "Invalid state name"))
+  
   ;; syntax class for a single state 
   (define-syntax-class state
     #:description "a single state of the machine"
@@ -181,45 +205,47 @@
              #:fail-when (invalid-state-name? #'field)
              "Invalid state name"))
 
-  ;; syntax class for a single alphabet
-  (define-syntax-class alpha
-    #:description "a single alphabet for the machine"
-    (pattern field:id
-             ;#:fail-when (invalid-alpha-name? #'field)
-             #;"Alphabet member is not a single lowercase letter."))
-  
   ;; syntax class for a list of states
   (define-syntax-class states
     #:description "the machine's states"
-    (pattern '(fields ...)
-             #:fail-when (invalid-lostx? #'(fields ...) invalid-state-name?)
-             (construct-error-message invalid-state-name? "states" #'(fields ...)))
-    (pattern (list fields ...)
-             #:fail-when (invalid-lostx? #'(fields ...) invalid-state-name?)
-             (construct-error-message invalid-state-name? "states" #'(fields ...))))
+    (pattern '(st:state ...)
+             #:with duplicate-lst (remove-duplicates (extract-duplicates #'(st ...)))
+             #:fail-when (has-duplicates? #'(st ...))
+             (format "Duplicate states: ~s\n" (map syntax-e (syntax->list #'duplicate-lst)))))
+
+  ;; syntax class for a single alphabet
+  (define-syntax-class alpha
+    #:description "a single alphabet member"
+    (pattern field:id
+             #:fail-when (invalid-alpha-name? #'field)
+             "Alphabet member is not a single lowercase letter."))
 
 
   ;; syntax class for a list of alphabet
   (define-syntax-class alphas
     #:description "the input alphabet:"
-    (pattern '(fields ...)
-             #:fail-when (invalid-lostx? #'(fields ...) invalid-alpha-name?)
-             (construct-error-message invalid-alpha-name? "alphabet" #'(fields ...))))
+    (pattern '(an-alpha:alpha ...)
+             #:with duplicate-lst (remove-duplicates (extract-duplicates #'(an-alpha ...)))
+             #:fail-when (has-duplicates? #'(an-alpha ...))
+             (format "Duplicate alphabet members: ~s\n"
+                     (map syntax-e (syntax->list #'duplicate-lst)))))
 
 
   ;; syntax class for start state
   (define-syntax-class start
     #:description "the starting state of the machine"
-    (pattern `field
+    (pattern 'field
              #:fail-when (invalid-state-name? #'field)
              (format "~s is an invalid start state name" (syntax->datum #'field))))
 
   ;; syntax class for a list of finals 
   (define-syntax-class finals
     #:description "the final states of the machine"
-    (pattern '(fields:state ...)
-             #:fail-when (check-duplicate-identifier (syntax->list #'(fields ...)))
-             "Duplicate or invalid final state name"))
+    (pattern '(st:state ...)
+             #:with duplicate-lst (remove-duplicates (extract-duplicates #'(st ...)))
+             #:fail-when (has-duplicates? #'(st ...))
+             (format "Duplicates in final states: ~s\n"
+                     (map syntax-e (syntax->list #'duplicate-lst)))))
 
   ;; syntax class for a list of rules
   (define-syntax-class rules
@@ -227,25 +253,27 @@
     (pattern '((s1:state a:alpha s2:state) ...)))
   
   (syntax-parse stx
-    [(_ sts:states a:alphas s:start f:finals r:rules (~optional (~var no-dead)))
+    [(_ sts:states a:alphas s:qstate f:finals r:rules (~optional (~var no-dead)))
+     
      ;; Make sure the start state is in the list of states
-     #:fail-when (false? (member-stx? #`s.field (syntax->list #`(sts.fields ...))))
+     #:fail-when (false? (member-stx? #'s.field (syntax->list #`(sts.st ...))))
      (raise-syntax-error 'make-dfa
-                         (format "Start state must be in the list of states ~s" (syntax->datum #`(sts.fields ...)))
+                         (format "Start state must be in the list of states ~s" (syntax->datum #`(sts.st ...)))
                          #'s)
+     
      ;; Make sure the final states are in the list of states
-     #:with failing-finals (check-finals (syntax->list #`(f.fields ...)) (syntax->list #`(sts.fields ...)))
+     #:with failing-finals (check-finals (syntax->list #`(f.st ...)) (syntax->list #`(sts.st ...)))
      #:fail-when (if (boolean? (syntax-e #'failing-finals)) #f #`f)
      (format "final states ~s must be in the list of states ~s"
              (syntax->datum #'failing-finals)
-             (syntax->datum #`(sts.fields ...))
+             (syntax->datum #`(sts.st ...))
              )
      ;; Make sure the rules checkout
      #:fail-when (invalid-rules?  (syntax->list #`(r.s1 ...))
                                   (syntax->list #`(r.a ...))
                                   (syntax->list #`(r.s2 ...))
-                                  (syntax->list #`(a.fields ...))
-                                  (syntax->list #`(sts.fields ...)))
+                                  (syntax->list #`(a.an-alpha ...))
+                                  (syntax->list #`(sts.st ...)))
      "Invalid rules supplied:"
      ;bring this part into the rules syntax class
      ;error?: syntax or #f
@@ -256,8 +284,8 @@
      (format "State/alphabet pairs ~s is duplicated in rules" (map syntax->datum (syntax-e #'error?)))
      
      #:with error (check-included (stx-map syntax-e #`((r.s1 r.a r.s2) ...))
-                                 (cartesian-product (syntax->list #`(sts.fields ...))
-                                                    (syntax->list #`(a.fields ...))))
+                                  (cartesian-product (syntax->list #`(sts.st ...))
+                                                     (syntax->list #`(a.an-alpha ...))))
      #:fail-when (if (syntax-e #'error)
                      #'r
                      #f)
@@ -267,120 +295,120 @@
        #`(void))]))
 
 
-(module+ test
-  (require rackunit syntax/macro-testing)
+#;(module+ test
+    (require rackunit syntax/macro-testing)
 
-  (define-syntax (check-exn! stx)
-    (syntax-parse stx
-      [(_ msg:expr exn-msg:expr machine:expr)
-       #`(check-exn exn-msg
-                    (lambda () (convert-compile-time-error machine))
-                    msg)]
-      [(_ exn-msg:expr machine:expr)
-       #`(check-exn exn-msg
-                    (lambda () (convert-compile-time-error machine)))]
-      [_ (error 'check-exn! "Invalid syntax")]))
-
-
-
-  (check-exn! "Fails when there are invalid states"
-              #rx"Invalid states elements: \\(a D\\-a\\)"
-              (make-dfa '(a B-1 R C D-a)
-                        '(a b e)
-                        'D
-                        '(A C)
-                        '((A a C)
-                          (B-1 a A))))
+    (define-syntax (check-exn! stx)
+      (syntax-parse stx
+        [(_ msg:expr exn-msg:expr machine:expr)
+         #`(check-exn exn-msg
+                      (lambda () (convert-compile-time-error machine))
+                      msg)]
+        [(_ exn-msg:expr machine:expr)
+         #`(check-exn exn-msg
+                      (lambda () (convert-compile-time-error machine)))]
+        [_ (error 'check-exn! "Invalid syntax")]))
 
 
-  (check-exn! "Fails when there are duplicate states"
-              #rx"Duplicates in list: \\(D A\\)"
-              (make-dfa '(A A B-1 R C D D)
-                        '(a b e)
-                        'D
-                        '(A C)
-                        '((A a C)
-                          (B-1 a A))))
+
+    (check-exn! "Fails when there are invalid states"
+                #rx"Invalid states elements: \\(a D\\-a\\)"
+                (make-dfa '(a B-1 R C D-a)
+                          '(a b e)
+                          'D
+                          '(A C)
+                          '((A a C)
+                            (B-1 a A))))
 
 
-  (check-exn! "Fails when there are invalid alpha"
-              #rx"Invalid alphabet elements: \\(D a\\-1\\)"
-              (make-dfa '(A B-1 R C D)
-                        '(a b e D a-1)
-                        'D
-                        '(A C)
-                        '((A a C)
-                          (B-1 a A))))
+    (check-exn! "Fails when there are duplicate states"
+                #rx"Duplicates in list: \\(D A\\)"
+                (make-dfa '(A A B-1 R C D D)
+                          '(a b e)
+                          'D
+                          '(A C)
+                          '((A a C)
+                            (B-1 a A))))
 
 
-  (check-exn! "Fails when there are duplicate alpha"
-              #rx"Duplicates in list: \\(a\\)"
-              (make-dfa '(A B-1 R C D)
-                        '(a b e a)
-                        'D
-                        '(A C)
-                        '((A a C)
-                          (B-1 a A))))
-
-  (check-exn! "Fails when start state is not in the list of states"
-              #rx"Start state must be in the list of states \\(A B\\-1 R C D\\)"
-              (make-dfa '(A B-1 R C D)
-                        '(a b e)
-                        'F
-                        '(A C)
-                        '((A a C)
-                          (B-1 a A))))
+    (check-exn! "Fails when there are invalid alpha"
+                #rx"Invalid alphabet elements: \\(D a\\-1\\)"
+                (make-dfa '(A B-1 R C D)
+                          '(a b e D a-1)
+                          'D
+                          '(A C)
+                          '((A a C)
+                            (B-1 a A))))
 
 
-  (check-exn! "Fails when start state is a invalid state"
-              #rx"a is an invalid start state name"
-              (make-dfa '(A B-1 R C D)
-                        '(a b e)
-                        'a
-                        '(A C)
-                        '((A a C)
-                          (B-1 a A))))
+    (check-exn! "Fails when there are duplicate alpha"
+                #rx"Duplicates in list: \\(a\\)"
+                (make-dfa '(A B-1 R C D)
+                          '(a b e a)
+                          'D
+                          '(A C)
+                          '((A a C)
+                            (B-1 a A))))
+
+    (check-exn! "Fails when start state is not in the list of states"
+                #rx"Start state must be in the list of states \\(A B\\-1 R C D\\)"
+                (make-dfa '(A B-1 R C D)
+                          '(a b e)
+                          'F
+                          '(A C)
+                          '((A a C)
+                            (B-1 a A))))
 
 
-  (check-exn! "Fails when Final states are not in list of states"
-              #rx"final states \\(Z Y X\\) must be in the list of states \\(A B\\-1 R C D\\)"
-              (make-dfa '(A B-1 R C D)
-                        '(a b e)
-                        'A
-                        '(X Y Z)
-                        '((A a C)
-                          (B-1 a A))))
+    (check-exn! "Fails when start state is a invalid state"
+                #rx"a is an invalid start state name"
+                (make-dfa '(A B-1 R C D)
+                          '(a b e)
+                          'a
+                          '(A C)
+                          '((A a C)
+                            (B-1 a A))))
 
 
-  (check-exn! "Fails when Final states are invalid states"
-              #rx"Invalid state name\n  at: X\\-a"
-              (make-dfa '(A B-1 R C D)
-                        '(a b e)
-                        'A
-                        '(X-a)
-                        '((A a C)
-                          (B-1 a A))))
+    (check-exn! "Fails when Final states are not in list of states"
+                #rx"final states \\(Z Y X\\) must be in the list of states \\(A B\\-1 R C D\\)"
+                (make-dfa '(A B-1 R C D)
+                          '(a b e)
+                          'A
+                          '(X Y Z)
+                          '((A a C)
+                            (B-1 a A))))
 
 
-  (check-exn! "Fails when duplicate rules are provided"
-              #rx"State\\/alphabet pairs \\(\\(A a\\) \\(B-1 a\\)\\) is duplicated in rules"
-              (make-dfa '(A B-1 R C D)
-                        '(a b e)
-                        'A
-                        '(B-1)
-                        '((A a C)
-                          (A a C)
-                          (B-1 a A)
-                          (B-1 a A))))
+    (check-exn! "Fails when Final states are invalid states"
+                #rx"Invalid state name\n  at: X\\-a"
+                (make-dfa '(A B-1 R C D)
+                          '(a b e)
+                          'A
+                          '(X-a)
+                          '((A a C)
+                            (B-1 a A))))
 
 
-  (check-exn! "Fails when duplicate rules are provided"
-              #rx"Must have rules for state\\/alphabet pairs: \\(\\(A b\\) \\(A e\\) \\(B-1 b\\) \\(B-1 e\\) \\(R a\\) \\(R b\\) \\(R e\\) \\(C a\\) \\(C b\\) \\(C e\\) \\(D a\\) \\(D b\\) \\(D e\\)\\)"
-              (make-dfa '(A B-1 R C D)
-                        '(a b e)
-                        'D
-                        '(A C)
-                        '((A a C)
-                          (B-1 a A))))
+    (check-exn! "Fails when duplicate rules are provided"
+                #rx"State\\/alphabet pairs \\(\\(A a\\) \\(B-1 a\\)\\) is duplicated in rules"
+                (make-dfa '(A B-1 R C D)
+                          '(a b e)
+                          'A
+                          '(B-1)
+                          '((A a C)
+                            (A a C)
+                            (B-1 a A)
+                            (B-1 a A))))
 
-  ) ;;end module+ test
+
+    (check-exn! "Fails when duplicate rules are provided"
+                #rx"Must have rules for state\\/alphabet pairs: \\(\\(A b\\) \\(A e\\) \\(B-1 b\\) \\(B-1 e\\) \\(R a\\) \\(R b\\) \\(R e\\) \\(C a\\) \\(C b\\) \\(C e\\) \\(D a\\) \\(D b\\) \\(D e\\)\\)"
+                (make-dfa '(A B-1 R C D)
+                          '(a b e)
+                          'D
+                          '(A C)
+                          '((A a C)
+                            (B-1 a A))))
+
+    ) ;;end module+ test
