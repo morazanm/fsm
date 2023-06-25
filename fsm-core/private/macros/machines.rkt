@@ -191,6 +191,13 @@
 
 
 (define-syntax (make-dfa stx)
+  ;; syntax class for a quoted state 
+  (define-syntax-class qstate
+    #:description "a quoted state"
+    (pattern 'field:id
+             #:fail-when (invalid-state-name? #'field)
+             "Invalid state name"))
+  
   ;; syntax class for a single state 
   (define-syntax-class state
     #:description "a single state of the machine"
@@ -227,16 +234,18 @@
   ;; syntax class for start state
   (define-syntax-class start
     #:description "the starting state of the machine"
-    (pattern `field
+    (pattern 'field
              #:fail-when (invalid-state-name? #'field)
              (format "~s is an invalid start state name" (syntax->datum #'field))))
 
   ;; syntax class for a list of finals 
   (define-syntax-class finals
     #:description "the final states of the machine"
-    (pattern '(fields:state ...)
-             #:fail-when (check-duplicate-identifier (syntax->list #'(fields ...)))
-             "Duplicate or invalid final state name"))
+    (pattern '(st:state ...)
+             #:with duplicate-lst (remove-duplicates (extract-duplicates #'(st ...)))
+             #:fail-when (has-duplicates? #'(st ...))
+             (format "Duplicates in final states: ~s\n"
+                     (map syntax-e (syntax->list #'duplicate-lst)))))
 
   ;; syntax class for a list of rules
   (define-syntax-class rules
@@ -244,14 +253,16 @@
     (pattern '((s1:state a:alpha s2:state) ...)))
   
   (syntax-parse stx
-    [(_ sts:states a:alphas s:start f:finals r:rules (~optional (~var no-dead)))
+    [(_ sts:states a:alphas s:qstate f:finals r:rules (~optional (~var no-dead)))
+     
      ;; Make sure the start state is in the list of states
-     #:fail-when (false? (member-stx? #`s.field (syntax->list #`(sts.st ...))))
+     #:fail-when (false? (member-stx? #'s.field (syntax->list #`(sts.st ...))))
      (raise-syntax-error 'make-dfa
                          (format "Start state must be in the list of states ~s" (syntax->datum #`(sts.st ...)))
                          #'s)
+     
      ;; Make sure the final states are in the list of states
-     #:with failing-finals (check-finals (syntax->list #`(f.fields ...)) (syntax->list #`(sts.st ...)))
+     #:with failing-finals (check-finals (syntax->list #`(f.st ...)) (syntax->list #`(sts.st ...)))
      #:fail-when (if (boolean? (syntax-e #'failing-finals)) #f #`f)
      (format "final states ~s must be in the list of states ~s"
              (syntax->datum #'failing-finals)
