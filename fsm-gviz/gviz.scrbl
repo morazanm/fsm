@@ -1,5 +1,5 @@
 #lang scribble/manual
-@(require (for-label racket 2htdp/image))
+@(require (for-label racket 2htdp/image "interface.rkt"))
 
 
 @title{FSM Graphviz Library}
