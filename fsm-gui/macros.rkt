@@ -60,41 +60,32 @@
                              x
                              (helper xs (cons (syntax-e x) a)))])
     (helper stx-list '()))
+
+
+
   
-  
-  (define-syntax-class invariant-func
+  (define-syntax-class (invariant-func machine-name)
     #:datum-literals (define-invariant-for)
     (pattern (~and (define-invariant-for state:id (args:id ...) body:expr ...+)
                    stx)
-      #:attr str-value #`(regexp-replace #px"define-invariant-for *[^\\s]* *"
+      #:with id (syntax-local-introduce (format-id common-ctx "~a-inv-~a" machine-name #'state))
+      #:with str-value #`(regexp-replace #px"define-invariant-for *[^\\s]* *"
                                          (syntax->string #`(stx))
                                          "define "))))
 
 
 (define-syntax (define-invariants-for stx)
   (syntax-parse stx
-    [(_ m-name func:invariant-func ...+)
+    [(_ m-name (~var func (invariant-func #'m-name)) ...+)
      #:fail-when (check-duplicates* (syntax->list #`(func.state ...)))
      "Duplicate invariant for state found"
-     #:with (inv-names ...) (stx-map (lambda (n)
-                                       (syntax-local-introduce (format-id common-ctx "~a-inv-~a" #'m-name n)))
-                                     #`(func.state ...))
-     #:with (str-inv-names ...) (stx-map (lambda (n)
-                                           (syntax-local-introduce (format-id common-ctx "~a-inv-~a-str" #`m-name n)))
-                                         #`(func.state ...))
      #`(begin
          ;; Add the invariant functions
-         (define (inv-names func.args ...) func.body ...) ...
-
-         ;; Add the string representation of the inv funcs for the GUI
-         #;(define str-inv-names func.str-value) ;...
+         (define (func.id func.args ...) func.body ...) ...
 
          ;; Add both values to a list for the gui 
          (define #,(syntax-local-introduce (format-id common-ctx "~a-inv-gui-list" #`m-name))
-           (list #,@(stx-map (lambda (n f s) #`(list '#,n #,s #,f))
-                             #`(func.state ...)
-                             #`(inv-names ...)
-                             #`(func.str-value ...)))))
+           (list (list 'func.state func.str-value func.id) ...)))
      ]
     [(_ _) (raise-syntax-error #f "Expected at least one 'define-invariant-for' clause" stx)]))
 
