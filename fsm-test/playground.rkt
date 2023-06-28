@@ -27,14 +27,14 @@
                (A b A))
              'nodead))
 
-
-(define-invariant (SS-INV ci) (empty? ci))
-(define-invariant (FF-INV ci)
-  (define ans (and (not (empty? ci))
-                   (eq? (first ci) 'a)
-                   (andmap (λ (s) (or (eq? s 'a) (eq? s 'b)))
-                           (rest ci))))
-  ans)
+(define-invariants-for a-aUb*
+  (define-invariant-for S (ci) (empty? ci))
+  (define-invariant-for F (ci)
+    (define ans (and (not (empty? ci))
+                     (eq? (first ci) 'a)
+                     (andmap (λ (s) (or (eq? s 'a) (eq? s 'b)))
+                             (rest ci))))
+    ans))
 
 
 ;(sm-visualize a-aUb* (list 'S SS-INV) (list 'F FF-INV))
@@ -75,9 +75,6 @@
                                     ((M a (b)) (M ,EMP))
                                     ((M b (a)) (M ,EMP)))))
 
-(define-invariant (PDA-S-INV a b) #t)
-(define-invariant (PDA-F-INV a b) #t)
-(define-invariant (PDA-M-INV a b) #f)
 
 #;(sm-visualize!! pda-numa=numb
                   (S -> PDA-S-INV)
@@ -261,13 +258,6 @@
                             'Y))
 
 
-;; gets the number of z's in the tape
-(define get-num-of-x (lambda (tape symbol)
-                       (length (filter (lambda (ele)
-                                         (eq? ele symbol)) tape))))
-
-(define implies (lambda (a c)
-                  (or (not a) c)))
 
 ;; takewhile stream-list boolean-procedure
 ;; Purpose: Contines to take from the stream until the boolean procedure is met
@@ -300,6 +290,14 @@
 
 
 (define-invariants-for a^nb^nc^n2
+  ;; gets the number of z's in the tape
+  (define get-num-of-x (lambda (tape symbol)
+                         (length (filter (lambda (ele)
+                                           (eq? ele symbol)) tape))))
+
+  (define implies (lambda (a c)
+                    (or (not a) c)))
+  
   ;; The number of z's is divisiable by 3
   ;; The number of z's before the first a is less or equal to the number of z's
   (define-invariant-for S (S tape posn)
@@ -365,9 +363,8 @@
        (= (modulo (length list-of-xyz) 3) 0)))))
 
 
-(sm-visualize!!! a^nb^nc^n2)
+(sm-visualize! a^nb^nc^n2)
                
-(displayln "here")
 #|
 (define LB (make-tm '(S H)
                     `(a b)
