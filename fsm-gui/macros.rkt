@@ -17,18 +17,17 @@
   (define (check-duplicates* stx-list)
     (define/match (helper lst acc)
       [(`() _) #f]
-      [(`(,x ,xs ...) a) (if (member (syntax-e x) a)
-                             x
-                             (helper xs (cons (syntax-e x) a)))])
+      [(`(,x ,xs ...) a)
+       (if (member (syntax-e x) a) x (helper xs (cons (syntax-e x) a)))])
     (helper stx-list '()))
 
-
+  ;; Syntax class for racket define keyword
   (define-syntax-class racket-define
     #:literals (define)
     (pattern (define n:id e:expr))
     (pattern (define (n:id params:id ...) body:expr ...+)))
       
-  
+  ;; Syntax for associating a invariant with a state in the machine
   (define-syntax-class (invariant-func machine-name)
     #:datum-literals (define-invariant-for)
     (pattern (~and (define-invariant-for state:id (args:id ...) body:expr ...+)
@@ -41,7 +40,7 @@
 
 (define-syntax (define-invariants-for stx)
   (syntax-parse stx
-    [(_ m-name (~or func:racket-define (~var func (invariant-func #'m-name))) ...+)
+    [(_ m-name:id (~or func:racket-define (~var func (invariant-func #'m-name))) ...+)
      #:fail-when (empty? (syntax->list #`((~? func.state) ...)))
      "Expected at least one 'define-invariant-for' clause"
      #:fail-when (check-duplicates* (syntax->list #`((~? func.state) ...)))
@@ -59,13 +58,18 @@
 (define-syntax (sm-visualize! stx)
   (syntax-parse stx
     [(_ fsa:id)
-     #:with inv-list (format-id common-ctx INV-LIST-ID #'fsa)
-     #`(run-with-prebuilt fsa inv-list)]))
-
+     #:with inv-list-id (format-id #'fsa INV-LIST-ID #'fsa)
+     #:fail-when (not (identifier-binding #'inv-list-id))
+     "Invariants not defined for fsa"
+     #`(run-with-prebuilt fsa inv-list-id)]
+    ;; If invariants where not defined then defeult to this case
+    [(_ fsa)
+     #`(run-with-prebuilt fsa '())]))
 
 (module+ test
   (require rackunit syntax/macro-testing)
   (define a^nb^nc^n2 'dummy)
+
 
   (check-exn #rx"Duplicate invariant for state found"
              (lambda ()
