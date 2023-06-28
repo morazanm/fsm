@@ -6,7 +6,7 @@
   syntax/to-string "electron-backend/server.rkt")
 
 (begin-for-syntax
-  (define ID-INV"~a-$inv$-~a")
+  (define ID-INV "~a-$inv$-~a")
   (define INV-LIST-ID "~a-inv-gui-list")
   
   ;; A common scope for storing variables 
@@ -25,8 +25,8 @@
 
   (define-syntax-class racket-define
     #:literals (define)
-    (pattern (~and (define n:id e:expr) stx))
-    (pattern (~and (define (n:id params:id ...) body:expr ...+) stx)))
+    (pattern (define n:id e:expr))
+    (pattern (define (n:id params:id ...) body:expr ...+)))
       
   
   (define-syntax-class (invariant-func machine-name)
@@ -49,7 +49,7 @@
      #:with list-name (syntax-local-introduce (format-id common-ctx INV-LIST-ID #'m-name))
      #`(begin
          ;; Add the invariant functions
-         (~? (define (func.id func.args ...) func.body ...) func.stx) ...
+         (~? (define (func.id func.args ...) func.body ...) func) ...
 
          ;; Add both values to a list so we can call it from sm-visualize
          (define list-name (list (~? (list 'func.state func.str-value func.id)) ...)))]
@@ -66,7 +66,6 @@
 (module+ test
   (require rackunit syntax/macro-testing)
   (define a^nb^nc^n2 'dummy)
-  
 
   (check-exn #rx"Duplicate invariant for state found"
              (lambda ()
