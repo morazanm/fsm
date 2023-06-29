@@ -229,12 +229,16 @@
 
 
 ;; a world is a structure that consists of
-;; cgraph - created dfa graph of a given ndfa
+;; cgraph - created dfa graph of a dfa
 ;; up-edges - unprocessed edges, edges that are yet to be drawn
 ;; ad-edges - already drawn edges
 ;; incl-nodes - states that are already drawn on the graph
 ;; M - a given ndfa
-(define-struct world (cgraph up-edges ad-edges incl-nodes M))
+;; hedges - a list of highlighted edges in the ndfa graph
+;; fedges - a list of faded edges in the ndfa graph
+;; bledges - a list of black/unvisited edges in the ndfa graph
+
+(define-struct world (cgraph up-edges ad-edges incl-nodes M hedges fedges bledges))
 
 
 ;; add-included-node
@@ -267,14 +271,15 @@
 
 ;; contains-final-state?
 ;; state (listof states) -> Boolean
+;; Putpose: To check if the given state is in the list of final states
 (define (contains-final-state? sss sm-finals)
   (ormap (λ (s) (equal? sss s)) sm-finals))
 
 
-
+;; dfa-node-graph
 ;; (listof rules) graph (listof states) -> graph
 ;; Purpose: To create a graph of nodes from the given list of rules
-(define (node-graph cgraph los finals)
+(define (dfa-node-graph cgraph los finals)
   (foldl (λ (state result)  (if  (contains-final-state? state finals)
                                  (add-node
                                   result
@@ -304,9 +309,10 @@
          los))
 
 
+;; dfa-edge-graph
 ;; (listof rules) -> graph
 ;; Purpose: To create a graph of edges from the given list of rules
-(define (edge-graph cgraph lor)
+(define (dfa-edge-graph cgraph lor added-dfa-edge)
   (foldl (λ (rule result) (add-edge result
                                     (second rule)
                                     (if (equal? (first rule) '())
@@ -315,18 +321,63 @@
                                     (if (equal? (third rule) '())
                                         'ds
                                         (los2symb (third rule)))
-                                    #:atb (hash 'fontsize 20 'style 'solid)))
+                                    #:atb (hash 'fontsize 20
+                                                'style 'solid
+                                                'color (if (equal? rule added-dfa-edge)
+                                                           'violet
+                                                           'black))))
          cgraph
          lor))
 
 
   
-
+;; create-dfa-graph
 ;; (listof rules) -> graph
 ;; Purpose: To create a dfa graph from a given ndfa
-(define (create-cgraph lor los finals)
-  (edge-graph (node-graph (create-graph 'cgraph #:atb (hash 'rankdir "LR")) los finals)
-              lor))
+(define (create-dfa-graph lor los finals)
+  (if (empty? lor)
+      (dfa-edge-graph (dfa-node-graph (create-graph 'dfagraph #:atb (hash 'rankdir "LR")) los finals)
+                  lor '())
+      (dfa-edge-graph (dfa-node-graph (create-graph 'dfagraph #:atb (hash 'rankdir "LR")) los finals)
+                  lor (first lor))))
+
+;; find-empty-transitions
+;; (listof state) (listof state) (listof rules) -> (listof rules)
+;; Purpose: To compute a list of empty transitions from any of the given states
+(define (find-empty-transitions to-visit visited rules)
+  (if (empty? to-visit)
+      empty
+      (let* [(current-state (first to-visit))
+             (current-state-empties (filter (λ (rule) (and (eq? (first rule) current-state)
+                                                           (eq? (second rule) EMP)))
+                                            rules))
+             (not-already-visited (filter (λ (cse) (not (member cse (append to-visit visited))))                 
+                                          (map third current-state-empties)))]
+        (append current-state-empties
+                (find-empty-transitions
+                 (append (rest to-visit) not-already-visited)
+                 (cons current-state visited)
+                 rules)))))
+                                                              
+
+
+;; compute-all-hedges
+;; ndfa ss -> (listof edges)
+;; Purpose: To compute a list of edges that needs to be highlighted in the ndfa graph
+(define (compute-all-hedges ndfa-rules to-ss added-dfa-edge)
+  (if (empty? to-ss)
+      empty
+      (let [(new-hedges (if (empty? added-dfa-edge)
+                            empty
+                            (filter (λ (rule) (and (eq? (second added-dfa-edge)
+                                                        (second rule))
+                                                   (member (first rule) (first added-dfa-edge))))
+                                    ndfa-rules)))]
+        (append (find-empty-transitions (list (first to-ss)) empty ndfa-rules)
+                new-hedges
+                (compute-all-hedges (filter (λ (rule) (not (member rule new-hedges)))
+                                            ndfa-rules)
+                                    (rest to-ss) added-dfa-edge)))))
       
 
 ;; world key -> world
@@ -340,31 +391,57 @@
                     (new-ad-edges (cons (first (world-up-edges a-world))
                                         (world-ad-edges a-world)))
                     (new-incl-nodes (add-included-node (world-incl-nodes a-world)
-                                                       (first new-ad-edges)))]
-               (make-world (create-cgraph new-ad-edges new-incl-nodes (ndfa2dfa-finals-only (world-M a-world)))                       
+                                                       (first new-ad-edges)))
+                    (new-hedges (compute-all-hedges (sm-rules (world-M a-world))
+                                                    (third (first new-ad-edges))
+                                                    (first new-ad-edges)))
+                    (new-fedges (append (world-hedges a-world) (world-fedges a-world)))
+                    (new-bledges (remove new-hedges (world-bledges a-world)))]
+               (make-world (create-dfa-graph new-ad-edges new-incl-nodes (ndfa2dfa-finals-only (world-M a-world)))                       
                            new-up-edges                       
                            new-ad-edges
                            new-incl-nodes
-                           (world-M a-world))))]
+                           (world-M a-world)
+                           new-hedges
+                           new-fedges
+                           new-bledges 
+                           )))]
         [(key=? "left" a-key)
          (if (empty? (world-ad-edges a-world))
              a-world
-             (let* [(new-up-edges (cons (first (world-ad-edges a-world))
+             (let* [(ss-edges (ndfa2dfa-rules-only (world-M a-world)))
+                    (super-start-state (first (first ss-edges)))
+                    (edge-removed (first (world-ad-edges a-world)))
+                    (new-up-edges (cons edge-removed
                                         (world-up-edges a-world)))
                     (new-ad-edges (rest (world-ad-edges a-world)))
                     (new-incl-nodes (remove-included-node (world-incl-nodes a-world)
-                                                          (first (world-ad-edges a-world))
-                                                          new-ad-edges))]
-               (make-world (create-cgraph new-ad-edges new-incl-nodes (ndfa2dfa-finals-only (world-M a-world)))                       
+                                                          edge-removed
+                                                          new-ad-edges))                    
+                    (new-hedges (if (empty? new-ad-edges)
+                                    (compute-all-hedges (sm-rules (world-M a-world))
+                                                        super-start-state '())
+                                    (compute-all-hedges (sm-rules (world-M a-world))                                                    
+                                                        (third (first new-ad-edges))                                                                                                           
+                                                        (first new-ad-edges))))
+                    (previous-hedges (compute-all-hedges (sm-rules (world-M a-world))
+                                                         (third edge-removed)
+                                                         edge-removed))
+                    (new-bledges (remove previous-hedges (world-bledges a-world)))
+                    (new-fedges (remove previous-hedges (world-fedges a-world)))]
+               (make-world (create-dfa-graph new-ad-edges new-incl-nodes (ndfa2dfa-finals-only (world-M a-world)))                       
                            new-up-edges                       
                            new-ad-edges
                            new-incl-nodes
-                           (world-M a-world))))]
+                           (world-M a-world)
+                           new-hedges
+                           new-fedges
+                           new-bledges)))]
         [else a-world]))
 
 
 
-(define E-SCENE (empty-scene 700 700))
+(define E-SCENE (empty-scene 1250 600))
 
 
 
@@ -390,30 +467,49 @@
          (sm-states M)))
 
 
+;; SELL THE LABEL INVARIANT AS A FEATURE
+;; for the highlighted edges, the first letter comes from the last edge added to the dfa
+;; for the faded edge, the first letter comes from the last dfa edge added that includes the ndfa destination state
+
 ;; (listof rules) -> graph
-;; Purpose: To create a graph of edges from the given list of rules
-(define (ndfa-edge-graph cgraph lor) ;; more input, ss that i'm adding and a lor from ndfa
-  (foldl (λ (rule result) (add-edge result
-                                    (second rule)
-                                    (first rule)
-                                    (third rule)
-                                    #:atb (hash 'fontsize 20 'style 'solid)))
-         cgraph
-         lor))
+;; Purpose: To create a graph of edges from the given hedges, fedges, and bledges
+;; Note: Some edges can be hedges and fedges at the same time, but in this visualization,
+;; hedges have a priority
+(define (ndfa-edge-graph cgraph hedges fedges bledges)
+  (let* [(no-duplicates-fedges (remove-duplicates (filter (λ (fedge) (not (member fedge hedges)))
+                                                fedges)))
+         (no-duplicates-bledges (filter (λ (bledge) (not (member bledge (append hedges no-duplicates-fedges))))
+                              bledges))]
+    (foldl (λ (rule result) (add-edge result
+                                      (second rule)
+                                      (first rule)
+                                      (third rule)
+                                      #:atb (hash 'fontsize 20
+                                                  'style 'solid
+                                                  'color (cond [(member rule hedges) 'violet]
+                                                               [(member rule fedges) 'gray]
+                                                               [(member rule bledges) 'black]))))
+           cgraph
+           (append hedges no-duplicates-fedges no-duplicates-bledges))))
 
 ;; make-ndfa-graph
+;; world -> graph
 ;; Purpose: To make an ndfa-graph from the given ndfa
-(define (make-ndfa-graph M)
-  (ndfa-edge-graph (ndfa-node-graph (create-graph 'ndfagraph #:atb (hash 'rankdir "LR")) M)
-                   (sm-rules M)))
+(define (make-ndfa-graph a-world)
+  (let* [(ndfa-edge-graph-x(ndfa-edge-graph (ndfa-node-graph (create-graph 'ndfagraph #:atb (hash 'rankdir "LR"))
+                                                             (world-M a-world))
+                                            (world-hedges a-world)
+                                            (world-fedges a-world)
+                                            (world-bledges a-world)))]
+    ndfa-edge-graph-x))
 
 
 ;; draw-world
 ;; world -> img
 ;; Purpose: To draw a world image
 (define (draw-world a-world)
-  (scale 0.5
-         (above (graph->bitmap (make-ndfa-graph (world-M a-world)) (current-directory) "fsm")
+  (scale 0.7
+         (above (graph->bitmap (make-ndfa-graph a-world) (current-directory) "fsm")
                 (overlay
                  (graph->bitmap (world-cgraph a-world) (current-directory) "fsm")
                  E-SCENE))))
@@ -436,6 +532,9 @@
 ;; symbol (listof symbols)
 (define (contains-final-state-run? sss sm-finals)
   (ormap (λ (s) (member s sm-finals)) sss))
+
+
+;(define-struct world (cgraph up-edges ad-edges incl-nodes M hedges fedges bledges))
 
 
 ;; ndfa --> world
@@ -464,7 +563,10 @@
                     ss-edges
                     '()
                     (list (first (first ss-edges)))
-                    M)
+                    M
+                    (compute-all-hedges (sm-rules M) super-start-state '())
+                    '()
+                    (remove (compute-all-hedges (sm-rules M) super-start-state '()) (sm-rules M)))
                 
       [on-draw draw-world]
       [on-key process-key]
