@@ -202,15 +202,37 @@
              "machine states cannot contain duplicates"
              )
     )
+
+  ;; machine-states: Syntax class representing the set of machine states.
+  (define-syntax-class alphabet
+    #:description "the machine's alphabet"
+    (pattern `(a:quasiquoted-alpha ...)
+             #:with error? (find-duplicate-state #`(a ...))
+             #:fail-when (syntax-e #'error?)
+             "machine alphabet cannot contain duplicates")
+    (pattern '(a:alpha ...)
+             #:fail-when (check-duplicate-identifier (syntax->list #`(a ...)))
+             "machine alphabet cannot contain duplicates.")
+    (pattern (list (~or a:qalpha e:expr) ...)
+             #:with alphabet (map cadr
+                                (stx-map syntax->datum (syntax->list #'(a ...))))
+             #:with rm-dups (remove-duplicates (syntax->list #'alphabet))
+             #:fail-when (begin
+                           ;(display (format "alphabet: ~s\n rm-dup: ~s\n" #'alphabet)
+                           (not (equal? #'rm-dups
+                                        #'alphabet)))
+             "machine alphabet cannot contain duplicates"
+             )
+    )
   
   (syntax-parse stx
-    [(_ states:machine-states sigma start finals delta)
+    [(_ states:machine-states sigma:alphabet start finals delta)
      (begin
        ;(displayln #'states)
        #'states)]
     ))
-
-(make-dfa2 (list 'A (string->symbol "B") 'A 'C)
+ 
+(make-dfa2 (list (string->symbol "B") 'A 'C)
            '(a b)
            'S
            (list 'F 'A)
