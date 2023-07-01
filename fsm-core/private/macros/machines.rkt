@@ -162,6 +162,24 @@
     #:description "an unquoted state or DEAD"
     (pattern s:state)
     (pattern ,expr))
+
+  (define-syntax-class alpha
+    #:description "a single alphabet of the machine"
+    (pattern name:id 
+             #:fail-unless (valid-alpha-name? #'name)
+             (format "Invalid alphabet name: ~s" (syntax->datum #'name)))
+    )
+  ;; syntax class for a quoted state 
+  (define-syntax-class qalpha
+    #:description "a quoted alphabet"
+    (pattern 'field:id
+             #:fail-unless (valid-alpha-name? #'field)
+             "Invalid alphabet name")
+    )
+  (define-syntax-class quasiquoted-alpha
+    #:description "an unquoted alphabet or EMP"
+    (pattern a:alpha)
+    (pattern ,expr))
   
   ;; machine-states: Syntax class representing the set of machine states.
   (define-syntax-class machine-states
