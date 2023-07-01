@@ -1,4 +1,5 @@
 #lang racket
+(require racket/contract)
 (define (member-of? lst)
   (lambda (v)
     (if (member v lst)
@@ -24,6 +25,14 @@
       #f)
   )
 
+(define (valid-rule? x states sigma)
+  (and (list? x)
+       (= (length x) 3)
+       (member (first x) states)
+       (member (second x) sigma)
+       (member (third x) states))
+  )
+
 ;applies the predicate to the list and returns false if
 ; any of the members of the list are invalid states/sigma
 (define (valid-list-of los pred)
@@ -42,15 +51,42 @@
     )
   )
 
-(define/contract (make-dfa states sigma start)
+(define (valid-final? states)
+  (lambda (finals)
+    (andmap (lambda (x) (member x states)) finals)
+    )
+  )
+
+(define (valid-rules? states sigma)
+  (lambda (rules)
+    (and (andmap (lambda (x) (valid-rule? x states sigma)) rules)
+         (functional? rules states sigma))
+    )
+  )
+
+(define (functional? rules states sigma)
+  (define pairs (map (lambda (x) (list (first x) (second x))) rules))
+  (define cart-prod (cartesian-product states sigma))
+  (andmap (lambda (x) (member x pairs)) cart-prod)
+  )
+
+(define/contract (make-dfa states sigma start finals rules)
   (->i ([states (and/c list?
                        valid-list-of-states?)]
         [sigma (and/c list?
                       valid-sigma?)]
         [start (states) (and/c symbol?
-                               (valid-start? states))])
+                               (valid-start? states))]
+        [finals (states) (and/c list?
+                                (valid-final? states))]
+        [rules (states
+                sigma) (and/c list?
+                              (valid-rules? states sigma))]
+        )
        [result list?])
-  (list states sigma start)
+  (list states sigma start finals rules)
   )
 
-(make-dfa '(A B C) '(a b c) 'D)
+(make-dfa '(A B C) '(a) 'A '(B C) (list '(A a C)
+                                        '(B a B)
+                                        '(C a A))) 
