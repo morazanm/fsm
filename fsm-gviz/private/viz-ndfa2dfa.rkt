@@ -417,7 +417,8 @@
                     (new-ad-edges (rest (world-ad-edges a-world)))
                     (new-incl-nodes (remove-included-node (world-incl-nodes a-world)
                                                           edge-removed
-                                                          new-ad-edges))                    
+                                                          new-ad-edges))
+                    (ddd (displayln (format "new-incl-nodes: ~s\n" new-incl-nodes)))
                     (new-hedges (if (empty? new-ad-edges)
                                     (compute-all-hedges (sm-rules (world-M a-world))
                                                         super-start-state '())
@@ -442,8 +443,9 @@
                 (super-start-state (first (first ss-edges)))                
                 (new-up-edges '())
                 (new-ad-edges (reverse ss-edges))
-                (list-of-nodes (reverse (cons super-start-state
-                                              (reverse (map (λ (edge) (third edge)) new-ad-edges)))))
+                (list-of-nodes (remove-duplicates
+                                (reverse (cons super-start-state
+                                               (reverse (map (λ (edge) (third edge)) new-ad-edges))))))
                 (new-hedges (compute-all-hedges (sm-rules (world-M a-world))
                                                 (third (first new-ad-edges))
                                                 (first new-ad-edges)))
