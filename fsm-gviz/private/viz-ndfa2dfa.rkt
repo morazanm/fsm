@@ -337,9 +337,9 @@
 (define (create-dfa-graph lor los finals)
   (if (empty? lor)
       (dfa-edge-graph (dfa-node-graph (create-graph 'dfagraph #:atb (hash 'rankdir "LR")) los finals)
-                  lor '())
+                      lor '())
       (dfa-edge-graph (dfa-node-graph (create-graph 'dfagraph #:atb (hash 'rankdir "LR")) los finals)
-                  lor (first lor))))
+                      lor (first lor))))
 
 ;; find-empty-transitions
 ;; (listof state) (listof state) (listof rules) -> (listof rules)
@@ -437,6 +437,24 @@
                            new-hedges
                            new-fedges
                            new-bledges)))]
+        [(key=? "down" a-key)
+         (let* [(ss-edges (ndfa2dfa-rules-only (world-M a-world)))
+                (super-start-state (first (first ss-edges)))                
+                (new-up-edges '())
+                (new-ad-edges (reverse ss-edges))                                 
+                (new-hedges (compute-all-hedges (sm-rules (world-M a-world))
+                                                (third (first new-ad-edges))
+                                                (first new-ad-edges)))
+                (new-fedges (append (world-hedges a-world) (world-bledges a-world)))
+                (new-bledges (remove new-hedges (world-bledges a-world)))]
+           (make-world (create-dfa-graph new-ad-edges (world-incl-nodes a-world) (ndfa2dfa-finals-only (world-M a-world)))                       
+                       new-up-edges                       
+                       new-ad-edges
+                       (world-incl-nodes a-world)
+                       (world-M a-world)
+                       new-hedges
+                       new-fedges
+                       new-bledges))]           
         [else a-world]))
 
 
@@ -477,9 +495,9 @@
 ;; hedges have a priority
 (define (ndfa-edge-graph cgraph hedges fedges bledges)
   (let* [(no-duplicates-fedges (remove-duplicates (filter (λ (fedge) (not (member fedge hedges)))
-                                                fedges)))
+                                                          fedges)))
          (no-duplicates-bledges (filter (λ (bledge) (not (member bledge (append hedges no-duplicates-fedges))))
-                              bledges))]
+                                        bledges))]
     (foldl (λ (rule result) (add-edge result
                                       (second rule)
                                       (first rule)
