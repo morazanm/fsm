@@ -441,16 +441,18 @@
          (let* [(ss-edges (ndfa2dfa-rules-only (world-M a-world)))
                 (super-start-state (first (first ss-edges)))                
                 (new-up-edges '())
-                (new-ad-edges (reverse ss-edges))                                 
+                (new-ad-edges (reverse ss-edges))
+                (list-of-nodes (reverse (cons super-start-state
+                                              (reverse (map (λ (edge) (third edge)) new-ad-edges)))))
                 (new-hedges (compute-all-hedges (sm-rules (world-M a-world))
                                                 (third (first new-ad-edges))
                                                 (first new-ad-edges)))
                 (new-fedges (append (world-hedges a-world) (world-bledges a-world)))
                 (new-bledges (remove new-hedges (world-bledges a-world)))]
-           (make-world (create-dfa-graph new-ad-edges (world-incl-nodes a-world) (ndfa2dfa-finals-only (world-M a-world)))                       
+           (make-world (create-dfa-graph new-ad-edges list-of-nodes (ndfa2dfa-finals-only (world-M a-world)))                       
                        new-up-edges                       
                        new-ad-edges
-                       (world-incl-nodes a-world)
+                       list-of-nodes
                        (world-M a-world)
                        new-hedges
                        new-fedges
