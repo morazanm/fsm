@@ -162,6 +162,24 @@
     #:description "an unquoted state or DEAD"
     (pattern s:state)
     (pattern ,expr))
+
+  (define-syntax-class alpha
+    #:description "a single alphabet of the machine"
+    (pattern name:id 
+             #:fail-unless (valid-alpha-name? #'name)
+             (format "Invalid alphabet name: ~s" (syntax->datum #'name)))
+    )
+  ;; syntax class for a quoted state 
+  (define-syntax-class qalpha
+    #:description "a quoted alphabet"
+    (pattern 'field:id
+             #:fail-unless (valid-alpha-name? #'field)
+             "Invalid alphabet name")
+    )
+  (define-syntax-class quasiquoted-alpha
+    #:description "an unquoted alphabet or EMP"
+    (pattern a:alpha)
+    (pattern ,expr))
   
   ;; machine-states: Syntax class representing the set of machine states.
   (define-syntax-class machine-states
@@ -184,15 +202,37 @@
              "machine states cannot contain duplicates"
              )
     )
+
+  ;; machine-states: Syntax class representing the set of machine states.
+  (define-syntax-class alphabet
+    #:description "the machine's alphabet"
+    (pattern `(a:quasiquoted-alpha ...)
+             #:with error? (find-duplicate-state #`(a ...))
+             #:fail-when (syntax-e #'error?)
+             "machine alphabet cannot contain duplicates")
+    (pattern '(a:alpha ...)
+             #:fail-when (check-duplicate-identifier (syntax->list #`(a ...)))
+             "machine alphabet cannot contain duplicates.")
+    (pattern (list (~or a:qalpha e:expr) ...)
+             #:with alphabet (map cadr
+                                (stx-map syntax->datum (syntax->list #'(a ...))))
+             #:with rm-dups (remove-duplicates (syntax->list #'alphabet))
+             #:fail-when (begin
+                           ;(display (format "alphabet: ~s\n rm-dup: ~s\n" #'alphabet)
+                           (not (equal? #'rm-dups
+                                        #'alphabet)))
+             "machine alphabet cannot contain duplicates"
+             )
+    )
   
   (syntax-parse stx
-    [(_ states:machine-states sigma start finals delta)
+    [(_ states:machine-states sigma:alphabet start finals delta)
      (begin
        ;(displayln #'states)
        #'states)]
     ))
-
-(make-dfa2 (list 'A (string->symbol "B") 'A 'C)
+ 
+(make-dfa2 (list (string->symbol "B") 'A 'C)
            '(a b)
            'S
            (list 'F 'A)
