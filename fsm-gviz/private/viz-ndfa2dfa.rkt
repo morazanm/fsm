@@ -2,6 +2,9 @@
 
 (require "../../fsm-core/interface.rkt" "lib.rkt")
 (require 2htdp/universe rackunit)
+(require (rename-in racket/gui/base
+                    [make-color loc-make-color]
+                    [make-pen loc-make-pen]))
 (require 2htdp/image)
 
 (define FNAME "fsm")
@@ -593,4 +596,6 @@
       [on-key process-key]
       [name 'visualization])))
 
-(run AT-LEAST-ONE-MISSING)
+;(run AT-LEAST-ONE-MISSING)
+
+(define EXAMPLE (call-with-values get-display-size empty-scene))
