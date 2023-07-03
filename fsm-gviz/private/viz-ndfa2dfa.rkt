@@ -418,7 +418,6 @@
                     (new-incl-nodes (remove-included-node (world-incl-nodes a-world)
                                                           edge-removed
                                                           new-ad-edges))
-                    (ddd (displayln (format "new-incl-nodes: ~s\n" new-incl-nodes)))
                     (new-hedges (if (empty? new-ad-edges)
                                     (compute-all-hedges (sm-rules (world-M a-world))
                                                         super-start-state '())
