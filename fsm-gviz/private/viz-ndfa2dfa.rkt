@@ -1,4 +1,4 @@
-#lang racket
+#lang fsm
 
 (require "../../fsm-core/interface.rkt" "lib.rkt")
 (require 2htdp/universe rackunit)
