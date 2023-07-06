@@ -381,6 +381,27 @@
                 (compute-all-hedges (filter (λ (rule) (not (member rule new-hedges)))
                                             ndfa-rules)
                                     (rest to-ss) added-dfa-edge)))))
+
+
+;; remove-edges
+;; (listof edges) (listof edges) -> (listof edges)
+;; Purpose: To remove edges from a list of edges
+(define (remove-edges to-remove removing-from)
+  (if (empty? removing-from)
+      removing-from
+      (drop removing-from (length to-remove))))
+
+;; compute-down-fedges
+;; (listof rules) (listof edges) -> (listof edges)
+;; Purpose: To compute all fedges in down click
+(define (compute-down-fedges rules ad-edges)
+  (if (empty? ad-edges)
+      empty
+      (append (compute-all-hedges rules
+                                  (third (first ad-edges))
+                                  (first ad-edges))
+              (compute-down-fedges rules (rest ad-edges)))))
+
       
 
 ;; world key -> world
@@ -399,7 +420,7 @@
                                                     (third (first new-ad-edges))
                                                     (first new-ad-edges)))
                     (new-fedges (append (world-hedges a-world) (world-fedges a-world)))
-                    (new-bledges (remove new-hedges (world-bledges a-world)))]
+                    (new-bledges (remove-edges new-hedges (world-bledges a-world)))]
                (make-world new-up-edges                       
                            new-ad-edges
                            new-incl-nodes
@@ -426,11 +447,9 @@
                                     (compute-all-hedges (sm-rules (world-M a-world))                                                    
                                                         (third (first new-ad-edges))                                                                                                           
                                                         (first new-ad-edges))))
-                    (previous-hedges (compute-all-hedges (sm-rules (world-M a-world))
-                                                         (third edge-removed)
-                                                         edge-removed))
+                    (previous-hedges (world-hedges a-world))
                     (new-bledges (remove-duplicates (append previous-hedges (world-bledges a-world))))
-                    (new-fedges (drop (world-fedges a-world) (length new-hedges)))]
+                    (new-fedges (remove-edges previous-hedges (world-fedges a-world)))]
                (make-world new-up-edges                       
                            new-ad-edges
                            new-incl-nodes
@@ -449,8 +468,11 @@
                 (new-hedges (compute-all-hedges (sm-rules (world-M a-world))
                                                 (third (first new-ad-edges))
                                                 (first new-ad-edges)))
-                (new-fedges (append (world-hedges a-world) (world-bledges a-world)))
-                (new-bledges (remove new-hedges (world-bledges a-world)))]
+                (new-fedges (append (compute-down-fedges (sm-rules (world-M a-world))
+                                                         new-ad-edges)
+                                    (compute-all-hedges (sm-rules (world-M a-world))
+                                                        super-start-state '())))
+                (new-bledges '())]
            (make-world new-up-edges                       
                        new-ad-edges
                        new-incl-nodes
