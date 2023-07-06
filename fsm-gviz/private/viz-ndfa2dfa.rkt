@@ -387,9 +387,11 @@
 ;; (listof edges) (listof edges) -> (listof edges)
 ;; Purpose: To remove edges from a list of edges
 (define (remove-edges to-remove removing-from)
-  (if (empty? removing-from)
+  (if (empty? to-remove)
       removing-from
-      (drop removing-from (length to-remove))))
+      (if (member (first to-remove) removing-from)
+          (remove (first to-remove) removing-from)
+          (remove-edges (rest to-remove) removing-from))))
 
 ;; compute-down-fedges
 ;; (listof rules) (listof edges) -> (listof edges)
@@ -447,9 +449,12 @@
                                     (compute-all-hedges (sm-rules (world-M a-world))                                                    
                                                         (third (first new-ad-edges))                                                                                                           
                                                         (first new-ad-edges))))
-                    (previous-hedges (world-hedges a-world))
+                    (previous-hedges (compute-all-hedges (sm-rules (world-M a-world))                                                    
+                                                         (third edge-removed)                                                                                                           
+                                                         edge-removed))
                     (new-bledges (remove-duplicates (append previous-hedges (world-bledges a-world))))
-                    (new-fedges (remove-edges previous-hedges (world-fedges a-world)))]
+                    (new-fedges (remove-edges (append previous-hedges new-hedges)
+                                              (world-fedges a-world)))]
                (make-world new-up-edges                       
                            new-ad-edges
                            new-incl-nodes
@@ -565,19 +570,15 @@
                  (graph->bitmap (create-dfa-graph (world-ad-edges a-world) (world-incl-nodes a-world) (ndfa2dfa-finals-only (world-M a-world))) (current-directory) "fsm")
                  E-SCENE))))
 
-(define AT-LEAST-ONE-MISSING (make-ndfa '(S A B C)
-                                        '(a b c)
-                                        'S
-                                        '(A B C)
-                                        `((S ,EMP A)
-                                          (S ,EMP B)
-                                          (S ,EMP C)
-                                          (A b A)
-                                          (A c A)
-                                          (B a B)
-                                          (B c B)
-                                          (C a C)
-                                          (C b C))))
+(define aa-ab (make-ndfa `(S A B F)
+                         '(a b)
+                         'S
+                         '(A B)
+                         `((S a A)
+                           (S a B)
+                           (S ,EMP F)
+                           (A a A)
+                           (B b B))))
 
 ;; contains-final-state-run?
 ;; symbol (listof symbols)
@@ -604,6 +605,6 @@
       [on-key process-key]
       [name 'visualization])))
 
-(run AT-LEAST-ONE-MISSING)
+(run aa-ab)
 
 (define EXAMPLE (call-with-values get-display-size empty-scene))
