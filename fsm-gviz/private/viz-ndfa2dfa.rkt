@@ -605,22 +605,24 @@
 
 ;; ndfa --> world
 (define (run M)
-  (let* [(ss-edges (ndfa2dfa-rules-only M))
-         (super-start-state (first (first ss-edges)))]
-    (big-bang
-        (make-world ss-edges
-                    '()
-                    (list (first (first ss-edges)))
-                    M
-                    (compute-all-hedges (sm-rules M) super-start-state '())
-                    '()
-                    (remove (compute-all-hedges (sm-rules M) super-start-state '()) (sm-rules M)))
+  (begin
+    (let* [(ss-edges (ndfa2dfa-rules-only M))
+           (super-start-state (first (first ss-edges)))]
+      (big-bang
+          (make-world ss-edges
+                      '()
+                      (list (first (first ss-edges)))
+                      M
+                      (compute-all-hedges (sm-rules M) super-start-state '())
+                      '()
+                      (remove (compute-all-hedges (sm-rules M) super-start-state '()) (sm-rules M)))
                 
-      [on-draw draw-world]
-      [on-key process-key]
-      [name 'visualization])))
+        [on-draw draw-world]
+        [on-key process-key]
+        [name 'visualization]))
+    (void)))
 
-(run aa-ab)
+;(run aa-ab)
 ;(run AT-LEAST-ONE-MISSING)
 
 (define EXAMPLE (call-with-values get-display-size empty-scene))
