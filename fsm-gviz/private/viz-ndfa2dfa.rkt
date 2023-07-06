@@ -422,7 +422,7 @@
                                                     (third (first new-ad-edges))
                                                     (first new-ad-edges)))
                     (new-fedges (append (world-hedges a-world) (world-fedges a-world)))
-                    (new-bledges (remove-edges new-hedges (world-bledges a-world)))]
+                    (new-bledges (remove-edges (append new-hedges new-fedges) (world-bledges a-world)))]
                (make-world new-up-edges                       
                            new-ad-edges
                            new-incl-nodes
@@ -453,8 +453,10 @@
                                                          (third edge-removed)                                                                                                           
                                                          edge-removed))
                     (new-bledges (remove-duplicates (append previous-hedges (world-bledges a-world))))
-                    (new-fedges (remove-edges (append previous-hedges new-hedges)
-                                              (world-fedges a-world)))]
+                    (new-fedges (if (empty? new-ad-edges)
+                                    empty
+                                    (remove-edges previous-hedges
+                                                  (world-fedges a-world))))]
                (make-world new-up-edges                       
                            new-ad-edges
                            new-incl-nodes
@@ -580,6 +582,19 @@
                            (A a A)
                            (B b B))))
 
+(define AT-LEAST-ONE-MISSING (make-ndfa '(S A B C) '(a b c)
+                                        'S
+                                        '(A B C)
+                                        `((S ,EMP A)
+                                          (S ,EMP B)
+                                          (S ,EMP C)
+                                          (A b A)
+                                          (A c A)
+                                          (B a B)
+                                          (B c B)
+                                          (C a C)
+                                          (C b C))))
+
 ;; contains-final-state-run?
 ;; symbol (listof symbols)
 (define (contains-final-state-run? sss sm-finals)
@@ -606,5 +621,6 @@
       [name 'visualization])))
 
 (run aa-ab)
+;(run AT-LEAST-ONE-MISSING)
 
 (define EXAMPLE (call-with-values get-display-size empty-scene))
