@@ -387,9 +387,11 @@
 ;; (listof edges) (listof edges) -> (listof edges)
 ;; Purpose: To remove edges from a list of edges
 (define (remove-edges to-remove removing-from)
-  (if (empty? removing-from)
+  (if (empty? to-remove)
       removing-from
-      (drop removing-from (length to-remove))))
+      (if (member (first to-remove) removing-from)
+          (remove (first to-remove) removing-from)
+          removing-from)))
 
 ;; compute-down-fedges
 ;; (listof rules) (listof edges) -> (listof edges)
