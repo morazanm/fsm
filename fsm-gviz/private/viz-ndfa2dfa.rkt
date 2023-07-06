@@ -391,7 +391,7 @@
       removing-from
       (if (member (first to-remove) removing-from)
           (remove (first to-remove) removing-from)
-          removing-from)))
+          (remove-edges (rest to-remove) removing-from))))
 
 ;; compute-down-fedges
 ;; (listof rules) (listof edges) -> (listof edges)
@@ -449,9 +449,12 @@
                                     (compute-all-hedges (sm-rules (world-M a-world))                                                    
                                                         (third (first new-ad-edges))                                                                                                           
                                                         (first new-ad-edges))))
-                    (previous-hedges (world-hedges a-world))
+                    (previous-hedges (compute-all-hedges (sm-rules (world-M a-world))                                                    
+                                                         (third edge-removed)                                                                                                           
+                                                         edge-removed))
                     (new-bledges (remove-duplicates (append previous-hedges (world-bledges a-world))))
-                    (new-fedges (remove-edges previous-hedges (world-fedges a-world)))]
+                    (new-fedges (remove-edges (append previous-hedges new-hedges)
+                                              (world-fedges a-world)))]
                (make-world new-up-edges                       
                            new-ad-edges
                            new-incl-nodes
