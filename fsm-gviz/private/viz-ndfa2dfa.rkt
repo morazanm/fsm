@@ -565,19 +565,15 @@
                  (graph->bitmap (create-dfa-graph (world-ad-edges a-world) (world-incl-nodes a-world) (ndfa2dfa-finals-only (world-M a-world))) (current-directory) "fsm")
                  E-SCENE))))
 
-(define AT-LEAST-ONE-MISSING (make-ndfa '(S A B C)
-                                        '(a b c)
-                                        'S
-                                        '(A B C)
-                                        `((S ,EMP A)
-                                          (S ,EMP B)
-                                          (S ,EMP C)
-                                          (A b A)
-                                          (A c A)
-                                          (B a B)
-                                          (B c B)
-                                          (C a C)
-                                          (C b C))))
+(define aa-ab (make-ndfa `(S A B F)
+                         '(a b)
+                         'S
+                         '(A B)
+                         `((S a A)
+                           (S a B)
+                           (S ,EMP F)
+                           (A a A)
+                           (B b B))))
 
 ;; contains-final-state-run?
 ;; symbol (listof symbols)
@@ -604,6 +600,6 @@
       [on-key process-key]
       [name 'visualization])))
 
-(run AT-LEAST-ONE-MISSING)
+(run aa-ab)
 
 (define EXAMPLE (call-with-values get-display-size empty-scene))
