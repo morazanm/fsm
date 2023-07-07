@@ -458,8 +458,8 @@
                                     empty
                                     (remove-edges previous-hedges
                                                   (world-fedges a-world))))
-                    (new-bledges (remove-edges new-fedges
-                                               (append previous-hedges (world-bledges a-world))))]
+                    (new-bledges (remove-duplicates (remove-edges new-fedges
+                                                                  (append previous-hedges (world-bledges a-world)))))]
                (make-world new-up-edges                       
                            new-ad-edges
                            new-incl-nodes
@@ -625,7 +625,7 @@
         [name 'visualization]))
     (void)))
 
-(run aa-ab)
-;(run AT-LEAST-ONE-MISSING)
+;(run aa-ab)
+(run AT-LEAST-ONE-MISSING)
 
 (define EXAMPLE (call-with-values get-display-size empty-scene))
