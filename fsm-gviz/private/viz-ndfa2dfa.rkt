@@ -421,8 +421,10 @@
                     (new-hedges (compute-all-hedges (sm-rules (world-M a-world))
                                                     (third (first new-ad-edges))
                                                     (first new-ad-edges)))
-                    (new-fedges (append (world-hedges a-world) (world-fedges a-world)))
-                    (new-bledges (remove-edges (append new-hedges new-fedges) (world-bledges a-world)))]
+                    (new-fedges (if (empty? new-up-edges)
+                                    (append new-hedges (world-fedges a-world))
+                                    (append (world-hedges a-world) (world-fedges a-world))))
+                    (new-bledges (remove-edges new-hedges (world-bledges a-world)))]
                (make-world new-up-edges                       
                            new-ad-edges
                            new-incl-nodes
@@ -451,12 +453,13 @@
                                                         (first new-ad-edges))))
                     (previous-hedges (compute-all-hedges (sm-rules (world-M a-world))                                                    
                                                          (third edge-removed)                                                                                                           
-                                                         edge-removed))
-                    (new-bledges (remove-duplicates (append previous-hedges (world-bledges a-world))))
+                                                         edge-removed))                   
                     (new-fedges (if (empty? new-ad-edges)
                                     empty
                                     (remove-edges previous-hedges
-                                                  (world-fedges a-world))))]
+                                                  (world-fedges a-world))))
+                    (new-bledges (remove-edges new-fedges
+                                               (append previous-hedges (world-bledges a-world))))]
                (make-world new-up-edges                       
                            new-ad-edges
                            new-incl-nodes
@@ -622,7 +625,7 @@
         [name 'visualization]))
     (void)))
 
-;(run aa-ab)
+(run aa-ab)
 ;(run AT-LEAST-ONE-MISSING)
 
 (define EXAMPLE (call-with-values get-display-size empty-scene))
