@@ -33,10 +33,16 @@
        (member (third x) states))
   )
 
+(define (no-duplicates los)
+  (cond [(empty? los) #t]
+        [(member (car los) (cdr los)) #f]
+        [else (no-duplicates (cdr los))]))
+
 ;applies the predicate to the list and returns false if
 ; any of the members of the list are invalid states/sigma
 (define (valid-list-of los pred)
-  (andmap pred los)
+  (and (andmap pred los)
+       (no-duplicates los))
   )
 
 (define (valid-list-of-states? states)
