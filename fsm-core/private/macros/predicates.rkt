@@ -10,8 +10,14 @@
            valid-list-of-states?
            valid-state?
            valid-alpha?
-           valid-rule?)
+           valid-rule?
+           return-duplicates)
 
+  (define (return-duplicates los)
+    (cond [(empty? los) '()]
+          [(member (car los) (cdr los)) (cons (car los) (return-duplicates (cdr los)))]
+          [else (return-duplicates (cdr los))]))
+  
   ;applies the predicate to the list and returns false if
   ; any of the members of the list are invalid states/sigma
   (define (valid-list-of los pred)

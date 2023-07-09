@@ -14,6 +14,16 @@
     (make-flat-contract
      #:name (string->symbol (format "distinct-list-of-~a" type))
      #:first-order (lambda (vals) (not (check-duplicates vals)))
+     #:projection (lambda (blame)
+                    (lambda (vals)
+                      (current-blame-format format-duplicates-error)
+                      (raise-blame-error
+                       blame
+                       (return-duplicates vals)
+                       (format "There following values are duplicated in your ~a, ~a : " type vals)
+                       )
+                      )
+                    )
      )
     )
 
