@@ -10,17 +10,19 @@
            valid-start/c
            start-in-states/c)
 
-  (define (valid-start/c start)
+  (define (valid-start/c states)
     (make-flat-contract
      #:name 'valid-starting-state
-     #:first-order (valid-start? start)
+     #:first-order (valid-start? states)
      #:projection (lambda (blame)
-                    (current-blame-format format-start-error)
-                    (raise-blame-error
-                     blame
-                     start
-                     (format "The value ~s is not a valid state" start)
-                     )
+                    (lambda (start)
+                      (current-blame-format format-start-error)
+                      (raise-blame-error
+                       blame
+                       start
+                       (format "The starting state ~s is not a valid state" start)
+                       )
+                      )
                     )
      )
     )

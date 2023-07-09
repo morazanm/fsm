@@ -40,7 +40,7 @@
                          (no-duplicates/c "states"))]
           [sigma (and/c (listof valid-alpha?)
                         (no-duplicates/c "sigma"))]
-          [start (states) (and/c valid-start/c
+          [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
           [finals (states) (and/c (listof valid-state?)
                                   (valid-finals/c states)
