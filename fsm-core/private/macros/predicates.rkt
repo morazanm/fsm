@@ -6,6 +6,7 @@
            valid-finals?
            invalid-finals
            valid-start?
+           start-in-states?
            valid-sigma?
            valid-list-of-states?
            valid-state?
@@ -48,11 +49,15 @@
     (valid-list-of sigma valid-alpha?)
     )
 
-  (define/contract (valid-start? states)
-    (-> (listof valid-state?) (-> valid-state? (or/c #f list? any/c)))
+  (define (start-in-states? states)
     (lambda (start)
       (member start states)
       )
+    )
+
+  (define (valid-start? start)
+    (and (symbol? start)
+         (valid-state? start))
     )
 
   (define (valid-finals? states)

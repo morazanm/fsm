@@ -5,7 +5,7 @@
 (make-dfa
  `(A B C)
  '(a b)
- 'A
+ 'D
  '(B C)
  (list '(A a C)
        '(B a B)
