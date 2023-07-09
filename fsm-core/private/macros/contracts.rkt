@@ -78,6 +78,11 @@
     (andmap (lambda (x) (member x states)) finals)
     )
   )
+(define (invalid-finals states finals)
+  (filter (lambda (x) (not (member x states)))finals))
+
+(define (format-finals-error blame value message)
+  (format "The following final states are not in ~a, your list of states: ~s" message value))
 
 ;; Testing out writing a custom blame projector for valid-finals.
 (define (valid-finals/c states)
@@ -85,15 +90,14 @@
    #:name 'valid-list-of-finals
    #:first-order (valid-finals? states)
    #:projection (lambda (blame)
-                  (lambda (val)
-                    (if ((valid-finals? states) val)
-                        val
-                        (raise-blame-error
-                         blame
-                         val
-                         (format "All final states must be in the list of machine states")
-                         )
-                        )
+                  (lambda (finals)
+                    (current-blame-format format-finals-error)
+                    (raise-blame-error
+                     blame
+                     (invalid-finals states finals)
+                     (format "~s" states)
+                     
+                     )
                     )
                   )
    )
@@ -153,8 +157,10 @@
 ;; 2. This code does not yet check for duplicates in the list fields - this must
 ;; be added.
 (define/contract (make-dfa states sigma start finals rules #:add-dead [add-dead #t])
-  (->i ([states (and/c (listof valid-state?) (no-duplicates/c "states"))]
-        [sigma (and/c (listof valid-alpha?) (no-duplicates/c "letters"))]
+  (->i ([states (and/c (listof valid-state?)
+                       (no-duplicates/c "states"))]
+        [sigma (and/c (listof valid-alpha?)
+                      (no-duplicates/c "letters"))]
         [start (states) (and/c symbol?
                                (valid-start? states))]
         [finals (states) (and/c (listof valid-state?)
