@@ -51,7 +51,7 @@
                                   (no-duplicates/c "final states"))]
           [rules (states
                   sigma
-                  add-dead) (and/c (listof-rules/c valid-dfa-rule? states sigma)
+                  add-dead) (and/c (valid-listof/c (valid-dfa-rule? states sigma) "machine rule" "list of machine rules")
                                    (functional/c states sigma add-dead)
                                    (no-duplicates/c "rules"))]
           )
