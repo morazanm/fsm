@@ -29,8 +29,8 @@
       
   ;; Syntax for associating a invariant with a state in the machine
   (define-syntax-class (invariant-func machine-name)
-    #:datum-literals (define-invariant-for)
-    (pattern (~and (define-invariant-for state:id (args:id ...) body:expr ...+)
+    #:datum-literals (define-invariant)
+    (pattern (~and (define-invariant state:id (args:id ...) body:expr ...+)
                    stx)
       #:with id (syntax-local-introduce (format-id common-ctx ID-INV machine-name #'state))
       #:with str-value #`(regexp-replace #px"define-invariant-for *[^\\s]* *"
@@ -42,7 +42,7 @@
   (syntax-parse stx
     [(_ m-name:id (~or func:racket-define (~var func (invariant-func #'m-name))) ...+)
      #:fail-when (empty? (syntax->list #`((~? func.state) ...)))
-     "Expected at least one 'define-invariant-for' clause"
+     "Expected at least one 'define-invariant' clause"
      #:fail-when (check-duplicates* (syntax->list #`((~? func.state) ...)))
      "Duplicate invariant for state found"
      #:with list-name (syntax-local-introduce (format-id common-ctx INV-LIST-ID #'m-name))
@@ -52,7 +52,7 @@
 
          ;; Add both values to a list so we can call it from sm-visualize
          (define list-name (list (~? (list 'func.state func.str-value func.id)) ...)))]
-    [(_ _) (raise-syntax-error #f "Expected at least one 'define-invariant-for' clause" stx)]))
+    [(_ _) (raise-syntax-error #f "Expected at least one 'define-invariant' clause" stx)]))
 
 
 (define-syntax (sm-visualize! stx)
@@ -80,31 +80,31 @@
                                          (length (filter (lambda (ele)
                                                            (eq? ele symbol)) tape))))
 
-                  (define-invariant-for B (tape posn)
+                  (define-invariant B (tape posn)
                     (let ((num-z (get-num-of-x tape 'z)))
                       (and (> num-z (get-num-of-x tape 'x))
                            (> num-z (get-num-of-x tape 'y)))))
 
                   ;; the number of x's before the first b is one more then the number of x's after the first b
-                  (define-invariant-for C (tape posn)
+                  (define-invariant C (tape posn)
                     (let ((num-x (get-num-of-x tape 'x)))
                       (and (= num-x (get-num-of-x tape 'z))
                            (> num-x (get-num-of-x tape 'y)))))
                   
 
                   ;; the number of z's is one bigger then number of x's and number of y's
-                  (define-invariant-for B (tape posn)
+                  (define-invariant B (tape posn)
                     (let ((num-z (get-num-of-x tape 'z)))
                       (and (> num-z (get-num-of-x tape 'x))
                            (> num-z (get-num-of-x tape 'y)))))))))
   
 
-  (check-exn #rx"Expected at least one 'define-invariant-for' clause"
+  (check-exn #rx"Expected at least one 'define-invariant' clause"
              (lambda ()
                (convert-compile-time-error (define-invariants-for a^nb^nc^n2 ))))
   
 
-  (check-exn #rx"Expected at least one 'define-invariant-for' clause"
+  (check-exn #rx"Expected at least one 'define-invariant' clause"
              (lambda ()
                (convert-compile-time-error (define-invariants-for a^nb^nc^n2
                                              (define x 10)))))

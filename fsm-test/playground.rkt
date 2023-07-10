@@ -38,7 +38,7 @@
 
 
 ;(sm-visualize a-aUb* (list 'S SS-INV) (list 'F FF-INV))
-;(sm-visualize! a-aUb* (S -> SS-INV) (F -> FF-INV))
+(sm-visualize! a-aUb*)
 
 #;(sm-visualize3 a-aUb*
                  (list 'F (inv->string!
