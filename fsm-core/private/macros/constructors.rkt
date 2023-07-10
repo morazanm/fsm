@@ -40,13 +40,13 @@
                              [add-dead #t]
                              #:accepts [accepts '()]
                              #:rejects [rejects '()])
-    (->i ([states (and/c (listof valid-state?)
+    (->i ([states (and/c (valid-listof/c valid-state? "machine state" "list of machine states")
                          (no-duplicates/c "states"))]
-          [sigma (and/c (listof valid-alpha?)
+          [sigma (and/c (valid-listof/c valid-alpha? "alphabet letter" "machine sigma")
                         (no-duplicates/c "sigma"))]
           [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
-          [finals (states) (and/c (listof valid-state?)
+          [finals (states) (and/c (valid-listof/c valid-state? "machine state" "list of machine finals")
                                   (valid-finals/c states)
                                   (no-duplicates/c "final states"))]
           [rules (states

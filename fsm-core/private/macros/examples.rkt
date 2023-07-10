@@ -13,6 +13,7 @@
                   (list '(A a A)
                         '(B a A)
                         '(B b B)
+                        '(A b B)
                         )
                   #f
                   #:accepts (list '(a a a) '(a a))
