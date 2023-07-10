@@ -4,5 +4,4 @@
          "./macros.rkt")
 
 (provide (rename-out (visualize sm-visualize))
-         define-invariants-for
-         sm-visualize!)
+         (all-from-out "./macros.rkt"))
