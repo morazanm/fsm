@@ -9,6 +9,8 @@
  'A
  '(B)
  (list '(A a A)
-       '(B a C)
+       '(B a B)
        )
- ) 
+ #:accepts '(aaaa)
+ #:rejects '(bbbb)
+ )  

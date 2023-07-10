@@ -35,7 +35,10 @@
   ;; 1. If add-dead boolean flag is true, do we need to disallow DEAD state from states.
   ;; 2. This code does not yet check for duplicates in the list fields - this must
   ;; be added.
-  (define/contract (make-dfa states sigma start finals rules [add-dead #t])
+  (define/contract (make-dfa states sigma start finals rules
+                             [add-dead #t]
+                             #:accepts [accepts '()]
+                             #:rejects [rejects '()])
     (->i ([states (and/c (listof valid-state?)
                          (no-duplicates/c "states"))]
           [sigma (and/c (listof valid-alpha?)
@@ -51,7 +54,11 @@
                                    (functional/c states sigma add-dead)
                                    (no-duplicates/c "rules"))]
           )
-         ([add-dead boolean?])
+         ([add-dead boolean?]
+          #:accepts [accepts (listof symbol?)]
+          #:rejects [rejects (listof symbol?)]
+          )
+         
          [result list?])
     (define all-rules
       (if add-dead
