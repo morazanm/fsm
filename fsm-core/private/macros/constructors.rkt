@@ -3,9 +3,10 @@
            "../constants.rkt"
            "predicates.rkt"
            "error-formatting.rkt"
+           "../fsa.rkt"
            racket/contract
            )
-  (provide make-dfa)
+  (provide make-dfa2)
 
   ;; Using the existing set of rules, the entire machine set of states, and the
   ;; machine alphabet, generates a list of rules that contains the original rule
@@ -35,29 +36,60 @@
   ;; 1. If add-dead boolean flag is true, do we need to disallow DEAD state from states.
   ;; 2. This code does not yet check for duplicates in the list fields - this must
   ;; be added.
-  (define/contract (make-dfa states sigma start finals rules #:add-dead [add-dead #t])
+  (define/contract (make-dfa2 states sigma start finals rules
+                             [add-dead #t]
+                             #:accepts [accepts '()]
+                             #:rejects [rejects '()])
     (->i ([states (and/c (listof valid-state?)
                          (no-duplicates/c "states"))]
           [sigma (and/c (listof valid-alpha?)
                         (no-duplicates/c "sigma"))]
-          [start (states) (and/c valid-start/c
+          [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
           [finals (states) (and/c (listof valid-state?)
                                   (valid-finals/c states)
                                   (no-duplicates/c "final states"))]
           [rules (states
                   sigma
-                  add-dead) (and/c (listof (valid-rule? states sigma))
+                  add-dead) (and/c (listof-rules/c valid-dfa-rule? states sigma)
                                    (functional/c states sigma add-dead)
                                    (no-duplicates/c "rules"))]
           )
-         (#:add-dead [add-dead boolean?])
-         [result list?])
+         ([add-dead boolean?]
+          #:accepts [accepts (states
+                              sigma
+                              start
+                              finals
+                              rules
+                              add-dead) (and/c (listof-words/c sigma)
+                                               (dfa-input/c states
+                                                              sigma
+                                                              start
+                                                              finals
+                                                              rules
+                                                              add-dead
+                                                              'accept))]
+          #:rejects [rejects (states
+                              sigma
+                              start
+                              finals
+                              rules
+                              add-dead) (and/c (listof-words/c sigma)
+                                               (dfa-input/c states
+                                                              sigma
+                                                              start
+                                                              finals
+                                                              rules
+                                                              add-dead
+                                                              'reject))]
+          )
+         
+         [result dfa?])
     (define all-rules
       (if add-dead
           (add-dead-state-rules rules states sigma)
           rules))
-    (list states sigma start finals all-rules add-dead)
+    (make-unchecked-dfa states sigma start finals all-rules add-dead)
     )
   
   )
