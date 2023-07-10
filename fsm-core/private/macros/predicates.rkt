@@ -55,9 +55,10 @@
       )
     )
 
-  (define (valid-start? start)
-    (and (symbol? start)
-         (valid-state? start))
+  (define (valid-start? states)
+    (lambda (start)
+      (and (symbol? start)
+           (valid-state? start)))
     )
 
   (define (valid-finals? states)
