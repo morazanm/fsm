@@ -6,7 +6,7 @@
            "../fsa.rkt"
            racket/contract
            )
-  (provide make-dfa)
+  (provide make-dfa2)
 
   ;; Using the existing set of rules, the entire machine set of states, and the
   ;; machine alphabet, generates a list of rules that contains the original rule
@@ -36,7 +36,7 @@
   ;; 1. If add-dead boolean flag is true, do we need to disallow DEAD state from states.
   ;; 2. This code does not yet check for duplicates in the list fields - this must
   ;; be added.
-  (define/contract (make-dfa states sigma start finals rules
+  (define/contract (make-dfa2 states sigma start finals rules
                              [add-dead #t]
                              #:accepts [accepts '()]
                              #:rejects [rejects '()])
