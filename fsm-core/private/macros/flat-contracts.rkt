@@ -88,6 +88,16 @@
     (make-flat-contract
      #:name 'functional-list-of-rules?
      #:first-order (lambda (rules) (functional? rules states sigma add-dead))
+     #:projection (lambda (blame)
+                    (lambda (rules)
+                      (current-blame-format format-missing-rule-error)
+                      (raise-blame-error
+                       blame
+                       (missing-functional rules states sigma)
+                       (format "You must include rules for these state/alphabet letter pairings: ")
+                       )
+                      )
+                    )
      )
     )
 

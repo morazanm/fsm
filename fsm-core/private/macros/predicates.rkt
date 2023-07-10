@@ -4,6 +4,7 @@
            "../sm-getters.rkt"
            "../fsa.rkt")
   (provide functional?
+           missing-functional
            valid-dfa-rule?
            valid-rules?
            valid-finals?
@@ -88,6 +89,12 @@
     (define pairs (map (lambda (x) (list (first x) (second x))) rules))
     (define cart-prod (cartesian-product states sigma))
     (or add-dead (andmap (lambda (x) (member x pairs)) cart-prod))
+    )
+
+  (define (missing-functional rules states sigma)
+    (define pairs (map (lambda (x) (list (first x) (second x))) rules))
+    (define cart-prod (cartesian-product states sigma))
+    (filter (lambda (x) (not (member x pairs))) cart-prod)
     )
 
   (define (valid-dfa-rule? states sigma rule)
