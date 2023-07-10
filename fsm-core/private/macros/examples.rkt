@@ -1,6 +1,6 @@
 #lang racket
 (require "constructors.rkt"
-         "constants.rkt")
+         "../constants.rkt")
 
 
 (make-dfa
@@ -9,7 +9,6 @@
  'A
  '(B)
  (list '(A a A)
-       '(B a B)
+       '(B a C)
        )
- #f
  ) 

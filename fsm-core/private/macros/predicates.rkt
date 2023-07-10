@@ -2,7 +2,8 @@
   (require racket/contract
            "../constants.rkt")
   (provide functional?
-           valid-dfa-rules?
+           valid-dfa-rule?
+           valid-rules?
            valid-finals?
            invalid-finals
            valid-start?
@@ -11,8 +12,8 @@
            valid-list-of-states?
            valid-state?
            valid-alpha?
-           valid-rule?
-           return-duplicates)
+           return-duplicates
+           invalid-rules)
 
   (define (return-duplicates los)
     (cond [(empty? los) '()]
@@ -80,21 +81,20 @@
     (or add-dead (andmap (lambda (x) (member x pairs)) cart-prod))
     )
 
-  (define (valid-rule? states sigma)
-    (lambda (rule)
-      (and (list? rule)
-           (= (length rule) 3)
-           (member (first rule) states)
-           (member (second rule) sigma)
-           (member (third rule) states))
-      )
+  (define (valid-dfa-rule? states sigma rule)
+    (and (list? rule)
+         (= (length rule) 3)
+         (member (first rule) states)
+         (member (second rule) sigma)
+         (member (third rule) states))
     )
-  
-  (define (valid-dfa-rules? states sigma add-dead)
-    (lambda (rules)
-      (and/c (andmap (lambda (x) (valid-rule? x states sigma)) rules)
-             (functional? rules states sigma add-dead))
-      )
+
+  (define (valid-rules? pred states sigma rules)
+    (andmap (lambda (rule) (pred states sigma rule)) rules))
+
+  (define (invalid-rules pred states sigma rules)
+    (filter (lambda (rule) (not (pred states sigma rule)))
+            rules)
     )
   
   )

@@ -8,7 +8,8 @@
            no-duplicates/c
            valid-finals/c
            valid-start/c
-           start-in-states/c)
+           start-in-states/c
+           listof-rules/c)
 
   (define (valid-start/c states)
     (make-flat-contract
@@ -57,6 +58,23 @@
                        blame
                        (return-duplicates vals)
                        (format "There following values are duplicated in your ~a, ~a : " type vals)
+                       )
+                      )
+                    )
+     )
+    )
+
+  (define (listof-rules/c pred states sigma)
+    (make-flat-contract
+     #:name 'valid-list-of-rules
+     #:first-order (lambda (rules) (valid-rules? pred states sigma rules))
+     #:projection (lambda (blame)
+                    (lambda (rules)
+                      (current-blame-format format-rule-error)
+                      (raise-blame-error
+                       blame
+                       (invalid-rules pred states sigma rules)
+                       (format "These rules contain improper states/sigma members")
                        )
                       )
                     )
