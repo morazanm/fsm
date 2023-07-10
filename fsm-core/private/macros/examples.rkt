@@ -6,13 +6,15 @@
 
 (define dfa-temp (make-dfa
                   `(A B)
-                  '(a)
+                  '(a b)
                   'A
                   '(A)
                   (list '(A a A)
-                        '(B a B)
+                        '(B a A)
+                        '(B b B)
+                        '(A b B)
                         )
                   #:accepts (list '(a a a) '(a a))
-                  #:rejects '(bbbb)
+                  #:rejects (list '(b b b) '(b b))
                   ))
-(dfa-temp '(a a a a))
+(dfa-temp '(a a a a b))

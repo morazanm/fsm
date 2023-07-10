@@ -11,7 +11,7 @@
            valid-start/c
            start-in-states/c
            listof-rules/c
-           dfa-accepts/c
+           dfa-input/c
            listof-words/c)
 
   (define (valid-start/c states)
@@ -129,33 +129,36 @@
     )
 
 
-  (define (dfa-accepts/c states
+  (define (dfa-input/c states
                          sigma
                          start
                          finals
                          rules
-                         add-dead)
+                         add-dead
+                         accepts?)
     (make-flat-contract
      #:name 'machine-accepting-correctly
-     #:first-order (check-accepted-dfa states
+     #:first-order (check-input-dfa states
                                        sigma
                                        start
                                        finals
                                        rules
-                                       add-dead)
+                                       add-dead
+                                       accepts?)
      #:projection (lambda (blame)
                     (lambda (words)
                       (current-blame-format format-accepts-error)
                       (raise-blame-error
                        blame
-                       (return-accepted-dfa states
+                       (return-input-dfa states
                                             sigma
                                             start
                                             finals
                                             rules
                                             add-dead
-                                            words)
-                       "Does not accept the predicted value: "
+                                            words
+                                            accepts?)
+                       (format "Does not ~s the predicted value: " accepts?)
                        )
                       )
                     )

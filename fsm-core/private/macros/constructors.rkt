@@ -62,13 +62,26 @@
                               finals
                               rules
                               add-dead) (and/c (listof-words/c sigma)
-                                               (dfa-accepts/c states
+                                               (dfa-input/c states
                                                               sigma
                                                               start
                                                               finals
                                                               rules
-                                                              add-dead))]
-          #:rejects [rejects (listof symbol?)]
+                                                              add-dead
+                                                              'accept))]
+          #:rejects [rejects (states
+                              sigma
+                              start
+                              finals
+                              rules
+                              add-dead) (and/c (listof-words/c sigma)
+                                               (dfa-input/c states
+                                                              sigma
+                                                              start
+                                                              finals
+                                                              rules
+                                                              add-dead
+                                                              'reject))]
           )
          
          [result dfa?])

@@ -17,8 +17,8 @@
            return-duplicates
            invalid-rules
            dfa?
-           check-accepted-dfa
-           return-accepted-dfa
+           check-input-dfa
+           return-input-dfa
            listof-words?)
 
   (define (dfa? machine)
@@ -113,12 +113,13 @@
                                              word))) words))
     )
 
-  (define (check-accepted-dfa states
+  (define (check-input-dfa states
                               sigma
                               start
                               finals
                               rules
-                              add-dead)
+                              add-dead
+                              accepts?)
     (lambda (words)
       (define temp-machine (make-unchecked-dfa states
                                                sigma
@@ -126,23 +127,24 @@
                                                finals
                                                rules
                                                add-dead))
-      (andmap (lambda (x) (equal? (temp-machine x) 'accept)) words)
+      (andmap (lambda (x) (equal? (temp-machine x) accepts?)) words)
       )
     )
 
-  (define (return-accepted-dfa states
+  (define (return-input-dfa states
                                sigma
                                start
                                finals
                                rules
                                add-dead
-                               words)
+                               words
+                               accepts?)
     (define temp-machine (make-unchecked-dfa states
                                              sigma
                                              start
                                              finals
                                              rules
                                              add-dead))
-    (filter (lambda (x) (equal? (temp-machine x) 'reject)) words)
+    (filter (lambda (x) (equal? (temp-machine x) (if (equal? 'accept accepts?) 'reject 'accept))) words)
     )
   )
