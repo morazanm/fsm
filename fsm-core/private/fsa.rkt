@@ -56,7 +56,10 @@
                    sigma
                    start
                    finals
-                   deltas)) ; add dead state  transitions if optional argument is missing
+                   (append deltas 
+                           (if (null? adddead)
+                               (new-dead-rules (cons DEAD states) sigma deltas)
+                               null)))) ; add dead state  transitions if optional argument is missing
   
   
   ; make-unchecked-ndfa: (listof states) alphabet state (listof state) (listof rule)

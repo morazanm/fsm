@@ -15,6 +15,6 @@
                         '(A b B)
                         )
                   #:accepts (list '(a a a) '(a a))
-                  #:rejects (list '(b b b) '(b b))
+                  #:rejects (list '(b b b a) '(b b))
                   ))
 (dfa-temp '(a a a a b))
