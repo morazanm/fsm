@@ -2,6 +2,7 @@
   (require "predicates.rkt"
            "error-formatting.rkt"
            "../constants.rkt"
+           "../fsa.rkt"
            racket/contract
            )
   (provide functional/c
@@ -9,7 +10,9 @@
            valid-finals/c
            valid-start/c
            start-in-states/c
-           listof-rules/c)
+           listof-rules/c
+           dfa-accepts/c
+           listof-words/c)
 
   (define (valid-start/c states)
     (make-flat-contract
@@ -101,6 +104,58 @@
                        (invalid-finals states finals)
                        (format "~s" states)
                      
+                       )
+                      )
+                    )
+     )
+    )
+
+  (define (listof-words/c sigma)
+    (make-flat-contract
+     #:name 'valid-list-of-words
+     #:first-order (lambda (words) (listof-words? words sigma))
+     #:projection (lambda (blame)
+                    (lambda (words)
+                      (current-blame-format format-accepts-error)
+                      (raise-blame-error
+                       blame
+                       words
+                       (format "Not given an accurate list of words ~s" words)
+                     
+                       )
+                      )
+                    )
+     )
+    )
+
+
+  (define (dfa-accepts/c states
+                         sigma
+                         start
+                         finals
+                         rules
+                         add-dead)
+    (make-flat-contract
+     #:name 'machine-accepting-correctly
+     #:first-order (check-accepted-dfa states
+                                       sigma
+                                       start
+                                       finals
+                                       rules
+                                       add-dead)
+     #:projection (lambda (blame)
+                    (lambda (words)
+                      (current-blame-format format-accepts-error)
+                      (raise-blame-error
+                       blame
+                       (return-accepted-dfa states
+                                            sigma
+                                            start
+                                            finals
+                                            rules
+                                            add-dead
+                                            words)
+                       "Does not accept the predicted value: "
                        )
                       )
                     )

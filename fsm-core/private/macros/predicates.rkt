@@ -1,6 +1,8 @@
 (module predicates racket
   (require racket/contract
-           "../constants.rkt")
+           "../constants.rkt"
+           "../sm-getters.rkt"
+           "../fsa.rkt")
   (provide functional?
            valid-dfa-rule?
            valid-rules?
@@ -13,7 +15,14 @@
            valid-state?
            valid-alpha?
            return-duplicates
-           invalid-rules)
+           invalid-rules
+           dfa?
+           check-accepted-dfa
+           return-accepted-dfa
+           listof-words?)
+
+  (define (dfa? machine)
+    (equal? (sm-type machine) 'dfa))
 
   (define (return-duplicates los)
     (cond [(empty? los) '()]
@@ -96,5 +105,44 @@
     (filter (lambda (rule) (not (pred states sigma rule)))
             rules)
     )
-  
+
+  (define (listof-words? words sigma)
+    (and (list? words)
+         (andmap (lambda (word) (and (list? word)
+                                     (andmap (lambda (letter) (symbol? letter))
+                                             word))) words))
+    )
+
+  (define (check-accepted-dfa states
+                              sigma
+                              start
+                              finals
+                              rules
+                              add-dead)
+    (lambda (words)
+      (define temp-machine (make-unchecked-dfa states
+                                               sigma
+                                               start
+                                               finals
+                                               rules
+                                               add-dead))
+      (andmap (lambda (x) (equal? (temp-machine x) 'accept)) words)
+      )
+    )
+
+  (define (return-accepted-dfa states
+                               sigma
+                               start
+                               finals
+                               rules
+                               add-dead
+                               words)
+    (define temp-machine (make-unchecked-dfa states
+                                             sigma
+                                             start
+                                             finals
+                                             rules
+                                             add-dead))
+    (filter (lambda (x) (equal? (temp-machine x) 'reject)) words)
+    )
   )

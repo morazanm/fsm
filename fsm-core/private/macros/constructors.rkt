@@ -3,6 +3,7 @@
            "../constants.rkt"
            "predicates.rkt"
            "error-formatting.rkt"
+           "../fsa.rkt"
            racket/contract
            )
   (provide make-dfa)
@@ -55,16 +56,27 @@
                                    (no-duplicates/c "rules"))]
           )
          ([add-dead boolean?]
-          #:accepts [accepts (listof symbol?)]
+          #:accepts [accepts (states
+                              sigma
+                              start
+                              finals
+                              rules
+                              add-dead) (and/c (listof-words/c sigma)
+                                               (dfa-accepts/c states
+                                                              sigma
+                                                              start
+                                                              finals
+                                                              rules
+                                                              add-dead))]
           #:rejects [rejects (listof symbol?)]
           )
          
-         [result list?])
+         [result dfa?])
     (define all-rules
       (if add-dead
           (add-dead-state-rules rules states sigma)
           rules))
-    (list states sigma start finals all-rules add-dead)
+    (make-unchecked-dfa states sigma start finals all-rules add-dead)
     )
   
   )

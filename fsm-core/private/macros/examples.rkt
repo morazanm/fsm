@@ -1,16 +1,18 @@
 #lang racket
 (require "constructors.rkt"
-         "../constants.rkt")
+         "../constants.rkt"
+         "../fsa.rkt")
 
 
-(make-dfa
- `(A B)
- '(a)
- 'A
- '(B)
- (list '(A a A)
-       '(B a B)
-       )
- #:accepts '(aaaa)
- #:rejects '(bbbb)
- )  
+(define dfa-temp (make-dfa
+                  `(A B)
+                  '(a)
+                  'A
+                  '(A)
+                  (list '(A a A)
+                        '(B a B)
+                        )
+                  #:accepts (list '(a a a) '(a a))
+                  #:rejects '(bbbb)
+                  ))
+(dfa-temp '(a a a a))
