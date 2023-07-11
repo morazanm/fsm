@@ -99,32 +99,34 @@
           rules
           (cons curr-ss ssts))))))
 
+;; state (listof state) (listof ndfa-rule) -> (listof ndfa-rule)
+;; Purpose: Extract empty transitions to non-generated states for the given state
+(define (get-e-trans state gen-states rules)
+  (filter (λ (r) (and (eq? (first r) state)
+                      (eq? (second r) EMP)
+                      (not (member (third r) gen-states))))
+          rules))
+
+;; (listof state) (listof ndfa-rules) (listof state) -> (listof state)
+;; Purpose: Compute the empties for the states left to explore in the first given (listof state)
+;; Accumulator Invariants:
+;;   to-search = unvisited states reachable by consuming no input
+;;   visited = visited states reachable by consuming no input
+(define (compute-empties to-search rules visited)
+  (if (empty? to-search)
+      visited
+      (let* [(current (first to-search))
+             (current-e-rules
+              (get-e-trans current (append to-search visited) rules))]
+        (compute-empties (append (rest to-search) (map third current-e-rules))
+                         rules
+                         (cons current visited)))))
+
 
 
 ;; (listof state) rules -> emps-tbl
 ;; Purpose: Compute empties table for all given states
-(define (compute-empties-tbl states rules)
-  ;; state (listof state) (listof ndfa-rule) -> (listof ndfa-rule)
-  ;; Purpose: Extract empty transitions to non-generated states for the given state
-  (define (get-e-trans state gen-states rules)
-    (filter (λ (r) (and (eq? (first r) state)
-                        (eq? (second r) EMP)
-                        (not (member (third r) gen-states))))
-            rules))
-  ;; (listof state) (listof ndfa-rules) (listof state) -> (listof state)
-  ;; Purpose: Compute the empties for the states left to explore in the first given (listof state)
-  ;; Accumulator Invariants:
-  ;;   to-search = unvisited states reachable by consuming no input
-  ;;   visited = visited states reachable by consuming no input
-  (define (compute-empties to-search rules visited)
-    (if (empty? to-search)
-        visited
-        (let* [(current (first to-search))
-               (current-e-rules
-                (get-e-trans current (append to-search visited) rules))]
-          (compute-empties (append (rest to-search) (map third current-e-rules))
-                           rules
-                           (cons current visited)))))
+(define (compute-empties-tbl states rules)  
   (map (λ (st) (list st (compute-empties (list st) rules '()))) states))
 
 
@@ -207,7 +209,7 @@
 
 ;; ndfa -> dfa rules
 ;; Purpose: Convert the given ndfa to an equivalent dfa (only outputs rules)
-(define (ndfa2dfa-rules-only M)
+(define (compute-ss-edges M)
   (if (eq? (sm-type M) 'dfa)
       M
       (convert-rules-only (sm-states M)
@@ -365,22 +367,27 @@
 
 
 ;; compute-all-hedges
-;; ndfa ss -> (listof edges)
+;; (listof ndfa-rules) superstate  super-state-edge -> (listof edges)
 ;; Purpose: To compute a list of edges that needs to be highlighted in the ndfa graph
 (define (compute-all-hedges ndfa-rules to-ss added-dfa-edge)
   (if (empty? to-ss)
       empty
-      (let [(new-hedges (if (empty? added-dfa-edge)
-                            empty
-                            (filter (λ (rule) (and (eq? (second added-dfa-edge)
-                                                        (second rule))
-                                                   (member (first rule) (first added-dfa-edge))))
-                                    ndfa-rules)))]
-        (append (find-empty-transitions (list (first to-ss)) empty ndfa-rules)
+      (let [(new-hedges
+             (if (empty? added-dfa-edge)
+                 empty
+                 (filter (λ (rule) (and (eq? (second added-dfa-edge)
+                                             (second rule))
+                                        (member (first rule)
+                                                (first added-dfa-edge))))
+                         ndfa-rules)))]
+        (append (find-empty-transitions (list (first to-ss))
+                                        empty
+                                        ndfa-rules)
                 new-hedges
                 (compute-all-hedges (filter (λ (rule) (not (member rule new-hedges)))
                                             ndfa-rules)
-                                    (rest to-ss) added-dfa-edge)))))
+                                    (rest to-ss)
+                                    added-dfa-edge)))))
 
 
 ;; remove-edges
@@ -413,17 +420,20 @@
   (cond [(key=? "right" a-key)
          (if (empty? (world-up-edges a-world))
              a-world
-             (let* [(new-up-edges (rest (world-up-edges a-world)))
-                    (new-ad-edges (cons (first (world-up-edges a-world))
+             (let* [(curr-dfa-ss-edge (first (world-up-edges a-world)))
+                    (new-up-edges (rest (world-up-edges a-world)))
+                    (new-ad-edges (cons curr-dfa-ss-edge
                                         (world-ad-edges a-world)))
                     (new-incl-nodes (add-included-node (world-incl-nodes a-world)
-                                                       (first new-ad-edges)))
+                                                       curr-dfa-ss-edge))
                     (new-hedges (compute-all-hedges (sm-rules (world-M a-world))
-                                                    (third (first new-ad-edges))
-                                                    (first new-ad-edges)))
+                                                    (third curr-dfa-ss-edge)
+                                                    curr-dfa-ss-edge))
                     (new-fedges (if (empty? new-up-edges)
-                                    (append new-hedges (world-fedges a-world))
-                                    (append (world-hedges a-world) (world-fedges a-world))))
+                                    (append new-hedges
+                                            (world-fedges a-world))
+                                    (append (world-hedges a-world)
+                                            (world-fedges a-world))))
                     (new-bledges (remove-edges new-hedges (world-bledges a-world)))]
                (make-world new-up-edges                       
                            new-ad-edges
@@ -436,29 +446,38 @@
         [(key=? "left" a-key)
          (if (empty? (world-ad-edges a-world))
              a-world
-             (let* [(ss-edges (ndfa2dfa-rules-only (world-M a-world)))
-                    (super-start-state (first (first ss-edges)))
-                    (edge-removed (first (world-ad-edges a-world)))
-                    (new-up-edges (cons edge-removed
+             (let* [(last-dfa-pedge (first (world-ad-edges a-world)))
+                    (new-up-edges (cons last-dfa-pedge
                                         (world-up-edges a-world)))
                     (new-ad-edges (rest (world-ad-edges a-world)))
-                    (new-incl-nodes (remove-included-node (world-incl-nodes a-world)
-                                                          edge-removed
-                                                          new-ad-edges))
-                    (new-hedges (if (empty? new-ad-edges)
-                                    (compute-all-hedges (sm-rules (world-M a-world))
-                                                        super-start-state '())
-                                    (compute-all-hedges (sm-rules (world-M a-world))                                                    
-                                                        (third (first new-ad-edges))                                                                                                           
-                                                        (first new-ad-edges))))
-                    (previous-hedges (compute-all-hedges (sm-rules (world-M a-world))                                                    
-                                                         (third edge-removed)                                                                                                           
-                                                         edge-removed))                   
+                    (new-incl-nodes (remove-included-node
+                                     (world-incl-nodes a-world)
+                                     last-dfa-pedge
+                                     new-ad-edges))
+                    (new-hedges
+                     (if (empty? new-ad-edges)
+                         (compute-all-hedges
+                          (sm-rules (world-M a-world))
+                          (compute-empties
+                           (list (sm-start (world-M a-world)))
+                           (sm-rules (world-M a-world))
+                           '())
+                          '())
+                         (compute-all-hedges
+                          (sm-rules (world-M a-world))                                                    
+                          (third (first new-ad-edges))                                                                                                           
+                          (first new-ad-edges))))
+                    (previous-hedges (compute-all-hedges
+                                      (sm-rules (world-M a-world))                                                    
+                                      (third last-dfa-pedge)                                                                                                           
+                                      last-dfa-pedge))                   
                     (new-fedges (if (empty? new-ad-edges)
                                     empty
                                     (remove-edges previous-hedges
                                                   (world-fedges a-world))))
-                    (new-bledges (remove-duplicates (append previous-hedges (world-bledges a-world))))]
+                    (new-bledges (remove-duplicates
+                                  (append previous-hedges
+                                          (world-bledges a-world))))]
                (make-world new-up-edges                       
                            new-ad-edges
                            new-incl-nodes
@@ -467,11 +486,15 @@
                            new-fedges
                            new-bledges)))]
         [(key=? "down" a-key)
-         (let* [(ss-edges (ndfa2dfa-rules-only (world-M a-world)))
+         (let* [(ss-edges (append (reverse (world-ad-edges a-world))
+                                  (world-up-edges a-world)))
                 (super-start-state (first (first ss-edges)))                
                 (new-up-edges '())
                 (new-ad-edges (reverse ss-edges))
-                (new-incl-nodes (remove-duplicates
+                (new-incl-nodes
+                 (remove-duplicates (append-map (λ (e) (list (first e) (third e)))
+                                                new-ad-edges))
+                 #;(remove-duplicates
                                  (reverse (cons super-start-state
                                                 (reverse (map (λ (edge) (third edge)) new-ad-edges))))))
                 (new-hedges (compute-all-hedges (sm-rules (world-M a-world))
@@ -608,23 +631,26 @@
 ;; ndfa --> world
 (define (run M)
   (begin
-    (let* [(ss-edges (ndfa2dfa-rules-only M))
-           (super-start-state (first (first ss-edges)))]
+    (let* [(ss-edges (compute-ss-edges M))
+           (super-start-state (compute-empties (list (sm-start M))
+                                               (sm-rules M)
+                                               '()))
+           (init-hedges (compute-all-hedges (sm-rules M) super-start-state '()))]
       (big-bang
           (make-world ss-edges
                       '()
                       (list (first (first ss-edges)))
                       M
-                      (compute-all-hedges (sm-rules M) super-start-state '())
+                      init-hedges
                       '()
-                      (remove (compute-all-hedges (sm-rules M) super-start-state '()) (sm-rules M)))
+                      (remove init-hedges (sm-rules M)))
                 
         [on-draw draw-world]
         [on-key process-key]
         [name 'visualization]))
     (void)))
 
-(run aa-ab)
+;(run aa-ab)
 ;(run AT-LEAST-ONE-MISSING)
 
 (define EXAMPLE (call-with-values get-display-size empty-scene))
