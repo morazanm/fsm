@@ -6,7 +6,6 @@
   (provide functional?
            missing-functional
            valid-dfa-rule?
-           valid-ndfa-rule?
            valid-rules?
            valid-finals?
            invalid-finals
@@ -20,6 +19,7 @@
            invalid-rules
            dfa?
            ndfa?
+           check-duplicates-dfa
            check-input-dfa
            check-input-ndfa
            return-input-dfa
@@ -112,20 +112,23 @@
          (member (third rule) states))
     )
 
-  (define (valid-ndfa-rule? states sigma rule)
-    (and (list? rule)
-         (= (length rule) 3)
-         (member (first rule) states)
-         (member (second rule) (cons EMP sigma))
-         (member (third rule) states))
-    )
-
   (define (valid-rules? pred states sigma rules)
     (andmap (lambda (rule) (pred states sigma rule)) rules))
 
   (define (invalid-rules pred states sigma rules)
     (filter (lambda (rule) (not (pred states sigma rule)))
             rules)
+    )
+
+  (define (check-duplicates-dfa rules)
+    (define starts (map (lambda (x) (list (car x) (cadr x))) rules))
+    (define (helper input acc)
+      (cond [(empty? input) acc]
+            [(member (car input) (cdr input)) (helper (cdr input) (cons (car input) acc))]
+            [else (helper (cdr input) acc)])
+      )
+    (define duplicates (helper starts '()))
+    (if (empty? duplicates) #f duplicates)
     )
 
   (define (listof-words? words sigma)
@@ -136,12 +139,12 @@
     )
 
   (define (check-input-dfa states
-                              sigma
-                              start
-                              finals
-                              rules
-                              add-dead
-                              accepts?)
+                           sigma
+                           start
+                           finals
+                           rules
+                           add-dead
+                           accepts?)
     (lambda (words)
       (define temp-machine (make-unchecked-dfa states
                                                sigma
@@ -154,29 +157,29 @@
     )
 
   (define (check-input-ndfa states
-                              sigma
-                              start
-                              finals
-                              rules
-                              accepts?)
+                            sigma
+                            start
+                            finals
+                            rules
+                            accepts?)
     (lambda (words)
       (define temp-machine (make-unchecked-ndfa states
-                                               sigma
-                                               start
-                                               finals
-                                               rules))
+                                                sigma
+                                                start
+                                                finals
+                                                rules))
       (andmap (lambda (x) (equal? (temp-machine x) accepts?)) words)
       )
     )
 
   (define (return-input-dfa states
-                               sigma
-                               start
-                               finals
-                               rules
-                               add-dead
-                               words
-                               accepts?)
+                            sigma
+                            start
+                            finals
+                            rules
+                            add-dead
+                            words
+                            accepts?)
     (define temp-machine (make-unchecked-dfa states
                                              sigma
                                              start
@@ -187,17 +190,17 @@
     )
 
   (define (return-input-ndfa states
-                               sigma
-                               start
-                               finals
-                               rules
-                               words
-                               accepts?)
+                             sigma
+                             start
+                             finals
+                             rules
+                             words
+                             accepts?)
     (define temp-machine (make-unchecked-ndfa states
-                                             sigma
-                                             start
-                                             finals
-                                             rules))
+                                              sigma
+                                              start
+                                              finals
+                                              rules))
     (filter (lambda (x) (equal? (temp-machine x) (if (equal? 'accept accepts?) 'reject 'accept))) words)
     )
   )

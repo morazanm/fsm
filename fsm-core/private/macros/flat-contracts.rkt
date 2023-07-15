@@ -13,7 +13,8 @@
            listof-rules/c
            dfa-input/c
            listof-words/c
-           ndfa-input/c)
+           ndfa-input/c
+           no-duplicates-dfa/c)
 
   (define (valid-start/c states)
     (make-flat-contract
@@ -61,12 +62,32 @@
                       (raise-blame-error
                        blame
                        (return-duplicates vals)
-                       (format "There following values are duplicated in your ~a, ~a : " type vals)
+                       (format "There following values are duplicated in your ~a: " type )
                        )
                       )
                     )
      )
     )
+
+  ;; Defines a simple contract to check that there are no duplicates in a list
+  ;; Parameter type refers to the type of elements in the list, e.g. number, state, symbol, etc.
+  (define (no-duplicates-dfa/c type)
+    (make-flat-contract
+     #:name (string->symbol (format "distinct-list-of-~a" type))
+     #:first-order (lambda (vals) (not (check-duplicates-dfa vals)))
+     #:projection (lambda (blame)
+                    (lambda (vals)
+                      (current-blame-format format-duplicates-error)
+                      (raise-blame-error
+                       blame
+                       (check-duplicates-dfa vals)
+                       (format "There following state/sigma pairs are duplicated in your ~a: " type)
+                       )
+                      )
+                    )
+     )
+    )
+
 
   (define (listof-rules/c pred states sigma)
     (make-flat-contract

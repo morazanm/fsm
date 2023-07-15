@@ -6,8 +6,8 @@
 (local-require test-engine/racket-tests)
 
 
-(define dfa-temp (make-ndfa2
-                  `(A B)
+(define dfa-temp (make-dfa2
+                  '(A B)
                   '(a b)
                   'A
                   '(A)
@@ -15,7 +15,7 @@
                         '(B a A)
                         '(B b B)
                         '(A b B)
-                        `(A ,EMP B))
+                        '(A a B))
                   #:accepts (list '(a a a) '(a a))
                   #:rejects (list '(b b b b) '(b b))
                   ))

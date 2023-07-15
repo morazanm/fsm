@@ -54,7 +54,7 @@
                   sigma
                   add-dead) (and/c (listof-rules/c valid-dfa-rule? states sigma)
                                    (functional/c states sigma add-dead)
-                                   (no-duplicates/c "rules"))]
+                                   (no-duplicates-dfa/c "rules"))]
           )
          ([add-dead boolean?]
           #:accepts [accepts (states
@@ -106,7 +106,7 @@
                                   (valid-finals/c states)
                                   (no-duplicates/c "final states"))]
           [rules (states
-                  sigma) (and/c (listof-rules/c valid-ndfa-rule? states sigma)
+                  sigma) (and/c (listof-rules/c valid-dfa-rule? states (cons EMP sigma))
                                    (no-duplicates/c "rules"))]
           )
          (#:accepts [accepts (states
@@ -137,5 +137,7 @@
   
     (make-unchecked-ndfa states sigma start finals rules)
     )
+
+  
   
   )
