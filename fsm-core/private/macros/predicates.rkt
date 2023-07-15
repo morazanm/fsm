@@ -97,7 +97,7 @@
     (filter (lambda (x) (not (member x pairs))) cart-prod)
     )
 
-  (define (valid-dfa-rule? states sigma rule)
+  (define ((valid-dfa-rule? states sigma) rule)
     (and (list? rule)
          (= (length rule) 3)
          (member (first rule) states)
