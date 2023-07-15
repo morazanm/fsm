@@ -1,8 +1,12 @@
 (module predicates racket
   (require racket/contract
-           "../constants.rkt")
+           "../constants.rkt"
+           "../sm-getters.rkt"
+           "../fsa.rkt")
   (provide functional?
-           valid-dfa-rules?
+           missing-functional
+           valid-dfa-rule?
+           valid-rules?
            valid-finals?
            invalid-finals
            valid-start?
@@ -11,8 +15,15 @@
            valid-list-of-states?
            valid-state?
            valid-alpha?
-           valid-rule?
-           return-duplicates)
+           return-duplicates
+           invalid-rules
+           dfa?
+           check-input-dfa
+           return-input-dfa
+           listof-words?)
+
+  (define (dfa? machine)
+    (equal? (sm-type machine) 'dfa))
 
   (define (return-duplicates los)
     (cond [(empty? los) '()]
@@ -55,9 +66,10 @@
       )
     )
 
-  (define (valid-start? start)
-    (and (symbol? start)
-         (valid-state? start))
+  (define (valid-start? states)
+    (lambda (start)
+      (and (symbol? start)
+           (valid-state? start)))
     )
 
   (define (valid-finals? states)
@@ -79,21 +91,67 @@
     (or add-dead (andmap (lambda (x) (member x pairs)) cart-prod))
     )
 
-  (define (valid-rule? states sigma)
-    (lambda (rule)
-      (and (list? rule)
-           (= (length rule) 3)
-           (member (first rule) states)
-           (member (second rule) sigma)
-           (member (third rule) states))
+  (define (missing-functional rules states sigma)
+    (define pairs (map (lambda (x) (list (first x) (second x))) rules))
+    (define cart-prod (cartesian-product states sigma))
+    (filter (lambda (x) (not (member x pairs))) cart-prod)
+    )
+
+  (define ((valid-dfa-rule? states sigma) rule)
+    (and (list? rule)
+         (= (length rule) 3)
+         (member (first rule) states)
+         (member (second rule) sigma)
+         (member (third rule) states))
+    )
+
+  (define (valid-rules? pred states sigma rules)
+    (andmap (lambda (rule) (pred states sigma rule)) rules))
+
+  (define (invalid-rules pred states sigma rules)
+    (filter (lambda (rule) (not (pred states sigma rule)))
+            rules)
+    )
+
+  (define (listof-words? words sigma)
+    (and (list? words)
+         (andmap (lambda (word) (and (list? word)
+                                     (andmap (lambda (letter) (symbol? letter))
+                                             word))) words))
+    )
+
+  (define (check-input-dfa states
+                              sigma
+                              start
+                              finals
+                              rules
+                              add-dead
+                              accepts?)
+    (lambda (words)
+      (define temp-machine (make-unchecked-dfa states
+                                               sigma
+                                               start
+                                               finals
+                                               rules
+                                               add-dead))
+      (andmap (lambda (x) (equal? (temp-machine x) accepts?)) words)
       )
     )
-  
-  (define (valid-dfa-rules? states sigma add-dead)
-    (lambda (rules)
-      (and/c (andmap (lambda (x) (valid-rule? x states sigma)) rules)
-             (functional? rules states sigma add-dead))
-      )
+
+  (define (return-input-dfa states
+                               sigma
+                               start
+                               finals
+                               rules
+                               add-dead
+                               words
+                               accepts?)
+    (define temp-machine (make-unchecked-dfa states
+                                             sigma
+                                             start
+                                             finals
+                                             rules
+                                             add-dead))
+    (filter (lambda (x) (equal? (temp-machine x) (if (equal? 'accept accepts?) 'reject 'accept))) words)
     )
-  
   )
