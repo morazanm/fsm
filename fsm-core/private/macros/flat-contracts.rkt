@@ -6,21 +6,39 @@
            )
   (provide functional/c
            no-duplicates/c
+           valid-states/c
            valid-finals/c
-           valid-start/c
+           valid-state/c
            start-in-states/c)
 
-  (define (valid-start/c start)
+  (define valid-states/c
     (make-flat-contract
-     #:name 'valid-starting-state
-     #:first-order (valid-start? start)
+     #:name 'valid-states/c
+     #:first-order (lambda (states) (andmap valid-state? states))
      #:projection (lambda (blame)
-                    (current-blame-format format-start-error)
-                    (raise-blame-error
-                     blame
-                     start
-                     (format "The value ~s is not a valid state" start)
-                     )
+                    (lambda (states)
+                      (define invalid-states (filter (lambda (state) (not (valid-state? state))) states))
+                      (current-blame-format format-valid-states-error)
+                      (raise-blame-error
+                       blame
+                       invalid-states
+                       (format "The machine states: ~a contains the following invalid states" states))))
+     )
+    )
+
+  (define (valid-state/c start)
+    (make-flat-contract
+     #:name 'valid-state
+     #:first-order (valid-state? start)
+     #:projection (lambda (blame)
+                    (lambda (start)
+                      (current-blame-format format-start-error)
+                      (raise-blame-error
+                       blame
+                       start
+                       (format "The value ~s is not a valid state" start)
+                       )
+                      )
                     )
      )
     )
