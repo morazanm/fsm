@@ -6,7 +6,8 @@
            "../fsa.rkt"
            racket/contract
            )
-  (provide make-dfa2)
+  (provide make-dfa2
+           make-ndfa2)
 
   ;; Using the existing set of rules, the entire machine set of states, and the
   ;; machine alphabet, generates a list of rules that contains the original rule
@@ -37,9 +38,9 @@
   ;; 2. This code does not yet check for duplicates in the list fields - this must
   ;; be added.
   (define/contract (make-dfa2 states sigma start finals rules
-                             [add-dead #t]
-                             #:accepts [accepts '()]
-                             #:rejects [rejects '()])
+                              [add-dead #t]
+                              #:accepts [accepts '()]
+                              #:rejects [rejects '()])
     (->i ([states (and/c (listof valid-state?)
                          (no-duplicates/c "states"))]
           [sigma (and/c (listof valid-alpha?)
@@ -63,12 +64,12 @@
                               rules
                               add-dead) (and/c (listof-words/c sigma)
                                                (dfa-input/c states
-                                                              sigma
-                                                              start
-                                                              finals
-                                                              rules
-                                                              add-dead
-                                                              'accept))]
+                                                            sigma
+                                                            start
+                                                            finals
+                                                            rules
+                                                            add-dead
+                                                            'accept))]
           #:rejects [rejects (states
                               sigma
                               start
@@ -76,12 +77,12 @@
                               rules
                               add-dead) (and/c (listof-words/c sigma)
                                                (dfa-input/c states
-                                                              sigma
-                                                              start
-                                                              finals
-                                                              rules
-                                                              add-dead
-                                                              'reject))]
+                                                            sigma
+                                                            start
+                                                            finals
+                                                            rules
+                                                            add-dead
+                                                            'reject))]
           )
          
          [result dfa?])
@@ -90,6 +91,51 @@
           (add-dead-state-rules rules states sigma)
           rules))
     (make-unchecked-dfa states sigma start finals all-rules add-dead)
+    )
+
+  (define/contract (make-ndfa2 states sigma start finals rules
+                              #:accepts [accepts '()]
+                              #:rejects [rejects '()])
+    (->i ([states (and/c (listof valid-state?)
+                         (no-duplicates/c "states"))]
+          [sigma (and/c (listof valid-alpha?)
+                        (no-duplicates/c "sigma"))]
+          [start (states) (and/c (valid-start/c states)
+                                 (start-in-states/c states))]
+          [finals (states) (and/c (listof valid-state?)
+                                  (valid-finals/c states)
+                                  (no-duplicates/c "final states"))]
+          [rules (states
+                  sigma) (and/c (listof-rules/c valid-ndfa-rule? states sigma)
+                                   (no-duplicates/c "rules"))]
+          )
+         (#:accepts [accepts (states
+                              sigma
+                              start
+                              finals
+                              rules) (and/c (listof-words/c sigma)
+                                               (ndfa-input/c states
+                                                            sigma
+                                                            start
+                                                            finals
+                                                            rules
+                                                            'accept))]
+          #:rejects [rejects (states
+                              sigma
+                              start
+                              finals
+                              rules) (and/c (listof-words/c sigma)
+                                               (ndfa-input/c states
+                                                            sigma
+                                                            start
+                                                            finals
+                                                            rules
+                                                            'reject))]
+          )
+         
+         [result ndfa?])
+  
+    (make-unchecked-ndfa states sigma start finals rules)
     )
   
   )
