@@ -36,3 +36,16 @@
   #:rejects (list '(b b b b) '(b b))
   )
  "Does not accept the predicted value:  ((a a a b))")
+
+(define wcw^r (make-ndpda2 '(S P Q F)
+                          '(a b c)
+                          '(a b)
+                          'S
+                          '(F)
+                          `(((S ,EMP ,EMP) (P ,EMP))
+                            ((P a ,EMP) (P (a)))
+                            ((P b ,EMP) (P (b)))
+                            ((P c ,EMP) (Q ,EMP))
+                            ((Q a (a)) (Q ,EMP))
+                            ((Q b (b)) (Q ,EMP))
+                            ((Q ,EMP ,EMP) (F ,EMP)))))
