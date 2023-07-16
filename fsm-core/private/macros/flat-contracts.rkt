@@ -15,7 +15,11 @@
            start-in-states/c
            listof-rules/c
            dfa-input/c
-           listof-words/c)
+           listof-words/c
+           ndfa-input/c
+           tm-input/c
+           no-duplicates-dfa/c
+           correct-members/c)
 
   ;; Purpose: Constructs a flat contract which checks if all elements in the
   ;;          list hold true for a given predicate. If any elements fail,
@@ -124,25 +128,61 @@
                       (raise-blame-error
                        blame
                        (return-duplicates vals)
-                       (format "The following values are duplicated in your ~a, ~a : " type vals)
+                       (format "There following values are duplicated in your ~a: " type )
                        )
                       )
                     )
      )
     )
 
-  
-  (define (listof-rules/c pred states sigma)
+  ;; Defines a simple contract to check that there are no duplicates in a list
+  ;; Parameter type refers to the type of elements in the list, e.g. number, state, symbol, etc.
+  (define (no-duplicates-dfa/c type)
+    (make-flat-contract
+     #:name (string->symbol (format "distinct-list-of-~a" type))
+     #:first-order (lambda (vals) (not (check-duplicates-dfa vals)))
+     #:projection (lambda (blame)
+                    (lambda (vals)
+                      (current-blame-format format-duplicates-error)
+                      (raise-blame-error
+                       blame
+                       (check-duplicates-dfa vals)
+                       (format "There following state/sigma pairs are duplicated in your ~a: " type)
+                       )
+                      )
+                    )
+     )
+    )
+
+
+  (define (listof-rules/c pred)
     (make-flat-contract
      #:name 'valid-list-of-rules
-     #:first-order (lambda (rules) (valid-rules? pred states sigma rules))
+     #:first-order (lambda (rules) (valid-rules? pred rules))
+     #:projection (lambda (blame)
+                    (lambda (rules)
+                      (current-blame-format format-rule-format-error)
+                      (raise-blame-error
+                       blame
+                       (invalid-rules pred rules)
+                       (format "Improperly formatted list of rules")
+                       )
+                      )
+                    )
+     )
+    )
+
+  (define (correct-members/c pred pred2 states sigma)
+    (make-flat-contract
+     #:name 'valid-list-of-rules
+     #:first-order (lambda (rules) (pred states sigma rules))
      #:projection (lambda (blame)
                     (lambda (rules)
                       (current-blame-format format-rule-error)
                       (raise-blame-error
                        blame
-                       (invalid-rules pred states sigma rules)
-                       (format "These rules contain improper states/sigma members")
+                       (pred2 states sigma rules)
+                       (format "The following rules contain symbols not contained in the states/sigma: ")
                        )
                       )
                     )
@@ -233,6 +273,75 @@
                                          add-dead
                                          words
                                          accepts?)
+                       (format "Does not ~s the predicted value: " accepts?)
+                       )
+                      )
+                    )
+     )
+    )
+
+  (define (ndfa-input/c states
+                         sigma
+                         start
+                         finals
+                         rules
+                         accepts?)
+    (make-flat-contract
+     #:name 'machine-accepting-correctly
+     #:first-order (check-input-ndfa states
+                                       sigma
+                                       start
+                                       finals
+                                       rules
+                                       accepts?)
+     #:projection (lambda (blame)
+                    (lambda (words)
+                      (current-blame-format format-accepts-error)
+                      (raise-blame-error
+                       blame
+                       (return-input-ndfa states
+                                            sigma
+                                            start
+                                            finals
+                                            rules
+                                            words
+                                            accepts?)
+                       (format "Does not ~s the predicted value: " accepts?)
+                       )
+                      )
+                    )
+     )
+    )
+
+  (define (tm-input/c states
+                         sigma
+                         start
+                         finals
+                         rules
+                         accept
+                         accepts?)
+    (make-flat-contract
+     #:name 'machine-accepting-correctly
+     #:first-order (check-input-tm states
+                                       sigma
+                                       start
+                                       finals
+                                       rules
+                                       accept
+                                       accepts?)
+     #:projection (lambda (blame)
+                    (lambda (words)
+                      (current-blame-format format-accepts-error)
+                      (raise-blame-error
+                       blame
+                       (return-input-tm states
+                                            sigma
+                                            start
+                                            finals
+                                            rules
+                                            words
+                                            accept
+                                            accepts?)
                        (format "Does not ~s the predicted value: " accepts?)
                        )
                       )

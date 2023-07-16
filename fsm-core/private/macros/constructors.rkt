@@ -5,9 +5,14 @@
            "error-formatting.rkt"
            "../fsa.rkt"
            "../pda.rkt"
+           "../tm.rkt"
            racket/contract
            )
-  (provide make-dfa2 make-ndpda2)
+  (provide make-dfa2
+           make-ndfa2
+           make-ndpda2
+           make-tm2
+           )
 
   ;; Using the existing set of rules, the entire machine set of states, and the
   ;; machine alphabet, generates a list of rules that contains the original rule
@@ -47,9 +52,14 @@
                                   (no-duplicates/c "final states"))]
           [rules (states
                   sigma
-                  add-dead) (and/c (valid-listof/c (valid-dfa-rule? states sigma) "machine rule" "list of machine rules")
+                  add-dead) (and/c (listof-rules/c valid-dfa-rule?)
+                                   (correct-members/c
+                                    correct-members-dfa?
+                                    incorrect-members-dfa
+                                    states
+                                    sigma)
                                    (functional/c states sigma add-dead)
-                                   (no-duplicates/c "rules"))]
+                                   (no-duplicates-dfa/c "rules"))]
           )
          ([add-dead boolean?]
           #:accepts [accepts (states
@@ -110,6 +120,117 @@
                                 (no-duplicates/c "rules"))])
          [result ndpda?])
     (make-unchecked-ndpda states sigma gamma start finals rules)
+    )
+
+  (define/contract (make-ndfa2 states sigma start finals rules
+                               #:accepts [accepts '()]
+                               #:rejects [rejects '()])
+    (->i ([states (and/c (valid-listof/c valid-state? "machine state" "list of machine states")
+                         (no-duplicates/c "states"))]
+          [sigma (and/c (valid-listof/c valid-alpha? "alphabet letter" "machine sigma")
+                        (no-duplicates/c "sigma"))]
+          [start (states) (and/c (valid-start/c states)
+                                 (start-in-states/c states))]
+          [finals (states) (and/c (valid-listof/c valid-state? "machine state" "list of machine finals")
+                                  (valid-finals/c states)
+                                  (no-duplicates/c "final states"))]
+          [rules (states
+                  sigma) (and/c (listof-rules/c valid-dfa-rule?)
+                                (correct-members/c
+                                 correct-members-dfa?
+                                 incorrect-members-dfa
+                                 states
+                                 (cons EMP sigma))
+                                (no-duplicates/c "rules"))]
+          )
+         (#:accepts [accepts (states
+                              sigma
+                              start
+                              finals
+                              rules) (and/c (listof-words/c sigma)
+                                            (ndfa-input/c states
+                                                          sigma
+                                                          start
+                                                          finals
+                                                          rules
+                                                          'accept))]
+          #:rejects [rejects (states
+                              sigma
+                              start
+                              finals
+                              rules) (and/c (listof-words/c sigma)
+                                            (ndfa-input/c states
+                                                          sigma
+                                                          start
+                                                          finals
+                                                          rules
+                                                          'reject))]
+          )
+         
+         [result ndfa?])
+  
+    (make-unchecked-ndfa states sigma start finals rules)
+    )
+
+   
+  (define/contract (make-tm2 states sigma rules start finals
+                             [accept 'null]
+                             ;#:accepts [accepts '()]
+                             ;#:rejects [rejects '()]
+                             )
+    (->i ([states (and/c (valid-listof/c valid-state? "machine state" "list of machine states")
+                         (no-duplicates/c "states"))]
+          [sigma (and/c (valid-listof/c valid-alpha? "alphabet letter" "machine sigma")
+                        (no-duplicates/c "sigma"))]
+          [rules (states
+                  sigma) (and/c (listof-rules/c valid-tm-rule?)
+                                (correct-members/c
+                                 correct-members-tm?
+                                 incorrect-members-tm
+                                 states
+                                 (cons RIGHT (cons LEFT (cons BLANK sigma))))
+                                (no-duplicates/c "rules"))]
+          [start (states) (and/c (valid-start/c states)
+                                 (start-in-states/c states))]
+          [finals (states) (and/c (valid-listof/c valid-state? "machine state" "list of machine finals")
+                                  (valid-finals/c states)
+                                  (no-duplicates/c "final states"))]
+          )
+         ([accept (sigma) (and/c symbol?
+                                 (lambda (x) (member x sigma)))]
+          ;#:accepts [accepts (states
+          ;                    sigma
+          ;                    start
+          ;                    finals
+          ;                    rules
+          ;                    accept) (and/c (listof-words/c sigma)
+          ;                                   (tm-input/c states
+          ;                                               sigma
+          ;                                               start
+          ;                                               finals
+          ;                                               rules
+          ;                                               accept
+          ;                                               'accept))]
+          ;#:rejects [rejects (states
+          ;                    sigma
+          ;                    start
+          ;                    finals
+          ;                    rules
+          ;                    accept) (and/c (listof-words/c sigma)
+          ;                                   (tm-input/c states
+          ;                                               sigma
+          ;                                               start
+          ;                                               finals
+          ;                                               rules
+          ;                                               accept
+          ;                                               'reject))]
+          )
+         
+         [result tm?])
+  
+    (if (equal? accept 'null)
+        (make-unchecked-tm states sigma rules start finals)
+        (make-unchecked-tm states sigma rules start finals accept))
     )
   
   )
