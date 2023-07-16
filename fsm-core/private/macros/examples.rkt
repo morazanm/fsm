@@ -4,7 +4,6 @@
          "../fsa.rkt"
          "../tm.rkt"
          "../../../main.rkt")
-(local-require test-engine/racket-tests)
 
 (define dfa-temp (make-dfa2
                   '(A B)

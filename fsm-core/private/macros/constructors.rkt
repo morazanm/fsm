@@ -40,16 +40,16 @@
   ;; 2. This code does not yet check for duplicates in the list fields - this must
   ;; be added.
   (define/contract (make-dfa2 states sigma start finals rules
-                              [add-dead #t]
-                              #:accepts [accepts '()]
-                              #:rejects [rejects '()])
-    (->i ([states (and/c (listof valid-state?)
+                             [add-dead #t]
+                             #:accepts [accepts '()]
+                             #:rejects [rejects '()])
+    (->i ([states (and/c (valid-listof/c valid-state? "machine state" "list of machine states")
                          (no-duplicates/c "states"))]
-          [sigma (and/c (listof valid-alpha?)
+          [sigma (and/c (valid-listof/c valid-alpha? "alphabet letter" "machine sigma")
                         (no-duplicates/c "sigma"))]
           [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
-          [finals (states) (and/c (listof valid-state?)
+          [finals (states) (and/c (valid-listof/c valid-state? "machine state" "list of machine finals")
                                   (valid-finals/c states)
                                   (no-duplicates/c "final states"))]
           [rules (states

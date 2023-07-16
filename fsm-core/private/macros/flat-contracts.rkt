@@ -5,7 +5,10 @@
            "../fsa.rkt"
            racket/contract
            )
-  (provide functional/c
+  (provide valid-listof/c
+           valid-states/c
+           valid-alphabet/c
+           functional/c
            no-duplicates/c
            valid-finals/c
            valid-start/c
@@ -17,6 +20,67 @@
            tm-input/c
            no-duplicates-dfa/c
            correct-members/c)
+
+  ;; Purpose: Constructs a flat contract which checks if all elements in the
+  ;;          list hold true for a given predicate. If any elements fail,
+  ;;          formats an error message with the list of failing elements,
+  ;;          and the given element and field names.
+  (define (valid-listof/c predicate element-name field-name)
+    (make-flat-contract
+     #:name (string->symbol (format "valid-~a" field-name))
+     #:first-order (lambda (vals) (andmap predicate vals))
+     #:projection (lambda (blame)
+                    (lambda (vals)
+                      (define invalid-vals (filter (lambda (val) (not (predicate val))) vals))
+                      (current-blame-format format-error)
+                      (raise-blame-error
+                       blame
+                       vals
+                       (format "The following: ~a are not valid ~a(s), in the ~a"
+                               invalid-vals
+                               element-name
+                               field-name)
+                       )
+                      )
+                    )
+     )
+    )
+
+  (define valid-states/c
+    (make-flat-contract
+     #:name 'valid-states
+     #:first-order (lambda (states) (andmap valid-state? states))
+     #:projection (lambda (blame)
+                    (lambda (states)
+                      (define invalid-states (filter (lambda (state) (not (valid-state? state))) states))
+                      (current-blame-format format-error)
+                      (raise-blame-error
+                       blame
+                       states
+                       (format "The following: ~a are not valid machine states, in the set of machine states" invalid-states)
+                       )
+                      )
+                    )
+     )
+    )
+
+  (define valid-alphabet/c
+    (make-flat-contract
+     #:name 'valid-alphabet
+     #:first-order (lambda (alphabet) (andmap valid-alpha? alphabet))
+     #:projection (lambda (blame)
+                    (lambda (alphabet)
+                      (define invalid-alphas (filter (lambda (alpha) (not (valid-alpha? alpha))) alphabet))
+                      (current-blame-format format-error)
+                      (raise-blame-error
+                       blame
+                       alphabet
+                       (format "The following: ~a are not valid alphabet letters, in the machine sigma" invalid-alphas)
+                       )
+                      )
+                    )
+     )
+    )
 
   (define (valid-start/c states)
     (make-flat-contract
@@ -181,34 +245,34 @@
 
 
   (define (dfa-input/c states
-                         sigma
-                         start
-                         finals
-                         rules
-                         add-dead
-                         accepts?)
+                       sigma
+                       start
+                       finals
+                       rules
+                       add-dead
+                       accepts?)
     (make-flat-contract
      #:name 'machine-accepting-correctly
      #:first-order (check-input-dfa states
-                                       sigma
-                                       start
-                                       finals
-                                       rules
-                                       add-dead
-                                       accepts?)
+                                    sigma
+                                    start
+                                    finals
+                                    rules
+                                    add-dead
+                                    accepts?)
      #:projection (lambda (blame)
                     (lambda (words)
                       (current-blame-format format-accepts-error)
                       (raise-blame-error
                        blame
                        (return-input-dfa states
-                                            sigma
-                                            start
-                                            finals
-                                            rules
-                                            add-dead
-                                            words
-                                            accepts?)
+                                         sigma
+                                         start
+                                         finals
+                                         rules
+                                         add-dead
+                                         words
+                                         accepts?)
                        (format "Does not ~s the predicted value: " accepts?)
                        )
                       )
