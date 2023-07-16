@@ -4,7 +4,8 @@
            "../sm-getters.rkt"
            "../fsa.rkt"
            "../tm.rkt"
-           "../../../main.rkt.")
+           "../pda.rkt"
+           "../../../main.rkt")
   (provide functional?
            missing-functional
            valid-dfa-rule?
@@ -27,8 +28,10 @@
            check-duplicates-dfa
            check-input-dfa
            check-input-ndfa
+           check-input-ndpda
            check-input-tm
            return-input-dfa
+           return-input-ndpda
            listof-words?
            valid-ndpda-rule?
            return-input-ndfa
@@ -218,6 +221,24 @@
       )
     )
 
+  (define (check-input-ndpda states
+                            sigma
+                            gamma
+                            start
+                            finals
+                            rules
+                            accepts?)
+    (lambda (words)
+      (define temp-machine (make-unchecked-ndpda states
+                                                sigma
+                                                gamma
+                                                start
+                                                finals
+                                                rules))
+      (andmap (lambda (x) (equal? (temp-machine x) accepts?)) words)
+      )
+    )
+
   (define (check-input-tm states
                           sigma
                           start
@@ -310,6 +331,23 @@
                              accepts?)
     (define temp-machine (make-unchecked-ndfa states
                                               sigma
+                                              start
+                                              finals
+                                              rules))
+    (filter (lambda (x) (equal? (temp-machine x) (if (equal? 'accept accepts?) 'reject 'accept))) words)
+    )
+
+  (define (return-input-ndpda states
+                             sigma
+                             gamma
+                             start
+                             finals
+                             rules
+                             words
+                             accepts?)
+    (define temp-machine (make-unchecked-ndfa states
+                                              sigma
+                                              gamma
                                               start
                                               finals
                                               rules))

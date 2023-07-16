@@ -18,6 +18,7 @@
            listof-words/c
            ndfa-input/c
            tm-input/c
+           ndpda-input/c
            no-duplicates-dfa/c
            correct-members/c
            has-accept/c)
@@ -302,6 +303,42 @@
                        blame
                        (return-input-ndfa states
                                           sigma
+                                          start
+                                          finals
+                                          rules
+                                          words
+                                          accepts?)
+                       (format "Does not ~s the predicted value: " accepts?)
+                       )
+                      )
+                    )
+     )
+    )
+
+  (define (ndpda-input/c states
+                        sigma
+                        gamma
+                        start
+                        finals
+                        rules
+                        accepts?)
+    (make-flat-contract
+     #:name 'machine-accepting-correctly
+     #:first-order (check-input-ndpda states
+                                     sigma
+                                     gamma
+                                     start
+                                     finals
+                                     rules
+                                     accepts?)
+     #:projection (lambda (blame)
+                    (lambda (words)
+                      (current-blame-format format-accepts-error)
+                      (raise-blame-error
+                       blame
+                       (return-input-ndpda states
+                                          sigma
+                                          gamma
                                           start
                                           finals
                                           rules
