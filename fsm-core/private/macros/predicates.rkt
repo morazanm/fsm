@@ -2,10 +2,12 @@
   (require racket/contract
            "../constants.rkt"
            "../sm-getters.rkt"
-           "../fsa.rkt")
+           "../fsa.rkt"
+           "../tm.rkt")
   (provide functional?
            missing-functional
            valid-dfa-rule?
+           valid-tm-rule?
            valid-rules?
            valid-finals?
            invalid-finals
@@ -19,18 +21,28 @@
            invalid-rules
            dfa?
            ndfa?
+           tm?
            check-duplicates-dfa
            check-input-dfa
            check-input-ndfa
+           check-input-tm
            return-input-dfa
            return-input-ndfa
-           listof-words?)
+           return-input-tm
+           listof-words?
+           incorrect-members-dfa
+           correct-members-dfa?
+           correct-members-tm?
+           incorrect-members-tm)
 
   (define (dfa? machine)
     (equal? (sm-type machine) 'dfa))
 
   (define (ndfa? machine)
     (equal? (sm-type machine) 'ndfa))
+
+  (define (tm? machine)
+    (equal? (sm-type machine) 'tm))
 
   (define (return-duplicates los)
     (cond [(empty? los) '()]
@@ -104,19 +116,44 @@
     (filter (lambda (x) (not (member x pairs))) cart-prod)
     )
 
-  (define (valid-dfa-rule? states sigma rule)
+  (define (correct-members-dfa? states sigma rules)
+    (andmap (lambda (x) (and (member (car x) states)
+                             (member (cadr x) sigma)
+                             (member (caddr x) states))) rules))
+
+  (define (incorrect-members-dfa states sigma rules)
+    (filter (lambda (x) (not (and (member (car x) states)
+                                  (member (cadr x) sigma)
+                                  (member (caddr x) states)))) rules))
+
+  (define (correct-members-tm? states sigma rules)
+    (andmap (lambda (x) (and (member (car (car x)) states)
+                             (member (cadr (car x)) sigma)
+                             (member (car (cadr x)) states)
+                             (member (cadr (cadr x)) sigma))) rules))
+
+  (define (incorrect-members-tm states sigma rules)
+    (filter (lambda (x) (not (and (member (car x) states)
+                                  (member (cadr x) sigma)
+                                  (member (caddr x) states)))) rules))
+
+  (define (valid-dfa-rule? rule)
     (and (list? rule)
-         (= (length rule) 3)
-         (member (first rule) states)
-         (member (second rule) sigma)
-         (member (third rule) states))
+         (= (length rule) 3))
     )
 
-  (define (valid-rules? pred states sigma rules)
-    (andmap (lambda (rule) (pred states sigma rule)) rules))
+  (define (valid-tm-rule? rule)
+    (and (list? rule)
+         (= (length rule) 2)
+         (= (length (car rule)) 2)
+         (= (length (cadr rule)) 2))
+    )
 
-  (define (invalid-rules pred states sigma rules)
-    (filter (lambda (rule) (not (pred states sigma rule)))
+  (define (valid-rules? pred rules)
+    (andmap (lambda (rule) (pred rule)) rules))
+
+  (define (invalid-rules pred rules)
+    (filter (lambda (rule) (not (pred rule)))
             rules)
     )
 
@@ -172,6 +209,31 @@
       )
     )
 
+  (define (check-input-tm states
+                          sigma
+                          start
+                          finals
+                          rules
+                          accept
+                          accepts?)
+    (lambda (words)
+      (define temp-machine (if (equal? accept 'null)
+                               (make-unchecked-tm states
+                                                  sigma
+                                                  rules
+                                                  start
+                                                  finals
+                                                  )
+                               (make-unchecked-tm states
+                                                  sigma
+                                                  rules
+                                                  start
+                                                  finals
+                                                  accept)))
+      (andmap (lambda (x) (equal? (temp-machine x) accepts?)) words)
+      )
+    )
+
   (define (return-input-dfa states
                             sigma
                             start
@@ -201,6 +263,30 @@
                                               start
                                               finals
                                               rules))
+    (filter (lambda (x) (equal? (temp-machine x) (if (equal? 'accept accepts?) 'reject 'accept))) words)
+    )
+
+  (define (return-input-tm states
+                           sigma
+                           start
+                           finals
+                           rules
+                           words
+                           accept
+                           accepts?)
+    (define temp-machine (if (equal? accept 'null)
+                             (make-unchecked-tm states
+                                                sigma
+                                                rules
+                                                start
+                                                finals
+                                                )
+                             (make-unchecked-tm states
+                                                sigma
+                                                rules
+                                                start
+                                                finals
+                                                accept)))
     (filter (lambda (x) (equal? (temp-machine x) (if (equal? 'accept accepts?) 'reject 'accept))) words)
     )
   )

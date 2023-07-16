@@ -14,7 +14,9 @@
            dfa-input/c
            listof-words/c
            ndfa-input/c
-           no-duplicates-dfa/c)
+           tm-input/c
+           no-duplicates-dfa/c
+           correct-members/c)
 
   (define (valid-start/c states)
     (make-flat-contract
@@ -89,17 +91,34 @@
     )
 
 
-  (define (listof-rules/c pred states sigma)
+  (define (listof-rules/c pred)
     (make-flat-contract
      #:name 'valid-list-of-rules
-     #:first-order (lambda (rules) (valid-rules? pred states sigma rules))
+     #:first-order (lambda (rules) (valid-rules? pred rules))
+     #:projection (lambda (blame)
+                    (lambda (rules)
+                      (current-blame-format format-rule-format-error)
+                      (raise-blame-error
+                       blame
+                       (invalid-rules pred rules)
+                       (format "Improperly formatted list of rules")
+                       )
+                      )
+                    )
+     )
+    )
+
+  (define (correct-members/c pred pred2 states sigma)
+    (make-flat-contract
+     #:name 'valid-list-of-rules
+     #:first-order (lambda (rules) (pred states sigma rules))
      #:projection (lambda (blame)
                     (lambda (rules)
                       (current-blame-format format-rule-error)
                       (raise-blame-error
                        blame
-                       (invalid-rules pred states sigma rules)
-                       (format "These rules contain improper states/sigma members")
+                       (pred2 states sigma rules)
+                       (format "The following rules contain symbols not contained in the states/sigma: ")
                        )
                       )
                     )
@@ -222,6 +241,42 @@
                                             finals
                                             rules
                                             words
+                                            accepts?)
+                       (format "Does not ~s the predicted value: " accepts?)
+                       )
+                      )
+                    )
+     )
+    )
+
+  (define (tm-input/c states
+                         sigma
+                         start
+                         finals
+                         rules
+                         accept
+                         accepts?)
+    (make-flat-contract
+     #:name 'machine-accepting-correctly
+     #:first-order (check-input-tm states
+                                       sigma
+                                       start
+                                       finals
+                                       rules
+                                       accept
+                                       accepts?)
+     #:projection (lambda (blame)
+                    (lambda (words)
+                      (current-blame-format format-accepts-error)
+                      (raise-blame-error
+                       blame
+                       (return-input-tm states
+                                            sigma
+                                            start
+                                            finals
+                                            rules
+                                            words
+                                            accept
                                             accepts?)
                        (format "Does not ~s the predicted value: " accepts?)
                        )
