@@ -41,8 +41,8 @@
                        ;; If the mttm reads a blank in a dfa non-final
                        ;; state then the dfa has read all the input and
                        ;; rejects. These rules have the mttm also reject.
-                       (map (λ (s) (list (list s BLANK)
-                                         (list rej-st BLANK)))
+                       (map (λ (s) (list (list s (list BLANK))
+                                         (list rej-st (list BLANK))))
                             (filter (λ (s) (not (member s finals))) sts))
                        ;; These are all the dfa's rules transformed into
                        ;; mttm rules.
