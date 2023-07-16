@@ -4,7 +4,7 @@
            "../sm-getters.rkt"
            "../fsa.rkt"
            "../tm.rkt"
-           "../../../main.rkt.")
+           "../../../main.rkt")
   (provide functional?
            missing-functional
            valid-dfa-rule?
