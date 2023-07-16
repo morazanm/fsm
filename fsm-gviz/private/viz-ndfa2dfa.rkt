@@ -99,32 +99,34 @@
           rules
           (cons curr-ss ssts))))))
 
+;; state (listof state) (listof ndfa-rule) -> (listof ndfa-rule)
+;; Purpose: Extract empty transitions to non-generated states for the given state
+(define (get-e-trans state gen-states rules)
+  (filter (λ (r) (and (eq? (first r) state)
+                      (eq? (second r) EMP)
+                      (not (member (third r) gen-states))))
+          rules))
+
+;; (listof state) (listof ndfa-rules) (listof state) -> (listof state)
+;; Purpose: Compute the empties for the states left to explore in the first given (listof state)
+;; Accumulator Invariants:
+;;   to-search = unvisited states reachable by consuming no input
+;;   visited = visited states reachable by consuming no input
+(define (compute-empties to-search rules visited)
+  (if (empty? to-search)
+      visited
+      (let* [(current (first to-search))
+             (current-e-rules
+              (get-e-trans current (append to-search visited) rules))]
+        (compute-empties (append (rest to-search) (map third current-e-rules))
+                         rules
+                         (cons current visited)))))
+
 
 
 ;; (listof state) rules -> emps-tbl
 ;; Purpose: Compute empties table for all given states
-(define (compute-empties-tbl states rules)
-  ;; state (listof state) (listof ndfa-rule) -> (listof ndfa-rule)
-  ;; Purpose: Extract empty transitions to non-generated states for the given state
-  (define (get-e-trans state gen-states rules)
-    (filter (λ (r) (and (eq? (first r) state)
-                        (eq? (second r) EMP)
-                        (not (member (third r) gen-states))))
-            rules))
-  ;; (listof state) (listof ndfa-rules) (listof state) -> (listof state)
-  ;; Purpose: Compute the empties for the states left to explore in the first given (listof state)
-  ;; Accumulator Invariants:
-  ;;   to-search = unvisited states reachable by consuming no input
-  ;;   visited = visited states reachable by consuming no input
-  (define (compute-empties to-search rules visited)
-    (if (empty? to-search)
-        visited
-        (let* [(current (first to-search))
-               (current-e-rules
-                (get-e-trans current (append to-search visited) rules))]
-          (compute-empties (append (rest to-search) (map third current-e-rules))
-                           rules
-                           (cons current visited)))))
+(define (compute-empties-tbl states rules)  
   (map (λ (st) (list st (compute-empties (list st) rules '()))) states))
 
 
@@ -207,7 +209,7 @@
 
 ;; ndfa -> dfa rules
 ;; Purpose: Convert the given ndfa to an equivalent dfa (only outputs rules)
-(define (ndfa2dfa-rules-only M)
+(define (compute-ss-edges M)
   (if (eq? (sm-type M) 'dfa)
       M
       (convert-rules-only (sm-states M)
@@ -241,7 +243,7 @@
 ;; fedges - a list of faded edges in the ndfa graph
 ;; bledges - a list of black/unvisited edges in the ndfa graph
 
-(define-struct world (cgraph up-edges ad-edges incl-nodes M hedges fedges bledges))
+(define-struct world (up-edges ad-edges incl-nodes M hedges fedges bledges))
 
 
 ;; add-included-node
@@ -288,7 +290,7 @@
                                   result
                                   (los2symb state)
                                   #:atb (hash 'color (if (equal? state (last los))
-                                                         'green
+                                                         'darkgreen
                                                          'red)
                                               'shape 'doublecircle
                                               'label (if (equal? state '())
@@ -301,7 +303,7 @@
                                       'ds  
                                       (los2symb state))
                                   #:atb (hash 'color (if (equal? state (last los))
-                                                         'green
+                                                         'darkgreen
                                                          'black)
                                               'shape 'circle
                                               'label (if (equal? state '())
@@ -365,22 +367,50 @@
 
 
 ;; compute-all-hedges
-;; ndfa ss -> (listof edges)
+;; (listof ndfa-rules) superstate  super-state-edge -> (listof edges)
 ;; Purpose: To compute a list of edges that needs to be highlighted in the ndfa graph
 (define (compute-all-hedges ndfa-rules to-ss added-dfa-edge)
   (if (empty? to-ss)
       empty
-      (let [(new-hedges (if (empty? added-dfa-edge)
-                            empty
-                            (filter (λ (rule) (and (eq? (second added-dfa-edge)
-                                                        (second rule))
-                                                   (member (first rule) (first added-dfa-edge))))
-                                    ndfa-rules)))]
-        (append (find-empty-transitions (list (first to-ss)) empty ndfa-rules)
+      (let [(new-hedges
+             (if (empty? added-dfa-edge)
+                 empty
+                 (filter (λ (rule) (and (eq? (second added-dfa-edge)
+                                             (second rule))
+                                        (member (first rule)
+                                                (first added-dfa-edge))))
+                         ndfa-rules)))]
+        (append (find-empty-transitions (list (first to-ss))
+                                        empty
+                                        ndfa-rules)
                 new-hedges
                 (compute-all-hedges (filter (λ (rule) (not (member rule new-hedges)))
                                             ndfa-rules)
-                                    (rest to-ss) added-dfa-edge)))))
+                                    (rest to-ss)
+                                    added-dfa-edge)))))
+
+
+;; remove-edges
+;; (listof edges) (listof edges) -> (listof edges)
+;; Purpose: To remove edges from a list of edges
+(define (remove-edges to-remove removing-from)
+  (if (empty? to-remove)
+      removing-from
+      (if (member (first to-remove) removing-from)
+          (remove (first to-remove) removing-from)
+          (remove-edges (rest to-remove) removing-from))))
+
+;; compute-down-fedges
+;; (listof rules) (listof edges) -> (listof edges)
+;; Purpose: To compute all fedges in down click
+(define (compute-down-fedges rules ad-edges)
+  (if (empty? ad-edges)
+      empty
+      (append (compute-all-hedges rules
+                                  (third (first ad-edges))
+                                  (first ad-edges))
+              (compute-down-fedges rules (rest ad-edges)))))
+
       
 
 ;; world key -> world
@@ -390,18 +420,22 @@
   (cond [(key=? "right" a-key)
          (if (empty? (world-up-edges a-world))
              a-world
-             (let* [(new-up-edges (rest (world-up-edges a-world)))
-                    (new-ad-edges (cons (first (world-up-edges a-world))
+             (let* [(curr-dfa-ss-edge (first (world-up-edges a-world)))
+                    (new-up-edges (rest (world-up-edges a-world)))
+                    (new-ad-edges (cons curr-dfa-ss-edge
                                         (world-ad-edges a-world)))
                     (new-incl-nodes (add-included-node (world-incl-nodes a-world)
-                                                       (first new-ad-edges)))
+                                                       curr-dfa-ss-edge))
                     (new-hedges (compute-all-hedges (sm-rules (world-M a-world))
-                                                    (third (first new-ad-edges))
-                                                    (first new-ad-edges)))
-                    (new-fedges (append (world-hedges a-world) (world-fedges a-world)))
-                    (new-bledges (remove new-hedges (world-bledges a-world)))]
-               (make-world (create-dfa-graph new-ad-edges new-incl-nodes (ndfa2dfa-finals-only (world-M a-world)))                       
-                           new-up-edges                       
+                                                    (third curr-dfa-ss-edge)
+                                                    curr-dfa-ss-edge))
+                    (new-fedges (if (empty? new-up-edges)
+                                    (append new-hedges
+                                            (world-fedges a-world))
+                                    (append (world-hedges a-world)
+                                            (world-fedges a-world))))
+                    (new-bledges (remove-edges new-hedges (world-bledges a-world)))]
+               (make-world new-up-edges                       
                            new-ad-edges
                            new-incl-nodes
                            (world-M a-world)
@@ -412,28 +446,39 @@
         [(key=? "left" a-key)
          (if (empty? (world-ad-edges a-world))
              a-world
-             (let* [(ss-edges (ndfa2dfa-rules-only (world-M a-world)))
-                    (super-start-state (first (first ss-edges)))
-                    (edge-removed (first (world-ad-edges a-world)))
-                    (new-up-edges (cons edge-removed
+             (let* [(last-dfa-pedge (first (world-ad-edges a-world)))
+                    (new-up-edges (cons last-dfa-pedge
                                         (world-up-edges a-world)))
                     (new-ad-edges (rest (world-ad-edges a-world)))
-                    (new-incl-nodes (remove-included-node (world-incl-nodes a-world)
-                                                          edge-removed
-                                                          new-ad-edges))
-                    (new-hedges (if (empty? new-ad-edges)
-                                    (compute-all-hedges (sm-rules (world-M a-world))
-                                                        super-start-state '())
-                                    (compute-all-hedges (sm-rules (world-M a-world))                                                    
-                                                        (third (first new-ad-edges))                                                                                                           
-                                                        (first new-ad-edges))))
-                    (previous-hedges (compute-all-hedges (sm-rules (world-M a-world))
-                                                         (third edge-removed)
-                                                         edge-removed))
-                    (new-bledges (remove previous-hedges (world-bledges a-world)))
-                    (new-fedges (remove previous-hedges (world-fedges a-world)))]
-               (make-world (create-dfa-graph new-ad-edges new-incl-nodes (ndfa2dfa-finals-only (world-M a-world)))                       
-                           new-up-edges                       
+                    (new-incl-nodes (remove-included-node
+                                     (world-incl-nodes a-world)
+                                     last-dfa-pedge
+                                     new-ad-edges))
+                    (new-hedges
+                     (if (empty? new-ad-edges)
+                         (compute-all-hedges
+                          (sm-rules (world-M a-world))
+                          (compute-empties
+                           (list (sm-start (world-M a-world)))
+                           (sm-rules (world-M a-world))
+                           '())
+                          '())
+                         (compute-all-hedges
+                          (sm-rules (world-M a-world))                                                    
+                          (third (first new-ad-edges))                                                                                                           
+                          (first new-ad-edges))))
+                    (previous-hedges (compute-all-hedges
+                                      (sm-rules (world-M a-world))                                                    
+                                      (third last-dfa-pedge)                                                                                                           
+                                      last-dfa-pedge))                   
+                    (new-fedges (if (empty? new-ad-edges)
+                                    empty
+                                    (remove-edges previous-hedges
+                                                  (world-fedges a-world))))
+                    (new-bledges (remove-duplicates
+                                  (append previous-hedges
+                                          (world-bledges a-world))))]
+               (make-world new-up-edges                       
                            new-ad-edges
                            new-incl-nodes
                            (world-M a-world)
@@ -441,22 +486,28 @@
                            new-fedges
                            new-bledges)))]
         [(key=? "down" a-key)
-         (let* [(ss-edges (ndfa2dfa-rules-only (world-M a-world)))
+         (let* [(ss-edges (append (reverse (world-ad-edges a-world))
+                                  (world-up-edges a-world)))
                 (super-start-state (first (first ss-edges)))                
                 (new-up-edges '())
                 (new-ad-edges (reverse ss-edges))
-                (list-of-nodes (remove-duplicates
-                                (reverse (cons super-start-state
-                                               (reverse (map (λ (edge) (third edge)) new-ad-edges))))))
+                (new-incl-nodes
+                 (remove-duplicates (append-map (λ (e) (list (first e) (third e)))
+                                                new-ad-edges))
+                 #;(remove-duplicates
+                                 (reverse (cons super-start-state
+                                                (reverse (map (λ (edge) (third edge)) new-ad-edges))))))
                 (new-hedges (compute-all-hedges (sm-rules (world-M a-world))
                                                 (third (first new-ad-edges))
                                                 (first new-ad-edges)))
-                (new-fedges (append (world-hedges a-world) (world-bledges a-world)))
-                (new-bledges (remove new-hedges (world-bledges a-world)))]
-           (make-world (create-dfa-graph new-ad-edges list-of-nodes (ndfa2dfa-finals-only (world-M a-world)))                       
-                       new-up-edges                       
+                (new-fedges (append (compute-down-fedges (sm-rules (world-M a-world))
+                                                         new-ad-edges)
+                                    (compute-all-hedges (sm-rules (world-M a-world))
+                                                        super-start-state '())))
+                (new-bledges '())]
+           (make-world new-up-edges                       
                        new-ad-edges
-                       list-of-nodes
+                       new-incl-nodes
                        (world-M a-world)
                        new-hedges
                        new-fedges
@@ -472,21 +523,29 @@
 ;; (listof symbols) -> graph
 ;; Purpose: To create a graph of nodes from the given list of rules
 (define (ndfa-node-graph cgraph M)
-  (foldl (λ (state result) (if (contains-final-state? state (sm-finals M))
-                               (add-node
-                                result
-                                state
-                                #:atb (hash 'color 'red
-                                            'shape 'doublecircle
-                                            'label state
-                                            'fontcolor 'black))
-                               (add-node
-                                result
-                                state
-                                #:atb (hash 'color 'black
-                                            'shape 'circle
-                                            'label state
-                                            'fontcolor 'black))))
+  (foldl (λ (state result) (cond [(contains-final-state? state (sm-finals M))
+                                  (add-node
+                                   result
+                                   state
+                                   #:atb (hash 'color 'red
+                                               'shape 'doublecircle
+                                               'label state
+                                               'fontcolor 'black))]
+                                 [(eq? state (sm-start M))
+                                  (add-node
+                                   result
+                                   state
+                                   #:atb (hash 'color 'darkgreen
+                                               'shape 'circle
+                                               'label state
+                                               'fontcolor 'black))]
+                                 [else (add-node
+                                        result
+                                        state
+                                        #:atb (hash 'color 'black
+                                                    'shape 'circle
+                                                    'label state
+                                                    'fontcolor 'black))]))
          cgraph
          (sm-states M)))
 
@@ -520,11 +579,11 @@
 ;; world -> graph
 ;; Purpose: To make an ndfa-graph from the given ndfa
 (define (make-ndfa-graph a-world)
-  (let* [(ndfa-edge-graph-x(ndfa-edge-graph (ndfa-node-graph (create-graph 'ndfagraph #:atb (hash 'rankdir "LR"))
-                                                             (world-M a-world))
-                                            (world-hedges a-world)
-                                            (world-fedges a-world)
-                                            (world-bledges a-world)))]
+  (let* [(ndfa-edge-graph-x (ndfa-edge-graph (ndfa-node-graph (create-graph 'ndfagraph #:atb (hash 'rankdir "LR"))
+                                                              (world-M a-world))
+                                             (world-hedges a-world)
+                                             (world-fedges a-world)
+                                             (world-bledges a-world)))]
     ndfa-edge-graph-x))
 
 
@@ -535,11 +594,20 @@
   (scale 0.7
          (above (graph->bitmap (make-ndfa-graph a-world) (current-directory) "fsm")
                 (overlay
-                 (graph->bitmap (world-cgraph a-world) (current-directory) "fsm")
+                 (graph->bitmap (create-dfa-graph (world-ad-edges a-world) (world-incl-nodes a-world) (ndfa2dfa-finals-only (world-M a-world))) (current-directory) "fsm")
                  E-SCENE))))
 
-(define AT-LEAST-ONE-MISSING (make-ndfa '(S A B C)
-                                        '(a b c)
+(define aa-ab (make-ndfa `(S A B F)
+                         '(a b)
+                         'S
+                         '(A B)
+                         `((S a A)
+                           (S a B)
+                           (S ,EMP F)
+                           (A a A)
+                           (B b B))))
+
+(define AT-LEAST-ONE-MISSING (make-ndfa '(S A B C) '(a b c)
                                         'S
                                         '(A B C)
                                         `((S ,EMP A)
@@ -558,44 +626,31 @@
   (ormap (λ (s) (member s sm-finals)) sss))
 
 
-;(define-struct world (cgraph up-edges ad-edges incl-nodes M hedges fedges bledges))
 
 
 ;; ndfa --> world
 (define (run M)
-  (let* [(ss-edges (ndfa2dfa-rules-only M))
-         (super-start-state (first (first ss-edges)))
-         (cgraph (create-graph 'cgraph
-                               #:atb (hash 'rankdir "LR")))
-         (init-graph (if (contains-final-state-run? super-start-state (sm-finals M))
-                         (add-node
-                          cgraph
-                          (los2symb super-start-state)
-                          #:atb (hash 'color 'green
-                                      'shape 'doublecircle
-                                      'label (los2symb super-start-state)
-                                      'fontcolor 'black))
-                         (add-node
-                          cgraph
-                          (los2symb super-start-state)
-                          #:atb (hash 'color 'black
-                                      'shape 'circle
-                                      'label (los2symb super-start-state)
-                                      'fontcolor 'black))))]
-    (big-bang
-        (make-world init-graph
-                    ss-edges
-                    '()
-                    (list (first (first ss-edges)))
-                    M
-                    (compute-all-hedges (sm-rules M) super-start-state '())
-                    '()
-                    (remove (compute-all-hedges (sm-rules M) super-start-state '()) (sm-rules M)))
+  (begin
+    (let* [(ss-edges (compute-ss-edges M))
+           (super-start-state (compute-empties (list (sm-start M))
+                                               (sm-rules M)
+                                               '()))
+           (init-hedges (compute-all-hedges (sm-rules M) super-start-state '()))]
+      (big-bang
+          (make-world ss-edges
+                      '()
+                      (list (first (first ss-edges)))
+                      M
+                      init-hedges
+                      '()
+                      (remove init-hedges (sm-rules M)))
                 
-      [on-draw draw-world]
-      [on-key process-key]
-      [name 'visualization])))
+        [on-draw draw-world]
+        [on-key process-key]
+        [name 'visualization]))
+    (void)))
 
+;(run aa-ab)
 ;(run AT-LEAST-ONE-MISSING)
 
 (define EXAMPLE (call-with-values get-display-size empty-scene))
