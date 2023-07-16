@@ -4,12 +4,15 @@
            "predicates.rkt"
            "error-formatting.rkt"
            "../fsa.rkt"
+           "../pda.rkt"
            "../tm.rkt"
            racket/contract
            )
   (provide make-dfa2
            make-ndfa2
-           make-tm2)
+           make-ndpda2
+           make-tm2
+           )
 
   ;; Using the existing set of rules, the entire machine set of states, and the
   ;; machine alphabet, generates a list of rules that contains the original rule
@@ -33,12 +36,7 @@
 
   ;; make-dfa: states alphabet state states rules (boolean) -> machine
   ;; Purpose: Eventually, will construct a multi-tape turing-machine from the given
-  ;; DFA inputs, but for now just parses inputs and constructs a list.
-
-  ;; Open questions:
-  ;; 1. If add-dead boolean flag is true, do we need to disallow DEAD state from states.
-  ;; 2. This code does not yet check for duplicates in the list fields - this must
-  ;; be added.
+  ;; DFA inputs, but for now just parses inputs and constructs an unchecked-dfa.
   (define/contract (make-dfa2 states sigma start finals rules
                               [add-dead #t]
                               #:accepts [accepts '()]
@@ -98,6 +96,30 @@
           (add-dead-state-rules rules states sigma)
           rules))
     (make-unchecked-dfa states sigma start finals all-rules add-dead)
+    )
+
+  ;; Purpose: Constrcts an ndpda given a set of states, a machine alphabet,
+  ;; set of stack symbols, a start state, a list of final states, and a list
+  ;; of ndpda rules. The function checks that all fields are valid before
+  ;; constructing the ndpda.
+  (define/contract (make-ndpda2 states sigma gamma start finals rules)
+    (->i ([states (and/c (valid-listof/c valid-state? "machine state" "list of machine states")
+                         (no-duplicates/c "states"))]
+          [sigma (and/c (valid-listof/c valid-alpha? "alphabet letter" "machine sigma")
+                        (no-duplicates/c "sigma"))]
+          [gamma (and/c (valid-listof/c (lambda (g) (or (valid-state? g) (valid-alpha? g))) "stack symbol" "list of stack symbols")
+                        (no-duplicates/c "gamma"))]
+          [start (states) (and/c (valid-start/c states)
+                                 (start-in-states/c states))]
+          [finals (states) (and/c (valid-listof/c valid-state? "machine state" "list of machine finals")
+                                  (valid-finals/c states)
+                                  (no-duplicates/c "final states"))]
+          [rules (states
+                  sigma
+                  gamma) (and/c (valid-listof/c (valid-ndpda-rule? states sigma gamma) "machine rule" "list of machine rules")
+                                (no-duplicates/c "rules"))])
+         [result ndpda?])
+    (make-unchecked-ndpda states sigma gamma start finals rules)
     )
 
   (define/contract (make-ndfa2 states sigma start finals rules
