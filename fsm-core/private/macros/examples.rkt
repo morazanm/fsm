@@ -29,19 +29,3 @@
                   ))
 (dfa-temp '(a a a a))
 (sm-apply tm-temp`(,LM a a a b a a))
-
-(check-error
- (make-dfa2
-  `(A B)
-  '(a b)
-  'A
-  '(A)
-  (list '(A a A)
-        '(B a A)
-        '(B b B)
-        '(A b B))
-  #f
-  #:accepts (list '(a a a b) '(a a))
-  #:rejects (list '(b b b b) '(b b))
-  )
- "Does not accept the predicted value:  ((a a a b))")
