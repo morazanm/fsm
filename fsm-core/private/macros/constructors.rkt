@@ -88,6 +88,10 @@
     (make-unchecked-dfa states sigma start finals all-rules add-dead)
     )
 
+  ;; Purpose: Constrcts an ndpda given a set of states, a machine alphabet,
+  ;; set of stack symbols, a start state, a list of final states, and a list
+  ;; of ndpda rules. The function checks that all fields are valid before
+  ;; constructing the ndpda.
   (define/contract (make-ndpda2 states sigma gamma start finals rules)
     (->i ([states (and/c (valid-listof/c valid-state? "machine state" "list of machine states")
                          (no-duplicates/c "states"))]
