@@ -29,7 +29,7 @@
     (define (show-transitions w t1pos)
       ;; (listof mttm-config) --> (listof tmconfig)
       (define (run paths)
-        ;(display (format "PATHS: ~s\n" paths))
+        ;; (display (format "PATHS: ~s\n" paths))
         (if (empty? paths)
             (cond [(void? accept-state)
                    (error "Turing machine exhausted all computation paths without reaching a halting state.")]
@@ -123,9 +123,9 @@
   (define (mttm-get-rules M) (M 'get-rules))
   (define (mttm-what-am-i M) (M 'whatami))
   (define (mttm-get-accept M) (M 'get-accept))
-  (define (mttm-apply M w . t1pos) ((M 'apply) w (if (null? t1pos) 0 (car t1pos))))
+  (define (mttm-apply M w . t1pos) ((M 'apply) (if (empty? w) `(,BLANK) w) (if (null? t1pos) 0 (car t1pos))))
   (define (mttm-show-transitions M w . t1pos)
-    ((M 'show-transitions) w (if (null? t1pos) 0 (car t1pos))))
+    ((M 'show-transitions) (if (empty? w) `(,BLANK) w) (if (null? t1pos) 0 (car t1pos))))
 
   
   ) ; closes module
