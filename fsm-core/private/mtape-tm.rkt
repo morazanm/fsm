@@ -31,7 +31,9 @@
       (define (run paths)
         ;(display (format "PATHS: ~s\n" paths))
         (if (empty? paths)
-            (error "Turing machine exhausted all computation paths without reaching a halting state.")
+            (cond [(void? accept-state)
+                   (error "Turing machine exhausted all computation paths without reaching a halting state.")]
+                  [else (list 'reject)])
             (let* ((currpath (first paths))
                    ;(d (displayln (format "First of urrent path: ~s\n" (first currpath))))
                    (currstate (first (first currpath))))
@@ -39,7 +41,7 @@
                   (cond [(void? accept-state) currpath] ;; if not a lang recog halt
                         [(eq? currstate accept-state)   ;; if lang recog add 'accept
                          (cons 'accept currpath)]
-                        [else (cons 'reject currpath)]) ;; else add 'reject
+                        [else (run (rest paths))]) ;; else add 'reject
                   (let* ((pos-tapes (rest (first currpath)))
                          ;(ddd (display (format "pos-tapes: ~s\n" pos-tapes)))
                          (posns (map first pos-tapes))
