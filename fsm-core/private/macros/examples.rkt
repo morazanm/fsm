@@ -16,6 +16,17 @@
                   #:accepts (list '(b b b b a))
                   #:rejects (list '(a a a a b))))
 
+(define ndfa-temp (make-ndfa2
+                  '(A B)
+                  '(a b)
+                  'A
+                  '(B)
+                  `((A b A)
+                    (A a B)
+                    (B ,EMP A))
+                  #:accepts (list '(b b b b a))
+                  #:rejects (list '(a a a a b))))
+
 (define tm-temp (make-tm2
                   '(S Y N)
                     `(a b)
