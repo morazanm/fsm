@@ -55,7 +55,11 @@
           [rules (states
                   sigma
                   add-dead) (and/c (listof-rules/c valid-dfa-rule?)
-                                   (correct-members/c correct-members-dfa? incorrect-members-dfa states sigma)
+                                   (correct-members/c
+                                    correct-members-dfa?
+                                    incorrect-members-dfa
+                                    states
+                                    sigma)
                                    (functional/c states sigma add-dead)
                                    (no-duplicates-dfa/c "rules"))]
           )
@@ -110,7 +114,11 @@
                                   (no-duplicates/c "final states"))]
           [rules (states
                   sigma) (and/c (listof-rules/c valid-dfa-rule?)
-                                (correct-members/c correct-members-dfa? incorrect-members-dfa states (cons EMP sigma))
+                                (correct-members/c
+                                 correct-members-dfa?
+                                 incorrect-members-dfa
+                                 states
+                                 (cons EMP sigma))
                                 (no-duplicates/c "rules"))]
           )
          (#:accepts [accepts (states
@@ -153,7 +161,11 @@
                         (no-duplicates/c "sigma"))]
           [rules (states
                   sigma) (and/c (listof-rules/c valid-tm-rule?)
-                                (correct-members/c correct-members-tm? incorrect-members-tm states (cons RIGHT (cons LEFT (cons BLANK sigma))))
+                                (correct-members/c
+                                 correct-members-tm?
+                                 incorrect-members-tm
+                                 states
+                                 (cons RIGHT (cons LEFT (cons BLANK sigma))))
                                 (no-duplicates/c "rules"))]
           [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]

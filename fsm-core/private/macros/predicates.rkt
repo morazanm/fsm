@@ -133,9 +133,10 @@
                              (member (cadr (cadr x)) sigma))) rules))
 
   (define (incorrect-members-tm states sigma rules)
-    (filter (lambda (x) (not (and (member (car x) states)
-                                  (member (cadr x) sigma)
-                                  (member (caddr x) states)))) rules))
+    (filter (lambda (x) (not (and (member (car (car x)) states)
+                                  (member (cadr (car x)) sigma)
+                                  (member (car (cadr x)) states)
+                                  (member (cadr (cadr x)) sigma)))) rules))
 
   (define (valid-dfa-rule? rule)
     (and (list? rule)
