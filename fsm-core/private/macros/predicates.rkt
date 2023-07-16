@@ -3,7 +3,8 @@
            "../constants.rkt"
            "../sm-getters.rkt"
            "../fsa.rkt"
-           "../tm.rkt")
+           "../tm.rkt"
+           "../../../main.rkt.")
   (provide functional?
            missing-functional
            valid-dfa-rule?
@@ -42,7 +43,8 @@
     (equal? (sm-type machine) 'ndfa))
 
   (define (tm? machine)
-    (equal? (sm-type machine) 'tm))
+    (or (equal? (sm-type machine) 'tm-language-recognizer)
+        (equal? (sm-type machine) 'tm)))
 
   (define (return-duplicates los)
     (cond [(empty? los) '()]
@@ -218,20 +220,13 @@
                           accept
                           accepts?)
     (lambda (words)
-      (define temp-machine (if (equal? accept 'null)
-                               (make-unchecked-tm states
-                                                  sigma
-                                                  rules
-                                                  start
-                                                  finals
-                                                  )
-                               (make-unchecked-tm states
-                                                  sigma
-                                                  rules
-                                                  start
-                                                  finals
-                                                  accept)))
-      (andmap (lambda (x) (equal? (temp-machine x) accepts?)) words)
+      (define temp-machine (make-unchecked-tm states
+                                              sigma
+                                              rules
+                                              start
+                                              finals
+                                              accept))
+      (andmap (lambda (x) (equal? (sm-apply temp-machine x) accepts?)) words)
       )
     )
 
@@ -275,19 +270,12 @@
                            words
                            accept
                            accepts?)
-    (define temp-machine (if (equal? accept 'null)
-                             (make-unchecked-tm states
-                                                sigma
-                                                rules
-                                                start
-                                                finals
-                                                )
-                             (make-unchecked-tm states
-                                                sigma
-                                                rules
-                                                start
-                                                finals
-                                                accept)))
-    (filter (lambda (x) (equal? (temp-machine x) (if (equal? 'accept accepts?) 'reject 'accept))) words)
+    (define temp-machine (make-unchecked-tm states
+                                            sigma
+                                            rules
+                                            start
+                                            finals
+                                            accept))
+    (filter (lambda (x) (equal? (sm-apply temp-machine x) (if (equal? 'accept accepts?) 'reject 'accept))) words)
     )
   )

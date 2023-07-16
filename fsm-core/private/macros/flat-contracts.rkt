@@ -19,7 +19,8 @@
            ndfa-input/c
            tm-input/c
            no-duplicates-dfa/c
-           correct-members/c)
+           correct-members/c
+           has-accept/c)
 
   ;; Purpose: Constructs a flat contract which checks if all elements in the
   ;;          list hold true for a given predicate. If any elements fail,
@@ -281,31 +282,31 @@
     )
 
   (define (ndfa-input/c states
-                         sigma
-                         start
-                         finals
-                         rules
-                         accepts?)
+                        sigma
+                        start
+                        finals
+                        rules
+                        accepts?)
     (make-flat-contract
      #:name 'machine-accepting-correctly
      #:first-order (check-input-ndfa states
-                                       sigma
-                                       start
-                                       finals
-                                       rules
-                                       accepts?)
+                                     sigma
+                                     start
+                                     finals
+                                     rules
+                                     accepts?)
      #:projection (lambda (blame)
                     (lambda (words)
                       (current-blame-format format-accepts-error)
                       (raise-blame-error
                        blame
                        (return-input-ndfa states
-                                            sigma
-                                            start
-                                            finals
-                                            rules
-                                            words
-                                            accepts?)
+                                          sigma
+                                          start
+                                          finals
+                                          rules
+                                          words
+                                          accepts?)
                        (format "Does not ~s the predicted value: " accepts?)
                        )
                       )
@@ -314,35 +315,52 @@
     )
 
   (define (tm-input/c states
-                         sigma
-                         start
-                         finals
-                         rules
-                         accept
-                         accepts?)
+                      sigma
+                      start
+                      finals
+                      rules
+                      accept
+                      accepts?)
     (make-flat-contract
      #:name 'machine-accepting-correctly
      #:first-order (check-input-tm states
-                                       sigma
-                                       start
-                                       finals
-                                       rules
-                                       accept
-                                       accepts?)
+                                   sigma
+                                   start
+                                   finals
+                                   rules
+                                   accept
+                                   accepts?)
      #:projection (lambda (blame)
                     (lambda (words)
                       (current-blame-format format-accepts-error)
                       (raise-blame-error
                        blame
                        (return-input-tm states
-                                            sigma
-                                            start
-                                            finals
-                                            rules
-                                            words
-                                            accept
-                                            accepts?)
+                                        sigma
+                                        start
+                                        finals
+                                        rules
+                                        words
+                                        accept
+                                        accepts?)
                        (format "Does not ~s the predicted value: " accepts?)
+                       )
+                      )
+                    )
+     )
+    )
+
+  (define (has-accept/c accept finals)
+    (make-flat-contract
+     #:name 'machine-accepting-correctly
+     #:first-order (lambda (words) (member accept finals))
+     #:projection (lambda (blame)
+                    (lambda (words)
+                      (current-blame-format format-error)
+                      (raise-blame-error
+                       blame
+                       words
+                       (format "Must have a value for accepted state in final states to process list of words: ")
                        )
                       )
                     )

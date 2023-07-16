@@ -35,8 +35,9 @@
                       ((S ,BLANK) (Y ,BLANK)))
                     'S
                     '(Y N)
-                  ;#:accepts (list '(a a a) '(a a))
-                  ;#:rejects (list '(b b b b) '(b b))
+                    'Y
+                  #:accepts (list '(a a a) '(a a))
+                  #:rejects (list '(b b b b) '(b b))
                   ))
 (dfa-temp '(a a a a))
 (sm-apply tm-temp`(,LM a a a b a a))

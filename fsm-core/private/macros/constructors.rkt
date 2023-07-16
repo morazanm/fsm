@@ -40,9 +40,9 @@
   ;; 2. This code does not yet check for duplicates in the list fields - this must
   ;; be added.
   (define/contract (make-dfa2 states sigma start finals rules
-                             [add-dead #t]
-                             #:accepts [accepts '()]
-                             #:rejects [rejects '()])
+                              [add-dead #t]
+                              #:accepts [accepts '()]
+                              #:rejects [rejects '()])
     (->i ([states (and/c (valid-listof/c valid-state? "machine state" "list of machine states")
                          (no-duplicates/c "states"))]
           [sigma (and/c (valid-listof/c valid-alpha? "alphabet letter" "machine sigma")
@@ -153,8 +153,8 @@
    
   (define/contract (make-tm2 states sigma rules start finals
                              [accept 'null]
-                             ;#:accepts [accepts '()]
-                             ;#:rejects [rejects '()]
+                             #:accepts [accepts '()]
+                             #:rejects [rejects '()]
                              )
     (->i ([states (and/c (valid-listof/c valid-state? "machine state" "list of machine states")
                          (no-duplicates/c "states"))]
@@ -174,34 +174,37 @@
                                   (valid-finals/c states)
                                   (no-duplicates/c "final states"))]
           )
-         ([accept (sigma) (and/c symbol?
-                                 (lambda (x) (member x sigma)))]
-          ;#:accepts [accepts (states
-          ;                    sigma
-          ;                    start
-          ;                    finals
-          ;                    rules
-          ;                    accept) (and/c (listof-words/c sigma)
-          ;                                   (tm-input/c states
-          ;                                               sigma
-          ;                                               start
-          ;                                               finals
-          ;                                               rules
-          ;                                               accept
-          ;                                               'accept))]
-          ;#:rejects [rejects (states
-          ;                    sigma
-          ;                    start
-          ;                    finals
-          ;                    rules
-          ;                    accept) (and/c (listof-words/c sigma)
-          ;                                   (tm-input/c states
-          ;                                               sigma
-          ;                                               start
-          ;                                               finals
-          ;                                               rules
-          ;                                               accept
-          ;                                               'reject))]
+         ([accept (states) (and/c symbol?
+                                  (lambda (x) (member x states)))]
+          #:accepts [accepts (states
+                              sigma
+                              start
+                              finals
+                              rules
+                              accept) (and/c (has-accept/c accept finals)
+                                             (listof-words/c sigma)
+                                             (tm-input/c states
+                                                         sigma
+                                                         start
+                                                         finals
+                                                         rules
+                                                         accept
+                                                         'accept)
+                                             )]
+          #:rejects [rejects (states
+                              sigma
+                              start
+                              finals
+                              rules
+                              accept) (and/c (has-accept/c accept finals)
+                                             (listof-words/c sigma)
+                                             (tm-input/c states
+                                                         sigma
+                                                         start
+                                                         finals
+                                                         rules
+                                                         accept
+                                                         'reject))]
           )
          
          [result tm?])
