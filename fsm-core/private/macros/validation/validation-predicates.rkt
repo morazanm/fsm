@@ -116,7 +116,7 @@
                               rules
                               words
                               accepts?)
-    (define temp-machine (make-unchecked-ndfa states
+    (define temp-machine (make-unchecked-ndpda states
                                               sigma
                                               gamma
                                               start
