@@ -1,7 +1,11 @@
 (module constructors racket
-  (require "flat-contracts.rkt"
+  (require "rules/rules-flat-contracts.rkt"
+           "shared/shared-flat-contracts.rkt"
+           "validation/validation-flat-contracts.rkt"
            "../constants.rkt"
-           "predicates.rkt"
+           "rules/rules-predicates.rkt"
+           "shared/shared-predicates.rkt"
+           "validation/validation-predicates.rkt"
            "error-formatting.rkt"
            "../fsa.rkt"
            "../pda.rkt"
