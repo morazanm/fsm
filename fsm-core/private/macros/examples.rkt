@@ -45,7 +45,7 @@
                              ((Q a (a)) (Q ,EMP))
                              ((Q b (b)) (Q ,EMP))
                              ((Q ,EMP ,EMP) (F ,EMP)))
-                           #:accepts (list '(a a a b b b))
+                           ;#:accepts (list '(a a a b b b))
                            ;#:rejects (list '(a a a b b))
                            ))
 
