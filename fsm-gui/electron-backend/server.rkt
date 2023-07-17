@@ -4,9 +4,7 @@
          racket/tcp
          "./fsm-functions.rkt")
 
-(provide run-with-prebuilt
-         run-without-prebuilt
-         run-with-prebuilt-hotload)
+(provide run-with-prebuilt)
 
 (define DEBUG_MODE #f)
 (define ADDRESS "127.0.0.1")
@@ -59,24 +57,23 @@
     ;; listens for incomming connections. If a connection is recieved then a thread is spun up
     ;; to handle the request
     (define (listen-for-input)
-      (define-values (invariants data ns)  (values (hash-ref pre-computed-data 'pre-inv '())
-                                                     (hash-ref pre-computed-data 'data '())
-                                                     (hash-ref pre-computed-data 'namespace (current-namespace))))
+      (define-values (init-data ns)  (values (hash-ref pre-computed-data 'data '())
+                                        (hash-ref pre-computed-data 'namespace (current-namespace))))
       ;; handle-request :: jsexpr(a) -> jsexpr(b)
       ;; Based off of the instruction that is provideded in the incomming jsexpr, dispatches
       ;; to the approperate mapping function
       (define (handle-request input)
         (match (string->symbol (hash-ref input 'instr))
           ['redraw (regenerate-graph (hash-ref input 'data))]
-          ['build_machine (build-machine (hash-ref input 'data) ns invariants)]
+          ['build_machine (build-machine (hash-ref input 'data) ns)]
           ['shut_down eof] ;; we use eof to denote a shutdown
           [_ (error 'handle-request "Invalid instruction given: ~a" (hash-ref input 'instr))]))
       ;; suspend untill a tcp connection is recieved
       (define-values (in out) (tcp-accept listener))
       ;; If we have initial data to send when first connecting with a client send it now
-      (when (not (null? data))
+      (unless (null? init-data)
         (displayln! "Sending prebuilt machine")
-        (send-fsm-protocal data out))
+        (send-fsm-protocal init-data out))
       (define thread-id (gensym))
       ;; Spin up a worker thread to handle the connection with the client and
       ;; repeat above steps.
@@ -103,28 +100,15 @@
     (listen-for-input)))
 
 
-;; run-with-prebuilt-hotload :: fsa listof(listof(symbol string inv-func) namespace -> ()
+;; run-with-prebuilt :: fsa listof(cons symbol string) namespace -> ()
 ;; Runs the TCP server and sends the prebuild machine to the GUI. A namespace must be
 ;; provided so we know the context that the function should be ran in.
-(define (run-with-prebuilt-hotload fsa invariants ns)
-  (define inv-data (map (lambda (v) (cons (first v) (second v))) invariants))
-  (define data-to-send (hash 'data (hash-set (fsa->jsexpr fsa inv-data)
+(define (run-with-prebuilt fsa invariants ns)
+  (define data-to-send (hash 'data (hash-set (fsa->jsexpr fsa invariants)
                                              'hotReload #t)
                              'error (json-null)
                              'responseType "prebuilt_machine"))
-  (run-server (hash 'data data-to-send 'hotload #t 'namespace ns)))
-
-
-;; run-with-prebuilt :: fsa listof(listof(symbol string inv-func)) -> ()
-;; Runs the TCP server and sends the prebuild machine to the GUI.
-(define (run-with-prebuilt fsa invariants)
-  (define inv-strings (map (match-lambda [`(,n ,s ,_) (cons n s)]) invariants))
-  (define inv-funcs (map (match-lambda [`(,n ,_ ,f) (cons n f)]) invariants))
-  (define data-to-send (hash 'data (hash-set (fsa->jsexpr fsa inv-strings)
-                                             'hotReload #f)
-                             'error (json-null)
-                             'responseType "prebuilt_machine"))
-  (run-server (hash 'data data-to-send 'pre-inv inv-funcs)))
+  (run-server (hash 'data data-to-send 'namespace ns)))
 
 ;; run-without-prebuilt :: ()
 ;; Runs the TCP server without sending a prebuilt machine to

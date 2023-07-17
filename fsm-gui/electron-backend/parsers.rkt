@@ -62,7 +62,7 @@
 (define (parse-type data)
   (string->symbol (hash-ref data 'type)))
 
-;; parse-invariants :: jsexpr(state) -> pairof(symbol string)
+;; parse-invariants :: jsexpr(state) -> listof(pairof(symbol string))
 ;; retunrs the invarits as pair contained the state name and a string containing
 ;; the racket code for the invariant.
 (define (parse-invariants jsexpr)

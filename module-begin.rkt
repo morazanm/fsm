@@ -12,7 +12,6 @@
          define-invariants-for-tm
          define-invariants-for-mttm
          sm-visualize!
-         sm-visualize!!
          $MODULE-NAMESPACE$)
 
 ;; We need to attach a namespace anchor to the top of the module so we can
@@ -25,11 +24,11 @@
       (splicing-parameterize ([$MODULE-NAMESPACE$ (namespace-anchor->namespace anchor)])
         . xs))])
 
-
-
 (begin-for-syntax
   (define ID-INV "~a-$inv$-~a")
-  (define INV-LIST-ID "~a-inv-gui-list")
+  ;; This hash table holds the list of invarinats that a machine is associated with
+  ;; The key is the machine name and value is a listof(cons symbol string)
+  (define shared-invariant-data (make-hash))
   
   ;; A common scope for storing variables 
   (define common-ctx #'common-context-for-hidden-ids)
@@ -62,32 +61,14 @@
       #:fail-when (not (equal? (syntax-e #'arg-len) arity-num))
       (format "Arity mismatch. Expected ~s, but was given ~s" arity-num (syntax-e #'arg-len)))))
 
+
 ;; Macro for starting GUI 2.0. if invariants are defined for the machine they are
 ;; sent to the viztool otherwise just the machine is sent.
 (define-syntax (sm-visualize! stx)
   (syntax-parse stx
     [(_ fsa:id)
-     #:with inv-list-id (format-id common-ctx INV-LIST-ID #'fsa)
-     #:fail-when (not (identifier-binding #'inv-list-id))
-     "Invariants not defined for fsa"
-     #`(run-with-prebuilt fsa inv-list-id)]
-    ;; If invariants where not defined then defeult to this case
-    #;[(_ fsa)
-       #`(run-with-prebuilt fsa '())]))
-
-
-;; Macro for starting GUI 2.0. if invariants are defined for the machine they are
-;; sent to the viztool otherwise just the machine is sent.
-(define-syntax (sm-visualize!! stx)
-  (syntax-parse stx
-    [(_ fsa:id)
-     #:with inv-list-id (format-id common-ctx INV-LIST-ID #'fsa)
-     #:fail-when (not (identifier-binding #'inv-list-id))
-     "Invariants not defined for fsa"
-     #`(run-with-prebuilt-hotload fsa inv-list-id ($MODULE-NAMESPACE$))]
-    ;; If invariants where not defined then defeult to this case
-    [(_ fsa)
-     #`(run-with-prebuilt fsa '())]))
+     #:with invariants (hash-ref shared-invariant-data (syntax-e #'fsa) #''())
+     #`(run-with-prebuilt fsa invariants ($MODULE-NAMESPACE$))]))
 
 
 ; This macro generates a macro for each for each of the `define-invariants-for-<machine-type>`
@@ -102,13 +83,13 @@
         "Expected at least one 'define-invariant' clause"
         #:fail-when (check-duplicates* (syntax->list #`((~? func.state) ...)))
         "Duplicate invariant for state found"
-        #:with list-name (syntax-local-introduce (format-id common-ctx INV-LIST-ID #'m-name))
-        #`(begin
-            ;; Add the invariant functions
-            (~? (define (func.id func.arg ...) func.body ...) func) ...
-
-            ;; Add both values to a list so we can call it from sm-visualize
-            (define list-name (list (~? (list 'func.state func.str-value func.id)) ...)))]
+        (begin 
+          (hash-set! shared-invariant-data
+                     (syntax-e #'m-name)
+                     #'(list (~? (cons 'func.state func.str-value)) ...))
+          #`(begin
+              ;; Add the invariant functions
+              (~? (define (func.id func.arg ...) func.body ...) func) ...))]
        [(_ _) (raise-syntax-error #f "Expected at least one 'define-invariant' clause" stx)]))))
 
 (generate-invariant-macro define-invariants-for-dfa  1)

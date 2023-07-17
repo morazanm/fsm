@@ -9,7 +9,7 @@
  build-machine
  regenerate-graph)
 
-;; build-machine :: jsexpr namespace | false optional(listof(cons symbol func) optional(boolean) -> jsexpr
+;; build-machine :: jsexpr namespace | false optional(boolean) -> jsexpr
 ;; takes the electron-gui machine json-expr, unparses it and runs it in fsm-core. It then
 ;; returns the machine or the error msg if it fails to build
 ;;
@@ -18,7 +18,7 @@
 ;;
 ;; The optional arg when set to true will not build the graphviz graph. This should be set
 ;; to true when using this function in tests
-(define (build-machine data namespace (pre-computed-invariants '()) #:test (test-mode #f))
+(define (build-machine data namespace #:test (test-mode #f))
   ;; generate-graphviz-images :: listof(jsexpr-transition) -> listof(jsexpr-transitions)
   ;; computes the graphviz images for each of the transtions using threads
   (define (generate-graphviz-images-threaded transitions)
@@ -71,9 +71,7 @@
   (define alpha (parse-alpha data))
   (define type (parse-type data))
   (define states (parse-states un-parsed-states))
-  (define invariants (if (null? pre-computed-invariants)
-                         (parse-invariants un-parsed-states)
-                         pre-computed-invariants))
+  (define invariants (parse-invariants un-parsed-states))
   (define start (parse-start un-parsed-states))
   (define finals (parse-finals un-parsed-states))
   (define rules (parse-rules (hash-ref data 'rules) type))
@@ -101,7 +99,7 @@
                                         (generate-graphviz-images-threaded jsexpr-trans))
                        ;; since fsm sometimes adds states (ds) we will return the list of states,
                        ;; so the gui can update accordingly
-                       'states (map (lambda (s) (state->jsexpr s fsa (if (null? pre-computed-invariants) invariants '())))
+                       'states (map (lambda (s) (state->jsexpr s fsa invariants))
                                     (sm-states fsa))
                        ;; same with rules.
                        'rules (map rule->jsexpr (sm-rules fsa)))

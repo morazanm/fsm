@@ -1,4 +1,4 @@
-#lang fsm
+(module playground "../main.rkt"
 
 
 
@@ -24,7 +24,7 @@
                (A b A))
              'nodead))
 
-(define-invariants-for-ndfa a-aUb*
+#;(define-invariants-for-ndfa a-aUb*
   (define-invariant S (ci) (empty? ci))
   (define-invariant F (ci)
     (define ans (and (not (empty? ci))
@@ -35,7 +35,7 @@
 
 
 ;(sm-visualize a-aUb* (list 'S SS-INV) (list 'F FF-INV))
-(sm-visualize!! a-aUb*)
+(sm-visualize! a-aUb*)
 
 #;(sm-visualize3 a-aUb*
                  (list 'F (inv->string!
@@ -359,7 +359,7 @@
        (= (length list-of-xyz) (- (length tape) 2))
        (= (modulo (length list-of-xyz) 3) 0)))))
 
-(sm-visualize!! a^nb^nc^n2)
+;(sm-visualize! a^nb^nc^n2)
                
 #|
 (define LB (make-tm '(S H)
@@ -599,3 +599,4 @@
 
 ;(sm-visualize a*)
 
+) ;; end module playground
