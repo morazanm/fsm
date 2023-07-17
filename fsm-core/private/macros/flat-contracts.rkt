@@ -1,6 +1,6 @@
 (module flat-contracts racket
   (require "predicates.rkt"
-           "error-formatting.rkt"
+           "formatting.rkt"
            "../constants.rkt"
            "../fsa.rkt"
            racket/contract
@@ -90,11 +90,11 @@
      #:first-order (valid-start? states)
      #:projection (lambda (blame)
                     (lambda (start)
-                      (current-blame-format format-start-error)
+                      (current-blame-format format-error)
                       (raise-blame-error
                        blame
                        start
-                       (format "The starting state ~s is not a valid state" start)
+                       (format "The starting state is not a valid state")
                        )
                       )
                     )
@@ -107,7 +107,7 @@
      #:first-order (start-in-states? states)
      #:projection (lambda (blame)
                     (lambda (start)
-                      (current-blame-format format-start-error)
+                      (current-blame-format format-error)
                       (raise-blame-error
                        blame
                        start
@@ -126,7 +126,7 @@
      #:first-order (lambda (vals) (not (check-duplicates vals)))
      #:projection (lambda (blame)
                     (lambda (vals)
-                      (current-blame-format format-duplicates-error)
+                      (current-blame-format format-error)
                       (raise-blame-error
                        blame
                        (return-duplicates vals)
