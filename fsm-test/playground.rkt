@@ -24,7 +24,7 @@
                (A b A))
              'nodead))
 
-#;(define-invariants-for-ndfa a-aUb*
+(define-invariants-for-ndfa a-aUb*
   (define-invariant S (ci) (empty? ci))
   (define-invariant F (ci)
     (define ans (and (not (empty? ci))

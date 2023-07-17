@@ -4,6 +4,7 @@ import {
   FSMRule,
   FSMTransition,
   MachineType,
+  RacketInvariantFunc,
   State,
   StateName,
   StateType,
@@ -77,6 +78,7 @@ type StateProps = {
   consumedInput: FSMAlpha[] | undefined;
   transform?: string;
   isConnectedToBackend: boolean;
+  updateInvariant: (stateName: string, invFun: RacketInvariantFunc) => void;
 };
 
 const State = (props: StateProps) => {
@@ -130,6 +132,7 @@ const State = (props: StateProps) => {
         resetMachineAndSet={props.resetMachineAndSet}
         states={props.states}
         isConnectedToBackend={props.isConnectedToBackend}
+        updateInvariant={props.updateInvariant}
       />
     </>
   );

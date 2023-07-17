@@ -21,6 +21,7 @@ import {
   isTmType,
   isTmMttmTransition,
   MachineTransitions,
+  RacketInvariantFunc,
 } from '../types/machine';
 import { useTheme } from '@mui/material/styles';
 import { BasicDialog, IncomingMachineDialog } from './dialog';
@@ -131,6 +132,22 @@ const MainView = (props: MainViewProps) => {
   const setGuiView = (newView: View) => {
     if (newView !== view) {
       setView(newView);
+    }
+  };
+
+  const updateInvariant = (incoming: string, invFunc: RacketInvariantFunc) => {
+    const newStates = machineState.states.map((state) =>
+      state.name === incoming ? { ...state, invFunc } : state,
+    );
+    // If the machine has not ran yet then just set the inv code and don't recompute
+    if (machineState.transitions.transitions.length === 0) {
+      setMachineState({
+        ...machineState,
+        states: newStates,
+      });
+    } else {
+      // we need to recompute the invariants for the changed state and update the gui
+      //TODO: Send to racket for new computations
     }
   };
 
@@ -479,6 +496,7 @@ const MainView = (props: MainViewProps) => {
                   rules={machineState.rules}
                   machineType={machineState.type}
                   isConnectedToBackend={props.racketBridge.connected}
+                  updateInvariant={updateInvariant}
                 />
               ) : (
                 <Box

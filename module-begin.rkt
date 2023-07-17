@@ -11,8 +11,7 @@
          define-invariants-for-pda
          define-invariants-for-tm
          define-invariants-for-mttm
-         sm-visualize!
-         $MODULE-NAMESPACE$)
+         sm-visualize!)
 
 ;; We need to attach a namespace anchor to the top of the module so we can
 ;; access all functions defined when calling eval

@@ -11,6 +11,7 @@ import {
   isPdaRule,
   FSMRule,
   MachineType,
+  RacketInvariantFunc,
 } from '../../types/machine';
 import StateComponent from './state';
 import styles from './view.module.css';
@@ -41,6 +42,7 @@ type ControlViewProps = {
   currentTransition: FSMTransition | null;
   resetMachineAndSet: (machine: Partial<MachineState>) => void;
   isConnectedToBackend: boolean;
+  updateInvariant: (stateName: string, invFun: RacketInvariantFunc) => void;
 };
 
 type CurrentTransition = {
@@ -211,6 +213,7 @@ const ControlView = (props: ControlViewProps) => {
             rotate={(360 / props.states.length) * i}
             transform={`translateX(${height / 2}px)`}
             isConnectedToBackend={props.isConnectedToBackend}
+            updateInvariant={props.updateInvariant}
           />
         ))}
       </div>

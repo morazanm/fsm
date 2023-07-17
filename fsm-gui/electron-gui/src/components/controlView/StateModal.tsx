@@ -42,6 +42,7 @@ import {
   FSMAlpha,
   isPdaTransition,
   ruleToString,
+  RacketInvariantFunc,
 } from '../../types/machine';
 import { useState } from 'react';
 import { validateState } from '../../components/rightEditor/forms/StateForm';
@@ -190,6 +191,7 @@ type StateModalProps = {
   currentTransition: FSMTransition | undefined;
   consumedInput: FSMAlpha[] | undefined;
   isConnectedToBackend: boolean;
+  updateInvariant: (stateName: string, invFun: RacketInvariantFunc) => void;
 };
 
 export const StateModal = (props: StateModalProps) => {
@@ -334,6 +336,7 @@ export const StateModal = (props: StateModalProps) => {
                           color="primary"
                           onClick={() => {
                             setEditInv(false);
+                            props.updateInvariant(props.state.name, invCode);
                           }}
                         >
                           <SaveIcon />
@@ -398,7 +401,15 @@ export const StateModal = (props: StateModalProps) => {
         </div>
       </DialogContent>
       <DialogActions>
-        <Button onClick={props.onClose}>Close</Button>
+        <Button
+          onClick={() => {
+            setEditInv(false);
+            setInvCode(props.state.invFunc);
+            props.onClose();
+          }}
+        >
+          Close
+        </Button>
         <Button
           disabled={!showUpdateButton()}
           onClick={() => {
