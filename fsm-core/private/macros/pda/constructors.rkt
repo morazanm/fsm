@@ -2,6 +2,7 @@
   (require
     racket/contract
     "contracts.rkt"
+    "predicates.rkt"
     "../contracts.rkt"
     "../predicates.rkt"
     "../../pda.rkt"
