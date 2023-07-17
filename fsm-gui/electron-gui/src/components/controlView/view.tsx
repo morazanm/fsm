@@ -58,7 +58,7 @@ const getCurrentStateAndInv = (
     return {
       start: trans.rule.start,
       end: trans.rule.end,
-      invPass: trans.invPass,
+      invPass: typeof trans.invPass === 'string' ? false : trans.invPass,
       input: isDfaNdfaRule(trans.rule)
         ? trans.rule.input
         : isPdaRule(trans.rule)

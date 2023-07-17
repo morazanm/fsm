@@ -1,14 +1,31 @@
 #lang racket
-(provide define-invariants-for-dfa
+(require (for-syntax syntax/parse racket/syntax syntax/stx racket/list racket/match)
+         syntax/parse/define 
+         racket/splicing
+         syntax/to-string
+         "fsm-gui/interface.rkt")
+
+(provide module-begin
+         define-invariants-for-dfa
          define-invariants-for-ndfa
          define-invariants-for-pda
          define-invariants-for-tm
          define-invariants-for-mttm
-         sm-visualize!)
+         sm-visualize!
+         sm-visualize!!
+         $MODULE-NAMESPACE$)
 
-(require
-  (for-syntax syntax/parse racket/syntax syntax/stx racket/list racket/match)
-  syntax/parse/define syntax/to-string "electron-backend/server.rkt")
+;; We need to attach a namespace anchor to the top of the module so we can
+;; access all functions defined when calling eval
+(define $MODULE-NAMESPACE$ (make-parameter #f))
+(define-syntax-parser module-begin
+  [(_ . xs)
+   #'(#%module-begin
+      (define-namespace-anchor anchor)
+      (splicing-parameterize ([$MODULE-NAMESPACE$ (namespace-anchor->namespace anchor)])
+        . xs))])
+
+
 
 (begin-for-syntax
   (define ID-INV "~a-$inv$-~a")
@@ -38,9 +55,9 @@
     (pattern (~and (define-invariant state:id (arg:id ...) body:expr ...+)
                    stx)
       #:with id (syntax-local-introduce (format-id common-ctx ID-INV machine-name #'state))
-      #:with str-value #`(regexp-replace #px"define-invariant-for *[^\\s]* *"
+      #:with str-value #`(regexp-replace #px"define-invariant *[^\\s]* *\\("
                                          (syntax->string #`(stx))
-                                         "define ")
+                                         (format "define (~a-inv " (syntax-e #'state)))
       #:with arg-len (length (syntax->list #'(arg ...)))
       #:fail-when (not (equal? (syntax-e #'arg-len) arity-num))
       (format "Arity mismatch. Expected ~s, but was given ~s" arity-num (syntax-e #'arg-len)))))
@@ -50,17 +67,31 @@
 (define-syntax (sm-visualize! stx)
   (syntax-parse stx
     [(_ fsa:id)
-     #:with inv-list-id (format-id #'fsa INV-LIST-ID #'fsa)
+     #:with inv-list-id (format-id common-ctx INV-LIST-ID #'fsa)
      #:fail-when (not (identifier-binding #'inv-list-id))
      "Invariants not defined for fsa"
      #`(run-with-prebuilt fsa inv-list-id)]
+    ;; If invariants where not defined then defeult to this case
+    #;[(_ fsa)
+       #`(run-with-prebuilt fsa '())]))
+
+
+;; Macro for starting GUI 2.0. if invariants are defined for the machine they are
+;; sent to the viztool otherwise just the machine is sent.
+(define-syntax (sm-visualize!! stx)
+  (syntax-parse stx
+    [(_ fsa:id)
+     #:with inv-list-id (format-id common-ctx INV-LIST-ID #'fsa)
+     #:fail-when (not (identifier-binding #'inv-list-id))
+     "Invariants not defined for fsa"
+     #`(run-with-prebuilt-hotload fsa inv-list-id ($MODULE-NAMESPACE$))]
     ;; If invariants where not defined then defeult to this case
     [(_ fsa)
      #`(run-with-prebuilt fsa '())]))
 
 
-; This macro generates a macro for each for each of the `define-invariants-for-<machine-type>`.
-;; the first arg is the name of the generated macro and the second arg is the arity that the
+; This macro generates a macro for each for each of the `define-invariants-for-<machine-type>`
+;; forms. The first arg is the name of the generated macro and the second arg is the arity that the
 ;; `invariant-func` should be associated with.
 (define-syntax-parse-rule (generate-invariant-macro macro-name:id num:expr)
   (...
@@ -188,7 +219,6 @@
                            (lambda ()
                              (convert-compile-time-error (define-invariants-for-pda a^nb^nc^n2
                                                            (define x 10))))))))
-
 
   (run-tests macro-tests)
   ) ;;end module+ test

@@ -11,7 +11,7 @@
          transitions->jsexpr)
 
 
-;; fsa->jsexpr :: fsa listof(cons symbol string | proc) -> jsexpr(fsa)
+;; fsa->jsexpr :: fsa listof(cons symbol string) -> jsexpr(fsa)
 ;; converts a fsm-core fsa to a jsexpr to be sent to the GUI
 ;; NOTE: invariants are a pair of a symbol representing the state name
 ;; and the invarinat function as a string.
@@ -28,7 +28,7 @@
      [(or 'tm 'tm-language-recognizer) base-hash]
      [ _ (error 'fsa->jsexpr "invalid machine type: ~a" (sm-type fsa))])))
 
-;; state->jsexpr :: symbol fsa optional(listof(cons symbol string | proc))-> jsexpr(state)
+;; state->jsexpr :: symbol fsa optional(listof(cons symbol string))-> jsexpr(state)
 ;; converts the fsm-core state to a jsexpr that containes the state name
 ;; state type and string representation of the invariant
 ;; NOTE: invariants are a pair of a symbol representing the state name
@@ -75,10 +75,10 @@
   [(_) (error 'rule->jsexpr "Invalid rule supplied ~a" rule)])
 
 
-;; transitions->jsexpr :: fsa listof(cons symbol string | proc) listof(string) number -> jsexpr(transitons) | string
+;; transitions->jsexpr :: fsa listof(cons symbol string) namespace | false listof(string) number -> jsexpr(transitons) | string
 ;; Given an fsa computes the jsexpr form of the transitions. If there is an error then a string
 ;; containing the error is returned
-(define (transitions->jsexpr fsa invariants input (tape-index 0))
+(define (transitions->jsexpr fsa invariants input namespace (tape-index 0))
   (define type (sm-type fsa))
   (define trans (if (or (equal? type 'tm) (equal? type 'tm-language-recpgnizer))
                     (sm-showtransitions fsa input tape-index)
@@ -86,16 +86,18 @@
   (match/values (values type trans)
     [(_ 'reject) "The given input for the machine was rejected"]
     [((or 'dfa 'ndfa) _)
-     (dfa-transitions->jsexpr trans (sm-start fsa) invariants input)]
-    [('pda _) (pda-transitions->jsexpr trans (sm-start fsa) invariants input (sm-rules fsa))]
-    [((or 'tm 'tm-language-recognizer) _) (tm-transitions->jsexpr trans (sm-start fsa) invariants input tape-index)]
+     (dfa-transitions->jsexpr trans (sm-start fsa) invariants input namespace)]
+    [('pda _)
+     (pda-transitions->jsexpr trans (sm-start fsa) invariants input (sm-rules fsa) namespace)]
+    [((or 'tm 'tm-language-recognizer) _)
+     (tm-transitions->jsexpr trans (sm-start fsa) invariants input tape-index namespace)]
     [(_ _) (error 'transitions->jsexpr "Invalid machine type: ~a" type)]))
 
-;; tm-transitions->jsexpr :: listof(transitions) symbol listof(cons symbol string | proc) listof(symbol) number -> listof(jsexpr(transition))
+;; tm-transitions->jsexpr :: listof(transitions) symbol listof(cons symbol string) listof(symbol) number namespace -> listof(jsexpr(transition))
 ;; Given the list of fsm-core transitions, computes the jsexpr form of the transitions
-(define (tm-transitions->jsexpr transitions start invariants initial-tape tape-start-index)
+(define (tm-transitions->jsexpr transitions start invariants initial-tape tape-start-index namespace)
   (define (symbol-list->string lst) (map (lambda (s) (symbol->string s)) lst))
-  ;; tm-transition->jsexpr :: transition transition listof(cons symbol string | proc) -> jsexpr(transition)
+  ;; tm-transition->jsexpr :: transition transition listof(cons symbol string) -> jsexpr(transition)
   ;; computes the jsexpr(transition) for a tm/lang-rec given 2 fsm-core transitions
   (define (tm-transition->jsexpr t1 t2)
     (match-define `(,cur-state ,cur-pos ,cur-tape) t1)
@@ -114,18 +116,19 @@
     (hash 'rule (rule->jsexpr `((,cur-state ,cur-action) (,next-state ,next-action)))
           'tapeIndex next-pos
           'tape (symbol-list->string next-tape)
-          'invPass (compute-inv next-state invariants next-tape next-pos)))
+          'invPass (compute-inv next-state namespace invariants next-tape next-pos)))
   ;; we alyays need to append the start transiton to the front for the gui.
   ;; EX: (hash 'start "A" 'input (json-null) 'end "start")
   (define start-transition (hash 'start (symbol->string start)
                                  'tapeIndex tape-start-index
                                  'tape (symbol-list->string initial-tape)
-                                 'invPass (compute-inv start invariants initial-tape tape-start-index)))
+                                 'invPass (compute-inv start namespace invariants initial-tape tape-start-index)))
   ;; if a tm builds then input always halts
   (define end-transition (hash 'end (symbol->string (first (last transitions)))
                                'tapeIndex (second (last transitions))
                                'tape (symbol-list->string (third (last transitions)))
                                'invPass (compute-inv (first (last transitions))
+                                                     namespace
                                                      invariants
                                                      (third (last transitions))
                                                      (second (last transitions)))))
@@ -136,16 +139,16 @@
   (append (list start-transition) (loop transitions) (list end-transition)))
 
 
-;; dfa-transitions->jsexpr :: listof(transitions) symbol listof(cons symbol string | proc) listof(symbol)-> listof(jsexpr(transition))
+;; dfa-transitions->jsexpr :: listof(transitions) symbol listof(cons symbol string) listof(symbol) namespace -> listof(jsexpr(transition))
 ;; Given the list of fsm-core transitions, computes the jsexpr form of the transitions
-(define (dfa-transitions->jsexpr transitions start invariants full-input)
-  ;; dfa-transition->jsexpr :: transition transition listof(cons symbol string | proc) listof(symbol) -> jsexpr(transition)
+(define (dfa-transitions->jsexpr transitions start invariants full-input namespace)
+  ;; dfa-transition->jsexpr :: transition transition listof(cons symbol string) listof(symbol) -> jsexpr(transition)
   ;; computes the jsexpr(transition) for a dfa given 2 fsm-core transitions
   (define (dfa-transition->jsexpr t1 t2 invariants full-input)
     (if (or (equal? t2 'reject) (equal? t2 'accept))
         (hash 'end (symbol->string (cadr t1))
               'action (symbol->string t2)
-              'invPass (compute-inv (cadr t1) invariants full-input))
+              'invPass (compute-inv (cadr t1) namespace invariants full-input))
         (match-let* ([`(,(and input1 `(,i1 ...)) ,s1) t1]
                      [`(,(and input2 `(,i2 ...)) ,s2) t2]
                      [consumed-input (drop-right full-input (length input2))])
@@ -156,11 +159,11 @@
                                         EMP
                                         (car i1)))
                             'end (symbol->string s2))
-                'invPass (compute-inv s2 invariants consumed-input)))))
+                'invPass (compute-inv s2 namespace invariants consumed-input)))))
   ;; we alyays need to append the start transiton to the front for the gui.
   ;; EX: (hash 'start "A" 'input (json-null) 'end "start")
   (define start-transition (hash 'start (symbol->string start)
-                                 'invPass (compute-inv start invariants)))
+                                 'invPass (compute-inv start namespace invariants)))
   (define (loop transitions)
     (match transitions
       [`(,f ,n ,xs ...) (cons (dfa-transition->jsexpr f n invariants full-input)
@@ -171,10 +174,10 @@
 
 
 
-;; pda-transitions->jsexpr :: listof(transitions) symbol listof(cons symbol string | proc) listof(symbol) listof(rules) -> listof(jsexpr(transition))
+;; pda-transitions->jsexpr :: listof(transitions) symbol listof(cons symbol string) listof(symbol) listof(rules) namespace -> listof(jsexpr(transition))
 ;; Given the list of fsm-core transitions, computes the jsexpr form of the transitions
-(define (pda-transitions->jsexpr transitions start invariants input rules)
-  ;; pda-transition->jsexpr: transition transition listof(rules) listof(cons symbol string | proc) listof(symbol) listof(symbol) -> values(pda-rule stack)
+(define (pda-transitions->jsexpr transitions start invariants input rules namespace)
+  ;; pda-transition->jsexpr: transition transition listof(rules) listof(cons symbol string) listof(symbol) listof(symbol) -> values(pda-rule stack)
   ;; Purpose: Constructes a pda rule from the given transitions
   ;; NOTE: There is no way to distinguish between
   ;; ((S a (y )) (A (y )) and ((S a ,EMP) (A ,EMP))
@@ -187,7 +190,7 @@
       [(or (equal? t2 'accept) (equal? t2 'reject))
        (values (hash 'end (symbol->string (car t1))
                      'action (symbol->string t2)
-                     'invPass (compute-inv (car t1) invariants full-input current-stack))
+                     'invPass (compute-inv (car t1) namespace invariants full-input current-stack))
                current-stack)]
       [else
        (match-define `(,next-state ,next-input ,next-stack) t2)
@@ -230,6 +233,7 @@
                                                   (,next-state ,next-stack)))]
                                            [_ cur-rule]))
                      'invPass (compute-inv next-state
+                                           namespace
                                            invariants
                                            (drop-right full-input (length next-input))
                                            new-stack)
@@ -240,7 +244,7 @@
   ;; we alyays need to append the start transiton to the front for the gui.
   ;; EX: (hash 'start "A" 'input (json-null) 'end "start")
   (define start-transition (hash 'start (symbol->string start)
-                                 'invPass (compute-inv start invariants '() '())))
+                                 'invPass (compute-inv start namespace invariants '() '())))
   (define (loop transitions current-stack)
     (match transitions
       [`(,f ,n ,xs ...)
@@ -250,23 +254,18 @@
   (cons start-transition (loop transitions '())))
 
 
-;; compute-inv :: symbol listof(cons symbol string | proc) vargs(any) -> boolean | json-null
+;; compute-inv :: symbol namespace listof(cons symbol string) vargs(any) -> boolean | json-null | string
 ;; computes the invariant and returns the result. If there is not a invariant associated
-;; with the state then json-null is returned
-;; TODO: Handle error messages
-(define (compute-inv state invariants . args)
+;; with the state then json-null is returned. If the response is a string then there was an error
+;; computing the invariant and the error message is returned
+(define (compute-inv state namespace invariants . args)
   ;; run-racket-code :: string -> boolean | string
-  ;; runs the invariant. If there is a syntax error then the error message is returned
-  ;; TODO: Document this more once I have a better understanding of racket macro namespaces https://stackoverflow.com/questions/57927786/how-to-obtain-namespace-of-a-custom-lang-in-racket
+  ;; runs the invariant in the provided namespace. If there is a syntax error then the error message is returned
   (define (run-racket-code invariant)
     (define (truthy? x) (not (false? x)))
-    (define ns (make-base-namespace))
-    (namespace-attach-module (current-namespace) 'racket ns)
-    (parameterize ([current-namespace (make-base-namespace)])
+    (parameterize ([current-namespace namespace])
       (namespace-require 'racket)
-      (with-handlers ([exn:fail? (lambda (e)
-                                   (displayln (format "[FSM Internal Error @ (invariant check)]: ~s" (exn-message e)))
-                                   (exn-message e))])
+      (with-handlers ([exn:fail? (lambda (e) (exn-message e))])
         (define res (eval (read (open-input-string invariant))))
         (define inv-args (if (null? args) (list null) args))
         (truthy? (match res
@@ -277,17 +276,11 @@
                                     (first (regexp-match #px"\\(define *\\([\\s]*[^ ]*" invariant))
                                     ""))
                     (apply (eval (string->symbol f-name)) inv-args)]
+                   ;; This is for the lambda form: (lambda (...) ....)
                    [_ (apply res inv-args)])))))
   (define inv (findf (lambda (i) (equal? (car i) state)) invariants))
   (match inv
-    ;; for hot realoading code
-    [(cons _ (? string?))
-     (define res (run-racket-code (cdr inv)))
-     (if (string? res) #f res)]
-    ;; classic way for computing invariants
-    [(cons _ (? procedure?))
-     (with-handlers ([exn:fail? (lambda (e) #f)])
-       (apply (cdr inv) (if (null? args) (list null) args)))]
+    [(cons _ (? string?)) (run-racket-code (cdr inv))]
     [_ (json-null)]))
 
 
@@ -345,7 +338,8 @@
                   (define actual (transitions->jsexpr
                                   a*a
                                   invariants
-                                  '(a a a b b b a)))
+                                  '(a a a b b b a)
+                                  (current-namespace)))
                   (check-equal? actual expected  "A*A compute all transitions"))
 
                 (test-case "pda"
@@ -401,7 +395,7 @@
                                                                     (define bs (length (filter (lambda (v) (equal? v 'b)) i)))
                                                                     (and (equal? bs (* 2 as))
                                                                          (empty? s)))))))
-                  (check-equal? (transitions->jsexpr pda=2ba invariants '(b b a)) expected))
+                  (check-equal? (transitions->jsexpr pda=2ba invariants '(b b a) (current-namespace)) expected))
 
 
                 (test-case "tm"
@@ -416,7 +410,7 @@
 
                   (define invariants '())
 
-                  (check-equal? (transitions->jsexpr Ma invariants '(b b) 0)
+                  (check-equal? (transitions->jsexpr Ma invariants '(b b) (current-namespace) 0)
                                 (list (hash 'start "S"
                                             'tapeIndex 0
                                             'tape '("b" "b")
@@ -465,7 +459,7 @@
                                              'Y))
                   (define invariants '())
 
-                  (check-equal? (transitions->jsexpr a^nb^nc^n invariants '(@ a b c) 0)
+                  (check-equal? (transitions->jsexpr a^nb^nc^n invariants '(@ a b c) (current-namespace) 0)
                                 (list (hash 'start "S"
                                             'tapeIndex 0
                                             'tape '("@" "a" "b" "c")

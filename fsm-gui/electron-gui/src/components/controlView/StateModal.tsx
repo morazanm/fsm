@@ -86,6 +86,11 @@ const InvariantDetails = (props: InvariantDetailsProps) => {
       ? props.currentTransition.stack
       : [];
 
+  const invPassed =
+    typeof props.currentTransition.invPass === 'string'
+      ? false
+      : props.currentTransition.invPass;
+
   return (
     <Grid
       alignItems="center"
@@ -162,10 +167,10 @@ const InvariantDetails = (props: InvariantDetailsProps) => {
           Status:{' '}
           <span
             style={{
-              color: invariantColor(props.currentTransition.invPass),
+              color: invariantColor(invPassed),
             }}
           >
-            {formatInvariant(props.currentTransition.invPass)}
+            {formatInvariant(invPassed)}
           </span>
         </Typography>
       </Grid>
@@ -281,61 +286,63 @@ export const StateModal = (props: StateModalProps) => {
           <hr />
           <Stack spacing={2} sx={{ paddingTop: 2 }}>
             <Grid container>
-              <Grid item xs={10}>
+              <Grid item xs={props.state.invFunc ? 10 : 12}>
                 <Typography variant="h6">Invariant:</Typography>
               </Grid>
-              <Grid item xs={2}>
-                <ButtonGroup variant="text">
-                  <Tooltip
-                    title={
-                      !props.isConnectedToBackend
-                        ? 'Must Be connected to Racket to edit invariants'
-                        : editInv
-                        ? 'Disable Editing'
-                        : 'Enable Editing'
-                    }
-                    disableInteractive
-                  >
-                    <IconButton
-                      disabled={!props.isConnectedToBackend}
-                      aria-label="edit"
-                      style={{
-                        color: !props.isConnectedToBackend
-                          ? theme.palette.action.disabled
+              {props.state.invFunc && (
+                <Grid item xs={2}>
+                  <ButtonGroup variant="text">
+                    <Tooltip
+                      title={
+                        !props.isConnectedToBackend
+                          ? 'Must Be connected to Racket to edit invariants'
                           : editInv
-                          ? theme.palette.warning.light
-                          : theme.palette.primary.main,
-                      }}
-                      onClick={() => setEditInv(!editInv)}
+                          ? 'Disable Editing'
+                          : 'Enable Editing'
+                      }
+                      disableInteractive
                     >
-                      <EditIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Undo Changes" disableInteractive>
-                    <IconButton
-                      aria-label="undo changes"
-                      color="primary"
-                      disabled={invCode === props.state.invFunc}
-                      onClick={() => setInvCode(props.state.invFunc)}
-                    >
-                      <UndoIcon />
-                    </IconButton>
-                  </Tooltip>
-                  {props.state.invFunc !== invCode && (
-                    <Tooltip title="Save Changes" disableInteractive>
                       <IconButton
-                        aria-label="save"
-                        color="primary"
-                        onClick={() => {
-                          setEditInv(false);
+                        disabled={!props.isConnectedToBackend}
+                        aria-label="edit"
+                        style={{
+                          color: !props.isConnectedToBackend
+                            ? theme.palette.action.disabled
+                            : editInv
+                            ? theme.palette.warning.light
+                            : theme.palette.primary.main,
                         }}
+                        onClick={() => setEditInv(!editInv)}
                       >
-                        <SaveIcon />
+                        <EditIcon />
                       </IconButton>
                     </Tooltip>
-                  )}
-                </ButtonGroup>
-              </Grid>
+                    <Tooltip title="Undo Changes" disableInteractive>
+                      <IconButton
+                        aria-label="undo changes"
+                        color="primary"
+                        disabled={invCode === props.state.invFunc}
+                        onClick={() => setInvCode(props.state.invFunc)}
+                      >
+                        <UndoIcon />
+                      </IconButton>
+                    </Tooltip>
+                    {props.state.invFunc !== invCode && (
+                      <Tooltip title="Save Changes" disableInteractive>
+                        <IconButton
+                          aria-label="save"
+                          color="primary"
+                          onClick={() => {
+                            setEditInv(false);
+                          }}
+                        >
+                          <SaveIcon />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                  </ButtonGroup>
+                </Grid>
+              )}
             </Grid>
             {showInvDetails(props.currentTransition) && (
               <InvariantDetails

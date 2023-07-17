@@ -61,8 +61,7 @@ export type TmMttmRule = {
 // is null then a invariant function was not supplied by the user.
 export type BasicTransition = {
   rule: FSMRule;
-  invPass: boolean | null;
-
+  invPass: boolean | null | string;
   // When the filepath key does not exist then that means that graphViz is not installed
   // on the users computer
   filepath?: string;

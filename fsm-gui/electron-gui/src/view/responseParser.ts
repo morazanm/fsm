@@ -34,7 +34,7 @@ export function parseDataResponse(
         (r) => !currentMachine.rules.find((mr) => isFSMRuleEqual(r, mr)),
       ),
     );
-
+    console.log(response.data.transitions);
     return {
       data: {
         ...currentMachine,
@@ -52,6 +52,7 @@ export function parseDataResponse(
     };
   } else if (result.responseType === Instruction.PREBUILT) {
     const response = result as SocketResponse<PrebuiltMachineResponse>;
+    console.log(response.data.states);
     return {
       data: {
         ...currentMachine,

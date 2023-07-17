@@ -1,8 +1,5 @@
-#lang racket
+#lang fsm
 
-(require (for-syntax syntax/parse syntax/to-string)
-         syntax/to-string
-         "../main.rkt")
 
 
 (define a-aUb*
@@ -38,7 +35,7 @@
 
 
 ;(sm-visualize a-aUb* (list 'S SS-INV) (list 'F FF-INV))
-(sm-visualize! a-aUb*)
+(sm-visualize!! a-aUb*)
 
 #;(sm-visualize3 a-aUb*
                  (list 'F (inv->string!
@@ -362,8 +359,7 @@
        (= (length list-of-xyz) (- (length tape) 2))
        (= (modulo (length list-of-xyz) 3) 0)))))
 
-
-(sm-visualize! a^nb^nc^n2)
+(sm-visualize!! a^nb^nc^n2)
                
 #|
 (define LB (make-tm '(S H)

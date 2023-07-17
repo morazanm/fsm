@@ -1,7 +1,8 @@
 #lang racket
 
 (require "legacy-gui/visualize.rkt"
-         "./macros.rkt")
+         "electron-backend/server.rkt")
 
 (provide (rename-out (visualize sm-visualize))
-         (all-from-out "./macros.rkt"))
+         run-with-prebuilt
+         run-with-prebuilt-hotload)

@@ -9,7 +9,7 @@
  build-machine
  regenerate-graph)
 
-;; build-machine :: jsexpr optional(listof(cons symbol func) optional(boolean) -> jsexpr
+;; build-machine :: jsexpr namespace | false optional(listof(cons symbol func) optional(boolean) -> jsexpr
 ;; takes the electron-gui machine json-expr, unparses it and runs it in fsm-core. It then
 ;; returns the machine or the error msg if it fails to build
 ;;
@@ -18,21 +18,7 @@
 ;;
 ;; The optional arg when set to true will not build the graphviz graph. This should be set
 ;; to true when using this function in tests
-(define (build-machine data (pre-computed-invariants '()) #:test (test-mode #f))
-  ;; generate-graphviz-images :: listof(jsexpr-transition) -> listof(jsexpr-transitions)
-  ;; computes the graphviz images for each of the transitions
-  (define (generate-graphviz-images trans)
-    (define start-time (current-seconds))
-    (define res (map (lambda (t i)
-                       (hash-set t
-                                 'filepath
-                                 (path->string (electron-machine->svg states start finals rules type t accept-state 0 i))))
-                     trans
-                     (range (length trans))))
-    (define end-time (current-seconds))
-    (displayln (format "Time to generate g-viz imgs: ~a" (- end-time start-time)))
-    res)
-
+(define (build-machine data namespace (pre-computed-invariants '()) #:test (test-mode #f))
   ;; generate-graphviz-images :: listof(jsexpr-transition) -> listof(jsexpr-transitions)
   ;; computes the graphviz images for each of the transtions using threads
   (define (generate-graphviz-images-threaded transitions)
@@ -109,7 +95,7 @@
            'responseType "build_machine"
            'error "The given input for the machine was rejected")]
     [fsa
-     (define jsexpr-trans (transitions->jsexpr fsa invariants input tape-index))
+     (define jsexpr-trans (transitions->jsexpr fsa invariants input namespace tape-index))
      (hash 'data (hash 'transitions (if (or test-mode (not (has-dot-executable?)))
                                         jsexpr-trans
                                         (generate-graphviz-images-threaded jsexpr-trans))
@@ -238,7 +224,7 @@
                                                                    'action "accept"
                                                                    'invPass (json-null))))
                                          'error (json-null)))
-                  (define actual (build-machine a*a-jsexpr #:test #t))
+                  (define actual (build-machine a*a-jsexpr (current-namespace) #:test #t))
                   (check-equal? (hash-ref actual 'error)
                                 (hash-ref expected 'error)
                                 "Error msg field for a*a should be null for a valid machine")
@@ -297,7 +283,7 @@
                                                               'action "accept"
                                                               'invPass (json-null))))
                                           'error (json-null)))
-                    (define actual (build-machine pda=2ba-jsexpr #:test #t))
+                    (define actual (build-machine pda=2ba-jsexpr (current-namespace) #:test #t))
                     (check-equal? (hash-ref actual 'error)
                                   (hash-ref expected 'error)
                                   "Error msg field for pda=2ba should be null for a valid machine")
@@ -338,7 +324,7 @@
                                                                    'tape (list (symbol->string LM) "a" "b")
                                                                    'invPass (json-null))))
                                          'error (json-null)))
-                  (define actual (build-machine Ma-jsexpr #:test #t))
+                  (define actual (build-machine Ma-jsexpr (current-namespace) #:test #t))
                   (check-equal? (hash-ref actual 'error)
                                 (hash-ref expected 'error)
                                 "Error msg field for Ma should be null for a valid machine")

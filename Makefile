@@ -16,4 +16,7 @@ clean:
 	find . -type d -name compiled | xargs rm -rfv
 	rm -vf fsm-docs/*.{html,js,png,css}
 
+reinstall:
+	@raco pkg remove fsm
+	@raco pkg install
 .PHONY: clean

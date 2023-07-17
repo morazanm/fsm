@@ -8,7 +8,7 @@
          run-without-prebuilt
          run-with-prebuilt-hotload)
 
-(define DEBUG_MODE #t)
+(define DEBUG_MODE #f)
 (define ADDRESS "127.0.0.1")
 (define PORT 4000)
 
@@ -34,7 +34,6 @@
      #`(when DEBUG_MODE (displayln (format s args ...)))]))
 
 
-
 (define (send-fsm-protocal data out)
   (displayln! "\n****Sending Data:****\n ~s" data)
   (write-json data out)
@@ -45,13 +44,13 @@
 ;; listen-for-input :: ()
 ;; listens on the specified socket for incomming connections
 ;; if data is supplied then it is sent when the connection is first established
-(define (run-server [pre-computed-data (hash 'pre-inv '())])
+(define (run-server [pre-computed-data (hash)])
   (displayln (format "FSM Gui server listenting at ~s on port ~s" ADDRESS PORT))
   (define listener (tcp-listen PORT 4 #t ADDRESS))
   (define active-threads (make-hash))
   ;; DrRacket throws a break exception when the stop button is pressed.
   ;; We need to make sure to cleanup the TCP-server when this happens so
-  ;; the GUI knows the socket was closed
+  ;; the GUI knows the socket was closed.
   (with-handlers ([exn:break? (lambda (_)
                                 (for ([t (hash-values active-threads)])
                                   (clean-up-listener-thread t))
@@ -60,22 +59,27 @@
     ;; listens for incomming connections. If a connection is recieved then a thread is spun up
     ;; to handle the request
     (define (listen-for-input)
-      (define-values (invariants data)  (values (hash-ref pre-computed-data 'pre-inv '())
-                                                (hash-ref pre-computed-data 'data '())))
+      (define-values (invariants data ns)  (values (hash-ref pre-computed-data 'pre-inv '())
+                                                     (hash-ref pre-computed-data 'data '())
+                                                     (hash-ref pre-computed-data 'namespace (current-namespace))))
       ;; handle-request :: jsexpr(a) -> jsexpr(b)
       ;; Based off of the instruction that is provideded in the incomming jsexpr, dispatches
       ;; to the approperate mapping function
       (define (handle-request input)
         (match (string->symbol (hash-ref input 'instr))
           ['redraw (regenerate-graph (hash-ref input 'data))]
-          ['build_machine (build-machine (hash-ref input 'data) invariants)]
+          ['build_machine (build-machine (hash-ref input 'data) ns invariants)]
           ['shut_down eof] ;; we use eof to denote a shutdown
           [_ (error 'handle-request "Invalid instruction given: ~a" (hash-ref input 'instr))]))
+      ;; suspend untill a tcp connection is recieved
       (define-values (in out) (tcp-accept listener))
+      ;; If we have initial data to send when first connecting with a client send it now
       (when (not (null? data))
         (displayln! "Sending prebuilt machine")
         (send-fsm-protocal data out))
       (define thread-id (gensym))
+      ;; Spin up a worker thread to handle the connection with the client and
+      ;; repeat above steps.
       (define worker (thread
                       (lambda ()
                         (let loop ()
@@ -99,14 +103,16 @@
     (listen-for-input)))
 
 
-;; run-with-prebuilt-hotload :: fsa listof(cons symbol string) -> ()
-;; Runs the TCP server and sends the prebuild machine to the GUI.
-(define (run-with-prebuilt-hotload fsa invariants)
-  (define data-to-send (hash 'data (hash-set (fsa->jsexpr fsa invariants)
+;; run-with-prebuilt-hotload :: fsa listof(listof(symbol string inv-func) namespace -> ()
+;; Runs the TCP server and sends the prebuild machine to the GUI. A namespace must be
+;; provided so we know the context that the function should be ran in.
+(define (run-with-prebuilt-hotload fsa invariants ns)
+  (define inv-data (map (lambda (v) (cons (first v) (second v))) invariants))
+  (define data-to-send (hash 'data (hash-set (fsa->jsexpr fsa inv-data)
                                              'hotReload #t)
                              'error (json-null)
                              'responseType "prebuilt_machine"))
-  (run-server (hash 'data data-to-send 'hotload #t)))
+  (run-server (hash 'data data-to-send 'hotload #t 'namespace ns)))
 
 
 ;; run-with-prebuilt :: fsa listof(listof(symbol string inv-func)) -> ()
