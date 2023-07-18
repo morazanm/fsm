@@ -34,3 +34,16 @@ export type RedrawnGraphvizImageResponse = {
   // that means that graphViz is not on the users computer
   filepath: string | null;
 };
+
+// Message from from racket for the invalid syntax
+type InvalidSyntaxError = string;
+type Filepath = string;
+
+export type RecomputeInvariantResponse = {
+  targetState: string;
+  changedStatuses: {
+    index: number;
+    status: boolean | InvalidSyntaxError;
+    filepath: Filepath;
+  }[];
+};

@@ -22,6 +22,7 @@ import {
   isTmMttmTransition,
   MachineTransitions,
   RacketInvariantFunc,
+  getTransitionEndState,
 } from '../types/machine';
 import { useTheme } from '@mui/material/styles';
 import { BasicDialog, IncomingMachineDialog } from './dialog';
@@ -39,6 +40,7 @@ import {
 } from '../socket/racketInterface';
 import {
   FSMBuildMachineRequest,
+  RecomputeInvariantRequest,
   RedrawnGraphvizImageRequest,
 } from '../socket/requestTypes';
 import { parseDataResponse } from './responseParser';
@@ -139,15 +141,33 @@ const MainView = (props: MainViewProps) => {
     const newStates = machineState.states.map((state) =>
       state.name === incoming ? { ...state, invFunc } : state,
     );
-    // If the machine has not ran yet then just set the inv code and don't recompute
-    if (machineState.transitions.transitions.length === 0) {
       setMachineState({
         ...machineState,
         states: newStates,
       });
-    } else {
+      // If the machine was ran then we also need to recompute the invariants for the
+      // state
+      if (machineState.transitions.transitions.length > 0) {
+      const currentStatuses = machineState.transitions.transitions
+        .filter((t) => getTransitionEndState(t) === incoming)
+        .map((t, idx) => {
+          return {
+            index: idx,
+            status: t.invPass,
+            filepath: t.filepath,
+          };
+        });
       // we need to recompute the invariants for the changed state and update the gui
-      //TODO: Send to racket for new computations
+      props.racketBridge.sendToRacket(
+        {
+          ...machineState,
+          states: newStates,
+          tapeIndex: machineState.initialTapePosition,
+          targetState: incoming,
+          invStatuses: currentStatuses,
+        } as RecomputeInvariantRequest,
+        Instruction.RECOMPUTE_INV,
+      );
     }
   };
 
@@ -270,13 +290,15 @@ const MainView = (props: MainViewProps) => {
               'Machine Successfully Built',
               'The machine was successfully built. You may now use the next and prev buttons to visualize the machine.',
             );
+          } else if (instruction === Instruction.RECOMPUTE_INV) {
+            setMachineState(data);
+            //TODO: Handle update message
           }
           // Add files to track for clean up
           const filesToTrack = data.transitions.transitions.map(
             (t) => t.filepath,
           );
-          //HACK: vizTool_electron1 needs to stay so the server and stay up and still send
-          // the image if a new instance of the GUI is spun up.
+          //HACK: vizTool_electron1 needs to stay so the backend can create the correct file
           //TODO: Once all files are unique named this will not a problem
           if (data.graphVizImage !== '/var/tmp/vizTool_electron1.svg') {
             filesToTrack.push(data.graphVizImage);

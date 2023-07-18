@@ -120,7 +120,7 @@ const State = (props: StateProps) => {
           />
         </DontTransform>
       )}
-      <StateModal
+      {open && <StateModal
         open={open}
         onClose={() => setOpen(false)}
         state={props.state}
@@ -133,7 +133,7 @@ const State = (props: StateProps) => {
         states={props.states}
         isConnectedToBackend={props.isConnectedToBackend}
         updateInvariant={props.updateInvariant}
-      />
+      />}
     </>
   );
 };

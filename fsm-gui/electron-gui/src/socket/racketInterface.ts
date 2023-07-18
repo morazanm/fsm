@@ -23,6 +23,7 @@ export enum Instruction {
   CLOSE = 'shut_down',
   PREBUILT = 'prebuilt_machine',
   REDRAW = 'redraw',
+  RECOMPUTE_INV = 'recompute_inv',
 }
 
 type SocketEvent = 'data' | 'error' | 'end';
@@ -106,7 +107,6 @@ export class RacketInterface {
   // this is the end of the data being sent
   private send<T extends object>(request: SocketRequest<T>): boolean {
     if (this.connected && this.client.readyState === 'open') {
-      console.log(this.client.readyState);
       this.client.write(`${JSON.stringify(request)}\r\n`);
       return true;
     }

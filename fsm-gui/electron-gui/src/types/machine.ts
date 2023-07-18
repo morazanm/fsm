@@ -259,3 +259,14 @@ export function isTransitionsEqual(
   }
   return false;
 }
+export function getTransitionEndState(t: FSMTransition) {
+  if (isStartTransition(t)) {
+    return t.start;
+  } else if (isEndTransition(t)) {
+    return t.end;
+  } else if (isNormalTransition(t)) {
+    return t.rule.end;
+  } else {
+    throw 'Unreachable';
+  }
+}

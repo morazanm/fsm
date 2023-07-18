@@ -6,7 +6,7 @@
 
 (provide run-with-prebuilt)
 
-(define DEBUG_MODE #f)
+(define DEBUG_MODE #t)
 (define ADDRESS "127.0.0.1")
 (define PORT 4000)
 
@@ -66,6 +66,7 @@
         (match (string->symbol (hash-ref input 'instr))
           ['redraw (regenerate-graph (hash-ref input 'data))]
           ['build_machine (build-machine (hash-ref input 'data) ns)]
+          ['recompute_inv (recompute-invariant (hash-ref input 'data) ns)]
           ['shut_down eof] ;; we use eof to denote a shutdown
           [_ (error 'handle-request "Invalid instruction given: ~a" (hash-ref input 'instr))]))
       ;; suspend untill a tcp connection is recieved

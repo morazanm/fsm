@@ -3,6 +3,7 @@ import { MachineState } from './MainView';
 import {
   BuildMachineResponse,
   PrebuiltMachineResponse,
+  RecomputeInvariantResponse,
   RedrawnGraphvizImageResponse,
 } from '../socket/responseTypes';
 import { isFSMRuleEqual, isTmType } from '../types/machine';
@@ -34,7 +35,6 @@ export function parseDataResponse(
         (r) => !currentMachine.rules.find((mr) => isFSMRuleEqual(r, mr)),
       ),
     );
-    console.log(response.data.transitions);
     return {
       data: {
         ...currentMachine,
@@ -52,7 +52,6 @@ export function parseDataResponse(
     };
   } else if (result.responseType === Instruction.PREBUILT) {
     const response = result as SocketResponse<PrebuiltMachineResponse>;
-    console.log(response.data.states);
     return {
       data: {
         ...currentMachine,
@@ -75,6 +74,25 @@ export function parseDataResponse(
       instruction: response.responseType,
       data: response.data.filepath,
     };
+  } else if (result.responseType === Instruction.RECOMPUTE_INV) {
+    const response = result as SocketResponse<RecomputeInvariantResponse>;
+    let newTrans = currentMachine.transitions.transitions;
+    response.data.changedStatuses.forEach(v => {
+      console.log("Updating: ", v.index)
+      newTrans[v.index].filepath = v.filepath;
+      newTrans[v.index].invPass = v.status;
+    })
+
+    return {
+      data: {
+      ...currentMachine,
+      transitions: {
+        ...currentMachine.transitions,
+        transitions: newTrans
+      },
+      },
+      instruction: response.responseType
+    }
   } else {
     return {
       instruction: result.responseType,
