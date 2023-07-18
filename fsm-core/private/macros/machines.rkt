@@ -232,7 +232,7 @@
        #'states)]
     ))
  
-(make-dfa2 (list (string->symbol "B") 'A 'C)
+#;(make-dfa2 (list (string->symbol "B") 'A 'C)
            '(a b)
            'S
            (list 'F 'A)
