@@ -63,7 +63,7 @@
                      finals
                      (append deltas 
                              (if (null? adddead)
-                                 (new-dead-rules (cons dead states) sigma deltas)
+                                 (new-dead-rules (cons dead states) sigma deltas dead)
                                  null))))) ; add dead state  transitions if optional argument is missing
   
   

@@ -35,7 +35,7 @@
             rules))
   
   ; (listof state) alphabet (listof rule) --> (listof rule)
-  (define (new-dead-rules states sigma rules)
+  (define (new-dead-rules states sigma rules dead)
     ; state alphabet --> (listof pair)
     (define (create-s-pairs s sigma) (map (lambda (a) (list s a)) sigma))
     ; (listof state) alphabet --> (listof pair)
@@ -47,7 +47,7 @@
                                                         (eq? (cadr p) (symb-fsarule r))))
                                        rules)))
                       (if (empty-rules? rls)
-                          (list (list (car p) (cadr p) DEAD))
+                          (list (list (car p) (cadr p) dead))
                           null)))
                   pairs)))
   
