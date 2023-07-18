@@ -29,13 +29,16 @@
     (define (show-transitions w t1pos)
       ;; (listof mttm-config) --> (listof tmconfig)
       (define (run paths)
-        ;; (display (format "PATHS: ~s\n" paths))
+        ;(displayln "NEW PATHS...")
+        ;(for-each (λ (p) (displayln (format "~s\n\n" p))) paths)
+        ;(displayln (format "\n"))
+        ;(display (format "PATHS: ~s\n\n" paths))
         (if (empty? paths)
             (cond [(void? accept-state)
                    (error "Turing machine exhausted all computation paths without reaching a halting state.")]
                   [else (list 'reject)])
             (let* ((currpath (first paths))
-                   ;(d (displayln (format "First of urrent path: ~s\n" (first currpath))))
+                   ;(d (displayln (format "First two of curr path: ~s ~s\n" (first currpath) (if (> (length currpath) 1) (second currpath) (void)))))
                    (currstate (first (first currpath))))
               (if (member currstate finals)
                   (cond [(void? accept-state) currpath] ;; if not a lang recog halt
@@ -85,6 +88,7 @@
                                                          tapes
                                                          actions))))
                                           rls))
+                         ;(ddd (displayln (format "newconfigs: ~s\n" newconfigs)))
                          (newpaths (map (λ (config) (cons config currpath)) newconfigs)))
                     (run (append (rest paths) newpaths)))))))
       (let* ((init-config (cons start
