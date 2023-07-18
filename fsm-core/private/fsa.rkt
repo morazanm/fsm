@@ -1,6 +1,6 @@
 ; FSM Library Version 1.0
-; Copyright (C) 2015 by Marco T. Morazan and Rosario Antunez
-; Written by: Marco T. Morazan and Rosario Antunez, 2015
+; Copyright (C) 2015 by Marco T. Morazan
+; Written by: Marco T. Morazan, 2015
 
 ;;; DFSA & NDFSA
 
@@ -52,14 +52,19 @@
                             [else (raise-arguments-error 'Unkown-request
                                                          "The machine does not understand"
                                                          "Request" (car l))]))])))
-    (concrete-dfsa (if (null? adddead) (cons DEAD states) states) ; add dead state if optional argument is missing
-                   sigma
-                   start
-                   finals
-                   (append deltas 
-                           (if (null? adddead)
-                               (new-dead-rules (cons DEAD states) sigma deltas)
-                               null)))) ; add dead state  transitions if optional argument is missing
+    (let [(dead (if (member DEAD states)
+                    (generate-symbol 'D states)
+                    DEAD))]
+      (concrete-dfsa (if (null? adddead) ; add dead state if optional argument is missing
+                         (cons dead states)
+                         states)
+                     sigma
+                     start
+                     finals
+                     (append deltas 
+                             (if (null? adddead)
+                                 (new-dead-rules (cons dead states) sigma deltas)
+                                 null))))) ; add dead state  transitions if optional argument is missing
   
   
   ; make-unchecked-ndfa: (listof states) alphabet state (listof state) (listof rule)
