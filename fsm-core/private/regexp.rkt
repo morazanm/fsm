@@ -178,7 +178,7 @@
             [(union-regexp? r) 
              (let ((r1 (helper (union-regexp-r1 r)))
                    (r2 (helper (union-regexp-r2 r))))
-               (string-append "(" r1 " ∪ " r2 ")"))]
+               (string-append "(" r1 " U " r2 ")"))]
             [(kleenestar-regexp? r) 
              (let* ((r1 (helper (kleenestar-regexp-r1 r))))
                (cond [(= (string-length r1) 1) (string-append r1 "*")]
