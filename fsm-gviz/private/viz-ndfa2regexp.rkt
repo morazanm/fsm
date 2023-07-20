@@ -53,34 +53,6 @@
 
 
 
-
-;; regexp alphabet → ndfa
-;; Purpose: Build an ndfa for the given regexp
-(define (regexp->ndfa e sigma)
-  (let* [(simple-tbl (map
-                      (λ (a)
-                        (let [(S (generate-symbol 'S '(S)))
-                              (A (generate-symbol 'A '(A)))]
-                          (list a (make-ndfa (list S A)
-                                             sigma
-                                             S
-                                             (list A)
-                                             (list (list S a A))))))
-                      (cons EMP sigma)))]
-    (cond [(empty-regexp? e) (second (assoc EMP simple-tbl))]
-          [(singleton-regexp? e)
-           (second (assoc (string->symbol (singleton-regexp-a e))
-                          simple-tbl))]
-          [(concat-regexp? e)
-           (sm-concat (regexp->ndfa (concat-regexp-r1 e) sigma)
-                       (regexp->ndfa (concat-regexp-r2 e) sigma))]
-          [(union-regexp? e)
-           (sm-union (regexp->ndfa (union-regexp-r1 e) sigma)
-                      (regexp->ndfa (union-regexp-r2 e) sigma))]
-          [else (sm-kleenestar (regexp->ndfa (kleenestar-regexp-r1 e) sigma))])))
-
-
-
 ;; (listof edge) → regexp
 ;; Purpose: Collapse the given edges into a regexp
 (define (collapse-edges loe) (cond [(empty? loe) '()]
@@ -197,17 +169,6 @@
                                           (C a C)
                                           (C b C))))
 
-(define A (singleton-regexp "a"))
-(define G (singleton-regexp "g"))
-(define C (singleton-regexp "c"))
-(define T (singleton-regexp "t"))
-
-(define UNION-AGCT (union-regexp (union-regexp (union-regexp A G) C) T))
-
-(define AGCT (kleenestar-regexp UNION-AGCT))
-
-(define AGCT-regexp (regexp->ndfa AGCT '(a g c t)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define E-SCENE (empty-scene 1250 600))
@@ -218,8 +179,10 @@
 (struct viz-state (pimgs upimgs))
 
 ;; create-nodes
-;; graph (listof state) -> graph
-;; Purpose: To create a graph of nodes
+;; graph (listof state) state state -> graph
+;; Purpose: To add the given states as nodes to the given graph
+;;          using the given ns and nf as, respectively, the new
+;;          start and final states.
 (define (create-nodes graph los ns nf)
   (let [(states-only (append (list ns nf) los))]
     (foldl (λ (state result)
@@ -245,20 +208,21 @@
 ;; Purpose: To create graph of edges
 (define (create-edges graph loe)
   (foldl (λ (rule result)
-           ;(let [(ddd (displayln (format "label: ~s\nsimplified: ~s\n" (second rule) (printable-regexp (simplify-regexp (second rule))))))]
+           (let [(ddd (displayln (format "label: ~s\nsimplified: ~s\n" (printable-regexp (simplify-regexp (second rule))) (printable-regexp (simplify-regexp (second rule))))))]
            (add-edge result
                      (printable-regexp (simplify-regexp (second rule)))
                      (first rule)
                      (third rule)
                      #:atb (hash 'fontsize 20
-                                 'style 'solid)))
+                                 'style 'solid))))
          graph
          loe))
 
 
 ;; create-graph-img
 ;; (listof state) dgraph state state -> img
-;; Purpose: To create a graph img 
+;; Purpose: To create a graph img for the given dgraph using
+;;          news as the start state and newf as the final state
 (define (create-graph-img los loe news newf)
   (graph->bitmap
    (create-edges
@@ -309,6 +273,9 @@
 
 
 ;; process-key
+;; viz-state key --> viz-state
+;; Purpose: Move the visualization on step forward, one step
+;;          backwards, or to the end.
 (define (process-key a-vs a-key)
   (cond [(key=? "right" a-key)
          (if (empty? (viz-state-upimgs a-vs))
@@ -336,8 +303,8 @@
 
 
 ;; draw-img
-;; struct -> img
-;; Purpose: To draw a graph img
+;; viz-state -> img
+;; Purpose: To render the given vis-state
 (define (draw-world a-vs)
   (if (empty? (viz-state-pimgs a-vs))
       (overlay
@@ -349,6 +316,7 @@
 
 
 ;; run-function
+;; ndfa --> (void)
 (define (run M)
   (begin
     (big-bang
@@ -356,12 +324,7 @@
                    (rest (create-graph-imgs M))) 
       [on-draw draw-world]
       [on-key process-key]
-      [name 'visualization]))
+      [name "FSM: ndfa to regexp visualization"]))
   (void))
 
-(run AT-LEAST-ONE-MISSING)
 
-
-(define AT-LEAST-ONE-MISSING-init-graph-img (make-init-graph-img AT-LEAST-ONE-MISSING))
-
-(define AT-LEAST-ONE-MISSING-seq (create-graph-imgs AT-LEAST-ONE-MISSING))
