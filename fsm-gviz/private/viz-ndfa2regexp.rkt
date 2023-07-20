@@ -351,13 +351,13 @@
 ;; Purpose: To create graph of edges
 (define (create-edges graph loe)
   (foldl (λ (rule result)
-           (let [(ddd (displayln (format "label: ~s\nsimplified: ~s\n" (second rule) (printable-regexp (simplify-regexp (second rule))))))]
+           ;(let [(ddd (displayln (format "label: ~s\nsimplified: ~s\n" (second rule) (printable-regexp (simplify-regexp (second rule))))))]
              (add-edge result
-                       (printable-regexp (second rule))
+                       (printable-regexp (simplify-regexp (second rule)))
                        (first rule)
                        (third rule)
                        #:atb (hash 'fontsize 20
-                                   'style 'solid))))
+                                   'style 'solid)))
          graph
          loe))
 
