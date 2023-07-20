@@ -320,8 +320,7 @@
 
 ;; pimgs is a list of processed graph images
 ;; upimgs is a list of unprocessed graph images
-;; n is the given ndfa
-(struct viz-state (pimgs upimgs n))
+(struct viz-state (pimgs upimgs))
 
 ;; create-nodes
 ;; graph (listof state) -> graph
@@ -352,19 +351,19 @@
 (define (create-edges graph loe)
   (foldl (λ (rule result)
            ;(let [(ddd (displayln (format "label: ~s\nsimplified: ~s\n" (second rule) (printable-regexp (simplify-regexp (second rule))))))]
-             (add-edge result
-                       (printable-regexp (simplify-regexp (second rule)))
-                       (first rule)
-                       (third rule)
-                       #:atb (hash 'fontsize 20
-                                   'style 'solid)))
+           (add-edge result
+                     (printable-regexp (simplify-regexp (second rule)))
+                     (first rule)
+                     (third rule)
+                     #:atb (hash 'fontsize 20
+                                 'style 'solid)))
          graph
          loe))
 
 
 ;; create-graph-img
-;; dgraph ndfa -> img
-;; Purpose: To create a graph img from the given dgraph
+;; (listof state) dgraph state state -> img
+;; Purpose: To create a graph img 
 (define (create-graph-img los loe news newf)
   (graph->bitmap
    (create-edges
@@ -374,8 +373,9 @@
    "fsm"))
 
 
-; los loe news newf
-
+;; create-graph-imgs
+;; ndfa -> listof imgs
+;; Purpose: To create a list of graph images
 (define (create-graph-imgs M)
   (define new-start (generate-symbol 'S (sm-states M)))
   (define new-final (generate-symbol 'F (sm-states M)))
@@ -400,46 +400,6 @@
 
   (reverse (grp-seq (sm-states M) (make-dgraph (append (sm-rules M) new-rules)) '())))
 
-
-;; process-key
-#;(define (process-key a-world a-key)
-    (cond [(key=? "right" a-key)
-         
-           ]
-          [(key=? "left" a-key)
-           ]
-          [(key=? "down" a-key)
-           ]           
-          [else a-world]))
-
-
-;; draw-img
-;; struct -> img
-;; Purpose: To draw a graph img
-#;(define (draw-world a-vs)
-    (overlay
-     (create-graph-img (make-dgraph (viz-state-n a-vs)) (viz-state-n a-vs))
-     E-SCENE))
-
-
-;; run-function
-#;(define (run n)
-    (let [(init-pimg (create-graph-img (make-dgraph (sm-rules n))
-                                       n))]
-      (begin
-        (big-bang
-            (viz-state (list init-pimg)
-                       (rest (reverse (create-graph-imgs (rip-out-nodes '() init-pimg)
-                                                         init-pimg
-                                                         n)))
-                       n)                
-          [on-draw draw-world]
-          #;[on-key process-key]
-          [name 'visualization])))
-    (void))
-
-;(run AT-LEAST-ONE-MISSING)
-
 (define (make-init-graph-img M)
   (let* [(new-start (generate-symbol 'S (sm-states M)))
          (new-final (generate-symbol 'F (sm-states M)))
@@ -452,7 +412,61 @@
      new-start
      new-final)))
 
+
+;; process-key
+(define (process-key a-vs a-key)
+  (cond [(key=? "right" a-key)
+         (if (empty? (viz-state-upimgs a-vs))
+             a-vs
+             (let* [(new-pimgs (cons (first (viz-state-upimgs a-vs))
+                                     (viz-state-pimgs a-vs)))
+                    (new-upimgs (rest (viz-state-upimgs a-vs)))]
+           
+               (viz-state new-pimgs new-upimgs)))]
+        [(key=? "left" a-key)
+         (if (empty? (viz-state-pimgs a-vs))
+             a-vs
+             (let* [(new-pimgs (rest (viz-state-pimgs a-vs)))
+                    (new-upimgs (cons (first (viz-state-pimgs a-vs))
+                                      (viz-state-upimgs a-vs)))]
+               (viz-state new-pimgs new-upimgs)))
+         ]
+        [(key=? "down" a-key)
+         (let* [(new-pimgs (append (reverse (viz-state-upimgs a-vs))
+                                   (viz-state-pimgs a-vs)))
+                (new-upimgs '())]
+           (viz-state new-pimgs new-upimgs))
+         ]           
+        [else a-vs]))
+
+
+;; draw-img
+;; struct -> img
+;; Purpose: To draw a graph img
+(define (draw-world a-vs)
+  (if (empty? (viz-state-pimgs a-vs))
+      (overlay
+       (first (viz-state-upimgs a-vs)) 
+       E-SCENE)
+      (overlay
+       (first (viz-state-pimgs a-vs)) 
+       E-SCENE)))
+
+
+;; run-function
+(define (run M)
+  (begin
+    (big-bang
+        (viz-state (list (make-init-graph-img M))
+                   (rest (create-graph-imgs M))) 
+      [on-draw draw-world]
+      [on-key process-key]
+      [name 'visualization]))
+  (void))
+
+(run AT-LEAST-ONE-MISSING)
+
+
 (define AT-LEAST-ONE-MISSING-init-graph-img (make-init-graph-img AT-LEAST-ONE-MISSING))
 
 (define AT-LEAST-ONE-MISSING-seq (create-graph-imgs AT-LEAST-ONE-MISSING))
-;(create-graph-img 
