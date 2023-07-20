@@ -114,10 +114,15 @@
 
 
   (define (simplify-union x)
-    ;(define d (displayln (format "in simplify-union x: ~s" x)))
+    ;(define d (displayln (format "in simplify-union x: ~s" (printable-regexp x))))
     (local [;simplify the lhs and rhs
             (define simp-lhs (simplify-regexp (union-regexp-r1 x)))
             (define simp-rhs (simplify-regexp (union-regexp-r2 x)))
+
+            #;(define d (displayln (format "e: ~s\nslhs: ~s\nsrhs: ~s\n"
+                                         (printable-regexp x)
+                                         (printable-regexp simp-lhs)
+                                         (printable-regexp simp-rhs))))
 
             ;return-compnents: regexp --> (listof regexp)
             ;purpose: return all the individual components of a regexp
@@ -136,7 +141,7 @@
 
             ;remove-duplicates: (listof regexp) --> (listof regexp)
             ;purpose: to remove the duplicates from a list of regular expressions
-            (define (remove-duplicates a-list)
+            #;(define (remove-duplicates a-list)
               (cond [(empty? a-list) empty]
                     [(or (member (first a-list) (rest a-list))
                          (ormap (lambda (x) (and (kleenestar-regexp? x)
@@ -151,6 +156,8 @@
             (define clean-list (reverse (remove-duplicates (append (return-components simp-lhs)
                                                                    (return-components simp-rhs)))))
 
+            ;(define ddd (displayln (format "cl: ~s\ncr:~s" (return-components simp-lhs) (return-components simp-rhs))))
+
             ;re-union: (listof regexp) --> regexp
             ;purpose: to recreate a union-regexp
             (define (re-union a-list)
@@ -163,6 +170,17 @@
             (define clean-union (re-union clean-list))
             ]
       clean-union))
+
+  (define R (union-regexp (concat-regexp (concat-regexp (empty-regexp) (empty-regexp))
+                                         (concat-regexp (kleenestar-regexp (union-regexp (singleton-regexp "b")
+                                                                                         (singleton-regexp "c")))
+                                                        (empty-regexp)))
+                          (concat-regexp (concat-regexp (empty-regexp) (empty-regexp))
+                                         (concat-regexp (kleenestar-regexp
+                                                         (union-regexp (singleton-regexp "a")
+                                                                       (singleton-regexp "c")))
+                                                        (empty-regexp)))))
+  
   
   ; regexp --> string
   (define (printable-regexp r)

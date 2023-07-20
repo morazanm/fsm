@@ -16,7 +16,7 @@
                        #:atb (hash 'color 'green 'shape 'circle 'label "B" 'fontcolor 'red)))
 
 (set! cgraph (add-edge cgraph
-                       'a
+                       "a"
                        'A
                        'B
                        #:atb (hash 'fontsize 20 'style 'solid 'fontcolor 'yellow 'color 'blue)))

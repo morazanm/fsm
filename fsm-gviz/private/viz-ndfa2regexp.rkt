@@ -326,23 +326,22 @@
 ;; create-nodes
 ;; graph (listof state) -> graph
 ;; Purpose: To create a graph of nodes
-(define (create-nodes graph loe n)
-  (let [(states-only (append-map (λ (edge) (remove (second edge) edge)) loe))]
-    (foldl (λ (state result)  (add-node
-                               result
-                               state
-                               #:atb (hash 'color (cond [(eq? state (sm-start n))
-                                                         'green]
-                                                        [(member state (sm-finals n))
-                                                         'red]
-                                                        [else 'black])
-                                           'shape (if (member state (sm-finals n))
-                                                      'doublecircle
-                                                      'circle)
-                                           'label (if (equal? state '())
-                                                      'ds  
-                                                      state)
-                                           'fontcolor 'black)))
+(define (create-nodes graph los ns nf)
+  (let [(states-only (append (list ns nf) los))]
+    (foldl (λ (state result)
+             (add-node
+              result
+              state
+              #:atb (hash 'color (cond [(eq? state ns) 'green]
+                                       [(eq? state nf) 'red]
+                                       [else 'black])
+                          'shape (if (eq? state nf)
+                                     'doublecircle
+                                     'circle)
+                          'label (if (equal? state '())
+                                     'ds  
+                                     state)
+                          'fontcolor 'black)))
            graph
            states-only)))
 
@@ -351,12 +350,14 @@
 ;; graph (listof edge) -> graph
 ;; Purpose: To create graph of edges
 (define (create-edges graph loe)
-  (foldl (λ (rule result) (add-edge result
-                                    (printable-regexp (second rule))
-                                    (first rule)
-                                    (third rule)
-                                    #:atb (hash 'fontsize 20
-                                                'style 'solid)))
+  (foldl (λ (rule result)
+           (let [(ddd (displayln (format "label: ~s\nsimplified: ~s\n" (second rule) (printable-regexp (simplify-regexp (second rule))))))]
+             (add-edge result
+                       (printable-regexp (second rule))
+                       (first rule)
+                       (third rule)
+                       #:atb (hash 'fontsize 20
+                                   'style 'solid))))
          graph
          loe))
 
@@ -364,24 +365,40 @@
 ;; create-graph-img
 ;; dgraph ndfa -> img
 ;; Purpose: To create a graph img from the given dgraph
-(define (create-graph-img loe n)
-  (graph->bitmap (create-edges (create-nodes
-                                (create-graph 'dgraph #:atb (hash 'rankdir "LR"))
-                                loe n)
-                               loe) (current-directory) "fsm"))
+(define (create-graph-img los loe news newf)
+  (graph->bitmap
+   (create-edges
+    (create-nodes (create-graph 'dgraph #:atb (hash 'rankdir "LR")) los news newf)
+    loe)
+   (current-directory)
+   "fsm"))
 
 
+; los loe news newf
 
-;; (listof state) dgraph n --> (listof img)
-(define (create-graph-imgs lon g n)
-  ;; (listof state) dgraph (listof img) --> (listof img)
-  (define (grp-seq lon g gseq)
-    (if (null? lon)
-        gseq
-        (let [(new-g (rip-out-node (first lon) g))]
-          (grp-seq (rest lon) new-g (cons (create-graph-img new-g n) gseq)))))
+(define (create-graph-imgs M)
+  (define new-start (generate-symbol 'S (sm-states M)))
+  (define new-final (generate-symbol 'F (sm-states M)))
+  (define new-rules (cons (list new-start EMP (sm-start M))
+                          (map (λ (fst) (list fst EMP new-final))
+                               (sm-finals M))))
+  (define (grp-seq to-rip g gseq)
+    (if (null? to-rip)
+        (cons (create-graph-img (append (list new-start new-final) to-rip)
+                                g
+                                new-start
+                                new-final)
+              gseq)
+        (let [(new-g (rip-out-node (first to-rip) g))]
+          (grp-seq (rest to-rip)
+                   new-g
+                   (cons (create-graph-img
+                          (append (list new-start new-final) to-rip)
+                          g
+                          new-start
+                          new-final) gseq)))))
 
-  (grp-seq lon g (list (create-graph-img g n))))
+  (reverse (grp-seq (sm-states M) (make-dgraph (append (sm-rules M) new-rules)) '())))
 
 
 ;; process-key
@@ -423,3 +440,19 @@
 
 ;(run AT-LEAST-ONE-MISSING)
 
+(define (make-init-graph-img M)
+  (let* [(new-start (generate-symbol 'S (sm-states M)))
+         (new-final (generate-symbol 'F (sm-states M)))
+         (new-rules (cons (list new-start EMP (sm-start M))
+                          (map (λ (fst) (list fst EMP new-final))
+                               (sm-finals M))))]
+    (create-graph-img
+     (sm-states M)
+     (make-dgraph (append (sm-rules M) new-rules))
+     new-start
+     new-final)))
+
+(define AT-LEAST-ONE-MISSING-init-graph-img (make-init-graph-img AT-LEAST-ONE-MISSING))
+
+(define AT-LEAST-ONE-MISSING-seq (create-graph-imgs AT-LEAST-ONE-MISSING))
+;(create-graph-img 
