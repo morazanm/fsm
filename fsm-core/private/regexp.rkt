@@ -136,20 +136,20 @@
 
             ;remove-duplicates: (listof regexp) --> (listof regexp)
             ;purpose: to remove the duplicates from a list of regular expressions
-            (define (remove-duplicates a-list)
-              (cond [(empty? a-list) empty]
-                    [(or (member (first a-list) (rest a-list))
-                         (ormap (lambda (x) (and (kleenestar-regexp? x)
-                                                 (member (first a-list) (return-components (kleenestar-regexp-r1 x))))) (rest a-list)))                              
-                     (remove-duplicates (rest a-list))]
-                    [(kleenestar-regexp? (first a-list)) (local [(define comps (return-components (kleenestar-regexp-r1 (first a-list))))]
-                                                           (cons (first a-list)
-                                                                 (remove-duplicates (filter (lambda (x) (member x comps)) (rest a-list)))))]
-                    [else (cons (first a-list) (remove-duplicates (rest a-list)))]))
+            #;(define (remove-duplicates a-list)
+                (cond [(empty? a-list) empty]
+                      [(or (member (first a-list) (rest a-list))
+                           (ormap (lambda (x) (and (kleenestar-regexp? x)
+                                                   (member (first a-list) (return-components (kleenestar-regexp-r1 x))))) (rest a-list)))                              
+                       (remove-duplicates (rest a-list))]
+                      [(kleenestar-regexp? (first a-list)) (local [(define comps (return-components (kleenestar-regexp-r1 (first a-list))))]
+                                                             (cons (first a-list)
+                                                                   (remove-duplicates (filter (lambda (x) (member x comps)) (rest a-list)))))]
+                      [else (cons (first a-list) (remove-duplicates (rest a-list)))]))
           
             ;remove the duplicates from the union
-            (define clean-list (reverse (remove-duplicates (append (return-components simp-lhs)
-                                                                   (return-components simp-rhs)))))
+            (define clean-list (remove-duplicates (append (return-components simp-lhs)
+                                                          (return-components simp-rhs))))
 
             ;re-union: (listof regexp) --> regexp
             ;purpose: to recreate a union-regexp
