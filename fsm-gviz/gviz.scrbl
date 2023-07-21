@@ -104,7 +104,7 @@ Example usage:
 
 
 @defproc[(add-edges [graph graph?]
-                    [edges (list/c symbol? symbol? any/c)]
+                    [edges (listof (list/c symbol? any/c symbol?))]
                     [#:atb edge-attributes (hash/c symbol? any/c) (hash 'fontsize 15)])
                     graph?]{
 
@@ -120,7 +120,7 @@ Example usage:
 Example usage:
 @codeblock{
 (add-edges (add-nodes (create-graph 'test) '(A B C D))
-           '((A B a) (B B b) (B D c-1)))
+           '((A a B) (B b B) (B c-1 D)))
 }
 }
 
@@ -128,10 +128,13 @@ Example usage:
 
 @defproc[(graph->bitmap [graph graph?]
                         [save-directory path?]
-                        [filename string?])
+                        [filename string?]
+                        [delete-files boolean? #t])
                         image?]{
 Converts the provided @racket[graph] to a bitmap using @emph{htdp2-lib}'s @hyperlink["https://docs.racket-lang.org/teachpack/2htdpimage.html#%28def._%28%28lib._2htdp%2Fimage..rkt%29._bitmap%2Ffile%29%29"]{bitmap/file} function. The file is saved in the provided
 @racket[save-directory] using the provided @racket[filename].
+
+When @racket[delete-files] is false, then the generated ".dot" and ".png" files are not deleted.
 
 In order for the function to work one must have the @emph{DOT Complier} downloaded on their machine and have a link to the @emph{DOT} executable
 on there PATH.
@@ -140,10 +143,13 @@ on there PATH.
 
 @defproc[(graph->svg [graph graph?]
                      [save-directory path?]
-                     [filename string?])
+                     [filename string?]
+                     [delete-files boolean? #t])
                      path?]{
 Converts the provided @racket[graph] to a svg file and returns the path the newly created file.
 The file is saved in the provided @racket[save-directory] using the provided @racket[filename].
+
+When @racket[delete-files] is false, then the generated ".dot"file is deleted.
 
 In order for the function to work one must have the @emph{DOT Complier} downloaded on their machine and have a link to the @emph{DOT} executable
 on there PATH.
@@ -276,9 +282,6 @@ Below is an example of creating a simple graph and converting it to an image.
            'A-2)
  (current-directory)
  "test")
-
-(delete-file "test.dot")
-(delete-file "test.png")
 }
 produces
 @centered{@image[#:suffixes @list[".png"]]{scribImgs/simple_graph}}
