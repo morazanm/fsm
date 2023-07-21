@@ -198,23 +198,24 @@
                           'label (if (equal? state '())
                                      'ds  
                                      state)
-                          'fontcolor 'black)))
+                          'fontcolor 'black
+                          'font "Sans")))
            graph
-           states-only)))
-
+           states-only)))                           
 
 ;; create-edges
 ;; graph (listof edge) -> graph
 ;; Purpose: To create graph of edges
 (define (create-edges graph loe)
   (foldl (λ (rule result)
-           (let [(ddd (displayln (format "label: ~s\nsimplified: ~s\n" (printable-regexp (simplify-regexp (second rule))) (printable-regexp (simplify-regexp (second rule))))))]
            (add-edge result
                      (printable-regexp (simplify-regexp (second rule)))
                      (first rule)
                      (third rule)
-                     #:atb (hash 'fontsize 20
-                                 'style 'solid))))
+                     #:atb (hash 'fontsize 14
+                                 'style 'solid
+                                 'fontname "Sans"
+                                 )))
          graph
          loe))
 
@@ -226,7 +227,11 @@
 (define (create-graph-img los loe news newf)
   (graph->bitmap
    (create-edges
-    (create-nodes (create-graph 'dgraph #:atb (hash 'rankdir "LR")) los news newf)
+    (create-nodes
+     (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+     los
+     news
+     newf)
     loe)
    (current-directory)
    "fsm"))
