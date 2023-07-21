@@ -112,10 +112,10 @@ Example usage:
  @bold{Note}: Since the @emph{DOT} language does not allow @racket{-} characters for node names the dashes are omitted, but
  are still provided for the label.
 
- @racket[edges] is a list of triples with the structure @racket[(list start-ndoe end-node value)]
+ @racket[edges] is a list of triples with the structure @racket[(list start-node end-node value)]
 
  @racket[edge-attributes] are a hash where the key is a symbol representing a @hyperlink["https://graphviz.org/docs/edges/"]{edge attribute}
- and the value is the value for that attribute. It is applied to evey value in the list.
+ and the value is the value for that attribute. It is applied to every value in the list.
 
 Example usage:
 @codeblock{
@@ -138,8 +138,20 @@ When @racket[save-directory] is not specified then the systems tmp directory is 
 
 When @racket[delete-files] is false, then the generated ".dot" and ".png" files are not deleted.
 
-In order for the function to work one must have the @emph{DOT Complier} downloaded on their machine and have a link to the @emph{DOT} executable
-on there PATH.
+@bold{Note}: In order for the function to work one must have the @emph{DOT Complier} downloaded on their machine and have a link to the @emph{DOT} executable
+on there PATH or specified directories (see @secref{executable} for more details).
+}
+@codeblock{
+(define my-graph (create-graph 'test))
+
+;; generate and cleanup files in the systems tmp directory using the default name
+(graph->bitmap my-graph)
+
+;; generate and cleanup files in using specified directory and filename
+(graph->bitmap my-graph #:directory (current-directory) #:filename "test")
+
+;; test.dot and test.png are not deleted 
+(graph->bitmap my-graph #:filename "test" #:clean #f)
 }
 
 
@@ -153,8 +165,8 @@ The file is saved in the provided @racket[save-directory] using the provided @ra
 
 When @racket[delete-files] is false the generated ".dot" file is deleted.
 
-In order for the function to work one must have the @emph{DOT Complier} downloaded on their machine and have a link to the @emph{DOT} executable
-on there PATH.
+@bold{Note}: In order for the function to work one must have the @emph{DOT Complier} downloaded on their machine and have a link to the @emph{DOT} executable
+on there PATH specified directories (see @secref{executable} for more details).
 }
 
 
@@ -247,7 +259,7 @@ Boolean to a string.
                             [#:node node-fmtrs (hash/c symbol? (-> any/c string?)) (hash)]
                             [#:edge edge-fmtrs (hash/c symbol? (-> any/c string?)) (hash)])
                      formatters?]{
-Creates a formatters struct with the given argeuments.                                 
+Creates a formatters struct with the given arguments.                                 
 }
 
 @section[#:tag "executable"]{Dealing with the DOT executable}
@@ -257,11 +269,11 @@ Creates a formatters struct with the given argeuments.
 Looks for the @emph{DOT} executable on the system by looking at the PATH (Windows, MacOS, Linux) and specified
 directories (MacOS, Linux). If the executable is found, then the path to the executable is returned. The specified
 directories are:
-@itemlist[@item{/usr/bin}
+@itemlist[@item{/bin}
+          @item{/usr/bin}
           @item{/usr/local/bin}
-          @item{/bin}
-          @item{/opt/homebrew/bin}
-          @item{opt/local/bin}]
+          @item{/opt/local/bin}
+          @item{/opt/homebrew/bin}]
 }
 
 
