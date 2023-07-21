@@ -144,12 +144,12 @@ on there PATH.
 @defproc[(graph->svg [graph graph?]
                      [save-directory path?]
                      [filename string?]
-                     [delete-files boolean? #t])
+                     [#:clean delete-files boolean? #t])
                      path?]{
 Converts the provided @racket[graph] to a svg file and returns the path the newly created file.
 The file is saved in the provided @racket[save-directory] using the provided @racket[filename].
 
-When @racket[delete-files] is false, then the generated ".dot"file is deleted.
+When @racket[delete-files] is false the generated ".dot" file is deleted.
 
 In order for the function to work one must have the @emph{DOT Complier} downloaded on their machine and have a link to the @emph{DOT} executable
 on there PATH.
@@ -158,10 +158,13 @@ on there PATH.
 
 @defproc[(graph->png [graph graph?]
                      [save-directory path?]
-                     [filename string?])
+                     [filename string?]
+                     [#:clean delete-files boolean? #t])
                      path?]{
 Converts the provided @racket[graph] to a png file and returns the path the newly created file.
 The file is saved in the provided @racket[save-directory] using the provided @racket[filename].
+
+When @racket[delete-files] is false the generated ".dot" file is deleted.
 
 In order for the function to work one must have the @emph{DOT Complier} downloaded on their machine and have a link to the @emph{DOT} executable
 on there PATH.

@@ -48,6 +48,7 @@
                       image?)]
   [graph->svg (->* (graph? path? string?) (#:clean boolean?) path?)]
   [graph->dot (-> graph? path? string? path?)]
+  [graph->png (->* (graph? path? string?) (#:clean boolean?) path?)]
   [graph->str (-> graph? string?)]))
 
 
@@ -117,7 +118,7 @@
 ;; create-graph: symbol -> graph
 ;; name: The name of the graph
 ;; Purpose: Creates a Graph with the given name
-(define (create-graph name #:fmtrs(fmtrs DEFAULT-FORMATTERS) #:atb [atb DEFAULT-GRAPH])
+(define (create-graph name #:fmtrs(fmtrs DEFAULT-FORMATTERS) #:atb [atb (hash)])
   (define (combine v1 v2) (hash-union v1 v2 #:combine/key (lambda (_k v1 _v2) v1)))
   (graph name
          '()
@@ -129,7 +130,7 @@
                    (formatters-node DEFAULT-FORMATTERS))
           (combine (formatters-edge fmtrs)
                    (formatters-edge DEFAULT-FORMATTERS)))
-         atb))
+         (combine atb DEFAULT-GRAPH)))
 
 
 (define (create-formatters #:graph[graph (hash)] #:node[node (hash)] #:edge[edge (hash)])
@@ -270,6 +271,7 @@
 
 ;; graph->bitmap: graph string string optional(boolean) -> image
 ;; Converts a graph to an image
+;; If clean is false then the dot and png files are not deleted
 (define (graph->bitmap graph save-dir #:filename[filename "__tmp__"] #:clean[delete-files #t])
   (define-values (img path)
     ((compose1 png->bitmap dot->png graph->dot) graph save-dir filename))
@@ -279,11 +281,21 @@
 
 ;; graph->svg: graph string string optional(boolean) -> path
 ;; Converts a graph to a svg and returns the path to the svg image
+;; If clean is false then the dot file is not deleted
 (define (graph->svg graph save-dir filename #:clean[delete-files #t])
   (define svg-path ((compose1 dot->svg graph->dot) graph save-dir filename))
   (when delete-files
-    (clean-up-files-by-extension svg-path "#.dot"))
+    (clean-up-files-by-extension svg-path #".dot"))
   svg-path)
+
+;; graph->svg: graph string string optional(boolean) -> path
+;; Converts a graph to a png and returns the path to the png image
+;; If clean is false then the dot file is not deleted
+(define (graph->png graph save-dir filename #:clean[delete-files #t])
+  (define png-path ((compose1 dot->png graph->dot) graph save-dir filename))
+  (when delete-files
+    (clean-up-files-by-extension png-path #".dot"))
+  png-path)
 
 ;; hash->str: hash hash Optional(string) -> string
 ;; Purpose: converts the hash to a graphviz string
