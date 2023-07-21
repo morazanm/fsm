@@ -127,12 +127,14 @@ Example usage:
 
 
 @defproc[(graph->bitmap [graph graph?]
-                        [save-directory path?]
+                        [#:directory save-directory path? "system tmp directory"]
                         [#:filename filename string? "__tmp__"]
                         [#:clean delete-files boolean? #t])
                         image?]{
 Converts the provided @racket[graph] to a bitmap using @emph{htdp2-lib}'s @hyperlink["https://docs.racket-lang.org/teachpack/2htdpimage.html#%28def._%28%28lib._2htdp%2Fimage..rkt%29._bitmap%2Ffile%29%29"]{bitmap/file} function. The file is saved in the provided
 @racket[save-directory] using the provided @racket[filename].
+
+When @racket[save-directory] is not specified then the systems tmp directory is used if read and write permissions exist, otherwise it defaults to the @racket[current-directory].
 
 When @racket[delete-files] is false, then the generated ".dot" and ".png" files are not deleted.
 

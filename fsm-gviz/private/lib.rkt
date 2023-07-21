@@ -42,8 +42,9 @@
   [add-edges (->* (graph? (listof (list/c symbol? any/c symbol?)))
                   (#:atb (hash/c symbol? any/c))
                   graph?)]
-  [graph->bitmap (->* (graph? path?)
-                      (#:filename string?
+  [graph->bitmap (->* (graph?)
+                      (#:directory path?
+                       #:filename string?
                        #:clean boolean?)
                       image?)]
   [graph->svg (->* (graph? path? string?) (#:clean boolean?) path?)]
@@ -58,6 +59,8 @@
 (define DEFAULT-NODE (hash 'color "black" 'shape "circle"))
 (define (DEFAULT-EDGE-LABEL-FMTR lst)
   (string-join (map (lambda (v) (format "~a" v)) (reverse lst)) ", "))
+(define SAVE-DIR (find-tmp-dir))
+
 
 ;; formatters contain custom formatting functions for attributes
 (struct formatters (graph node edge) #:transparent)
@@ -269,10 +272,10 @@
     (delete-file (path-replace-extension file-path extra-extension))  ...))
 
 
-;; graph->bitmap: graph string string optional(boolean) -> image
+;; graph->bitmap: graph optional(string) optional(string) optional(boolean) -> image
 ;; Converts a graph to an image
 ;; If clean is false then the dot and png files are not deleted
-(define (graph->bitmap graph save-dir #:filename[filename "__tmp__"] #:clean[delete-files #t])
+(define (graph->bitmap graph #:directory [save-dir SAVE-DIR] #:filename[filename "__tmp__"] #:clean[delete-files #t])
   (define-values (img path)
     ((compose1 png->bitmap dot->png graph->dot) graph save-dir filename))
   (when delete-files
