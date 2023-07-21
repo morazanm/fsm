@@ -5,7 +5,7 @@ install:
 .PHONY: install
 
 test:
-	@raco test -j 4 fsm-test fsm-gui fsm-core fsm-gviz
+	@raco test -t -j 4 fsm-test fsm-gui fsm-core fsm-gviz
 .PHONY: test
 
 docs:
