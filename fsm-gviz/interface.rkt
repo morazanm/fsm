@@ -61,9 +61,7 @@
 ;; fsa->graph :: fsa -> image
 ;; converts the fsa to a image
 (define (fsa->bitmap fsa color-blind-mode)
-  (graph->bitmap (fsa->graph fsa color-blind-mode)
-                 SAVE-DIR
-                 "vizTool"))
+  (graph->bitmap (fsa->graph fsa color-blind-mode) SAVE-DIR))
 
 
 ;; machine->graph :: machine -> symbol -> symbol -> symbol -> graph
@@ -95,4 +93,4 @@
                   cur-state
                   inv-state)
                  SAVE-DIR
-                 "vizTool"))
+                 #:filename "vizTool"))

@@ -93,7 +93,7 @@ Example usage:
                    graph?]{
 
  Adds a edge to the provided @racket[graph] with a directional arrow from the @racket[start-node] to the @racket[end-node]. The
- lable for the arrow is the @racket[value] that is supplied. The edge structure stores the @racket[value] as a list since we squash
+ label for the arrow is the @racket[value] that is supplied. The edge structure stores the @racket[value] as a list since we squash
  all edges between the same nodes into a single edge.
  @bold{Note}: Since the @emph{DOT} language does not allow @racket{-} characters for node names the dashes are omitted, but
  are still provided for the label.
@@ -128,8 +128,8 @@ Example usage:
 
 @defproc[(graph->bitmap [graph graph?]
                         [save-directory path?]
-                        [filename string?]
-                        [delete-files boolean? #t])
+                        [#:filename filename string? "__tmp__"]
+                        [#:clean delete-files boolean? #t])
                         image?]{
 Converts the provided @racket[graph] to a bitmap using @emph{htdp2-lib}'s @hyperlink["https://docs.racket-lang.org/teachpack/2htdpimage.html#%28def._%28%28lib._2htdp%2Fimage..rkt%29._bitmap%2Ffile%29%29"]{bitmap/file} function. The file is saved in the provided
 @racket[save-directory] using the provided @racket[filename].
@@ -238,7 +238,12 @@ Boolean to a string.
  }
 }
 
-
+@defproc[(create-formatters [#:graph graph-fmtrs (hash/c symbol? (-> any/c string?)) (hash)]
+                            [#:node node-fmtrs (hash/c symbol? (-> any/c string?)) (hash)]
+                            [#:edge edge-fmtrs (hash/c symbol? (-> any/c string?)) (hash)])
+                     formatters?]{
+Creates a formatters struct with the given argeuments.                                 
+}
 
 @section[#:tag "executable"]{Dealing with the DOT executable}
 
@@ -265,11 +270,13 @@ If the tmp dir is not found then the current-directory from which the program is
 
 
 @section[#:tag "examples"]{Examples}
+Below are examples of how to use the library.
 
-Below is an example of creating a simple graph and converting it to an image.
+@subsection{Creating Basic Graphs}
+An example of creating a simple graph and converting it to an image.
 @codeblock{
 #lang racket
-(require "lib.rkt")
+(require "interface.rkt")
 
 (define init-graph (create-graph 'cgraph #:atb (hash 'rankdir "LR")))
 
@@ -285,3 +292,31 @@ Below is an example of creating a simple graph and converting it to an image.
 }
 produces
 @centered{@image[#:suffixes @list[".png"]]{scribImgs/simple_graph}}
+
+@subsection{Creating Graphs with Formatters}
+An example of using formatters to format the edge labels on a graph so that only one rule
+is displayed per line.
+@codeblock{
+#lang racket
+(require "interface.rkt")
+
+;; one-rule-per-line :: listof(rules) -> string
+;; prints 1 rule per line
+(define (one-rule-per-line rules)
+  (define string-rules (map (curry format "~a") rules))
+  (string-join string-rules "\n"))
+
+(define fmtrs (create-formatters #:edge (hash 'label one-rule-per-line)))
+
+(graph->bitmap (add-edges (add-nodes (create-graph 'test  #:fmtrs fmtrs) '(A B C D))
+                          '((A (A a B) B)
+                            (A (A b B) B)
+                            (B (B a B) C)
+                            (B (B b B) C)
+                            (B (B c-1 B) C)
+                            (C c-1 D)
+                            (C c-2 D)))
+               (current-directory))
+}
+produces
+@centered{@image[#:suffixes @list[".png"]]{scribImgs/simple_graph_with_formatter}}

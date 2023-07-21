@@ -1,5 +1,5 @@
 #lang racket
-(require (for-meta 2 racket/base) 2htdp/image racket/hash "dot.rkt")
+(require 2htdp/image racket/hash "dot.rkt")
 #| This file handles converting graphs to the dot file equivalent |#
 
 (provide
@@ -25,6 +25,10 @@
                      (#:fmtrs formatters?
                       #:atb (hash/c symbol? any/c))
                      graph?)]
+  (create-formatters (->* () (#:graph (hash/c symbol? (-> any/c string?))
+                              #:node (hash/c symbol? (-> any/c string?))
+                              #:edge (hash/c symbol? (-> any/c string?)))
+                          formatters?))
   [add-node (->* (graph? symbol?)
                  (#:atb (hash/c symbol? any/c))
                  graph?)]
@@ -38,8 +42,11 @@
   [add-edges (->* (graph? (listof (list/c symbol? any/c symbol?)))
                   (#:atb (hash/c symbol? any/c))
                   graph?)]
-  [graph->bitmap (->* (graph? path? string?) (boolean?) image?)]
-  [graph->svg (->* (graph? path? string?) (boolean?) path?)]
+  [graph->bitmap (->* (graph? path?)
+                      (#:filename string?
+                       #:clean boolean?)
+                      image?)]
+  [graph->svg (->* (graph? path? string?) (#:clean boolean?) path?)]
   [graph->dot (-> graph? path? string? path?)]
   [graph->str (-> graph? string?)]))
 
@@ -123,6 +130,10 @@
           (combine (formatters-edge fmtrs)
                    (formatters-edge DEFAULT-FORMATTERS)))
          atb))
+
+
+(define (create-formatters #:graph[graph (hash)] #:node[node (hash)] #:edge[edge (hash)])
+  (formatters graph node edge))
 
 
 ;; add-node: graph string Optional(hash-map) -> graph
@@ -259,7 +270,7 @@
 
 ;; graph->bitmap: graph string string optional(boolean) -> image
 ;; Converts a graph to an image
-(define (graph->bitmap graph save-dir filename [delete-files #t])
+(define (graph->bitmap graph save-dir #:filename[filename "__tmp__"] #:clean[delete-files #t])
   (define-values (img path)
     ((compose1 png->bitmap dot->png graph->dot) graph save-dir filename))
   (when delete-files
@@ -268,7 +279,7 @@
 
 ;; graph->svg: graph string string optional(boolean) -> path
 ;; Converts a graph to a svg and returns the path to the svg image
-(define (graph->svg graph save-dir filename [delete-files #t])
+(define (graph->svg graph save-dir filename #:clean[delete-files #t])
   (define svg-path ((compose1 dot->svg graph->dot) graph save-dir filename))
   (when delete-files
     (clean-up-files-by-extension svg-path "#.dot"))
