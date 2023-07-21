@@ -41,7 +41,7 @@
                   (cond [(void? accept-state) currpath] ;; if not a lang recog halt
                         [(eq? currstate accept-state)   ;; if lang recog add 'accept
                          (cons 'accept currpath)]
-                        [else (run (rest paths))]) ;; explore the rest of the computation tree
+                        [else (run (rest paths))]) ;; else add 'reject
                   (let* ((pos-tapes (rest (first currpath)))
                          ;(ddd (display (format "pos-tapes: ~s\n" pos-tapes)))
                          (posns (map first pos-tapes))
