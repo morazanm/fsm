@@ -292,8 +292,8 @@ An example of creating a simple graph and converting it to an image.
            'a-name
            'A-1
            'A-2)
- (current-directory)
- "test")
+ #:directory (current-directory)
+ #:filename "test")
 }
 produces
 @centered{@image[#:suffixes @list[".png"]]{scribImgs/simple_graph}}
@@ -320,8 +320,7 @@ is displayed per line.
                             (B (B b B) C)
                             (B (B c-1 B) C)
                             (C c-1 D)
-                            (C c-2 D)))
-               (current-directory))
+                            (C c-2 D))))
 }
 produces
 @centered{@image[#:suffixes @list[".png"]]{scribImgs/simple_graph_with_formatter}}
