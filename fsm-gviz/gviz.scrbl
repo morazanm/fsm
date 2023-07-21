@@ -93,7 +93,7 @@ Example usage:
                    graph?]{
 
  Adds a edge to the provided @racket[graph] with a directional arrow from the @racket[start-node] to the @racket[end-node]. The
- lable for the arrow is the @racket[value] that is supplied. The edge structure stores the @racket[value] as a list since we squash
+ label for the arrow is the @racket[value] that is supplied. The edge structure stores the @racket[value] as a list since we squash
  all edges between the same nodes into a single edge.
  @bold{Note}: Since the @emph{DOT} language does not allow @racket{-} characters for node names the dashes are omitted, but
  are still provided for the label.
@@ -104,7 +104,7 @@ Example usage:
 
 
 @defproc[(add-edges [graph graph?]
-                    [edges (list/c symbol? symbol? any/c)]
+                    [edges (listof (list/c symbol? any/c symbol?))]
                     [#:atb edge-attributes (hash/c symbol? any/c) (hash 'fontsize 15)])
                     graph?]{
 
@@ -112,50 +112,73 @@ Example usage:
  @bold{Note}: Since the @emph{DOT} language does not allow @racket{-} characters for node names the dashes are omitted, but
  are still provided for the label.
 
- @racket[edges] is a list of triples with the structure @racket[(list start-ndoe end-node value)]
+ @racket[edges] is a list of triples with the structure @racket[(list start-node end-node value)]
 
  @racket[edge-attributes] are a hash where the key is a symbol representing a @hyperlink["https://graphviz.org/docs/edges/"]{edge attribute}
- and the value is the value for that attribute. It is applied to evey value in the list.
+ and the value is the value for that attribute. It is applied to every value in the list.
 
 Example usage:
 @codeblock{
 (add-edges (add-nodes (create-graph 'test) '(A B C D))
-           '((A B a) (B B b) (B D c-1)))
+           '((A a B) (B b B) (B c-1 D)))
 }
 }
 
 
 
 @defproc[(graph->bitmap [graph graph?]
-                        [save-directory path?]
-                        [filename string?])
+                        [#:directory save-directory path? "system tmp directory"]
+                        [#:filename filename string? "__tmp__"]
+                        [#:clean delete-files boolean? #t])
                         image?]{
 Converts the provided @racket[graph] to a bitmap using @emph{htdp2-lib}'s @hyperlink["https://docs.racket-lang.org/teachpack/2htdpimage.html#%28def._%28%28lib._2htdp%2Fimage..rkt%29._bitmap%2Ffile%29%29"]{bitmap/file} function. The file is saved in the provided
 @racket[save-directory] using the provided @racket[filename].
 
-In order for the function to work one must have the @emph{DOT Complier} downloaded on their machine and have a link to the @emph{DOT} executable
-on there PATH.
+When @racket[save-directory] is not specified then the systems tmp directory is used if read and write permissions exist, otherwise it defaults to the @racket[current-directory].
+
+When @racket[delete-files] is false, then the generated ".dot" and ".png" files are not deleted.
+
+@bold{Note}: In order for the function to work one must have the @emph{DOT Complier} downloaded on their machine and have a link to the @emph{DOT} executable
+on there PATH or specified directories (see @secref{executable} for more details).
+}
+@codeblock{
+(define my-graph (create-graph 'test))
+
+;; generate and cleanup files in the systems tmp directory using the default name
+(graph->bitmap my-graph)
+
+;; generate and cleanup files in using specified directory and filename
+(graph->bitmap my-graph #:directory (current-directory) #:filename "test")
+
+;; test.dot and test.png are not deleted 
+(graph->bitmap my-graph #:filename "test" #:clean #f)
 }
 
 
 @defproc[(graph->svg [graph graph?]
                      [save-directory path?]
-                     [filename string?])
+                     [filename string?]
+                     [#:clean delete-files boolean? #t])
                      path?]{
 Converts the provided @racket[graph] to a svg file and returns the path the newly created file.
 The file is saved in the provided @racket[save-directory] using the provided @racket[filename].
 
-In order for the function to work one must have the @emph{DOT Complier} downloaded on their machine and have a link to the @emph{DOT} executable
-on there PATH.
+When @racket[delete-files] is false the generated ".dot" file is deleted.
+
+@bold{Note}: In order for the function to work one must have the @emph{DOT Complier} downloaded on their machine and have a link to the @emph{DOT} executable
+on there PATH specified directories (see @secref{executable} for more details).
 }
 
 
 @defproc[(graph->png [graph graph?]
                      [save-directory path?]
-                     [filename string?])
+                     [filename string?]
+                     [#:clean delete-files boolean? #t])
                      path?]{
 Converts the provided @racket[graph] to a png file and returns the path the newly created file.
 The file is saved in the provided @racket[save-directory] using the provided @racket[filename].
+
+When @racket[delete-files] is false the generated ".dot" file is deleted.
 
 In order for the function to work one must have the @emph{DOT Complier} downloaded on their machine and have a link to the @emph{DOT} executable
 on there PATH.
@@ -232,7 +255,12 @@ Boolean to a string.
  }
 }
 
-
+@defproc[(create-formatters [#:graph graph-fmtrs (hash/c symbol? (-> any/c string?)) (hash)]
+                            [#:node node-fmtrs (hash/c symbol? (-> any/c string?)) (hash)]
+                            [#:edge edge-fmtrs (hash/c symbol? (-> any/c string?)) (hash)])
+                     formatters?]{
+Creates a formatters struct with the given arguments.                                 
+}
 
 @section[#:tag "executable"]{Dealing with the DOT executable}
 
@@ -241,11 +269,11 @@ Boolean to a string.
 Looks for the @emph{DOT} executable on the system by looking at the PATH (Windows, MacOS, Linux) and specified
 directories (MacOS, Linux). If the executable is found, then the path to the executable is returned. The specified
 directories are:
-@itemlist[@item{/usr/bin}
+@itemlist[@item{/bin}
+          @item{/usr/bin}
           @item{/usr/local/bin}
-          @item{/bin}
-          @item{/opt/homebrew/bin}
-          @item{opt/local/bin}]
+          @item{/opt/local/bin}
+          @item{/opt/homebrew/bin}]
 }
 
 
@@ -259,11 +287,13 @@ If the tmp dir is not found then the current-directory from which the program is
 
 
 @section[#:tag "examples"]{Examples}
+Below are examples of how to use the library.
 
-Below is an example of creating a simple graph and converting it to an image.
+@subsection{Creating Basic Graphs}
+An example of creating a simple graph and converting it to an image.
 @codeblock{
 #lang racket
-(require "lib.rkt")
+(require "interface.rkt")
 
 (define init-graph (create-graph 'cgraph #:atb (hash 'rankdir "LR")))
 
@@ -274,11 +304,35 @@ Below is an example of creating a simple graph and converting it to an image.
            'a-name
            'A-1
            'A-2)
- (current-directory)
- "test")
-
-(delete-file "test.dot")
-(delete-file "test.png")
+ #:directory (current-directory)
+ #:filename "test")
 }
 produces
 @centered{@image[#:suffixes @list[".png"]]{scribImgs/simple_graph}}
+
+@subsection{Creating Graphs with Formatters}
+An example of using formatters to format the edge labels on a graph so that only one rule
+is displayed per line.
+@codeblock{
+#lang racket
+(require "interface.rkt")
+
+;; one-rule-per-line :: listof(rules) -> string
+;; prints 1 rule per line
+(define (one-rule-per-line rules)
+  (define string-rules (map (curry format "~a") rules))
+  (string-join string-rules "\n"))
+
+(define fmtrs (create-formatters #:edge (hash 'label one-rule-per-line)))
+
+(graph->bitmap (add-edges (add-nodes (create-graph 'test  #:fmtrs fmtrs) '(A B C D))
+                          '((A (A a B) B)
+                            (A (A b B) B)
+                            (B (B a B) C)
+                            (B (B b B) C)
+                            (B (B c-1 B) C)
+                            (C c-1 D)
+                            (C c-2 D))))
+}
+produces
+@centered{@image[#:suffixes @list[".png"]]{scribImgs/simple_graph_with_formatter}}
