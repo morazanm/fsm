@@ -879,16 +879,16 @@
                           (B b S))))
 
 (check-equal? (fsa->regexp KLEENESTAR-abUaba)
-              "(aba(aba)* U (ε U (a U aba(aba)*a)b((a U aba(aba)*a)b)*(ε U aba(aba)*)))")
+              "(aba(aba)* ∪ (ε ∪ (a ∪ aba(aba)*a)b((a ∪ aba(aba)*a)b)*(ε ∪ aba(aba)*)))")
 
 (check-equal? (fsa->regexp KLEENESTAR-abUaba2)
-              "(aba(aba)* U (ε U (a U aba(aba)*a)b((a U aba(aba)*a)b)*(ε U aba(aba)*)))")
+              "(aba(aba)* ∪ (ε ∪ (a ∪ aba(aba)*a)b((a ∪ aba(aba)*a)b)*(ε ∪ aba(aba)*)))")
 
 (check-equal? (fsa->regexp a*) "a*")
 
 (check-equal? (fsa->regexp a*b*) "a*b*")
 
-(check-equal? (fsa->regexp aab*) "(ε U aa(baa)*b)")
+(check-equal? (fsa->regexp aab*) "(ε ∪ aa(baa)*b)")
 
 
 (define regexp-inter-a*-b* (fsa->regexp ndfa-inter-a*-b*)) 
@@ -898,7 +898,7 @@
 (check-equal? regexp-a*bab* "a*bab*")
 
 (define regexp-nota*Unotb* (fsa->regexp nota*Unotb*)) 
-(check-equal? regexp-nota*Unotb* "(a*b(b U a)* U b*a(b U a)*)")
+(check-equal? regexp-nota*Unotb* "(a*b(b ∪ a)* ∪ b*a(b ∪ a)*)")
 
 
 

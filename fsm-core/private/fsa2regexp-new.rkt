@@ -225,10 +225,10 @@
 ;    (printable-regexp (simplify-regexp (second (first final-graph))))))
 
 (check-equal? (fsa->regexp KLEENESTAR-abUaba)
-              "(aba(aba)* U (ε U (a U aba(aba)*a)b((a U aba(aba)*a)b)*(ε U aba(aba)*)))")
+              "(aba(aba)* ∪ (ε ∪ (a ∪ aba(aba)*a)b((a ∪ aba(aba)*a)b)*(ε ∪ aba(aba)*)))")
 
 (check-equal? (fsa->regexp KLEENESTAR-abUaba2)
-              "(aba(aba)* U (ε U (a U aba(aba)*a)b((a U aba(aba)*a)b)*(ε U aba(aba)*)))")
+              "(aba(aba)* ∪ (ε ∪ (a ∪ aba(aba)*a)b((a ∪ aba(aba)*a)b)*(ε ∪ aba(aba)*)))")
 
 (check-equal? (fsa->regexp a*)
               "a*")
@@ -236,5 +236,5 @@
 (check-equal? (fsa->regexp a*b*)
               "a*b*")
 
-(check-equal? (fsa->regexp aab*)
-              "(ε U aa(baa)*b)")
+(check-equal? (fsa->regexp aab*) "(ε ∪ aa(baa)*b)")
+
