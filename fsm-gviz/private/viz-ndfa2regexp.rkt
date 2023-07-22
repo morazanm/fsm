@@ -323,7 +323,7 @@
 (define (run M)
   (begin
     (big-bang
-        (viz-state (list (make-init-graph-img M))
+        (viz-state (list (sm-graph M))
                    (rest (create-graph-imgs M))) 
       [on-draw draw-world]
       [on-key process-key]
