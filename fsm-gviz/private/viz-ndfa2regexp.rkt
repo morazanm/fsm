@@ -324,11 +324,12 @@
   (begin
     (big-bang
         (viz-state (list (sm-graph M))
-                   (rest (create-graph-imgs M))) 
+                   (cons (make-init-graph-img M) (rest (create-graph-imgs M))))
       [on-draw draw-world]
       [on-key process-key]
       [name "FSM: ndfa to regexp visualization"]))
   (void))
+
 
 
 
