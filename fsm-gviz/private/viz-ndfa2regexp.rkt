@@ -285,17 +285,15 @@
              a-vs
              (let* [(new-pimgs (cons (first (viz-state-upimgs a-vs))
                                      (viz-state-pimgs a-vs)))
-                    (new-upimgs (rest (viz-state-upimgs a-vs)))]
-           
+                    (new-upimgs (rest (viz-state-upimgs a-vs)))]           
                (viz-state new-pimgs new-upimgs)))]
         [(key=? "left" a-key)
-         (if (empty? (viz-state-pimgs a-vs))
+         (if (= (length (viz-state-pimgs a-vs)) 1)
              a-vs
              (let* [(new-pimgs (rest (viz-state-pimgs a-vs)))
                     (new-upimgs (cons (first (viz-state-pimgs a-vs))
                                       (viz-state-upimgs a-vs)))]
-               (viz-state new-pimgs new-upimgs)))
-         ]
+               (viz-state new-pimgs new-upimgs)))]
         [(key=? "down" a-key)
          (let* [(new-pimgs (append (reverse (viz-state-upimgs a-vs))
                                    (viz-state-pimgs a-vs)))
