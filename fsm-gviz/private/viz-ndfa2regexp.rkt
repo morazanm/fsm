@@ -232,9 +232,7 @@
      los
      news
      newf)
-    loe)
-   (current-directory)
-   "fsm"))
+    loe)))
 
 
 ;; create-graph-imgs
@@ -333,3 +331,5 @@
   (void))
 
 
+
+(run AT-LEAST-ONE-MISSING)
