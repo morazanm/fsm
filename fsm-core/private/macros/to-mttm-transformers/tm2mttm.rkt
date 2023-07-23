@@ -1,6 +1,6 @@
 #lang fsm
 
-(require "mtape-tm.rkt")
+(require "./mtape-tm.rkt")
 
 
 (define (tm->mttm M)

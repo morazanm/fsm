@@ -11,8 +11,9 @@
          (rules (sm-rules M))
          (acc-st (generate-symbol 'Y sts))
          (rej-st (generate-symbol 'N sts))
-         (mt-finals (list acc-st))]
-    (make-mttm sts
+         (mt-finals (list acc-st rej-st))
+         (mt-sts (append sts mt-finals))]
+    (make-mttm mt-sts
                sigma
                start
                (list acc-st rej-st)
