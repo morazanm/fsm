@@ -54,7 +54,7 @@ Below are all the exported library functions from @racket["interface.rkt"].
 
  Adds a node to the provided @racket[graph] where the @racket[name] is the name of the generated @emph{DOT} node and sets
  the nodes label attribute to the name. Note: Since the @emph{DOT} language does not allow @racket{-} characters
- for node names the dashes are omitted, but are still provided for the label.
+ in node names the dashes are omitted but are still provided for the label.
 
  @racket[node-attributes] are a hash where the key is a symbol representing a @hyperlink["https://graphviz.org/docs/nodes/"]{node attribute}
  and the value is the value for that attribute. The @racket[DEFAULT-NODE] attributes are:
@@ -71,7 +71,7 @@ Below are all the exported library functions from @racket["interface.rkt"].
                     graph?]{
  Adds the list of nodes to the provided @racket[graph] where each value in the @racket[names] is the name of the generated @emph{DOT} node and sets
  the nodes label attribute to the name. Note: Since the @emph{DOT} language does not allow @racket{-} characters
- for node names the dashes are omitted, but are still provided for the label.
+ in node names the dashes are omitted, but are still provided for the label.
 
  @racket[node-attributes] are a hash where the key is a symbol representing a @hyperlink["https://graphviz.org/docs/nodes/"]{node attribute}
  and the value is the value for that attribute. They are applied to each of the nodes in the list. The @racket[DEFAULT-NODE] attributes are:
@@ -95,7 +95,7 @@ Example usage:
  Adds a edge to the provided @racket[graph] with a directional arrow from the @racket[start-node] to the @racket[end-node]. The
  label for the arrow is the @racket[value] that is supplied. The edge structure stores the @racket[value] as a list since we squash
  all edges between the same nodes into a single edge.
- @bold{Note}: Since the @emph{DOT} language does not allow @racket{-} characters for node names the dashes are omitted, but
+ @bold{Note}: Since the @emph{DOT} language does not allow @racket{-} characters in node names the dashes are omitted, but
  are still provided for the label.
 
  @racket[edge-attributes] are a hash where the key is a symbol representing a @hyperlink["https://graphviz.org/docs/edges/"]{edge attribute}
@@ -109,7 +109,7 @@ Example usage:
                     graph?]{
 
  Adds this list of edges to the provided @racket[graph] with a directional arrow from the @racket[start-node] to the @racket[end-node].
- @bold{Note}: Since the @emph{DOT} language does not allow @racket{-} characters for node names the dashes are omitted, but
+ @bold{Note}: Since the @emph{DOT} language does not allow @racket{-} characters in node names the dashes are omitted, but
  are still provided for the label.
 
  @racket[edges] is a list of triples with the structure @racket[(list start-node end-node value)]
@@ -139,7 +139,7 @@ When @racket[save-directory] is not specified then the systems tmp directory is 
 When @racket[delete-files] is false, then the generated ".dot" and ".png" files are not deleted.
 
 @bold{Note}: In order for the function to work one must have the @emph{DOT Complier} downloaded on their machine and have a link to the @emph{DOT} executable
-on there PATH or specified directories (see @secref{executable} for more details).
+on there PATH or have the binary saved in one of the searched directories (see @secref{executable} for more details).
 }
 @codeblock{
 (define my-graph (create-graph 'test))
@@ -160,13 +160,13 @@ on there PATH or specified directories (see @secref{executable} for more details
                      [filename string?]
                      [#:clean delete-files boolean? #t])
                      path?]{
-Converts the provided @racket[graph] to a svg file and returns the path the newly created file.
+Converts the provided @racket[graph] to a svg file and returns the path to the newly created file.
 The file is saved in the provided @racket[save-directory] using the provided @racket[filename].
 
 When @racket[delete-files] is false the generated ".dot" file is deleted.
 
 @bold{Note}: In order for the function to work one must have the @emph{DOT Complier} downloaded on their machine and have a link to the @emph{DOT} executable
-on there PATH specified directories (see @secref{executable} for more details).
+on there PATH or have the binary saved in one of the searched directories (see @secref{executable} for more details).
 }
 
 
@@ -175,7 +175,7 @@ on there PATH specified directories (see @secref{executable} for more details).
                      [filename string?]
                      [#:clean delete-files boolean? #t])
                      path?]{
-Converts the provided @racket[graph] to a png file and returns the path the newly created file.
+Converts the provided @racket[graph] to a png file and returns the path to the newly created file.
 The file is saved in the provided @racket[save-directory] using the provided @racket[filename].
 
 When @racket[delete-files] is false the generated ".dot" file is deleted.
@@ -225,10 +225,9 @@ green. If @racket['fail] is supplied then the state is highlighted red. If @rack
 
 
 @subsection[#:tag "formatters"]{Custom Formatters}
-Formatters are ways to implementers to customize of attribute data is generated to @emph{DOT} code.
+Formatters are ways for implementers to customize how attribute data is generated to @emph{DOT} code.
 If a formatter is provided for an attribute then it is used anytime @emph{DOT} code is generated for that
-attribute. For instance, if the value for a node label is a Boolean then a formatting function converts a
-Boolean to a string.
+attribute.
 
 @defstruct*[formatters ([graph (hash/c symbol? (-> any/c string?))]
                        [node (hash/c symbol? (-> any/c string?))]
@@ -244,7 +243,7 @@ Boolean to a string.
  For example one might add the following formatters to set one rule per line for a edge label.
  @codeblock{
   ;; one-rule-per-line :: listof(string) -> string
-  ;; creates a string where each value in the list is on a new line
+  ;; prints 1 rule per line
   (define (one-rule-per-line rules)
     (string-join rules "\n"))
 
@@ -259,7 +258,15 @@ Boolean to a string.
                             [#:node node-fmtrs (hash/c symbol? (-> any/c string?)) (hash)]
                             [#:edge edge-fmtrs (hash/c symbol? (-> any/c string?)) (hash)])
                      formatters?]{
-Creates a formatters struct with the given arguments.                                 
+Creates a formatters struct with the given arguments. For examples the above could be simplified to:
+@codeblock{
+;; one-rule-per-line :: listof(string) -> string
+;; prints 1 rule per line
+(define (one-rule-per-line rules)
+  (string-join rules "\n"))
+
+(define fmtrs (create-formatters #:edge (hash 'label one-rule-per-line)))
+}
 }
 
 @section[#:tag "executable"]{Dealing with the DOT executable}
