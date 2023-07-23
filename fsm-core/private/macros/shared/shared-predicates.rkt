@@ -11,9 +11,7 @@
            ndpda?
            tm?
            valid-list-of
-           valid-list-of-states?
            valid-state?
-           valid-sigma?
            valid-alpha?
            start-in-states?
            valid-start?
@@ -23,29 +21,39 @@
 
            )
 
+  ;dfa?: machine --> boolean
+  ;purpose: return true if the machine is a dfa
   (define (dfa? machine)
     (equal? (sm-type machine) 'dfa))
 
+  ;ndfa?: machine --> boolean
+  ;purpose: return true if the machine is a ndfa
   (define (ndfa? machine)
     (equal? (sm-type machine) 'ndfa))
-  
+
+  ;ndpda?: machine --> boolean
+  ;purpose: return true if the machine is a ndpda
   (define (ndpda? machine)
     (equal? (sm-type machine) 'pda))
 
+  ;tm?: machine --> boolean
+  ;purpose: return true if the machine is a tm or a tm language recognizer
   (define (tm? machine)
     (or (equal? (sm-type machine) 'tm-language-recognizer)
         (equal? (sm-type machine) 'tm)))
 
-  ;applies the predicate to the list and returns false if
-  ; any of the members of the list are invalid states/sigma
+  ;valid-list-of: (listof something) (something --> boolean) --> boolean
+  ;purpose: takes in a list of anything, passes all to the predicate function
+  ; and returns true if all are true, and false if even one fails
   (define (valid-list-of los pred)
     (andmap pred los)
     )
 
-  (define (valid-list-of-states? states)
-    (valid-list-of states valid-state?)
-    )
-
+  ;valid-state?: something --> boolean
+  ;purpose: takes in anything and makes sure that it is a symbol that is either
+  ; uppercase roman letter
+  ; uppercase roman letter, -, natural number
+  ; DEAD
   (define (valid-state? x)
     (define regex-pattern #px"^[A-Z](?:-[0-9]+)?$")
     (or (equal? x DEAD)
@@ -55,10 +63,9 @@
         )
     )
 
-  (define (valid-sigma? sigma)
-    (valid-list-of sigma valid-alpha?)
-    )
-  
+  ;valid-alpha? something --> boolean
+  ;purpose: takes in anything and makes sure that it is a symbol that
+  ; a lowercase roman letter
   (define (valid-alpha? x)
     (define regex-pattern #px"[a-z]")
     (if (symbol? x)
@@ -66,26 +73,49 @@
         #f)
     )
 
+  ;start-in-states?: (listof symbols) --> (symbol --> boolean)
+  ;purpose: to take in the list of states, and then the start state,
+  ; and return whether or not that symbol is in that list
+  ; WHY IS IT A LAMBDA?: to allow for the proper order of predicates
+  ;   to be observed by the flat contract, and so the start state
+  ;   can be given to the function properly
   (define (start-in-states? states)
     (lambda (start)
       (member start states)
       )
     )
 
+  ;start-in-states?: (listof symbols) --> (symbol --> boolean)
+  ;purpose: to take in the list of states, and then the start state,
+  ; and return whether or not that symbol is a valid state
+  ; WHY IS IT A LAMBDA?: to allow for the proper order of predicates
+  ;   to be observed by the flat contract, and so the start state
+  ;   can be given to the function properly
+  ;  This is why it takes in the states even though it doesnt use them
   (define (valid-start? states)
     (lambda (start)
       (and (symbol? start)
            (valid-state? start)))
     )
 
+  ;valid-finals?: (list of states) --> (listof states --> boolean)
+  ;purpose: to take in the list of states, and then the final states,
+  ; and return true, only if all the final states are included
+  ; in the list of states
   (define (valid-finals? states)
     (lambda (finals)
       (andmap (lambda (x) (member x states)) finals)
       )
     )
+
+  ;invalid-finals: (listof states) (listof states) --> (listof states)
+  ;purpose: take in the states and finals, and return all finals that
+  ; arent included in the list of states
   (define (invalid-finals states finals)
     (filter (lambda (x) (not (member x states)))finals))
 
+  ;return-duplicates: (listof something) --> (listof something)
+  ;purpose: return all the duplicated items in any list of anything
   (define (return-duplicates los)
     (cond [(empty? los) '()]
           [(member (car los) (cdr los)) (cons (car los) (return-duplicates (cdr los)))]
