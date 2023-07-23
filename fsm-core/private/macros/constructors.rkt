@@ -108,7 +108,7 @@
   ;; constructing the ndpda.
   (define/contract (make-ndpda2 states sigma gamma start finals rules
                                 #:accepts [accepts '()]
-                               #:rejects [rejects '()])
+                                #:rejects [rejects '()])
     (->i ([states (and/c (valid-listof/c valid-state? "machine state" "list of machine states")
                          (no-duplicates/c "states"))]
           [sigma (and/c (valid-listof/c valid-alpha? "alphabet letter" "machine sigma")
@@ -122,7 +122,13 @@
                                   (no-duplicates/c "final states"))]
           [rules (states
                   sigma
-                  gamma) (and/c (valid-listof/c (valid-ndpda-rule? states sigma gamma) "machine rule" "list of machine rules")
+                  gamma) (and/c (listof-rules/c valid-ndpda-rule?)
+                                (correct-members-ndpda/c
+                                 correct-members-ndpda?
+                                 incorrect-members-ndpda
+                                 states
+                                 sigma
+                                 gamma)
                                 (no-duplicates/c "rules"))]
           )
          (#:accepts [accepts (states
@@ -132,12 +138,12 @@
                               finals
                               rules) (and/c (listof-words/c sigma)
                                             (ndpda-input/c states
-                                                          sigma
-                                                          gamma
-                                                          start
-                                                          finals
-                                                          rules
-                                                          'accept))]
+                                                           sigma
+                                                           gamma
+                                                           start
+                                                           finals
+                                                           rules
+                                                           'accept))]
           #:rejects [rejects (states
                               sigma
                               gamma
@@ -145,12 +151,12 @@
                               finals
                               rules) (and/c (listof-words/c sigma)
                                             (ndpda-input/c states
-                                                          sigma
-                                                          gamma
-                                                          start
-                                                          finals
-                                                          rules
-                                                          'reject))]
+                                                           sigma
+                                                           gamma
+                                                           start
+                                                           finals
+                                                           rules
+                                                           'reject))]
           )
          [result ndpda?])
     (make-unchecked-ndpda states sigma gamma start finals rules)
