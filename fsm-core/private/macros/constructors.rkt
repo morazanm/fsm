@@ -123,7 +123,13 @@
                                   (no-duplicates/c "final states"))]
           [rules (states
                   sigma
-                  gamma) (and/c (valid-listof/c (valid-ndpda-rule? states sigma gamma) "machine rule" "list of machine rules")
+                  gamma) (and/c (listof-rules/c valid-ndpda-rule?)
+                                (correct-members-ndpda/c
+                                 correct-members-ndpda?
+                                 incorrect-members-ndpda
+                                 states
+                                 sigma
+                                 gamma)
                                 (no-duplicates/c "rules"))]
           )
          (#:accepts [accepts (states

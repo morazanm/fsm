@@ -7,6 +7,7 @@
            )
   (provide listof-rules/c
            correct-members/c
+           correct-members-ndpda/c
            functional/c
            no-duplicates-dfa/c)
 
@@ -37,6 +38,23 @@
                       (raise-blame-error
                        blame
                        (pred2 states sigma rules)
+                       (format "The following rules contain symbols not contained in the states/sigma: ")
+                       )
+                      )
+                    )
+     )
+    )
+
+  (define (correct-members-ndpda/c pred pred2 states sigma gamma)
+    (make-flat-contract
+     #:name 'valid-list-of-rules
+     #:first-order (lambda (rules) (pred states sigma gamma rules))
+     #:projection (lambda (blame)
+                    (lambda (rules)
+                      (current-blame-format format-rule-error)
+                      (raise-blame-error
+                       blame
+                       (pred2 states sigma gamma rules)
                        (format "The following rules contain symbols not contained in the states/sigma: ")
                        )
                       )
