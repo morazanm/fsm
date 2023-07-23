@@ -16,6 +16,7 @@
            make-ndfa2
            make-ndpda2
            make-tm2
+           make-mttm2
            )
 
   ;; Using the existing set of rules, the entire machine set of states, and the
@@ -108,7 +109,7 @@
   ;; constructing the ndpda.
   (define/contract (make-ndpda2 states sigma gamma start finals rules
                                 #:accepts [accepts '()]
-                               #:rejects [rejects '()])
+                                #:rejects [rejects '()])
     (->i ([states (and/c (valid-listof/c valid-state? "machine state" "list of machine states")
                          (no-duplicates/c "states"))]
           [sigma (and/c (valid-listof/c valid-alpha? "alphabet letter" "machine sigma")
@@ -132,12 +133,12 @@
                               finals
                               rules) (and/c (listof-words/c sigma)
                                             (ndpda-input/c states
-                                                          sigma
-                                                          gamma
-                                                          start
-                                                          finals
-                                                          rules
-                                                          'accept))]
+                                                           sigma
+                                                           gamma
+                                                           start
+                                                           finals
+                                                           rules
+                                                           'accept))]
           #:rejects [rejects (states
                               sigma
                               gamma
@@ -145,12 +146,12 @@
                               finals
                               rules) (and/c (listof-words/c sigma)
                                             (ndpda-input/c states
-                                                          sigma
-                                                          gamma
-                                                          start
-                                                          finals
-                                                          rules
-                                                          'reject))]
+                                                           sigma
+                                                           gamma
+                                                           start
+                                                           finals
+                                                           rules
+                                                           'reject))]
           )
          [result ndpda?])
     (make-unchecked-ndpda states sigma gamma start finals rules)
@@ -269,5 +270,65 @@
         (make-unchecked-tm states sigma rules start finals)
         (make-unchecked-tm states sigma rules start finals accept))
     )
-  
+
+  (define/contract (make-mttm2 states sigma start finals rules num-tapes
+                               [accept 'null]
+                               #:accepts [accepts '()]
+                               #:rejects [rejects '()])
+    (->i ([states (and/c (valid-listof/c valid-state? "machine state" "list of machine states")
+                         (no-duplicates/c "states"))]
+          [sigma (and/c (valid-listof/c valid-alpha? "alphabet letter" "machine sigma")
+                        (no-duplicates/c "sigma"))]
+          [start (states) (and/c (valid-start/c states)
+                                 (start-in-states/c states))]
+          [finals (states) (and/c (valid-listof/c valid-state? "machine state" "list of machine finals")
+                                  (valid-finals/c states)
+                                  (no-duplicates/c "final states"))]
+          [rules (states
+                  sigma
+                  num-tapes) (and/c (listof-rules/c valid-tm-rule?)
+                                    (correct-members/c
+                                     correct-members-tm?
+                                     incorrect-members-tm
+                                     states
+                                     (cons RIGHT (cons LEFT (cons BLANK sigma))))
+                                    (no-duplicates/c "rules"))]
+          [num-tapes (integer-in 1 #f)]
+          )
+         ([accept (states) (and/c symbol?
+                                  (lambda (x) (member x states)))]
+          #:accepts [accepts (states
+                              sigma
+                              start
+                              finals
+                              rules
+                              accept) (and/c (has-accept/c accept finals)
+                                             (listof-words/c sigma)
+                                             (tm-input/c states
+                                                         sigma
+                                                         start
+                                                         finals
+                                                         rules
+                                                         accept
+                                                         'accept)
+                                             )]
+          #:rejects [rejects (states
+                              sigma
+                              start
+                              finals
+                              rules
+                              accept) (and/c (has-accept/c accept finals)
+                                             (listof-words/c sigma)
+                                             (tm-input/c states
+                                                         sigma
+                                                         start
+                                                         finals
+                                                         rules
+                                                         accept
+                                                         'reject))]
+          )
+         [result tm?]
+         )
+    (list states sigma start finals rules accept accepts rejects)
+    )
   )
