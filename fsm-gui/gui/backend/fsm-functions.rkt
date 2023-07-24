@@ -206,8 +206,14 @@
     (for/list ([t trans]
                [s (hash-ref data 'invStatuses)]
                #:when (not (equal? (hash-ref s 'status) (hash-ref t 'invPass))))
-      
-      (define filename (string-append (get-filename (build-path (hash-ref s 'filepath))) "_new"))
+      (define old-filename (get-filename (build-path (hash-ref s 'filepath))))
+      ;; HACK: The electron browser caches the image once it is loaded. This means that if we update the
+      ;; image and supply the same filepath then the browser will not realize that the image was updated.
+      ;; The current workaround is to ping-pong between two image file paths to force the browser to update
+      ;; the image.
+      (define filename (if (regexp-match #rx"_new" old-filename)
+                           (regexp-replace #rx"_new" old-filename "")
+                           (string-append old-filename "_new")))
       ;; If the inv failed to compute we will return the old filepath and report the error
       ;; otherwise we recompute the image and send the updated file path
       (hash 'status (hash-ref t 'invPass)
