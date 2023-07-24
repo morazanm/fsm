@@ -45,6 +45,9 @@
 ;; fsa->graph :: fsa -> graph
 ;; converts the fsa to a graphviz graph
 (define (fsa->graph fsa color-blind-mode)
+  (define type (sm-type fsa))
+  (when (or (equal? type 'mttm) (equal? type 'mttm-language-recognizer))
+    (error 'sm-graph "Graphing a Multi-tape Turing Machine is not supported"))
   (define adapter (fsa-adapter (sm-states fsa)
                                (sm-start fsa)
                                (sm-finals fsa)
@@ -63,7 +66,7 @@
 ;; fsa->graph :: fsa -> image
 ;; converts the fsa to a image
 (define (fsa->bitmap fsa color-blind-mode)
-  (graph->bitmap (fsa->graph fsa color-blind-mode) SAVE-DIR "vizTool"))
+  (graph->bitmap (fsa->graph fsa color-blind-mode) #:directory SAVE-DIR))
 
 ;; fsa-graph :: fsa number optional(string) -> filepath
 ;; returns the filepath the the svg image
@@ -150,4 +153,4 @@
                    inv-pass
                    (make-color-palette cb-mode)))
   (define file-name (if (number? index) (format "viztool_~a" index) index))
-  (graph->svg (fsa-adapter->graph adaptor) SAVE-DIR file-name))
+  (graph->svg (fsa-adapter->graph adaptor) #:directory SAVE-DIR #:filename file-name))
