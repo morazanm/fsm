@@ -10,7 +10,7 @@
 (define FNAME "fsm")
 
 ;; L = ab*
-(define ab* (make-ndfa '(S A)
+(define ab* (make-ndfa '(S A) 
                        '(a b)
                        'S
                        '(A)
