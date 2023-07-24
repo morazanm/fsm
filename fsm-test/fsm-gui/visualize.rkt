@@ -1,5 +1,5 @@
 #lang racket
-(require "../../main.rkt" "../test-helpers.rkt")
+(require fsm "../test-helpers.rkt")
 
 
 (define R (make-tm '(S H)
