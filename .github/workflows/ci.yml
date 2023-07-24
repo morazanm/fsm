@@ -14,7 +14,7 @@ jobs:
       matrix:
         racket-variant: ["CS"]  
         racket-version: ["stable"]
-    name: Runs Tests on ${{ matrix.racket-variant }} Racket
+    name: Build and Run Tests on ${{ matrix.racket-variant }} Racket
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       - name: Checkout 
