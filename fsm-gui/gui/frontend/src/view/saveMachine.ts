@@ -104,7 +104,6 @@ export function invariantsToString(
     .filter((s) => s.invFunc != null)
     .map((s) => {
       try {
-        console.log(s.invFunc);
         const trimmedStr = s.invFunc.replace(/\(define *\(/g, '');
         const fName = trimmedStr.match(/^\S*/g)[0];
         return trimmedStr.replace(/^\S* */g, `\t(define-invariant ${fName} (`);
