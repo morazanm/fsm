@@ -592,9 +592,9 @@
 ;; Purpose: To draw a world image
 (define (draw-world a-world)
   (scale 0.7
-         (above (graph->bitmap (make-ndfa-graph a-world) (current-directory) "fsm")
+         (above (graph->bitmap (make-ndfa-graph a-world))
                 (overlay
-                 (graph->bitmap (create-dfa-graph (world-ad-edges a-world) (world-incl-nodes a-world) (ndfa2dfa-finals-only (world-M a-world))) (current-directory) "fsm")
+                 (graph->bitmap (create-dfa-graph (world-ad-edges a-world) (world-incl-nodes a-world) (ndfa2dfa-finals-only (world-M a-world))))
                  E-SCENE))))
 
 (define aa-ab (make-ndfa `(S A B F)
