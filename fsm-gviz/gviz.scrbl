@@ -297,11 +297,10 @@ If the tmp dir is not found then the current-directory from which the program is
 Below are examples of how to use the library.
 
 @subsection{Creating Basic Graphs}
-An example of creating a simple graph and converting it to an image.
+The simplest way to create a graph is work in steps. First create the graph using @racket[create-graph]. Then
+add the nodes to the graph using either @racket[add-node] or @racket[add-ndoes]. Then add the edges to the graph
+using @racket[add-edges] or @racket[add-edge]. Last, convert it to the dot language.
 @codeblock{
-#lang racket
-(require "interface.rkt")
-
 (define init-graph (create-graph 'cgraph #:atb (hash 'rankdir "LR")))
 
 (define nodes '(A-1 A-2))
@@ -317,9 +316,85 @@ An example of creating a simple graph and converting it to an image.
 produces
 @centered{@image[#:suffixes @list[".png"]]{scribImgs/simple_graph}}
 
+
+@subsection{Adding Attributes}
+Often you will want to add attributes to the graph. This is done using the #:atb keyword on the
+graph, edge, and node functions. Below is an example of using attributes for a graph.
+@codeblock{
+(struct character (name mother father side))
+
+;; character->node :: character -> graph
+;; adds a character to the graph
+(define (character->node c g) 
+  (add-node g (character-name c) #:atb (hash 'color (match (character-side c)
+                                                      ['light 'green]
+                                                      ['dark 'red]
+                                                      ['unknown ""])
+                                             'shape 'box
+                                             'style 'filled)))
+;; character->edge :: character -> graph
+;; adds an edge to the graph
+(define (character->edge c g)
+  (match (cons (character-father c) (character-mother c))
+    [(cons 'unknown 'unknown) g]
+    [(cons 'unknown mother) (add-edge g "" mother (character-name c))]
+    [(cons father 'unknown) (add-edge g "" father (character-name c))]
+    [(cons father mother) (add-edge (add-edge g "" father (character-name c)) "" mother (character-name c))]))
+  
+
+(define skywalkers (list (character 'Shmi 'unknown 'unknown 'unknown)
+                         (character 'Anakin 'Shmi 'unknown 'dark)
+                         (character 'Ruwee 'unknown 'unknown 'unknown)
+                         (character 'Jobal 'unknown 'unknown 'unknown)
+                         (character 'Padme 'Jobal 'Ruwee 'light)
+                         (character 'Luke 'Padme 'Anakin 'light)
+                         (character 'Leia 'Padme 'Anakin 'light)
+                         (character 'Han 'unknown 'unknown 'light)
+                         (character 'Ben 'Leia 'Han 'dark)))
+                                
+
+
+(define init-graph (create-graph 'test #:atb (hash 'label "Skywalker Family Tree")))
+(define graph-with-nodes (foldl character->node init-graph skywalkers))
+(define graph-with-edges (foldl character->edge graph-with-nodes skywalkers))
+(graph->bitmap graph-with-edges)
+}
+produces
+@centered{@image[#:suffixes @list[".png"]]{scribImgs/skywalker}}
+
+
+
 @subsection{Creating Graphs with Formatters}
-An example of using formatters to format the edge labels on a graph so that only one rule
-is displayed per line.
+Formatters can be used to specify the output for an attribute value. For example we can use formatters to
+format the edge labels on a graph so that only one rule is displayed per line.
+@codeblock{
+#lang racket
+(require "interface.rkt")
+
+;; one-rule-per-line :: listof(string) -> string
+;; prints 1 rule per line
+(define (one-rule-per-line rules)
+  (string-join rules "\n"))
+
+(define fmtrs (create-formatters #:edge (hash 'label one-rule-per-line)))
+
+(graph->bitmap (add-edges (add-nodes (create-graph 'test  #:fmtrs fmtrs) '(A B C D))
+                          '((A "(A a B)" B)
+                            (A "(A b B)" B)
+                            (B "(B a B)" C)
+                            (B "(B b B)" C)
+                            (B "(B c-1 B)" C)
+                            (C "c-1" D)
+                            (C "c-2" D))))
+}
+produces
+@centered{@image[#:suffixes @list[".png"]]{scribImgs/simple_graph_with_formatter}}
+
+
+@subsection{Using Complex Data for Edges}
+Sometimes it can be more intuitive to use non string data for edge labels. Edges are allowed to store
+any datatype for a edge label by defualt we just need to make sure that the label has a formatter to
+convert it to a string. 
 @codeblock{
 #lang racket
 (require "interface.rkt")
@@ -328,7 +403,7 @@ is displayed per line.
 ;; prints 1 rule per line
 (define (one-rule-per-line rules)
   (define string-rules (map (curry format "~a") rules))
-  (string-join string-rules "\n"))
+  (string-join rules "\n"))
 
 (define fmtrs (create-formatters #:edge (hash 'label one-rule-per-line)))
 
