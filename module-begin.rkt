@@ -1,5 +1,5 @@
 #lang racket
-(require (for-syntax syntax/parse racket/syntax syntax/stx racket/list racket/match)
+(require (for-syntax racket/syntax racket/list racket/match)
          syntax/parse/define 
          racket/splicing
          syntax/to-string

@@ -441,7 +441,18 @@
                                                       (error . null)
                                                       (responseType . "prebuilt_machine")))
                            (define actual (recompute-invariant a-aUb*-jexpr (current-namespace) #:test #t))
-                           (check-equal? actual #t))
+
+                           
+                           (check-equal? actual #hash((data
+                                                        .
+                                                        #hash((changedStatuses
+                                                               .
+                                                               (#hash((filepath . "viztool_2_new") (index . 1) (status . #f))
+                                                                #hash((filepath . "viztool_3_new") (index . 2) (status . #f))
+                                                                #hash((filepath . "viztool_4_new") (index . 3) (status . #f))))
+                                                              (targetState . "F")))
+                                                       (error . null)
+                                                       (responseType . "recompute_inv"))))
 
                            
                 (test-case "No Updates"
