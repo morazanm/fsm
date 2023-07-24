@@ -21,7 +21,7 @@ jobs:
         uses: actions/checkout@master
 
       - name: Install Racket and Raco 
-        uses: Bogdanp/setup-racket@v1.8.1 # see https://github.com/Bogdanp/setup-racket for more info
+        uses: Bogdanp/setup-racket@v1.10.1 # see https://github.com/Bogdanp/setup-racket for more info
         with:
           architecture: 'x64'
           distribution: 'full' # or: 'minimal'
