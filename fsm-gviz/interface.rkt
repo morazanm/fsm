@@ -43,6 +43,9 @@
 ;; fsa->graph :: fsa -> graph
 ;; converts the fsa to a graphviz graph
 (define (fsa->graph fsa color-blind-mode)
+  (define type (sm-type fsa))
+  (when (or (equal? type 'mttm) (equal? type 'mttm-language-recognizer))
+    (error 'sm-graph "Graphing a Multi-tape Turing Machine is not supported"))
   (define adapter (fsa-adapter (sm-states fsa)
                                (sm-start fsa)
                                (sm-finals fsa)
