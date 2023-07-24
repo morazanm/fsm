@@ -1,4 +1,4 @@
-name: Build and Test FSM Library
+name: Build and Test FSM DSL
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
