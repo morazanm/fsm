@@ -1,5 +1,5 @@
 #lang info
 
-(define compile-omit-paths '("electron-gui"))
+(define compile-omit-paths '("gui/frontend"))
 (define test-omit-paths
-  '("electron-gui" "electron-backend/server.rkt"))
+  '("gui/frontend" "gui/backend/server.rkt"))
