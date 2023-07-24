@@ -12,7 +12,7 @@ export function saveMachine(filepath: string, machine: MachineState): boolean {
   try {
     const exists = existsSync(filepath);
     // When we have a new file we need to append #lang fsm
-    const dataToWrite = exists ? allFSMCode : '#lang fsm\n' + existsSync;
+    const dataToWrite = exists ? allFSMCode : '#lang fsm\n' + allFSMCode;
     writeFileSync(filepath, dataToWrite, { flag: 'a' });
     return true;
   } catch (error) {
