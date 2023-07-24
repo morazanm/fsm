@@ -1,4 +1,10 @@
-import { dfaNdfaToString, pdaToString, tmMttmToString } from '../saveMachine';
+import { State } from '../../types/machine';
+import {
+  dfaNdfaToString,
+  invariantsToString,
+  pdaToString,
+  tmMttmToString,
+} from '../saveMachine';
 
 test('Save dfa', () => {
   const machine = JSON.parse(
@@ -34,4 +40,16 @@ test('Save tm', () => {
     "(make-tm\n\t'(S B C D E Y N)\n\t'(@ a b c z x y)\n\t'(((S @) (S R)) ((B @) (B R)) ((C @) (C R)) ((D @) (D R)) ((E @) (E R)) ((S a) (B z)) ((S b) (N b)) ((S c) (N c)) ((S _) (Y _)) ((S z) (N z)) ((S x) (N x)) ((S y) (N y)) ((E z) (E R)) ((E x) (E R)) ((E y) (E R)) ((E _) (Y _)) ((E a) (N a)) ((E b) (N b)) ((E c) (N c)) ((B a) (B R)) ((B b) (C x)) ((B c) (N c)) ((B _) (N _)) ((B z) (B R)) ((B x) (B R)) ((B y) (B R)) ((C a) (N a)) ((C b) (C R)) ((C c) (D y)) ((C _) (N _)) ((C z) (C R)) ((C x) (C R)) ((C y) (C R)) ((D a) (S a)) ((D b) (D L)) ((D c) (D L)) ((D _) (N _)) ((D z) (D L)) ((D x) (D L)) ((D y) (D L)) ((D @) (E R)))\n\t'S\n\t'(Y N)\n\t'Y)";
 
   expect(actual).toBe(expected);
+});
+
+test('InvariantToString', () => {
+  const sInv = '(define (s-inv a) \n\t(+ a b)';
+  const aInv = '(define (a-inv a) (- a b)';
+  const states: State[] = [
+    { name: 'A', type: 'start', invFunc: aInv },
+    { name: 'S', type: 'final', invFunc: sInv },
+    { name: 'F', type: 'final', invFunc: null },
+  ];
+
+  const actual = invariantsToString(states, 'a-name', 'dfa');
 });

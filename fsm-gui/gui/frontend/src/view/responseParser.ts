@@ -77,21 +77,21 @@ export function parseDataResponse(
   } else if (result.responseType === Instruction.RECOMPUTE_INV) {
     const response = result as SocketResponse<RecomputeInvariantResponse>;
     let newTrans = currentMachine.transitions.transitions;
-    response.data.changedStatuses.forEach(v => {
+    response.data.changedStatuses.forEach((v) => {
       newTrans[v.index].filepath = v.filepath;
       newTrans[v.index].invPass = v.status;
-    })
+    });
 
     return {
       data: {
-      ...currentMachine,
-      transitions: {
-        ...currentMachine.transitions,
-        transitions: newTrans
+        ...currentMachine,
+        transitions: {
+          ...currentMachine.transitions,
+          transitions: newTrans,
+        },
       },
-      },
-      instruction: response.responseType
-    }
+      instruction: response.responseType,
+    };
   } else {
     return {
       instruction: result.responseType,

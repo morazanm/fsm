@@ -141,16 +141,16 @@ const MainView = (props: MainViewProps) => {
     const newStates = machineState.states.map((state) =>
       state.name === incoming ? { ...state, invFunc } : state,
     );
-      setMachineState({
-        ...machineState,
-        states: newStates,
-      });
-      // If the machine was ran then we also need to recompute the invariants for the
-      // state
-      if (machineState.transitions.transitions.length > 0) {
+    setMachineState({
+      ...machineState,
+      states: newStates,
+    });
+    // If the machine was ran then we also need to recompute the invariants for the
+    // state
+    if (machineState.transitions.transitions.length > 0) {
       const currentStatuses = machineState.transitions.transitions
         .map((t, idx) => [t, idx] as const)
-        .filter(([t,_]) => getTransitionEndState(t) === incoming)
+        .filter(([t, _]) => getTransitionEndState(t) === incoming)
         .map(([t, idx]) => {
           return {
             index: idx,

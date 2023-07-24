@@ -120,20 +120,22 @@ const State = (props: StateProps) => {
           />
         </DontTransform>
       )}
-      {open && <StateModal
-        open={open}
-        onClose={() => setOpen(false)}
-        state={props.state}
-        rules={props.rules}
-        currentTransition={props.currentTransition}
-        consumedInput={props.consumedInput}
-        onSubmit={props.onSubmit}
-        machineType={props.machineType}
-        resetMachineAndSet={props.resetMachineAndSet}
-        states={props.states}
-        isConnectedToBackend={props.isConnectedToBackend}
-        updateInvariant={props.updateInvariant}
-      />}
+      {open && (
+        <StateModal
+          open={open}
+          onClose={() => setOpen(false)}
+          state={props.state}
+          rules={props.rules}
+          currentTransition={props.currentTransition}
+          consumedInput={props.consumedInput}
+          onSubmit={props.onSubmit}
+          machineType={props.machineType}
+          resetMachineAndSet={props.resetMachineAndSet}
+          states={props.states}
+          isConnectedToBackend={props.isConnectedToBackend}
+          updateInvariant={props.updateInvariant}
+        />
+      )}
     </>
   );
 };
