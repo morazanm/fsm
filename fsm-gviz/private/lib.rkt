@@ -25,22 +25,31 @@
                      (#:fmtrs formatters?
                       #:atb (hash/c symbol? any/c))
                      graph?)]
+  (create-formatters (->* () (#:graph (hash/c symbol? (-> any/c string?))
+                              #:node (hash/c symbol? (-> any/c string?))
+                              #:edge (hash/c symbol? (-> any/c string?)))
+                          formatters?))
   [add-node (->* (graph? symbol?)
                  (#:atb (hash/c symbol? any/c))
                  graph?)]
   [add-nodes (->* (graph? (listof symbol?))
-                 (#:atb (hash/c symbol? any/c))
-                 graph?)]
+                  (#:atb (hash/c symbol? any/c))
+                  graph?)]
   [add-edge (->* (graph? (or/c list? any/c) symbol? symbol?)
                  (#:atb (hash/c symbol? any/c))
                  graph?)]
 
-  [add-edges (->* (graph? (list/c symbol? symbol? (or/c list? any/c)))
+  [add-edges (->* (graph? (listof (list/c symbol? any/c symbol?)))
                   (#:atb (hash/c symbol? any/c))
                   graph?)]
-  [graph->bitmap (-> graph? path? string? image?)]
-  [graph->svg (-> graph? path? string? path?)]
+  [graph->bitmap (->* (graph?)
+                      (#:directory path?
+                       #:filename string?
+                       #:clean boolean?)
+                      image?)]
+  [graph->svg (->* (graph? path? string?) (#:clean boolean?) path?)]
   [graph->dot (-> graph? path? string? path?)]
+  [graph->png (->* (graph? path? string?) (#:clean boolean?) path?)]
   [graph->str (-> graph? string?)]))
 
 
@@ -50,6 +59,8 @@
 (define DEFAULT-NODE (hash 'color "black" 'shape "circle"))
 (define (DEFAULT-EDGE-LABEL-FMTR lst)
   (string-join (map (lambda (v) (format "~a" v)) (reverse lst)) ", "))
+(define SAVE-DIR (find-tmp-dir))
+
 
 ;; formatters contain custom formatting functions for attributes
 (struct formatters (graph node edge) #:transparent)
@@ -110,7 +121,7 @@
 ;; create-graph: symbol -> graph
 ;; name: The name of the graph
 ;; Purpose: Creates a Graph with the given name
-(define (create-graph name #:fmtrs(fmtrs DEFAULT-FORMATTERS) #:atb [atb DEFAULT-GRAPH])
+(define (create-graph name #:fmtrs(fmtrs DEFAULT-FORMATTERS) #:atb [atb (hash)])
   (define (combine v1 v2) (hash-union v1 v2 #:combine/key (lambda (_k v1 _v2) v1)))
   (graph name
          '()
@@ -122,7 +133,11 @@
                    (formatters-node DEFAULT-FORMATTERS))
           (combine (formatters-edge fmtrs)
                    (formatters-edge DEFAULT-FORMATTERS)))
-         atb))
+         (combine atb DEFAULT-GRAPH)))
+
+
+(define (create-formatters #:graph[graph (hash)] #:node[node (hash)] #:edge[edge (hash)])
+  (formatters graph node edge))
 
 
 ;; add-node: graph string Optional(hash-map) -> graph
@@ -189,8 +204,8 @@
 ;; into a single edge
 (define (add-edges g edgs #:atb [atb DEFAULT-EDGE])
   (foldl (lambda (e a)
-           (match-define (list start end val) e)
-           (add-edge a val start end #:atb atb)) g edgs))
+           (match-define (list start-node edge-val end-node) e)
+           (add-edge a edge-val start-node end-node #:atb atb)) g edgs))
 
 ; clean-string: symbol -> symbol
 ; Purpose: cleans the string to only have valid dot language id symbols
@@ -242,21 +257,49 @@
 (define dot->svg (curry dot->output-fmt 'svg))
 
 
-;; png->bitmap: path -> string
-;; Function alias to htdp2-lib function
-(define png->bitmap bitmap/file)
+;; png->bitmap: path -> values(img path)
+;; returns the image and the path to the file that was used to create the image
+(define (png->bitmap path)
+  (values (bitmap/file path) path))
 
-;; graph->bitmap: graph string string -> image
+;; clean-up-files-by-extension :: filepath string/regex
+;; Given a filepath will delete the files by the given extension. For example
+;; if you have files test.png test.svg test.dot
+;;    (clean-up-files-by-extension test-path #".dot" #".png")
+;; will delete test.png and test.dot 
+(define-syntax-rule (clean-up-files-by-extension file-path extra-extension ...)
+  (with-handlers ([exn:fail:filesystem? (lambda (e) (displayln (exn-message e)))])
+    (delete-file (path-replace-extension file-path extra-extension))  ...))
+
+
+;; graph->bitmap: graph optional(string) optional(string) optional(boolean) -> image
 ;; Converts a graph to an image
-(define (graph->bitmap graph save-dir filename)
-  ((compose1 png->bitmap dot->png graph->dot) graph save-dir filename))
+;; If clean is false then the dot and png files are not deleted
+(define (graph->bitmap graph #:directory [save-dir SAVE-DIR] #:filename[filename "__tmp__"] #:clean[delete-files #t])
+  (define-values (img path)
+    ((compose1 png->bitmap dot->png graph->dot) graph save-dir filename))
+  (when delete-files
+    (clean-up-files-by-extension path #".png" #".dot"))
+  img)
 
-
-;; graph->svg: graph string string -> path
+;; graph->svg: graph string string optional(boolean) -> path
 ;; Converts a graph to a svg and returns the path to the svg image
-(define (graph->svg graph save-dir filename)
-  ((compose1 dot->svg graph->dot) graph save-dir filename))
- 
+;; If clean is false then the dot file is not deleted
+(define (graph->svg graph save-dir filename #:clean[delete-files #t])
+  (define svg-path ((compose1 dot->svg graph->dot) graph save-dir filename))
+  (when delete-files
+    (clean-up-files-by-extension svg-path #".dot"))
+  svg-path)
+
+;; graph->svg: graph string string optional(boolean) -> path
+;; Converts a graph to a png and returns the path to the png image
+;; If clean is false then the dot file is not deleted
+(define (graph->png graph save-dir filename #:clean[delete-files #t])
+  (define png-path ((compose1 dot->png graph->dot) graph save-dir filename))
+  (when delete-files
+    (clean-up-files-by-extension png-path #".dot"))
+  png-path)
+
 ;; hash->str: hash hash Optional(string) -> string
 ;; Purpose: converts the hash to a graphviz string
 (define (hash->str hash fmtr (spacer ", "))
@@ -294,7 +337,7 @@
 
 
   (check-equal? (add-edges (add-nodes (create-graph 'test) '(A B C D))
-                           '((A B a) (B B b) (B D c-1)))
+                           '((A a B) (B b B) (B c-1 D)))
                 (graph
                  'test
                  (list
