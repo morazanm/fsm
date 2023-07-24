@@ -153,4 +153,4 @@
                    inv-pass
                    (make-color-palette cb-mode)))
   (define file-name (if (number? index) (format "viztool_~a" index) index))
-  (graph->svg (fsa-adapter->graph adaptor) #:directory SAVE-DIR #:filename file-name))
+  (graph->svg (fsa-adapter->graph adaptor) SAVE-DIR file-name))

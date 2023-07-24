@@ -74,18 +74,6 @@ function removeGvizFiles() {
     } catch (e) {
       console.log(e);
     }
-
-    // .svg files also have a .dot so we will try to remove those as well
-    try {
-      const dotFile = path.format({
-        ...path.parse(file),
-        base: '',
-        ext: '.dot',
-      });
-      unlinkSync(dotFile);
-    } catch (e) {
-      console.log(e);
-    }
   });
 }
 

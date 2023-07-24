@@ -196,14 +196,17 @@
                          #f))
   (define accept-state (if (equal? type 'tm-language-recognizer) (parse-accept un-parsed-states) #f))
   (define fsa (build-fsm-core-machine states start finals alpha rules type stack-alpha accept-state no-dead))
+  (define trans (filter (lambda (t)
+                          (define end-state (if (hash-has-key? t 'rule)
+                                                (hash-ref (hash-ref t 'rule) 'end #f)
+                                                (hash-ref t 'start (hash-ref t 'end #f))))
+                          (equal? (hash-ref data 'targetState) end-state))
+                        (transitions->jsexpr fsa invariants input namespace tape-index)))
   (define generated-imgs
-    (for/list ([t (transitions->jsexpr fsa invariants input namespace tape-index)]
+    (for/list ([t trans]
                [s (hash-ref data 'invStatuses)]
-               #:when (let ((end-state (if (hash-has-key? t 'rule)
-                                           (hash-ref (hash-ref t 'rule) 'end #f)
-                                           (hash-ref t 'start (hash-ref t 'end #f)))))
-                        (and (equal? (hash-ref data 'targetState) end-state)
-                             (not (equal? (hash-ref s 'status) (hash-ref t 'invPass))))))
+               #:when (not (equal? (hash-ref s 'status) (hash-ref t 'invPass))))
+      
       (define filename (string-append (get-filename (build-path (hash-ref s 'filepath))) "_new"))
       ;; If the inv failed to compute we will return the old filepath and report the error
       ;; otherwise we recompute the image and send the updated file path
@@ -417,7 +420,7 @@
                                                            'targetState "S")
                                                'error (json-null)
                                                'responseType "recompute_inv")))
-                (test-case "No Updates for a*"
+                (test-case "Updates for a*"
                            (define a-aUb*-jexpr #hash((alpha . ("a" "b"))
                                                       (filepath . "/var/tmp/vizTool_electron1.svg")
                                                       (hotReload . #t)
@@ -430,8 +433,7 @@
                                                       (rules . (#hash((end . "F") (input . "a") (start . "S"))
                                                                 #hash((end . "F") (input . "a") (start . "F"))
                                                                 #hash((end . "F") (input . "b") (start . "F"))))
-                                                      (invStatuses . (#hash((filepath . "/var/tmp/viztool_1.svg") (index . 0) (status . #t))
-                                                                      #hash((filepath . "/var/tmp/viztool_2.svg") (index . 1) (status . #t))
+                                                      (invStatuses . (#hash((filepath . "/var/tmp/viztool_2.svg") (index . 1) (status . #t))
                                                                       #hash((filepath . "/var/tmp/viztool_3.svg") (index . 2) (status . #t))
                                                                       #hash((filepath . "/var/tmp/viztool_4.svg") (index . 3) (status . #t))))
                                                       (states . (#hash((invFunc . "(define (S-inv ci) (empty? ci))") (name . "S") (type . "start"))
@@ -444,15 +446,15 @@
 
                            
                            (check-equal? actual #hash((data
-                                                        .
-                                                        #hash((changedStatuses
-                                                               .
-                                                               (#hash((filepath . "viztool_2_new") (index . 1) (status . #f))
-                                                                #hash((filepath . "viztool_3_new") (index . 2) (status . #f))
-                                                                #hash((filepath . "viztool_4_new") (index . 3) (status . #f))))
-                                                              (targetState . "F")))
-                                                       (error . null)
-                                                       (responseType . "recompute_inv"))))
+                                                       .
+                                                       #hash((changedStatuses
+                                                              .
+                                                              (#hash((filepath . "viztool_2_new") (index . 1) (status . #f))
+                                                               #hash((filepath . "viztool_3_new") (index . 2) (status . #f))
+                                                               #hash((filepath . "viztool_4_new") (index . 3) (status . #f))))
+                                                             (targetState . "F")))
+                                                      (error . null)
+                                                      (responseType . "recompute_inv"))))
 
                            
                 (test-case "No Updates"
@@ -494,9 +496,9 @@
                                                     'input (list "a" "a")
                                                     'nodead false
                                                     'targetState "S"
-                                                    'invStatuses (list (hash 'index 0 'status #f 'filepath "test_1.svg")
-                                                                       (hash 'index 1 'status #f 'filepath "test_2.svg")
-                                                                       (hash 'index 2 'status #f 'filepath "test_3.svg"))))
+                                                    'invStatuses (list (hash 'index 0 'status #f 'filepath "test_0.svg")
+                                                                       (hash 'index 1 'status #f 'filepath "test_1.svg")
+                                                                       (hash 'index 2 'status #f 'filepath "test_2.svg"))))
                            (define actual (recompute-invariant a*a-jsexpr (current-namespace) #:test #t))
                            
                            (check-equal? (hash-ref actual 'error) (json-null))
@@ -504,7 +506,7 @@
                            (check-equal? (hash-ref (hash-ref actual 'data) 'targetState) "S")
 
                            (define data (list-ref (hash-ref (hash-ref actual 'data) 'changedStatuses) 0))
-                           (check-equal? (hash-ref data 'filepath) "test_1.svg")
+                           (check-equal? (hash-ref data 'filepath) "test_0.svg")
                            (check-equal? (hash-ref data 'index) 0)
                            (check-regexp-match "read: expected a `\\)` to close `\\(" (hash-ref data 'status)))))
 

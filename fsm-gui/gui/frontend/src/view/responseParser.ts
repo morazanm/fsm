@@ -78,7 +78,6 @@ export function parseDataResponse(
     const response = result as SocketResponse<RecomputeInvariantResponse>;
     let newTrans = currentMachine.transitions.transitions;
     response.data.changedStatuses.forEach(v => {
-      console.log("Updating: ", v.index)
       newTrans[v.index].filepath = v.filepath;
       newTrans[v.index].invPass = v.status;
     })

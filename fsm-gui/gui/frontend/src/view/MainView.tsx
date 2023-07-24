@@ -149,8 +149,9 @@ const MainView = (props: MainViewProps) => {
       // state
       if (machineState.transitions.transitions.length > 0) {
       const currentStatuses = machineState.transitions.transitions
-        .filter((t) => getTransitionEndState(t) === incoming)
-        .map((t, idx) => {
+        .map((t, idx) => [t, idx] as const)
+        .filter(([t,_]) => getTransitionEndState(t) === incoming)
+        .map(([t, idx]) => {
           return {
             index: idx,
             status: t.invPass,
