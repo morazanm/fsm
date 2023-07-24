@@ -14,7 +14,7 @@ jobs:
       matrix:
         racket-variant: ["CS"]  
         racket-version: ["stable"]
-    name: Runs on ${{ matrix.racket-variant }} Racket
+    name: Build and Run Tests on ${{ matrix.racket-variant }} Racket
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       - name: Checkout 
@@ -28,7 +28,7 @@ jobs:
           variant: ${{ matrix.racket-variant }} # Taken from `racket-variant: ["CS"]`
           version: ${{ matrix.racket-version }} # Taken from `racket-version: ["stable"]`
       # Build FSM
-      - name: Build FSM Library
+      - name: Build FSM DSL
         run: xvfb-run raco pkg install
       # Kick off the tests
       - name: Run tests
