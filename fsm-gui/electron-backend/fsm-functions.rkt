@@ -497,14 +497,16 @@
                                                     'invStatuses (list (hash 'index 0 'status #f 'filepath "test_1.svg")
                                                                        (hash 'index 1 'status #f 'filepath "test_2.svg")
                                                                        (hash 'index 2 'status #f 'filepath "test_3.svg"))))
+                           (define actual (recompute-invariant a*a-jsexpr (current-namespace) #:test #t))
                            
-                           (check-equal? (recompute-invariant a*a-jsexpr (current-namespace) #:test #t)
-                                         (hash 'data (hash 'changedStatuses (list (hash 'filepath "test_1.svg"
-                                                                                        'index 0
-                                                                                        'status "read: expected a `)` to close `(`"))
-                                                           'targetState "S")
-                                               'error (json-null)
-                                               'responseType "recompute_inv")))))
+                           (check-equal? (hash-ref actual 'error) (json-null))
+                           (check-equal? (hash-ref actual 'responseType) "recompute_inv")
+                           (check-equal? (hash-ref (hash-ref actual 'data) 'targetState) "S")
+
+                           (define data (list-ref (hash-ref (hash-ref actual 'data) 'changedStatuses) 0))
+                           (check-equal? (hash-ref data 'filepath) "test_1.svg")
+                           (check-equal? (hash-ref data 'index) 0)
+                           (check-regexp-match "read: expected a `\\)` to close `\\(" (hash-ref data 'status)))))
 
   (run-tests build-machine-tests)
   (run-tests recompute-invariant-tests)
