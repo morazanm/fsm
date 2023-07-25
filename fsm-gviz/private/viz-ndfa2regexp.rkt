@@ -174,6 +174,10 @@
 (define E-SCENE (empty-scene 1250 600))
 
 
+;; img is the graph image
+;; state is the state being ripped
+(struct image-struct (img state))
+
 ;; pimgs is a list of processed graph images
 ;; upimgs is a list of unprocessed graph images
 (struct viz-state (pimgs upimgs))
@@ -246,19 +250,23 @@
                                (sm-finals M))))
   (define (grp-seq to-rip g gseq)
     (if (null? to-rip)
-        (cons (create-graph-img (append (list new-start new-final) to-rip)
-                                g
-                                new-start
-                                new-final)
+        (cons (image-struct (create-graph-img
+                             (append (list new-start new-final) to-rip)
+                             g
+                             new-start
+                             new-final)
+                            '())
               gseq)
         (let [(new-g (rip-out-node (first to-rip) g))]
           (grp-seq (rest to-rip)
                    new-g
-                   (cons (create-graph-img
-                          (append (list new-start new-final) to-rip)
-                          g
-                          new-start
-                          new-final) gseq)))))
+                   (cons (image-struct (create-graph-img
+                                        (append (list new-start new-final) to-rip)
+                                        g
+                                        new-start
+                                        new-final)
+                                       (first to-rip))
+                         gseq)))))
 
   (reverse (grp-seq (sm-states M) (make-dgraph (append (sm-rules M) new-rules)) '())))
 
@@ -268,12 +276,12 @@
          (new-rules (cons (list new-start EMP (sm-start M))
                           (map (λ (fst) (list fst EMP new-final))
                                (sm-finals M))))]
-    (create-graph-img
-     (sm-states M)
-     (make-dgraph (append (sm-rules M) new-rules))
-     new-start
-     new-final)))
-
+    (image-struct (create-graph-img
+                   (sm-states M)
+                   (make-dgraph (append (sm-rules M) new-rules))
+                   new-start
+                   new-final)
+                  'S)))
 
 ;; process-key
 ;; viz-state key --> viz-state
@@ -298,8 +306,7 @@
          (let* [(new-pimgs (append (reverse (viz-state-upimgs a-vs))
                                    (viz-state-pimgs a-vs)))
                 (new-upimgs '())]
-           (viz-state new-pimgs new-upimgs))
-         ]           
+           (viz-state new-pimgs new-upimgs))]           
         [else a-vs]))
 
 
@@ -307,13 +314,19 @@
 ;; viz-state -> img
 ;; Purpose: To render the given vis-state
 (define (draw-world a-vs)
-  (if (empty? (viz-state-pimgs a-vs))
-      (overlay
-       (first (viz-state-upimgs a-vs)) 
-       E-SCENE)
-      (overlay
-       (first (viz-state-pimgs a-vs)) 
-       E-SCENE)))
+  (cond [(empty? (viz-state-pimgs a-vs))
+         (overlay
+           (image-struct-img (first (viz-state-upimgs a-vs)))
+          E-SCENE)]
+        [else
+         (overlay
+          (above
+           (image-struct-img (first (viz-state-pimgs a-vs)))
+           (text (format "Next node to remove: ~a" (image-struct-state
+                                                   (first (viz-state-pimgs a-vs))))
+                 20
+                 'black))
+          E-SCENE)]))
 
 
 ;; run-function
@@ -321,13 +334,12 @@
 (define (run M)
   (begin
     (big-bang
-        (viz-state (list (sm-graph M))
+        (viz-state (list (image-struct (sm-graph M) '()))
                    (cons (make-init-graph-img M) (rest (create-graph-imgs M))))
       [on-draw draw-world]
       [on-key process-key]
       [name "FSM: ndfa to regexp visualization"]))
   (void))
-
 
 
 
