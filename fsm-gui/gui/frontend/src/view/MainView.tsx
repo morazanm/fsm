@@ -43,7 +43,7 @@ import {
   RecomputeInvariantRequest,
   RedrawnGraphvizImageRequest,
 } from '../socket/requestTypes';
-import { parseDataResponse } from './responseParser';
+import { isInvUpdate, parseDataResponse } from './responseParser';
 import { channels } from '../shared/constants';
 import { saveMachine } from './saveMachine';
 
@@ -127,7 +127,7 @@ const MainView = (props: MainViewProps) => {
     setOpenDialog({ openDialog: 'info', title, message });
   };
 
-  const openErrorDialog = (title: string, message: string) => {
+  const openErrorDialog = (title: string, message: string | JSX.Element) => {
     setOpenDialog({ openDialog: 'error', title, message });
   };
 
@@ -272,6 +272,41 @@ const MainView = (props: MainViewProps) => {
           } else {
             openErrorDialog('Error Building Machine', data);
           }
+        } else if (isInvUpdate(data)) {
+          if (instruction === Instruction.RECOMPUTE_INV) {
+            if (data.syntaxErrorMsg) {
+              openInfoDialog(
+                'Invariant Syntax Error',
+                <Grid spacing={2}>
+                  <Grid item>
+                    <Typography component={'span'}>
+                      There is a syntax error with the current invariant.
+                    </Typography>
+                  </Grid>
+                  <Grid item>
+                    <Typography
+                      component={'code'}
+                      style={{ color: theme.palette.error.light }}
+                    >
+                      {data.syntaxErrorMsg}
+                    </Typography>
+                  </Grid>
+                </Grid>,
+              );
+            } else if (data.hasFailingInv) {
+              openErrorDialog(
+                'Failing Invariants',
+                'There are invariants that are failing for this machine. See the Map View for more details.',
+              );
+            } else {
+              openInfoDialog(
+                'Passing Invariants',
+                'All invariants are still passing',
+              );
+            }
+            setMachineState(data.updatedMachine);
+            //TODO: Handle update message
+          }
         } else {
           if (instruction === Instruction.PREBUILT) {
             const acceptFunction = () => {
@@ -291,9 +326,6 @@ const MainView = (props: MainViewProps) => {
               'Machine Successfully Built',
               'The machine was successfully built. You may now use the next and prev buttons to visualize the machine.',
             );
-          } else if (instruction === Instruction.RECOMPUTE_INV) {
-            setMachineState(data);
-            //TODO: Handle update message
           }
           // Add files to track for clean up
           const filesToTrack = data.transitions.transitions.map(

@@ -263,9 +263,10 @@
   ;; runs the invariant in the provided namespace. If there is a syntax error then the error message is returned
   (define (run-racket-code invariant)
     (define (truthy? x) (not (false? x)))
-    (parameterize ([current-namespace namespace])
+    (parameterize ([current-namespace namespace]
+                   [port-count-lines-enabled #t])
       (namespace-require 'racket)
-      (with-handlers ([exn:fail? (lambda (e) (exn-message e))])
+      (with-handlers ([exn:fail? exn-message])
         (define res (eval (read (open-input-string invariant))))
         (define inv-args (if (null? args) (list null) args))
         (truthy? (match res

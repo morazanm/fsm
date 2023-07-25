@@ -71,7 +71,7 @@ const getCurrentStateAndInv = (
     return {
       start: null,
       end: trans.start,
-      invPass: trans.invPass,
+      invPass: typeof trans.invPass === 'string' ? false : trans.invPass,
       input: null,
     };
   else {

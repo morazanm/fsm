@@ -202,6 +202,7 @@
                                                 (hash-ref t 'start (hash-ref t 'end #f))))
                           (equal? (hash-ref data 'targetState) end-state))
                         (transitions->jsexpr fsa invariants input namespace tape-index)))
+  (displayln trans)
   (define generated-imgs
     (for/list ([t trans]
                [s (hash-ref data 'invStatuses)]

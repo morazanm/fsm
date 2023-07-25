@@ -83,7 +83,7 @@ export type TmMttmTransition = BasicTransition & {
 // a state state.
 export type StartTransition = {
   start: StateName;
-  invPass: boolean | null;
+  invPass: boolean | null | string;
 
   // When the filepath key does not exist then that means that graphViz is not installed
   // on the users computer

@@ -1,11 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogContentText,
   DialogTitle,
+  FormControl,
   IconButton,
+  InputLabel,
+  MenuItem,
+  Select,
   Slide,
+  Stack,
   Step,
   StepButton,
   StepContent,
@@ -52,13 +57,23 @@ const CustomStepper = (props: CustomStepperProps) => {
       return '';
     }
   };
+  const getInvDetails = (status: string | boolean) => {
+    if (typeof status === 'string') {
+      return {
+        color: theme.palette.error.main,
+        status: 'syntax error',
+      } as const;
+    } else if (status) {
+      return { color: theme.palette.success.main, status: 'pass' } as const;
+    } else {
+      return { color: theme.palette.error.main, status: 'fail' } as const;
+    }
+  };
 
   return (
     <Stepper nonLinear orientation="vertical">
       {props.transitions.map((trans, index) => {
-        const invColor = trans.invPass
-          ? theme.palette.success.main
-          : theme.palette.error.main;
+        const { color, status } = getInvDetails(trans.invPass);
         return (
           <Step
             key={index}
@@ -76,9 +91,7 @@ const CustomStepper = (props: CustomStepperProps) => {
               <StepContent>
                 <Typography component={'span'}>
                   Invariant Status:{' '}
-                  <span style={{ color: invColor }}>
-                    {trans.invPass ? 'pass' : 'fail'}
-                  </span>
+                  <span style={{ color: color }}>{status}</span>
                 </Typography>
               </StepContent>
             )}
@@ -97,14 +110,31 @@ type MapViewProps = {
   setTransIndex: (isx: number) => void;
 };
 
+type Status = 'pass' | 'fail' | 'all' | 'error';
+
+const hasSameStatus = (trans: FSMTransition, targetStatus: Status): boolean => {
+  return (
+    (targetStatus === 'pass' && trans.invPass === true) ||
+    (targetStatus === 'fail' && trans.invPass === false) ||
+    (targetStatus === 'error' && typeof trans.invPass === 'string') ||
+    targetStatus === 'all'
+  );
+};
+
 export const MapView = (props: MapViewProps) => {
   const theme = useTheme();
+  const [invStatus, setInvStatus] = useState<Status>('all');
+
+  const filteredTransitions = props.transitions.filter((t) =>
+    hasSameStatus(t, invStatus),
+  );
   return (
     <Dialog
       open={props.open}
       TransitionComponent={Transition}
       keepMounted
       maxWidth="sm"
+      fullScreen
       onClose={props.onClose}
       aria-describedby="alert-dialog-slide-description"
     >
@@ -124,18 +154,33 @@ export const MapView = (props: MapViewProps) => {
         </IconButton>
       </DialogTitle>
       <DialogContent>
-        {props.transitions.length > 0 ? (
-          <>
+        {props.transitions.length >= 0 ? (
+          <Stack spacing={2}>
             <DialogContentText style={{ paddingBottom: '10px' }}>
               Click on a state transition in order to switch the transition
               being visualized by the GUI. highlighting.
             </DialogContentText>
+            <FormControl>
+              <InputLabel id="demo-simple-select-label">Filter</InputLabel>
+              <Select
+                labelId="demo-simple-select-label"
+                id="demo-simple-select"
+                value={invStatus}
+                label="Age"
+                onChange={(e) => setInvStatus(e.target.value as Status)}
+              >
+                <MenuItem value={'all'}>All</MenuItem>
+                <MenuItem value={'pass'}>Pass</MenuItem>
+                <MenuItem value={'fail'}>Fail</MenuItem>
+                <MenuItem value={'error'}>Error</MenuItem>
+              </Select>
+            </FormControl>
             <CustomStepper
-              transitions={props.transitions}
+              transitions={filteredTransitions}
               index={props.currentTransIndex}
               setTransIndex={props.setTransIndex}
             />
-          </>
+          </Stack>
         ) : (
           <DialogContentText id="alert-dialog-slide-description">
             Oh No! There does not appear to be any transitions to view! Please

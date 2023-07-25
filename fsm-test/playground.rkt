@@ -282,10 +282,6 @@
 
 
 ;;num zs before first a = num zs between last a and first b = num zs between last b and first c
-
-
-
-
 (define-invariants-for-tm a^nb^nc^n2
   ;; gets the number of z's in the tape
   (define get-num-of-x (lambda (tape symbol)

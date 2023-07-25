@@ -8,10 +8,21 @@ import {
 } from '../socket/responseTypes';
 import { isFSMRuleEqual, isTmType } from '../types/machine';
 
+type ResultData = MachineState | InvUpdate | string;
 type Result = {
-  data: MachineState | string;
+  data: ResultData;
   instruction: Instruction;
 };
+
+type InvUpdate = {
+  syntaxErrorMsg: string | undefined;
+  hasFailingInv: boolean;
+  updatedMachine: MachineState;
+};
+
+export function isInvUpdate(data: ResultData): data is InvUpdate {
+  return (data as InvUpdate).updatedMachine !== undefined;
+}
 
 export function parseDataResponse(
   data: string,
@@ -76,20 +87,33 @@ export function parseDataResponse(
     };
   } else if (result.responseType === Instruction.RECOMPUTE_INV) {
     const response = result as SocketResponse<RecomputeInvariantResponse>;
+    const hasSyntaxError = response.data.changedStatuses.find(
+      (s) => typeof s.status === 'string',
+    );
+    const hasFailingInvariants =
+      hasSyntaxError ||
+      response.data.changedStatuses.find((s) => s.status !== true);
     let newTrans = currentMachine.transitions.transitions;
     response.data.changedStatuses.forEach((v) => {
       newTrans[v.index].filepath = v.filepath;
       newTrans[v.index].invPass = v.status;
     });
-
     return {
       data: {
-        ...currentMachine,
-        transitions: {
-          ...currentMachine.transitions,
-          transitions: newTrans,
+        syntaxErrorMsg:
+          hasSyntaxError !== undefined &&
+          typeof hasSyntaxError.status === 'string'
+            ? hasSyntaxError.status
+            : undefined,
+        hasFailingInv: hasFailingInvariants !== undefined,
+        updatedMachine: {
+          ...currentMachine,
+          transitions: {
+            ...currentMachine.transitions,
+            transitions: newTrans,
+          },
         },
-      },
+      } as InvUpdate,
       instruction: response.responseType,
     };
   } else {
