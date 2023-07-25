@@ -316,14 +316,20 @@
 (define (draw-world a-vs)
   (cond [(empty? (viz-state-pimgs a-vs))
          (overlay
-           (image-struct-img (first (viz-state-upimgs a-vs)))
+          (image-struct-img (first (viz-state-upimgs a-vs)))
           E-SCENE)]
+        [(= 1 (length (viz-state-pimgs a-vs)))
+         (overlay
+          (above
+           (image-struct-img (first (viz-state-pimgs a-vs)))
+           (text "Starting ndfa" 20 'black))
+          E-SCENE)]          
         [else
          (overlay
           (above
            (image-struct-img (first (viz-state-pimgs a-vs)))
            (text (format "Next node to remove: ~a" (image-struct-state
-                                                   (first (viz-state-pimgs a-vs))))
+                                                    (first (viz-state-pimgs a-vs))))
                  20
                  'black))
           E-SCENE)]))
