@@ -143,7 +143,7 @@
   
   
   ; fsm --> fsm
-  (define (ndfa->dfa m . L)
+  (define (ndfa->dfa m)
     (define (ndfsm->dfsm m)
       (let* ((esr (compute-superstate-rules null 
                                             (list (sort-symbols (empties (fsa-getstart m) (fsa-getrules m)))) 
