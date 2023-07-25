@@ -143,7 +143,7 @@
   
   
   ; fsm --> fsm
-  (define (ndfa->dfa m . L)
+  (define (ndfa->dfa m)
     (define (ndfsm->dfsm m)
       (let* ((esr (compute-superstate-rules null 
                                             (list (sort-symbols (empties (fsa-getstart m) (fsa-getrules m)))) 
@@ -154,10 +154,24 @@
              (new-start (superstate->state (sort-symbols (empties (fsa-getstart m) (fsa-getrules m)))))
              (new-finals (map superstate->state (extract-final-ss new-states (fsa-getfinals m))))
              (new-rules (convert2rules esr)))
-        (if (null? L)
-            (make-unchecked-dfa (map superstate->state new-states) (fsa-getalphabet m) new-start new-finals new-rules)
-            (make-unchecked-dfa (map superstate->state new-states) (fsa-getalphabet m) new-start new-finals new-rules (car L)))))
+        (make-unchecked-dfa (map superstate->state new-states) (fsa-getalphabet m) new-start new-finals new-rules 'no-dead)))
     (ndfsm->dfsm m))
+  
+  #;(define (ndfa->dfa m . L)
+      (define (ndfsm->dfsm m)
+        (let* ((esr (compute-superstate-rules null 
+                                              (list (sort-symbols (empties (fsa-getstart m) (fsa-getrules m)))) 
+                                              (fsa-getalphabet m) 
+                                              (fsa-getrules m) 
+                                              null))
+               (new-states (extract-sstates esr))
+               (new-start (superstate->state (sort-symbols (empties (fsa-getstart m) (fsa-getrules m)))))
+               (new-finals (map superstate->state (extract-final-ss new-states (fsa-getfinals m))))
+               (new-rules (convert2rules esr)))
+          (if (null? L)
+              (make-unchecked-dfa (map superstate->state new-states) (fsa-getalphabet m) new-start new-finals new-rules)
+              (make-unchecked-dfa (map superstate->state new-states) (fsa-getalphabet m) new-start new-finals new-rules (car L)))))
+      (ndfsm->dfsm m))
   
   ; (listof superstate) (listof superstate) alphabet (listof rule) (listof ssr) --> (listof ssr) 
   (define (compute-superstate-rules visited tovisit sigma rules res)
@@ -251,10 +265,10 @@
                                          (map (lambda (s) (mk-fsarule s EMP (fsa-getstart m1))) 
                                               (fsa-getfinals m1)))))))
   
-  ; dfsa --> dfsa
+  ; fsa --> dfa
   (define (complement-fsa m)
     ; rename-states-fsa is not needed, because no new states are introduced
-    (let ((m1 (ndfa->dfa m 'nodead)))
+    (let ((m1 (ndfa->dfa m)))
       (make-unchecked-dfa (fsa-getstates m1)
                           (fsa-getalphabet m1)
                           (fsa-getstart m1)
