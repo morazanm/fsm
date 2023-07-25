@@ -322,7 +322,7 @@
          (overlay
           (above
            (image-struct-img (first (viz-state-pimgs a-vs)))
-           (text "Starting ndfa" 20 'black))
+           (text (format "                    Starting ndfa\nNext step: add new starting and final states") 20 'black))
           E-SCENE)]          
         [else
          (overlay
