@@ -1,6 +1,6 @@
 #lang fsm
 
-(require "../../fsm-core/interface.rkt" "lib.rkt")
+(require "../../fsm-core/interface.rkt" "lib.rkt" "../../fsm-gui/graphViz/main.rkt")
 (require 2htdp/universe rackunit)
 (require (rename-in racket/gui/base
                     [make-color loc-make-color]
@@ -232,7 +232,11 @@
   (graph->bitmap
    (create-edges
     (create-nodes
-     (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+     (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans")
+                   #;(hash 'rankdir "LR"
+                           'size "7, 7"
+                           'ranksep "2.0"
+                           'font "Sans"))
      los
      news
      newf)
@@ -314,31 +318,25 @@
 ;; viz-state -> img
 ;; Purpose: To render the given vis-state
 (define (draw-world a-vs)
-  (cond [(empty? (viz-state-pimgs a-vs))
-         (overlay
-          (image-struct-img (first (viz-state-upimgs a-vs)))
-          E-SCENE)]
-        [(= 1 (length (viz-state-pimgs a-vs)))
-         (overlay
-          (above
-           (image-struct-img (first (viz-state-pimgs a-vs)))
-           (text (format "Starting ndfa") 20 'black))
-          E-SCENE)]
-        [(= 2 (length (viz-state-pimgs a-vs)))
-         (overlay
-          (above
-           (image-struct-img (first (viz-state-pimgs a-vs)))
-           (text (format "Added starting and final state") 20 'black))
-          E-SCENE)]
-        [else
-         (overlay
-          (above
-           (image-struct-img (first (viz-state-pimgs a-vs)))
-           (text (format "Ripped node: ~a" (image-struct-state
-                                            (first (rest (viz-state-pimgs a-vs)))))
-                 20
-                 'black))
-          E-SCENE)]))
+  (define graph-img (cond [(empty? (viz-state-pimgs a-vs))
+                           (image-struct-img (first (viz-state-upimgs a-vs)))]
+                          [(= 1 (length (viz-state-pimgs a-vs)))
+                           (above
+                            (image-struct-img (first (viz-state-pimgs a-vs)))
+                            (text (format "Starting ndfa") 20 'black))]
+                          [(= 2 (length (viz-state-pimgs a-vs)))
+                           (above
+                            (image-struct-img (first (viz-state-pimgs a-vs)))
+                            (text (format "Added starting and final state") 20 'black))]
+                          [else
+                           (above
+                            (image-struct-img (first (viz-state-pimgs a-vs)))
+                            (text (format "Ripped node: ~a" (image-struct-state
+                                                             (first (rest (viz-state-pimgs a-vs)))))
+                                  20
+                                  'black))]))
+  (overlay (resize-image graph-img (image-width E-SCENE) (image-height E-SCENE))
+           E-SCENE))
 
 
 ;; run-function
