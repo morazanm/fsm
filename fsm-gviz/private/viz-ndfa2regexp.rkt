@@ -322,14 +322,20 @@
          (overlay
           (above
            (image-struct-img (first (viz-state-pimgs a-vs)))
-           (text (format "                    Starting ndfa\nNext step: add new starting and final states") 20 'black))
-          E-SCENE)]          
+           (text (format "Starting ndfa") 20 'black))
+          E-SCENE)]
+        [(= 2 (length (viz-state-pimgs a-vs)))
+         (overlay
+          (above
+           (image-struct-img (first (viz-state-pimgs a-vs)))
+           (text (format "Added starting and final state") 20 'black))
+          E-SCENE)]
         [else
          (overlay
           (above
            (image-struct-img (first (viz-state-pimgs a-vs)))
-           (text (format "Next node to remove: ~a" (image-struct-state
-                                                    (first (viz-state-pimgs a-vs))))
+           (text (format "Ripped node: ~a" (image-struct-state
+                                            (first (rest (viz-state-pimgs a-vs)))))
                  20
                  'black))
           E-SCENE)]))
