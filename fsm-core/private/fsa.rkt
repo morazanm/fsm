@@ -154,9 +154,7 @@
              (new-start (superstate->state (sort-symbols (empties (fsa-getstart m) (fsa-getrules m)))))
              (new-finals (map superstate->state (extract-final-ss new-states (fsa-getfinals m))))
              (new-rules (convert2rules esr)))
-        (if (null? L)
-            (make-unchecked-dfa (map superstate->state new-states) (fsa-getalphabet m) new-start new-finals new-rules)
-            (make-unchecked-dfa (map superstate->state new-states) (fsa-getalphabet m) new-start new-finals new-rules (car L)))))
+        (make-unchecked-dfa (map superstate->state new-states) (fsa-getalphabet m) new-start new-finals new-rules 'no-dead)))
     (ndfsm->dfsm m))
   
   ; (listof superstate) (listof superstate) alphabet (listof rule) (listof ssr) --> (listof ssr) 

@@ -281,7 +281,7 @@
                    (make-dgraph (append (sm-rules M) new-rules))
                    new-start
                    new-final)
-                  'S)))
+                  (sm-start M))))
 
 ;; process-key
 ;; viz-state key --> viz-state
@@ -355,4 +355,5 @@
 
 
 
-(run AT-LEAST-ONE-MISSING)
+;(run AT-LEAST-ONE-MISSING)
+(define D (ndfa->dfa AT-LEAST-ONE-MISSING))
