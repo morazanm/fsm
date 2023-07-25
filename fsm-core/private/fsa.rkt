@@ -252,7 +252,7 @@
   ; dfsa --> dfsa
   (define (complement-fsa m)
     ; rename-states-fsa is not needed, because no new states are introduced
-    (let ((m1 (ndfa->dfa m 'nodead)))
+    (let ((m1 (ndfa->dfa m)))
       (make-unchecked-dfa (fsa-getstates m1)
                           (fsa-getalphabet m1)
                           (fsa-getstart m1)
