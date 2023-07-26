@@ -8,6 +8,8 @@ import {
   Backdrop,
   CircularProgress,
   Typography,
+  Alert,
+  AlertTitle,
 } from '@mui/material';
 import {
   State,
@@ -276,32 +278,27 @@ const MainView = (props: MainViewProps) => {
           if (instruction === Instruction.RECOMPUTE_INV) {
             if (data.syntaxErrorMsg) {
               openInfoDialog(
-                'Invariant Syntax Error',
-                <Grid spacing={2}>
-                  <Grid item>
-                    <Typography component={'span'}>
-                      There is a syntax error with the current invariant.
-                    </Typography>
-                  </Grid>
-                  <Grid item>
-                    <Typography
-                      component={'code'}
-                      style={{ color: theme.palette.error.light }}
-                    >
-                      {data.syntaxErrorMsg}
-                    </Typography>
-                  </Grid>
-                </Grid>,
+                'Invalid Code',
+                <Alert severity="error">
+                  The updated code is failing to build. See{' '}
+                  <strong>State View</strong> for the error message.
+                </Alert>,
               );
             } else if (data.hasFailingInv) {
               openErrorDialog(
-                'Failing Invariants',
-                'There are invariants that are failing for this machine. See the Map View for more details.',
+                'Error',
+                <Alert severity="error">
+                  There are failing invariants for this state on some
+                  transitions. See the <strong>Map View</strong> for more
+                  details
+                </Alert>,
               );
             } else {
               openInfoDialog(
-                'Passing Invariants',
-                'All invariants are still passing',
+                'Success',
+                <Alert severity="success">
+                  All Invariants for this state are passing on all transitions.
+                </Alert>,
               );
             }
             setMachineState(data.updatedMachine);

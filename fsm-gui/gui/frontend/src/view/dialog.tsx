@@ -1,4 +1,5 @@
 import {
+  Alert,
   Breadcrumbs,
   Button,
   Dialog,
@@ -61,31 +62,29 @@ export const IncomingMachineDialog = (props: IncomingMachineDialogProps) => {
       <DialogTitle id="alert-dialog-title">{`Incoming Prebuilt Machine: ${props.incomingType}`}</DialogTitle>
       <DialogContent>
         <DialogContentText id="alert-dialog-description">
-          {`Received a request to import a prebuilt ${props.incomingType} machine. If you wish to import this machine press accept. If you do not wish to import this machine press reject.`}
+          {`Received a request to import a prebuilt ${props.incomingType}. If you wish to import this machine press accept. If you do not wish to import this machine press reject.`}
         </DialogContentText>
         <br />
         <DialogContent id="alert-dialog-description">
-          <DialogContentText>
-            <Typography component={'span'}>
-              <span style={{ color: theme.palette.warning.main }}>Warning</span>
-              : Pressing accept will remove the machine currently loaded in the
-              GUI. You can save your current machine using the following steps:
-            </Typography>
-          </DialogContentText>
+          <Alert severity="warning">
+            Pressing accept will remove any machine that is currently loaded in
+            the GUI. You can save your current machine using the following
+            steps:
+            <Breadcrumbs
+              sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                paddingTop: '5px',
+              }}
+              aria-label="breadcrumb"
+              separator="›››"
+            >
+              <Typography color="text.secondary">File</Typography>
+              <Typography color="text.secondary">Save</Typography>
+            </Breadcrumbs>
+          </Alert>
           <br />
-          <Breadcrumbs
-            sx={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              paddingTop: '5px',
-            }}
-            aria-label="breadcrumb"
-            separator="›››"
-          >
-            <Typography color="text.secondary">File</Typography>
-            <Typography color="text.secondary">Save</Typography>
-          </Breadcrumbs>
         </DialogContent>
       </DialogContent>
       <DialogActions>

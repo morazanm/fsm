@@ -293,7 +293,7 @@
   
   ;; The number of z's is divisiable by 3
   ;; The number of z's before the first a is less or equal to the number of z's
-  (define-invariant S (tape posn)
+  #;(define-invariant S (tape posn)
     (let ((list-of-xyz (filter (lambda (input) (or (equal? input 'x)
                                                    (equal? input 'y)
                                                    (equal? input 'z)))

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import {
+  Alert,
+  AlertTitle,
   Dialog,
   DialogContent,
   DialogContentText,
@@ -154,7 +156,7 @@ export const MapView = (props: MapViewProps) => {
         </IconButton>
       </DialogTitle>
       <DialogContent>
-        {props.transitions.length >= 0 ? (
+        {props.transitions.length > 0 ? (
           <Stack spacing={2}>
             <DialogContentText style={{ paddingBottom: '10px' }}>
               Click on a state transition in order to switch the transition
@@ -182,10 +184,11 @@ export const MapView = (props: MapViewProps) => {
             />
           </Stack>
         ) : (
-          <DialogContentText id="alert-dialog-slide-description">
+          <Alert severity="info">
+            <AlertTitle>Info</AlertTitle>
             Oh No! There does not appear to be any transitions to view! Please
             run the machine and try again.
-          </DialogContentText>
+          </Alert>
         )}
       </DialogContent>
     </Dialog>

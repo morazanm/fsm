@@ -6,7 +6,11 @@ import {
   RecomputeInvariantResponse,
   RedrawnGraphvizImageResponse,
 } from '../socket/responseTypes';
-import { isFSMRuleEqual, isTmType } from '../types/machine';
+import {
+  getTransitionEndState,
+  isFSMRuleEqual,
+  isTmType,
+} from '../types/machine';
 
 type ResultData = MachineState | InvUpdate | string;
 type Result = {
@@ -90,14 +94,19 @@ export function parseDataResponse(
     const hasSyntaxError = response.data.changedStatuses.find(
       (s) => typeof s.status === 'string',
     );
-    const hasFailingInvariants =
-      hasSyntaxError ||
-      response.data.changedStatuses.find((s) => s.status !== true);
-    let newTrans = currentMachine.transitions.transitions;
+
+    const newTrans = currentMachine.transitions.transitions;
     response.data.changedStatuses.forEach((v) => {
       newTrans[v.index].filepath = v.filepath;
       newTrans[v.index].invPass = v.status;
     });
+
+    const hasFailingInvariants =
+      hasSyntaxError ||
+      newTrans
+        .filter((t) => getTransitionEndState(t) === response.data.targetState)
+        .find((t) => t.invPass !== true);
+
     return {
       data: {
         syntaxErrorMsg:

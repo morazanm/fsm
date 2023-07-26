@@ -1,4 +1,6 @@
 import {
+  Alert,
+  AlertTitle,
   Button,
   ButtonGroup,
   Dialog,
@@ -72,9 +74,13 @@ type InvariantDetailsProps = {
 
 const InvariantDetails = (props: InvariantDetailsProps) => {
   const theme = useTheme();
-  const formatInvariant = (status: boolean | null): string => {
-    if (status === null) return 'None';
-    return status ? 'Passing' : 'Failing';
+  const formatInvariant = (status: boolean | null): JSX.Element => {
+    if (status === null) return <Alert severity="info">Not Ran</Alert>;
+    return status ? (
+      <Alert severity="success">Passing</Alert>
+    ) : (
+      <Alert severity="error">Failing</Alert>
+    );
   };
 
   const invariantColor = (status: boolean | null): string => {
@@ -164,18 +170,27 @@ const InvariantDetails = (props: InvariantDetailsProps) => {
         </Stack>
       </Grid>
       <Grid item xs={5}>
-        <Typography>
-          Status:{' '}
-          <span
-            style={{
-              color: invariantColor(invPassed),
-            }}
-          >
-            {formatInvariant(invPassed)}
-          </span>
-        </Typography>
+        <Grid container alignItems="center" spacing={2}>
+          <Grid item xs={2}>
+            <Typography>Status:</Typography>
+          </Grid>
+          <Grid item>{formatInvariant(invPassed)}</Grid>
+        </Grid>
       </Grid>
     </Grid>
+  );
+};
+
+type ErrorWindowProps = {
+  msg: string;
+};
+
+const ErrorWindow = (props: ErrorWindowProps) => {
+  return (
+    <Alert severity="error">
+      <AlertTitle>Racket Code Error</AlertTitle>
+      {props.msg}
+    </Alert>
   );
 };
 
@@ -214,6 +229,9 @@ export const StateModal = (props: StateModalProps) => {
     }
     return true;
   };
+
+  const hasCodeError = () =>
+    typeof props.currentTransition?.invPass === 'string';
 
   const showInvDetails = (t: FSMTransition | undefined): boolean => {
     if (t === undefined) return false;
@@ -354,6 +372,11 @@ export const StateModal = (props: StateModalProps) => {
                 machineType={props.machineType}
               />
             )}
+            {hasCodeError() && (
+              <ErrorWindow
+                msg={(props.currentTransition?.invPass as string) ?? ''}
+              />
+            )}
             {props.state.invFunc ? (
               editInv ? (
                 <CodeEditor
@@ -380,11 +403,11 @@ export const StateModal = (props: StateModalProps) => {
                 </SyntaxHighlighter>
               )
             ) : (
-              <Typography>
+              <Alert severity="info">
                 There does not appear to be an invariant function associated
                 with this state. Please build a machine with an invariant
                 associated with this state to view the invariant here.
-              </Typography>
+              </Alert>
             )}
           </Stack>
           <hr />
