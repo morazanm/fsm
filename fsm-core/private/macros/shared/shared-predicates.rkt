@@ -1,5 +1,6 @@
-(module predicates racket
+(module shared-predicates racket
   (require racket/contract
+           rackunit
            "../../constants.rkt"
            "../../sm-getters.rkt"
            "../../fsa.rkt"
@@ -55,10 +56,10 @@
   ; uppercase roman letter, -, natural number
   ; DEAD
   (define (valid-state? x)
-    (define regex-pattern #px"^[A-Z](?:-[0-9]+)?$")
+    (define regex-pattern (regexp "^[A-Z](?:-[0-9]+)?$"))
     (or (equal? x DEAD)
         (if (symbol? x)
-            (regexp-match regex-pattern (symbol->string x))
+            (if (regexp-match regex-pattern (symbol->string x)) #t #f)
             #f)
         )
     )
@@ -67,9 +68,9 @@
   ;purpose: takes in anything and makes sure that it is a symbol that
   ; a lowercase roman letter
   (define (valid-alpha? x)
-    (define regex-pattern #px"[a-z]")
+    (define regex-pattern (regexp "^[a-z]$"))
     (if (symbol? x)
-        (regexp-match regex-pattern (symbol->string x))
+        (if (regexp-match regex-pattern (symbol->string x)) #t #f)
         #f)
     )
 
@@ -81,7 +82,7 @@
   ;   can be given to the function properly
   (define (start-in-states? states)
     (lambda (start)
-      (member start states)
+      (if (member start states) #t #f)
       )
     )
 
@@ -104,7 +105,7 @@
   ; in the list of states
   (define (valid-finals? states)
     (lambda (finals)
-      (andmap (lambda (x) (member x states)) finals)
+      (if (andmap (lambda (x) (member x states)) finals) #t #f)
       )
     )
 
@@ -116,9 +117,65 @@
 
   ;return-duplicates: (listof something) --> (listof something)
   ;purpose: return all the duplicated items in any list of anything
-  (define (return-duplicates los)
-    (cond [(empty? los) '()]
-          [(member (car los) (cdr los)) (cons (car los) (return-duplicates (cdr los)))]
-          [else (return-duplicates (cdr los))]))
-  
+  (define (return-duplicates input)
+    (define (helper los)
+      (cond [(empty? los) '()]
+            [(member (car los) (cdr los)) (cons (car los) (return-duplicates (cdr los)))]
+            [else (return-duplicates (cdr los))]))
+    (remove-duplicates (helper input)))
+
+  (module+ test
+    ;valid-list-of tests
+    (check-equal? (valid-list-of '(A B C D E) symbol?) #t)
+    (check-equal? (valid-list-of '(A B C 1 D E) symbol?) #f)
+
+    ;valid-state? tests
+    (check-equal? (valid-state? 'A) #t)
+    (check-equal? (valid-state? 'A-1) #t)
+    (check-equal? (valid-state? 'A-123) #t)
+    (check-equal? (valid-state? '1) #f)
+    (check-equal? (valid-state? 1) #f)
+    (check-equal? (valid-state? 'AB) #f)
+    (check-equal? (valid-state? DEAD) #t)
+    (check-equal? (valid-state? 'A-1ifodsijfodsijf) #f)
+    (check-equal? (valid-state? 'ajfdA) #f)
+
+    ;valid-alpha? tests
+    (check-equal? (valid-alpha? 'a) #t)
+    (check-equal? (valid-alpha? '1) #f)
+    (check-equal? (valid-alpha? 1) #f)
+    (check-equal? (valid-alpha? 'A) #f)
+    (check-equal? (valid-alpha? 'a1) #f)
+    (check-equal? (valid-alpha? 'Aa) #f)
+    (check-equal? (valid-alpha? EMP) #f)
+
+    ;start-in-states? tests
+    (check-equal? ((start-in-states? '(A B C)) 'A) #t)
+    (check-equal? ((start-in-states? '(A B C)) 'D) #f)
+
+    ;valid-start? tests
+    (check-equal? ((valid-start? '(A B C)) 'A) #t)
+    (check-equal? ((valid-start? '(A B C)) 'A-1) #t)
+    (check-equal? ((valid-start? '(A B C)) DEAD) #t)
+    (check-equal? ((valid-start? '(A B C)) 1) #f)
+    (check-equal? ((valid-start? '(A B C)) 'A1) #f)
+    (check-equal? ((valid-start? '(A B C)) '(A)) #f)
+
+    ;valid-finals? tests
+    (check-equal? ((valid-finals? '(A B C)) '(A)) #t)
+    (check-equal? ((valid-finals? '(A B C)) '(A-1)) #f)
+    (check-equal? ((valid-finals? '(A B C)) 'A) #f)
+    (check-equal? ((valid-finals? '(A B C)) '(D)) #f)
+
+    ;invalid-finals tests
+    (check-equal? (invalid-finals '(A B C) '(B)) '())
+    (check-equal? (invalid-finals '(A B C) '(D)) '(D))
+    (check-equal? (invalid-finals '(A B C) '(B D)) '(D))
+    (check-equal? (invalid-finals '(A B C) '(B C 1 D)) '(1 D))
+
+    ;return-duplicates tests
+    (check-equal? (return-duplicates '(A A B C)) '(A))
+    (check-equal? (return-duplicates '(A A B B B C)) '(A B))
+    (check-equal? (return-duplicates '(A B C)) '())    
+    )
   )

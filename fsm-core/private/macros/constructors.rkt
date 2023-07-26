@@ -228,7 +228,7 @@
                                  correct-members-tm?
                                  incorrect-members-tm
                                  states
-                                 (cons RIGHT (cons LEFT (cons BLANK sigma))))
+                                 sigma)
                                 (no-duplicates/c "rules"))]
           [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
