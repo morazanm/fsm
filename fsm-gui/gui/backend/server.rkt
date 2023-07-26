@@ -1,14 +1,12 @@
 #lang racket
-(require (for-syntax syntax/parse)
-         json
+(require json
          racket/tcp
-         "./fsm-functions.rkt")
+         "env.rkt"
+         "macros.rkt"
+         "response.rkt")
 
-(provide run-with-prebuilt)
+(provide run-with-prebuilt run-without-prebuilt)
 
-(define DEBUG_MODE #f)
-(define ADDRESS "127.0.0.1")
-(define PORT 4000)
 
 ;; Holds data for a active tcp-thread. This data is help for cleanup
 ;; thrd -> thread
@@ -23,15 +21,11 @@
   (tcp-abandon-port (listener-thread-out t))
   (kill-thread (listener-thread-thrd t)))
 
-; displayln! is a simple macro that prints debug logs when the DEBUG_MODE variable is 
-; #t. The first arg is the string to be printed. Any additional args are used to format the string
-(define-syntax (displayln! stx)
-  (syntax-parse stx
-    [(_ s:expr) #`(when DEBUG_MODE (displayln s))]
-    [(_ s:expr args:expr ...)
-     #`(when DEBUG_MODE (displayln (format s args ...)))]))
 
-
+;; send-fsm-protocal :: jsexpr port -> ()
+;; Since there is not a standard for knowing when a TCP message has been 
+;; fully sent we send a EOF after the inital message to signal that the 
+;; message is finished
 (define (send-fsm-protocal data out)
   (displayln! "\n****Sending Data:****\n ~s" data)
   (write-json data out)
@@ -85,6 +79,7 @@
                           (displayln! "\n----Recieved a incomming request: ~s ----"
                                       (if (eof-object? hashed-msg) "eof" (hash-ref hashed-msg 'instr)))
                           (displayln! hashed-msg)
+                          ;; When we get a EOF we will shut down the thread
                           (unless (eof-object? hashed-msg)
                             (define outgoing-data (handle-request hashed-msg))
                             (if (eof-object? outgoing-data)
@@ -112,6 +107,5 @@
   (run-server (hash 'data data-to-send 'namespace ns)))
 
 ;; run-without-prebuilt :: ()
-;; Runs the TCP server without sending a prebuilt machine to
-;; the GUI
+;; Runs the TCP server without sending a prebuilt machine to the GUI
 (define (run-without-prebuilt) (run-server))

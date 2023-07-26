@@ -66,7 +66,7 @@
                                   (hash-set t 'filepath (hash-ref data i)))
                                 transitions
                                 (range (length transitions))))
-      (displayln (format "Time to create gviz imgs: ~s" (- (current-seconds) start-time)))
+      (displayln (format "[DEBUG] Time to create gviz imgs: ~s" (- (current-seconds) start-time)))
       return-data))
 
   (define no-dead (hash-ref data 'nodead))
