@@ -125,13 +125,14 @@
 ;; ndfa → ndfa
 ;; Purpose: Construct ndfa for the Kleene star of given ndfa’s language
 (define (kstar-fsa M)
-  (let* [(new-start (generate-symbol 'K (sm-states M))) (new-sigma (sm-sigma M))
-                                                        (new-states (cons new-start (sm-states M)))
-                                                        (new-finals (cons new-start (sm-finals M)))
-                                                        (new-rules (cons (list new-start EMP (sm-start M))
-                                                                         (append (sm-rules M)
-                                                                                 (map (λ (f) (list f EMP new-start))
-                                                                                      (sm-finals M)))))]
+  (let* [(new-start (generate-symbol 'K (sm-states M)))
+         (new-sigma (sm-sigma M))
+         (new-states (cons new-start (sm-states M)))
+         (new-finals (cons new-start (sm-finals M)))
+         (new-rules (cons (list new-start EMP (sm-start M))
+                          (append (sm-rules M)
+                                  (map (λ (f) (list f EMP new-start))
+                                       (sm-finals M)))))]
     (make-ndfa new-states new-sigma new-start new-finals new-rules)))
 
 ;; Tests for kstar-fsa
@@ -181,3 +182,13 @@
            (union-fsa (regexp->ndfa (union-regexp-r1 e) sigma)
                       (regexp->ndfa (union-regexp-r2 e) sigma))]
           [else (kstar-fsa (regexp->ndfa (kleenestar-regexp-r1 e) sigma))])))
+
+
+(define R1 (union-regexp (singleton-regexp "a")
+                         (singleton-regexp "b")))
+
+(define R2 (concat-regexp (singleton-regexp "m") R1))
+
+(define R3 (kleenestar-regexp R2))
+
+(define M3 (regexp->ndfa R3 '(a b m)))
