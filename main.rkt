@@ -17,6 +17,7 @@
    (all-from-out "fsm-gui/interface.rkt")
    (all-from-out "module-begin.rkt")
    check-machine
+   check-invariant?
    empties
 
    ; sm constructors
@@ -86,6 +87,8 @@
     (when (or (< color-blind-mode 0) (> color-blind-mode 2))
       (error 'sm-graph "Invalid color option. Must be either 0, 1, or 2. Given ~a" color-blind-mode))
     (fsa->bitmap fsa color-blind-mode))
+
+  (define check-invariant? check-equal?)
 
  
   ) ; close module

@@ -11,7 +11,8 @@
          define-invariants-for-pda
          define-invariants-for-tm
          define-invariants-for-mttm
-         sm-visualize!)
+         sm-visualize!
+         get-invariant)
 
 ;; We need to attach a namespace anchor to the top of the module so we can
 ;; access all functions defined when calling eval
@@ -26,11 +27,18 @@
 (begin-for-syntax
   (define ID-INV "~a-$inv$-~a")
   ;; This hash table holds the list of invarinats that a machine is associated with
-  ;; The key is the machine name and value is a listof(cons symbol string)
+  ;; The key is the machine name and value is a pairof(listof(symbol) syntax(listof(cons symbol string))
+  ;; where the first value in the pair is the list of states that have invarints defined and the second
+  ;; value is the syntax list passed to sm-visualize
   (define shared-invariant-data (make-hash))
   
   ;; A common scope for storing variables 
   (define common-ctx #'common-context-for-hidden-ids)
+
+  ;; has-state-defined? :: syntax stntax -> boolean
+  ;; Checks if there is an invariant for the provided state defined for the given machine
+  (define (has-state-defined? machine-name state)
+    (member (syntax-e state) (car (hash-ref shared-invariant-data (syntax-e machine-name) '()))))
 
   ;; check-duplicates* :: [syntax] -> syntax | boolean
   ;; if a duplicate identifier is found then the syntax is returned
@@ -66,7 +74,7 @@
 (define-syntax (sm-visualize! stx)
   (syntax-parse stx
     [(_ fsa:id)
-     #:with invariants (hash-ref shared-invariant-data (syntax-e #'fsa) #''())
+     #:with invariants (cdr (hash-ref shared-invariant-data (syntax-e #'fsa) #''()))
      #`(run-with-prebuilt fsa invariants ($MODULE-NAMESPACE$))]))
 
 
@@ -78,6 +86,8 @@
    (define-syntax (macro-name stx)
      (syntax-parse stx
        [(_ m-name:id (~or func:racket-define (~var func (invariant-func #'m-name num))) ...+)
+        #:fail-when (not (identifier-binding #'m-name))
+        (raise-syntax-error 'undefined-machine "" #'m-name)
         #:fail-when (empty? (syntax->list #'((~? func.state) ...)))
         "Expected at least one 'define-invariant' clause"
         #:fail-when (check-duplicates* (syntax->list #`((~? func.state) ...)))
@@ -85,7 +95,8 @@
         (begin 
           (hash-set! shared-invariant-data
                      (syntax-e #'m-name)
-                     #'(list (~? (cons 'func.state func.str-value)) ...))
+                     (cons (map syntax->datum (syntax->list #`((~? func.state) ...)))
+                           #'(list (~? (cons 'func.state func.str-value)) ...)))
           #`(begin
               ;; Add the invariant functions
               (~? (define (func.id func.arg ...) func.body ...) func) ...))]
@@ -98,6 +109,16 @@
 (generate-invariant-macro define-invariants-for-mttm 2)
 
 
+;; This macro extracts the procedure that is associated with the machines
+;; state.
+(define-syntax-parse-rule (get-invariant m-name:id state:id)
+  #:with  func-name (format-id common-ctx ID-INV #'m-name #'state)
+  #:fail-when (not (identifier-binding #'m-name))
+  (raise-syntax-error 'undefined-machine "" #'m-name)
+  #:fail-when (not (has-state-defined? #'m-name #'state))
+  (raise-syntax-error #f "No Invarint defined for state" #'state)
+  func-name)
+
 (module+ test
   (require rackunit rackunit/text-ui syntax/macro-testing)
   (define a^nb^nc^n2 'dummy)
@@ -108,7 +129,7 @@
      (test-case "dfa"
                 (check-exn #rx"Duplicate invariant for state found"
                            (lambda ()
-                             (define a* 'dymmy)
+                             (define a* 'dummy)
                              (convert-compile-time-error
                               (define-invariants-for-dfa a*
                                 (define-invariant S (ci) #t)
@@ -117,7 +138,7 @@
 
                 (check-exn #rx"Arity mismatch. Expected 1, but was given 2"
                            (lambda ()
-                             (define a* 'dymmy)
+                             (define a* 'dummy)
                              (convert-compile-time-error
                               (define-invariants-for-dfa a*
                                 (define-invariant S (ci o) #t)
@@ -127,7 +148,7 @@
      (test-case "ndfa"
                 (check-exn #rx"Duplicate invariant for state found"
                            (lambda ()
-                             (define a* 'dymmy)
+                             (define a* 'dummy)
                              (convert-compile-time-error
                               (define-invariants-for-ndfa a*
                                 (define-invariant S (ci) #t)
@@ -136,7 +157,7 @@
 
                 (check-exn #rx"Arity mismatch. Expected 1, but was given 2"
                            (lambda ()
-                             (define a* 'dymmy)
+                             (define a* 'dummy)
                              (convert-compile-time-error
                               (define-invariants-for-ndfa a*
                                 (define-invariant S (ci o) #t)
@@ -146,7 +167,7 @@
      (test-case "pda"
                 (check-exn #rx"Duplicate invariant for state found"
                            (lambda ()
-                             (define a* 'dymmy)
+                             (define a* 'dummy)
                              (convert-compile-time-error
                               (define-invariants-for-pda a*
                                 (define-invariant S (ci stack) #t)
@@ -155,7 +176,7 @@
 
                 (check-exn #rx"Arity mismatch. Expected 2, but was given 1"
                            (lambda ()
-                             (define a* 'dymmy)
+                             (define a* 'dummy)
                              (convert-compile-time-error
                               (define-invariants-for-pda a*
                                 (define-invariant S (ci) #t)
@@ -192,13 +213,38 @@
      (test-case "general errors"
                 (check-exn #rx"Expected at least one 'define-invariant' clause"
                            (lambda ()
-                             (convert-compile-time-error (define-invariants-for-tm a^nb^nc^n2 ))))
+                             (convert-compile-time-error (define-invariants-for-tm a^nb^nc^n2))))
+
+                (check-exn #rx"undefined-machine"
+                           (lambda ()
+                             (convert-compile-time-error
+                              (define-invariants-for-tm a*
+                                (define-invariant S (ci stack) #t)))))
   
 
                 (check-exn #rx"Expected at least one 'define-invariant' clause"
                            (lambda ()
                              (convert-compile-time-error (define-invariants-for-pda a^nb^nc^n2
-                                                           (define x 10))))))))
+                                                           (define x 10))))))
+     (test-case "get-invariant"
+                (check-exn #rx"undefined-machine"
+                           (lambda ()
+                             (define a* 'dummy)
+                             (define-invariants-for-dfa a*
+                               (define-invariant S (ci) #t)
+                               (define-invariant A (ci) #t)
+                               (define-invariant Y (ci) #f))
+                             (convert-compile-time-error
+                              (get-invariant a** S))))
+                (check-exn #rx"No Invarint defined for state"
+                           (lambda ()
+                             (define a* 'dummy)
+                             (define-invariants-for-dfa a*
+                               (define-invariant S (ci) #t)
+                               (define-invariant A (ci) #t)
+                               (define-invariant Y (ci) #f))
+                             (convert-compile-time-error
+                              (get-invariant a* SS)))))))
 
   (run-tests macro-tests)
   ) ;;end module+ test
