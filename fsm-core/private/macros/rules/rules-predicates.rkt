@@ -76,8 +76,8 @@
          (= (length rule) 2)
          (= (length (car rule)) 3)
          (= (length (cadr rule)) 2)
-         (list? (caddr (car rule)))
-         (list? (cadr (cadr rule)))
+         (or (list? (caddr (car rule))) (equal? (caddr (car rule)) EMP))
+         (or (list? (cadr (cadr rule))) (equal? (cadr (cadr rule)) EMP))
          ))
 
   ;valid-tm-rule: something --> boolean
@@ -154,7 +154,7 @@
   ; which can also be a turing machine action.
   (define (correct-members-tm? states sigma rules)
     (if (andmap (lambda (x) (and (member (car (car x)) states)
-                                 (member (cadr (car x)) sigma)
+                                 (member (cadr (car x)) (cons BLANK sigma))
                                  (member (car (cadr x)) states)
                                  (member (cadr (cadr x)) (cons RIGHT
                                                                (cons LEFT

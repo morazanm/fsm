@@ -17,6 +17,9 @@
            return-input-tm
            )
 
+  ;listof-words?: (listof something) sigma --> boolean
+  ;purpose: to check if the list of words is a valid list
+  ; of list of symbols
   (define (listof-words? words sigma)
     (and (list? words)
          (andmap (lambda (word) (and (list? word)
@@ -24,6 +27,14 @@
                                              word))) words))
     )
 
+  ;check-input-dfa:
+  ; (listof states) (listof alphabet) symbol (listof states) (listof dfa-rules) boolean symbol
+  ; --> [(listof (listof symbols)) --> boolean]
+  ;purpose: to take in all the components of a machine, and then a list
+  ; of words to check in that machine, then run those words through the machine
+  ; and make sure that they match the "accepts?" symbol, which will be either
+  ; accept or reject. This ensures that this can be used for both accept lists
+  ; and rejects lists.
   (define (check-input-dfa states
                            sigma
                            start
@@ -42,6 +53,11 @@
       )
     )
 
+  ;return-input-dfa:
+  ; (listof states) sigma symbol (listof states) (listof rules) boolean (listof (listof symbols) symbol
+  ; --> (listof (listof symbols))
+  ;purpose: builds the machine and finds all the words from the input
+  ; list of words that don't accept/reject (based on accepts?)
   (define (return-input-dfa states
                             sigma
                             start
@@ -59,6 +75,14 @@
     (filter (lambda (x) (equal? (temp-machine x) (if (equal? 'accept accepts?) 'reject 'accept))) words)
     )
 
+  ;check-input-ndfa
+  ; (listof states) (listof alphabet) symbol (listof states) (listof ndfa-rules) boolean symbol
+  ; --> [(listof (listof symbols)) --> boolean]
+  ;purpose: to take in all the components of a machine, and then a list
+  ; of words to check in that machine, then run those words through the machine
+  ; and make sure that they match the "accepts?" symbol, which will be either
+  ; accept or reject. This ensures that this can be used for both accept lists
+  ; and rejects lists.
   (define (check-input-ndfa states
                             sigma
                             start
@@ -75,6 +99,11 @@
       )
     )
 
+  ;return-input-nfa:
+  ; (listof states) sigma symbol (listof states) (listof rules) boolean (listof (listof symbols) symbol
+  ; --> (listof (listof symbols))
+  ;purpose: builds the machine and finds all the words from the input
+  ; list of words that don't accept/reject (based on accepts?)
   (define (return-input-ndfa states
                              sigma
                              start
@@ -90,6 +119,14 @@
     (filter (lambda (x) (equal? (temp-machine x) (if (equal? 'accept accepts?) 'reject 'accept))) words)
     )
 
+  ;check-input-ndpda
+  ; (listof states) sigma gamma symbol (listof states) (listof ndpda-rules) boolean symbol
+  ; --> [(listof (listof symbols)) --> boolean]
+  ;purpose: to take in all the components of a machine, and then a list
+  ; of words to check in that machine, then run those words through the machine
+  ; and make sure that they match the "accepts?" symbol, which will be either
+  ; accept or reject. This ensures that this can be used for both accept lists
+  ; and rejects lists.
   (define (check-input-ndpda states
                              sigma
                              gamma
@@ -108,6 +145,11 @@
       )
     )
 
+  ;return-input-ndpda:
+  ; (listof states) sigma symbol (listof states) (listof rules) boolean (listof (listof symbols) symbol
+  ; --> (listof (listof symbols))
+  ;purpose: builds the machine and finds all the words from the input
+  ; list of words that don't accept/reject (based on accepts?)
   (define (return-input-ndpda states
                               sigma
                               gamma
@@ -117,14 +159,23 @@
                               words
                               accepts?)
     (define temp-machine (make-unchecked-ndpda states
-                                              sigma
-                                              gamma
-                                              start
-                                              finals
-                                              rules))
+                                               sigma
+                                               gamma
+                                               start
+                                               finals
+                                               rules))
     (filter (lambda (x) (equal? (temp-machine x) (if (equal? 'accept accepts?) 'reject 'accept))) words)
     )
 
+
+  ;check-input-tm
+  ; (listof states) (listof alphabet) symbol (listof states) (listof tm-rules) boolean symbol
+  ; --> [(listof (listof symbols)) --> boolean]
+  ;purpose: to take in all the components of a machine, and then a list
+  ; of words to check in that machine, then run those words through the machine
+  ; and make sure that they match the "accepts?" symbol, which will be either
+  ; accept or reject. This ensures that this can be used for both accept lists
+  ; and rejects lists.
   (define (check-input-tm states
                           sigma
                           start
@@ -143,6 +194,11 @@
       )
     )
 
+  ;return-input-tm:
+  ; (listof states) sigma symbol (listof states) (listof rules) boolean (listof (listof symbols) symbol
+  ; --> (listof (listof symbols))
+  ;purpose: builds the machine and finds all the words from the input
+  ; list of words that don't accept/reject (based on accepts?)
   (define (return-input-tm states
                            sigma
                            start
@@ -158,5 +214,139 @@
                                             finals
                                             accept))
     (filter (lambda (x) (equal? (sm-apply temp-machine x) (if (equal? 'accept accepts?) 'reject 'accept))) words)
+    )
+
+  (module+ test
+
+    ;listof-words? tests
+    (check-equal? (listof-words? '((a a a a)) '(a a a)) #t)
+    (check-equal? (listof-words? '(a a a a) '(b a c)) #f)
+    (check-equal? (listof-words? '((a 1 2 e r)) '(a b c)) #f)
+
+    ;check-input-dfa tests
+    (define word-list-a `((a a a a) (a a a)))
+    (define word-list-b `((b b b b) (a a a)))
+    (define word-list-c `((b b b b) (b a b)))
+    (define all-as (check-input-dfa '(A B)
+                                    '(a b)
+                                    'B
+                                    '(A)
+                                    `((B a A)
+                                      (B b B)
+                                      (A a A)
+                                      (A b B))
+                                    #f
+                                    'accept))
+    (define all-bs (check-input-dfa '(A B)
+                                    '(a b)
+                                    'B
+                                    '(A)
+                                    `((B a A)
+                                      (B b B)
+                                      (A a A)
+                                      (A b B))
+                                    #f
+                                    'reject))
+    (check-equal? (all-as word-list-a) #t)
+    (check-equal? (all-as word-list-a) #t)
+    (check-equal? (all-as word-list-b) #f)
+    (check-equal? (all-bs word-list-c) #t)
+    (check-equal? (all-bs word-list-b) #f)
+    
+    ;return-input-dfa tests
+    (check-equal? (return-input-dfa '(A B)
+                                    '(a b)
+                                    'B
+                                    '(A)
+                                    `((B a A)
+                                      (B b B)
+                                      (A a A)
+                                      (A b B))
+                                    #f
+                                    word-list-a
+                                    'accept) '())
+    (check-equal? (return-input-dfa '(A B)
+                                    '(a b)
+                                    'B
+                                    '(A)
+                                    `((B a A)
+                                      (B b B)
+                                      (A a A)
+                                      (A b B))
+                                    #f
+                                    word-list-b
+                                    'accept) `((b b b b)))
+    (check-equal? (return-input-dfa '(A B)
+                                    '(a b)
+                                    'B
+                                    '(A)
+                                    `((B a A)
+                                      (B b B)
+                                      (A a A)
+                                      (A b B))
+                                    #f
+                                    word-list-b
+                                    'reject) `((a a a)))
+    
+    ;check-input-ndfa tests
+    (define allas (check-input-ndfa '(A B)
+                                    '(a b)
+                                    'B
+                                    '(A)
+                                    `((B a A)
+                                      (B b B)
+                                      (A a A)
+                                      (A b B))
+                                    'accept))
+    (define allbs (check-input-ndfa '(A B)
+                                    '(a b)
+                                    'B
+                                    '(A)
+                                    `((B a A)
+                                      (B b B)
+                                      (A a A)
+                                      (A b B))
+                                    'reject))
+    (check-equal? (allas word-list-a) #t)
+    (check-equal? (allas word-list-a) #t)
+    (check-equal? (allas word-list-b) #f)
+    (check-equal? (allbs word-list-c) #t)
+    (check-equal? (allbs word-list-b) #f)
+    
+    ;return-input-ndfa tests
+    (check-equal? (return-input-ndfa '(A B)
+                                    '(a b)
+                                    'B
+                                    '(A)
+                                    `((B a A)
+                                      (B b B)
+                                      (A a A)
+                                      (A b B))
+                                    word-list-a
+                                    'accept) '())
+    (check-equal? (return-input-ndfa '(A B)
+                                    '(a b)
+                                    'B
+                                    '(A)
+                                    `((B a A)
+                                      (B b B)
+                                      (A a A)
+                                      (A b B))
+                                    word-list-b
+                                    'accept) `((b b b b)))
+    (check-equal? (return-input-ndfa '(A B)
+                                    '(a b)
+                                    'B
+                                    '(A)
+                                    `((B a A)
+                                      (B b B)
+                                      (A a A)
+                                      (A b B))
+                                    word-list-b
+                                    'reject) `((a a a)))
+    ;check-input-ndpda tests
+    ;return-input-ndpda tests
+    ;check-input-tm tests
+    ;return-input-tm tests
     )
   )
