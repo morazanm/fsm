@@ -117,7 +117,7 @@
                     (new-updg (rest (viz-state-updg a-vs)))]           
                (viz-state new-updg new-pdg)))]
         [(key=? "left" a-key)
-         (if (empty? (viz-state-pdg a-vs))
+         (if (= 1 (length (viz-state-pdg a-vs)))
              a-vs
              (let* [(new-pdg (rest (viz-state-pdg a-vs)))
                     (new-updg (cons (first (viz-state-pdg a-vs))
@@ -236,9 +236,7 @@
 ;; viz-state -> img
 ;; Purpose: To render the given vis-state
 (define (draw-world a-vs)
-  (define graph-img (cond [(empty? (viz-state-pdg a-vs))
-                           (create-starting-graph-img (first (viz-state-updg a-vs)))]
-                          [(= 1 (length (viz-state-pdg a-vs)))
+  (define graph-img (cond [(= 1 (length (viz-state-pdg a-vs)))
                            (above
                             (create-starting-graph-img (first (viz-state-pdg a-vs)))
                             (text "Starting regexp" 20 'black))]
