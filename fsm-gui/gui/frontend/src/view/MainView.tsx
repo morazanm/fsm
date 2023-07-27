@@ -9,7 +9,6 @@ import {
   CircularProgress,
   Typography,
   Alert,
-  AlertTitle,
   Snackbar,
 } from '@mui/material';
 import {
@@ -93,8 +92,8 @@ type MainViewProps = {
 
 type Snack = {
   open: boolean;
-  body: JSX.Element | undefined
-}
+  body: JSX.Element | undefined;
+};
 
 const MainView = (props: MainViewProps) => {
   const theme = useTheme();
@@ -105,7 +104,7 @@ const MainView = (props: MainViewProps) => {
     connected: props.racketBridge.connected,
     status: 'done',
   });
-  const [snack, setSnack] = useState<Snack>({open: false, body: undefined})
+  const [snack, setSnack] = useState<Snack>({ open: false, body: undefined });
   const skipRedraw = useRef(true);
   const [waitingForResponse, setWaitingForResponse] = useState(false);
   const [view, setView] = useState<View>('control');
@@ -243,9 +242,10 @@ const MainView = (props: MainViewProps) => {
     setConnected({ ...connected, status: 'attempting' });
     props.racketBridge.establishConnection().then((res) => {
       if (!res) {
-        setSnack({open: true,
-          body: <Alert severity="error">Unable to connect</Alert>
-        })
+        setSnack({
+          open: true,
+          body: <Alert severity="error">Unable to connect</Alert>,
+        });
       }
       setConnected({ connected: res, status: 'done' });
     });
@@ -353,8 +353,9 @@ const MainView = (props: MainViewProps) => {
           'Disconnected from FSM',
           <div>
             <Typography component={'span'}>
-              The FSM backend was disconnected. You can still save, edit, and view the current transitions of your
-              machine, but you will not be able to rebuild it.
+              The FSM backend was disconnected. You can still save, edit, and
+              view the current transitions of your machine, but you will not be
+              able to rebuild it.
               <br />
               To reconnect please try running the following in the Racket REPL:
             </Typography>
@@ -699,9 +700,9 @@ const MainView = (props: MainViewProps) => {
         <Snackbar
           open={snack.open}
           autoHideDuration={1000}
-          onClose={() => setSnack({open: false, body: undefined})}
+          onClose={() => setSnack({ open: false, body: undefined })}
         >
-        {snack.body}
+          {snack.body}
         </Snackbar>
       )}
     </Paper>

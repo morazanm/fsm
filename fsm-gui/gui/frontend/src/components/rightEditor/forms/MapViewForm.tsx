@@ -40,7 +40,7 @@ const Transition = React.forwardRef(function Transition(
 });
 
 type CustomStepperProps = {
-  transitions: FSMTransition[];
+  transitions: (readonly [FSMTransition, number])[];
   index: number;
   setTransIndex: (isx: number) => void;
 };
@@ -74,7 +74,7 @@ const CustomStepper = (props: CustomStepperProps) => {
 
   return (
     <Stepper nonLinear orientation="vertical">
-      {props.transitions.map((trans, index) => {
+      {props.transitions.map(([trans, index]) => {
         const { color, status } = getInvDetails(trans.invPass);
         return (
           <Step
@@ -84,6 +84,7 @@ const CustomStepper = (props: CustomStepperProps) => {
             active={index === props.index}
           >
             <StepButton
+              icon={index.toString()}
               color="inherit"
               onClick={() => props.setTransIndex(index)}
             >
@@ -127,9 +128,9 @@ export const MapView = (props: MapViewProps) => {
   const theme = useTheme();
   const [invStatus, setInvStatus] = useState<Status>('all');
 
-  const filteredTransitions = props.transitions.filter((t) =>
-    hasSameStatus(t, invStatus),
-  );
+  const filteredTransitions = props.transitions
+    .map((t, i) => [t, i] as const)
+    .filter((t) => hasSameStatus(t[0], invStatus));
   return (
     <Dialog
       open={props.open}

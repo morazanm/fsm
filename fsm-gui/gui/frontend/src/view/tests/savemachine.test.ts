@@ -51,5 +51,5 @@ test('InvariantToString', () => {
     { name: 'F', type: 'final', invFunc: null },
   ];
 
-  const actual = invariantsToString(states, 'a-name', 'dfa');
+  invariantsToString(states, 'a-name', 'dfa');
 });

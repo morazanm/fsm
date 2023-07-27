@@ -83,11 +83,6 @@ const InvariantDetails = (props: InvariantDetailsProps) => {
     );
   };
 
-  const invariantColor = (status: boolean | null): string => {
-    if (status === null) return theme.palette.secondary.main;
-    return status ? theme.palette.success.main : theme.palette.error.main;
-  };
-
   const pdaStack =
     props.currentTransition && isPdaTransition(props.currentTransition)
       ? props.currentTransition.stack
@@ -188,7 +183,7 @@ type ErrorWindowProps = {
 const ErrorWindow = (props: ErrorWindowProps) => {
   return (
     <Alert severity="error">
-      <AlertTitle>Racket Code Error</AlertTitle>
+      <AlertTitle>FSM Error</AlertTitle>
       {props.msg}
     </Alert>
   );

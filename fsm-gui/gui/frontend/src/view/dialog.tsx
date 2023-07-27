@@ -7,7 +7,6 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
-  useTheme,
 } from '@mui/material';
 import { Typography } from '@mui/material';
 import { MachineType } from '../types/machine';
@@ -52,7 +51,6 @@ type IncomingMachineDialogProps = {
 };
 
 export const IncomingMachineDialog = (props: IncomingMachineDialogProps) => {
-  const theme = useTheme();
   return (
     <Dialog
       open={props.open}
