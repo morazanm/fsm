@@ -46,6 +46,9 @@
     (or (equal? (sm-type machine) 'tm-language-recognizer)
         (equal? (sm-type machine) 'tm)))
 
+  ;mttm? machine --> boolean
+  ;purpose: return true if the machine is a multi-tape TM or a multi-tape TM
+  ; langauge recognizer
   (define (mttm? machine)
     (or (equal? (sm-type machine) 'mttm)
         (equal? (sm-type machine) 'mttm-language-recognizer)))
@@ -57,15 +60,21 @@
     (andmap pred los)
     )
 
+  ;valid-list-of-states?: (listof something) --> boolean
+  ;purpose: takes in a list of anything, returns true if all elements are valid
+  ; state symbols, and false if any are not.
   (define (valid-list-of-states? states)
     (valid-list-of states valid-state?)
     )
 
+  ;valid-non-dead-state?: any --> boolean
+  ;purpose: takes in any value, returns true if the value is a valid state except
+  ; for DEAD, and false otherwise.
   (define (valid-non-dead-state? x)
     (define regex-pattern (regexp "^[A-Z](?:-[0-9]+)?$"))
-    (if (symbol? x)
-        (if (regexp-match regex-pattern (symbol->string x)) #t #f)
-        #f)
+    (and (symbol? x)
+         (not (not (regexp-match regex-pattern (symbol->string x))))
+         )
     )
 
   ;valid-state?: something --> boolean
@@ -83,9 +92,9 @@
   ; a lowercase roman letter
   (define (valid-alpha? x)
     (define regex-pattern (regexp "^[a-z]$"))
-    (if (symbol? x)
-        (if (regexp-match regex-pattern (symbol->string x)) #t #f)
-        #f)
+    (and (symbol? x)
+         (not (not (regexp-match regex-pattern (symbol->string x))))
+         )
     )
 
   ;start-in-states?: (listof symbols) --> (symbol --> boolean)
@@ -107,22 +116,17 @@
   ;   to be observed by the flat contract, and so the start state
   ;   can be given to the function properly
   ;  This is why it takes in the states even though it doesnt use them
-  (define (valid-start? states)
-    (lambda (start)
-      (and (symbol? start)
-           (valid-state? start)))
+  (define ((valid-start? states) start)
+    (and (symbol? start)
+         (valid-state? start))
     )
 
   ;valid-finals?: (list of states) --> (listof states --> boolean)
   ;purpose: to take in the list of states, and then the final states,
   ; and return true, only if all the final states are included
   ; in the list of states
-  (define (valid-finals? states)
-    (lambda (finals)
-      (and (list? finals) (if (andmap (lambda (x) (member x states)) finals) #t #f)
-           )
-      )
-    )
+  (define ((valid-finals? states) finals)
+    (and (list? finals) (not (not (andmap (lambda (x) (member x states)) finals)))))
 
   ;invalid-finals: (listof states) (listof states) --> (listof states)
   ;purpose: take in the states and finals, and return all finals that

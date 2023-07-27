@@ -90,16 +90,26 @@
   (define (valid-tm-rule? rule)
     (and (list? rule)
          (= (length rule) 2)
-         (= (length (car rule)) 2)
-         (= (length (cadr rule)) 2))
+         (list? (first rule))
+         (= (length (first rule)) 2)
+         (list? (second rule))
+         (= (length (second rule)) 2))
     )
 
+  ;valid-mttm-rule-structure?: integer --> (mttm-rule --> boolean)
+  ;purpose: takes in an integer representing the number of tapes on a multi-tape
+  ; tm, and returns a function that takes a mttm-rule and checks if the given
+  ; rule has the correct structure.
   (define ((valid-mttm-rule-structure? num-tapes) rule)
     (and (list? rule)
          (= (length rule) 2)
+         (list? (first rule))
          (= (length (first rule)) 2)
+         (list? (second rule))
          (= (length (second rule)) 2)
+         (list? (second (first rule)))
          (= (length (second (first rule))) num-tapes)
+         (list? (second (second rule)))
          (= (length (second (second rule))) num-tapes)))
 
 
@@ -175,15 +185,24 @@
                                  ))
                 rules) #t #f))
 
+  ;valid-mttm-rule?: (listof state) (listof alpha) mttm-rule --> boolean
+  ;purpose: checks to see if the given multi-tape tm rule is valid, when compared
+  ; against the given states and sigma. A rule is invalid if either of its states
+  ; is not in the list of states, or any of the symbols/actions in the rule are
+  ; not in the sigma.
   (define (valid-mttm-rule? states sigma rule)
+    (define actions (cons RIGHT (cons LEFT (cons BLANK sigma))))
     (and (member (first (first rule)) states)
          (andmap (lambda (letter) (member letter sigma)) (second (first rule)))
          (member (first (second rule)) states)
-         (andmap (lambda (letter) (member letter sigma)) (second (second rule))))
+         (andmap (lambda (letter) (member letter actions)) (second (second rule))))
     )
 
+  ;correct-members-mttm?: (listof state) (listof alpha) (listof mttm-rule) --> boolean
+  ;purpose: checks to see if all rules in the list of rules is valid. Returns
+  ; false if any rules are invalid.
   (define (correct-members-mttm? states sigma rules)
-    (andmap (lambda (rule) (valid-mttm-rule? states sigma rule)) rules))
+    (not (not (andmap (lambda (rule) (valid-mttm-rule? states sigma rule)) rules))))
 
   ;incorrect-members-dfa (listof states) sigma (listof dfa-rules) --> listof dfa rules
   ;purpose: return all rules containing incorrect elements
@@ -206,7 +225,7 @@
               )
             rules))
 
-  ;incorrect-members-tm (listof states) sigma gamma (listof-tm-rules) --> listof turing machine rules
+  ;incorrect-members-tm (listof states) sigma (listof-tm-rules) --> listof turing machine rules
   ;purpose: return all rules containing incorrect elements
   (define (incorrect-members-tm states sigma rules)
     (filter (lambda (x) (not (and (member (car (car x)) states)
@@ -215,6 +234,12 @@
                                   (member (cadr (cadr x)) (cons RIGHT
                                                                 (cons LEFT
                                                                       (cons BLANK sigma))))))) rules))
+
+  ;incorrect-members-mttm: (listof state) (listof alpha) (listof mttm-rule) --> (listof mttm-rule)
+  ;purpose: returns all rules in the list of rules containing incorrect elements.
+  ; Incorrect elements can be either unexpected states or alphabet characters.
+  (define (incorrect-members-mttm states sigma rules)
+    (filter (lambda (rule) (not (valid-mttm-rule? states sigma rule))) rules))
 
   (module+ test
     ;add-dead-state-rules tests
@@ -249,6 +274,11 @@
     (check-equal? (valid-tm-rule? `(((A) a) (A 1))) #t)
     (check-equal? (valid-tm-rule? `((A a (A b)))) #f)
     (check-equal? (valid-tm-rule? `(a a a)) #f)
+
+    ;valid-mttm-rule-structure? tests
+    (check-equal? ((valid-mttm-rule-structure? 3) `((A (a b ,BLANK)) (B (,RIGHT ,BLANK b)))) #t)
+    (check-equal? ((valid-mttm-rule-structure? 2) `(a b)) #f)
+    (check-equal? ((valid-mttm-rule-structure? 1) `((A a) (B b))) #f)
 
     ;functional? tests
     (check-equal? (functional? `((A a B) (A b B)) '(A B) '(a b) #t) #t)
@@ -323,6 +353,36 @@
     (check-equal? (correct-members-tm? '(A B)
                                        '(a b)
                                        `(((A c) (C ,BLANK)))) #f)
+
+    ;correct-members-mttm? tests
+    (check-equal? (correct-members-mttm? '(A B)
+                                          '(a b)
+                                          '(((A (b b)) (B (a b))))) #t)
+    (check-equal? (correct-members-mttm? '(A B)
+                                          '(a b)
+                                          `(((A (b)) (B (,RIGHT))))) #t)
+    (check-equal? (correct-members-mttm? '(A B)
+                                          '(a b)
+                                          `(((A (b)) (B (,LEFT))))) #t)
+    (check-equal? (correct-members-mttm? '(A B)
+                                          '(a b)
+                                          `(((A (b)) (B (,BLANK))))) #t)
+    (check-equal? (correct-members-mttm? '(A B)
+                                          '(a b)
+                                          `(((A (b)) (B (,BLANK)))
+                                            ((A (c)) (B (,BLANK))))) #f)
+    (check-equal? (correct-members-mttm? '(A B)
+                                          '(a b)
+                                          `(((A (b)) (B (,BLANK)))
+                                            ((C (b)) (B (,BLANK))))) #f)
+    (check-equal? (correct-members-mttm? '(A B)
+                                          '(a b)
+                                          `(((A (b)) (B (,BLANK)))
+                                            ((A (c)) (C (,BLANK))))) #f)
+    (check-equal? (correct-members-mttm? '(A B)
+                                          '(a b)
+                                          `(((A (b)) (B (,BLANK)))
+                                            ((A (c)) (B (d))))) #f)
     
     ;incorrect-members-dfa tests
     (check-equal? (incorrect-members-dfa '(A B) '(a b) `((A b B) (B a A))) '())
@@ -368,38 +428,66 @@
     
     ;incorrect-members-tm tests
     (check-equal? (incorrect-members-tm '(A B)
-                                       '(a b)
-                                       `(((A b) (B b)))) '())
+                                        '(a b)
+                                        `(((A b) (B b)))) '())
     (check-equal? (incorrect-members-tm '(A B)
-                                       '(a b)
-                                       `(((A b) (B ,RIGHT)))) '())
+                                        '(a b)
+                                        `(((A b) (B ,RIGHT)))) '())
     (check-equal? (incorrect-members-tm '(A B)
-                                       '(a b)
-                                       `(((A b) (B ,LEFT)))) '())
+                                        '(a b)
+                                        `(((A b) (B ,LEFT)))) '())
     (check-equal? (incorrect-members-tm '(A B)
-                                       '(a b)
-                                       `(((A b) (B ,BLANK)))) '())
+                                        '(a b)
+                                        `(((A b) (B ,BLANK)))) '())
     (check-equal? (incorrect-members-tm '(A B)
-                                       '(a b)
-                                       `(((A b) (B ,BLANK))
-                                         ((A c) (B ,BLANK)))) `(((A c) (B ,BLANK))))
+                                        '(a b)
+                                        `(((A b) (B ,BLANK))
+                                          ((A c) (B ,BLANK)))) `(((A c) (B ,BLANK))))
     (check-equal? (incorrect-members-tm '(A B)
-                                       '(a b)
-                                       `(((A b) (B ,BLANK))
-                                         ((C b) (B ,BLANK)))) `(((C b) (B ,BLANK))))
+                                        '(a b)
+                                        `(((A b) (B ,BLANK))
+                                          ((C b) (B ,BLANK)))) `(((C b) (B ,BLANK))))
     (check-equal? (incorrect-members-tm '(A B)
-                                       '(a b)
-                                       `(((A b) (B ,BLANK))
-                                         ((A c) (C ,BLANK)))) `(((A c) (C ,BLANK))))
+                                        '(a b)
+                                        `(((A b) (B ,BLANK))
+                                          ((A c) (C ,BLANK)))) `(((A c) (C ,BLANK))))
     (check-equal? (incorrect-members-tm '(A B)
-                                       '(a b)
-                                       `(((A b) (B ,BLANK))
-                                         ((A c) (B d)))) `(((A c) (B d))))
-           
+                                        '(a b)
+                                        `(((A b) (B ,BLANK))
+                                          ((A c) (B d)))) `(((A c) (B d))))
+
+    ;incorrect-members-mttm tests
+    (check-equal? (incorrect-members-mttm '(A B)
+                                          '(a b)
+                                          '(((A (b b)) (B (a b))))) '())
+    (check-equal? (incorrect-members-mttm '(A B)
+                                          '(a b)
+                                          `(((A (b)) (B (,RIGHT))))) '())
+    (check-equal? (incorrect-members-mttm '(A B)
+                                          '(a b)
+                                          `(((A (b)) (B (,LEFT))))) '())
+    (check-equal? (incorrect-members-mttm '(A B)
+                                          '(a b)
+                                          `(((A (b)) (B (,BLANK))))) '())
+    (check-equal? (incorrect-members-mttm '(A B)
+                                          '(a b)
+                                          `(((A (b)) (B (,BLANK)))
+                                            ((A (c)) (B (,BLANK)))))
+                  `(((A (c)) (B (,BLANK)))))
+    (check-equal? (incorrect-members-mttm '(A B)
+                                          '(a b)
+                                          `(((A (b)) (B (,BLANK)))
+                                            ((C (b)) (B (,BLANK)))))
+                  `(((C (b)) (B (,BLANK)))))
+    (check-equal? (incorrect-members-mttm '(A B)
+                                          '(a b)
+                                          `(((A (b)) (B (,BLANK)))
+                                            ((A (c)) (C (,BLANK)))))
+                  `(((A (c)) (C (,BLANK)))))
+    (check-equal? (incorrect-members-mttm '(A B)
+                                          '(a b)
+                                          `(((A (b)) (B (,BLANK)))
+                                            ((A (c)) (B (d)))))
+                  `(((A (c)) (B (d)))))
     )
-
-  (define (incorrect-members-mttm states sigma rules)
-    (filter (lambda (rule) (not (valid-mttm-rule? states sigma rule))) rules))
-
-  
   )
