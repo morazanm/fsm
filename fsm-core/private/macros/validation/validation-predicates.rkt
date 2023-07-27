@@ -315,38 +315,149 @@
     
     ;return-input-ndfa tests
     (check-equal? (return-input-ndfa '(A B)
-                                    '(a b)
-                                    'B
-                                    '(A)
-                                    `((B a A)
-                                      (B b B)
-                                      (A a A)
-                                      (A b B))
-                                    word-list-a
-                                    'accept) '())
+                                     '(a b)
+                                     'B
+                                     '(A)
+                                     `((B a A)
+                                       (B b B)
+                                       (A a A)
+                                       (A b B))
+                                     word-list-a
+                                     'accept) '())
     (check-equal? (return-input-ndfa '(A B)
-                                    '(a b)
-                                    'B
-                                    '(A)
-                                    `((B a A)
-                                      (B b B)
-                                      (A a A)
-                                      (A b B))
-                                    word-list-b
-                                    'accept) `((b b b b)))
+                                     '(a b)
+                                     'B
+                                     '(A)
+                                     `((B a A)
+                                       (B b B)
+                                       (A a A)
+                                       (A b B))
+                                     word-list-b
+                                     'accept) `((b b b b)))
     (check-equal? (return-input-ndfa '(A B)
-                                    '(a b)
-                                    'B
-                                    '(A)
-                                    `((B a A)
-                                      (B b B)
-                                      (A a A)
-                                      (A b B))
-                                    word-list-b
-                                    'reject) `((a a a)))
+                                     '(a b)
+                                     'B
+                                     '(A)
+                                     `((B a A)
+                                       (B b B)
+                                       (A a A)
+                                       (A b B))
+                                     word-list-b
+                                     'reject) `((a a a)))
     ;check-input-ndpda tests
+    (define wcw^r (check-input-ndpda '(S P Q F)
+                                     '(a b c)
+                                     '(a b)
+                                     'S
+                                     '(F)
+                                     `(((S ,EMP ,EMP) (P ,EMP))
+                                       ((P a ,EMP) (P (a)))
+                                       ((P b ,EMP) (P (b)))
+                                       ((P c ,EMP) (Q ,EMP))
+                                       ((Q a (a)) (Q ,EMP))
+                                       ((Q b (b)) (Q ,EMP))
+                                       ((Q ,EMP ,EMP) (F ,EMP)))
+                                     'accept))
+    (define wcw^r-r (check-input-ndpda '(S P Q F)
+                                       '(a b c)
+                                       '(a b)
+                                       'S
+                                       '(F)
+                                       `(((S ,EMP ,EMP) (P ,EMP))
+                                         ((P a ,EMP) (P (a)))
+                                         ((P b ,EMP) (P (b)))
+                                         ((P c ,EMP) (Q ,EMP))
+                                         ((Q a (a)) (Q ,EMP))
+                                         ((Q b (b)) (Q ,EMP))
+                                         ((Q ,EMP ,EMP) (F ,EMP)))
+                                       'reject))
+    (check-equal? (wcw^r `((c))) #t)
+    (check-equal? (wcw^r-r `((a a a))) #t)
+    (check-equal? (wcw^r-r `((c))) #f)
+    
     ;return-input-ndpda tests
+    (check-equal? (return-input-ndpda '(S P Q F)
+                                      '(a b c)
+                                      '(a b)
+                                      'S
+                                      '(F)
+                                      `(((S ,EMP ,EMP) (P ,EMP))
+                                        ((P a ,EMP) (P (a)))
+                                        ((P b ,EMP) (P (b)))
+                                        ((P c ,EMP) (Q ,EMP))
+                                        ((Q a (a)) (Q ,EMP))
+                                        ((Q b (b)) (Q ,EMP))
+                                        ((Q ,EMP ,EMP) (F ,EMP)))
+                                      `((c))
+                                      'accept) '())
+    (check-equal? (return-input-ndpda '(S P Q F)
+                                      '(a b c)
+                                      '(a b)
+                                      'S
+                                      '(F)
+                                      `(((S ,EMP ,EMP) (P ,EMP))
+                                        ((P a ,EMP) (P (a)))
+                                        ((P b ,EMP) (P (b)))
+                                        ((P c ,EMP) (Q ,EMP))
+                                        ((Q a (a)) (Q ,EMP))
+                                        ((Q b (b)) (Q ,EMP))
+                                        ((Q ,EMP ,EMP) (F ,EMP)))
+                                      `((c))
+                                      'reject) '((c)))
     ;check-input-tm tests
+    (define tm-accept (check-input-tm '(S Y N)
+                                      `(a b)
+                                      'S
+                                      '(Y N)
+                                      `(((S a) (S ,RIGHT))
+                                        ((S b) (N b))
+                                        ((S ,BLANK) (Y ,BLANK)))
+                                      'Y
+                                      'accept))
+    (define tm-reject (check-input-tm '(S Y N)
+                                      `(a b)
+                                      'S
+                                      '(Y N)
+                                      `(((S a) (S ,RIGHT))
+                                        ((S b) (N b))
+                                        ((S ,BLANK) (Y ,BLANK)))
+                                      'Y
+                                      'reject))
+    (check-equal? (tm-accept `((a a a a) (a a a))) #t)
+    (check-equal? (tm-accept `((a a a a) (b b b))) #f)
+    (check-equal? (tm-reject `((a a a a) (a a a))) #f)
+    (check-equal? (tm-reject `((b b b b) (b b b))) #t)
+
     ;return-input-tm tests
+    (check-equal? (return-input-tm '(S Y N)
+                                   `(a b)
+                                   'S
+                                   '(Y N)
+                                   `(((S a) (S ,RIGHT))
+                                     ((S b) (N b))
+                                     ((S ,BLANK) (Y ,BLANK)))
+                                   `((a a a a) (a a a))
+                                   'Y
+                                   'accept) '())
+    (check-equal? (return-input-tm '(S Y N)
+                                   `(a b)
+                                   'S
+                                   '(Y N)
+                                   `(((S a) (S ,RIGHT))
+                                     ((S b) (N b))
+                                     ((S ,BLANK) (Y ,BLANK)))
+                                   `((b b b b) (a a a))
+                                   'Y
+                                   'accept) '((b b b b)))
+    (check-equal? (return-input-tm '(S Y N)
+                                   `(a b)
+                                   'S
+                                   '(Y N)
+                                   `(((S a) (S ,RIGHT))
+                                     ((S b) (N b))
+                                     ((S ,BLANK) (Y ,BLANK)))
+                                   `((b b b b) (a a a))
+                                   'Y
+                                   'reject) '((a a a)))
     )
   )
