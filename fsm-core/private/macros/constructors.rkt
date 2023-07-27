@@ -10,6 +10,7 @@
            "../fsa.rkt"
            "../pda.rkt"
            "../tm.rkt"
+           "../mtape-tm.rkt"
            racket/contract
            )
   (provide make-dfa2
@@ -46,9 +47,11 @@
                               [add-dead #t]
                               #:accepts [accepts '()]
                               #:rejects [rejects '()])
-    (->i ([states (and/c (valid-listof/c valid-state? "machine state" "list of machine states")
+    (->i ([states (and/c (is-nonempty-list/c "machine state" "list of machine states")
+                         (valid-listof/c valid-state? "machine state" "list of machine states")
                          (no-duplicates/c "states"))]
-          [sigma (and/c (valid-listof/c valid-alpha? "alphabet letter" "machine sigma")
+          [sigma (and/c (is-nonempty-list/c "alphabet letter" "machine sigma")
+                        (valid-listof/c valid-alpha? "alphabet letter" "machine sigma")
                         (no-duplicates/c "sigma"))]
           [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
@@ -110,9 +113,11 @@
   (define/contract (make-ndpda2 states sigma gamma start finals rules
                                 #:accepts [accepts '()]
                                 #:rejects [rejects '()])
-    (->i ([states (and/c (valid-listof/c valid-state? "machine state" "list of machine states")
+    (->i ([states (and/c (is-nonempty-list/c "machine state" "list of machine states")
+                         (valid-listof/c valid-state? "machine state" "list of machine states")
                          (no-duplicates/c "states"))]
-          [sigma (and/c (valid-listof/c valid-alpha? "alphabet letter" "machine sigma")
+          [sigma (and/c (is-nonempty-list/c "alphabet letter" "machine sigma")
+                        (valid-listof/c valid-alpha? "alphabet letter" "machine sigma")
                         (no-duplicates/c "sigma"))]
           [gamma (and/c (valid-listof/c (lambda (g) (or (valid-state? g) (valid-alpha? g))) "stack symbol" "list of stack symbols")
                         (no-duplicates/c "gamma"))]
@@ -166,9 +171,11 @@
   (define/contract (make-ndfa2 states sigma start finals rules
                                #:accepts [accepts '()]
                                #:rejects [rejects '()])
-    (->i ([states (and/c (valid-listof/c valid-state? "machine state" "list of machine states")
+    (->i ([states (and/c (is-nonempty-list/c "machine state" "list of machine states")
+                         (valid-listof/c valid-state? "machine state" "list of machine states")
                          (no-duplicates/c "states"))]
-          [sigma (and/c (valid-listof/c valid-alpha? "alphabet letter" "machine sigma")
+          [sigma (and/c (is-nonempty-list/c "alphabet letter" "machine sigma")
+                        (valid-listof/c valid-alpha? "alphabet letter" "machine sigma")
                         (no-duplicates/c "sigma"))]
           [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
@@ -219,9 +226,11 @@
                              #:accepts [accepts '()]
                              #:rejects [rejects '()]
                              )
-    (->i ([states (and/c (valid-listof/c valid-state? "machine state" "list of machine states")
+    (->i ([states (and/c (is-nonempty-list/c "machine state" "list of machine states")
+                         (valid-listof/c valid-state? "machine state" "list of machine states")
                          (no-duplicates/c "states"))]
-          [sigma (and/c (valid-listof/c valid-alpha? "alphabet letter" "machine sigma")
+          [sigma (and/c (is-nonempty-list/c "alphabet letter" "machine sigma")
+                        (valid-listof/c valid-alpha? "alphabet letter" "machine sigma")
                         (no-duplicates/c "sigma"))]
           [rules (states
                   sigma) (and/c (listof-rules/c valid-tm-rule?)
@@ -237,8 +246,8 @@
                                   (valid-finals/c states)
                                   (no-duplicates/c "final states"))]
           )
-         ([accept (states) (and/c symbol?
-                                  (lambda (x) (member x states)))]
+         ([accept (finals) (and/c valid-non-dead-state/c
+                                  (is-state-in-finals/c finals))]
           #:accepts [accepts (states
                               sigma
                               start
@@ -281,9 +290,11 @@
                                [accept 'null]
                                #:accepts [accepts '()]
                                #:rejects [rejects '()])
-    (->i ([states (and/c (valid-listof/c valid-state? "machine state" "list of machine states")
+    (->i ([states (and/c (is-nonempty-list/c "machine state" "list of machine states")
+                         (valid-listof/c valid-state? "machine state" "list of machine states")
                          (no-duplicates/c "states"))]
-          [sigma (and/c (valid-listof/c valid-alpha? "alphabet letter" "machine sigma")
+          [sigma (and/c (is-nonempty-list/c "alphabet letter" "machine-sigma")
+                        (valid-listof/c valid-alpha? "alphabet letter" "machine sigma")
                         (no-duplicates/c "sigma"))]
           [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
@@ -292,17 +303,17 @@
                                   (no-duplicates/c "final states"))]
           [rules (states
                   sigma
-                  num-tapes) (and/c (listof-rules/c valid-tm-rule?)
+                  num-tapes) (and/c (listof-rules/c (valid-mttm-rule-structure? num-tapes))
                                     (correct-members/c
-                                     correct-members-tm?
-                                     incorrect-members-tm
+                                     correct-members-mttm?
+                                     incorrect-members-mttm
                                      states
                                      (cons RIGHT (cons LEFT (cons BLANK sigma))))
                                     (no-duplicates/c "rules"))]
           [num-tapes (integer-in 1 #f)]
           )
-         ([accept (states) (and/c symbol?
-                                  (lambda (x) (member x states)))]
+         ([accept (finals) (and/c valid-non-dead-state/c
+                                  (is-state-in-finals/c finals))]
           #:accepts [accepts (states
                               sigma
                               start
@@ -333,8 +344,10 @@
                                                          accept
                                                          'reject))]
           )
-         [result tm?]
+         [result mttm?]
          )
-    (list states sigma start finals rules accept accepts rejects)
+    (if (equal? accept 'null)
+        (make-mttm states sigma rules start finals num-tapes)
+        (make-mttm states sigma rules start finals num-tapes accept))
     )
   )

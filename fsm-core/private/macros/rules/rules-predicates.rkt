@@ -12,14 +12,18 @@
            valid-dfa-rule?
            valid-ndpda-rule?
            valid-tm-rule?
+           valid-mttm-rule?
+           valid-mttm-rule-structure?
            functional?
            missing-functional
            check-duplicates-dfa
            correct-members-dfa?
            correct-members-tm?
+           correct-members-mttm?
            correct-members-ndpda?
            incorrect-members-dfa
            incorrect-members-tm
+           incorrect-members-mttm
            incorrect-members-ndpda
            )
 
@@ -69,6 +73,14 @@
          (= (length (cadr rule)) 2))
     )
 
+  (define ((valid-mttm-rule-structure? num-tapes) rule)
+    (and (list? rule)
+         (= (length rule) 2)
+         (= (length (first rule)) 2)
+         (= (length (second rule)) 2)
+         (= (length (second (first rule))) num-tapes)
+         (= (length (second (second rule))) num-tapes)))
+
   ;; Determines if the set of rules is a function, based on the machine states
   ;; and alphabet (sigma). The machine must either automatically add dead states
   ;; (add-dead is true), or there must exist a rule with a starting state and
@@ -105,10 +117,10 @@
     (andmap (lambda (x) (and (member (car (car x)) states)
                              (member (cadr (car x)) (cons EMP sigma))
                              (or (equal? (caddr (car x)) EMP)
-                                      (map (lambda (y) (member y gamma)) (caddr (car x))))
+                                 (map (lambda (y) (member y gamma)) (caddr (car x))))
                              (member (car (cadr x)) states)
                              (or (equal? (cadr (cadr x)) EMP)
-                                      (map (lambda (y) (member y gamma)) (cadr (cadr x))))
+                                 (map (lambda (y) (member y gamma)) (cadr (cadr x))))
                              )) rules))
 
   (define (correct-members-tm? states sigma rules)
@@ -116,6 +128,16 @@
                              (member (cadr (car x)) sigma)
                              (member (car (cadr x)) states)
                              (member (cadr (cadr x)) sigma))) rules))
+
+  (define (valid-mttm-rule? states sigma rule)
+    (and (member (first (first rule)) states)
+         (andmap (lambda (letter) (member letter sigma)) (second (first rule)))
+         (member (first (second rule)) states)
+         (andmap (lambda (letter) (member letter sigma)) (second (second rule))))
+    )
+
+  (define (correct-members-mttm? states sigma rules)
+    (andmap (lambda (rule) (valid-mttm-rule? states sigma rule)) rules))
 
   (define (incorrect-members-dfa states sigma rules)
     (filter (lambda (x) (not (and (member (car x) states)
@@ -138,6 +160,9 @@
                                   (member (cadr (car x)) sigma)
                                   (member (car (cadr x)) states)
                                   (member (cadr (cadr x)) sigma)))) rules))
+
+  (define (incorrect-members-mttm states sigma rules)
+    (filter (lambda (rule) (not (valid-mttm-rule? states sigma rule))) rules))
 
   
   )

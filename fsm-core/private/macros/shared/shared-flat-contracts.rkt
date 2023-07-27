@@ -5,14 +5,34 @@
            "../../fsa.rkt"
            racket/contract
            )
-  (provide valid-listof/c
-           valid-states/c
-           valid-alphabet/c
-           valid-start/c
-           start-in-states/c
-           no-duplicates/c
-           valid-finals/c
-           )
+  (provide
+   is-nonempty-list/c
+   valid-listof/c
+   valid-states/c
+   valid-alphabet/c
+   valid-start/c
+   valid-non-dead-state/c
+   start-in-states/c
+   no-duplicates/c
+   valid-finals/c
+   is-state-in-finals/c
+   )
+
+  ;; Purpose: A flat contract that checks if the input is a non-empty list.
+  (define (is-nonempty-list/c element-name field-name)
+    (make-flat-contract
+     #:name 'is-nonempty-list/c
+     #:first-order (lambda (x) (and (list? x) (not (empty? x))))
+     #:projection (lambda (blame)
+                    (lambda (x)
+                      (current-blame-format format-error)
+                      (raise-blame-error
+                       blame
+                       x
+                       (format "Expected a non-empty list of ~a(s) for the ~a, but got" element-name field-name))))
+     )
+    )
+  
   ;; Purpose: Constructs a flat contract which checks if all elements in the
   ;;          list hold true for a given predicate. If any elements fail,
   ;;          formats an error message with the list of failing elements,
@@ -37,6 +57,18 @@
                     )
      )
     )
+
+  (define valid-non-dead-state/c
+    (make-flat-contract
+     #:name 'valid-state
+     #:first-order (lambda (state) (valid-non-dead-state? state))
+     #:projection (lambda (blame)
+                    (lambda (state)
+                      (current-blame-format format-error)
+                      (raise-blame-error
+                       blame
+                       state
+                       "The following is not a valid non-dead state")))))
 
   (define valid-states/c
     (make-flat-contract
@@ -144,5 +176,18 @@
                       )
                     )
      )
+    )
+
+  (define (is-state-in-finals/c finals)
+    (make-flat-contract
+     #:name 'is-state-in-finals
+     #:first-order (lambda (state) (member state finals))
+     #:projection (lambda (blame)
+                    (lambda (state)
+                      (current-blame-format format-error)
+                      (raise-blame-error
+                       blame
+                       state
+                       (format "The following state is not a member of your list of final states ~a" finals)))))
     )
   )

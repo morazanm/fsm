@@ -182,7 +182,7 @@
                       (raise-blame-error
                        blame
                        words
-                       (format "Must have a value for accepted state in final states to process list of words: ")
+                       (format "Must have a value for accepted state in final states to process list of words")
                        )
                       )
                     )

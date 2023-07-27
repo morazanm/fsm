@@ -10,8 +10,10 @@
            ndfa?
            ndpda?
            tm?
+           mttm?
            valid-list-of
            valid-list-of-states?
+           valid-non-dead-state?
            valid-state?
            valid-sigma?
            valid-alpha?
@@ -36,6 +38,10 @@
     (or (equal? (sm-type machine) 'tm-language-recognizer)
         (equal? (sm-type machine) 'tm)))
 
+  (define (mttm? machine)
+    (or (equal? (sm-type machine) 'mttm)
+        (equal? (sm-type machine) 'mttm-language-recognizer)))
+
   ;applies the predicate to the list and returns false if
   ; any of the members of the list are invalid states/sigma
   (define (valid-list-of los pred)
@@ -46,12 +52,17 @@
     (valid-list-of states valid-state?)
     )
 
+  (define (valid-non-dead-state? x)
+    (define regex-pattern #px"^[A-Z](?:-[0-9]+)?$")
+    (if (symbol? x)
+        (regexp-match regex-pattern (symbol->string x))
+        #f)
+    )
+
   (define (valid-state? x)
     (define regex-pattern #px"^[A-Z](?:-[0-9]+)?$")
     (or (equal? x DEAD)
-        (if (symbol? x)
-            (regexp-match regex-pattern (symbol->string x))
-            #f)
+        (valid-non-dead-state? x)
         )
     )
 
