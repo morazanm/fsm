@@ -101,7 +101,9 @@
                                       (cons (list istate (empty-regexp) tost)
                                             (remove edge grph))))
                           (cons grph acc)))]))))
-  (bfs dgraph '()))
+  (define (all-edges-extracted lodgprh)
+    (
+  (struct (bfs dgraph '()) ())
 
 ;; updg are unprocessed dgraphs
 ;; pdg are processed dgraphs

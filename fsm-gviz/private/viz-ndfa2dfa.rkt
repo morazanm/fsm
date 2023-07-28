@@ -600,11 +600,12 @@
 ;; Purpose: To draw a world image
 (define (draw-world a-world)
   (let [(graph-img
-         (above (overlay (graph->bitmap (make-ndfa-graph a-world)) E-SCENE)
-                (overlay (graph->bitmap (create-dfa-graph (world-ad-edges a-world)
+         (above (graph->bitmap (make-ndfa-graph a-world))
+                (square 100 "solid" "white")
+                (graph->bitmap (create-dfa-graph (world-ad-edges a-world)
                                                           (world-incl-nodes a-world)
                                                           (ndfa2dfa-finals-only (world-M a-world))))
-                         E-SCENE)))]
+                        ))]
     (let [(width (image-width graph-img))
           (height (image-height graph-img))]
       (if (or (> width (image-width E-SCENE))
@@ -666,7 +667,7 @@
         [name 'visualization]))
     (void)))
 
-;(run aa-ab)
-(run AT-LEAST-ONE-MISSING)
+(run aa-ab)
+;(run AT-LEAST-ONE-MISSING)
 
 (define EXAMPLE (call-with-values get-display-size empty-scene))
