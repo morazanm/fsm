@@ -37,7 +37,7 @@
 ;; listens on the specified socket for incomming connections
 ;; if data is supplied then it is sent when the connection is first established
 (define (run-server [pre-computed-data (hash)])
-  (displayln (format "FSM Gui server listenting at ~s on port ~s" ADDRESS PORT))
+  (displayln (format "FSM Gui server listening at ~s on port ~s" ADDRESS PORT))
   (define listener (tcp-listen PORT 4 #t ADDRESS))
   (define active-threads (make-hash))
   ;; DrRacket throws a break exception when the stop button is pressed.
