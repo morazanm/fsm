@@ -9,6 +9,14 @@
 
 (define FNAME "fsm")
 
+(require "../../fsm-core/interface.rkt" "lib.rkt" "../../fsm-gui/graphViz/main.rkt")
+(require 2htdp/universe rackunit)
+(require (rename-in racket/gui/base
+                    [make-color loc-make-color]
+                    [make-pen loc-make-pen]))
+(require 2htdp/image)
+
+
 
 
 
@@ -495,8 +503,8 @@
                  (remove-duplicates (append-map (λ (e) (list (first e) (third e)))
                                                 new-ad-edges))
                  #;(remove-duplicates
-                                 (reverse (cons super-start-state
-                                                (reverse (map (λ (edge) (third edge)) new-ad-edges))))))
+                    (reverse (cons super-start-state
+                                   (reverse (map (λ (edge) (third edge)) new-ad-edges))))))
                 (new-hedges (compute-all-hedges (sm-rules (world-M a-world))
                                                 (third (first new-ad-edges))
                                                 (first new-ad-edges)))
@@ -591,11 +599,18 @@
 ;; world -> img
 ;; Purpose: To draw a world image
 (define (draw-world a-world)
-  (scale 0.7
+  (let [(graph-img
          (above (graph->bitmap (make-ndfa-graph a-world))
-                (overlay
-                 (graph->bitmap (create-dfa-graph (world-ad-edges a-world) (world-incl-nodes a-world) (ndfa2dfa-finals-only (world-M a-world))))
-                 E-SCENE))))
+                (graph->bitmap (create-dfa-graph (world-ad-edges a-world)
+                                                 (world-incl-nodes a-world)
+                                                 (ndfa2dfa-finals-only (world-M a-world))))))]
+    (let [(width (image-width graph-img))
+          (height (image-height graph-img))]
+      (if (or (> width (image-width E-SCENE))
+              (> height (image-height E-SCENE)))
+          (overlay (resize-image graph-img (image-width E-SCENE) (image-height E-SCENE))
+                   E-SCENE)
+          (overlay graph-img E-SCENE)))))
 
 (define aa-ab (make-ndfa `(S A B F)
                          '(a b)
@@ -651,6 +666,6 @@
     (void)))
 
 ;(run aa-ab)
-;(run AT-LEAST-ONE-MISSING)
+(run AT-LEAST-ONE-MISSING)
 
 (define EXAMPLE (call-with-values get-display-size empty-scene))
