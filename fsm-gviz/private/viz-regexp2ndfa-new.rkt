@@ -85,11 +85,14 @@
                                       (remove edge grph)))
                           (cons grph acc)))]
                 [else
-                 (let [(istart (generate-symbol 'I '(I)))]
+                 (let [(istart1 (generate-symbol 'I '(I)))
+                       (istart2 (generate-symbol 'I '(I)))]
                    (bfs
-                    (append (list (list istart (empty-regexp) fromst)
-                                  (list fromst (kleenestar-regexp-r1 rexp) tost)
-                                  (list tost (empty-regexp) istart))
+                    (append (list (list fromst (empty-regexp) istart1)
+                                  (list istart1 (empty-regexp) tost)
+                                  (list istart1 (empty-regexp) istart2)
+                                  (list istart2 (kleenestar-regexp-r1 rexp) istart2)
+                                  (list istart2 (empty-regexp) tost))
                             (remove edge grph))
                     (cons grph acc)))
                  #;(let [(istate (generate-symbol 'I '(I)))]
@@ -135,7 +138,9 @@
 ;; Purpose: To add the nodes to the graph
 (define (create-nodes graph dgraph)
   (define (states-only dgraph)
-    (remove-duplicates (if (empty? dgraph)
+    (remove-duplicates
+     (append-map (λ (e) (list (first e) (third e))) dgraph))
+    #;(remove-duplicates (if (empty? dgraph)
                            empty
                            (flatten (cons (filter (λ (el) (symbol? el)) dgraph)
                                           (states-only (rest dgraph)))))))                    
@@ -247,22 +252,31 @@
                           [else
                            (create-graph-img (first (viz-state-pdg a-vs)))]))
                             
-  (overlay (resize-image graph-img (image-width E-SCENE) (image-height E-SCENE))
-           E-SCENE))
+  (let [(width (image-width graph-img))
+        (height (image-height graph-img))]
+    (if (or (> width (image-width E-SCENE))
+            (> height (image-height E-SCENE)))
+        (overlay (resize-image graph-img (image-width E-SCENE) (image-height E-SCENE))
+                 E-SCENE)
+        (overlay graph-img E-SCENE))))
 
 
 
 
 ;; run-function
 (define (run regexp)
-  (begin
-    (big-bang
-        (viz-state (rest (reverse (dgraph2lodgraph (list (list 'S regexp 'F)))))
-                   (first (reverse (dgraph2lodgraph (list (list 'S regexp 'F))))))
-      [on-draw draw-world]
-      [on-key process-key]
-      [name "FSM: regexp to ndfa visualization"]))
-  (void))
+  (let [(lodgraph (reverse
+                   (dgraph2lodgraph
+                    (list (list (generate-symbol 'S '(S))
+                                regexp
+                                (generate-symbol 'F '(F)))))))]
+    (begin
+      (big-bang
+          (viz-state (rest lodgraph) (first lodgraph))
+        [on-draw draw-world]
+        [on-key process-key]
+        [name "FSM: regexp to ndfa visualization"]))
+    (void)))
 
 
 
