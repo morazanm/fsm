@@ -599,20 +599,54 @@
 ;; world -> img
 ;; Purpose: To draw a world image
 (define (draw-world a-world)
-  (let [(graph-img
-         (above (graph->bitmap (make-ndfa-graph a-world))
-                (square 100 "solid" "white")
-                (graph->bitmap (create-dfa-graph (world-ad-edges a-world)
-                                                          (world-incl-nodes a-world)
-                                                          (ndfa2dfa-finals-only (world-M a-world))))
-                        ))]
-    (let [(width (image-width graph-img))
-          (height (image-height graph-img))]
-      (if (or (> width (image-width E-SCENE))
-              (> height (image-height E-SCENE)))
-          (overlay (resize-image graph-img (image-width E-SCENE) (image-height E-SCENE))
-                   E-SCENE)
-          (overlay graph-img E-SCENE)))))
+  (define (resize-img img)
+    (let [(e-scn-w (- (image-width E-SCENE) 10))
+          (e-scn-h (- (image-height E-SCENE) 10))
+          (w (image-width img))
+          (h (image-height img))]
+      (cond [(and (> w e-scn-w) (> h (/ e-scn-h 2)))
+             (resize-image img e-scn-w (/ e-scn-h 2))]
+            [(> w e-scn-w) (resize-image img e-scn-w h)]
+            [(> h (/ e-scn-h 2)) (resize-image img w (/ e-scn-h 2))]
+            [else img])))
+          
+  (let* [(ndfa-graph (overlay (resize-img
+                               (beside (text "NDFA    " 24 'darkgreen)
+                                       (graph->bitmap (make-ndfa-graph a-world))))
+                              (empty-scene (image-width E-SCENE)
+                                           (/ (image-height E-SCENE) 2))))
+         (dfa-graph
+          (let* [(new-edge (if (empty? (world-ad-edges a-world))
+                               '()
+                               (first (world-ad-edges a-world))))
+                 (edge-str (if (empty? new-edge)
+                               "Starting Super State"
+                               (string-append "SS Edge Added: "
+                                              "("
+                                              (symbol->string (if (empty? (first new-edge))
+                                                                  DEAD
+                                                                  (los->symbol (first new-edge))))
+                                              " "
+                                              (symbol->string (second new-edge))
+                                              " "
+                                              (symbol->string (if (empty? (third new-edge))
+                                                                  DEAD
+                                                                  (los->symbol (third new-edge))))
+                                              ")")))
+                 (edge-msg-img (text edge-str 24 'violet))]
+              
+            (overlay (resize-img
+                      (above
+                       (graph->bitmap
+                        (create-dfa-graph
+                         (world-ad-edges a-world)
+                         (world-incl-nodes a-world)
+                         (ndfa2dfa-finals-only (world-M a-world))))
+                       edge-msg-img))
+                     (empty-scene (image-width E-SCENE)
+                                  (/ (image-height E-SCENE) 2)))))]
+    (above ndfa-graph dfa-graph)))
+
 
 (define aa-ab (make-ndfa `(S A B F)
                          '(a b)
