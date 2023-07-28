@@ -141,15 +141,21 @@
     (remove-duplicates
      (append-map (λ (e) (list (first e) (third e))) dgraph))
     #;(remove-duplicates (if (empty? dgraph)
-                           empty
-                           (flatten (cons (filter (λ (el) (symbol? el)) dgraph)
-                                          (states-only (rest dgraph)))))))                    
+                             empty
+                             (flatten (cons (filter (λ (el) (symbol? el)) dgraph)
+                                            (states-only (rest dgraph)))))))                    
   (foldl (λ (state result)
            (add-node
             result
             state
-            #:atb (hash 'color 'black
-                        'shape 'circle
+            #:atb (hash 'color (cond [(eq? state 'S)
+                                      'green]
+                                     [(eq? state 'F)
+                                      'red]
+                                     [else 'black])                                   
+                        'shape (if (eq? state 'F)
+                                   'doublecircle
+                                   'circle)
                         'label (if (equal? state '())
                                    'ds  
                                    state)
@@ -267,9 +273,9 @@
 (define (run regexp)
   (let [(lodgraph (reverse
                    (dgraph2lodgraph
-                    (list (list (generate-symbol 'S '(S))
+                    (list (list 'S
                                 regexp
-                                (generate-symbol 'F '(F)))))))]
+                                'F)))))]
     (begin
       (big-bang
           (viz-state (rest lodgraph) (first lodgraph))
