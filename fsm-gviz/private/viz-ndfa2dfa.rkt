@@ -600,10 +600,11 @@
 ;; Purpose: To draw a world image
 (define (draw-world a-world)
   (let [(graph-img
-         (above (graph->bitmap (make-ndfa-graph a-world))
-                (graph->bitmap (create-dfa-graph (world-ad-edges a-world)
-                                                 (world-incl-nodes a-world)
-                                                 (ndfa2dfa-finals-only (world-M a-world))))))]
+         (above (overlay (graph->bitmap (make-ndfa-graph a-world)) E-SCENE)
+                (overlay (graph->bitmap (create-dfa-graph (world-ad-edges a-world)
+                                                          (world-incl-nodes a-world)
+                                                          (ndfa2dfa-finals-only (world-M a-world))))
+                         E-SCENE)))]
     (let [(width (image-width graph-img))
           (height (image-height graph-img))]
       (if (or (> width (image-width E-SCENE))
