@@ -5,19 +5,35 @@
            "../../fsa.rkt"
            racket/contract
            )
-  (provide valid-listof/c
-           valid-start/c
-           start-in-states/c
-           no-duplicates/c
-           valid-finals/c
-           )
-  ;valid-listof/c: ((listof x) --> boolean) string string --> contract
+  (provide
+   is-nonempty-list/c
+   valid-listof/c
+   valid-start/c
+   valid-non-dead-state/c
+   start-in-states/c
+   no-duplicates/c
+   valid-finals/c
+   is-state-in-finals/c
+   )
+
+  ;; Purpose: A flat contract that checks if the input is a non-empty list.
+  (define (is-nonempty-list/c element-name field-name)
+    (make-flat-contract
+     #:name 'is-nonempty-list/c
+     #:first-order (lambda (x) (and (list? x) (not (empty? x))))
+     #:projection (lambda (blame)
+                    (lambda (x)
+                      (current-blame-format format-error)
+                      (raise-blame-error
+                       blame
+                       x
+                       (format "Expected a non-empty list of ~a(s) for the ~a, but got" element-name field-name))))
+     )
+    )
+  
+;valid-listof/c: ((listof x) --> boolean) string string --> contract
   ;; predicate: (listof x) --> boolean
   ;; helper: (listof x) --> (listof x)
-  ;; Purpose: Constructs a flat contract which checks if all elements in the
-  ;;          list hold true for a given predicate. If any elements fail,
-  ;;          formats an error message with the list of failing elements,
-  ;;          and the given element and field names.
   (define (valid-listof/c predicate element-name field-name)
     (make-flat-contract
      #:name (string->symbol (format "valid-~a" field-name))
@@ -39,9 +55,36 @@
      )
     )
 
-  ;valid-start/c: (listof states) --> contract
-  ;; predicate: ((listof x) --> (x --> boolean)
-  ;PURPOSE: 
+  (define valid-non-dead-state/c
+    (make-flat-contract
+     #:name 'valid-state
+     #:first-order (lambda (state) (valid-non-dead-state? state))
+     #:projection (lambda (blame)
+                    (lambda (state)
+                      (current-blame-format format-error)
+                      (raise-blame-error
+                       blame
+                       state
+                       "The following is not a valid non-dead state")))))
+
+  (define valid-states/c
+    (make-flat-contract
+     #:name 'valid-states
+     #:first-order (lambda (states) (andmap valid-state? states))
+     #:projection (lambda (blame)
+                    (lambda (states)
+                      (define invalid-states (filter (lambda (state) (not (valid-state? state))) states))
+                      (current-blame-format format-error)
+                      (raise-blame-error
+                       blame
+                       states
+                       (format "The following: ~a are not valid machine states, in the set of machine states" invalid-states)
+                       )
+                      )
+                    )
+     )
+    )
+
   (define (valid-start/c states)
     (make-flat-contract
      #:name 'valid-starting-state
@@ -112,5 +155,18 @@
                       )
                     )
      )
+    )
+
+  (define (is-state-in-finals/c finals)
+    (make-flat-contract
+     #:name 'is-state-in-finals
+     #:first-order (lambda (state) (member state finals))
+     #:projection (lambda (blame)
+                    (lambda (state)
+                      (current-blame-format format-error)
+                      (raise-blame-error
+                       blame
+                       state
+                       (format "The following state is not a member of your list of final states ~a" finals)))))
     )
   )
