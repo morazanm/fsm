@@ -50,13 +50,7 @@
         (let* [(edge (extract-first-nonsimple grph))
                (fromst (first edge))
                (rexp (second edge))
-               (tost (third edge))
-               #;(dd (displayln (format "graph: ~a\n" (map (λ (e) (format "(~a ~a ~a)"
-                                                                          (first e)
-                                                                          (printable-regexp (second e))
-                                                                          (third e) ))
-                                                           grph))))
-               #;(d (displayln (format "edge: (~a ~a ~a)\n" fromst (printable-regexp rexp) tost)))]
+               (tost (third edge))]
           (cond [(union-regexp? rexp)
                  (let [(newi1 (generate-symbol 'I '(I)))
                        (newi2 (generate-symbol 'I '(I)))
@@ -74,7 +68,12 @@
                     #;(cons (list fromst (union-regexp-r1 rexp) tost)
                             (cons (list fromst (union-regexp-r2 rexp) tost)
                                   (remove edge grph)))
-                    (cons (gedge grph (printable-regexp rexp)) acc)))]
+                    (cons (gedge grph
+                                 (format "Regular Expression Expanded: ~a \n\nFrom ~a to ~a"
+                                         (printable-regexp rexp)
+                                         (symbol->string fromst)
+                                         (symbol->string tost)))
+                          acc)))]
                 [(concat-regexp? rexp)
                  (let [(istate1 (generate-symbol 'I '(I)))
                        (istate2 (generate-symbol 'I '(I)))]
@@ -82,7 +81,12 @@
                                       (list istate1 (empty-regexp) istate2)
                                       (list istate2 (concat-regexp-r2 rexp) tost))
                                 (remove edge grph))
-                        (cons (gedge grph (printable-regexp rexp)) acc))                   
+                        (cons (gedge grph
+                                     (format "Regular Expression Expanded: ~a \n\nFrom ~a to ~a"
+                                             (printable-regexp rexp)
+                                             (symbol->string fromst)
+                                             (symbol->string tost)))
+                              acc))                   
                    #;(bfs (cons (list fromst (concat-regexp-r1 rexp) istate)
                                 (cons (list istate (concat-regexp-r2 rexp) tost)
                                       (remove edge grph)))
@@ -97,7 +101,12 @@
                                   (list istart2 (kleenestar-regexp-r1 rexp) istart2)
                                   (list istart2 (empty-regexp) tost))
                             (remove edge grph))
-                    (cons (gedge grph (printable-regexp rexp)) acc)))
+                    (cons (gedge grph
+                                 (format "Regular Expression Expanded: ~a \n\nFrom ~a to ~a"
+                                         (printable-regexp rexp)
+                                         (symbol->string fromst)
+                                         (symbol->string tost)))
+                          acc)))
                  #;(let [(istate (generate-symbol 'I '(I)))]
                      (bfs (cons (list fromst (empty-regexp) istate)
                                 (cons (list istate (kleenestar-regexp-r1 rexp) istate)
@@ -167,11 +176,13 @@
 ;; create-graph-img
 ;; graph -> img
 ;; Purpose: To create a graph img for the given dgraph
-(define (create-graph-img dgraph)
+(define (create-graph-img dgraph glabel)
   (graph->bitmap
    (create-edges
     (create-nodes
-     (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans")) dgraph)
+     (create-graph 'dgraph #:atb (hash 'rankdir "LR"
+                                       'font "Sans"))
+     dgraph)
     dgraph)))
 
 ;; create-starting-nodes
@@ -232,7 +243,8 @@
 (define (create-graph-imgs log)
   (if (empty? log)
       empty
-      (cons (create-graph-img (gedge-grph (first log)))
+      (cons (create-graph-img (gedge-grph (first log))
+                              (gedge-edge (first log)))
             (create-graph-imgs (rest log)))))
 
 ;; process-key
@@ -291,13 +303,14 @@
             (overlay (above (viz-state-rxp a-vs) (text "Starting regexp" 20 'black)) E-SCENE)))
       (let* [(graph-img (first (viz-state-pdg a-vs)))
              (width (image-width graph-img))
-             (height (image-height graph-img))]
+             (height (image-height graph-img))
+             (text-img (text (first (viz-state-pe a-vs)) 24 'black))]
         (if (or (> width (image-width E-SCENE))
                 (> height (image-height E-SCENE)))
             (overlay (above (resize-image graph-img (image-width E-SCENE) (image-height E-SCENE))
-                            (text (string-append "Regexp broken up: " (first (viz-state-pe a-vs))) 20 'black))
+                            text-img)
                      E-SCENE)
-            (overlay (above graph-img (text (string-append "Regexp broken up: " (first (viz-state-pe a-vs))) 20 'black))
+            (overlay (above graph-img text-img)
                      E-SCENE)))))
 
 
@@ -331,104 +344,3 @@
     (void)))
 
 
-
-
-
-#| NO LONGER ILLUSTRATIVE
-Illustrative tests; can't be implemented because of randomness in generating symbols
-
-(check-equal? (dgraph2lodgraph (list (list 'S R1 'F)))
-              (list
-               (list (list 'S (singleton-regexp "a") 'F) (list 'S (singleton-regexp "b") 'F))
-               (list (list 'S (union-regexp (singleton-regexp "a") (singleton-regexp "b")) 'F))))
-
-(check-equal? (dgraph2lodgraph (list (list 'S R2 'F)))
-              (list
-               (list
-                (list 'I-1648402 (singleton-regexp "a") 'F)
-                (list 'I-1648402 (singleton-regexp "b") 'F)
-                (list 'S (singleton-regexp "m") 'I-1648402))
-               (list
-                (list 'S (singleton-regexp "m") 'I-1648402)
-                (list 'I-1648402 (union-regexp (singleton-regexp "a") (singleton-regexp "b")) 'F))
-               (list
-                (list
-                 'S
-                 (concat-regexp
-                  (singleton-regexp "m")
-                  (union-regexp (singleton-regexp "a") (singleton-regexp "b")))
-                 'F))))
-
-(check-equal? (dgraph2lodgraph (list (list 'S R3 'F)))
-              (list
-               (list
-                (list 'I-1637562 (singleton-regexp "a") 'I-1637561)
-                (list 'I-1637562 (singleton-regexp "b") 'I-1637561)
-                (list 'I-1637561 (singleton-regexp "m") 'I-1637562)
-                (list 'S (empty-regexp) 'I-1637561)
-                (list 'I-1637561 (empty-regexp) 'F))
-               (list
-                (list 'I-1637561 (singleton-regexp "m") 'I-1637562)
-                (list 'I-1637562 (union-regexp (singleton-regexp "a") (singleton-regexp "b")) 'I-1637561)
-                (list 'S (empty-regexp) 'I-1637561)
-                (list 'I-1637561 (empty-regexp) 'F))
-               (list
-                (list 'S (empty-regexp) 'I-1637561)
-                (list
-                 'I-1637561
-                 (concat-regexp
-                  (singleton-regexp "m")
-                  (union-regexp (singleton-regexp "a") (singleton-regexp "b")))
-                 'I-1637561)
-                (list 'I-1637561 (empty-regexp) 'F))
-               (list
-                (list
-                 'S
-                 (kleenestar-regexp
-                  (concat-regexp
-                   (singleton-regexp "m")
-                   (union-regexp (singleton-regexp "a") (singleton-regexp "b"))))
-                 'F))))
-|#
-
-#|
-
-(list
- (list
-  (list 'I-245828 (empty-regexp) 'I-245829)
-  (list 'I-245828 (empty-regexp) 'I-245830)
-  (list 'I-245829 (singleton-regexp "a") 'I-245831)
-  (list 'I-245830 (singleton-regexp "b") 'I-245832)
-  (list 'I-245831 (empty-regexp) 'F)
-  (list 'I-245832 (empty-regexp) 'F)
-  (list 'S (singleton-regexp "m") 'I-245827)
-  (list 'I-245827 (empty-regexp) 'I-245828)
-  (list 'I-245826 (empty-regexp) 'S)
-  (list 'F (empty-regexp) 'I-245826))
- (list
-  (list 'S (singleton-regexp "m") 'I-245827)
-  (list 'I-245827 (empty-regexp) 'I-245828)
-  (list
-   'I-245828
-   (union-regexp (singleton-regexp "a") (singleton-regexp "b"))
-   'F)
-  (list 'I-245826 (empty-regexp) 'S)
-  (list 'F (empty-regexp) 'I-245826))
- (list
-  (list 'I-245826 (empty-regexp) 'S)
-  (list
-   'S
-   (concat-regexp
-    (singleton-regexp "m")
-    (union-regexp (singleton-regexp "a") (singleton-regexp "b")))
-   'F)
-  (list 'F (empty-regexp) 'I-245826))
- (list
-  (list
-   'S
-   (kleenestar-regexp
-    (concat-regexp
-     (singleton-regexp "m")
-     (union-regexp (singleton-regexp "a") (singleton-regexp "b"))))
-   'F)))
-|#
