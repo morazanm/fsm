@@ -261,13 +261,15 @@
                                    (viz-state-upe a-vs)))]
                (viz-state new-updg new-pdg (viz-state-rxp a-vs) new-upe new-pe)))]
         [(key=? "down" a-key)
-         (let* [(new-pdg (append (reverse (viz-state-updg a-vs))
-                                 (viz-state-pdg a-vs)))
-                (new-updg '())
-                (new-pe (append (reverse (viz-state-upe a-vs))
-                                (viz-state-pe a-vs)))
-                (new-upe '())]
-           (viz-state new-updg new-pdg (viz-state-rxp a-vs) new-upe new-pe))]           
+         (if (empty? (viz-state-updg a-vs))
+             a-vs
+             (let* [(new-pdg (append (reverse (viz-state-updg a-vs))
+                                     (viz-state-pdg a-vs)))
+                    (new-updg '())
+                    (new-pe (rest (append (reverse (viz-state-upe a-vs))
+                                          (viz-state-pe a-vs))))
+                    (new-upe '())]
+               (viz-state new-updg new-pdg (viz-state-rxp a-vs) new-upe new-pe)))]           
         [else a-vs]))
 
 
