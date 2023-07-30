@@ -1,6 +1,10 @@
 #lang racket
 ;;BUG LIST
 
+;TOOD:
+;;; pinpoint where in the rule the action fails
+
+
 ;shared-predicates
 ;o Final states must be a list
 

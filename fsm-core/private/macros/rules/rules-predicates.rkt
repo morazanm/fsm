@@ -177,7 +177,7 @@
   ; which can also be a turing machine action.
   (define (correct-members-tm? states sigma rules)
     (if (andmap (lambda (x) (and (member (car (car x)) states)
-                                 (member (cadr (car x)) (cons BLANK sigma))
+                                 (member (cadr (car x)) (cons BLANK (cons LM sigma)))
                                  (member (car (cadr x)) states)
                                  (member (cadr (cadr x)) (cons RIGHT
                                                                (cons LEFT
