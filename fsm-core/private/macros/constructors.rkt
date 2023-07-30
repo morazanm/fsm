@@ -308,7 +308,7 @@
                                      correct-members-mttm?
                                      incorrect-members-mttm
                                      states
-                                     (cons RIGHT (cons LEFT (cons BLANK sigma))))
+                                     (cons BLANK sigma))
                                     (no-duplicates/c "rules"))]
           [num-tapes (integer-in 1 #f)]
           )
