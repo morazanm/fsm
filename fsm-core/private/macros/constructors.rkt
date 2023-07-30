@@ -55,7 +55,8 @@
                         (no-duplicates/c "sigma"))]
           [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
-          [finals (states) (and/c (valid-listof/c valid-state? "machine state" "list of machine finals")
+          [finals (states) (and/c (is-nonempty-list/c "final state" "list of machine final states")
+                                  (valid-listof/c valid-state? "machine state" "list of machine finals")
                                   (valid-finals/c states)
                                   (no-duplicates/c "final states"))]
           [rules (states
@@ -123,7 +124,8 @@
                         (no-duplicates/c "gamma"))]
           [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
-          [finals (states) (and/c (valid-listof/c valid-state? "machine state" "list of machine finals")
+          [finals (states) (and/c (is-nonempty-list/c "final state" "list of machine final states")
+                                  (valid-listof/c valid-state? "machine state" "list of machine finals")
                                   (valid-finals/c states)
                                   (no-duplicates/c "final states"))]
           [rules (states
@@ -179,7 +181,8 @@
                         (no-duplicates/c "sigma"))]
           [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
-          [finals (states) (and/c (valid-listof/c valid-state? "machine state" "list of machine finals")
+          [finals (states) (and/c (is-nonempty-list/c "final state" "list of machine final states")
+                                  (valid-listof/c valid-state? "machine state" "list of machine finals")
                                   (valid-finals/c states)
                                   (no-duplicates/c "final states"))]
           [rules (states
@@ -242,7 +245,8 @@
                                 (no-duplicates/c "rules"))]
           [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
-          [finals (states) (and/c (valid-listof/c valid-state? "machine state" "list of machine finals")
+          [finals (states) (and/c (is-nonempty-list/c "final state" "list of machine final states")
+                                  (valid-listof/c valid-state? "machine state" "list of machine finals")
                                   (valid-finals/c states)
                                   (no-duplicates/c "final states"))]
           )
@@ -298,7 +302,8 @@
                         (no-duplicates/c "sigma"))]
           [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
-          [finals (states) (and/c (valid-listof/c valid-state? "machine state" "list of machine finals")
+          [finals (states) (and/c (is-nonempty-list/c "final state" "list of machine final states")
+                                  (valid-listof/c valid-state? "machine state" "list of machine finals")
                                   (valid-finals/c states)
                                   (no-duplicates/c "final states"))]
           [rules (states
