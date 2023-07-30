@@ -76,7 +76,7 @@
                     'S
                     '(Y N)
                     'Y
-                  #:accepts (list '(a a a) '(a a))
+                  #:accepts (list `((a a a) 0) '(a a))
                   #:rejects (list '(b b b b) '(b b))
                   ))
 (dfa-temp '(a a a a))

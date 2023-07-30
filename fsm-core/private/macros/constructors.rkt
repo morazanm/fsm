@@ -263,9 +263,9 @@
                               start
                               finals
                               rules
-                              accept) (and/c (words-in-sigma/c (append (list BLANK LM) sigma))
-                                             (has-accept/c accept finals)
-                                             (listof-words/c sigma)
+                              accept) (and/c (has-accept/c accept finals)
+                                             (listof-words-tm/c sigma)
+                                             (words-in-sigma-tm/c (append (list BLANK LM) sigma))
                                              (tm-input/c states
                                                          sigma
                                                          start
@@ -279,9 +279,9 @@
                               start
                               finals
                               rules
-                              accept) (and/c (words-in-sigma/c (append (list BLANK LM) sigma))
-                                             (has-accept/c accept finals)
-                                             (listof-words/c sigma)
+                              accept) (and/c (has-accept/c accept finals)
+                                             (listof-words-tm/c sigma)
+                                             (words-in-sigma-tm/c (append (list BLANK LM) sigma))
                                              (tm-input/c states
                                                          sigma
                                                          start
@@ -333,9 +333,9 @@
                               finals
                               rules
                               num-tapes
-                              accept) (and/c (words-in-sigma/c (append (list BLANK LM) sigma))
-                                             (has-accept/c accept finals)
-                                             (listof-words/c sigma)
+                              accept) (and/c (has-accept/c accept finals)
+                                             (listof-words-tm/c sigma)
+                                             (words-in-sigma-tm/c (append (list BLANK LM) sigma))
                                              (mttm-input/c states
                                                          sigma
                                                          start
@@ -351,9 +351,9 @@
                               finals
                               rules
                               num-tapes
-                           accept) (and/c (words-in-sigma/c (append (list BLANK LM) sigma))
-                                             (has-accept/c accept finals)
-                                             (listof-words/c sigma)
+                           accept) (and/c (has-accept/c accept finals)
+                                             (listof-words-tm/c sigma)
+                                             (words-in-sigma-tm/c (append (list BLANK LM) sigma))
                                              (mttm-input/c states
                                                          sigma
                                                          start

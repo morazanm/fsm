@@ -7,8 +7,13 @@
            "../../pda.rkt"
            "../../../../main.rkt")
   (provide listof-words?
+           listof-words-tm?
            words-in-sigma?
+           words-in-sigma-tm?
            invalid-words
+           invalid-words-tm
+           words-in-sigma-tm?
+           invalid-words-tm
            check-input-dfa
            return-input-dfa
            check-input-ndfa
@@ -21,14 +26,35 @@
            return-input-mttm
            )
 
-  ;listof-words?: (listof something) sigma --> boolean
+  ;listof-words?: (listof something) --> boolean
   ;purpose: to check if the list of words is a valid list
   ; of list of symbols
-  (define (listof-words? words sigma)
+  (define (listof-words? words)
     (and (list? words)
          (andmap (lambda (word) (and (list? word)
                                      (andmap (lambda (letter) (symbol? letter))
                                              word))) words))
+    )
+
+  ;listof-words-tm?: (listof something) --> boolean
+  ;purpose: turing machine words are either:
+  ;  a list of symbols
+  ;  a pair where the first item is a list of symbols
+  ;               the second item is a starting index
+  (define (listof-words-tm? words)
+    (and (list words) 
+         (andmap (lambda (word) (and (list? word)
+                                     (or (andmap (lambda (letter) (symbol? letter))
+                                                 word)
+                                         (and (equal? (length word) 2)
+                                              (andmap (lambda (letter) (symbol? letter))
+                                                      (car word))
+                                              (and (integer? (cadr word))
+                                                   (equal? (abs (cadr word))
+                                                           (cadr word))))
+                                         ))
+                   )
+                 words))
     )
 
   ;words-in-sigma?: (listof words) sigma --> boolean
@@ -39,7 +65,33 @@
   ;invalid-words: (listof words) sigma --> (listof words)
   ;purpose: to return if the words are made of character from sigma
   (define (invalid-words words sigma)
-    (filter (lambda (word) (andmap (lambda (letter) (not (member letter sigma))) word)) words))
+    (filter (lambda (word) (ormap (lambda (letter) (not (member letter sigma))) word)) words))
+
+  ;words-in-sigma?: (listof words) sigma --> boolean
+  ;purpose: to return if the words are made of character from sigma
+  (define (words-in-sigma-tm? words sigma)
+    (if (andmap (lambda (word) (or (andmap (lambda (letter) (member letter sigma)) word)
+                                   (if (and (equal? (length word) 2)
+                                            (integer? (cadr word))
+                                            (list? (car word)))
+                                       (andmap (lambda (letter) (member letter sigma)) (car word))
+                                       #f)
+                                   )
+                  ) words) #t #f))
+
+  ;invalid-words-tm (listof words) sigma --> boolean
+  ;purpose: to return the invalid turing machine words
+  (define (invalid-words-tm words sigma)
+    (filter (lambda (word) (or (if (not (list? (car word)))
+                                   (ormap (lambda (letter) (not (member letter sigma))) word)
+                                   #f)
+                               (if (and (equal? (length word) 2)
+                                        (integer? (cadr word))
+                                        (list? (car word)))
+                                   (ormap (lambda (letter) (not (member letter sigma))) (car word))
+                                   #f)
+                               )
+              ) words))
 
   ;check-input-dfa:
   ; (listof states) (listof alphabet) symbol (listof states) (listof dfa-rules) boolean symbol
@@ -181,6 +233,15 @@
     (filter (lambda (x) (equal? (temp-machine x) (if (equal? 'accept accepts?) 'reject 'accept))) words)
     )
 
+  ;apply-input-tm: tm word --> accept/reject
+  ;purpose: to apply a turing machine to a word
+  (define (apply-input-tm machine word)
+    (if (and (equal? (length word) 2)
+             (integer? (cadr word)))
+        (machine (car word) (cadr word))
+        (sm-apply machine word))
+    )
+
 
   ;check-input-tm
   ; (listof states) (listof alphabet) symbol (listof states) (listof tm-rules) boolean symbol
@@ -204,7 +265,7 @@
                                               start
                                               finals
                                               accept))
-      (andmap (lambda (x) (equal? (sm-apply temp-machine x) accepts?)) words)
+      (andmap (lambda (x) (equal? (apply-input-tm temp-machine x) accepts?)) words)
       )
     )
 
@@ -227,7 +288,7 @@
                                             start
                                             finals
                                             accept))
-    (filter (lambda (x) (equal? (sm-apply temp-machine x) (if (equal? 'accept accepts?) 'reject 'accept))) words)
+    (filter (lambda (x) (equal? (apply-input-tm temp-machine x) (if (equal? 'accept accepts?) 'reject 'accept))) words)
     )
 
   ;check-input-mttm:
@@ -247,7 +308,7 @@
                              accept
                              accepts?) words)
     (define temp-machine (make-mttm states sigma start finals rules num-tapes accept))
-    (andmap (lambda (word) (equal? (sm-apply temp-machine word) accepts?)) words)
+    (andmap (lambda (word) (equal? (apply-input-tm temp-machine word) accepts?)) words)
     )
 
   ;return-input-mttm:
@@ -265,14 +326,22 @@
                              accept
                              accepts?)
     (define temp-machine (make-mttm states sigma start finals rules num-tapes accept))
-    (filter (lambda (word) (equal? (sm-apply temp-machine word) (if (equal? 'accept accepts?) 'reject 'accept))) words))
+    (filter (lambda (word) (equal? (apply-input-tm temp-machine word) (if (equal? 'accept accepts?) 'reject 'accept))) words))
 
   (module+ test
 
     ;listof-words? tests
-    (check-equal? (listof-words? '((a a a a)) '(a a a)) #t)
-    (check-equal? (listof-words? '(a a a a) '(b a c)) #f)
-    (check-equal? (listof-words? '((a 1 2 e r)) '(a b c)) #f)
+    (check-equal? (listof-words? '((a a a a))) #t)
+    (check-equal? (listof-words? '(a a a a)) #f)
+    (check-equal? (listof-words? '((a 1 2 e r))) #f)
+
+    ;listof-words-tm? tests
+    (check-equal? (listof-words-tm? '((a a a a) (b b b))) #t)
+    (check-equal? (listof-words-tm? '((a a 2 a) (a h 2))) #f)
+    (check-equal? (listof-words-tm? `(((a a a a) 0)
+                                      (b b b b))) #t)
+    (check-equal? (listof-words-tm? `(((a a a a) a)
+                                      (b b b b))) #f)
 
     ;words-in-sigma? tests
     (check-equal? (words-in-sigma? `((a a a a) (b b b)) '(a b)) #t)
@@ -281,6 +350,23 @@
     ;invalid-words tests
     (check-equal? (invalid-words `((a a a a) (b b b)) '(a b)) '())
     (check-equal? (invalid-words `((a a a a) (b b b)) '(a)) '((b b b)))
+
+    ;words-in-sigma-tm? tests
+    (check-equal? (words-in-sigma-tm? `((a a a a)
+                                        (b b b b)) '(a)) #f)
+    (check-equal? (words-in-sigma-tm? `((a a a a)
+                                        (b b b b)) '(a b)) #t)
+    (check-equal? (words-in-sigma-tm? `(((a a a a) 0)
+                                        (b b b b)) '(a b)) #t)
+
+    ;invalid-words-tm tests
+    (check-equal? (invalid-words-tm `(((a a a a) 1)
+                                      (a a a)) '(a)) '())
+    (check-equal? (invalid-words-tm `((a a a b)
+                                      (b b b b)) '(a b)) '())
+    (check-equal? (invalid-words-tm `((a a a b)
+                                      (b b b b)) '(a)) `((a a a b)
+                                                         (b b b b)))
 
 
     ;check-input-dfa tests
