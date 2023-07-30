@@ -238,7 +238,7 @@
   (define (apply-input-tm machine word)
     (if (and (equal? (length word) 2)
              (integer? (cadr word)))
-        (machine (car word) (cadr word))
+        (sm-apply machine (car word) (cadr word))
         (sm-apply machine word))
     )
 
