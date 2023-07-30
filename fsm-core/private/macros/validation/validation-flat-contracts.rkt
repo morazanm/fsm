@@ -24,11 +24,11 @@
      #:first-order (lambda (words) (listof-words? words))
      #:projection (lambda (blame)
                     (lambda (words)
-                      (current-blame-format format-accepts-error)
+                      (current-blame-format format-error)
                       (raise-blame-error
                        blame
                        words
-                       (format "Not given an accurate list of words ~s" words)
+                       (format "Not given an accurate list of words")
                      
                        )
                       )
@@ -42,11 +42,11 @@
      #:first-order (lambda (words) (listof-words-tm? words))
      #:projection (lambda (blame)
                     (lambda (words)
-                      (current-blame-format format-accepts-error)
+                      (current-blame-format format-error)
                       (raise-blame-error
                        blame
                        words
-                       (format "Turing machine words must be lists of symbols, or pairs of symbol lists and starting indexes ~s" words)
+                       (format "Turing machine words must be lists of symbols, or pairs of symbol lists and starting indexes ~s")
                      
                        )
                       )
@@ -60,11 +60,11 @@
      #:first-order (lambda (words) (words-in-sigma? words sigma))
      #:projection (lambda (blame)
                     (lambda (words)
-                      (current-blame-format format-accepts-error)
+                      (current-blame-format format-error)
                       (raise-blame-error
                        blame
-                       words
-                       (format-error blame "The following words contain symbols not included in the sigma" (invalid-words words sigma))
+                       (invalid-words words sigma)
+                       (format "The following words contain symbols not included in the sigma" )
                      
                        )
                       )
@@ -78,11 +78,11 @@
      #:first-order (lambda (words) (words-in-sigma-tm? words sigma))
      #:projection (lambda (blame)
                     (lambda (words)
-                      (current-blame-format format-accepts-error)
+                      (current-blame-format format-error)
                       (raise-blame-error
                        blame
-                       words
-                       (format-error blame "The following words contain symbols not included in the sigma" (invalid-words-tm words sigma))
+                       (invalid-words-tm words sigma)
+                       (format-error blame "The following words contain symbols not included in the sigma" )
                      
                        )
                       )
