@@ -12,8 +12,9 @@
                   'A
                   '(B)
                   (list '(A b A)
-                        '(A a B)
-                        '(B b A))
+                        '(A c B)
+                        '(B a C)
+                        '(B c B))
                   #:accepts (list '(b b b b c a))
                   #:rejects (list '(a a a a b))))
 

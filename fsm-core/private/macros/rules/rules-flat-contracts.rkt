@@ -20,7 +20,7 @@
                       (current-blame-format format-rule-format-error)
                       (raise-blame-error
                        blame
-                       (invalid-rules pred rules)
+                       (map (lambda (x) (format "~n~s" x)) (invalid-rules pred rules))
                        (format "Improperly formatted list of rules")
                        )
                       )
@@ -37,7 +37,7 @@
                       (current-blame-format format-rule-error)
                       (raise-blame-error
                        blame
-                       (pred2 states sigma rules)
+                       (map (lambda (x) (format "~n~s" x)) (pred2 states sigma rules))
                        (format "The following rules contain symbols not contained in the states/sigma: ")
                        )
                       )
@@ -54,7 +54,7 @@
                       (current-blame-format format-rule-error)
                       (raise-blame-error
                        blame
-                       (pred2 states sigma gamma rules)
+                       (map (lambda (x) (format "~n~s" x)) (pred2 states sigma gamma rules))
                        (format "The following rules contain symbols not contained in the states/sigma: ")
                        )
                       )
@@ -71,7 +71,7 @@
                       (current-blame-format format-missing-rule-error)
                       (raise-blame-error
                        blame
-                       (missing-functional rules states sigma)
+                       (map (lambda (x) (format "~n~s" x)) (missing-functional rules states sigma))
                        (format "You must include rules for these state/alphabet letter pairings: ")
                        )
                       )
@@ -90,7 +90,7 @@
                       (current-blame-format format-duplicates-error)
                       (raise-blame-error
                        blame
-                       (check-duplicates-dfa vals)
+                       (map (lambda (x) (format "~n~s" x)) (check-duplicates-dfa vals))
                        (format "There following state/sigma pairs are duplicated in your ~a: " type)
                        )
                       )
