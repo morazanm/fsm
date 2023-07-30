@@ -14,6 +14,8 @@
            invalid-words-tm
            words-in-sigma-tm?
            invalid-words-tm
+           acceptable-position?
+           unacceptable-position
            check-input-dfa
            return-input-dfa
            check-input-ndfa
@@ -92,6 +94,27 @@
                                    #f)
                                )
               ) words))
+
+  (define (acceptable-position? words)
+    (andmap (lambda (x) (if (and (equal? 2 (length x))
+                                 (integer? (cadr x))
+                                 (list? (car x)))
+                            (and (>= (cadr x) 0)
+                                 (< (cadr x) (length (car x))))
+                            #t)
+                            )
+              words))
+
+  (define (unacceptable-position words)
+    (filter (lambda (x) (if (and (equal? 2 (length x))
+                                 (integer? (cadr x))
+                                 (list? (car x)))
+                            (or (< (cadr x) 0)
+                                 (>= (cadr x) (length (car x))))
+                            #f)
+                            )
+              words)
+    )
 
   ;check-input-dfa:
   ; (listof states) (listof alphabet) symbol (listof states) (listof dfa-rules) boolean symbol

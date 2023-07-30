@@ -9,6 +9,7 @@
            listof-words-tm/c
            words-in-sigma/c
            words-in-sigma-tm/c
+           acceptable-position/c
            dfa-input/c
            ndfa-input/c
            ndpda-input/c
@@ -82,6 +83,24 @@
                        blame
                        words
                        (format-error blame "The following words contain symbols not included in the sigma" (invalid-words-tm words sigma))
+                     
+                       )
+                      )
+                    )
+     )
+    )
+
+  (define (acceptable-position/c sigma)
+    (make-flat-contract
+      #:name 'tm-starting-position-in-words
+     #:first-order (lambda (words) (acceptable-position? words))
+     #:projection (lambda (blame)
+                    (lambda (words)
+                      (current-blame-format format-error)
+                      (raise-blame-error
+                       blame
+                       (unacceptable-position words)
+                       (format "The following words have positions that are not valid in their list of words")
                      
                        )
                       )

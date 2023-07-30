@@ -128,4 +128,4 @@
                                 (list 'N (list BLANK 'a BLANK BLANK))))
                          4
                          'Y
-                         #:accepts `(((,LM ,BLANK a b c) 1))))
+                         #:accepts `(((,LM ,BLANK a b c) 7))))

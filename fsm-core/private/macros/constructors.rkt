@@ -265,6 +265,7 @@
                               rules
                               accept) (and/c (has-accept/c accept finals)
                                              (listof-words-tm/c sigma)
+                                             (acceptable-position/c sigma)
                                              (words-in-sigma-tm/c (append (list BLANK LM) sigma))
                                              (tm-input/c states
                                                          sigma
@@ -281,6 +282,7 @@
                               rules
                               accept) (and/c (has-accept/c accept finals)
                                              (listof-words-tm/c sigma)
+                                             (acceptable-position/c sigma)
                                              (words-in-sigma-tm/c (append (list BLANK LM) sigma))
                                              (tm-input/c states
                                                          sigma
@@ -335,6 +337,7 @@
                               num-tapes
                               accept) (and/c (has-accept/c accept finals)
                                              (listof-words-tm/c sigma)
+                                             (acceptable-position/c sigma)
                                              (words-in-sigma-tm/c (append (list BLANK LM) sigma))
                                              (mttm-input/c states
                                                          sigma
@@ -353,6 +356,7 @@
                               num-tapes
                            accept) (and/c (has-accept/c accept finals)
                                              (listof-words-tm/c sigma)
+                                             (acceptable-position/c sigma)
                                              (words-in-sigma-tm/c (append (list BLANK LM) sigma))
                                              (mttm-input/c states
                                                          sigma
