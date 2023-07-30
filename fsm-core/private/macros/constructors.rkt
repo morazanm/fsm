@@ -76,7 +76,8 @@
                               start
                               finals
                               rules
-                              add-dead) (and/c (listof-words/c sigma)
+                              add-dead) (and/c (words-in-sigma/c sigma)
+                                               (listof-words/c sigma)
                                                (dfa-input/c states
                                                             sigma
                                                             start
@@ -89,7 +90,8 @@
                               start
                               finals
                               rules
-                              add-dead) (and/c (listof-words/c sigma)
+                              add-dead) (and/c (words-in-sigma/c sigma)
+                                               (listof-words/c sigma)
                                                (dfa-input/c states
                                                             sigma
                                                             start
@@ -144,7 +146,8 @@
                               gamma
                               start
                               finals
-                              rules) (and/c (listof-words/c sigma)
+                              rules) (and/c (words-in-sigma/c sigma)
+                                            (listof-words/c sigma)
                                             (ndpda-input/c states
                                                            sigma
                                                            gamma
@@ -157,7 +160,8 @@
                               gamma
                               start
                               finals
-                              rules) (and/c (listof-words/c sigma)
+                              rules) (and/c (words-in-sigma/c sigma)
+                                            (listof-words/c sigma)
                                             (ndpda-input/c states
                                                            sigma
                                                            gamma
@@ -198,7 +202,8 @@
                               sigma
                               start
                               finals
-                              rules) (and/c (listof-words/c sigma)
+                              rules) (and/c (words-in-sigma/c sigma)
+                                            (listof-words/c sigma)
                                             (ndfa-input/c states
                                                           sigma
                                                           start
@@ -209,7 +214,8 @@
                               sigma
                               start
                               finals
-                              rules) (and/c (listof-words/c sigma)
+                              rules) (and/c (words-in-sigma/c sigma)
+                                            (listof-words/c sigma)
                                             (ndfa-input/c states
                                                           sigma
                                                           start
@@ -257,7 +263,8 @@
                               start
                               finals
                               rules
-                              accept) (and/c (has-accept/c accept finals)
+                              accept) (and/c (words-in-sigma/c (append (list BLANK LM) sigma))
+                                             (has-accept/c accept finals)
                                              (listof-words/c sigma)
                                              (tm-input/c states
                                                          sigma
@@ -272,7 +279,8 @@
                               start
                               finals
                               rules
-                              accept) (and/c (has-accept/c accept finals)
+                              accept) (and/c (words-in-sigma/c (append (list BLANK LM) sigma))
+                                             (has-accept/c accept finals)
                                              (listof-words/c sigma)
                                              (tm-input/c states
                                                          sigma
@@ -325,7 +333,8 @@
                               finals
                               rules
                               num-tapes
-                              accept) (and/c (has-accept/c accept finals)
+                              accept) (and/c (words-in-sigma/c (append (list BLANK LM) sigma))
+                                             (has-accept/c accept finals)
                                              (listof-words/c sigma)
                                              (mttm-input/c states
                                                          sigma
@@ -342,7 +351,8 @@
                               finals
                               rules
                               num-tapes
-                              accept) (and/c (has-accept/c accept finals)
+                           accept) (and/c (words-in-sigma/c (append (list BLANK LM) sigma))
+                                             (has-accept/c accept finals)
                                              (listof-words/c sigma)
                                              (mttm-input/c states
                                                          sigma
