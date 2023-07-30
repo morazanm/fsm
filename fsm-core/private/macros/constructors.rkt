@@ -323,7 +323,7 @@
                                      states
                                      (cons BLANK sigma))
                                     (no-duplicates/c "rules"))]
-          [num-tapes (integer-in 1 #f)]
+          [num-tapes  (and/c valid-num-tapes/c)]
           )
          ([accept (finals) (and/c valid-non-dead-state/c
                                   (is-state-in-finals/c finals))]

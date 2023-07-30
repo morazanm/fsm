@@ -14,6 +14,7 @@
    no-duplicates/c
    valid-finals/c
    is-state-in-finals/c
+   valid-num-tapes/c
    )
 
   ;; Purpose: A flat contract that checks if the input is a non-empty list.
@@ -138,7 +139,9 @@
      )
     )
 
-  ;; Testing out writing a custom blame projector for valid-finals.
+  ;valid-finals/c: (listof any) --> boolean or exception
+  ;purpose: creates a flat contract that checks if a given list of elements is
+  ; a valid list of machine finals.
   (define (valid-finals/c states)
     (make-flat-contract
      #:name 'valid-list-of-finals
@@ -157,6 +160,9 @@
      )
     )
 
+  ;is-state-in-finals/c: (listof state) --> (state --> boolean or exception)
+  ;purpose: Creates a flat contract that checks if a given state is in a list
+  ; of final states.
   (define (is-state-in-finals/c finals)
     (make-flat-contract
      #:name 'is-state-in-finals
@@ -169,4 +175,19 @@
                        state
                        (format "The following state is not a member of your list of final states ~a" finals)))))
     )
+
+  ;valid-num-tapes/c: any --> boolean or exception
+  ;purpose: creates a flat contract that checks if the given input is an integer
+  ; between 1 (inclusive) and infinity.
+  (define valid-num-tapes/c
+    (make-flat-contract
+     #:name 'valid-num-tapes
+     #:first-order (lambda (val) (and (integer? val) (> val 0)))
+     #:projection (lambda (blame)
+                    (lambda (val)
+                      (current-blame-format format-error)
+                      (raise-blame-error
+                       blame
+                       val
+                       "The following is not an integer greater than 0")))))
   )
