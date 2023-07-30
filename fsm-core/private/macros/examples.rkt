@@ -1,9 +1,6 @@
 #lang fsm
 (require "constructors.rkt"
-         "../constants.rkt"
-         ;"../fsa.rkt"
-         ;"../tm.rkt"
-         #;"../../../main.rkt")
+         "../constants.rkt")
 (local-require test-engine/racket-tests)
 
 (define dfa-temp (make-dfa2
