@@ -11,6 +11,7 @@
            ndfa-input/c
            ndpda-input/c
            tm-input/c
+           mttm-input/c
            has-accept/c
            )
 
@@ -190,6 +191,26 @@
                     )
      )
     )
+
+  (define (mttm-input/c states sigma start finals rules num-tapes accept accepts?)
+    (make-flat-contract
+     #:name 'mttm-accepting-correctly
+     #:first-order (check-input-mttm states sigma start finals rules num-tapes accept accepts?)
+     #:projection (lambda (blame)
+                    (lambda (words)
+                      (current-blame-format format-accepts-error)
+                      (raise-blame-error
+                       blame
+                       (return-input-mttm states
+                                          sigma
+                                          start
+                                          finals
+                                          rules
+                                          num-tapes
+                                          words
+                                          accept
+                                          accepts?)
+                       (format "Does not ~a the predicted value" accepts?))))))
 
   (define (has-accept/c accept finals)
     (make-flat-contract

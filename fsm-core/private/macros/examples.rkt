@@ -10,7 +10,7 @@
                   '(A B)
                   '(a b)
                   'A
-                  '(B)
+                  'B
                   (list '(A b A)
                         '(A c B)
                         '(B a C)

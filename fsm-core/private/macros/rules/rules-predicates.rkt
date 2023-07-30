@@ -193,7 +193,7 @@
   (define (valid-mttm-rule? states sigma rule)
     (define actions (cons RIGHT (cons LEFT (cons BLANK sigma))))
     (and (member (first (first rule)) states)
-         (andmap (lambda (letter) (member letter sigma)) (second (first rule)))
+         (andmap (lambda (letter) (member letter (cons LM (cons BLANK sigma)))) (second (first rule)))
          (member (first (second rule)) states)
          (andmap (lambda (letter) (member letter actions)) (second (second rule))))
     )
@@ -229,7 +229,7 @@
   ;purpose: return all rules containing incorrect elements
   (define (incorrect-members-tm states sigma rules)
     (filter (lambda (x) (not (and (member (car (car x)) states)
-                                  (member (cadr (car x)) sigma)
+                                  (member (cadr (car x)) (cons BLANK (cons LM sigma)))
                                   (member (car (cadr x)) states)
                                   (member (cadr (cadr x)) (cons RIGHT
                                                                 (cons LEFT

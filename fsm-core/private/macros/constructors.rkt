@@ -55,7 +55,8 @@
                         (no-duplicates/c "sigma"))]
           [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
-          [finals (states) (and/c (valid-listof/c valid-state? "machine state" "list of machine finals")
+          [finals (states) (and/c (is-nonempty-list/c "final state" "list of machine final states")
+                                  (valid-listof/c valid-state? "machine state" "list of machine finals")
                                   (valid-finals/c states)
                                   (no-duplicates/c "final states"))]
           [rules (states
@@ -125,7 +126,8 @@
                         (no-duplicates/c "gamma"))]
           [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
-          [finals (states) (and/c (valid-listof/c valid-state? "machine state" "list of machine finals")
+          [finals (states) (and/c (is-nonempty-list/c "final state" "list of machine final states")
+                                  (valid-listof/c valid-state? "machine state" "list of machine finals")
                                   (valid-finals/c states)
                                   (no-duplicates/c "final states"))]
           [rules (states
@@ -183,7 +185,8 @@
                         (no-duplicates/c "sigma"))]
           [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
-          [finals (states) (and/c (valid-listof/c valid-state? "machine state" "list of machine finals")
+          [finals (states) (and/c (is-nonempty-list/c "final state" "list of machine final states")
+                                  (valid-listof/c valid-state? "machine state" "list of machine finals")
                                   (valid-finals/c states)
                                   (no-duplicates/c "final states"))]
           [rules (states
@@ -248,7 +251,8 @@
                                 (no-duplicates/c "rules"))]
           [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
-          [finals (states) (and/c (valid-listof/c valid-state? "machine state" "list of machine finals")
+          [finals (states) (and/c (is-nonempty-list/c "final state" "list of machine final states")
+                                  (valid-listof/c valid-state? "machine state" "list of machine finals")
                                   (valid-finals/c states)
                                   (no-duplicates/c "final states"))]
           )
@@ -306,7 +310,8 @@
                         (no-duplicates/c "sigma"))]
           [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
-          [finals (states) (and/c (valid-listof/c valid-state? "machine state" "list of machine finals")
+          [finals (states) (and/c (is-nonempty-list/c "final state" "list of machine final states")
+                                  (valid-listof/c valid-state? "machine state" "list of machine finals")
                                   (valid-finals/c states)
                                   (no-duplicates/c "final states"))]
           [rules (states
@@ -316,7 +321,7 @@
                                      correct-members-mttm?
                                      incorrect-members-mttm
                                      states
-                                     (cons RIGHT (cons LEFT (cons BLANK sigma))))
+                                     (cons BLANK sigma))
                                     (no-duplicates/c "rules"))]
           [num-tapes (integer-in 1 #f)]
           )
@@ -327,14 +332,16 @@
                               start
                               finals
                               rules
+                              num-tapes
                               accept) (and/c (words-in-sigma/c (append (list BLANK LM) sigma))
                                              (has-accept/c accept finals)
                                              (listof-words/c sigma)
-                                             (tm-input/c states
+                                             (mttm-input/c states
                                                          sigma
                                                          start
                                                          finals
                                                          rules
+                                                         num-tapes
                                                          accept
                                                          'accept)
                                              )]
@@ -343,14 +350,16 @@
                               start
                               finals
                               rules
-                              accept) (and/c (words-in-sigma/c (append (list BLANK LM) sigma))
+                              num-tapes
+                           accept) (and/c (words-in-sigma/c (append (list BLANK LM) sigma))
                                              (has-accept/c accept finals)
                                              (listof-words/c sigma)
-                                             (tm-input/c states
+                                             (mttm-input/c states
                                                          sigma
                                                          start
                                                          finals
                                                          rules
+                                                         num-tapes
                                                          accept
                                                          'reject))]
           )
