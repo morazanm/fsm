@@ -6,13 +6,14 @@
            racket/contract
            )
   (provide valid-listof/c
-           valid-states/c
-           valid-alphabet/c
            valid-start/c
            start-in-states/c
            no-duplicates/c
            valid-finals/c
            )
+  ;valid-listof/c: ((listof x) --> boolean) string string --> contract
+  ;; predicate: (listof x) --> boolean
+  ;; helper: (listof x) --> (listof x)
   ;; Purpose: Constructs a flat contract which checks if all elements in the
   ;;          list hold true for a given predicate. If any elements fail,
   ;;          formats an error message with the list of failing elements,
@@ -38,42 +39,9 @@
      )
     )
 
-  (define valid-states/c
-    (make-flat-contract
-     #:name 'valid-states
-     #:first-order (lambda (states) (andmap valid-state? states))
-     #:projection (lambda (blame)
-                    (lambda (states)
-                      (define invalid-states (filter (lambda (state) (not (valid-state? state))) states))
-                      (current-blame-format format-error)
-                      (raise-blame-error
-                       blame
-                       states
-                       (format "The following: ~a are not valid machine states, in the set of machine states" invalid-states)
-                       )
-                      )
-                    )
-     )
-    )
-
-  (define valid-alphabet/c
-    (make-flat-contract
-     #:name 'valid-alphabet
-     #:first-order (lambda (alphabet) (andmap valid-alpha? alphabet))
-     #:projection (lambda (blame)
-                    (lambda (alphabet)
-                      (define invalid-alphas (filter (lambda (alpha) (not (valid-alpha? alpha))) alphabet))
-                      (current-blame-format format-error)
-                      (raise-blame-error
-                       blame
-                       alphabet
-                       (format "The following: ~a are not valid alphabet letters, in the machine sigma" invalid-alphas)
-                       )
-                      )
-                    )
-     )
-    )
-
+  ;valid-start/c: (listof states) --> contract
+  ;; predicate: ((listof x) --> (x --> boolean)
+  ;PURPOSE: 
   (define (valid-start/c states)
     (make-flat-contract
      #:name 'valid-starting-state

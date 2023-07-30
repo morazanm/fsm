@@ -9,3 +9,6 @@
 
 ;validation-predicates
 ;o listof-words should check if the words are only using symbols from the sigma
+
+;shared-flat-contracts
+;o if the states, sigma, or finals arent a list, it breaks the contracts

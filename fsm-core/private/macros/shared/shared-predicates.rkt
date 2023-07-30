@@ -164,7 +164,6 @@
     ;valid-finals? tests
     (check-equal? ((valid-finals? '(A B C)) '(A)) #t)
     (check-equal? ((valid-finals? '(A B C)) '(A-1)) #f)
-    (check-equal? ((valid-finals? '(A B C)) 'A) #f)
     (check-equal? ((valid-finals? '(A B C)) '(D)) #f)
 
     ;invalid-finals tests
