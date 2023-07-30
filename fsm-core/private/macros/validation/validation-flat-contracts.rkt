@@ -6,7 +6,9 @@
            racket/contract
            )
   (provide listof-words/c
+           listof-words-tm/c
            words-in-sigma/c
+           words-in-sigma-tm/c
            dfa-input/c
            ndfa-input/c
            ndpda-input/c
@@ -18,7 +20,7 @@
   (define (listof-words/c sigma)
     (make-flat-contract
      #:name 'valid-list-of-words
-     #:first-order (lambda (words) (listof-words? words sigma))
+     #:first-order (lambda (words) (listof-words? words))
      #:projection (lambda (blame)
                     (lambda (words)
                       (current-blame-format format-accepts-error)
@@ -26,6 +28,24 @@
                        blame
                        words
                        (format "Not given an accurate list of words ~s" words)
+                     
+                       )
+                      )
+                    )
+     )
+    )
+
+    (define (listof-words-tm/c sigma)
+    (make-flat-contract
+     #:name 'valid-list-of-words-tm
+     #:first-order (lambda (words) (listof-words-tm? words))
+     #:projection (lambda (blame)
+                    (lambda (words)
+                      (current-blame-format format-accepts-error)
+                      (raise-blame-error
+                       blame
+                       words
+                       (format "Turing machine words must be lists of symbols, or pairs of symbol lists and starting indexes ~s" words)
                      
                        )
                       )
@@ -44,6 +64,24 @@
                        blame
                        words
                        (format-error blame "The following words contain symbols not included in the sigma" (invalid-words words sigma))
+                     
+                       )
+                      )
+                    )
+     )
+    )
+
+  (define (words-in-sigma-tm/c sigma)
+    (make-flat-contract
+     #:name 'words-made-of-sigma-symbols-tm
+     #:first-order (lambda (words) (words-in-sigma-tm? words sigma))
+     #:projection (lambda (blame)
+                    (lambda (words)
+                      (current-blame-format format-accepts-error)
+                      (raise-blame-error
+                       blame
+                       words
+                       (format-error blame "The following words contain symbols not included in the sigma" (invalid-words-tm words sigma))
                      
                        )
                       )

@@ -12,3 +12,6 @@
 
 ;validation-flat-contracts
 ;o error message for validation words in sigma is ugly
+
+;validation
+;o turing machine must specify where on the tape its starting with each word
