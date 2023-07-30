@@ -102,18 +102,18 @@
                             (and (>= (cadr x) 0)
                                  (< (cadr x) (length (car x))))
                             #t)
-                            )
-              words))
+              )
+            words))
 
   (define (unacceptable-position words)
     (filter (lambda (x) (if (and (equal? 2 (length x))
                                  (integer? (cadr x))
                                  (list? (car x)))
                             (or (< (cadr x) 0)
-                                 (>= (cadr x) (length (car x))))
+                                (>= (cadr x) (length (car x))))
                             #f)
-                            )
-              words)
+              )
+            words)
     )
 
   ;check-input-dfa:
@@ -390,6 +390,21 @@
     (check-equal? (invalid-words-tm `((a a a b)
                                       (b b b b)) '(a)) `((a a a b)
                                                          (b b b b)))
+
+    ;acceptable-position? tests
+    (check-equal? (acceptable-position? `((a a a a) (a a a) (a a))) #t)
+    (check-equal? (acceptable-position? `(((a a a a) 1) (a a a) (a a))) #t)
+    (check-equal? (acceptable-position? `(((a a a a) -1) (a a a) (a a))) #f)
+    (check-equal? (acceptable-position? `(((a a a a) 4) (a a a) (a a))) #f)
+    (check-equal? (acceptable-position? `(((a a a a) 5) (a a a) (a a))) #f)
+
+    ;unacceptable-position tests
+    (check-equal? (unacceptable-position `((a a a a) (a a a) (a a))) '())
+    (check-equal? (unacceptable-position `(((a a a a) 1) (a a a) (a a))) '())
+    (check-equal? (unacceptable-position `(((a a a a) -1) (a a a) (a a))) `(((a a a a) -1)))
+    (check-equal? (unacceptable-position `(((a a a a) 4) (a a a) (a a))) `(((a a a a) 4)))
+    (check-equal? (unacceptable-position `(((a a a a) 5) (a a a) (a a))) `(((a a a a) 5)))
+
 
 
     ;check-input-dfa tests

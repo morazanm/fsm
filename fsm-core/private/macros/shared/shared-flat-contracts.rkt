@@ -17,6 +17,8 @@
    valid-num-tapes/c
    )
 
+  ;is-nonempty-list//c: string string --> contract
+  ;; predicate: any --> boolean
   ;; Purpose: A flat contract that checks if the input is a non-empty list.
   (define (is-nonempty-list/c element-name field-name)
     (make-flat-contract
@@ -32,9 +34,11 @@
      )
     )
   
-;valid-listof/c: ((listof x) --> boolean) string string --> contract
-  ;; predicate: (listof x) --> boolean
-  ;; helper: (listof x) --> (listof x)
+;valid-listof/c: ((listof any) --> boolean) string string --> contract
+  ;; predicate: (listof any) --> boolean
+  ;; helper: (listof any) --> (listof any)
+  ;Purpose: applies a predicate to a list and makes sure that everything in
+  ; the list passes the predicate. Returns an error if it doesnt
   (define (valid-listof/c predicate element-name field-name)
     (make-flat-contract
      #:name (string->symbol (format "valid-~a" field-name))
@@ -56,6 +60,10 @@
      )
     )
 
+  ;valid-non-dead-state/c: () --> contract
+  ;; predicate: (any) --> boolean
+  ;Purpose: to ensure the state given is a valid state, that isnt the dead
+  ; state and to retunran error message if that is not the case
   (define valid-non-dead-state/c
     (make-flat-contract
      #:name 'valid-state
@@ -68,6 +76,11 @@
                        state
                        "The following is not a valid non-dead state")))))
 
+  ;valid-states/c: () --> contract
+  ;;predicate: (listof any) --> boolean
+  ;;helper: (listof any) --> listof any
+  ;Purpose: to check if all the states in a list are valid, and if not, return an
+  ; error containing the failing states
   (define valid-states/c
     (make-flat-contract
      #:name 'valid-states
@@ -86,6 +99,10 @@
      )
     )
 
+  ;valid-start/c: (listof states) --> contract
+  ;; predicate: (listof states) --> (any --> boolean)
+  ;Purpose: to check that the start state is a valid state and is a single symbol
+  ; returns an error message if that is not the case
   (define (valid-start/c states)
     (make-flat-contract
      #:name 'valid-starting-state
@@ -103,6 +120,10 @@
      )
     )
 
+  ;start-in-states/c: (listof states) --> contract
+  ;; predicate: (listof states) --> (symbol --> boolean)
+  ;Purpose: to check if the starting state is in the list of states, and return
+  ; an error containing the start state and list of states if that is not the case
   (define (start-in-states/c states)
     (make-flat-contract
      #:name 'starting-state-in-state-list
@@ -120,8 +141,12 @@
      )
     )
 
-  ;; Defines a simple contract to check that there are no duplicates in a list
-  ;; Parameter type refers to the type of elements in the list, e.g. number, state, symbol, etc.
+  ;no-duplicates/c: string --> contract
+  ;; predicate: (listof any) --> boolean
+  ;; helper: (listof any) --> (listof any)
+  ;Purpose: to check if there are any duplicates in a list, and if there are
+  ; returns an error that contains the offending value, and the type of list that
+  ; those values are coming from
   (define (no-duplicates/c type)
     (make-flat-contract
      #:name (string->symbol (format "distinct-list-of-~a" type))
@@ -139,7 +164,9 @@
      )
     )
 
-  ;valid-finals/c: (listof any) --> boolean or exception
+  ;valid-finals/c: (listof any) --> contract
+  ;; predicate: (listof states) --> ((listof any) --> boolean)
+  ;; helper: (listof states) --> ((listof any) --> (listof any))
   ;purpose: creates a flat contract that checks if a given list of elements is
   ; a valid list of machine finals.
   (define (valid-finals/c states)
@@ -160,9 +187,11 @@
      )
     )
 
-  ;is-state-in-finals/c: (listof state) --> (state --> boolean or exception)
+  ;is-state-in-finals/c: (listof any) --> contract
+  ;; predicate: any --> boolean
   ;purpose: Creates a flat contract that checks if a given state is in a list
-  ; of final states.
+  ; of final states and returns an error with that state and the final states
+  ; if that is not the case
   (define (is-state-in-finals/c finals)
     (make-flat-contract
      #:name 'is-state-in-finals
@@ -176,9 +205,10 @@
                        (format "The following state is not a member of your list of final states ~a" finals)))))
     )
 
-  ;valid-num-tapes/c: any --> boolean or exception
+  ;valid-num-tapes/c: any --> contract
+  ;; predicate: any --> boolean
   ;purpose: creates a flat contract that checks if the given input is an integer
-  ; between 1 (inclusive) and infinity.
+  ; between 1 (inclusive) and infinity and returns an error if that is not the case
   (define valid-num-tapes/c
     (make-flat-contract
      #:name 'valid-num-tapes
