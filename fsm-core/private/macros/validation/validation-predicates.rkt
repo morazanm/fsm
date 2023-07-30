@@ -15,6 +15,8 @@
            return-input-ndpda
            check-input-tm
            return-input-tm
+           check-input-mttm
+           return-input-mttm
            )
 
   ;listof-words?: (listof something) sigma --> boolean
@@ -215,6 +217,36 @@
                                             accept))
     (filter (lambda (x) (equal? (sm-apply temp-machine x) (if (equal? 'accept accepts?) 'reject 'accept))) words)
     )
+
+  ;check-input-mttm:
+  ; (listof states) (listof alpha) state (listof states) (listof mttm-rule) (listof word) boolean symbol
+  ; --> (listof (listof symbol))
+  ;purpose: to take in all the components of a multi-tape tm, and then a list
+  ; of words to check in that machine, then run those words through the machine
+  ; and make sure that they match the "accepts?" symbol, which will be either
+  ; accept or reject. This ensures that this can be used for both accept lists
+  ; and rejects lists.
+  (define (check-input-mttm states sigma start finals rules num-tapes words accept accepts?)
+    (define temp-machine (make-mttm states sigma start finals rules num-tapes accept))
+    (andmap (lambda (word) (equal? (sm-apply temp-machine word) accepts?)) words)
+    )
+
+  ;return-input-mttm:
+  ; (listof states) (listof alpha) state (listof states) (listof mttm-rule) (listof word) boolean symbol
+  ; --> (listof (listof symbol))
+  ;purpose: builds the multi-tape tm and finds all the words from the input
+  ; list of words that don't accept/reject (based on accepts?)
+  (define (return-input-mttm states
+                             sigma
+                             start
+                             finals
+                             rules
+                             num-tapes
+                             words
+                             accept
+                             accepts?)
+    (define temp-machine (make-mttm states sigma start finals rules num-tapes accept))
+    (filter (lambda (word) (equal? (sm-apply temp-machine word) (if (equal? 'accept accepts?) 'reject 'accept))) words))
 
   (module+ test
 

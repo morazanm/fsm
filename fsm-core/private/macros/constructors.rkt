@@ -324,13 +324,15 @@
                               start
                               finals
                               rules
+                              num-tapes
                               accept) (and/c (has-accept/c accept finals)
                                              (listof-words/c sigma)
-                                             (tm-input/c states
+                                             (mttm-input/c states
                                                          sigma
                                                          start
                                                          finals
                                                          rules
+                                                         num-tapes
                                                          accept
                                                          'accept)
                                              )]
@@ -339,13 +341,15 @@
                               start
                               finals
                               rules
+                              num-tapes
                               accept) (and/c (has-accept/c accept finals)
                                              (listof-words/c sigma)
-                                             (tm-input/c states
+                                             (mttm-input/c states
                                                          sigma
                                                          start
                                                          finals
                                                          rules
+                                                         num-tapes
                                                          accept
                                                          'reject))]
           )
