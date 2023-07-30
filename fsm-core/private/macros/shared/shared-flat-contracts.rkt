@@ -18,7 +18,7 @@
    )
 
   ;is-nonempty-list//c: string string --> contract
-  ;; predicate: something --> boolean
+  ;; predicate: any --> boolean
   ;; Purpose: A flat contract that checks if the input is a non-empty list.
   (define (is-nonempty-list/c element-name field-name)
     (make-flat-contract
@@ -34,9 +34,9 @@
      )
     )
   
-;valid-listof/c: ((listof x) --> boolean) string string --> contract
-  ;; predicate: (listof x) --> boolean
-  ;; helper: (listof x) --> (listof x)
+;valid-listof/c: ((listof any) --> boolean) string string --> contract
+  ;; predicate: (listof any) --> boolean
+  ;; helper: (listof any) --> (listof any)
   ;Purpose: applies a predicate to a list and makes sure that everything in
   ; the list passes the predicate. Returns an error if it doesnt
   (define (valid-listof/c predicate element-name field-name)
@@ -61,7 +61,7 @@
     )
 
   ;valid-non-dead-state/c: () --> contract
-  ;; predicate: (x) --> boolean
+  ;; predicate: (any) --> boolean
   ;Purpose: to ensure the state given is a valid state, that isnt the dead
   ; state and to retunran error message if that is not the case
   (define valid-non-dead-state/c
@@ -77,8 +77,8 @@
                        "The following is not a valid non-dead state")))))
 
   ;valid-states/c: () --> contract
-  ;;predicate: (listof x) --> boolean
-  ;;helper: (listof x) --> listof x
+  ;;predicate: (listof any) --> boolean
+  ;;helper: (listof any) --> listof any
   ;Purpose: to check if all the states in a list are valid, and if not, return an
   ; error containing the failing states
   (define valid-states/c
@@ -100,7 +100,7 @@
     )
 
   ;valid-start/c: (listof states) --> contract
-  ;; predicate: (listof states) --> (x --> boolean)
+  ;; predicate: (listof states) --> (any --> boolean)
   ;Purpose: to check that the start state is a valid state and is a single symbol
   ; returns an error message if that is not the case
   (define (valid-start/c states)
@@ -142,8 +142,8 @@
     )
 
   ;no-duplicates/c: string --> contract
-  ;; predicate: (listof x) --> boolean
-  ;; helper: (listof x) --> (listof x)
+  ;; predicate: (listof any) --> boolean
+  ;; helper: (listof any) --> (listof any)
   ;Purpose: to check if there are any duplicates in a list, and if there are
   ; returns an error that contains the offending value, and the type of list that
   ; those values are coming from
@@ -165,8 +165,8 @@
     )
 
   ;valid-finals/c: (listof any) --> contract
-  ;; predicate: (listof states) --> ((listof x) --> boolean)
-  ;; helper: (listof states) --> ((listof x) --> (listof x))
+  ;; predicate: (listof states) --> ((listof any) --> boolean)
+  ;; helper: (listof states) --> ((listof any) --> (listof any))
   ;purpose: creates a flat contract that checks if a given list of elements is
   ; a valid list of machine finals.
   (define (valid-finals/c states)
@@ -187,8 +187,8 @@
      )
     )
 
-  ;is-state-in-finals/c: (listof x) --> contract
-  ;; predicate: x --> boolean
+  ;is-state-in-finals/c: (listof any) --> contract
+  ;; predicate: any --> boolean
   ;purpose: Creates a flat contract that checks if a given state is in a list
   ; of final states and returns an error with that state and the final states
   ; if that is not the case
@@ -206,7 +206,7 @@
     )
 
   ;valid-num-tapes/c: any --> contract
-  ;; predicate: x --> boolean
+  ;; predicate: any --> boolean
   ;purpose: creates a flat contract that checks if the given input is an integer
   ; between 1 (inclusive) and infinity and returns an error if that is not the case
   (define valid-num-tapes/c
