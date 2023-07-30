@@ -10,7 +10,8 @@
   (provide add-dead-state-rules
            valid-rules?
            invalid-rules
-           valid-dfa-rule?
+           incorrect-dfa-rules
+           valid-dfa-rule-structure?
            valid-ndpda-rule?
            valid-tm-rule?
            valid-mttm-rule?
@@ -27,6 +28,10 @@
            incorrect-members-mttm
            incorrect-members-ndpda
            )
+
+  ;true?: any -> boolean
+  ;purpose: returns true if the given value is not false, and false if it is.
+  (define (true? x) (not (not x)))
 
   ;add-dead-state-rules: (listof dfa-rules) (listof states) sigma --> (listof dfa-rules)
   ;purpose: to generate the implicit rules that go to the deadstate from a
@@ -64,10 +69,10 @@
             rules)
     )
 
-  ;valid-dfa-rule: something --> boolean
+  ;valid-dfa-rule: any --> boolean
   ;purpose: just checks if the rule list is formatted the correct way
   ; for a dfa, this is a list of three
-  (define (valid-dfa-rule? rule)
+  (define (valid-dfa-rule-structure? rule)
     (and (list? rule)
          (= (length rule) 3))
     )
@@ -211,6 +216,19 @@
                                   (member (cadr x) sigma)
                                   (member (caddr x) states)))) rules))
 
+  ;incorrect-dfa-rules: (listof state) (listof alpha) (listof dfa-rule) --> (listof (listof state) (listof alpha))
+  ;purpose: for all the rules in the list of dfa-rules, returns tuples of all
+  ; states and alphabet letters that are invalid (meaning not in the states or sigma)
+  (define (incorrect-dfa-rules states sigma rules)
+    (define (rule-with-errors rule)
+      (list rule (list
+                  (true? (member (first rule) states))
+                  (true? (member (second rule) sigma))
+                  (true? (member (third rule) states)))
+            )
+      )
+    (filter (lambda (x) (ormap false? (second x))) (map rule-with-errors rules)))
+
   ;incorrect-members-ndpda (listof states) sigma gamma (listof ndpda-rules) --> listof ndpdarules
   ;purpose: return all rules containing incorrect elements
   (define (incorrect-members-ndpda states sigma gamma rules)
@@ -257,10 +275,10 @@
     (check-equal? (invalid-rules (lambda (x) (symbol? x)) `(A (B) C D)) `((B)))
     
     ;valid-dfa-rule? tests
-    (check-equal? (valid-dfa-rule? '(A a B)) #t)
-    (check-equal? (valid-dfa-rule? '(A a a B)) #f)
-    (check-equal? (valid-dfa-rule? '(a a a)) #t)
-    (check-equal? (valid-dfa-rule? `((A) b b)) #t)
+    (check-equal? (valid-dfa-rule-structure? '(A a B)) #t)
+    (check-equal? (valid-dfa-rule-structure? '(A a a B)) #f)
+    (check-equal? (valid-dfa-rule-structure? '(a a a)) #t)
+    (check-equal? (valid-dfa-rule-structure? `((A) b b)) #t)
     
     ;valid-ndpda-rule? tests
     (check-equal? (valid-ndpda-rule? `((A a (B)) (A (b)))) #t)
@@ -298,6 +316,12 @@
     (check-equal? (correct-members-dfa? '(A B) '(a b) `((A b B) (B a A))) #t)
     (check-equal? (correct-members-dfa? '(A B) '(a b) `()) #t)
     (check-equal? (correct-members-dfa? '(A B) '(a b) `((A b B) (B a A) (C b A))) #f)
+
+    ;incorrect-dfa-rules tests
+    (check-equal? (incorrect-dfa-rules '(A B) '(a b) '((A b A) (A c D) (E a F)))
+                  '(((A c D) (#t #f #f)) ((E a F) (#f #t #f))))
+    (check-equal? (incorrect-dfa-rules '(A B) '(a b) '((A b A) (B a A)))
+                  '())
     
     ;correct-members-ndpda? tests
     (check-equal? (correct-members-ndpda? '(A B)
@@ -356,33 +380,33 @@
 
     ;correct-members-mttm? tests
     (check-equal? (correct-members-mttm? '(A B)
-                                          '(a b)
-                                          '(((A (b b)) (B (a b))))) #t)
+                                         '(a b)
+                                         '(((A (b b)) (B (a b))))) #t)
     (check-equal? (correct-members-mttm? '(A B)
-                                          '(a b)
-                                          `(((A (b)) (B (,RIGHT))))) #t)
+                                         '(a b)
+                                         `(((A (b)) (B (,RIGHT))))) #t)
     (check-equal? (correct-members-mttm? '(A B)
-                                          '(a b)
-                                          `(((A (b)) (B (,LEFT))))) #t)
+                                         '(a b)
+                                         `(((A (b)) (B (,LEFT))))) #t)
     (check-equal? (correct-members-mttm? '(A B)
-                                          '(a b)
-                                          `(((A (b)) (B (,BLANK))))) #t)
+                                         '(a b)
+                                         `(((A (b)) (B (,BLANK))))) #t)
     (check-equal? (correct-members-mttm? '(A B)
-                                          '(a b)
-                                          `(((A (b)) (B (,BLANK)))
-                                            ((A (c)) (B (,BLANK))))) #f)
+                                         '(a b)
+                                         `(((A (b)) (B (,BLANK)))
+                                           ((A (c)) (B (,BLANK))))) #f)
     (check-equal? (correct-members-mttm? '(A B)
-                                          '(a b)
-                                          `(((A (b)) (B (,BLANK)))
-                                            ((C (b)) (B (,BLANK))))) #f)
+                                         '(a b)
+                                         `(((A (b)) (B (,BLANK)))
+                                           ((C (b)) (B (,BLANK))))) #f)
     (check-equal? (correct-members-mttm? '(A B)
-                                          '(a b)
-                                          `(((A (b)) (B (,BLANK)))
-                                            ((A (c)) (C (,BLANK))))) #f)
+                                         '(a b)
+                                         `(((A (b)) (B (,BLANK)))
+                                           ((A (c)) (C (,BLANK))))) #f)
     (check-equal? (correct-members-mttm? '(A B)
-                                          '(a b)
-                                          `(((A (b)) (B (,BLANK)))
-                                            ((A (c)) (B (d))))) #f)
+                                         '(a b)
+                                         `(((A (b)) (B (,BLANK)))
+                                           ((A (c)) (B (d))))) #f)
     
     ;incorrect-members-dfa tests
     (check-equal? (incorrect-members-dfa '(A B) '(a b) `((A b B) (B a A))) '())

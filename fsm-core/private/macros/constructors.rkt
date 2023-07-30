@@ -61,12 +61,8 @@
                                   (no-duplicates/c "final states"))]
           [rules (states
                   sigma
-                  add-dead) (and/c (listof-rules/c valid-dfa-rule?)
-                                   (correct-members/c
-                                    correct-members-dfa?
-                                    incorrect-members-dfa
-                                    states
-                                    sigma)
+                  add-dead) (and/c (listof-rules/c valid-dfa-rule-structure?)
+                                   (correct-dfa-rules/c states sigma)
                                    (functional/c states sigma add-dead)
                                    (no-duplicates-dfa/c "rules"))]
           )
@@ -190,7 +186,7 @@
                                   (valid-finals/c states)
                                   (no-duplicates/c "final states"))]
           [rules (states
-                  sigma) (and/c (listof-rules/c valid-dfa-rule?)
+                  sigma) (and/c (listof-rules/c valid-dfa-rule-structure?)
                                 (correct-members/c
                                  correct-members-dfa?
                                  incorrect-members-dfa

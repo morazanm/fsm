@@ -7,6 +7,7 @@
            )
   (provide listof-rules/c
            correct-members/c
+           correct-dfa-rules/c
            correct-members-ndpda/c
            functional/c
            no-duplicates-dfa/c)
@@ -44,6 +45,18 @@
                     )
      )
     )
+
+  (define (correct-dfa-rules/c states sigma)
+    (make-flat-contract
+     #:name 'correct-dfa-rules
+     #:first-order (lambda (rules) (correct-members-dfa? states sigma rules))
+     #:projection (lambda (blame)
+                    (lambda (rules)
+                      (current-blame-format format-incorrect-rules-error)
+                      (raise-blame-error
+                       blame
+                       (incorrect-dfa-rules states sigma rules)
+                       "The following rules have errors, which make them invalid")))))
 
   (define (correct-members-ndpda/c pred pred2 states sigma gamma)
     (make-flat-contract

@@ -8,8 +8,8 @@
                   '(a b)
                   'A
                   '(B)
-                  (list '(A b A)
-                        '(A a B)
+                  (list '(A c D)
+                        '(E a F)
                         '(B b A))
                   #:accepts (list '(b b b b a))
                   #:rejects (list '(a a a a b))))
@@ -128,4 +128,4 @@
                                 (list 'N (list BLANK 'a BLANK BLANK))))
                          4
                          'Y
-                         #:accepts `(((,LM ,BLANK a b c) 7))))
+                         #:accepts `(((,LM ,BLANK a b c) 1))))
