@@ -14,7 +14,7 @@
                   (list '(A b A)
                         '(A a B)
                         '(B b A))
-                  #:accepts (list '(b b b b a))
+                  #:accepts (list '(b b b b c a))
                   #:rejects (list '(a a a a b))))
 
 (check-error

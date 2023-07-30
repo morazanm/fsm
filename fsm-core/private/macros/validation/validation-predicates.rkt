@@ -7,6 +7,8 @@
            "../../pda.rkt"
            "../../../../main.rkt")
   (provide listof-words?
+           words-in-sigma?
+           invalid-words
            check-input-dfa
            return-input-dfa
            check-input-ndfa
@@ -26,6 +28,16 @@
                                      (andmap (lambda (letter) (symbol? letter))
                                              word))) words))
     )
+
+  ;words-in-sigma?: (listof words) sigma --> boolean
+  ;purpose: to return if the words are made of character from sigma
+  (define (words-in-sigma? words sigma)
+    (if (andmap (lambda (word) (andmap (lambda (letter) (member letter sigma)) word)) words) #t #f))
+
+  ;invalid-words: (listof words) sigma --> (listof words)
+  ;purpose: to return if the words are made of character from sigma
+  (define (invalid-words words sigma)
+    (filter (lambda (word) (andmap (lambda (letter) (not (member letter sigma))) word)) words))
 
   ;check-input-dfa:
   ; (listof states) (listof alphabet) symbol (listof states) (listof dfa-rules) boolean symbol
@@ -222,6 +234,15 @@
     (check-equal? (listof-words? '((a a a a)) '(a a a)) #t)
     (check-equal? (listof-words? '(a a a a) '(b a c)) #f)
     (check-equal? (listof-words? '((a 1 2 e r)) '(a b c)) #f)
+
+    ;words-in-sigma? tests
+    (check-equal? (words-in-sigma? `((a a a a) (b b b)) '(a b)) #t)
+    (check-equal? (words-in-sigma? `((a a a a) (b b b)) '(a)) #f)
+
+    ;invalid-words tests
+    (check-equal? (invalid-words `((a a a a) (b b b)) '(a b)) '())
+    (check-equal? (invalid-words `((a a a a) (b b b)) '(a)) '((b b b)))
+
 
     ;check-input-dfa tests
     (define word-list-a `((a a a a) (a a a)))
