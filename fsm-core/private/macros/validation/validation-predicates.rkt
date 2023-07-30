@@ -238,7 +238,14 @@
   ; and make sure that they match the "accepts?" symbol, which will be either
   ; accept or reject. This ensures that this can be used for both accept lists
   ; and rejects lists.
-  (define (check-input-mttm states sigma start finals rules num-tapes words accept accepts?)
+  (define ((check-input-mttm states
+                             sigma
+                             start
+                             finals
+                             rules
+                             num-tapes
+                             accept
+                             accepts?) words)
     (define temp-machine (make-mttm states sigma start finals rules num-tapes accept))
     (andmap (lambda (word) (equal? (sm-apply temp-machine word) accepts?)) words)
     )
@@ -512,5 +519,66 @@
                                    `((b b b b) (a a a))
                                    'Y
                                    'reject) '((a a a)))
+
+    ;check-input-mttm tests
+    (define mttm-accept (check-input-mttm '(S Y N)
+                                          `(a b)
+                                          'S
+                                          '(Y N)
+                                          `(((S (a)) (S (,RIGHT)))
+                                            ((S (b)) (N (b)))
+                                            ((S (,BLANK)) (Y (,BLANK))))
+                                          1
+                                          'Y
+                                          'accept))
+    (define mttm-reject (check-input-mttm '(S Y N)
+                                          `(a b)
+                                          'S
+                                          '(Y N)
+                                          `(((S (a)) (S (,RIGHT)))
+                                            ((S (b)) (N (b)))
+                                            ((S (,BLANK)) (Y (,BLANK))))
+                                          1
+                                          'Y
+                                          'reject))
+    (check-equal? (mttm-accept `((a a a a) (a a a))) #t)
+    (check-equal? (mttm-accept `((a a a a) (b b b))) #f)
+    (check-equal? (mttm-reject `((a a a a) (a a a))) #f) 
+    (check-equal? (mttm-reject `((b b b b) (b b b))) #t)
+
+    ;return-input-mttm tests
+    (check-equal? (return-input-mttm '(S Y N)
+                                     `(a b)
+                                     'S
+                                     '(Y N)
+                                     `(((S (a)) (S (,RIGHT)))
+                                       ((S (b)) (N (b)))
+                                       ((S (,BLANK)) (Y (,BLANK))))
+                                     1
+                                     `((a a a a) (a a a))
+                                     'Y
+                                     'accept) '())
+    (check-equal? (return-input-mttm '(S Y N)
+                                     `(a b)
+                                     'S
+                                     '(Y N)
+                                     `(((S (a)) (S (,RIGHT)))
+                                       ((S (b)) (N (b)))
+                                       ((S (,BLANK)) (Y (,BLANK))))
+                                     1
+                                     `((b b b b) (a a a))
+                                     'Y
+                                     'accept) '((b b b b)))
+    (check-equal? (return-input-mttm '(S Y N)
+                                     `(a b)
+                                     'S
+                                     '(Y N)
+                                     `(((S (a)) (S (,RIGHT)))
+                                       ((S (b)) (N (b)))
+                                       ((S (,BLANK)) (Y (,BLANK))))
+                                     1
+                                     `((b b b b) (a a a))
+                                     'Y
+                                     'reject) '((a a a)))
     )
   )
