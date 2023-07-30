@@ -6,6 +6,7 @@
            racket/contract
            )
   (provide listof-words/c
+           words-in-sigma/c
            dfa-input/c
            ndfa-input/c
            ndpda-input/c
@@ -25,6 +26,24 @@
                        blame
                        words
                        (format "Not given an accurate list of words ~s" words)
+                     
+                       )
+                      )
+                    )
+     )
+    )
+
+  (define (words-in-sigma/c sigma)
+    (make-flat-contract
+     #:name 'words-made-of-sigma-symbols
+     #:first-order (lambda (words) (words-in-sigma? words sigma))
+     #:projection (lambda (blame)
+                    (lambda (words)
+                      (current-blame-format format-accepts-error)
+                      (raise-blame-error
+                       blame
+                       words
+                       (format-error blame "The following words contain symbols not included in the sigma" (invalid-words words sigma))
                      
                        )
                       )
