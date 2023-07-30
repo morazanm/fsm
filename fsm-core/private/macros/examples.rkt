@@ -1,20 +1,20 @@
-#lang racket
+#lang fsm
 (require "constructors.rkt"
          "../constants.rkt"
-         "../fsa.rkt"
-         "../tm.rkt"
-         "../../../main.rkt")
+         ;"../fsa.rkt"
+         ;"../tm.rkt"
+         #;"../../../main.rkt")
 (local-require test-engine/racket-tests)
 
 (define dfa-temp (make-dfa2
                   '(A B)
                   '(a b)
                   'A
-                  'B
+                  '(B)
                   (list '(A b A)
                         '(A a B)
                         '(B b A))
-                  #:accepts (list '(b b b b c a))
+                  #:accepts (list '(b b b b a))
                   #:rejects (list '(a a a a b))))
 
 (check-error

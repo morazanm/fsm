@@ -366,7 +366,7 @@
          [result mttm?]
          )
     (if (equal? accept 'null)
-        (make-mttm states sigma rules start finals num-tapes)
-        (make-mttm states sigma rules start finals num-tapes accept))
+        (make-mttm states sigma start finals rules num-tapes)
+        (make-mttm states sigma start finals rules num-tapes accept))
     )
   )
