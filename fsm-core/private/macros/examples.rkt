@@ -127,4 +127,5 @@
                           (list (list 'G (list BLANK 'a BLANK BLANK))
                                 (list 'N (list BLANK 'a BLANK BLANK))))
                          4
-                         'Y))
+                         'Y
+                         #:accepts `(((,LM ,BLANK a b c) 1))))
