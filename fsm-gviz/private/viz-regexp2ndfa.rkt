@@ -69,10 +69,7 @@
                             (cons (list fromst (union-regexp-r2 rexp) tost)
                                   (remove edge grph)))
                     (cons (gedge grph
-                                 (format "Regular Expression Expanded: ~a \n\nFrom ~a to ~a"
-                                         (printable-regexp rexp)
-                                         (symbol->string fromst)
-                                         (symbol->string tost)))
+                                 edge)
                           acc)))]
                 [(concat-regexp? rexp)
                  (let [(istate1 (generate-symbol 'I '(I)))
@@ -82,10 +79,7 @@
                                       (list istate2 (concat-regexp-r2 rexp) tost))
                                 (remove edge grph))
                         (cons (gedge grph
-                                     (format "Regular Expression Expanded: ~a \n\nFrom ~a to ~a"
-                                             (printable-regexp rexp)
-                                             (symbol->string fromst)
-                                             (symbol->string tost)))
+                                     edge)
                               acc))                   
                    #;(bfs (cons (list fromst (concat-regexp-r1 rexp) istate)
                                 (cons (list istate (concat-regexp-r2 rexp) tost)
@@ -102,10 +96,7 @@
                                   (list istart2 (empty-regexp) tost))
                             (remove edge grph))
                     (cons (gedge grph
-                                 (format "Regular Expression Expanded: ~a \n\nFrom ~a to ~a"
-                                         (printable-regexp rexp)
-                                         (symbol->string fromst)
-                                         (symbol->string tost)))
+                                 edge)
                           acc)))
                  #;(let [(istate (generate-symbol 'I '(I)))]
                      (bfs (cons (list fromst (empty-regexp) istate)
@@ -128,14 +119,14 @@
 ;; create-nodes
 ;; graph (listof edge) -> graph
 ;; Purpose: To add the nodes to the graph
-(define (create-nodes graph dgraph)
+(define (create-nodes graph dgraph edge)
   (define (states-only dgraph)
     (remove-duplicates
      (append-map (λ (e) (list (first e) (third e))) dgraph))
     #;(remove-duplicates (if (empty? dgraph)
                              empty
                              (flatten (cons (filter (λ (el) (symbol? el)) dgraph)
-                                            (states-only (rest dgraph)))))))                    
+                                            (states-only (rest dgraph)))))))
   (foldl (λ (state result)
            (add-node
             result
@@ -144,6 +135,9 @@
                                       'green]
                                      [(eq? state 'F)
                                       'red]
+                                     [(or (eq? state (first edge))
+                                          (eq? state (third edge)))
+                                      'violet]
                                      [else 'black])                                   
                         'shape (if (eq? state 'F)
                                    'doublecircle
@@ -154,7 +148,7 @@
                         'fontcolor 'black
                         'font "Sans")))
          graph
-         (states-only dgraph)))                           
+         (states-only dgraph)))                         
 
 ;; create-edges
 ;; graph (listof edge) -> graph
@@ -176,13 +170,14 @@
 ;; create-graph-img
 ;; graph -> img
 ;; Purpose: To create a graph img for the given dgraph
-(define (create-graph-img dgraph glabel)
+(define (create-graph-img dgraph edge)
   (graph->bitmap
    (create-edges
     (create-nodes
      (create-graph 'dgraph #:atb (hash 'rankdir "LR"
                                        'font "Sans"))
-     dgraph)
+     dgraph
+     edge)
     dgraph)))
 
 ;; create-starting-nodes
@@ -304,7 +299,7 @@
       (let* [(graph-img (first (viz-state-pdg a-vs)))
              (width (image-width graph-img))
              (height (image-height graph-img))
-             (text-img (text (first (viz-state-pe a-vs)) 24 'black))]
+             (text-img (text (printable-regexp (second (first (viz-state-pe a-vs)))) 24 'black))]
         (if (or (> width (image-width E-SCENE))
                 (> height (image-height E-SCENE)))
             (overlay (above (resize-image graph-img (image-width E-SCENE) (image-height E-SCENE))
@@ -320,7 +315,7 @@
 (define (all-gedges los)
   (if (empty? los)
       empty
-      (append (list  (gedge-edge (first los)))
+      (append (list (gedge-edge (first los)))
               (all-gedges (rest los)))))
 
 
