@@ -16,14 +16,16 @@
 
 (define R3 (kleenestar-regexp R2))
 
+(define R4 (kleenestar-regexp (union-regexp R3 R2)))
+
 (define E-SCENE (empty-scene 1250 600))
 
 ;; dgraph-struct
 (struct gedge (grph edge))
 
-;; dgraph --> ndfa
-;; Purpose: Create ndfa from given dgraph
-(define (dgraph2lodgraph dgraph)
+;; dgraph edge --> (listof gedges)
+;; Purpose: Create a list of digraph-edge structures
+(define (dgraph2lodgraph dgraph edge)
   
   ;; digraph --> Boolean
   (define (only-simple-edges? grph)
@@ -38,19 +40,19 @@
                                (not (singleton-regexp? (second e)))))
                    grph)))
   
-  ;; dgraph (listof dgraph) --> (listof dgraph)
-  (define (bfs grph acc)
+  ;; dgraph edge (listof dgraph) --> (listof dgraph)
+  (define (bfs grph edge acc)
     #;(displayln (format "graph: ~a\n" (map (λ (e) (format "(~a ~a ~a)"
                                                            (first e)
                                                            (printable-regexp (second e))
                                                            (third e) ))
                                             grph)))
     (if (only-simple-edges? grph)
-        (cons (gedge grph '()) acc)
-        (let* [(edge (extract-first-nonsimple grph))
-               (fromst (first edge))
-               (rexp (second edge))
-               (tost (third edge))]
+        (cons (gedge grph edge) acc)
+        (let* [(next-edge (extract-first-nonsimple grph))
+               (fromst (first next-edge))
+               (rexp (second next-edge))
+               (tost (third next-edge))]
           (cond [(union-regexp? rexp)
                  (let [(newi1 (generate-symbol 'I '(I)))
                        (newi2 (generate-symbol 'I '(I)))
@@ -63,28 +65,18 @@
                                   (list newi2 (union-regexp-r2 rexp) newi4)
                                   (list newi3 (empty-regexp) tost)
                                   (list newi4 (empty-regexp) tost))
-                            (remove edge grph))
-                                
-                    #;(cons (list fromst (union-regexp-r1 rexp) tost)
-                            (cons (list fromst (union-regexp-r2 rexp) tost)
-                                  (remove edge grph)))
-                    (cons (gedge grph
-                                 edge)
-                          acc)))]
+                            (remove next-edge grph))
+                    next-edge
+                    (cons (gedge grph edge) acc)))]
                 [(concat-regexp? rexp)
                  (let [(istate1 (generate-symbol 'I '(I)))
                        (istate2 (generate-symbol 'I '(I)))]
                    (bfs (append (list (list fromst (concat-regexp-r1 rexp) istate1)
                                       (list istate1 (empty-regexp) istate2)
                                       (list istate2 (concat-regexp-r2 rexp) tost))
-                                (remove edge grph))
-                        (cons (gedge grph
-                                     edge)
-                              acc))                   
-                   #;(bfs (cons (list fromst (concat-regexp-r1 rexp) istate)
-                                (cons (list istate (concat-regexp-r2 rexp) tost)
-                                      (remove edge grph)))
-                          (cons grph acc)))]
+                                (remove next-edge grph))
+                        next-edge
+                        (cons (gedge grph edge) acc)))]
                 [else
                  (let [(istart1 (generate-symbol 'I '(I)))
                        (istart2 (generate-symbol 'I '(I)))]
@@ -94,47 +86,37 @@
                                   (list istart1 (empty-regexp) istart2)
                                   (list istart2 (kleenestar-regexp-r1 rexp) istart2)
                                   (list istart2 (empty-regexp) tost))
-                            (remove edge grph))
-                    (cons (gedge grph
-                                 edge)
-                          acc)))
-                 #;(let [(istate (generate-symbol 'I '(I)))]
-                     (bfs (cons (list fromst (empty-regexp) istate)
-                                (cons (list istate (kleenestar-regexp-r1 rexp) istate)
-                                      (cons (list istate (empty-regexp) tost)
-                                            (remove edge grph))))
-                          (cons grph acc)))]))))
-  (define (all-edges-extracted lodgrph)
-    (if (empty? lodgrph)
-        empty
-        (cons (extract-first-nonsimple (first lodgrph))
-              (all-edges-extracted (rest lodgrph)))))
-  (bfs dgraph '()))
+                            (remove next-edge grph))
+                    next-edge
+                    (cons (gedge grph edge) acc)))]))))
+  (bfs dgraph edge '()))
 
 ;; updg are unprocessed dgraphs
 ;; pdg are processed dgraphs
-(struct viz-state (updg pdg rxp upe pe))
+(struct viz-state (upimgs pimgs) #:transparent)
 
 
 ;; create-nodes
-;; graph (listof edge) -> graph
+;; graph dgraph edge -> graph
 ;; Purpose: To add the nodes to the graph
 (define (create-nodes graph dgraph edge)
   (define (states-only dgraph)
     (remove-duplicates
-     (append-map (λ (e) (list (first e) (third e))) dgraph))
-    #;(remove-duplicates (if (empty? dgraph)
-                             empty
-                             (flatten (cons (filter (λ (el) (symbol? el)) dgraph)
-                                            (states-only (rest dgraph)))))))
+     (append-map (λ (e) (list (first e) (third e))) dgraph)))
   (foldl (λ (state result)
            (add-node
             result
             state
             #:atb (hash 'color (cond [(eq? state 'S)
-                                      'green]
+                                      (if (and (not (empty? edge))
+                                               (eq? (first edge) 'S))
+                                          'violet
+                                          'green)]
                                      [(eq? state 'F)
-                                      'red]
+                                      (if (and (not (empty? edge))
+                                               (eq? (third edge) 'F))
+                                          'violet
+                                          'red)]
                                      [(or (eq? state (first edge))
                                           (eq? state (third edge)))
                                       'violet]
@@ -168,79 +150,37 @@
 
 
 ;; create-graph-img
-;; graph -> img
+;; graph edge -> img
 ;; Purpose: To create a graph img for the given dgraph
 (define (create-graph-img dgraph edge)
-  (graph->bitmap
-   (create-edges
-    (create-nodes
-     (create-graph 'dgraph #:atb (hash 'rankdir "LR"
-                                       'font "Sans"))
-     dgraph
-     edge)
-    dgraph)))
-
-;; create-starting-nodes
-;; graph (listof edge) -> graph
-;; Purpose: To add the nodes to the graph
-(define (create-starting-nodes graph dgraph)
-  (let [(states (list (first (first dgraph)) (third (first dgraph))))]                    
-    (foldl (λ (state result)
-             (add-node
-              result
-              state
-              #:atb (hash 'color (if (eq? state (first (first dgraph)))
-                                     'green
-                                     'red)                                        
-                          'shape (if (eq? state (first (first dgraph)))
-                                     'circle
-                                     'doublecircle)
-                          'label (if (equal? state '())
-                                     'ds  
-                                     state)
-                          'fontcolor 'black
-                          'font "Sans")))
-           graph
-           states)))
-
-
-;; create-starting-edges
-;; graph (listof edge) -> graph
-;; Purpose: To create graph of edges
-(define (create-starting-edges graph dgraph)
-  (foldl (λ (rule result)
-           (add-edge result
-                     (printable-regexp (simplify-regexp (second (first rule))))
-                     (first (first rule))
-                     (third (first rule))
-                     #:atb (hash 'fontsize 14
-                                 'style 'solid
-                                 'fontname "Sans"
-                                 )))
-         graph
-         (list dgraph)))
-
-
-;; create-starting-graph-img
-;; graph -> img
-;; Purpose: To make starting regular expression graph
-(define (create-starting-graph-img dgraph)
-  (graph->bitmap
-   (create-starting-edges
-    (create-starting-nodes
-     (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans")) dgraph)
-    dgraph)))
+  (overlay
+   (above
+    (graph->bitmap
+     (create-edges
+      (create-nodes
+       (create-graph 'dgraph #:atb (hash 'rankdir "LR"
+                                         'font "Sans"))
+       dgraph
+       edge)
+      dgraph))
+    (if (empty? edge)
+        (text "Starting NDFA" 24 'black)
+        (beside (text (format "Expanded regexp: ~a on edge from state" (printable-regexp (second edge))) 24 'black)
+                (text (format " ~a" (first edge)) 24 'violet)
+                (text (format " to state ") 24 'black)
+                (text (format "~a" (third edge)) 24 'violet))))
+   E-SCENE))
 
 
 ;; create-graph-imgs
-;; (listof graph) -> (listof image)
+;; (listof gedges) -> (listof image)
 ;; Purpose: To create a list of graph images
-(define (create-graph-imgs log)
-  (if (empty? log)
+(define (create-graph-imgs gedges)
+  (if (empty? gedges)
       empty
-      (cons (create-graph-img (gedge-grph (first log))
-                              (gedge-edge (first log)))
-            (create-graph-imgs (rest log)))))
+      (cons (create-graph-img (gedge-grph (first gedges))
+                              (gedge-edge (first gedges)))
+            (create-graph-imgs (rest gedges)))))
 
 ;; process-key
 ;; viz-state key --> viz-state
@@ -248,35 +188,23 @@
 ;;          backwards, or to the end.
 (define (process-key a-vs a-key)
   (cond [(key=? "right" a-key)
-         (if (empty? (viz-state-updg a-vs))
+         (if (empty? (rest (viz-state-upimgs a-vs)))
              a-vs
-             (let* [(new-pdg (cons (first (viz-state-updg a-vs))
-                                   (viz-state-pdg a-vs)))
-                    (new-updg (rest (viz-state-updg a-vs)))
-                    (new-pe (cons (first (viz-state-upe a-vs))
-                                  (viz-state-pe a-vs)))
-                    (new-upe (rest (viz-state-upe a-vs)))]           
-               (viz-state new-updg new-pdg (viz-state-rxp a-vs) new-upe new-pe)))]
+             (viz-state (rest (viz-state-upimgs a-vs))
+                        (cons (first (viz-state-upimgs a-vs))
+                              (viz-state-pimgs a-vs))))]
         [(key=? "left" a-key)
-         (if (empty? (viz-state-pdg a-vs))
+         (if (empty? (viz-state-pimgs a-vs))
              a-vs
-             (let* [(new-pdg (rest (viz-state-pdg a-vs)))
-                    (new-updg (cons (first (viz-state-pdg a-vs))
-                                    (viz-state-updg a-vs)))
-                    (new-pe (rest (viz-state-pe a-vs)))
-                    (new-upe (cons (first (viz-state-pe a-vs))
-                                   (viz-state-upe a-vs)))]
-               (viz-state new-updg new-pdg (viz-state-rxp a-vs) new-upe new-pe)))]
+             (viz-state (cons (first (viz-state-pimgs a-vs))
+                              (viz-state-upimgs a-vs))
+                        (rest (viz-state-pimgs a-vs))))]
         [(key=? "down" a-key)
-         (if (empty? (viz-state-updg a-vs))
+         (if (empty? (rest (viz-state-upimgs a-vs)))
              a-vs
-             (let* [(new-pdg (append (reverse (viz-state-updg a-vs))
-                                     (viz-state-pdg a-vs)))
-                    (new-updg '())
-                    (new-pe (rest (append (reverse (viz-state-upe a-vs))
-                                          (viz-state-pe a-vs))))
-                    (new-upe '())]
-               (viz-state new-updg new-pdg (viz-state-rxp a-vs) new-upe new-pe)))]           
+             (viz-state (list (last (viz-state-upimgs a-vs)))
+                        (append (rest (reverse (viz-state-upimgs a-vs)))
+                                (viz-state-pimgs a-vs))))]           
         [else a-vs]))
 
 
@@ -284,55 +212,21 @@
 ;; draw-img
 ;; viz-state -> img
 ;; Purpose: To render the given vis-state
-(define (draw-world a-vs)                            
-  (if (empty? (viz-state-pdg a-vs))
-      (let* [(graph-img (viz-state-rxp a-vs))
-             (width (image-width graph-img))
-             (height (image-height graph-img))]
-        (if (or (> width (image-width E-SCENE))
-                (> height (image-height E-SCENE)))
-            (overlay (above
-                      (resize-image graph-img (image-width E-SCENE) (image-height E-SCENE))
-                      (text "Starting regexp" 20 'black)
-                      E-SCENE))
-            (overlay (above (viz-state-rxp a-vs) (text "Starting regexp" 20 'black)) E-SCENE)))
-      (let* [(graph-img (first (viz-state-pdg a-vs)))
-             (width (image-width graph-img))
-             (height (image-height graph-img))
-             (text-img (text (printable-regexp (second (first (viz-state-pe a-vs)))) 24 'black))]
-        (if (or (> width (image-width E-SCENE))
-                (> height (image-height E-SCENE)))
-            (overlay (above (resize-image graph-img (image-width E-SCENE) (image-height E-SCENE))
-                            text-img)
-                     E-SCENE)
-            (overlay (above graph-img text-img)
-                     E-SCENE)))))
-
-
-;; all-gedges
-;; (listof struct) -> (listof edges)
-;; Purpose: To extract all gedges from the struct
-(define (all-gedges los)
-  (if (empty? los)
-      empty
-      (append (list (gedge-edge (first los)))
-              (all-gedges (rest los)))))
-
+(define (draw-world a-vs)
+  (if (empty? (viz-state-upimgs a-vs))
+      (first (viz-state-pimgs a-vs))
+      (first (viz-state-upimgs a-vs))))
 
 ;; run-function
 (define (run regexp)
-  (let [(lodgraph (reverse
-                   (dgraph2lodgraph
-                    (list (list 'S
-                                regexp
-                                'F)))))]
+  (let* [(logedges (reverse
+                    (dgraph2lodgraph
+                     (list (list 'S regexp 'F))
+                     '())))
+         (loimgs (create-graph-imgs logedges))]
     (begin
       (big-bang
-          (viz-state (create-graph-imgs (rest lodgraph))
-                     '()
-                     (create-starting-graph-img (gedge-grph (first lodgraph)))
-                     (all-gedges lodgraph)
-                     '())
+          (viz-state loimgs '())
         [on-draw draw-world]
         [on-key process-key]
         [name "FSM: regexp to ndfa visualization"]))
