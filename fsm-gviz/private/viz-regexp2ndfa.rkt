@@ -222,7 +222,7 @@
 (define (run regexp)
   (let* [(logedges (reverse
                     (dgraph2lodgraph
-                     (list (list 'S (simplify-regexp regexp) 'F))
+                     (list (list 'S (simplify-regexp regexp) 'F)) ;; simplify-regexp beforehand to avoid silly expansions (e.g., (union-regexp (null-regexp) (null-regexp)) )
                      '())))
          (loimgs (create-graph-imgs logedges))]
     (begin

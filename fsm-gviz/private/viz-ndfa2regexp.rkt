@@ -10,6 +10,13 @@
 (define FNAME "fsm")
 
 ;; L = ab*
+(define nl (make-ndfa '(S)
+                       '(a b)
+                       'S
+                       '()
+                       '()))
+
+;; L = ab*
 (define ab* (make-ndfa '(S A)
                        '(a b)
                        'S
@@ -365,5 +372,5 @@
 
 
 
-(run AT-LEAST-ONE-MISSING)
-(define D (ndfa->dfa AT-LEAST-ONE-MISSING))
+;(run AT-LEAST-ONE-MISSING)
+;(define D (ndfa->dfa AT-LEAST-ONE-MISSING))
