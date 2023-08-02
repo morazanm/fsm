@@ -103,8 +103,8 @@
             (define (simplify-concat x)
               (local [(define simp-lhs (simplify-regexp (concat-regexp-r1 x)))
                       (define simp-rhs (simplify-regexp (concat-regexp-r2 x)))]
-                (cond [(or (null-regexp? (concat-regexp-r1 x))
-                           (null-regexp? (concat-regexp-r2 x)))
+                (cond [(or (null-regexp? simp-lhs)
+                           (null-regexp? simp-rhs))
                        (null-regexp)]
                       [(empty-regexp? simp-lhs) simp-rhs]
                       [(empty-regexp? simp-rhs) simp-lhs]
