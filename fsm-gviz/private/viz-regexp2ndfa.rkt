@@ -30,7 +30,8 @@
   ;; digraph --> Boolean
   (define (only-simple-edges? grph)
     (andmap (λ (e) (or (empty-regexp? (second e))
-                       (singleton-regexp? (second e))))
+                       (singleton-regexp? (second e))
+                       (null-regexp? (second e))))
             grph))
 
   ;; dgraph --> dedge
@@ -221,7 +222,7 @@
 (define (run regexp)
   (let* [(logedges (reverse
                     (dgraph2lodgraph
-                     (list (list 'S regexp 'F))
+                     (list (list 'S (simplify-regexp regexp) 'F))
                      '())))
          (loimgs (create-graph-imgs logedges))]
     (begin
