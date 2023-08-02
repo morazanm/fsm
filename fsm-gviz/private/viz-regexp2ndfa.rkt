@@ -9,6 +9,9 @@
 
 (define FNAME "fsm")
 
+(define R0 (union-regexp (singleton-regexp "a")
+                         (null-regexp)))
+
 (define R1 (union-regexp (singleton-regexp "a")
                          (singleton-regexp "b")))
 
@@ -18,6 +21,10 @@
 
 (define R4 (kleenestar-regexp (union-regexp R3 R2)))
 
+(define R5 (concat-regexp (singleton-regexp "m") R0))
+
+(define R6 (kleenestar-regexp R5))
+
 (define E-SCENE (empty-scene 1250 600))
 
 ;; dgraph-struct
@@ -25,7 +32,7 @@
 
 ;; dgraph edge --> (listof gedges)
 ;; Purpose: Create a list of digraph-edge structures
-(define (dgraph2lodgraph dgraph edge)
+(define (dgraph2lodgraph dgraph edge . issimp?)
   
   ;; digraph --> Boolean
   (define (only-simple-edges? grph)
@@ -48,48 +55,51 @@
                                                            (printable-regexp (second e))
                                                            (third e) ))
                                             grph)))
-    (if (only-simple-edges? grph)
-        (cons (gedge grph edge) acc)
-        (let* [(next-edge (extract-first-nonsimple grph))
-               (fromst (first next-edge))
-               (rexp (second next-edge))
-               (tost (third next-edge))]
-          (cond [(union-regexp? rexp)
-                 (let [(newi1 (generate-symbol 'I '(I)))
-                       (newi2 (generate-symbol 'I '(I)))
-                       (newi3 (generate-symbol 'I '(I)))
-                       (newi4 (generate-symbol 'I '(I)))]
-                   (bfs
-                    (append (list (list fromst (empty-regexp) newi1)
-                                  (list fromst (empty-regexp) newi2)
-                                  (list newi1 (union-regexp-r1 rexp) newi3)
-                                  (list newi2 (union-regexp-r2 rexp) newi4)
-                                  (list newi3 (empty-regexp) tost)
-                                  (list newi4 (empty-regexp) tost))
-                            (remove next-edge grph))
-                    next-edge
-                    (cons (gedge grph edge) acc)))]
-                [(concat-regexp? rexp)
-                 (let [(istate1 (generate-symbol 'I '(I)))
-                       (istate2 (generate-symbol 'I '(I)))]
-                   (bfs (append (list (list fromst (concat-regexp-r1 rexp) istate1)
-                                      (list istate1 (empty-regexp) istate2)
-                                      (list istate2 (concat-regexp-r2 rexp) tost))
-                                (remove next-edge grph))
-                        next-edge
-                        (cons (gedge grph edge) acc)))]
-                [else
-                 (let [(istart1 (generate-symbol 'I '(I)))
-                       (istart2 (generate-symbol 'I '(I)))]
-                   (bfs
-                    (append (list (list fromst (empty-regexp) istart1)
-                                  (list istart1 (empty-regexp) tost)
-                                  (list istart1 (empty-regexp) istart2)
-                                  (list istart2 (kleenestar-regexp-r1 rexp) istart2)
-                                  (list istart2 (empty-regexp) tost))
-                            (remove next-edge grph))
-                    next-edge
-                    (cons (gedge grph edge) acc)))]))))
+    (cond [(only-simple-edges? grph) (cons (gedge grph edge) acc)]
+          [(and (not (null? issimp?))
+                (first issimp?))
+           (cons (gedge grph (void)) acc)]
+          [else 
+           (let* [(next-edge (extract-first-nonsimple grph))
+                  (fromst (first next-edge))
+                  (rexp (second next-edge))
+                  (tost (third next-edge))]
+             (cond [(union-regexp? rexp)
+                    (let [(newi1 (generate-symbol 'I '(I)))
+                          (newi2 (generate-symbol 'I '(I)))
+                          (newi3 (generate-symbol 'I '(I)))
+                          (newi4 (generate-symbol 'I '(I)))]
+                      (bfs
+                       (append (list (list fromst (empty-regexp) newi1)
+                                     (list fromst (empty-regexp) newi2)
+                                     (list newi1 (union-regexp-r1 rexp) newi3)
+                                     (list newi2 (union-regexp-r2 rexp) newi4)
+                                     (list newi3 (empty-regexp) tost)
+                                     (list newi4 (empty-regexp) tost))
+                               (remove next-edge grph))
+                       next-edge
+                       (cons (gedge grph edge) acc)))]
+                   [(concat-regexp? rexp)
+                    (let [(istate1 (generate-symbol 'I '(I)))
+                          (istate2 (generate-symbol 'I '(I)))]
+                      (bfs (append (list (list fromst (concat-regexp-r1 rexp) istate1)
+                                         (list istate1 (empty-regexp) istate2)
+                                         (list istate2 (concat-regexp-r2 rexp) tost))
+                                   (remove next-edge grph))
+                           next-edge
+                           (cons (gedge grph edge) acc)))]
+                   [else
+                    (let [(istart1 (generate-symbol 'I '(I)))
+                          (istart2 (generate-symbol 'I '(I)))]
+                      (bfs
+                       (append (list (list fromst (empty-regexp) istart1)
+                                     (list istart1 (empty-regexp) tost)
+                                     (list istart1 (empty-regexp) istart2)
+                                     (list istart2 (kleenestar-regexp-r1 rexp) istart2)
+                                     (list istart2 (empty-regexp) tost))
+                               (remove next-edge grph))
+                       next-edge
+                       (cons (gedge grph edge) acc)))]))]))
   (bfs dgraph edge '()))
 
 ;; updg are unprocessed dgraphs
@@ -110,11 +120,13 @@
             state
             #:atb (hash 'color (cond [(eq? state 'S)
                                       (if (and (not (empty? edge))
+                                               (not (void? edge))
                                                (eq? (first edge) 'S))
                                           'violet
                                           'green)]
                                      [(eq? state 'F)
                                       (if (and (not (empty? edge))
+                                               (not (void? edge))
                                                (eq? (third edge) 'F))
                                           'violet
                                           'red)]
@@ -139,7 +151,7 @@
 (define (create-edges graph dgraph)
   (foldl (λ (rule result)
            (add-edge result
-                     (printable-regexp (simplify-regexp (second rule)))
+                     (printable-regexp (second rule))
                      (first rule)
                      (third rule)
                      #:atb (hash 'fontsize 14
@@ -164,12 +176,12 @@
        dgraph
        edge)
       dgraph))
-    (if (empty? edge)
-        (text "Starting NDFA" 24 'black)
-        (beside (text (format "Expanded regexp: ~a on edge from state" (printable-regexp (second edge))) 24 'black)
-                (text (format " ~a" (first edge)) 24 'violet)
-                (text (format " to state ") 24 'black)
-                (text (format "~a" (third edge)) 24 'violet))))
+    (cond [(empty? edge) (text "Starting NDFA" 24 'black)]
+          [(void? edge) (text "Simplified initial regexp" 24 'black)]
+          [else (beside (text (format "Expanded regexp: ~a on edge from state" (printable-regexp (second edge))) 24 'black)
+                        (text (format " ~a" (first edge)) 24 'violet)
+                        (text (format " to state ") 24 'black)
+                        (text (format "~a" (third edge)) 24 'violet))]))
    E-SCENE))
 
 
@@ -220,10 +232,18 @@
 
 ;; run-function
 (define (run regexp)
-  (let* [(logedges (reverse
-                    (dgraph2lodgraph
-                     (list (list 'S (simplify-regexp regexp) 'F)) ;; simplify-regexp beforehand to avoid silly expansions (e.g., (union-regexp (null-regexp) (null-regexp)) )
-                     '())))
+  (let* [(logedges (append
+                    (list
+                     (last (dgraph2lodgraph
+                            (list (list 'S regexp 'F)) 
+                            '()))
+                     (last (dgraph2lodgraph
+                            (list (list 'S (simplify-regexp regexp) 'F)) ;; simplify-regexp beforehand to avoid silly expansions (e.g., (union-regexp (null-regexp) (null-regexp)) )
+                            '()
+                            #t)))
+                    (rest (reverse (dgraph2lodgraph
+                                    (list (list 'S (simplify-regexp regexp) 'F)) ;; simplify-regexp beforehand to avoid silly expansions (e.g., (union-regexp (null-regexp) (null-regexp)) )
+                                    '())))))
          (loimgs (create-graph-imgs logedges))]
     (begin
       (big-bang

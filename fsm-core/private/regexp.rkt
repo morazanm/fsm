@@ -103,8 +103,8 @@
             (define (simplify-concat x)
               (local [(define simp-lhs (simplify-regexp (concat-regexp-r1 x)))
                       (define simp-rhs (simplify-regexp (concat-regexp-r2 x)))]
-                (cond [(or (null-regexp? (concat-regexp-r1 x))
-                           (null-regexp? (concat-regexp-r2 x)))
+                (cond [(or (null-regexp? simp-lhs)
+                           (null-regexp? simp-rhs))
                        (null-regexp)]
                       [(empty-regexp? simp-lhs) simp-rhs]
                       [(empty-regexp? simp-rhs) simp-lhs]
@@ -155,9 +155,12 @@
                       [else (cons (first a-list) (remove-duplicates (rest a-list)))]))
           
             ;remove the duplicates from the union
-            (define clean-list (remove-duplicates (append (return-components simp-lhs)
-                                                          (return-components simp-rhs))))
-
+            (define clean-list
+              (filter (λ (x)
+                        (not (null-regexp? x)))
+                      (remove-duplicates (append (return-components simp-lhs)
+                                                 (return-components simp-rhs)))))
+    
             ;re-union: (listof regexp) --> regexp
             ;purpose: to recreate a union-regexp
             (define (re-union a-list)
