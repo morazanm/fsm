@@ -76,15 +76,17 @@
                                   (list new-start EMP (sm-start N)))
                             (sm-rules M)
                             (sm-rules N)))]
-    (sm-graph (make-ndfa new-states new-sigma new-start new-finals new-rules))))
+    (overlay (above (sm-graph (make-ndfa new-states new-sigma new-start new-finals new-rules))
+                    (text "Union of the ndfas" 20 'black))
+             E-SCENE)))
      
 ;; make-init-grph-img
 ;; ndfa ndfa -> img
 ;; Purpose: To draw the graph of the initial ndfa's
 (define (make-init-grph-img M N)
-  (overlay (above (text "First ndfa:" 24 'black)
+  (overlay (above (text "First ndfa:" 20 'black)
                   (sm-graph M)
-                  (text "Second ndfa:" 24 'black)
+                  (text "Second ndfa:" 20 'black)
                   (sm-graph N))
            E-SCENE))
 
@@ -107,9 +109,7 @@
 ;; viz-state -> img
 ;; Purpose: To render the given viz-state
 (define (draw-world a-vs)
-  (overlay
-   (viz-state-pgi a-vs)
-   E-SCENE))
+  (viz-state-pgi a-vs))
 
 ;; run-function
 ;; run-function
