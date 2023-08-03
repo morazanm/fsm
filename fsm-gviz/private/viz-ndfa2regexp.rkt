@@ -11,10 +11,10 @@
 
 ;; L = ab*
 (define nl (make-ndfa '(S)
-                       '(a b)
-                       'S
-                       '()
-                       '()))
+                      '(a b)
+                      'S
+                      '()
+                      '()))
 
 ;; L = ab*
 (define ab* (make-ndfa '(S A)
@@ -54,6 +54,18 @@
                        (D b D))
                      'no-dead))
 
+(define AT-LEAST-ONE-MISSING (make-ndfa '(S A B C) '(a b c)
+                                        'S
+                                        '(A B C)
+                                        `((S ,EMP A)
+                                          (S ,EMP B)
+                                          (S ,EMP C)
+                                          (A b A)
+                                          (A c A)
+                                          (B a B)
+                                          (B c B)
+                                          (C a C)
+                                          (C b C))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -86,7 +98,6 @@
 ;; node dgraph → dgraph
 ;; Purpose: Rip out given state from given graph
 (define (rip-out-node n g)
-  #;(define d (displayln (format "removing: ~s\n from: ~s\n" s g)))
   (let* [(non (filter (λ (r) (and (not (eq? (third r) n))
                                   (not (eq? (first r) n))))
                       g))
@@ -162,20 +173,6 @@
         (null-regexp)
         (simplify-regexp (second (first collapsed-dgraph))))))
 
-
-(define AT-LEAST-ONE-MISSING (make-ndfa '(S A B C) '(a b c)
-                                        'S
-                                        '(A B C)
-                                        `((S ,EMP A)
-                                          (S ,EMP B)
-                                          (S ,EMP C)
-                                          (A b A)
-                                          (A c A)
-                                          (B a B)
-                                          (B c B)
-                                          (C a C)
-                                          (C b C))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define E-SCENE (empty-scene 1250 600))
@@ -239,11 +236,7 @@
   (graph->bitmap
    (create-edges
     (create-nodes
-     (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans")
-                   #;(hash 'rankdir "LR"
-                           'size "7, 7"
-                           'ranksep "2.0"
-                           'font "Sans"))
+     (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
      los
      news
      newf)
@@ -251,8 +244,9 @@
 
 
 ;; create-graph-imgs
-;; ndfa -> listof imgs
-;; Purpose: To create a list of graph images
+;; ndfa -> (listof img)
+;; Purpose: To create a list of images of graphs that build a regular
+;; expression from the  given ndfa
 (define (create-graph-imgs M)
   (define new-start (generate-symbol 'S (sm-states M)))
   (define new-final (generate-symbol 'F (sm-states M)))
@@ -284,6 +278,9 @@
                         (cons DEAD (remove DEAD (sm-states M))))
                     (make-dgraph (append (sm-rules M) new-rules)) '())))
 
+;; make-init-graph-img
+;; ndfa -> img
+;; Purpose: To create the image of the initial ndfa graph
 (define (make-init-graph-img M)
   (let* [(new-start (generate-symbol 'S (sm-states M)))
          (new-final (generate-symbol 'F (sm-states M)))
@@ -330,7 +327,7 @@
 
 ;; draw-img
 ;; viz-state -> img
-;; Purpose: To render the given vis-state
+;; Purpose: To render the given viz-state
 (define (draw-world a-vs)
   (define graph-img (cond [(empty? (viz-state-pimgs a-vs))
                            (image-struct-img (first (viz-state-upimgs a-vs)))]
@@ -372,5 +369,5 @@
 
 
 
-;(run AT-LEAST-ONE-MISSING)
+(run AT-LEAST-ONE-MISSING)
 ;(define D (ndfa->dfa AT-LEAST-ONE-MISSING))

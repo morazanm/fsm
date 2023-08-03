@@ -1,5 +1,4 @@
 #lang fsm
-#;(require test-engine/racket-tests)
 (require "../../fsm-core/interface.rkt" "lib.rkt" "../../fsm-gui/graphViz/main.rkt")
 (require 2htdp/universe rackunit)
 (require (rename-in racket/gui/base
@@ -27,12 +26,14 @@
 
 (define E-SCENE (empty-scene 1250 600))
 
-;; dgraph-struct
+;; grph is a (listof img) of graphs used to build an ndfa from regexp
+;; edge is an edge that has been expanded to build an ndfa from regexp
 (struct gedge (grph edge))
 
+;; dgraph2logedges
 ;; dgraph edge --> (listof gedges)
 ;; Purpose: Create a list of digraph-edge structures
-(define (dgraph2lodgraph dgraph edge . issimp?)
+(define (dgraph2logedges dgraph edge . issimp?)
   
   ;; digraph --> Boolean
   (define (only-simple-edges? grph)
@@ -41,7 +42,8 @@
                        (null-regexp? (second e))))
             grph))
 
-  ;; dgraph --> dedge
+  ;; dgraph --> gedge
+  ;; Purpose: To extract the first nonsimple edge in the dgraph
   ;; Assumption: dgraph has a nonsimple edge
   (define (extract-first-nonsimple grph)
     (first (filter (λ (e) (and (not (empty-regexp? (second e)))
@@ -49,12 +51,9 @@
                    grph)))
   
   ;; dgraph edge (listof dgraph) --> (listof dgraph)
+  ;; Purpose: To create a list of dgraphs with  the expanded edge removed
+  ;; and replaced with the appropriate edges
   (define (bfs grph edge acc)
-    #;(displayln (format "graph: ~a\n" (map (λ (e) (format "(~a ~a ~a)"
-                                                           (first e)
-                                                           (printable-regexp (second e))
-                                                           (third e) ))
-                                            grph)))
     (cond [(only-simple-edges? grph) (cons (gedge grph edge) acc)]
           [(and (not (null? issimp?))
                 (first issimp?))
@@ -104,7 +103,7 @@
 
 ;; updg are unprocessed dgraphs
 ;; pdg are processed dgraphs
-(struct viz-state (upimgs pimgs) #:transparent)
+(struct viz-state (upimgs pimgs))
 
 
 ;; create-nodes
@@ -165,6 +164,7 @@
 ;; create-graph-img
 ;; graph edge -> img
 ;; Purpose: To create a graph img for the given dgraph
+;; with the labeled edge that has been expanded
 (define (create-graph-img dgraph edge)
   (overlay
    (above
@@ -224,7 +224,7 @@
 
 ;; draw-img
 ;; viz-state -> img
-;; Purpose: To render the given vis-state
+;; Purpose: To render the given viz-state
 (define (draw-world a-vs)
   (if (empty? (viz-state-upimgs a-vs))
       (first (viz-state-pimgs a-vs))
@@ -234,15 +234,15 @@
 (define (run regexp)
   (let* [(logedges (append
                     (list
-                     (last (dgraph2lodgraph
+                     (last (dgraph2logedges
                             (list (list 'S regexp 'F)) 
                             '()))
-                     (last (dgraph2lodgraph
-                            (list (list 'S (simplify-regexp regexp) 'F)) ;; simplify-regexp beforehand to avoid silly expansions (e.g., (union-regexp (null-regexp) (null-regexp)) )
+                     (last (dgraph2logedges
+                            (list (list 'S (simplify-regexp regexp) 'F)) 
                             '()
                             #t)))
-                    (rest (reverse (dgraph2lodgraph
-                                    (list (list 'S (simplify-regexp regexp) 'F)) ;; simplify-regexp beforehand to avoid silly expansions (e.g., (union-regexp (null-regexp) (null-regexp)) )
+                    (rest (reverse (dgraph2logedges
+                                    (list (list 'S (simplify-regexp regexp) 'F))
                                     '())))))
          (loimgs (create-graph-imgs logedges))]
     (begin
