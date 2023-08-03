@@ -46,7 +46,7 @@
       (define read-letter-error (if (second (second rule-with-errors)) "" (format " The letter ~a is not in your machine sigma." (second rule))))
       (define to-state-error (if (third (second rule-with-errors)) "" (format " The state ~a is not in your list of states." (third rule))))
       (format "Rule ~a:~a~a~a\n" rule from-state-error read-letter-error to-state-error))
-    (define all-rule-errors-formatted (foldl string-append "" (map format-incorrect-rule-error rules-with-errors)))
+    (define all-rule-errors-formatted (foldr string-append "" (map format-incorrect-rule-error rules-with-errors)))
     (format "~a:\n~a" message all-rule-errors-formatted)
     )
 

@@ -187,11 +187,7 @@
                                   (no-duplicates/c "final states"))]
           [rules (states
                   sigma) (and/c (listof-rules/c valid-dfa-rule-structure?)
-                                (correct-members/c
-                                 correct-members-dfa?
-                                 incorrect-members-dfa
-                                 states
-                                 (cons EMP sigma))
+                                (correct-dfa-rules/c states (cons EMP sigma))
                                 (no-duplicates/c "rules"))]
           )
          (#:accepts [accepts (states

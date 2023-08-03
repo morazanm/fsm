@@ -18,7 +18,7 @@
      #:first-order (lambda (rules) (valid-rules? pred rules))
      #:projection (lambda (blame)
                     (lambda (rules)
-                      (current-blame-format format-rule-format-error)
+                      (current-blame-format format-error)
                       (raise-blame-error
                        blame
                        (map (lambda (x) (format "~n~s" x)) (invalid-rules pred rules))

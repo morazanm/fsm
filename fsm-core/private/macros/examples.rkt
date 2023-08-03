@@ -8,8 +8,8 @@
                   '(a b)
                   'A
                   '(B)
-                  (list '(A c D)
-                        '(E a F)
+                  (list '(A b A)
+                        '(A a B)
                         '(B b A))
                   #:accepts (list '(b b b b a))
                   #:rejects (list '(a a a a b))))
