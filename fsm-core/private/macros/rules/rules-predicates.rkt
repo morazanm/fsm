@@ -248,7 +248,13 @@
                     (list (format "The to state ~a is not in the list of machine states." to-state))
                     '())))
       (if (empty? all-errors) '() (list (make-invalid-rule rule all-errors))))
-    (flatten (map rule-with-errors rules)))  
+    (flatten (map rule-with-errors rules)))
+
+  ;with-indices: (listof x) --> (listof (list x natnum))
+  ;Purpose: Returns the input list, but each element is paired with its index
+  ; in the list.
+  (define (with-indices lox)
+    (map list lox (range (length lox))))
 
   ;incorrect-ndpda-rules: (listof state) (listof alpha) (listof symbol) (listof pda-rule) --> (listof invalid-rule)
   ;purpose: for all of the rules in the list of pda-rules, returns invalid-rule for any
@@ -263,24 +269,31 @@
       (define rule-pop (first rule))
       (define rule-push (second rule))
       (define pop-errors
-        (append (if (not (member (first rule-pop) states))
-                    (list (format "The from state ~a is not in the list of machine states." (first rule-pop)))
-                    '())
-                (if (not (member (second rule-pop) (cons EMP sigma)))
-                    (list (format "The letter ~a is not in the machine sigma." (second rule-pop)))
-                    '())
-                (if (not (or (equal? (third rule-pop) EMP)
-                             (and (andmap (lambda (pop) (member pop gamma)) (third rule-pop)))))
-                    (list (format "The pop element ~a must be either EMP or a list of symbols from the machine gamma." (third rule-pop)))
-                    '())))
+        (let [(state (first rule-pop))
+              (consumed (second rule-pop))
+              (pop-elems (third rule-pop))]
+          (append (if (not (member state states))
+                      (list (format "The from state ~a is not in the list of machine states." state))
+                      '())
+                  (if (not (member consumed (cons EMP sigma)))
+                      (list (format "The letter ~a is not in the machine sigma." consumed))
+                      '())
+                  (if (equal? pop-elems EMP)
+                      '()
+                      (map (lambda (x) (format "The pop element ~a at index ~a is not in the machine gamma." (first x) (second x)))
+                           (filter (lambda (p) (not (member (first p) gamma))) (with-indices pop-elems))))))
+        )
       (define push-errors
-        (append (if (not (member (first rule-push) states))
-                    (list (format "The to state ~a is not in the list of machine states." (first rule-push)))
-                    '())
-                (if (not (or (equal? (second rule-push) EMP)
-                             (andmap (lambda (push) (member push gamma)) (second rule-push))))
-                    (list (format "The push element ~a must either be EMP or a list of symbols from the machine gamma." (second rule-push)))
-                    '())))
+        (let [(state (first rule-push))
+              (push-elems (second rule-push))]
+          (append (if (not (member state states))
+                      (list (format "The to state ~a is not in the list of machine states." state))
+                      '())
+                  (if (equal? push-elems EMP)
+                      '()
+                      (map (lambda (x) (format "The push element ~a at index ~a is not in the machine gamma." (first x) (second x)))
+                           (filter (lambda (p) (not (member (first p) gamma))) (with-indices push-elems))))))
+        )
       (define all-errors (append pop-errors push-errors))
       (if (empty? all-errors) '() (list (make-invalid-rule rule all-errors))))
     (flatten (map rule-with-errors rules)))
@@ -322,11 +335,6 @@
   ; sigma or are BLANK/LM, or any tm actions that are not in the sigma or are the
   ; LEFT/RIGHT constants.
   (define (incorrect-mttm-rules states sigma rules)
-    ;with-indices: (listof x) --> (listof (list x natnum))
-    ;Purpose: Returns the input list, but each element is paired with its index
-    ; in the list.
-    (define (with-indices lox)
-      (map list lox (range (length lox))))
     ;rule-with-errors: tm-rule --> (listof invalid-rule)
     ;Purpose: If there is anything wrong with the give rule (see possible errors
     ; in above purpose), then returns a list containing an invalid-rule with all
@@ -604,9 +612,9 @@
                                            (list
                                             "The from state D is not in the list of machine states."
                                             "The letter e is not in the machine sigma."
-                                            "The pop element (f) must be either EMP or a list of symbols from the machine gamma."
+                                            "The pop element f at index 0 is not in the machine gamma."
                                             "The to state G is not in the list of machine states."
-                                            "The push element (ε) must either be EMP or a list of symbols from the machine gamma."))))
+                                            "The push element ε at index 0 is not in the machine gamma."))))
 
     ;incorrect-tm-rules tests
     (check-equal? (incorrect-tm-rules '(A B C)
