@@ -9,6 +9,8 @@
            correct-members/c
            correct-dfa-rules/c
            correct-ndpda-rules/c
+           correct-tm-rules/c
+           correct-mttm-rules/c
            functional/c
            no-duplicates-dfa/c)
 
@@ -64,6 +66,7 @@
                        "The following rules have errors, which make them invalid")))))
 
   ;correct-ndpda-rules/c: (listof state) (listof alpha) (listof symbol) --> contract
+  ;predicate: (listof x) --> boolean
   ;Purpose: Ensures that every element in the list is a valid pda rule. It checks
   ; each rule to see that the from-state and to-state are in the list of machine
   ; states, that the consumed letter is in the machine sigma, and that the
@@ -79,7 +82,45 @@
                       (raise-blame-error
                        blame
                        (incorrect-ndpda-rules states sigma gamma rules)
-                       "The following rules have errors, which makes them invalid")))))
+                       "The following rules have errors, which make them invalid")))))
+
+  ;correct-tm-rules/c: (listof state) (list of alpha) --> contract
+  ;predicate: (listof x) --> boolean
+  ;Purpose: Ensures that every element in the list is a valid tm rule. It checks
+  ; each rule to see that the from-state and to-state are in the list of machine
+  ; states, that the read tape symbol is either in the machine sigma or is the
+  ; BLANK or LM constants, and that the tm-action is either in the machine sigma
+  ; or is the LEFT or RIGHT constants.
+  (define (correct-tm-rules/c states sigma)
+    (make-flat-contract
+     #:name 'correct-tm-rules
+     #:first-order (lambda (rules) (correct-members-tm? states sigma rules))
+     #:projection (lambda (blame)
+                    (lambda (rules)
+                      (current-blame-format format-incorrect-rules-error)
+                      (raise-blame-error
+                       blame
+                       (incorrect-tm-rules states sigma rules)
+                       "The following rules have errors, which make them invalid")))))
+
+  ;correct-mttm-rules/c: (listof state) (listof alpha) --> contract
+  ;predicate: (listof x) --> boolean
+  ;Purpose: Ensures that every element in the list is a valid mttm rule. It checks
+  ; each rule to see that the from-state and to-state are in the list of machine
+  ; states, that every read tape symbol is either in the machine sigma or is the
+  ; BLANK or LM constants, and that every tm-action is either in the machine
+  ; sigma or is the LEFT or RIGHT constants.
+  (define (correct-mttm-rules/c states sigma)
+    (make-flat-contract
+     #:name 'correct-mttm-rules
+     #:first-order (lambda (rules) (correct-members-mttm? states sigma rules))
+     #:projection (lambda (blame)
+                    (lambda (rules)
+                      (current-blame-format format-incorrect-rules-error)
+                      (raise-blame-error
+                       blame
+                       (incorrect-mttm-rules states sigma rules)
+                       "The following rules have errors, which make them invalid")))))
 
   ;functional/c: (listof state) (listof sigma) boolean -> contract
   ;predicate: (listof x) --> boolean

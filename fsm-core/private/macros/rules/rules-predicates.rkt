@@ -12,9 +12,11 @@
            invalid-rules
            incorrect-dfa-rules
            incorrect-ndpda-rules
+           incorrect-tm-rules
+           incorrect-mttm-rules
            valid-dfa-rule-structure?
            valid-ndpda-rule-structure?
-           valid-tm-rule?
+           valid-tm-rule-structure?
            valid-mttm-rule?
            valid-mttm-rule-structure?
            functional?
@@ -96,7 +98,7 @@
   ;valid-tm-rule: something --> boolean
   ;purpose: just checks if the rule list is formatted the correct way
   ; for a tm, this is a list of two lists of length 2
-  (define (valid-tm-rule? rule)
+  (define (valid-tm-rule-structure? rule)
     (and (list? rule)
          (= (length rule) 2)
          (list? (first rule))
@@ -226,6 +228,11 @@
   ;purpose: for all the rules in the list of dfa-rules, returns tuples of all
   ; states and alphabet letters that are invalid (meaning not in the states or sigma)
   (define (incorrect-dfa-rules states sigma rules)
+    ;rule-with-errors: dfa-rule --> (listof invalid-rule)
+    ;Purpose: If there is anything wrong with the give rule (see possible errors
+    ; in above purpose), then returns a list containing an invalid-rule with all
+    ; appropriate error messages for that rule. If the rule is valid, returns
+    ; an empty list.
     (define (rule-with-errors rule)
       (define from-state (first rule))
       (define consumed (second rule))
@@ -241,13 +248,17 @@
                     (list (format "The to state ~a is not in the list of machine states." to-state))
                     '())))
       (if (empty? all-errors) '() (list (make-invalid-rule rule all-errors))))
-    (flatten (map rule-with-errors rules)))
-  
+    (flatten (map rule-with-errors rules)))  
 
-  ;incorrect-ndpda-rules: (listof state) (listof alpha) (listof symbol) (listof pda-rule) --> (listof pda-rule-error)
-  ;purpose: for all of the rules in the list of pda-rules, returns pda-rule-errors for any
+  ;incorrect-ndpda-rules: (listof state) (listof alpha) (listof symbol) (listof pda-rule) --> (listof invalid-rule)
+  ;purpose: for all of the rules in the list of pda-rules, returns invalid-rule for any
   ; rule that has invalid states, alpha characters, or gamma elements.
   (define (incorrect-ndpda-rules states sigma gamma rules)
+    ;rule-with-errors: pda-rule --> (listof invalid-rule)
+    ;Purpose: If there is anything wrong with the give rule (see possible errors
+    ; in above purpose), then returns a list containing an invalid-rule with all
+    ; appropriate error messages for that rule. If the rule is valid, returns
+    ; an empty list.
     (define (rule-with-errors rule)
       (define rule-pop (first rule))
       (define rule-push (second rule))
@@ -271,6 +282,84 @@
                     (list (format "The push element ~a must either be EMP or a list of symbols from the machine gamma." (second rule-push)))
                     '())))
       (define all-errors (append pop-errors push-errors))
+      (if (empty? all-errors) '() (list (make-invalid-rule rule all-errors))))
+    (flatten (map rule-with-errors rules)))
+
+  ;incorrect-tm-rules: (listof state) (listof alpha) (listof tm-rule) --> (listof invalid-rule)
+  ;Purpose: For all of the rules in the list of tm-rules, returns an invalid-rule
+  ; for any rule that has invalid states, a read element that is not in the sigma
+  ; or is BLANK/LM, or a tm-action that is not in the sigma or the LEFT/RIGHT constants.
+  (define (incorrect-tm-rules states sigma rules)
+    ;rule-with-errors: tm-rule --> (listof invalid-rule)
+    ;Purpose: If there is anything wrong with the give rule (see possible errors
+    ; in above purpose), then returns a list containing an invalid-rule with all
+    ; appropriate error messages for that rule. If the rule is valid, returns
+    ; an empty list.
+    (define (rule-with-errors rule)
+      (define rule-from (first rule))
+      (define rule-to (second rule))
+      (define from-errors
+        (append (if (not (member (first rule-from) states))
+                    (list (format "The from state ~a is not in the list of machine states." (first rule-from)))
+                    '())
+                (if (not (member (second rule-from) (cons BLANK (cons LM sigma))))
+                    (list (format "The read tape symbol ~a must be in the machine sigma, or be the BLANK or LM constants." (second rule-from)))
+                    '())))
+      (define to-errors
+        (append (if (not (member (first rule-to) states))
+                    (list (format "The to state ~a is not in the list of machine states." (first rule-to)))
+                    '())
+                (if (not (member (second rule-to) (cons RIGHT (cons LEFT (cons BLANK sigma)))))
+                    (list (format "The tm-action ~a must be in the machine sigma, or be the LEFT, RIGHT, or BLANK constants." (second rule-to)))
+                    '())))
+      (define all-errors (append from-errors to-errors))
+      (if (empty? all-errors) '() (list (make-invalid-rule rule all-errors))))
+    (flatten (map rule-with-errors rules)))
+
+  ;incorrect-mttm-rules: (listof state) (listof alpha) (listof mttm-rule) --> (listof invalid-rule)
+  ;Purpose: For all of the rules in the list of mttm-rules, returns an invalid-rule
+  ; for any rule that has invalid states, any read elements that are not in the
+  ; sigma or are BLANK/LM, or any tm actions that are not in the sigma or are the
+  ; LEFT/RIGHT constants.
+  (define (incorrect-mttm-rules states sigma rules)
+    ;with-indices: (listof x) --> (listof (list x natnum))
+    ;Purpose: Returns the input list, but each element is paired with its index
+    ; in the list.
+    (define (with-indices lox)
+      (map list lox (range (length lox))))
+    ;rule-with-errors: tm-rule --> (listof invalid-rule)
+    ;Purpose: If there is anything wrong with the give rule (see possible errors
+    ; in above purpose), then returns a list containing an invalid-rule with all
+    ; appropriate error messages for that rule. If the rule is valid, returns
+    ; an empty list.
+    (define (rule-with-errors rule)
+      (define rule-from (first rule))
+      (define rule-to (second rule))
+      (define from-errors
+        (let [(state (first rule-from))
+              (tape-reads (second rule-from))]
+          (append (if (not (member state states))
+                      (list (format "The from state ~a is not in the list of machine states." state))
+                      '())
+                  (map (lambda (x)
+                         (format "The read tape symbol ~a on tape ~a must be in the machine sigma, or be the BLANK or LM constants."
+                                 (first x)
+                                 (second x)))
+                       (filter (lambda (r) (not (member (first r) (cons BLANK (cons LM sigma))))) (with-indices tape-reads)))))
+        )
+      (define to-errors
+        (let [(state (first rule-to))
+              (tm-actions (second rule-to))]
+          (append (if (not (member state states))
+                      (list (format "The to state ~a is not in the list of machine states." state))
+                      '())
+                  (map (lambda (x)
+                         (format "The tm-action ~a on tape ~a must be in the machine sigma, or be the LEFT, RIGHT, or BLANK constants."
+                                 (first x)
+                                 (second x)))
+                       (filter (lambda (r) (not (member (first r) (cons RIGHT (cons LEFT (cons BLANK sigma)))))) (with-indices tm-actions)))))
+        )
+      (define all-errors (append from-errors to-errors))
       (if (empty? all-errors) '() (list (make-invalid-rule rule all-errors))))
     (flatten (map rule-with-errors rules)))
 
@@ -319,24 +408,24 @@
     (check-equal? (invalid-rules (lambda (x) (symbol? x)) '(A B C D)) '())
     (check-equal? (invalid-rules (lambda (x) (symbol? x)) `(A (B) C D)) `((B)))
     
-    ;valid-dfa-rule? tests
+    ;valid-dfa-rule-structure? tests
     (check-equal? (valid-dfa-rule-structure? '(A a B)) #t)
     (check-equal? (valid-dfa-rule-structure? '(A a a B)) #f)
     (check-equal? (valid-dfa-rule-structure? '(a a a)) #t)
     (check-equal? (valid-dfa-rule-structure? `((A) b b)) #t)
     
-    ;valid-ndpda-rule? tests
+    ;valid-ndpda-rule-structure? tests
     (check-equal? (valid-ndpda-rule-structure? `((A a (B)) (A (b)))) #t)
     (check-equal? (valid-ndpda-rule-structure? `((a a (a)) (1 (b)))) #t)
     (check-equal? (valid-ndpda-rule-structure? `((1 1 a) (A (b)))) #f)
     (check-equal? (valid-ndpda-rule-structure? `((1 1 (a)) (A ))) #f)
     (check-equal? (valid-ndpda-rule-structure? `((A a) (A b))) #f)
     
-    ;valid-tm-rule? tests
-    (check-equal? (valid-tm-rule? `((A a) (A b))) #t)
-    (check-equal? (valid-tm-rule? `(((A) a) (A 1))) #t)
-    (check-equal? (valid-tm-rule? `((A a (A b)))) #f)
-    (check-equal? (valid-tm-rule? `(a a a)) #f)
+    ;valid-tm-rule-structure? tests
+    (check-equal? (valid-tm-rule-structure? `((A a) (A b))) #t)
+    (check-equal? (valid-tm-rule-structure? `(((A) a) (A 1))) #t)
+    (check-equal? (valid-tm-rule-structure? `((A a (A b)))) #f)
+    (check-equal? (valid-tm-rule-structure? `(a a a)) #f)
 
     ;valid-mttm-rule-structure? tests
     (check-equal? ((valid-mttm-rule-structure? 3) `((A (a b ,BLANK)) (B (,RIGHT ,BLANK b)))) #t)
@@ -457,12 +546,12 @@
     (check-equal? (incorrect-dfa-rules '(A B) '(a b) `((C d E) (A f G)))
                   (list
                    (make-invalid-rule '(C d E)
-                                    '("The from state C is not in the list of machine states."
-                                      "The consumed letter d is not in the machine sigma."
-                                      "The to state E is not in the list of machine states."))
+                                      '("The from state C is not in the list of machine states."
+                                        "The consumed letter d is not in the machine sigma."
+                                        "The to state E is not in the list of machine states."))
                    (make-invalid-rule '(A f G)
-                                    '("The consumed letter f is not in the machine sigma."
-                                      "The to state G is not in the list of machine states."))))
+                                      '("The consumed letter f is not in the machine sigma."
+                                        "The to state G is not in the list of machine states."))))
     
     ;incorrect-members-ndpda tests
     (check-equal? (incorrect-members-ndpda '(A B)
@@ -512,12 +601,45 @@
                                          '(c d)
                                          `(((D e (f)) (G (,EMP)))))
                   (list (make-invalid-rule `((D e (f)) (G (,EMP)))
-                                         (list
-                                          "The from state D is not in the list of machine states."
-                                          "The letter e is not in the machine sigma."
-                                          "The pop element (f) must be either EMP or a list of symbols from the machine gamma."
-                                          "The to state G is not in the list of machine states."
-                                          "The push element (ε) must either be EMP or a list of symbols from the machine gamma."))))
+                                           (list
+                                            "The from state D is not in the list of machine states."
+                                            "The letter e is not in the machine sigma."
+                                            "The pop element (f) must be either EMP or a list of symbols from the machine gamma."
+                                            "The to state G is not in the list of machine states."
+                                            "The push element (ε) must either be EMP or a list of symbols from the machine gamma."))))
+
+    ;incorrect-tm-rules tests
+    (check-equal? (incorrect-tm-rules '(A B C)
+                                      '(a b)
+                                      `(((A b) (B b))
+                                        ((B ,LM) (A ,LEFT))
+                                        ((C ,BLANK) (B ,RIGHT))))
+                  '())
+    (check-equal? (incorrect-tm-rules '(A B C)
+                                      '(a b)
+                                      `(((D ,LEFT) (E ,EMP))))
+                  (list (make-invalid-rule `((D ,LEFT) (E ,EMP))
+                                           '("The from state D is not in the list of machine states."
+                                             "The read tape symbol L must be in the machine sigma, or be the BLANK or LM constants."
+                                             "The to state E is not in the list of machine states."
+                                             "The tm-action ε must be in the machine sigma, or be the LEFT, RIGHT, or BLANK constants."))))
+
+    ;incorrect-mttm-rules tests
+    (check-equal? (incorrect-mttm-rules '(A B C)
+                                        '(a b)
+                                        `(((A (,LM ,BLANK)) (B (a b)))
+                                          ((B (a b)) (C (,LEFT ,RIGHT)))))
+                  '())
+    (check-equal? (incorrect-mttm-rules '(A B C)
+                                        '(a b)
+                                        `(((D (,LEFT ,EMP)) (E (f g)))))
+                  (list (make-invalid-rule `((D (,LEFT ,EMP)) (E (f g)))
+                                           '("The from state D is not in the list of machine states."
+                                             "The read tape symbol L on tape 0 must be in the machine sigma, or be the BLANK or LM constants."
+                                             "The read tape symbol ε on tape 1 must be in the machine sigma, or be the BLANK or LM constants."
+                                             "The to state E is not in the list of machine states."
+                                             "The tm-action f on tape 0 must be in the machine sigma, or be the LEFT, RIGHT, or BLANK constants."
+                                             "The tm-action g on tape 1 must be in the machine sigma, or be the LEFT, RIGHT, or BLANK constants."))))
     
     ;incorrect-members-tm tests
     (check-equal? (incorrect-members-tm '(A B)

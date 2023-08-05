@@ -231,12 +231,8 @@
                         (valid-listof/c valid-alpha? "alphabet letter" "machine sigma")
                         (no-duplicates/c "sigma"))]
           [rules (states
-                  sigma) (and/c (listof-rules/c valid-tm-rule?)
-                                (correct-members/c
-                                 correct-members-tm?
-                                 incorrect-members-tm
-                                 states
-                                 sigma)
+                  sigma) (and/c (listof-rules/c valid-tm-rule-structure?)
+                                (correct-tm-rules/c states sigma)
                                 (no-duplicates/c "rules"))]
           [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
@@ -308,11 +304,7 @@
           [rules (states
                   sigma
                   num-tapes) (and/c (listof-rules/c (valid-mttm-rule-structure? num-tapes))
-                                    (correct-members/c
-                                     correct-members-mttm?
-                                     incorrect-members-mttm
-                                     states
-                                     (cons BLANK sigma))
+                                    (correct-mttm-rules/c states sigma)
                                     (no-duplicates/c "rules"))]
           [num-tapes  (and/c valid-num-tapes/c)]
           )
