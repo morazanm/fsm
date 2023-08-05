@@ -8,7 +8,7 @@
   (provide listof-rules/c
            correct-members/c
            correct-dfa-rules/c
-           correct-members-ndpda/c
+           correct-ndpda-rules/c
            functional/c
            no-duplicates-dfa/c)
 
@@ -46,6 +46,11 @@
      )
     )
 
+  ;correct-dfa-rules/c: (listof state) (listof alpha) --> contract
+  ;predicate: (listof x) -> boolean
+  ;Purpose: Ensures that every element in the list is a valid dfa rule. It checks
+  ; each rule to see if the from-state and to-states are in the list of machine
+  ; states, and the consumed letter is in the machine sigma.
   (define (correct-dfa-rules/c states sigma)
     (make-flat-contract
      #:name 'correct-dfa-rules
@@ -58,23 +63,32 @@
                        (incorrect-dfa-rules states sigma rules)
                        "The following rules have errors, which make them invalid")))))
 
-  (define (correct-members-ndpda/c pred pred2 states sigma gamma)
+  ;correct-ndpda-rules/c: (listof state) (listof alpha) (listof symbol) --> contract
+  ;Purpose: Ensures that every element in the list is a valid pda rule. It checks
+  ; each rule to see that the from-state and to-state are in the list of machine
+  ; states, that the consumed letter is in the machine sigma, and that the
+  ; push and pop elements are either the EMP constant or lists of symbols from
+  ; the machine gamma.
+  (define (correct-ndpda-rules/c states sigma gamma)
     (make-flat-contract
-     #:name 'valid-list-of-rules
-     #:first-order (lambda (rules) (pred states sigma gamma rules))
+     #:name 'correct-ndpda-rules
+     #:first-order (lambda (rules) (correct-members-ndpda? states sigma gamma rules))
      #:projection (lambda (blame)
                     (lambda (rules)
-                      (current-blame-format format-rule-error)
+                      (current-blame-format format-incorrect-rules-error)
                       (raise-blame-error
                        blame
-                       (map (lambda (x) (format "~n~s" x)) (pred2 states sigma gamma rules))
-                       (format "The following rules contain symbols not contained in the states/sigma: ")
-                       )
-                      )
-                    )
-     )
-    )
+                       (incorrect-ndpda-rules states sigma gamma rules)
+                       "The following rules have errors, which makes them invalid")))))
 
+  ;functional/c: (listof state) (listof sigma) boolean -> contract
+  ;predicate: (listof x) --> boolean
+  ;Purpose: Ensures that the given list of rules forms an entire function over
+  ; the domain of machine states and sigma elements. For this to be true, either:
+  ; a) the add-dead flag must be true, in which case dead-state rules are added
+  ;    to make the rule-set a function regardless of the existing rules.
+  ; b) there must be a rule in the list of rules for every pair in the Cartesian
+  ;    product of state-sigma pairings.
   (define (functional/c states sigma add-dead)
     (make-flat-contract
      #:name 'functional-list-of-rules?

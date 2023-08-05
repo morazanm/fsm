@@ -11,13 +11,17 @@
            valid-rules?
            invalid-rules
            incorrect-dfa-rules
+           incorrect-ndpda-rules
            valid-dfa-rule-structure?
-           valid-ndpda-rule?
+           valid-ndpda-rule-structure?
            valid-tm-rule?
            valid-mttm-rule?
            valid-mttm-rule-structure?
            functional?
            missing-functional
+           make-invalid-rule
+           invalid-rule-rule
+           invalid-rule-errors
            check-duplicates-dfa
            correct-members-dfa?
            correct-members-tm?
@@ -80,7 +84,7 @@
   ;valid-ndpda-rule: something --> boolean
   ;purpose: just checks if the rule list is formatted the correct way
   ; for a ndpda, this is a list of two lists, one of 3 and one of 2
-  (define (valid-ndpda-rule? rule)
+  (define (valid-ndpda-rule-structure? rule)
     (and (list? rule)
          (= (length rule) 2)
          (= (length (car rule)) 3)
@@ -216,18 +220,59 @@
                                   (member (cadr x) sigma)
                                   (member (caddr x) states)))) rules))
 
-  ;incorrect-dfa-rules: (listof state) (listof alpha) (listof dfa-rule) --> (listof (listof state) (listof alpha))
+  (define-struct invalid-rule (rule errors) #:transparent)
+
+  ;incorrect-dfa-rules: (listof state) (listof alpha) (listof dfa-rule) --> (listof (list (dfa-rule (list boolean boolean boolean)))
   ;purpose: for all the rules in the list of dfa-rules, returns tuples of all
   ; states and alphabet letters that are invalid (meaning not in the states or sigma)
   (define (incorrect-dfa-rules states sigma rules)
     (define (rule-with-errors rule)
-      (list rule (list
-                  (true? (member (first rule) states))
-                  (true? (member (second rule) sigma))
-                  (true? (member (third rule) states)))
-            )
-      )
-    (filter (lambda (x) (ormap false? (second x))) (map rule-with-errors rules)))
+      (define from-state (first rule))
+      (define consumed (second rule))
+      (define to-state (third rule))
+      (define all-errors
+        (append (if (not (member from-state states))
+                    (list (format "The from state ~a is not in the list of machine states." from-state))
+                    '())
+                (if (not (member consumed sigma))
+                    (list (format "The consumed letter ~a is not in the machine sigma." consumed))
+                    '())
+                (if (not (member to-state states))
+                    (list (format "The to state ~a is not in the list of machine states." to-state))
+                    '())))
+      (if (empty? all-errors) '() (list (make-invalid-rule rule all-errors))))
+    (flatten (map rule-with-errors rules)))
+  
+
+  ;incorrect-ndpda-rules: (listof state) (listof alpha) (listof symbol) (listof pda-rule) --> (listof pda-rule-error)
+  ;purpose: for all of the rules in the list of pda-rules, returns pda-rule-errors for any
+  ; rule that has invalid states, alpha characters, or gamma elements.
+  (define (incorrect-ndpda-rules states sigma gamma rules)
+    (define (rule-with-errors rule)
+      (define rule-pop (first rule))
+      (define rule-push (second rule))
+      (define pop-errors
+        (append (if (not (member (first rule-pop) states))
+                    (list (format "The from state ~a is not in the list of machine states." (first rule-pop)))
+                    '())
+                (if (not (member (second rule-pop) (cons EMP sigma)))
+                    (list (format "The letter ~a is not in the machine sigma." (second rule-pop)))
+                    '())
+                (if (not (or (equal? (third rule-pop) EMP)
+                             (and (andmap (lambda (pop) (member pop gamma)) (third rule-pop)))))
+                    (list (format "The pop element ~a must be either EMP or a list of symbols from the machine gamma." (third rule-pop)))
+                    '())))
+      (define push-errors
+        (append (if (not (member (first rule-push) states))
+                    (list (format "The to state ~a is not in the list of machine states." (first rule-push)))
+                    '())
+                (if (not (or (equal? (second rule-push) EMP)
+                             (andmap (lambda (push) (member push gamma)) (second rule-push))))
+                    (list (format "The push element ~a must either be EMP or a list of symbols from the machine gamma." (second rule-push)))
+                    '())))
+      (define all-errors (append pop-errors push-errors))
+      (if (empty? all-errors) '() (list (make-invalid-rule rule all-errors))))
+    (flatten (map rule-with-errors rules)))
 
   ;incorrect-members-ndpda (listof states) sigma gamma (listof ndpda-rules) --> listof ndpdarules
   ;purpose: return all rules containing incorrect elements
@@ -281,11 +326,11 @@
     (check-equal? (valid-dfa-rule-structure? `((A) b b)) #t)
     
     ;valid-ndpda-rule? tests
-    (check-equal? (valid-ndpda-rule? `((A a (B)) (A (b)))) #t)
-    (check-equal? (valid-ndpda-rule? `((a a (a)) (1 (b)))) #t)
-    (check-equal? (valid-ndpda-rule? `((1 1 a) (A (b)))) #f)
-    (check-equal? (valid-ndpda-rule? `((1 1 (a)) (A ))) #f)
-    (check-equal? (valid-ndpda-rule? `((A a) (A b))) #f)
+    (check-equal? (valid-ndpda-rule-structure? `((A a (B)) (A (b)))) #t)
+    (check-equal? (valid-ndpda-rule-structure? `((a a (a)) (1 (b)))) #t)
+    (check-equal? (valid-ndpda-rule-structure? `((1 1 a) (A (b)))) #f)
+    (check-equal? (valid-ndpda-rule-structure? `((1 1 (a)) (A ))) #f)
+    (check-equal? (valid-ndpda-rule-structure? `((A a) (A b))) #f)
     
     ;valid-tm-rule? tests
     (check-equal? (valid-tm-rule? `((A a) (A b))) #t)
@@ -316,12 +361,6 @@
     (check-equal? (correct-members-dfa? '(A B) '(a b) `((A b B) (B a A))) #t)
     (check-equal? (correct-members-dfa? '(A B) '(a b) `()) #t)
     (check-equal? (correct-members-dfa? '(A B) '(a b) `((A b B) (B a A) (C b A))) #f)
-
-    ;incorrect-dfa-rules tests
-    (check-equal? (incorrect-dfa-rules '(A B) '(a b) '((A b A) (A c D) (E a F)))
-                  '(((A c D) (#t #f #f)) ((E a F) (#f #t #f))))
-    (check-equal? (incorrect-dfa-rules '(A B) '(a b) '((A b A) (B a A)))
-                  '())
     
     ;correct-members-ndpda? tests
     (check-equal? (correct-members-ndpda? '(A B)
@@ -412,6 +451,18 @@
     (check-equal? (incorrect-members-dfa '(A B) '(a b) `((A b B) (B a A))) '())
     (check-equal? (incorrect-members-dfa '(A B) '(a b) `()) '())
     (check-equal? (incorrect-members-dfa '(A B) '(a b) `((A b B) (B a A) (C b A))) '((C b A)))
+
+    ;incorrect-dfa-rules tests
+    (check-equal? (incorrect-dfa-rules '(A B) '(a b) `((A b B) (B a A))) '())
+    (check-equal? (incorrect-dfa-rules '(A B) '(a b) `((C d E) (A f G)))
+                  (list
+                   (make-invalid-rule '(C d E)
+                                    '("The from state C is not in the list of machine states."
+                                      "The consumed letter d is not in the machine sigma."
+                                      "The to state E is not in the list of machine states."))
+                   (make-invalid-rule '(A f G)
+                                    '("The consumed letter f is not in the machine sigma."
+                                      "The to state G is not in the list of machine states."))))
     
     ;incorrect-members-ndpda tests
     (check-equal? (incorrect-members-ndpda '(A B)
@@ -449,6 +500,24 @@
                                            `(((A b (c)) (B (d)))
                                              ((A b (c)) (B (a))))
                                            ) `(((A b (c)) (B (a)))))
+
+    ;incorrect-ndpda-rules tests
+    (check-equal? (incorrect-ndpda-rules '(A B)
+                                         '(a b)
+                                         '(c d)
+                                         `(((A b (c)) (B (d)))))
+                  '())
+    (check-equal? (incorrect-ndpda-rules '(A B)
+                                         '(a b)
+                                         '(c d)
+                                         `(((D e (f)) (G (,EMP)))))
+                  (list (make-invalid-rule `((D e (f)) (G (,EMP)))
+                                         (list
+                                          "The from state D is not in the list of machine states."
+                                          "The letter e is not in the machine sigma."
+                                          "The pop element (f) must be either EMP or a list of symbols from the machine gamma."
+                                          "The to state G is not in the list of machine states."
+                                          "The push element (ε) must either be EMP or a list of symbols from the machine gamma."))))
     
     ;incorrect-members-tm tests
     (check-equal? (incorrect-members-tm '(A B)
