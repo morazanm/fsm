@@ -53,7 +53,9 @@
                        (D b D))
                      'no-dead))
 
-;; UNION VISUALIZATION
+
+;; COMPLEMENT VISUZALIZATION
+
 
 (define E-SCENE (empty-scene 1250 600))
 
@@ -65,30 +67,24 @@
 ;; ndfa ndfa -> img
 ;; Purpose: To create a graph image for the union
 ;; Assume: The intersection of the states of the given machines is empty
-(define (create-graph-img M N)
-  (let* [(new-start (generate-symbol 'S (append (sm-states M) (sm-states N))))
-         (new-sigma (remove-duplicates
-                     (append (sm-sigma M) (sm-sigma N))))
-         (new-states (cons new-start
-                           (append (sm-states M) (sm-states N))))
-         (new-finals (append (sm-finals M) (sm-finals N)))
-         (new-rules (append (list (list new-start EMP (sm-start M))
-                                  (list new-start EMP (sm-start N)))
-                            (sm-rules M)
-                            (sm-rules N)))]
-    (overlay (above (sm-graph (make-ndfa new-states new-sigma new-start new-finals new-rules))
-                    (text "Union of the ndfas" 20 'black))
+(define (create-graph-img M)  
+  (let* [(new-finals (filter (λ (s) (not (member s (sm-finals M)))) (sm-states M)))]
+    (overlay (above (sm-graph (make-dfa (sm-states M)
+                                        (sm-sigma M)
+                                        (sm-start M)
+                                        new-finals (sm-rules M) 'no-dead))
+                    (text "Complement of the ndfa" 20 'black))
              E-SCENE)))
      
 ;; make-init-grph-img
 ;; ndfa ndfa -> img
 ;; Purpose: To draw the graph of the initial ndfa's
-(define (make-init-grph-img M N)
-  (overlay (above (text "First ndfa:" 20 'black)
-                  (sm-graph M)
-                  (text "Second ndfa:" 20 'black)
-                  (sm-graph N))
-           E-SCENE))
+(define (make-init-grph-img M)
+  (overlay
+   (above
+    (text "Starting ndfa:" 20 'black)
+    (sm-graph M))
+   E-SCENE))
 
 
 ;; process-key
@@ -113,24 +109,11 @@
 
 ;; run-function
 ;; run-function
-(define (run M N)
+(define (run M)
   (begin
     (big-bang
-        (viz-state (create-graph-img M N) (make-init-grph-img M N))
+        (viz-state (create-graph-img M) (make-init-grph-img M))
       [on-draw draw-world]
       [on-key process-key]
-      [name "FSM: union visualization"]))
+      [name "FSM: complement visualization"]))
   (void))
-
-
-
-
-
-
-
-
-
-
-
-
-

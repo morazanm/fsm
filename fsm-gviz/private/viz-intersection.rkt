@@ -53,7 +53,9 @@
                        (D b D))
                      'no-dead))
 
-;; UNION VISUALIZATION
+;; INTERSECTION VISUALIZATION
+
+
 
 (define E-SCENE (empty-scene 1250 600))
 
@@ -66,18 +68,16 @@
 ;; Purpose: To create a graph image for the union
 ;; Assume: The intersection of the states of the given machines is empty
 (define (create-graph-img M N)
-  (let* [(new-start (generate-symbol 'S (append (sm-states M) (sm-states N))))
-         (new-sigma (remove-duplicates
-                     (append (sm-sigma M) (sm-sigma N))))
-         (new-states (cons new-start
-                           (append (sm-states M) (sm-states N))))
-         (new-finals (append (sm-finals M) (sm-finals N)))
-         (new-rules (append (list (list new-start EMP (sm-start M))
-                                  (list new-start EMP (sm-start N)))
-                            (sm-rules M)
-                            (sm-rules N)))]
-    (overlay (above (sm-graph (make-ndfa new-states new-sigma new-start new-finals new-rules))
-                    (text "Union of the ndfas" 20 'black))
+  (define (complement-fsa ndfa)
+    (let* [(new-finals (filter (λ (s) (not (member s (sm-finals ndfa)))) (sm-states ndfa)))]
+      (make-dfa (sm-states ndfa)
+                (sm-sigma ndfa)
+                (sm-start ndfa)
+                new-finals (sm-rules ndfa) 'no-dead)))
+  (let* [(notM (sm-rename-states (list DEAD) (sm-complement (ndfa->dfa M))))
+         (notN (sm-rename-states (list DEAD) (sm-complement (ndfa->dfa N))))]
+    (overlay (above (sm-graph (complement-fsa (ndfa->dfa (sm-union notM notN))))
+                    (text "Intersection of the ndfas" 20 'black))
              E-SCENE)))
      
 ;; make-init-grph-img
@@ -119,18 +119,5 @@
         (viz-state (create-graph-img M N) (make-init-grph-img M N))
       [on-draw draw-world]
       [on-key process-key]
-      [name "FSM: union visualization"]))
+      [name "FSM: intersection visualization"]))
   (void))
-
-
-
-
-
-
-
-
-
-
-
-
-

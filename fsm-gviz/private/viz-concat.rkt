@@ -1,4 +1,5 @@
 #lang fsm
+
 (require "../../fsm-core/interface.rkt" "lib.rkt" "../../fsm-gui/graphViz/main.rkt")
 (require 2htdp/universe rackunit)
 (require (rename-in racket/gui/base
@@ -53,7 +54,9 @@
                        (D b D))
                      'no-dead))
 
-;; UNION VISUALIZATION
+;; CONCATENATION VISUALIZATION
+
+
 
 (define E-SCENE (empty-scene 1250 600))
 
@@ -66,18 +69,16 @@
 ;; Purpose: To create a graph image for the union
 ;; Assume: The intersection of the states of the given machines is empty
 (define (create-graph-img M N)
-  (let* [(new-start (generate-symbol 'S (append (sm-states M) (sm-states N))))
-         (new-sigma (remove-duplicates
-                     (append (sm-sigma M) (sm-sigma N))))
-         (new-states (cons new-start
-                           (append (sm-states M) (sm-states N))))
-         (new-finals (append (sm-finals M) (sm-finals N)))
-         (new-rules (append (list (list new-start EMP (sm-start M))
-                                  (list new-start EMP (sm-start N)))
-                            (sm-rules M)
-                            (sm-rules N)))]
+  (let* [(new-start (sm-start M))
+         (new-sigma (remove-duplicates (append (sm-sigma M) (sm-sigma N))))
+         (new-states (append (sm-states M) (sm-states N)))
+         (new-finals (sm-finals N))
+         (new-rules (append (sm-rules M)
+                            (sm-rules N)
+                            (map (λ (f) (list f EMP (sm-start N)))
+                                 (sm-finals M))))]
     (overlay (above (sm-graph (make-ndfa new-states new-sigma new-start new-finals new-rules))
-                    (text "Union of the ndfas" 20 'black))
+                    (text "Concatenation of the ndfas - L(M) ◦ L(N) " 20 'black))
              E-SCENE)))
      
 ;; make-init-grph-img
@@ -119,18 +120,6 @@
         (viz-state (create-graph-img M N) (make-init-grph-img M N))
       [on-draw draw-world]
       [on-key process-key]
-      [name "FSM: union visualization"]))
+      [name "FSM: concatenation visualization"]))
   (void))
-
-
-
-
-
-
-
-
-
-
-
-
 
