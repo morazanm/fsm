@@ -70,9 +70,9 @@
             result
             state
             #:atb (hash 'color (cond [(eq? state s) 'green]
-                                     [(eq? state f) 'red]
+                                     [(member state f) 'red]
                                      [else 'black])
-                        'shape (if (eq? state f)
+                        'shape (if (member state f)
                                    'doublecircle
                                    'circle)
                         'label (if (equal? state '())
@@ -100,7 +100,7 @@
                                                 'color (cond [(member rule (sm-rules M))
                                                               'violet]
                                                              [(eq? (second rule) EMP)
-                                                              'blue]
+                                                              'black]
                                                              [else
                                                               'pink]))))
          graph
@@ -117,11 +117,7 @@
   (let* [(new-start (generate-symbol 'S (append (sm-states M) (sm-states N))))
          (new-states (cons new-start
                            (append (sm-states M) (sm-states N))))
-         (new-finals (append (sm-finals M) (sm-finals N)))
-         (new-rules (append (list (list new-start EMP (sm-start M))
-                                  (list new-start EMP (sm-start N)))
-                            (sm-rules M)
-                            (sm-rules N)))]
+         (new-finals (append (sm-finals M) (sm-finals N)))]
     (overlay (above (graph->bitmap (make-edge-graph (make-node-graph
                                                      (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
                                                      new-states new-start new-finals) M N new-start))

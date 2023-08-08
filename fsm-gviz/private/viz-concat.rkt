@@ -74,9 +74,9 @@
             result
             state
             #:atb (hash 'color (cond [(eq? state s) 'green]
-                                     [(eq? state f) 'red]
+                                     [(member state f) 'red]
                                      [else 'black])
-                        'shape (if (eq? state f)
+                        'shape (if (member state f)
                                    'doublecircle
                                    'circle)
                         'label (if (equal? state '())
@@ -104,7 +104,7 @@
                                                 'color (cond [(member rule (sm-rules M))
                                                               'violet]
                                                              [(eq? (second rule) EMP)
-                                                              'blue]
+                                                              'black]
                                                              [else
                                                               'pink]))))
          graph
