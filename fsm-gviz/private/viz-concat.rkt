@@ -103,10 +103,12 @@
                                                 'style 'solid
                                                 'color (cond [(member rule (sm-rules M))
                                                               'violet]
-                                                             [(eq? (second rule) EMP)
+                                                             [(and (eq? (second rule) EMP)
+                                                                   (and (not (member rule (sm-rules M)))
+                                                                        (not (member rule (sm-rules N)))))
                                                               'black]
                                                              [else
-                                                              'pink]))))
+                                                              'orange]))))
          graph
          (append (sm-rules M) (sm-rules N) (map (λ (f) (list f EMP (sm-start N)))
                                                 (sm-finals M)))))
@@ -117,12 +119,16 @@
 ;; Assume: The intersection of the states of the given machines is empty
 (define (create-graph-img M N)
   (let* [(new-start (sm-start M))
+         (edge-added (map (λ (f) (list f EMP (sm-start N)))
+                          (sm-finals M)))
          (new-states (append (sm-states M) (sm-states N)))
          (new-finals (sm-finals N))]
     (overlay (above (graph->bitmap (make-edge-graph (make-node-graph
                                                      (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
                                                      new-states new-start new-finals) M N))
-                    (text "Concatenation of the ndfas - L(M) ◦ L(N) " 20 'black))
+                    (text "Concatenation of the ndfas \n" 20 'black)
+                    (text (format "New final state(s): ~a \n" new-finals) 20 'black)
+                    (text (format "Added edge: ~a \n" edge-added) 20 'black))
              E-SCENE)))
      
 ;; make-init-grph-img

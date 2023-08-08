@@ -63,16 +63,21 @@
 ;; pgi are processed graph images
 (struct viz-state (upgi pgi))
 
+
+;; when the input is an ndfa, gonna have to transform before the function below
+
 ;; create-graph-imgs
 ;; ndfa ndfa -> img
 ;; Purpose: To create a graph image for the union
 ;; Assume: The intersection of the states of the given machines is empty
 (define (create-graph-img M)  
   (let* [(new-finals (filter (λ (s) (not (member s (sm-finals M)))) (sm-states M)))]
-    (overlay (above (sm-graph (make-dfa (sm-states M)
-                                        (sm-sigma M)
-                                        (sm-start M)
-                                        new-finals (sm-rules M) 'no-dead))
+    (overlay (above (sm-graph (make-ndfa (sm-states M)
+                                         (sm-sigma M)
+                                         (sm-start M)
+                                         new-finals
+                                         (sm-rules M)
+                                         'no-dead))
                     (text "Complement of the ndfa" 20 'black))
              E-SCENE)))
      
@@ -82,8 +87,8 @@
 (define (make-init-grph-img M)
   (overlay
    (above
-    (text "Starting ndfa:" 20 'black)
-    (sm-graph M))
+    (sm-graph M)
+    (text "Starting ndfa:" 20 'black))
    E-SCENE))
 
 

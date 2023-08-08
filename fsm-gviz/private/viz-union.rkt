@@ -99,10 +99,12 @@
                                                 'style 'solid
                                                 'color (cond [(member rule (sm-rules M))
                                                               'violet]
-                                                             [(eq? (second rule) EMP)
+                                                             [(and (eq? (second rule) EMP)
+                                                                   (and (not (member rule (sm-rules M)))
+                                                                        (not (member rule (sm-rules N)))))
                                                               'black]
                                                              [else
-                                                              'pink]))))
+                                                              'orange]))))
          graph
          (append (list (list ns EMP (sm-start M))
                        (list ns EMP (sm-start N)))
@@ -117,11 +119,15 @@
   (let* [(new-start (generate-symbol 'S (append (sm-states M) (sm-states N))))
          (new-states (cons new-start
                            (append (sm-states M) (sm-states N))))
+         (added-edges (list (list new-start EMP (sm-start M))
+                            (list new-start EMP (sm-start N))))
          (new-finals (append (sm-finals M) (sm-finals N)))]
     (overlay (above (graph->bitmap (make-edge-graph (make-node-graph
                                                      (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
                                                      new-states new-start new-finals) M N new-start))
-                    (text "Union of the ndfas" 20 'black))
+                    (text "Union of the ndfas \n" 20 'black)
+                    (text (format "Added edges: ~a \n" added-edges) 20 'black)
+                    (text (format "New final states: ~a \n" new-finals) 20 'black))
              E-SCENE)))
      
 ;; make-init-grph-img
@@ -129,9 +135,10 @@
 ;; Purpose: To draw the graph of the initial ndfa's
 (define (make-init-grph-img M N)
   (overlay (above (text "First ndfa:" 20 'black)
-                  (sm-graph M)
+                  (sm-graph N)
+                  (text " " 20 'white)
                   (text "Second ndfa:" 20 'black)
-                  (sm-graph N))
+                  (sm-graph M))
            E-SCENE))
 
 
