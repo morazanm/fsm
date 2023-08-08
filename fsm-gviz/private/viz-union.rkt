@@ -61,14 +61,60 @@
 ;; pgi are processed graph images
 (struct viz-state (upgi pgi))
 
+;; make-node-graph
+;; graph los start final -> graph
+;; Purpose: To make a node graph
+(define (make-node-graph graph los s f)
+  (foldl (λ (state result)
+           (add-node
+            result
+            state
+            #:atb (hash 'color (cond [(eq? state s) 'green]
+                                     [(eq? state f) 'red]
+                                     [else 'black])
+                        'shape (if (eq? state f)
+                                   'doublecircle
+                                   'circle)
+                        'label (if (equal? state '())
+                                   'ds  
+                                   state)
+                        'fontcolor 'black
+                        'font "Sans")))
+         graph
+         los))
+
+;; make-edge-graph
+;; graph ndfa ndfa -> graph
+;; Purpose: To make an edge graph
+(define (make-edge-graph graph M N ns)
+  (foldl (λ (rule result) (add-edge result
+                                    (second rule)
+                                    (if (equal? (first rule) '())
+                                        'ds
+                                        (first rule))
+                                    (if (equal? (third rule) '())
+                                        'ds
+                                        (third rule))
+                                    #:atb (hash 'fontsize 20
+                                                'style 'solid
+                                                'color (cond [(member rule (sm-rules M))
+                                                              'violet]
+                                                             [(eq? (second rule) EMP)
+                                                              'blue]
+                                                             [else
+                                                              'pink]))))
+         graph
+         (append (list (list ns EMP (sm-start M))
+                       (list ns EMP (sm-start N)))
+                 (sm-rules M)
+                 (sm-rules N))))
+
 ;; create-graph-imgs
 ;; ndfa ndfa -> img
 ;; Purpose: To create a graph image for the union
 ;; Assume: The intersection of the states of the given machines is empty
 (define (create-graph-img M N)
   (let* [(new-start (generate-symbol 'S (append (sm-states M) (sm-states N))))
-         (new-sigma (remove-duplicates
-                     (append (sm-sigma M) (sm-sigma N))))
          (new-states (cons new-start
                            (append (sm-states M) (sm-states N))))
          (new-finals (append (sm-finals M) (sm-finals N)))
@@ -76,7 +122,9 @@
                                   (list new-start EMP (sm-start N)))
                             (sm-rules M)
                             (sm-rules N)))]
-    (overlay (above (sm-graph (make-ndfa new-states new-sigma new-start new-finals new-rules))
+    (overlay (above (graph->bitmap (make-edge-graph (make-node-graph
+                                                     (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                                     new-states new-start new-finals) M N new-start))
                     (text "Union of the ndfas" 20 'black))
              E-SCENE)))
      
