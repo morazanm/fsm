@@ -72,7 +72,6 @@
             result
             state
             #:atb (hash 'color (cond [(eq? state s) 'green]
-                                     [(member state f) 'red]
                                      [else 'black])
                         'shape (if (member state f)
                                    'doublecircle
