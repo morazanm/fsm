@@ -141,16 +141,16 @@
          (notN (graph->bitmap (create-edge-graph (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
                                                                     (sm-rename-states (list DEAD) (sm-complement (ndfa->dfa N))))
                                                  (sm-rename-states (list DEAD) (sm-complement (ndfa->dfa N))))))
-         (unionMN (graph->bitmap (create-edge-graph (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                                       (sm-union notM notN)))
-                                 (sm-union notM notN)))
-         (dfaMN (graph->bitmap (create-edge-graph (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                                     (ndfa->dfa (sm-union notM notN)))
-                                                  (ndfa->dfa (sm-union notM notN)))))
-         (final-graph (graph->bitmap (create-edge-graph (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                                           (complement-fsa (ndfa->dfa (sm-union notM notN))))
-                                                        (complement-fsa (ndfa->dfa (sm-union notM notN))))))]
-    (list dfaM dfaN cmplM cmplN notM notN unionMN dfaMN final-graph)))
+         #;(unionMN (graph->bitmap (create-edge-graph (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                                                         (sm-union notM notN)))
+                                   (sm-union notM notN)))
+         #;(dfaMN (graph->bitmap (create-edge-graph (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                                                       (ndfa->dfa (sm-union notM notN)))
+                                                    (ndfa->dfa (sm-union notM notN)))))
+         #;(final-graph (graph->bitmap (create-edge-graph (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                                                             (complement-fsa (ndfa->dfa (sm-union notM notN))))
+                                                          (complement-fsa (ndfa->dfa (sm-union notM notN))))))]
+    (list dfaM dfaN cmplM cmplN notM notN #;unionMN #;dfaMN #;final-graph)))
     
                     
      
@@ -171,11 +171,12 @@
 ;;          backwards, or to the end.
 (define (process-key a-vs a-key)
   (cond [(key=? "right" a-key)
-         (viz-state (viz-state-pgi a-vs)
-                    (viz-state-upgi a-vs))]
+         (viz-state (first (viz-state-upgi a-vs))
+                    (rest (viz-state-upgi a-vs)))]
         [(key=? "left" a-key)
-         (viz-state (viz-state-pgi a-vs)
-                    (viz-state-upgi a-vs))]           
+         (viz-state (rest (viz-state-pgi a-vs))
+                    (cons (first (viz-state-pgi a-vs)
+                                 (viz-state-upgi a-vs))))]           
         [else a-vs]))
      
 
