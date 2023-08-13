@@ -71,7 +71,7 @@
            (add-node
             result
             state
-            #:atb (hash 'color (cond [(eq? state s) 'green]
+            #:atb (hash 'color (cond [(eq? state s) 'darkgreen]
                                      [else 'black])
                         'shape (if (member state f)
                                    'doublecircle
@@ -107,6 +107,26 @@
                        (map (λ (f) (list f EMP new-start))
                             (sm-finals M))))))
 
+;; make-init-edge-graph
+;; graph ndfa ndfa -> graph
+;; Purpose: To make an edge graph
+(define (make-init-edge-graph graph M new-start)
+  (foldl (λ (rule result) (add-edge result
+                                    (second rule)
+                                    (if (equal? (first rule) '())
+                                        'ds
+                                        (first rule))
+                                    (if (equal? (third rule) '())
+                                        'ds
+                                        (third rule))
+                                    #:atb (hash 'fontsize 20
+                                                'style 'solid
+                                                'color (cond [(member rule (sm-rules M))
+                                                              'violet]
+                                                             [else 'black]))))
+         graph
+         (sm-rules M)))
+
 ;; create-graph-imgs
 ;; ndfa ndfa -> img
 ;; Purpose: To create a graph image for the union
@@ -125,7 +145,8 @@
                                                      new-finals)
                                                     M new-start))
                     (text "Kleenestar of the ndfa \n" 20 'black)
-                    (text (format "Added edges: ~a" added-edges) 20 'black))
+                    (text (format "New starting state: ~a \n" new-start) 20 'black)
+                    (text (format "Added edges: ~a \n" added-edges) 20 'black))
              E-SCENE)))
      
 ;; make-init-grph-img
@@ -134,8 +155,13 @@
 (define (make-init-grph-img M)
   (overlay
    (above
-    (text "Starting ndfa:" 20 'black)
-    (sm-graph M))
+    (graph->bitmap (make-init-edge-graph (make-node-graph
+                                          (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                          (sm-states M)
+                                          (sm-start M)
+                                          (sm-finals M))
+                                         M (sm-start M)))
+    (text "Starting ndfa \n" 20 'black))
    E-SCENE))
 
 

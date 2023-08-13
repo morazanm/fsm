@@ -71,7 +71,12 @@
            (add-node
             result
             state
-            #:atb (hash 'color (cond [(eq? state s) 'darkgreen]
+            #:atb (hash 'color (cond [(and (eq? state s)
+                                           (member state f))
+                                      'violet]
+                                     [(eq? state s) 'darkgreen]
+                                     [(member state f)
+                                      'violet] 
                                      [else 'black])
                         'shape (if (member state f)
                                    'doublecircle
@@ -98,11 +103,7 @@
                                           'ds
                                           (third rule))
                                       #:atb (hash 'fontsize 20
-                                                  'style 'solid
-                                                  'color (cond [(and (not (member rule (sm-rules (sm-complement M))))
-                                                                     (member (third rule) new-finals))
-                                                                'violet]
-                                                               [else 'black]))))
+                                                  'style 'solid )))
            graph
            (sm-rules M))))
 
@@ -118,7 +119,8 @@
                                                                      new-finals)
                                                     M))
                     (text "Complement of the ndfa" 20 'black)
-                    (text (format "New final states: ~a" new-finals) 20 'black))
+                    (text (format "New final states: ~a" new-finals) 20 'black)
+                    (text (format "Starting state: ~a" (sm-start M)) 20 'black))
              E-SCENE)))
 
      

@@ -69,7 +69,7 @@
            (add-node
             result
             state
-            #:atb (hash 'color (cond [(eq? state s) 'green]
+            #:atb (hash 'color (cond [(eq? state s) 'darkgreen]
                                      [else 'black])
                         'shape (if (member state f)
                                    'doublecircle
@@ -110,6 +110,46 @@
                  (sm-rules M)
                  (sm-rules N))))
 
+;; make-init-edge-graph
+;; graph ndfa ndfa -> graph
+;; Purpose: To make an edge graph
+(define (make-first-edge-graph graph M new-start)
+  (foldl (λ (rule result) (add-edge result
+                                    (second rule)
+                                    (if (equal? (first rule) '())
+                                        'ds
+                                        (first rule))
+                                    (if (equal? (third rule) '())
+                                        'ds
+                                        (third rule))
+                                    #:atb (hash 'fontsize 20
+                                                'style 'solid
+                                                'color (cond [(member rule (sm-rules M))
+                                                              'orange]
+                                                             [else 'black]))))
+         graph
+         (sm-rules M)))
+
+;; make-init-edge-graph
+;; graph ndfa ndfa -> graph
+;; Purpose: To make an edge graph
+(define (make-second-edge-graph graph M new-start)
+  (foldl (λ (rule result) (add-edge result
+                                    (second rule)
+                                    (if (equal? (first rule) '())
+                                        'ds
+                                        (first rule))
+                                    (if (equal? (third rule) '())
+                                        'ds
+                                        (third rule))
+                                    #:atb (hash 'fontsize 20
+                                                'style 'solid
+                                                'color (cond [(member rule (sm-rules M))
+                                                              'violet]
+                                                             [else 'black]))))
+         graph
+         (sm-rules M)))
+
 ;; create-graph-imgs
 ;; ndfa ndfa -> img
 ;; Purpose: To create a graph image for the union
@@ -126,7 +166,8 @@
                                                      new-states new-start new-finals) M N new-start))
                     (text "Union of the ndfas \n" 20 'black)
                     (text (format "Added edges: ~a \n" added-edges) 20 'black)
-                    (text (format "New final states: ~a \n" new-finals) 20 'black))
+                    (text (format "New final states: ~a \n" new-finals) 20 'black)
+                    (text (format "New starting state: ~a \n" new-start) 20 'black))
              E-SCENE)))
      
 ;; make-init-grph-img
@@ -134,10 +175,20 @@
 ;; Purpose: To draw the graph of the initial ndfa's
 (define (make-init-grph-img M N)
   (overlay (above (text "First ndfa:" 20 'black)
-                  (sm-graph N)
+                  (graph->bitmap (make-first-edge-graph (make-node-graph
+                                                         (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                                         (sm-states N)
+                                                         (sm-start N)
+                                                         (sm-finals N))
+                                                        N (sm-start N)))
                   (text " " 20 'white)
                   (text "Second ndfa:" 20 'black)
-                  (sm-graph M))
+                  (graph->bitmap (make-second-edge-graph (make-node-graph
+                                                          (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                                          (sm-states M)
+                                                          (sm-start M)
+                                                          (sm-finals M))
+                                                         M (sm-start M))))
            E-SCENE))
 
 
