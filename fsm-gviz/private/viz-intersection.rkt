@@ -200,16 +200,16 @@
                                   (sm-rename-states (list DEAD) (sm-complement (ndfa->dfa N)))))
          (notMimg (graph->bitmap notM))
          (notNimg (graph->bitmap notN))
-         (unionMN (graph->bitmap (create-edge-graph (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                                       (create-union-graph notM notN)))
-                                 (create-union-graph notM notN)))
+         #;(unionMN (graph->bitmap (create-edge-graph (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                                                         (create-union-graph notM notN)))
+                                   (create-union-graph notM notN)))
          #;(dfaMN (graph->bitmap (create-edge-graph (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
                                                                        (ndfa->dfa (sm-union notM notN)))
                                                     (ndfa->dfa (sm-union notM notN)))))
          #;(final-graph (graph->bitmap (create-edge-graph (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
                                                                              (complement-fsa (ndfa->dfa (sm-union notM notN))))
                                                           (complement-fsa (ndfa->dfa (sm-union notM notN))))))]
-    (list dfaM dfaN cmplM cmplN notMimg notNimg unionMN #;dfaMN #;final-graph)))
+    (list dfaM dfaN cmplM cmplN notMimg notNimg #;unionMN #;dfaMN #;final-graph)))
     
                     
      
@@ -248,7 +248,9 @@
 ;; viz-state -> img
 ;; Purpose: To render the given viz-state
 (define (draw-world a-vs)
-  (first (viz-state-pgi a-vs)))
+  (overlay
+   (first (viz-state-pgi a-vs))
+   E-SCENE))
 
 ;; run-function
 ;; run-function
