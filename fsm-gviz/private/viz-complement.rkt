@@ -176,3 +176,14 @@
       [on-key process-key]
       [name "FSM: complement visualization"]))
   (void))
+
+(define M (make-ndfa '(Z H B C D)
+                     '(a b)
+                     'Z
+                     '(C D)
+                     `((Z a H)
+                       (Z a B)
+                       (H a D)
+                       (B a C))))
+
+(run M)
