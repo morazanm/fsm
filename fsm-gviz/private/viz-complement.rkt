@@ -93,7 +93,7 @@
 ;; graph ndfa ndfa -> graph
 ;; Purpose: To make an edge graph
 (define (make-edge-graph graph M)
-  (let* [(new-finals (filter (λ (s) (not (member s (sm-finals M)))) (sm-states M)))]
+  (let* [(new-finals (filter (λ (s) (not (member s (sm-finals (ndfa->dfa M))))) (sm-states (ndfa->dfa M))))]
     (foldl (λ (rule result) (add-edge result
                                       (second rule)
                                       (if (equal? (first rule) '())
@@ -105,17 +105,28 @@
                                       #:atb (hash 'fontsize 20
                                                   'style 'solid )))
            graph
-           (sm-rules M))))
+           (sm-rules (ndfa->dfa M)))))
 
 
 ;; create-graph-img
 ;; ndfa -> img
 ;; Purpose: To create a graph image for the union
-(define (create-graph-img M)  
+(define (create-graph-img M)
+  (eq? (sm-type M) 'dfa)
   (let* [(new-finals (filter (λ (s) (not (member s (sm-finals M)))) (sm-states M)))]
     (overlay (above (graph->bitmap (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
                                                                      (sm-states M) 
                                                                      (sm-start M)
+                                                                     new-finals)
+                                                    M))
+                    (text "Complement of the ndfa" 20 'black)
+                    (text (format "New final states: ~a" new-finals) 20 'black)
+                    (text (format "Starting state: ~a" (sm-start M)) 20 'black))
+             E-SCENE))
+  (let* [(new-finals (filter (λ (s) (not (member s (sm-finals (ndfa->dfa M))))) (sm-states (ndfa->dfa M))))]
+    (overlay (above (graph->bitmap (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                                                     (sm-states (ndfa->dfa M)) 
+                                                                     (sm-start (ndfa->dfa M))
                                                                      new-finals)
                                                     M))
                     (text "Complement of the ndfa" 20 'black)
