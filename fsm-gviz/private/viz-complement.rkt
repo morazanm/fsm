@@ -34,6 +34,17 @@
                               (B a C)
                               (C b F)
                               (F b F))))
+
+(define M (make-ndfa '(Z H B C D)
+                     '(a b)
+                     'Z
+                     '(C D)
+                     `((Z a H)
+                       (Z a B)
+                       (H a D)
+                       (B a C))))
+
+
 ;; L = aab*
 (define aab* (make-ndfa '(W X Y)
                         '(a b)
