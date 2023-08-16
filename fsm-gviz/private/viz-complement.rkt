@@ -110,7 +110,7 @@
 
 ;; create-graph-img
 ;; ndfa -> img
-;; Purpose: To create a graph image for the union
+;; Purpose: To create a graph image for complement
 (define (create-graph-img M)
   (eq? (sm-type M) 'dfa)
   (let* [(new-finals (filter (λ (s) (not (member s (sm-finals M)))) (sm-states M)))]
@@ -134,6 +134,18 @@
                     (text (format "Starting state: ~a" (sm-start M)) 20 'black))
              E-SCENE)))
 
+
+;; create-graph-imgs
+;; ndfa -> (listof img)
+;; Purpose: To create a list of graph images for complement
+(define (create-graph-imgs M)
+  (if (eq? (sm-type M) 'dfa)
+      (list (overlay (above (sm-graph (ndfa->dfa M))
+                            (text "Converting the ndfa to dfa" 20 'black))
+                     E-SCENE)
+            (create-graph-img M))
+      (list (create-graph-img M))))
+
      
 ;; make-init-grph-img
 ;; ndfa ndfa -> img
@@ -152,11 +164,17 @@
 ;;          backwards, or to the end.
 (define (process-key a-vs a-key)
   (cond [(key=? "right" a-key)
-         (viz-state (viz-state-pgi a-vs)
-                    (viz-state-upgi a-vs))]
+         (if (empty? (viz-state-upgi a-vs))
+             a-vs
+             (viz-state (rest (viz-state-upgi a-vs))
+                        (cons (first (viz-state-upgi a-vs))
+                              (viz-state-pgi a-vs))))]
         [(key=? "left" a-key)
-         (viz-state (viz-state-pgi a-vs)
-                    (viz-state-upgi a-vs))]           
+         (if (= (length (viz-state-pgi a-vs)) 1)
+             a-vs
+             (viz-state (cons (first (viz-state-pgi a-vs))
+                              (viz-state-upgi a-vs))
+                        (rest (viz-state-pgi a-vs))))]           
         [else a-vs]))
      
 
@@ -164,26 +182,49 @@
 ;; viz-state -> img
 ;; Purpose: To render the given viz-state
 (define (draw-world a-vs)
-  (viz-state-pgi a-vs))
+  (first (viz-state-pgi a-vs)))
 
 ;; run-function
 ;; run-function
 (define (run M)
   (begin
     (big-bang
-        (viz-state (create-graph-img M) (make-init-grph-img M))
+        (viz-state (create-graph-imgs M)(list (make-init-grph-img M)))
       [on-draw draw-world]
       [on-key process-key]
       [name "FSM: complement visualization"]))
   (void))
 
-(define M (make-ndfa '(Z H B C D)
-                     '(a b)
-                     'Z
-                     '(C D)
-                     `((Z a H)
-                       (Z a B)
-                       (H a D)
-                       (B a C))))
+(define no-one-el (make-dfa '(S A B C D E F G)
+                            '(a b c)
+                            'S
+                            '(D E F)
+                            '((S a A)
+                              (S b B)
+                              (S c C)
+                              (A a A)
+                              (A b D)
+                              (A c F)
+                              (B a D)
+                              (B b B)
+                              (B c E)
+                              (C a F)
+                              (C b E)
+                              (C c C)
+                              (D a D)
+                              (D b D)
+                              (D c G)
+                              (E a G)
+                              (E b E)
+                              (E c E)
+                              (F a F)
+                              (F b G)
+                              (F c F)
+                              (G a G)
+                              (G b G)
+                              (G c G))
+                            'no-dead))
+
+
 
 
