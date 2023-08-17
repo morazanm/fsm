@@ -166,8 +166,8 @@
                                                      (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
                                                      new-states new-start new-finals) M N))
                     (text "Concatenation of the ndfas \n" 20 'black)
-                    (text (format "New starting state: ~a \n" new-start) 20 'black)
-                    (text (format "New final state(s): ~a \n" new-finals) 20 'black)
+                    (text (format "Generated starting state: ~a \n" new-start) 20 'black)
+                    (text (format "Generated final state(s): ~a \n" new-finals) 20 'black)
                     (text (format "Added edge: ~a \n" edge-added) 20 'black))
              E-SCENE)))
      

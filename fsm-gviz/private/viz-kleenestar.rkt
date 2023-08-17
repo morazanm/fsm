@@ -145,7 +145,7 @@
                                                      new-finals)
                                                     M new-start))
                     (text "Kleenestar of the ndfa \n" 20 'black)
-                    (text (format "New starting state: ~a \n" new-start) 20 'black)
+                    (text (format "Generated starting state: ~a \n" new-start) 20 'black)
                     (text (format "Added edges: ~a \n" added-edges) 20 'black))
              E-SCENE)))
      

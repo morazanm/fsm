@@ -166,8 +166,8 @@
                                                      new-states new-start new-finals) M N new-start))
                     (text "Union of the ndfas \n" 20 'black)
                     (text (format "Added edges: ~a \n" added-edges) 20 'black)
-                    (text (format "New final states: ~a \n" new-finals) 20 'black)
-                    (text (format "New starting state: ~a \n" new-start) 20 'black))
+                    (text (format "Generated final states: ~a \n" new-finals) 20 'black)
+                    (text (format "Generated starting state: ~a \n" new-start) 20 'black))
              E-SCENE)))
      
 ;; make-init-grph-img
