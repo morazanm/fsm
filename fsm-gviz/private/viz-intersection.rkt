@@ -272,9 +272,13 @@
 ;; viz-state -> img
 ;; Purpose: To render the given viz-state
 (define (draw-world a-vs)
-  (overlay
-   (first (viz-state-pgi a-vs))
-   E-SCENE))
+  (let [(width (image-width (first (viz-state-pgi a-vs))))
+        (height (image-height (first (viz-state-pgi a-vs))))]
+    (if (or (> width (image-width E-SCENE))
+            (> height (image-height E-SCENE)))
+        (overlay (resize-image (first (viz-state-pgi a-vs)) (image-width E-SCENE) (image-height E-SCENE))
+                 E-SCENE)
+        (overlay (first (viz-state-pgi a-vs)) E-SCENE))))
 
 ;; run-function
 ;; run-function
