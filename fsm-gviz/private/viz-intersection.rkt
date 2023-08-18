@@ -241,9 +241,9 @@
 ;; ndfa ndfa -> img
 ;; Purpose: To draw the graph of the initial ndfa's
 (define (make-init-grph-img M N)
-  (overlay (above (text "First ndfa:" 20 'black)
+  (overlay (above (text (format " First ndfa: M") 20 'black)
                   (sm-graph M)
-                  (text "Second ndfa:" 20 'black)
+                  (text (format "\n\n\n\nSecond ndfa: N") 20 'black)
                   (sm-graph N))
            E-SCENE))
 
