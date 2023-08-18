@@ -155,7 +155,9 @@
              (new-finals (map superstate->state (extract-final-ss new-states (fsa-getfinals m))))
              (new-rules (convert2rules esr)))
         (make-unchecked-dfa (map superstate->state new-states) (fsa-getalphabet m) new-start new-finals new-rules 'no-dead)))
-    (ndfsm->dfsm m))
+    (if (eq? (m 'whatami) 'dfa)
+        m
+        (ndfsm->dfsm m)))
   
   ; (listof superstate) (listof superstate) alphabet (listof rule) (listof ssr) --> (listof ssr) 
   (define (compute-superstate-rules visited tovisit sigma rules res)
@@ -190,7 +192,7 @@
   ; (listof state) fsa --> fsa
   (define (rename-states-fsa los m)
     (let* ((mstates (fsa-getstates m))
-           (sts (if (member DEAD mstates) mstates (cons DEAD mstates)))
+           (sts mstates #;(if (member DEAD mstates) mstates (cons DEAD mstates)))
            (rename-table (map (lambda (s) (list s (generate-symbol s los)))
                               sts))
            (new-states (map (lambda (s) (cadr (assoc s rename-table))) sts))

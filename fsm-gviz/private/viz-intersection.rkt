@@ -182,27 +182,39 @@
                 (sm-sigma ndfa)
                 (sm-start ndfa)
                 new-finals (sm-rules ndfa) 'no-dead)))
-  (let* [(dfaM (graph->bitmap (create-edge-graph (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                                    (ndfa->dfa M)) (ndfa->dfa M))))
-         (dfaN (graph->bitmap (create-edge-graph (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                                    (ndfa->dfa N)) (ndfa->dfa N))))
-         (cmplM (graph->bitmap (create-edge-graph (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                                     (sm-complement (ndfa->dfa M)))
-                                                  (sm-complement (ndfa->dfa M)))))
-         (cmplN (graph->bitmap (create-edge-graph (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                                     (sm-complement (ndfa->dfa N)))
-                                                  (sm-complement (ndfa->dfa N)))))
-         (notM (create-edge-graph (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                     (sm-rename-states (list DEAD) (sm-complement (ndfa->dfa M))))
-                                  (sm-rename-states (list DEAD) (sm-complement (ndfa->dfa M)))))
+  (let* [(dfaM (graph->bitmap (create-edge-graph
+                               (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                                  (ndfa->dfa M))
+                               (ndfa->dfa M))))
+         (dfaN (graph->bitmap (create-edge-graph
+                               (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                                  (ndfa->dfa N))
+                               (ndfa->dfa N))))
+         (cmplM (graph->bitmap (create-edge-graph
+                                (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                                   (sm-complement (ndfa->dfa M)))
+                                (sm-complement (ndfa->dfa M)))))
+         (cmplN (graph->bitmap (create-edge-graph
+                                (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                                   (sm-complement (ndfa->dfa N)))
+                                (sm-complement (ndfa->dfa N)))))
+         (nM (sm-rename-states (list DEAD) (sm-complement (ndfa->dfa M))))
+         (nN (sm-rename-states (list DEAD) (sm-complement (ndfa->dfa N))))
+         (notM (create-edge-graph
+                (create-node-graph
+                 (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                 nM)
+                nM))
          (notN (create-edge-graph (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                     (sm-rename-states (list DEAD) (sm-complement (ndfa->dfa N))))
-                                  (sm-rename-states (list DEAD) (sm-complement (ndfa->dfa N)))))
+                                                     nN)
+                                  nN))
          (notMimg (graph->bitmap notM))
          (notNimg (graph->bitmap notN))
-         (unionMN (graph->bitmap (create-edge-graph (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                                         (sm-union notM notN)))
-                                   (sm-union notM notN)))
+         (notM-U-notN (sm-union nM nN))
+         (unionMN (graph->bitmap
+                   (create-edge-graph (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                                         notM-U-notN)
+                                      notM-U-notN)))
          #;(dfaMN (graph->bitmap (create-edge-graph (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
                                                                        (ndfa->dfa (sm-union notM notN)))
                                                     (ndfa->dfa (sm-union notM notN)))))
@@ -257,7 +269,9 @@
 (define (run M N)
   (begin
     (big-bang
-        (viz-state (create-graph-imgs M N) (list (make-init-grph-img M N)))
+        (let* [(imgs (create-graph-imgs M N))
+               (d (displayln imgs))]
+          (viz-state imgs (list (make-init-grph-img M N))))
       [on-draw draw-world]
       [on-key process-key]
       [name "FSM: intersection visualization"]))
