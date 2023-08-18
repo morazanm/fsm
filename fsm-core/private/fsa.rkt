@@ -206,7 +206,7 @@
   ; (listof state) fsa --> fsa
   (define (rename-states-fsa los m)
     (let* ((mstates (fsa-getstates m))
-           (sts (if (member DEAD mstates) mstates (cons DEAD mstates)))
+           (sts mstates #;(if (member DEAD mstates) mstates (cons DEAD mstates)))
            (rename-table (map (lambda (s) (list s (generate-symbol s los)))
                               sts))
            (new-states (map (lambda (s) (cadr (assoc s rename-table))) sts))
