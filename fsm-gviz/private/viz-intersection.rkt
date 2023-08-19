@@ -53,6 +53,14 @@
                        (D b D))
                      'no-dead))
 
+;; L = ab*
+(define ab*-deter (make-dfa '(S A)
+                            '(a b)
+                            'S
+                            '(A)
+                            '((S a A)
+                              (A b A))))
+
 ;; INTERSECTION VISUALIZATION
 
 ;; make-node-union
@@ -171,26 +179,30 @@
                 (sm-sigma ndfa)
                 (sm-start ndfa)
                 new-finals (sm-rules ndfa) 'no-dead)))
-  (let* [(dfaM (above (graph->bitmap (create-edge-graph
+  (let* [(Mdfa (ndfa->dfa M))
+         (dfaM (above (graph->bitmap (create-edge-graph
                                       (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                         (ndfa->dfa M))
-                                      (ndfa->dfa M)))
-                      (text "First ndfa turned into dfa" 20 'black)))
+                                                         Mdfa)
+                                      Mdfa))
+                      (text "MD: M converted to a dfa" 20 'black)))
+         (Ndfa (ndfa->dfa N))
          (dfaN (above (graph->bitmap (create-edge-graph
                                       (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                         (ndfa->dfa N))
-                                      (ndfa->dfa N)))
-                      (text "Second ndfa turned into dfa" 20 'black)))
+                                                         Ndfa)
+                                      Ndfa))
+                      (text "ND: N converted to a dfa" 20 'black)))
+         (Mcomplement (sm-complement (ndfa->dfa M)))
          (cmplM (above (graph->bitmap (create-edge-graph
                                        (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                          (sm-complement (ndfa->dfa M)))
-                                       (sm-complement (ndfa->dfa M))))
-                       (text "Complement of the dfa M" 20 'black)))
+                                                          Mcomplement)
+                                       Mcomplement))
+                       (text "CMD: Complement of MD" 20 'black)))
+         (Ncomplement (sm-complement (ndfa->dfa N)))
          (cmplN (above (graph->bitmap (create-edge-graph
                                        (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                          (sm-complement (ndfa->dfa N)))
-                                       (sm-complement (ndfa->dfa N))))
-                       (text "Complement of the dfa N" 20 'black)))
+                                                          Ncomplement)
+                                       Ncomplement))
+                       (text "CND: Complement of ND" 20 'black)))
          (nM (sm-rename-states (list DEAD) (sm-complement (ndfa->dfa M))))
          (nN (sm-rename-states (list DEAD) (sm-complement (ndfa->dfa N))))
          (notM (create-edge-graph
@@ -201,8 +213,8 @@
          (notN (create-edge-graph (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
                                                      nN)
                                   nN))
-         (notMimg (above (graph->bitmap notM) (text "Renaming states of M" 20 'black)))
-         (notNimg (above (graph->bitmap notN) (text "Renaming states of N" 20 'black)))
+         (notMimg (above (graph->bitmap notM) (text "CMD States Renamed" 20 'black)))
+         (notNimg (above (graph->bitmap notN) (text "CND States Renamed" 20 'black)))
          (notM-U-notN (sm-union nM nN))
          (ndfa-un (ndfa->dfa notM-U-notN))
          (comp-un (complement-fsa ndfa-un))
@@ -210,15 +222,15 @@
                           (create-edge-graph (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
                                                                 notM-U-notN)
                                              notM-U-notN))
-                         (text "Union of notM and notN" 20 'black)))
+                         (text "U-CMD-CND: Union of CMD and CND" 20 'black)))
          (dfaMN (above (graph->bitmap (create-edge-graph (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
                                                                             ndfa-un)
                                                          ndfa-un))
-                       (text "Dfa of the union of M and N" 20 'black)))
+                       (text "DU-CMD-CND: U-CMD-CND converted to a dfa" 20 'black)))
          (final-graph (above (graph->bitmap (create-edge-graph (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
                                                                                   comp-un)
                                                                comp-un))
-                             (text "Intersection of M and M" 20 'black)))]
+                             (text "Intersection of M and N: Complement of DU-CMD-CND" 20 'black)))]
     (cond [(and (eq? (sm-type M) 'dfa)
                 (eq? (sm-type N) 'ndfa))
            (list dfaN cmplM cmplN notMimg notNimg unionMN dfaMN final-graph)]

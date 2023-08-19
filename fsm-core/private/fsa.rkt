@@ -143,21 +143,147 @@
   
   
   ; fsm --> fsm
-  (define (ndfa->dfa m)
-    (define (ndfsm->dfsm m)
-      (let* ((esr (compute-superstate-rules null 
-                                            (list (sort-symbols (empties (fsa-getstart m) (fsa-getrules m)))) 
-                                            (fsa-getalphabet m) 
-                                            (fsa-getrules m) 
-                                            null))
-             (new-states (extract-sstates esr))
-             (new-start (superstate->state (sort-symbols (empties (fsa-getstart m) (fsa-getrules m)))))
-             (new-finals (map superstate->state (extract-final-ss new-states (fsa-getfinals m))))
-             (new-rules (convert2rules esr)))
-        (make-unchecked-dfa (map superstate->state new-states) (fsa-getalphabet m) new-start new-finals new-rules 'no-dead)))
-    (if (eq? (m 'whatami) 'dfa)
-        m
-        (ndfsm->dfsm m)))
+  #;(define (ndfa->dfa m)
+      (define (ndfsm->dfsm m)
+        (let* ((esr (compute-superstate-rules null 
+                                              (list (sort-symbols (empties (fsa-getstart m) (fsa-getrules m)))) 
+                                              (fsa-getalphabet m) 
+                                              (fsa-getrules m) 
+                                              null))
+               (new-states (extract-sstates esr))
+               (new-start (superstate->state (sort-symbols (empties (fsa-getstart m) (fsa-getrules m)))))
+               (new-finals (map superstate->state (extract-final-ss new-states (fsa-getfinals m))))
+               (new-rules (convert2rules esr)))
+          (make-unchecked-dfa (map superstate->state new-states) (fsa-getalphabet m) new-start new-finals new-rules 'no-dead)))
+      (if (eq? (m 'whatami) 'dfa)
+          m
+          (ndfsm->dfsm m)))
+
+  ;; ndfa --> dfa
+  ;; Convert the given ndfa to an equivalent dfa
+  (define (ndfa->dfa M)
+
+    ;; state emps-tbl --> ss
+    ;; Purpose: Extract the empties of the given state
+    ;; Assume: Given state is in the given table
+    (define (extract-empties st empties)
+      (second (first (filter (λ (e) (eq? (first e) st)) empties))))
+
+    ;; (listof ss) alphabet emps-tbl (listof ndfa-rule) (listof ss) --> (listof ss-dfa-rule)
+    ;; Purpose: Compute the dfa rules
+    ;; Accumulator Invariants
+    ;;   to-search-ssts = the super states that must still be explored
+    ;;             ssts = the super states explored
+    (define (compute-ss-dfa-rules to-search-ssts sigma empties rules ssts)
+      ;; state symbol (listof ndfa-rule) emps-tbl --> ss
+      ;; Purpose: Find the reachable super state from the given state and the given alphabet element
+      (define (find-reachables-from-st-on-a st a rules empties)
+        (let* [(rls (filter (λ (r) (and (eq? (first r) st) (eq? (second r) a)))
+                            rules))
+               (to-states (map third rls))]
+          (remove-duplicates (append-map (λ (st) (extract-empties st empties)) to-states))))
+
+      ;; state alphabet (listof ndfa-rule) emps-tbl --> (listof ss)
+      ;; Purpose: Find the reachable super state from the given state for each element of the given alphabet
+      (define (find-reachables-from-st st sigma rules empties)
+        (map (λ (a) (find-reachables-from-st-on-a st a rules empties))
+             sigma))
+
+      ;; ss alphabet (listof ndfa-rule) emps-tbl --> (listof (listof ss))
+      ;; Purpose: Compute reachable super states from given super state
+      (define (find-reachables ss sigma rules empties)
+        (map (λ (st) (find-reachables-from-st st sigma rules empties)) ss))
+
+      ;; natnum (listof (listof ss)) --> (listof ss)
+      ;; Purpose: Return ss of ith (listof state) in each given list element
+      (define (get-reachable i reachables)
+        (remove-duplicates (append-map (λ (reached) (list-ref reached i))
+                                       reachables)))
+      (if (empty? to-search-ssts)
+          '()
+          (let* [(curr-ss (first to-search-ssts))
+                 (reachables (find-reachables curr-ss sigma rules empties))
+                 (to-super-states (build-list (length sigma)
+                                              (λ (i) (get-reachable i reachables))))
+                 (new-rules (map (λ (sst a) (list curr-ss a sst))
+                                 to-super-states
+                                 sigma))]
+            (append new-rules (compute-ss-dfa-rules
+                               (append (rest to-search-ssts)
+                                       (filter (λ (ss) (not (member ss (append to-search-ssts ssts))))
+                                               to-super-states))
+                               sigma
+                               empties
+                               rules
+                               (cons curr-ss ssts))))))
+
+    ;; (listof ss) --> ss-name-tbl
+    ;; Purpose: Create a table for ss names
+    (define (compute-ss-name-tbl super-states)
+      (map (λ (ss) (list ss (generate-symbol 'X '(X))))                                      
+           super-states))
+
+    ;; (listof state) rules --> emps-tbl
+    ;; Purpose: Compute empties table for all given states
+    (define (compute-empties-tbl states rules)
+      ;; state (listof state) (listof ndfa-rule) --> (listof ndfa-rule)
+      ;; Purpose: Extract empty transitions to non-generated states for the given state
+      (define (get-e-trans state gen-states rules)
+        (filter (λ (r) (and (eq? (first r) state)
+                            (eq? (second r) EMP)
+                            (not (member (third r) gen-states))))
+                rules))
+    
+      ;; (listof state) (listof ndfa-rules) (listof state) --> (listof state)
+      ;; Purpose: Compute the empties for the states left to explore in the first given (listof state)
+      ;; Accumlator Invariants:
+      ;;     to-search = states reachable by consuming no input that have not been visited
+      ;;       visited = states reachable by consuming no input
+      (define (compute-empties to-search rules visited)
+        (if (empty? to-search)
+            visited
+            (let* [(curr (first to-search))
+                   (curr-e-rules (get-e-trans curr (append to-search visited) rules))]
+              (compute-empties (append (rest to-search) (map third curr-e-rules))
+                               rules
+                               (cons curr visited)))))
+      (map (λ (st) (list st (compute-empties (list st) rules '()))) states))
+
+    ;; (listof state) alphabet state (listof state) (list-of ndfa-rule) --> dfa
+    ;; Purpose: Create a dfa from the given ndfa components
+    (define (convert states sigma start finals rules)
+      (let* [(empties (compute-empties-tbl states rules))
+             (ss-dfa-rules 
+              (compute-ss-dfa-rules (list (extract-empties start empties))
+                                    sigma
+                                    empties
+                                    rules
+                                    '()))
+             (super-states (remove-duplicates
+                            (append-map
+                             (λ (r) (list (first r) (third r)))
+                             ss-dfa-rules)))
+             (ss-name-tbl (compute-ss-name-tbl super-states))]
+        (make-unchecked-dfa (map (λ (ss) (second (assoc ss ss-name-tbl)))
+                                 super-states)
+                            sigma
+                            (second (assoc (first super-states) ss-name-tbl))
+                            (map (λ (ss) (second (assoc ss ss-name-tbl)))
+                                 (filter (λ (ss) (ormap (λ (s) (member s finals)) ss))
+                                         super-states))
+                            (map (λ (r) (list (second (assoc (first r) ss-name-tbl))
+                                              (second r)
+                                              (second (assoc (third r) ss-name-tbl))))
+                                 ss-dfa-rules)
+                            'no-dead)))
+  
+    (if (eq? (M 'whatami) 'dfa)
+        M
+        (convert (fsa-getstates M)
+                 (fsa-getalphabet M)
+                 (fsa-getstart M)
+                 (fsa-getfinals M)
+                 (fsa-getrules M))))
   
   ; (listof superstate) (listof superstate) alphabet (listof rule) (listof ssr) --> (listof ssr) 
   (define (compute-superstate-rules visited tovisit sigma rules res)
