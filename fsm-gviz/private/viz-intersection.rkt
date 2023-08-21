@@ -168,6 +168,71 @@
          graph
          (sm-rules M)))
 
+;; create-edge-graph-n
+;; graph ndfa ndfa -> graph
+;; Purpose: To make an edge graph
+(define (create-edge-graph-n graph N)
+  (foldl (λ (rule result) (add-edge result
+                                    (second rule)
+                                    (if (equal? (first rule) '())
+                                        'ds
+                                        (first rule))
+                                    (if (equal? (third rule) '())
+                                        'ds
+                                        (third rule))
+                                    #:atb (hash 'fontsize 20
+                                                'style 'solid
+                                                'color (if (member rule (sm-rules N))
+                                                           'violet
+                                                           'black)
+                                                )))
+         graph
+         (sm-rules N)))
+
+;; create-edge-graph-m
+;; graph ndfa ndfa -> graph
+;; Purpose: To make an edge graph
+(define (create-edge-graph-m graph M)
+  (foldl (λ (rule result) (add-edge result
+                                    (second rule)
+                                    (if (equal? (first rule) '())
+                                        'ds
+                                        (first rule))
+                                    (if (equal? (third rule) '())
+                                        'ds
+                                        (third rule))
+                                    #:atb (hash 'fontsize 20
+                                                'style 'solid
+                                                'color (if (member rule (sm-rules M))
+                                                           'orange
+                                                           'black)
+                                                )))
+         graph
+         (sm-rules M)))
+
+;; create-edge-graph-union
+;; graph ndfa ndfa -> graph
+;; Purpose: To make an edge graph
+(define (create-edge-graph-union graph union M N)
+  (foldl (λ (rule result) (add-edge result
+                                    (second rule)
+                                    (if (equal? (first rule) '())
+                                        'ds
+                                        (first rule))
+                                    (if (equal? (third rule) '())
+                                        'ds
+                                        (third rule))
+                                    #:atb (hash 'fontsize 20
+                                                'style 'solid
+                                                'color (cond [(member rule (sm-rules M))
+                                                              'orange]
+                                                             [(member rule (sm-rules N))
+                                                              'violet]
+                                                             [else
+                                                              'black]))))
+         graph
+         (sm-rules union)))
+
 
 ;; create-graph-img
 ;; ndfa ndfa -> img
@@ -180,48 +245,48 @@
                 (sm-start ndfa)
                 new-finals (sm-rules ndfa) 'no-dead)))
   (let* [(Mdfa (ndfa->dfa M))
-         (dfaM (above (graph->bitmap (create-edge-graph
+         (dfaM (above (graph->bitmap (create-edge-graph-m
                                       (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
                                                          Mdfa)
                                       Mdfa))
                       (text "MD: M converted to a dfa" 20 'black)))
          (Ndfa (ndfa->dfa N))
-         (dfaN (above (graph->bitmap (create-edge-graph
+         (dfaN (above (graph->bitmap (create-edge-graph-n
                                       (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
                                                          Ndfa)
                                       Ndfa))
                       (text "ND: N converted to a dfa" 20 'black)))
          (Mcomplement (sm-complement (ndfa->dfa M)))
-         (cmplM (above (graph->bitmap (create-edge-graph
+         (cmplM (above (graph->bitmap (create-edge-graph-m
                                        (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
                                                           Mcomplement)
                                        Mcomplement))
                        (text "CMD: Complement of MD" 20 'black)))
          (Ncomplement (sm-complement (ndfa->dfa N)))
-         (cmplN (above (graph->bitmap (create-edge-graph
+         (cmplN (above (graph->bitmap (create-edge-graph-n
                                        (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
                                                           Ncomplement)
                                        Ncomplement))
                        (text "CND: Complement of ND" 20 'black)))
          (nM (sm-rename-states (list DEAD) (sm-complement (ndfa->dfa M))))
          (nN (sm-rename-states (list DEAD) (sm-complement (ndfa->dfa N))))
-         (notM (create-edge-graph
+         (notM (create-edge-graph-m
                 (create-node-graph
                  (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
                  nM)
                 nM))
-         (notN (create-edge-graph (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                     nN)
-                                  nN))
+         (notN (create-edge-graph-n (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                                       nN)
+                                    nN))
          (notMimg (above (graph->bitmap notM) (text "CMD States Renamed" 20 'black)))
          (notNimg (above (graph->bitmap notN) (text "CND States Renamed" 20 'black)))
          (notM-U-notN (sm-union nM nN))
          (ndfa-un (ndfa->dfa notM-U-notN))
          (comp-un (complement-fsa ndfa-un))
          (unionMN (above (graph->bitmap
-                          (create-edge-graph (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                                notM-U-notN)
-                                             notM-U-notN))
+                          (create-edge-graph-union (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                                                      notM-U-notN)
+                                                   notM-U-notN nM nN))
                          (text "U-CMD-CND: Union of CMD and CND" 20 'black)))
          (dfaMN (above (graph->bitmap (create-edge-graph (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
                                                                             ndfa-un)
@@ -244,8 +309,6 @@
                 (eq? (sm-type N) 'dfa))
            (list cmplM cmplN notMimg notNimg unionMN dfaMN final-graph)])))
           
-
-#;(list dfaM dfaN cmplM cmplN notMimg notNimg unionMN dfaMN final-graph)
     
                     
      
@@ -253,11 +316,16 @@
 ;; ndfa ndfa -> img
 ;; Purpose: To draw the graph of the initial ndfa's
 (define (make-init-grph-img M N)
-  (overlay (above (text (format " First ndfa: M") 20 'black)
-                  (sm-graph M)
-                  (text (format "\n\n\n\nSecond ndfa: N") 20 'black)
-                  (sm-graph N))
-           E-SCENE))
+  (above (text (format " First ndfa: M") 20 'black)
+         (graph->bitmap (create-edge-graph-m
+                         (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                            M)
+                         M))
+         (text (format "\n\n\n\nSecond ndfa: N") 20 'black)
+         (graph->bitmap (create-edge-graph-n
+                         (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                            N)
+                         N))))
 
 
 ;; process-key
