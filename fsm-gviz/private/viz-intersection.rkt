@@ -348,7 +348,11 @@
              a-vs
              (viz-state (cons (first (viz-state-pgi a-vs))
                               (viz-state-upgi a-vs))
-                        (rest (viz-state-pgi a-vs))))]           
+                        (rest (viz-state-pgi a-vs))))]
+        [(key=? "down" a-key)
+         (viz-state '()
+                    (append (reverse (viz-state-upgi a-vs))
+                            (viz-state-pgi a-vs)))]
         [else a-vs]))
      
 
