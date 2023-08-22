@@ -124,11 +124,6 @@
              E-SCENE)))
 
 
-;; create-graph-imgs
-;; dfa -> (listof img)
-;; Purpose: To create a list of graph images for complement
-(define (create-graph-imgs MD)
-  (list (create-graph-img MD)))
 
      
 ;; make-init-grph-img
