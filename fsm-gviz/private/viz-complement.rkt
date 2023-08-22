@@ -112,39 +112,23 @@
 ;; ndfa -> img
 ;; Purpose: To create a graph image for complement
 (define (create-graph-img M)
-  (if (eq? (sm-type M) 'dfa)
-      (let* [(new-finals (filter (λ (s) (not (member s (sm-finals M)))) (sm-states M)))]
-        (overlay (above (graph->bitmap (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                                         (sm-states M) 
-                                                                         (sm-start M)
-                                                                         new-finals)
-                                                        M))
-                        (text "Complement of the ndfa" 20 'black)
-                        (text (format "New final states: ~a" new-finals) 20 'black)
-                        (text (format "Starting state: ~a" (sm-start M)) 20 'black))
-                 E-SCENE))
-      (let* [(new-finals (filter (λ (s) (not (member s (sm-finals (ndfa->dfa M))))) (sm-states (ndfa->dfa M))))]
-        (overlay (above (graph->bitmap (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                                         (sm-states (ndfa->dfa M)) 
-                                                                         (sm-start (ndfa->dfa M))
-                                                                         new-finals)
-                                                        M))
-                        (text "Complement of the ndfa" 20 'black)
-                        (text (format "New final states: ~a" new-finals) 20 'black)
-                        (text (format "Starting state: ~a" (sm-start M)) 20 'black))
-                 E-SCENE))))
+  (let* [(new-finals (filter (λ (s) (not (member s (sm-finals M)))) (sm-states M)))]
+    (overlay (above (graph->bitmap (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                                                     (sm-states M) 
+                                                                     (sm-start M)
+                                                                     new-finals)
+                                                    M))
+                    (text "Complement of MD" 20 'black)
+                    (text (format "New final states: ~a" new-finals) 20 'black)
+                    (text (format "Starting state: ~a" (sm-start M)) 20 'black))
+             E-SCENE)))
 
 
 ;; create-graph-imgs
-;; ndfa -> (listof img)
+;; dfa -> (listof img)
 ;; Purpose: To create a list of graph images for complement
-(define (create-graph-imgs M)
-  (if (eq? (sm-type M) 'dfa)
-      (list (create-graph-img M))
-      (list (overlay (above (sm-graph (ndfa->dfa M))
-                            (text "Converting the ndfa to dfa" 20 'black))
-                     E-SCENE)
-            (create-graph-img M))))
+(define (create-graph-imgs MD)
+  (list (create-graph-img MD)))
 
      
 ;; make-init-grph-img
@@ -154,7 +138,9 @@
   (overlay
    (above
     (sm-graph M)
-    (text "Starting ndfa:" 20 'black))
+    (if (eq? (sm-type M) 'dfa)
+        (text "DM: input machine" 20 'black)
+        (text "M: input machine" 20 'black)))
    E-SCENE))
 
 
@@ -195,7 +181,13 @@
 (define (run M)
   (begin
     (big-bang
-        (viz-state (create-graph-imgs M)(list (make-init-grph-img M)))
+        (viz-state (if (eq? (sm-type M) 'dfa)
+                       (list (create-graph-img M))
+                       (let [(machine (ndfa->dfa M))]
+                         (list (above (sm-graph machine)
+                                      (text "MD: M converted to a dfa" 20 'black))
+                               (create-graph-img machine))))
+                   (list (make-init-grph-img M)))
       [on-draw draw-world]
       [on-key process-key]
       [name "FSM: complement visualization"]))
