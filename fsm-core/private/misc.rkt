@@ -9,33 +9,33 @@
            symbol->fsmlos)
   
   ; string --> los
-(define (string->fsmlos str)
+  (define (string->fsmlos str)
   
-  (define (end-of-fsm-suffix i)
-    (cond [(= i (string-length str)) (- i 1)]
-          [(or (string=? (substring str i (+ i 1)) "-")
-               (and (string>=? (substring str i (+ i 1)) "0")
-                    (string<=? (substring str i (+ i 1)) "9")))
-           (end-of-fsm-suffix (+ i 1))]
-          [else (- i 1)]))
+    (define (end-of-fsm-suffix i)
+      (cond [(= i (string-length str)) (- i 1)]
+            [(or (string=? (substring str i (+ i 1)) "-")
+                 (and (string>=? (substring str i (+ i 1)) "0")
+                      (string<=? (substring str i (+ i 1)) "9")))
+             (end-of-fsm-suffix (+ i 1))]
+            [else (- i 1)]))
   
-  (define (helper i)
+    (define (helper i)
     
-    ;(define d (if (< i (string-length str)) (displayln (substring str (+ i 1))) 0))
+      ;(define d (if (< i (string-length str)) (displayln (substring str (+ i 1))) 0))
     
-    (cond [(= i (string-length str)) null]
-          [(= i (sub1 (string-length str))) 
-           (let ((substr (substring str i (+ i 1)))) 
-             (if (string=? substr (symbol->string EMP))
-                 (list EMP)
-                 (list (string->symbol substr))))]
-          [(string=? "-" (substring str (+ i 1) (+ i 2)))
-           (let* ((eos (end-of-fsm-suffix (+ i 1))))
-             (cons (string->symbol (substring str i (+ eos 1)))
-                   (helper (+ eos 1))))]
-          [else (cons (string->symbol (substring str i (+ i 1)))
-                      (helper (+ i 1)))]))
-  (helper 0))
+      (cond [(= i (string-length str)) null]
+            [(= i (sub1 (string-length str))) 
+             (let ((substr (substring str i (+ i 1)))) 
+               (if (string=? substr (symbol->string EMP))
+                   (list EMP)
+                   (list (string->symbol substr))))]
+            [(string=? "-" (substring str (+ i 1) (+ i 2)))
+             (let* ((eos (end-of-fsm-suffix (+ i 1))))
+               (cons (string->symbol (substring str i (+ eos 1)))
+                     (helper (+ eos 1))))]
+            [else (cons (string->symbol (substring str i (+ i 1)))
+                        (helper (+ i 1)))]))
+    (helper 0))
   
   ; symbol -> (listof fsm-symbol)
   (define (symbol->fsmlos s) (string->fsmlos (symbol->string s)))
@@ -67,7 +67,20 @@
   ; symbol (listof symbol) --> symbol
   (define (generate-symbol s los)
     (let ((new-symb (if (member s los)
-                        (string->symbol (string-append (symbol->string (gensym (string->symbol (string-append (symbol->string s) "-"))))))
+                          (string->symbol (string-append (symbol->string (gensym (string->symbol (string-append (symbol->string s) "-"))))))
+                          s))
+          #;(new-symb (if (member s los)
+                        #;(string->symbol (string-append (symbol->string (gensym (string->symbol (string-append (symbol->string s) "-"))))))
+                        (let [(lochar (string->list (symbol->string s)))]
+                          (string->symbol
+                           (string-append
+                            (symbol->string
+                             (gensym (if (member #\- lochar)
+                                         (string->symbol
+                                          (string-append (list->string (takef lochar
+                                                                              (λ (c) (not (eq? c #\-)))))
+                                                         "-"))
+                                         s))))))
                         s)))
       (if (not (member new-symb los))
           new-symb

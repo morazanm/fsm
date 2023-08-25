@@ -27,7 +27,7 @@
            convert-singleton pick-regexp extract-union-regexps pick-reps
            )
   
-  (define NULL-REGEXP-STRING "()")
+  (define NULL-REGEXP-STRING "∅")
   (define EMPTY-REGEXP-STRING (symbol->string EMP))
   
   ;   --> regexp
@@ -93,7 +93,9 @@
             (define (simplify-kleenestar x)
               (local [(define simp-x (simplify-regexp (kleenestar-regexp-r1 x)))]
                 (cond [(or (kleenestar-regexp? simp-x)
-                           (empty-regexp? simp-x)) simp-x]
+                           (empty-regexp? simp-x)
+                           (null-regexp? simp-x))
+                       simp-x]
                       [else (kleenestar-regexp simp-x)])))
 
             ;simplify-concat: concat --> regexp
@@ -101,7 +103,10 @@
             (define (simplify-concat x)
               (local [(define simp-lhs (simplify-regexp (concat-regexp-r1 x)))
                       (define simp-rhs (simplify-regexp (concat-regexp-r2 x)))]
-                (cond [(empty-regexp? simp-lhs) simp-rhs]
+                (cond [(or (null-regexp? simp-lhs)
+                           (null-regexp? simp-rhs))
+                       (null-regexp)]
+                      [(empty-regexp? simp-lhs) simp-rhs]
                       [(empty-regexp? simp-rhs) simp-lhs]
                       [else (concat-regexp simp-lhs simp-rhs)])))
             ]
@@ -154,7 +159,7 @@
             ;re-union: (listof regexp) --> regexp
             ;purpose: to recreate a union-regexp
             (define (re-union a-list)
-              (cond [(empty? a-list) (empty-regexp)]
+              (cond [(empty? a-list) (null-regexp)]
                     [(empty? (rest a-list)) (first a-list)]
                     [else (union-regexp (first a-list) (re-union (rest a-list)))]))
 
