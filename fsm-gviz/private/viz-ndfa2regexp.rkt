@@ -197,9 +197,9 @@
              (add-node
               result
               state
-              #:atb (hash 'color (cond [(eq? state ns) 'green]
-                                       [(eq? state nf) 'red]
-                                       [else 'black])
+              #:atb (hash 'color (if (eq? state ns)
+                                     'darkgreen
+                                     'black)
                           'shape (if (eq? state nf)
                                      'doublecircle
                                      'circle)
