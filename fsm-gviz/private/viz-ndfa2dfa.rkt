@@ -535,7 +535,7 @@
                                   (add-node
                                    result
                                    state
-                                   #:atb (hash 'color 'red
+                                   #:atb (hash 'color 'black
                                                'shape 'doublecircle
                                                'label state
                                                'fontcolor 'black))]

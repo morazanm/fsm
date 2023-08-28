@@ -122,13 +122,13 @@
                                                (not (void? edge))
                                                (eq? (first edge) 'S))
                                           'violet
-                                          'green)]
+                                          'darkgreen)]
                                      [(eq? state 'F)
                                       (if (and (not (empty? edge))
                                                (not (void? edge))
                                                (eq? (third edge) 'F))
                                           'violet
-                                          'red)]
+                                          'black)]
                                      [(or (eq? state (first edge))
                                           (eq? state (third edge)))
                                       'violet]
