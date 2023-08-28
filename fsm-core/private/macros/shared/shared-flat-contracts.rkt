@@ -39,7 +39,7 @@
   ;; helper: (listof any) --> (listof any)
   ;Purpose: applies a predicate to a list and makes sure that everything in
   ; the list passes the predicate. Returns an error if it doesnt
-  (define (valid-listof/c predicate element-name field-name)
+  (define (valid-listof/c predicate element-name field-name #:rule [rule ""])
     (make-flat-contract
      #:name (string->symbol (format "valid-~a" field-name))
      #:first-order (lambda (vals) (andmap predicate vals))
@@ -50,10 +50,14 @@
                       (raise-blame-error
                        blame
                        vals
-                       (format "The following: ~a are not valid ~a(s), in the ~a"
+                       (format "~a. The following: ~a are not valid ~a(s), in the ~a."
+                               (if (equal? rule "")
+                                   ""
+                                   (format "This violates rule ~a of the design recipe for state machines" rule))
                                invalid-vals
                                element-name
-                               field-name)
+                               field-name
+                               )
                        )
                       )
                     )
