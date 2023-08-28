@@ -299,7 +299,7 @@
                                   (los2symb state)
                                   #:atb (hash 'color (if (equal? state (last los))
                                                          'darkgreen
-                                                         'red)
+                                                         'black)
                                               'shape 'doublecircle
                                               'label (if (equal? state '())
                                                          'ds  
