@@ -1,6 +1,5 @@
 #lang fsm
-
-(require "../../fsm-core/interface.rkt" "lib.rkt")
+(require "../../fsm-core/interface.rkt" "lib.rkt" "../../fsm-gui/graphViz/main.rkt")
 (require 2htdp/universe rackunit)
 (require (rename-in racket/gui/base
                     [make-color loc-make-color]
@@ -9,175 +8,264 @@
 
 (define FNAME "fsm")
 
-;; L = ab*
-(define ab* (make-ndfa '(S A)
-                       '(a b)
-                       'S
-                       '(A)
-                       '((S a A)
-                         (A b A))))
-;; L = a(a U ab)b*
-(define a-aUb-b* (make-ndfa '(Z H B C D F)
-                            '(a b)
-                            'Z
-                            '(F)
-                            `((Z a H)
-                              (Z a B)
-                              (H a D)
-                              (D ,EMP F)
-                              (B a C)
-                              (C b F)
-                              (F b F))))
-;; L = aab*
-(define aab* (make-ndfa '(W X Y)
-                        '(a b)
-                        'W
-                        '(Y)
-                        '((W a X)
-                          (X a Y)
-                          (Y b Y))))
-;; L = a*
-(define a* (make-dfa '(S D)
-                     '(a b)
-                     'S
-                     '(S)
-                     '((S a S)
-                       (S b D)
-                       (D a D)
-                       (D b D))
-                     'no-dead))
+(define R0 (union-regexp (singleton-regexp "a")
+                         (null-regexp)))
+
+(define R1 (union-regexp (singleton-regexp "a")
+                         (singleton-regexp "b")))
+
+(define R2 (concat-regexp (singleton-regexp "m") R1))
+
+(define R3 (kleenestar-regexp R2))
+
+(define R4 (kleenestar-regexp (union-regexp R3 R2)))
+
+(define R5 (concat-regexp (singleton-regexp "m") R0))
+
+(define R6 (kleenestar-regexp R5))
+
+(define E-SCENE (empty-scene 1250 600))
+
+;; grph is a (listof img) of graphs used to build an ndfa from regexp
+;; edge is an edge that has been expanded to build an ndfa from regexp
+(struct gedge (grph edge))
+
+;; dgraph2logedges
+;; dgraph edge --> (listof gedges)
+;; Purpose: Create a list of digraph-edge structures
+(define (dgraph2logedges dgraph edge . issimp?)
+  
+  ;; digraph --> Boolean
+  (define (only-simple-edges? grph)
+    (andmap (λ (e) (or (empty-regexp? (second e))
+                       (singleton-regexp? (second e))
+                       (null-regexp? (second e))))
+            grph))
+
+  ;; dgraph --> gedge
+  ;; Purpose: To extract the first nonsimple edge in the dgraph
+  ;; Assumption: dgraph has a nonsimple edge
+  (define (extract-first-nonsimple grph)
+    (first (filter (λ (e) (and (not (empty-regexp? (second e)))
+                               (not (singleton-regexp? (second e)))))
+                   grph)))
+  
+  ;; dgraph edge (listof dgraph) --> (listof dgraph)
+  ;; Purpose: To create a list of dgraphs with  the expanded edge removed
+  ;; and replaced with the appropriate edges
+  (define (bfs grph edge acc)
+    (cond [(only-simple-edges? grph) (cons (gedge grph edge) acc)]
+          [(and (not (null? issimp?))
+                (first issimp?))
+           (cons (gedge grph (void)) acc)]
+          [else 
+           (let* [(next-edge (extract-first-nonsimple grph))
+                  (fromst (first next-edge))
+                  (rexp (second next-edge))
+                  (tost (third next-edge))]
+             (cond [(union-regexp? rexp)
+                    (let [(newi1 (generate-symbol 'I '(I)))
+                          (newi2 (generate-symbol 'I '(I)))
+                          (newi3 (generate-symbol 'I '(I)))
+                          (newi4 (generate-symbol 'I '(I)))]
+                      (bfs
+                       (append (list (list fromst (empty-regexp) newi1)
+                                     (list fromst (empty-regexp) newi2)
+                                     (list newi1 (union-regexp-r1 rexp) newi3)
+                                     (list newi2 (union-regexp-r2 rexp) newi4)
+                                     (list newi3 (empty-regexp) tost)
+                                     (list newi4 (empty-regexp) tost))
+                               (remove next-edge grph))
+                       next-edge
+                       (cons (gedge grph edge) acc)))]
+                   [(concat-regexp? rexp)
+                    (let [(istate1 (generate-symbol 'I '(I)))
+                          (istate2 (generate-symbol 'I '(I)))]
+                      (bfs (append (list (list fromst (concat-regexp-r1 rexp) istate1)
+                                         (list istate1 (empty-regexp) istate2)
+                                         (list istate2 (concat-regexp-r2 rexp) tost))
+                                   (remove next-edge grph))
+                           next-edge
+                           (cons (gedge grph edge) acc)))]
+                   [else
+                    (let [(istart1 (generate-symbol 'I '(I)))
+                          (istart2 (generate-symbol 'I '(I)))]
+                      (bfs
+                       (append (list (list fromst (empty-regexp) istart1)
+                                     (list istart1 (empty-regexp) tost)
+                                     (list istart1 (empty-regexp) istart2)
+                                     (list istart2 (kleenestar-regexp-r1 rexp) istart2)
+                                     (list istart2 (empty-regexp) tost))
+                               (remove next-edge grph))
+                       next-edge
+                       (cons (gedge grph edge) acc)))]))]))
+  (bfs dgraph edge '()))
+
+;; updg are unprocessed dgraphs
+;; pdg are processed dgraphs
+(struct viz-state (upimgs pimgs))
 
 
-;; ndfa ndfa → ndfa
-;; Purpose: Construct ndfa for the union of the languages of the
-;;          given ndfas
-;; Assume: The intersection of the states of the given machines is empty
-(define (union-fsa M N)
-  (let* [(new-start (generate-symbol
-                     'S (append (sm-states M) (sm-states N))))
-         (new-sigma (remove-duplicates
-                     (append (sm-sigma M) (sm-sigma N))))
-         (new-states (cons new-start
-                           (append (sm-states M) (sm-states N))))
-         (new-finals (append (sm-finals M) (sm-finals N)))
-         (new-rules (append (list (list new-start EMP (sm-start M))
-                                  (list new-start EMP (sm-start N)))
-                            (sm-rules M)
-                            (sm-rules N)))]
-    (make-ndfa new-states new-sigma new-start new-finals new-rules)))
+;; create-nodes
+;; graph dgraph edge -> graph
+;; Purpose: To add the nodes to the graph
+(define (create-nodes graph dgraph edge)
+  (define (states-only dgraph)
+    (remove-duplicates
+     (append-map (λ (e) (list (first e) (third e))) dgraph)))
+  (foldl (λ (state result)
+           (add-node
+            result
+            state
+            #:atb (hash 'color (cond [(eq? state 'S)
+                                      (if (and (not (empty? edge))
+                                               (not (void? edge))
+                                               (eq? (first edge) 'S))
+                                          'violet
+                                          'darkgreen)]
+                                     [(eq? state 'F)
+                                      (if (and (not (empty? edge))
+                                               (not (void? edge))
+                                               (eq? (third edge) 'F))
+                                          'violet
+                                          'black)]
+                                     [(or (eq? state (first edge))
+                                          (eq? state (third edge)))
+                                      'violet]
+                                     [else 'black])                                   
+                        'shape (if (eq? state 'F)
+                                   'doublecircle
+                                   'circle)
+                        'label (if (equal? state '())
+                                   'ds  
+                                   state)
+                        'fontcolor 'black
+                        'font "Sans")))
+         graph
+         (states-only dgraph)))                         
+
+;; create-edges
+;; graph (listof edge) -> graph
+;; Purpose: To create graph of edges
+(define (create-edges graph dgraph)
+  (foldl (λ (rule result)
+           (add-edge result
+                     (printable-regexp (second rule))
+                     (first rule)
+                     (third rule)
+                     #:atb (hash 'fontsize 14
+                                 'style 'solid
+                                 'fontname "Sans"
+                                 )))
+         graph
+         dgraph))
 
 
-;; Tests for union-fsa
-(define ab*Ua-aUb-b* (union-fsa ab* a-aUb-b*))
-(define ab*Uaab* (union-fsa ab* aab*))
+;; create-graph-img
+;; graph edge -> img
+;; Purpose: To create a graph img for the given dgraph
+;; with the labeled edge that has been expanded
+(define (create-graph-img dgraph edge)
+  (overlay
+   (above
+    (graph->bitmap
+     (create-edges
+      (create-nodes
+       (create-graph 'dgraph #:atb (hash 'rankdir "LR"
+                                         'font "Sans"))
+       dgraph
+       edge)
+      dgraph))
+    (cond [(empty? edge) (text "Starting NDFA" 24 'black)]
+          [(void? edge) (text "Simplified initial regexp" 24 'black)]
+          [else (beside (text (format "Expanded regexp: ~a on edge from state" (printable-regexp (second edge))) 24 'black)
+                        (text (format " ~a" (first edge)) 24 'violet)
+                        (text (format " to state ") 24 'black)
+                        (text (format "~a" (third edge)) 24 'violet))]))
+   E-SCENE))
 
 
-(check-equal? (sm-apply ab*Ua-aUb-b* '()) 'reject)
-(check-equal? (sm-apply ab*Ua-aUb-b* '(a a a a)) 'reject)
-(check-equal? (sm-apply ab*Ua-aUb-b* '(a b)) 'accept)
-(check-equal? (sm-apply ab*Ua-aUb-b* '(a a b b)) 'accept)
-(check-equal? (sm-testequiv? ab*Ua-aUb-b* (sm-union ab* ab*Ua-aUb-b*))
-              #t)
-(check-equal? (sm-apply ab*Uaab* '(a a a)) 'reject)
-(check-equal? (sm-apply ab*Uaab* '(b a b a)) 'reject)
-(check-equal? (sm-apply ab*Uaab* '(a b b)) 'accept)
-(check-equal? (sm-apply ab*Uaab* '(a a b)) 'accept)
-(check-equal? (sm-apply ab*Uaab* '(a b b b b)) 'accept)
-(check-equal? (sm-testequiv? ab*Uaab* (sm-union ab* aab*)) #t)
+;; create-graph-imgs
+;; (listof gedges) -> (listof image)
+;; Purpose: To create a list of graph images
+(define (create-graph-imgs gedges)
+  (if (empty? gedges)
+      empty
+      (cons (create-graph-img (gedge-grph (first gedges))
+                              (gedge-edge (first gedges)))
+            (create-graph-imgs (rest gedges)))))
 
-
-;; ndfa ndfa → ndfa
-;; Purpose: Construct ndfa for the concatenation of the languages of the
-;;          given ndfas
-;; Assume: The intersection of the states of the given machines is empty
-(define (concat-fsa M N)
-  (let* [(new-start (sm-start M))
-         (new-sigma (remove-duplicates (append (sm-sigma M) (sm-sigma N))))
-         (new-states (append (sm-states M) (sm-states N)))
-         (new-finals (sm-finals N))
-         (new-rules (append (sm-rules M)
-                            (sm-rules N)
-                            (map (λ (f) (list f EMP (sm-start N)))
-                                 (sm-finals M))))]
-    (make-ndfa new-states new-sigma new-start new-finals new-rules)))
-
-
-;; Tests for concat-fsa
-(define ab*-o-a-aUb-b* (concat-fsa ab* a-aUb-b*))
-(define ab*-o-aab* (concat-fsa ab* aab*))
-
-
-(check-equal? (sm-apply ab*-o-a-aUb-b* '()) 'reject)
-(check-equal? (sm-apply ab*-o-a-aUb-b* '(b b b)) 'reject)
-(check-equal? (sm-apply ab*-o-a-aUb-b* '(a a b a b)) 'reject)
-(check-equal? (sm-apply ab*-o-a-aUb-b* '(a b a a b)) 'accept)
-(check-equal? (sm-apply ab*-o-a-aUb-b* '(a b b b a a)) 'accept)
-(check-equal? (sm-testequiv? ab*-o-a-aUb-b* (sm-concat ab* a-aUb-b*)) #t)
-(check-equal? (sm-apply ab*-o-aab* '()) 'reject)
-(check-equal? (sm-apply ab*-o-aab* '(a b a)) 'reject)
-(check-equal? (sm-apply ab*-o-aab* '(a a b b a a)) 'reject)
-(check-equal? (sm-apply ab*-o-aab* '(a b b a a b b)) 'accept)
-(check-equal? (sm-apply ab*-o-aab* '(a a a)) 'accept)
-(check-equal? (sm-testequiv? ab*-o-aab* (sm-concat ab* aab*)) #t)
-
-
-
-;; ndfa → ndfa
-;; Purpose: Construct ndfa for the Kleene star of given ndfa’s language
-(define (kstar-fsa M)
-  (let* [(new-start (generate-symbol 'K (sm-states M))) (new-sigma (sm-sigma M))
-                                                        (new-states (cons new-start (sm-states M)))
-                                                        (new-finals (cons new-start (sm-finals M)))
-                                                        (new-rules (cons (list new-start EMP (sm-start M))
-                                                                         (append (sm-rules M)
-                                                                                 (map (λ (f) (list f EMP new-start))
-                                                                                      (sm-finals M)))))]
-    (make-ndfa new-states new-sigma new-start new-finals new-rules)))
-
-;; Tests for kstar-fsa
-(define a-aUb-b*-* (kstar-fsa a-aUb-b*))
-(define ab*-* (kstar-fsa ab*))
-
-
-(check-equal? (sm-apply a-aUb-b*-* '(b b b)) 'reject)
-(check-equal? (sm-apply a-aUb-b*-* '(a b a b a a a a)) 'reject)
-(check-equal? (sm-apply a-aUb-b*-* '()) 'accept)
-(check-equal? (sm-apply a-aUb-b*-* '(a a a a b b b b)) 'accept)
-(check-equal? (sm-apply a-aUb-b*-* '(a a b a a b b a a)) 'accept)
-(check-equal? (sm-testequiv? a-aUb-b*-* (sm-kleenestar a-aUb-b*)) #t)
-(check-equal? (sm-apply ab*-* '(b)) 'reject)
-(check-equal? (sm-apply ab*-* '(b b b)) 'reject)
-(check-equal? (sm-apply ab*-* '()) 'accept)
-(check-equal? (sm-apply ab*-* '(a a a a)) 'accept)
-(check-equal? (sm-apply ab*-* '(a b a b b a b b b)) 'accept)
-(check-equal? (sm-testequiv? ab*-* (sm-kleenestar ab*)) #t)
+;; process-key
+;; viz-state key --> viz-state
+;; Purpose: Move the visualization on step forward, one step
+;;          backwards, or to the end.
+(define (process-key a-vs a-key)
+  (cond [(key=? "right" a-key)
+         (if (empty? (rest (viz-state-upimgs a-vs)))
+             a-vs
+             (viz-state (rest (viz-state-upimgs a-vs))
+                        (cons (first (viz-state-upimgs a-vs))
+                              (viz-state-pimgs a-vs))))]
+        [(key=? "left" a-key)
+         (if (empty? (viz-state-pimgs a-vs))
+             a-vs
+             (viz-state (cons (first (viz-state-pimgs a-vs))
+                              (viz-state-upimgs a-vs))
+                        (rest (viz-state-pimgs a-vs))))]
+        [(key=? "down" a-key)
+         (if (empty? (rest (viz-state-upimgs a-vs)))
+             a-vs
+             (viz-state (list (last (viz-state-upimgs a-vs)))
+                        (append (rest (reverse (viz-state-upimgs a-vs)))
+                                (viz-state-pimgs a-vs))))]           
+        [else a-vs]))
 
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; draw-img
+;; viz-state -> img
+;; Purpose: To render the given viz-state
+(define (draw-world a-vs)
+  (if (empty? (viz-state-upimgs a-vs))
+      (let [(width (image-width (first (viz-state-pimgs a-vs))))
+            (height (image-height (first (viz-state-pimgs a-vs))))]
+        (if (or (> width (image-width E-SCENE))
+                (> height (image-height E-SCENE)))
+            (overlay (resize-image (first (viz-state-pimgs a-vs)) (- (image-width E-SCENE) 5)
+                                   (- (image-height E-SCENE) 5))
+                     E-SCENE)
+            (overlay (first (viz-state-pimgs a-vs)) E-SCENE)))
+      (let [(width (image-width (first (viz-state-upimgs a-vs))))
+            (height (image-height (first (viz-state-upimgs a-vs))))]
+        (if (or (> width (image-width E-SCENE))
+                (> height (image-height E-SCENE)))
+            (overlay (resize-image (first (viz-state-upimgs a-vs)) (- (image-width E-SCENE) 5)
+                                   (- (image-height E-SCENE) 5))
+                     E-SCENE)
+            (overlay (first (viz-state-upimgs a-vs)) E-SCENE)))))
 
 
-;; regexp alphabet → ndfa
-;; Purpose: Build an ndfa for the given regexp
-(define (regexp->ndfa e sigma)
-  (let* [(simple-tbl (map
-                      (λ (a)
-                        (let [(S (generate-symbol 'S '(S)))
-                              (A (generate-symbol 'A '(A)))]
-                          (list a (make-ndfa (list S A)
-                                             sigma
-                                             S
-                                             (list A)
-                                             (list (list S a A))))))
-                      (cons EMP sigma)))]
-    (cond [(empty-regexp? e) (second (assoc EMP simple-tbl))]
-          [(singleton-regexp? e)
-           (second (assoc (string->symbol (singleton-regexp-a e))
-                          simple-tbl))]
-          [(concat-regexp? e)
-           (concat-fsa (regexp->ndfa (concat-regexp-r1 e) sigma)
-                       (regexp->ndfa (concat-regexp-r2 e) sigma))]
-          [(union-regexp? e)
-           (union-fsa (regexp->ndfa (union-regexp-r1 e) sigma)
-                      (regexp->ndfa (union-regexp-r2 e) sigma))]
-          [else (kstar-fsa (regexp->ndfa (kleenestar-regexp-r1 e) sigma))])))
+;; run-function
+(define (run regexp)
+  (let* [(logedges (append
+                    (list
+                     (last (dgraph2logedges
+                            (list (list 'S regexp 'F)) 
+                            '()))
+                     (last (dgraph2logedges
+                            (list (list 'S (simplify-regexp regexp) 'F)) 
+                            '()
+                            #t)))
+                    (rest (reverse (dgraph2logedges
+                                    (list (list 'S (simplify-regexp regexp) 'F))
+                                    '())))))
+         (loimgs (create-graph-imgs logedges))]
+    (begin
+      (big-bang
+          (viz-state loimgs '())
+        [on-draw draw-world]
+        [on-key process-key]
+        [name "FSM: regexp to ndfa visualization"]))
+    (void)))
+
+

@@ -10,6 +10,13 @@
 (define FNAME "fsm")
 
 ;; L = ab*
+(define nl (make-ndfa '(S)
+                      '(a b)
+                      'S
+                      '()
+                      '()))
+
+;; L = ab*
 (define ab* (make-ndfa '(S A)
                        '(a b)
                        'S
@@ -47,6 +54,18 @@
                        (D b D))
                      'no-dead))
 
+(define AT-LEAST-ONE-MISSING (make-ndfa '(S A B C) '(a b c)
+                                        'S
+                                        '(A B C)
+                                        `((S ,EMP A)
+                                          (S ,EMP B)
+                                          (S ,EMP C)
+                                          (A b A)
+                                          (A c A)
+                                          (B a B)
+                                          (B c B)
+                                          (C a C)
+                                          (C b C))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -79,7 +98,6 @@
 ;; node dgraph → dgraph
 ;; Purpose: Rip out given state from given graph
 (define (rip-out-node n g)
-  #;(define d (displayln (format "removing: ~s\n from: ~s\n" s g)))
   (let* [(non (filter (λ (r) (and (not (eq? (third r) n))
                                   (not (eq? (first r) n))))
                       g))
@@ -155,20 +173,6 @@
         (null-regexp)
         (simplify-regexp (second (first collapsed-dgraph))))))
 
-
-(define AT-LEAST-ONE-MISSING (make-ndfa '(S A B C) '(a b c)
-                                        'S
-                                        '(A B C)
-                                        `((S ,EMP A)
-                                          (S ,EMP B)
-                                          (S ,EMP C)
-                                          (A b A)
-                                          (A c A)
-                                          (B a B)
-                                          (B c B)
-                                          (C a C)
-                                          (C b C))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define E-SCENE (empty-scene 1250 600))
@@ -193,9 +197,9 @@
              (add-node
               result
               state
-              #:atb (hash 'color (cond [(eq? state ns) 'green]
-                                       [(eq? state nf) 'red]
-                                       [else 'black])
+              #:atb (hash 'color (if (eq? state ns)
+                                     'darkgreen
+                                     'black)
                           'shape (if (eq? state nf)
                                      'doublecircle
                                      'circle)
@@ -232,11 +236,7 @@
   (graph->bitmap
    (create-edges
     (create-nodes
-     (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans")
-                   #;(hash 'rankdir "LR"
-                           'size "7, 7"
-                           'ranksep "2.0"
-                           'font "Sans"))
+     (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
      los
      news
      newf)
@@ -244,8 +244,9 @@
 
 
 ;; create-graph-imgs
-;; ndfa -> listof imgs
-;; Purpose: To create a list of graph images
+;; ndfa -> (listof img)
+;; Purpose: To create a list of images of graphs that build a regular
+;; expression from the  given ndfa
 (define (create-graph-imgs M)
   (define new-start (generate-symbol 'S (sm-states M)))
   (define new-final (generate-symbol 'F (sm-states M)))
@@ -277,6 +278,9 @@
                         (cons DEAD (remove DEAD (sm-states M))))
                     (make-dgraph (append (sm-rules M) new-rules)) '())))
 
+;; make-init-graph-img
+;; ndfa -> img
+;; Purpose: To create the image of the initial ndfa graph
 (define (make-init-graph-img M)
   (let* [(new-start (generate-symbol 'S (sm-states M)))
          (new-final (generate-symbol 'F (sm-states M)))
@@ -294,72 +298,76 @@
                       (sm-states M)
                       DEAD))))
 
-  ;; process-key
-  ;; viz-state key --> viz-state
-  ;; Purpose: Move the visualization on step forward, one step
-  ;;          backwards, or to the end.
-  (define (process-key a-vs a-key)
-    (cond [(key=? "right" a-key)
-           (if (empty? (viz-state-upimgs a-vs))
-               a-vs
-               (let* [(new-pimgs (cons (first (viz-state-upimgs a-vs))
-                                       (viz-state-pimgs a-vs)))
-                      (new-upimgs (rest (viz-state-upimgs a-vs)))]           
-                 (viz-state new-pimgs new-upimgs)))]
-          [(key=? "left" a-key)
-           (if (= (length (viz-state-pimgs a-vs)) 1)
-               a-vs
-               (let* [(new-pimgs (rest (viz-state-pimgs a-vs)))
-                      (new-upimgs (cons (first (viz-state-pimgs a-vs))
-                                        (viz-state-upimgs a-vs)))]
-                 (viz-state new-pimgs new-upimgs)))]
-          [(key=? "down" a-key)
-           (let* [(new-pimgs (append (reverse (viz-state-upimgs a-vs))
+;; process-key
+;; viz-state key --> viz-state
+;; Purpose: Move the visualization on step forward, one step
+;;          backwards, or to the end.
+(define (process-key a-vs a-key)
+  (cond [(key=? "right" a-key)
+         (if (empty? (viz-state-upimgs a-vs))
+             a-vs
+             (let* [(new-pimgs (cons (first (viz-state-upimgs a-vs))
                                      (viz-state-pimgs a-vs)))
-                  (new-upimgs '())]
-             (viz-state new-pimgs new-upimgs))]           
-          [else a-vs]))
+                    (new-upimgs (rest (viz-state-upimgs a-vs)))]           
+               (viz-state new-pimgs new-upimgs)))]
+        [(key=? "left" a-key)
+         (if (= (length (viz-state-pimgs a-vs)) 1)
+             a-vs
+             (let* [(new-pimgs (rest (viz-state-pimgs a-vs)))
+                    (new-upimgs (cons (first (viz-state-pimgs a-vs))
+                                      (viz-state-upimgs a-vs)))]
+               (viz-state new-pimgs new-upimgs)))]
+        [(key=? "down" a-key)
+         (let* [(new-pimgs (append (reverse (viz-state-upimgs a-vs))
+                                   (viz-state-pimgs a-vs)))
+                (new-upimgs '())]
+           (viz-state new-pimgs new-upimgs))]           
+        [else a-vs]))
 
 
-  ;; draw-img
-  ;; viz-state -> img
-  ;; Purpose: To render the given vis-state
-  (define (draw-world a-vs)
-    (define graph-img (cond [(empty? (viz-state-pimgs a-vs))
-                             (image-struct-img (first (viz-state-upimgs a-vs)))]
-                            [(= 1 (length (viz-state-pimgs a-vs)))
-                             (above
-                              (image-struct-img (first (viz-state-pimgs a-vs)))
-                              (text (format "Starting ndfa") 20 'black))]
-                            [(= 2 (length (viz-state-pimgs a-vs)))
-                             (above
-                              (image-struct-img (first (viz-state-pimgs a-vs)))
-                              (text (format "Added starting and final state") 20 'black))]
-                            [else
-                             (above
-                              (image-struct-img (first (viz-state-pimgs a-vs)))
-                              (text (format "Ripped node: ~a" (image-struct-state
-                                                               (first (rest (viz-state-pimgs a-vs)))))
-                                    20
-                                    'black))]))
-    (overlay (resize-image graph-img (image-width E-SCENE) (image-height E-SCENE))
-             E-SCENE))
+;; draw-img
+;; viz-state -> img
+;; Purpose: To render the given viz-state
+(define (draw-world a-vs)
+  (define graph-img (cond [(empty? (viz-state-pimgs a-vs))
+                           (image-struct-img (first (viz-state-upimgs a-vs)))]
+                          [(= 1 (length (viz-state-pimgs a-vs)))
+                           (above
+                            (image-struct-img (first (viz-state-pimgs a-vs)))
+                            (text (format "Starting ndfa") 20 'black))]
+                          [(= 2 (length (viz-state-pimgs a-vs)))
+                           (above
+                            (image-struct-img (first (viz-state-pimgs a-vs)))
+                            (text (format "Added starting and final state") 20 'black))]
+                          [else
+                           (above
+                            (image-struct-img (first (viz-state-pimgs a-vs)))
+                            (text (format "Ripped node: ~a" (image-struct-state
+                                                             (first (rest (viz-state-pimgs a-vs)))))
+                                  20
+                                  'black))]))
+  (let [(width (image-width graph-img))
+        (height (image-height graph-img))]
+    (if (or (> width (image-width E-SCENE))
+            (> height (image-height E-SCENE)))
+        (overlay (resize-image graph-img (image-width E-SCENE) (image-height E-SCENE))
+                 E-SCENE)
+        (overlay graph-img E-SCENE))))
 
 
-  ;; run-function
-  ;; ndfa --> (void)
-  (define (run M)
-    (begin
-      (big-bang
-          (viz-state (list (image-struct (sm-graph M) '()))
-                     (cons (make-init-graph-img M) (rest (create-graph-imgs M))))
-        [on-draw draw-world]
-        [on-key process-key]
-        [name "FSM: ndfa to regexp visualization"]))
-    (void))
+;; run-function
+;; ndfa --> (void)
+(define (run M)
+  (begin
+    (big-bang
+        (viz-state (list (image-struct (sm-graph M) '()))
+                   (cons (make-init-graph-img M) (rest (create-graph-imgs M))))
+      [on-draw draw-world]
+      [on-key process-key]
+      [name "FSM: ndfa to regexp visualization"]))
+  (void))
 
 
 
-  ;(run AT-LEAST-ONE-MISSING)
-  (define D (ndfa->dfa AT-LEAST-ONE-MISSING))
-  
+(run AT-LEAST-ONE-MISSING)
+;(define D (ndfa->dfa AT-LEAST-ONE-MISSING))

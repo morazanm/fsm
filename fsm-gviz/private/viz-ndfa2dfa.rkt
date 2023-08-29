@@ -9,6 +9,14 @@
 
 (define FNAME "fsm")
 
+(require "../../fsm-core/interface.rkt" "lib.rkt" "../../fsm-gui/graphViz/main.rkt")
+(require 2htdp/universe rackunit)
+(require (rename-in racket/gui/base
+                    [make-color loc-make-color]
+                    [make-pen loc-make-pen]))
+(require 2htdp/image)
+
+
 
 
 
@@ -291,7 +299,7 @@
                                   (los2symb state)
                                   #:atb (hash 'color (if (equal? state (last los))
                                                          'darkgreen
-                                                         'red)
+                                                         'black)
                                               'shape 'doublecircle
                                               'label (if (equal? state '())
                                                          'ds  
@@ -337,14 +345,14 @@
 
   
 ;; create-dfa-graph
-;; (listof rules) -> graph
+;; (listof rules) -> graph img
 ;; Purpose: To create a dfa graph from a given ndfa
 (define (create-dfa-graph lor los finals)
   (if (empty? lor)
-      (dfa-edge-graph (dfa-node-graph (create-graph 'dfagraph #:atb (hash 'rankdir "LR")) los finals)
-                      lor '())
-      (dfa-edge-graph (dfa-node-graph (create-graph 'dfagraph #:atb (hash 'rankdir "LR")) los finals)
-                      lor (first lor))))
+      (graph->bitmap (dfa-edge-graph (dfa-node-graph (create-graph 'dfagraph #:atb (hash 'rankdir "LR")) los finals)
+                                     lor '()))
+      (graph->bitmap (dfa-edge-graph (dfa-node-graph (create-graph 'dfagraph #:atb (hash 'rankdir "LR")) los finals)
+                                     lor (first lor)))))
 
 ;; find-empty-transitions
 ;; (listof state) (listof state) (listof rules) -> (listof rules)
@@ -495,8 +503,8 @@
                  (remove-duplicates (append-map (λ (e) (list (first e) (third e)))
                                                 new-ad-edges))
                  #;(remove-duplicates
-                                 (reverse (cons super-start-state
-                                                (reverse (map (λ (edge) (third edge)) new-ad-edges))))))
+                    (reverse (cons super-start-state
+                                   (reverse (map (λ (edge) (third edge)) new-ad-edges))))))
                 (new-hedges (compute-all-hedges (sm-rules (world-M a-world))
                                                 (third (first new-ad-edges))
                                                 (first new-ad-edges)))
@@ -527,7 +535,7 @@
                                   (add-node
                                    result
                                    state
-                                   #:atb (hash 'color 'red
+                                   #:atb (hash 'color 'black
                                                'shape 'doublecircle
                                                'label state
                                                'fontcolor 'black))]
@@ -576,7 +584,7 @@
            (append hedges no-duplicates-fedges no-duplicates-bledges))))
 
 ;; make-ndfa-graph
-;; world -> graph
+;; world -> graph img
 ;; Purpose: To make an ndfa-graph from the given ndfa
 (define (make-ndfa-graph a-world)
   (let* [(ndfa-edge-graph-x (ndfa-edge-graph (ndfa-node-graph (create-graph 'ndfagraph #:atb (hash 'rankdir "LR"))
@@ -584,23 +592,65 @@
                                              (world-hedges a-world)
                                              (world-fedges a-world)
                                              (world-bledges a-world)))]
-    ndfa-edge-graph-x))
+    (graph->bitmap ndfa-edge-graph-x)))
 
 
 ;; draw-world
 ;; world -> img
 ;; Purpose: To draw a world image
 (define (draw-world a-world)
-  (scale 0.7
-         (above (graph->bitmap (make-ndfa-graph a-world))
-                (overlay
-                 (graph->bitmap (create-dfa-graph (world-ad-edges a-world) (world-incl-nodes a-world) (ndfa2dfa-finals-only (world-M a-world))))
-                 E-SCENE))))
+  (define (resize-img img)
+    (let [(e-scn-w (- (image-width E-SCENE) 10))
+          (e-scn-h (- (image-height E-SCENE) 10))
+          (w (image-width img))
+          (h (image-height img))]
+      (cond [(and (> w e-scn-w) (> h (/ e-scn-h 2)))
+             (resize-image img e-scn-w (/ e-scn-h 2))]
+            [(> w e-scn-w) (resize-image img e-scn-w h)]
+            [(> h (/ e-scn-h 2)) (resize-image img w (/ e-scn-h 2))]
+            [else img])))
+          
+  (let* [(ndfa-graph (overlay (resize-img
+                               (beside (text "NDFA    " 24 'darkgreen)
+                                       (make-ndfa-graph a-world)))
+                              (empty-scene (image-width E-SCENE)
+                                           (/ (image-height E-SCENE) 2))))
+         (dfa-graph
+          (let* [(new-edge (if (empty? (world-ad-edges a-world))
+                               '()
+                               (first (world-ad-edges a-world))))
+                 (edge-str (if (empty? new-edge)
+                               "Starting Super State"
+                               (string-append "SS Edge Added: "
+                                              "("
+                                              (symbol->string (if (empty? (first new-edge))
+                                                                  DEAD
+                                                                  (los->symbol (first new-edge))))
+                                              " "
+                                              (symbol->string (second new-edge))
+                                              " "
+                                              (symbol->string (if (empty? (third new-edge))
+                                                                  DEAD
+                                                                  (los->symbol (third new-edge))))
+                                              ")")))
+                 (edge-msg-img (text edge-str 24 'violet))]
+              
+            (overlay (resize-img
+                      (above
+                       (create-dfa-graph
+                        (world-ad-edges a-world)
+                        (world-incl-nodes a-world)
+                        (ndfa2dfa-finals-only (world-M a-world)))
+                       edge-msg-img))
+                     (empty-scene (image-width E-SCENE)
+                                  (/ (image-height E-SCENE) 2)))))]
+    (above ndfa-graph dfa-graph)))
+
 
 (define aa-ab (make-ndfa `(S A B F)
                          '(a b)
                          'S
-                         '(A B)
+                         '(A B F)
                          `((S a A)
                            (S a B)
                            (S ,EMP F)
@@ -650,7 +700,7 @@
         [name 'visualization]))
     (void)))
 
-;(run aa-ab)
+(run aa-ab)
 ;(run AT-LEAST-ONE-MISSING)
 
 (define EXAMPLE (call-with-values get-display-size empty-scene))
