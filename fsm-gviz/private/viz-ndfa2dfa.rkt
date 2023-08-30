@@ -299,7 +299,7 @@
                                   (los2symb state)
                                   #:atb (hash 'color (if (equal? state (last los))
                                                          'darkgreen
-                                                         'black)
+                                                         'red)
                                               'shape 'doublecircle
                                               'label (if (equal? state '())
                                                          'ds  
@@ -558,10 +558,6 @@
          (sm-states M)))
 
 
-;; SELL THE LABEL INVARIANT AS A FEATURE
-;; for the highlighted edges, the first letter comes from the last edge added to the dfa
-;; for the faded edge, the first letter comes from the last dfa edge added that includes the ndfa destination state
-
 ;; (listof rules) -> graph
 ;; Purpose: To create a graph of edges from the given hedges, fedges, and bledges
 ;; Note: Some edges can be hedges and fedges at the same time, but in this visualization,
@@ -647,29 +643,6 @@
     (above ndfa-graph dfa-graph)))
 
 
-(define aa-ab (make-ndfa `(S A B F)
-                         '(a b)
-                         'S
-                         '(A B F)
-                         `((S a A)
-                           (S a B)
-                           (S ,EMP F)
-                           (A a A)
-                           (B b B))))
-
-(define AT-LEAST-ONE-MISSING (make-ndfa '(S A B C) '(a b c)
-                                        'S
-                                        '(A B C)
-                                        `((S ,EMP A)
-                                          (S ,EMP B)
-                                          (S ,EMP C)
-                                          (A b A)
-                                          (A c A)
-                                          (B a B)
-                                          (B c B)
-                                          (C a C)
-                                          (C b C))))
-
 ;; contains-final-state-run?
 ;; symbol (listof symbols)
 (define (contains-final-state-run? sss sm-finals)
@@ -700,7 +673,29 @@
         [name 'visualization]))
     (void)))
 
+(define aa-ab (make-ndfa `(S A B F)
+                         '(a b)
+                         'S
+                         '(A B F)
+                         `((S a A)
+                           (S a B)
+                           (S ,EMP F)
+                           (A a A)
+                           (B b B))))
+
+(define AT-LEAST-ONE-MISSING (make-ndfa '(S A B C) '(a b c)
+                                        'S
+                                        '(A B C)
+                                        `((S ,EMP A)
+                                          (S ,EMP B)
+                                          (S ,EMP C)
+                                          (A b A)
+                                          (A c A)
+                                          (B a B)
+                                          (B c B)
+                                          (C a C)
+                                          (C b C))))
+
 (run aa-ab)
 ;(run AT-LEAST-ONE-MISSING)
 
-(define EXAMPLE (call-with-values get-display-size empty-scene))
