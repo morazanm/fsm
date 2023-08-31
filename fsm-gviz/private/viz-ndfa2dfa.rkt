@@ -252,7 +252,7 @@
 
 (define-struct etc (up-edges ad-edges incl-nodes M hedges fedges bledges))
 
-;; vst is a structure that consists of
+;; vst (visualization state) is a structure that consists of
 ;; upimgs - unprocessed graph images
 ;; pimgs - processed graph images
 (define-struct vst (upimgs pimgs))
