@@ -239,9 +239,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define E-SCENE (empty-scene 1250 600))
 
-
-;; a world is a structure that consists of
+;; etc (edges-to-track) is a structure that consists of
 ;; up-edges - unprocessed edges, edges that are yet to be drawn
 ;; ad-edges - already drawn edges
 ;; incl-nodes - states that are already drawn on the graph
@@ -250,12 +250,12 @@
 ;; fedges - a list of faded edges in the ndfa graph
 ;; bledges - a list of black/unvisited edges in the ndfa graph
 
-(define-struct world (up-edges ad-edges incl-nodes M hedges fedges bledges))
+(define-struct etc (up-edges ad-edges incl-nodes M hedges fedges bledges))
 
-;; nw is a structure that consists of
+;; vst is a structure that consists of
 ;; upimgs - unprocessed graph images
 ;; pimgs - processed graph images
-(define-struct nw (upimgs pimgs))
+(define-struct vst (upimgs pimgs))
 
 
 ;; add-included-node
@@ -425,31 +425,27 @@
 
       
 
-;; world key -> world
-;; Purpose: To return the next world based on
+;; etc key -> etc
+;; Purpose: To return the next etc based on
 ;; the given key
-(define (process-key a-nw a-key)
+(define (process-key a-vst a-key)
   (cond [(key=? "right" a-key)
-         (if (empty? (nw-upimgs a-nw))
-             a-nw
-             (nw (rest (nw-upimgs a-nw))
-                 (cons (first (nw-upimgs a-nw))
-                       (nw-pimgs a-nw))))]
+         (if (empty? (vst-upimgs a-vst))
+             a-vst
+             (vst (rest (vst-upimgs a-vst))
+                 (cons (first (vst-upimgs a-vst))
+                       (vst-pimgs a-vst))))]
         [(key=? "left" a-key)
-         (if (= (length (nw-pimgs a-nw)) 1)
-             a-nw
-             (nw (cons (first (nw-pimgs a-nw))
-                       (nw-upimgs a-nw))
-                 (rest (nw-pimgs a-nw))))]
+         (if (= (length (vst-pimgs a-vst)) 1)
+             a-vst
+             (vst (cons (first (vst-pimgs a-vst))
+                       (vst-upimgs a-vst))
+                 (rest (vst-pimgs a-vst))))]
         [(key=? "down" a-key)
-         (nw '()
-             (append (reverse (nw-upimgs a-nw))
-                     (nw-pimgs a-nw)))]           
-        [else a-nw]))
-
-
-
-(define E-SCENE (empty-scene 1250 600))
+         (vst '()
+             (append (reverse (vst-upimgs a-vst))
+                     (vst-pimgs a-vst)))]           
+        [else a-vst]))
 
 
 
@@ -505,50 +501,50 @@
            (append hedges no-duplicates-fedges no-duplicates-bledges))))
 
 ;; make-ndfa-graph
-;; world -> graph img
+;; etc -> graph img
 ;; Purpose: To make an ndfa-graph from the given ndfa
-(define (make-ndfa-graph a-world)
+(define (make-ndfa-graph a-etc)
   (let* [(ndfa-edge-graph-x (ndfa-edge-graph (ndfa-node-graph (create-graph 'ndfagraph #:atb (hash 'rankdir "LR"))
-                                                              (world-M a-world))
-                                             (world-hedges a-world)
-                                             (world-fedges a-world)
-                                             (world-bledges a-world)))]
+                                                              (etc-M a-etc))
+                                             (etc-hedges a-etc)
+                                             (etc-fedges a-etc)
+                                             (etc-bledges a-etc)))]
     (graph->bitmap ndfa-edge-graph-x)))
 
 
-;; create-worlds
-;; world (listof world) -> (listof world)
-;; Purpose: To create all the worlds for graph imgs
-(define (create-worlds a-world low)
-  (if (empty? (world-up-edges a-world))
-      (cons a-world low)
-      (let* [(curr-dfa-ss-edge (first (world-up-edges a-world)))
-             (new-up-edges (rest (world-up-edges a-world)))
+;; create-etcs
+;; etc (listof etc) -> (listof etc)
+;; Purpose: To create all the etcs for graph imgs
+(define (create-etcs a-etc low)
+  (if (empty? (etc-up-edges a-etc))
+      (cons a-etc low)
+      (let* [(curr-dfa-ss-edge (first (etc-up-edges a-etc)))
+             (new-up-edges (rest (etc-up-edges a-etc)))
              (new-ad-edges (cons curr-dfa-ss-edge
-                                 (world-ad-edges a-world)))
-             (new-incl-nodes (add-included-node (world-incl-nodes a-world)
+                                 (etc-ad-edges a-etc)))
+             (new-incl-nodes (add-included-node (etc-incl-nodes a-etc)
                                                 curr-dfa-ss-edge))
-             (new-hedges (compute-all-hedges (sm-rules (world-M a-world))
+             (new-hedges (compute-all-hedges (sm-rules (etc-M a-etc))
                                              (third curr-dfa-ss-edge)
                                              curr-dfa-ss-edge))
              (new-fedges (if (empty? new-up-edges)
                              (append new-hedges
-                                     (world-fedges a-world))
-                             (append (world-hedges a-world)
-                                     (world-fedges a-world))))
-             (new-bledges (remove-edges new-hedges (world-bledges a-world)))]
-        (create-worlds
-         (make-world new-up-edges                       
+                                     (etc-fedges a-etc))
+                             (append (etc-hedges a-etc)
+                                     (etc-fedges a-etc))))
+             (new-bledges (remove-edges new-hedges (etc-bledges a-etc)))]
+        (create-etcs
+         (make-etc new-up-edges                       
                      new-ad-edges
                      new-incl-nodes
-                     (world-M a-world)
+                     (etc-M a-etc)
                      new-hedges
                      new-fedges
                      new-bledges)
-         (cons a-world low)))))
+         (cons a-etc low)))))
 
 ;; create-all-imgs
-;; (listof world) -> (listof img)
+;; (listof etc) -> (listof img)
 ;; Purpose: To create all graph imgs
 (define (create-all-imgs low)
   (define (resize-img img)
@@ -569,9 +565,9 @@
                                   (empty-scene (image-width E-SCENE)
                                                (/ (image-height E-SCENE) 2))))
              (dfa-graph
-              (let* [(new-edge (if (empty? (world-ad-edges (first low)))
+              (let* [(new-edge (if (empty? (etc-ad-edges (first low)))
                                    '()
-                                   (first (world-ad-edges (first low)))))
+                                   (first (etc-ad-edges (first low)))))
                      (edge-str (if (empty? new-edge)
                                    "Starting Super State"
                                    (string-append "SS Edge Added: "
@@ -590,9 +586,9 @@
                 (overlay (resize-img
                           (above
                            (create-dfa-graph
-                            (world-ad-edges (first low))
-                            (world-incl-nodes (first low))
-                            (ndfa2dfa-finals-only (world-M (first low))))
+                            (etc-ad-edges (first low))
+                            (etc-incl-nodes (first low))
+                            (ndfa2dfa-finals-only (etc-M (first low))))
                            edge-msg-img))
                          (empty-scene (image-width E-SCENE)
                                       (/ (image-height E-SCENE) 2)))))]
@@ -606,13 +602,13 @@
 
 
 
-;; draw-world
-;; world -> img
-;; Purpose: To draw a world image
-(define (draw-world a-world)
-  (if (empty? (nw-pimgs a-world))
-      (first (nw-upimgs a-world))
-      (first (nw-pimgs a-world))))
+;; draw-etc
+;; etc -> img
+;; Purpose: To draw a etc image
+(define (draw-etc a-etc)
+  (if (empty? (vst-pimgs a-etc))
+      (first (vst-upimgs a-etc))
+      (first (vst-pimgs a-etc))))
 
 
 ;; contains-final-state-run?
@@ -623,7 +619,7 @@
 
 
 
-;; ndfa --> world
+;; ndfa --> etc
 (define (run M)
   (begin
     (let* [(ss-edges (compute-ss-edges M))
@@ -631,20 +627,20 @@
                                                (sm-rules M)
                                                '()))
            (init-hedges (compute-all-hedges (sm-rules M) super-start-state '()))
-           (world (make-world ss-edges
+           (etc (make-etc ss-edges
                               '()
                               (list (first (first ss-edges)))
                               M
                               init-hedges
                               '()
                               (remove init-hedges (sm-rules M))))
-           (low (reverse (create-worlds world '())))
+           (low (reverse (create-etcs etc '())))
            (imgs (create-all-imgs low))
            ]
       (big-bang
-          (make-nw (rest imgs)
+          (make-vst (rest imgs)
                    (list (first imgs)))                
-        [on-draw draw-world]
+        [on-draw draw-etc]
         [on-key process-key]
         [name 'visualization]))
     (void)))
