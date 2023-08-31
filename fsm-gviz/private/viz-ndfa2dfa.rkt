@@ -183,19 +183,7 @@
                         (append-map (λ (r) (list (first r) (third r)))
                                     ss-dfa-rules)))
          (ss-name-tbl (compute-ss-name-tbl super-states))]
-    ss-dfa-rules
-    #;(make-dfa (map (λ (ss) (second (assoc ss ss-name-tbl)))
-                     super-states)
-                sigma
-                (second (assoc (first super-states) ss-name-tbl))
-                (map (λ (ss) (second (assoc ss ss-name-tbl)))
-                     (filter (λ (ss) (ormap (λ (s) (member s finals)) ss))
-                             super-states))
-                (map (λ (r) (list (second (assoc (first r) ss-name-tbl))
-                                  (second r)
-                                  (second (assoc (third r) ss-name-tbl))))
-                     ss-dfa-rules)
-                'no-dead)))
+    ss-dfa-rules))
 
 ;; (listof states) alphabet state (listof state) (listof ndfa-rule) -> dfa
 ;; Purpose: Creates a dfa from the given ndfa
@@ -433,18 +421,18 @@
          (if (empty? (vst-upimgs a-vst))
              a-vst
              (vst (rest (vst-upimgs a-vst))
-                 (cons (first (vst-upimgs a-vst))
-                       (vst-pimgs a-vst))))]
+                  (cons (first (vst-upimgs a-vst))
+                        (vst-pimgs a-vst))))]
         [(key=? "left" a-key)
          (if (= (length (vst-pimgs a-vst)) 1)
              a-vst
              (vst (cons (first (vst-pimgs a-vst))
-                       (vst-upimgs a-vst))
-                 (rest (vst-pimgs a-vst))))]
+                        (vst-upimgs a-vst))
+                  (rest (vst-pimgs a-vst))))]
         [(key=? "down" a-key)
          (vst '()
-             (append (reverse (vst-upimgs a-vst))
-                     (vst-pimgs a-vst)))]           
+              (append (reverse (vst-upimgs a-vst))
+                      (vst-pimgs a-vst)))]           
         [else a-vst]))
 
 
@@ -535,12 +523,12 @@
              (new-bledges (remove-edges new-hedges (etc-bledges a-etc)))]
         (create-etcs
          (make-etc new-up-edges                       
-                     new-ad-edges
-                     new-incl-nodes
-                     (etc-M a-etc)
-                     new-hedges
-                     new-fedges
-                     new-bledges)
+                   new-ad-edges
+                   new-incl-nodes
+                   (etc-M a-etc)
+                   new-hedges
+                   new-fedges
+                   new-bledges)
          (cons a-etc low)))))
 
 ;; create-all-imgs
@@ -628,18 +616,18 @@
                                                '()))
            (init-hedges (compute-all-hedges (sm-rules M) super-start-state '()))
            (etc (make-etc ss-edges
-                              '()
-                              (list (first (first ss-edges)))
-                              M
-                              init-hedges
-                              '()
-                              (remove init-hedges (sm-rules M))))
+                          '()
+                          (list (first (first ss-edges)))
+                          M
+                          init-hedges
+                          '()
+                          (remove init-hedges (sm-rules M))))
            (low (reverse (create-etcs etc '())))
            (imgs (create-all-imgs low))
            ]
       (big-bang
           (make-vst (rest imgs)
-                   (list (first imgs)))                
+                    (list (first imgs)))                
         [on-draw draw-etc]
         [on-key process-key]
         [name 'visualization]))
