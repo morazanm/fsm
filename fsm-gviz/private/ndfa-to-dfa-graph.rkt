@@ -19,6 +19,7 @@ Take ndfa as input, make a dfa and then make a graph
        super-states))
 
 ;; Tests for compute-ss-name-tbl
+
 (check-pred (lambda (tbl)
               (and (list? tbl)
                    (andmap (λ (e) (= (length e) 2)) tbl)
