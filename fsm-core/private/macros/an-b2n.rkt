@@ -7,7 +7,7 @@
                        '(a b)
                        '(a)
                        'S
-                       '(F)
+                       '(F W)
                        `(((S a ,EMP) (S (a a)))
                          ((s ,EMP ,EMP) (F ,EMP))
                          ((f b (A)) (F ,EMP)))))
