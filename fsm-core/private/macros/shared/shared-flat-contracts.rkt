@@ -120,7 +120,7 @@
                       (raise-blame-error
                        blame
                        start
-                       (format "Step three of the design recipe was not successfully completed.\nThe given starting state: ~s is not a valid state" start)
+                       (format "Step three of the design recipe was not successfully completed.\nFor the given starting state: ~s is not a valid state" start)
                        )
                       )
                     )
