@@ -239,13 +239,13 @@
       (define to-state (third rule))
       (define all-errors
         (append (if (not (member from-state states))
-                    (list (format "The from state ~a is not in the list of machine states." from-state))
+                    (list (format "The from state, ~a, is not in the list of states." from-state))
                     '())
                 (if (not (member consumed sigma))
-                    (list (format "The consumed letter ~a is not in the machine sigma." consumed))
+                    (list (format "The consumed letter, ~a, is not in the input alphabet." consumed))
                     '())
                 (if (not (member to-state states))
-                    (list (format "The to state ~a is not in the list of machine states." to-state))
+                    (list (format "The to state, ~a, is not in the list of states." to-state))
                     '())))
       (if (empty? all-errors) '() (list (make-invalid-rule rule all-errors))))
     (flatten (map rule-with-errors rules)))
@@ -273,25 +273,25 @@
               (consumed (second rule-pop))
               (pop-elems (third rule-pop))]
           (append (if (not (member state states))
-                      (list (format "The from state ~a is not in the list of machine states." state))
+                      (list (format "The from state, ~a, is not in the list of states." state))
                       '())
                   (if (not (member consumed (cons EMP sigma)))
-                      (list (format "The letter ~a is not in the machine sigma." consumed))
+                      (list (format "The letter ~a is not in the input alphabet." consumed))
                       '())
                   (if (equal? pop-elems EMP)
                       '()
-                      (map (lambda (x) (format "The pop element ~a at index ~a is not in the machine gamma." (first x) (second x)))
+                      (map (lambda (x) (format "The ~a at index ~a of the pop list is not in the stack alphabet." (first x) (second x)))
                            (filter (lambda (p) (not (member (first p) gamma))) (with-indices pop-elems))))))
         )
       (define push-errors
         (let [(state (first rule-push))
               (push-elems (second rule-push))]
           (append (if (not (member state states))
-                      (list (format "The to state ~a is not in the list of machine states." state))
+                      (list (format "The to state, ~a, is not in the list of states." state))
                       '())
                   (if (equal? push-elems EMP)
                       '()
-                      (map (lambda (x) (format "The push element ~a at index ~a is not in the machine gamma." (first x) (second x)))
+                      (map (lambda (x) (format "The ~a at index ~a of the push list is not in the stack alphabet." (first x) (second x)))
                            (filter (lambda (p) (not (member (first p) gamma))) (with-indices push-elems))))))
         )
       (define all-errors (append pop-errors push-errors))
@@ -313,17 +313,17 @@
       (define rule-to (second rule))
       (define from-errors
         (append (if (not (member (first rule-from) states))
-                    (list (format "The from state ~a is not in the list of machine states." (first rule-from)))
+                    (list (format "The from state, ~a, is not in the list of states." (first rule-from)))
                     '())
                 (if (not (member (second rule-from) (cons BLANK (cons LM sigma))))
-                    (list (format "The read tape symbol ~a must be in the machine sigma, or be the BLANK or LM constants." (second rule-from)))
+                    (list (format "The read symbol, ~a, must be in the input alphabet, BLANK, or LM." (second rule-from)))
                     '())))
       (define to-errors
         (append (if (not (member (first rule-to) states))
-                    (list (format "The to state ~a is not in the list of machine states." (first rule-to)))
+                    (list (format "The to state, ~a, is not in the list of states." (first rule-to)))
                     '())
                 (if (not (member (second rule-to) (cons RIGHT (cons LEFT (cons BLANK sigma)))))
-                    (list (format "The tm-action ~a must be in the machine sigma, or be the LEFT, RIGHT, or BLANK constants." (second rule-to)))
+                    (list (format "The action ~a must be in the input alphabet, LEFT, RIGHT, or BLANK." (second rule-to)))
                     '())))
       (define all-errors (append from-errors to-errors))
       (if (empty? all-errors) '() (list (make-invalid-rule rule all-errors))))
@@ -347,10 +347,10 @@
         (let [(state (first rule-from))
               (tape-reads (second rule-from))]
           (append (if (not (member state states))
-                      (list (format "The from state ~a is not in the list of machine states." state))
+                      (list (format "The from state, ~a, is not in the list of states." state))
                       '())
                   (map (lambda (x)
-                         (format "The read tape symbol ~a on tape ~a must be in the machine sigma, or be the BLANK or LM constants."
+                         (format "The read symbol, ~a, on tape ~a must be in the input alphabet, BLANK, or LM."
                                  (first x)
                                  (second x)))
                        (filter (lambda (r) (not (member (first r) (cons BLANK (cons LM sigma))))) (with-indices tape-reads)))))
@@ -359,10 +359,10 @@
         (let [(state (first rule-to))
               (tm-actions (second rule-to))]
           (append (if (not (member state states))
-                      (list (format "The to state ~a is not in the list of machine states." state))
+                      (list (format "The to state, ~a, is not in the list of states." state))
                       '())
                   (map (lambda (x)
-                         (format "The tm-action ~a on tape ~a must be in the machine sigma, or be the LEFT, RIGHT, or BLANK constants."
+                         (format "The action ~a on tape ~a must be in the input alphabet, LEFT, RIGHT, or BLANK."
                                  (first x)
                                  (second x)))
                        (filter (lambda (r) (not (member (first r) (cons RIGHT (cons LEFT (cons BLANK sigma)))))) (with-indices tm-actions)))))
@@ -554,12 +554,12 @@
     (check-equal? (incorrect-dfa-rules '(A B) '(a b) `((C d E) (A f G)))
                   (list
                    (make-invalid-rule '(C d E)
-                                      '("The from state C is not in the list of machine states."
-                                        "The consumed letter d is not in the machine sigma."
-                                        "The to state E is not in the list of machine states."))
+                                      '("The from state, C, is not in the list of states."
+                                        "The consumed letter, d, is not in the input alphabet."
+                                        "The to state, E, is not in the list of states."))
                    (make-invalid-rule '(A f G)
-                                      '("The consumed letter f is not in the machine sigma."
-                                        "The to state G is not in the list of machine states."))))
+                                      '("The consumed letter, f, is not in the input alphabet."
+                                        "The to state, G, is not in the list of states."))))
     
     ;incorrect-members-ndpda tests
     (check-equal? (incorrect-members-ndpda '(A B)
@@ -610,11 +610,11 @@
                                          `(((D e (f)) (G (,EMP)))))
                   (list (make-invalid-rule `((D e (f)) (G (,EMP)))
                                            (list
-                                            "The from state D is not in the list of machine states."
-                                            "The letter e is not in the machine sigma."
-                                            "The pop element f at index 0 is not in the machine gamma."
-                                            "The to state G is not in the list of machine states."
-                                            "The push element ε at index 0 is not in the machine gamma."))))
+                                            "The from state, D, is not in the list of states."
+                                            "The letter e is not in the input alphabet."
+                                            "The f at index 0 of the pop list is not in the stack alphabet."
+                                            "The to state, G, is not in the list of states."
+                                            "The ε at index 0 of the push list is not in the stack alphabet."))))
 
     ;incorrect-tm-rules tests
     (check-equal? (incorrect-tm-rules '(A B C)
@@ -627,10 +627,10 @@
                                       '(a b)
                                       `(((D ,LEFT) (E ,EMP))))
                   (list (make-invalid-rule `((D ,LEFT) (E ,EMP))
-                                           '("The from state D is not in the list of machine states."
-                                             "The read tape symbol L must be in the machine sigma, or be the BLANK or LM constants."
-                                             "The to state E is not in the list of machine states."
-                                             "The tm-action ε must be in the machine sigma, or be the LEFT, RIGHT, or BLANK constants."))))
+                                           '("The from state, D, is not in the list of states."
+                                             "The read symbol, L, must be in the input alphabet, BLANK, or LM."
+                                             "The to state, E, is not in the list of states."
+                                             "The action ε must be in the input alphabet, LEFT, RIGHT, or BLANK."))))
 
     ;incorrect-mttm-rules tests
     (check-equal? (incorrect-mttm-rules '(A B C)
@@ -642,12 +642,12 @@
                                         '(a b)
                                         `(((D (,LEFT ,EMP)) (E (f g)))))
                   (list (make-invalid-rule `((D (,LEFT ,EMP)) (E (f g)))
-                                           '("The from state D is not in the list of machine states."
-                                             "The read tape symbol L on tape 0 must be in the machine sigma, or be the BLANK or LM constants."
-                                             "The read tape symbol ε on tape 1 must be in the machine sigma, or be the BLANK or LM constants."
-                                             "The to state E is not in the list of machine states."
-                                             "The tm-action f on tape 0 must be in the machine sigma, or be the LEFT, RIGHT, or BLANK constants."
-                                             "The tm-action g on tape 1 must be in the machine sigma, or be the LEFT, RIGHT, or BLANK constants."))))
+                                           '("The from state, D, is not in the list of states."
+                                             "The read symbol, L, on tape 0 must be in the input alphabet, BLANK, or LM."
+                                             "The read symbol, ε, on tape 1 must be in the input alphabet, BLANK, or LM."
+                                             "The to state, E, is not in the list of states."
+                                             "The action f on tape 0 must be in the input alphabet, LEFT, RIGHT, or BLANK."
+                                             "The action g on tape 1 must be in the input alphabet, LEFT, RIGHT, or BLANK."))))
     
     ;incorrect-members-tm tests
     (check-equal? (incorrect-members-tm '(A B)
