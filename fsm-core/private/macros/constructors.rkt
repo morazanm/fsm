@@ -48,15 +48,15 @@
                               #:accepts [accepts '()]
                               #:rejects [rejects '()])
     (->i ([states (and/c (is-nonempty-list/c "machine state" "list of machine states")
-                         (valid-listof/c valid-state? "machine state" "list of machine states")
+                         (valid-listof/c valid-state? "machine state" "list of machine states" #:rule "three")
                          (no-duplicates/c "states"))]
           [sigma (and/c (is-nonempty-list/c "alphabet letter" "machine sigma")
-                        (valid-listof/c valid-alpha? "alphabet letter" "machine sigma")
+                        (valid-listof/c valid-alpha? "alphabet letter" "machine sigma" #:rule "one")
                         (no-duplicates/c "sigma"))]
           [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
           [finals (states) (and/c (is-nonempty-list/c "final state" "list of machine final states")
-                                  (valid-listof/c valid-state? "machine state" "list of machine finals")
+                                  (valid-listof/c valid-state? "machine state" "list of machine finals" #:rule "three")
                                   (valid-finals/c states)
                                   (no-duplicates/c "final states"))]
           [rules (states
@@ -111,15 +111,15 @@
                                #:accepts [accepts '()]
                                #:rejects [rejects '()])
     (->i ([states (and/c (is-nonempty-list/c "machine state" "list of machine states")
-                         (valid-listof/c valid-state? "machine state" "list of machine states")
+                         (valid-listof/c valid-state? "machine state" "list of machine states" #:rule "third")
                          (no-duplicates/c "states"))]
           [sigma (and/c (is-nonempty-list/c "alphabet letter" "machine sigma")
-                        (valid-listof/c valid-alpha? "alphabet letter" "machine sigma")
+                        (valid-listof/c valid-alpha? "alphabet letter" "machine sigma" #:rule "one")
                         (no-duplicates/c "sigma"))]
           [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
           [finals (states) (and/c (is-nonempty-list/c "final state" "list of machine final states")
-                                  (valid-listof/c valid-state? "machine state" "list of machine finals")
+                                  (valid-listof/c valid-state? "machine state" "list of machine finals" #:rule "three")
                                   (valid-finals/c states)
                                   (no-duplicates/c "final states"))]
           [rules (states
@@ -166,17 +166,17 @@
                                 #:accepts [accepts '()]
                                 #:rejects [rejects '()])
     (->i ([states (and/c (is-nonempty-list/c "machine state" "list of machine states")
-                         (valid-listof/c valid-state? "machine state" "list of machine states")
+                         (valid-listof/c valid-state? "machine state" "list of machine states" #:rule "three")
                          (no-duplicates/c "states"))]
           [sigma (and/c (is-nonempty-list/c "alphabet letter" "machine sigma")
-                        (valid-listof/c valid-alpha? "alphabet letter" "machine sigma")
+                        (valid-listof/c valid-alpha? "alphabet letter" "machine sigma" #:rule "one")
                         (no-duplicates/c "sigma"))]
-          [gamma (and/c (valid-listof/c (lambda (g) (or (valid-state? g) (valid-alpha? g))) "stack symbol" "list of stack symbols")
+          [gamma (and/c (valid-listof/c (lambda (g) (or (valid-state? g) (valid-alpha? g))) "stack symbol" "list of stack symbols" #:rule "one")
                         (no-duplicates/c "gamma"))]
           [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
           [finals (states) (and/c (is-nonempty-list/c "final state" "list of machine final states")
-                                  (valid-listof/c valid-state? "machine state" "list of machine finals")
+                                  (valid-listof/c valid-state? "machine state" "list of machine finals" #:rule "three")
                                   (valid-finals/c states)
                                   (no-duplicates/c "final states"))]
           [rules (states
@@ -225,10 +225,10 @@
                              #:rejects [rejects '()]
                              )
     (->i ([states (and/c (is-nonempty-list/c "machine state" "list of machine states")
-                         (valid-listof/c valid-state? "machine state" "list of machine states")
+                         (valid-listof/c valid-state? "machine state" "list of machine states" #:rule "three")
                          (no-duplicates/c "states"))]
           [sigma (and/c (is-nonempty-list/c "alphabet letter" "machine sigma")
-                        (valid-listof/c valid-alpha? "alphabet letter" "machine sigma")
+                        (valid-listof/c valid-alpha? "alphabet letter" "machine sigma" #:rule "one")
                         (no-duplicates/c "sigma"))]
           [rules (states
                   sigma) (and/c (listof-rules/c valid-tm-rule-structure?)
@@ -237,7 +237,7 @@
           [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
           [finals (states) (and/c (is-nonempty-list/c "final state" "list of machine final states")
-                                  (valid-listof/c valid-state? "machine state" "list of machine finals")
+                                  (valid-listof/c valid-state? "machine state" "list of machine finals" #:rule "three")
                                   (valid-finals/c states)
                                   (no-duplicates/c "final states"))]
           )
@@ -290,15 +290,15 @@
                                #:accepts [accepts '()]
                                #:rejects [rejects '()])
     (->i ([states (and/c (is-nonempty-list/c "machine state" "list of machine states")
-                         (valid-listof/c valid-state? "machine state" "list of machine states" #:rule 3)
+                         (valid-listof/c valid-state? "machine state" "list of machine states" #:rule "three")
                          (no-duplicates/c "states"))]
           [sigma (and/c (is-nonempty-list/c "alphabet letter" "machine-sigma")
-                        (valid-listof/c valid-alpha? "alphabet letter" "machine sigma")
+                        (valid-listof/c valid-alpha? "alphabet letter" "machine sigma" #:rule "one")
                         (no-duplicates/c "sigma"))]
           [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
           [finals (states) (and/c (is-nonempty-list/c "final state" "list of machine final states")
-                                  (valid-listof/c valid-state? "machine state" "list of machine finals")
+                                  (valid-listof/c valid-state? "machine state" "list of machine finals" #:rule "three")
                                   (valid-finals/c states)
                                   (no-duplicates/c "final states"))]
           [rules (states
