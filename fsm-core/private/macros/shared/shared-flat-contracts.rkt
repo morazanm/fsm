@@ -30,11 +30,14 @@
                       (raise-blame-error
                        blame
                        x
-                       (format "Expected a non-empty list of ~a(s) for the ~a, but got" element-name field-name))))
+                       (if (equal? element-name "state")
+                           (format "Step three of the design recipe has not be succesfully completed, the list of ~a cannot be empty" field-name)
+                           (format "Step one of the design recipe has not be succesfully completed, the ~a cannot be empty" field-name))))
+                    )
      )
     )
   
-;valid-listof/c: ((listof any) --> boolean) string string --> contract
+  ;valid-listof/c: ((listof any) --> boolean) string string --> contract
   ;; predicate: (listof any) --> boolean
   ;; helper: (listof any) --> (listof any)
   ;Purpose: applies a predicate to a list and makes sure that everything in
@@ -50,10 +53,10 @@
                       (raise-blame-error
                        blame
                        vals
-                       (format "~a. The following: ~a are not valid ~a(s), in the ~a."
+                       (format "~a.\n The following: ~a are not valid ~as in the given ~a."
                                (if (equal? rule "")
                                    ""
-                                   (format "This violates rule ~a of the design recipe for state machines" rule))
+                                   (format "Step ~a of the design recipe was not successfully completed" rule))
                                invalid-vals
                                element-name
                                field-name
@@ -78,7 +81,7 @@
                       (raise-blame-error
                        blame
                        state
-                       "The following is not a valid non-dead state")))))
+                       "Step three of the design recipe has not been successfully completed.\nThe following is not a valid non-dead state")))))
 
   ;valid-states/c: () --> contract
   ;;predicate: (listof any) --> boolean
@@ -117,7 +120,7 @@
                       (raise-blame-error
                        blame
                        start
-                       (format "The starting state ~s is not a valid state" start)
+                       (format "Step three of the design recipe was not successfully completed.\nThe starting state: ~s is not a valid state" start)
                        )
                       )
                     )
@@ -138,7 +141,7 @@
                       (raise-blame-error
                        blame
                        start
-                       (format "The following starting state is not in ~a, your list of states: ~a" states start)
+                       (format "Step three of the design recipe has not been successfully completed.\nThe following starting state is not in ~a, your list of states: ~a" states start)
                        )
                       )
                     )
@@ -161,7 +164,12 @@
                       (raise-blame-error
                        blame
                        (return-duplicates vals)
-                       (format "There following values are duplicated in your ~a: " type )
+                       (format "Step ~a of the design recipe has not been sucessfully completed.\nThere following values are duplicated in your ~a: "
+                               (if (or (equal? type "sigma") (equal? type "gamma"))
+                                   "one"
+                                   (if (or (equal? type "states") (equal? type "final states"))
+                                       "three"
+                                       "four")) type)
                        )
                       )
                     )
@@ -206,7 +214,7 @@
                       (raise-blame-error
                        blame
                        state
-                       (format "The following state is not a member of your list of final states ~a" finals)))))
+                       (format "Step three of the design recipe has not been sucecssfully completed.\nThe following state is not a member of your list of final states ~a" finals)))))
     )
 
   ;valid-num-tapes/c: any --> contract
@@ -223,5 +231,5 @@
                       (raise-blame-error
                        blame
                        val
-                       "The following is not an integer greater than 0")))))
+                       "Step five of the design recipe has not been successfully completed.\nThe following is not an integer greater than 0")))))
   )
