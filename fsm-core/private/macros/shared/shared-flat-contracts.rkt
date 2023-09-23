@@ -15,7 +15,28 @@
    valid-finals/c
    is-state-in-finals/c
    valid-num-tapes/c
+   is-a-list/c
    )
+
+  ;is-a-list//c: string string --> contract
+  ;; predicate: any --> boolean
+  ;; Purpose: A flat contract that checks if the input is a list.
+  (define (is-a-list/c field-name)
+    (make-flat-contract
+     #:name 'is-nonempty-list/c
+     #:first-order (lambda (x) (list? x))
+     #:projection (lambda (blame)
+                    (lambda (x)
+                      (current-blame-format format-error)
+                      (raise-blame-error
+                       blame
+                       x
+                       (format "Step three of the design recipe has not be succesfully completed, the list of ~a must be a list" field-name)
+                       ))
+                    )
+     )
+    )
+  
 
   ;is-nonempty-list//c: string string --> contract
   ;; predicate: any --> boolean
@@ -30,7 +51,7 @@
                       (raise-blame-error
                        blame
                        x
-                       (if (or (equal? element-name "mahine state") (equal? element-name "final state"))
+                       (if (or (equal? element-name "machine state") (equal? element-name "final state"))
                            (format "Step three of the design recipe has not be succesfully completed, the list of ~a must be a non-empty list" field-name)
                            (format "Step one of the design recipe has not be succesfully completed, the ~a must be a non-empty list" field-name))))
                     )
