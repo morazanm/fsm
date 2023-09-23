@@ -166,23 +166,21 @@
 ;; Purpose: To create a graph img for the given dgraph
 ;; with the labeled edge that has been expanded
 (define (create-graph-img dgraph edge)
-  (overlay
-   (above
-    (graph->bitmap
-     (create-edges
-      (create-nodes
-       (create-graph 'dgraph #:atb (hash 'rankdir "LR"
-                                         'font "Sans"))
-       dgraph
-       edge)
-      dgraph))
-    (cond [(empty? edge) (text "Starting NDFA" 24 'black)]
-          [(void? edge) (text "Simplified initial regexp" 24 'black)]
-          [else (beside (text (format "Expanded regexp: ~a on edge from state" (printable-regexp (second edge))) 24 'black)
-                        (text (format " ~a" (first edge)) 24 'violet)
-                        (text (format " to state ") 24 'black)
-                        (text (format "~a" (third edge)) 24 'violet))]))
-   E-SCENE))
+  (above
+   (graph->bitmap
+    (create-edges
+     (create-nodes
+      (create-graph 'dgraph #:atb (hash 'rankdir "LR"
+                                        'font "Sans"))
+      dgraph
+      edge)
+     dgraph))
+   (cond [(empty? edge) (text "Starting NDFA" 24 'black)]
+         [(void? edge) (text "Simplified initial regexp" 24 'black)]
+         [else (beside (text (format "Expanded regexp: ~a on edge from state" (printable-regexp (second edge))) 24 'black)
+                       (text (format " ~a" (first edge)) 24 'violet)
+                       (text (format " to state ") 24 'black)
+                       (text (format "~a" (third edge)) 24 'violet))])))
 
 
 ;; create-graph-imgs
@@ -231,16 +229,16 @@
             (height (image-height (first (viz-state-pimgs a-vs))))]
         (if (or (> width (image-width E-SCENE))
                 (> height (image-height E-SCENE)))
-            (overlay (resize-image (first (viz-state-pimgs a-vs)) (- (image-width E-SCENE) 5)
-                                   (- (image-height E-SCENE) 5))
+            (overlay (resize-image (first (viz-state-pimgs a-vs)) (- (image-width E-SCENE) 10)
+                                   (- (image-height E-SCENE) 10))
                      E-SCENE)
             (overlay (first (viz-state-pimgs a-vs)) E-SCENE)))
       (let [(width (image-width (first (viz-state-upimgs a-vs))))
             (height (image-height (first (viz-state-upimgs a-vs))))]
         (if (or (> width (image-width E-SCENE))
                 (> height (image-height E-SCENE)))
-            (overlay (resize-image (first (viz-state-upimgs a-vs)) (- (image-width E-SCENE) 5)
-                                   (- (image-height E-SCENE) 5))
+            (overlay (resize-image (first (viz-state-upimgs a-vs)) (- (image-width E-SCENE) 10)
+                                   (- (image-height E-SCENE) 10))
                      E-SCENE)
             (overlay (first (viz-state-upimgs a-vs)) E-SCENE)))))
 

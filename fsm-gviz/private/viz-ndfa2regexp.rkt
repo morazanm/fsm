@@ -350,7 +350,7 @@
         (height (image-height graph-img))]
     (if (or (> width (image-width E-SCENE))
             (> height (image-height E-SCENE)))
-        (overlay (resize-image graph-img (image-width E-SCENE) (image-height E-SCENE))
+        (overlay (resize-image graph-img (- 10 (image-width E-SCENE)) (- 10 (image-height E-SCENE)))
                  E-SCENE)
         (overlay graph-img E-SCENE))))
 
