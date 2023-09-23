@@ -53,7 +53,7 @@
                       (raise-blame-error
                        blame
                        vals
-                       (format "~a.\n The following: ~a are not valid ~as in the given ~a."
+                       (format "~a.\n The following: ~a are not valid ~as in the given ~a"
                                (if (equal? rule "")
                                    ""
                                    (format "Step ~a of the design recipe was not successfully completed" rule))
@@ -120,7 +120,7 @@
                       (raise-blame-error
                        blame
                        start
-                       (format "Step three of the design recipe was not successfully completed.\nThe starting state: ~s is not a valid state" start)
+                       (format "Step three of the design recipe was not successfully completed.\nThe given starting state: ~s is not a valid state" start)
                        )
                       )
                     )
@@ -141,7 +141,7 @@
                       (raise-blame-error
                        blame
                        start
-                       (format "Step three of the design recipe has not been successfully completed.\nThe following starting state is not in ~a, your list of states: ~a" states start)
+                       (format "Step three of the design recipe has not been successfully completed.\nThe following starting state is not in ~a, the given list of states: ~a" states start)
                        )
                       )
                     )
@@ -164,7 +164,7 @@
                       (raise-blame-error
                        blame
                        (return-duplicates vals)
-                       (format "Step ~a of the design recipe has not been sucessfully completed.\nThere following values are duplicated in your ~a: "
+                       (format "Step ~a of the design recipe has not been sucessfully completed.\nThere following values are duplicated in the given ~a: "
                                (if (or (equal? type "sigma") (equal? type "gamma"))
                                    "one"
                                    (if (or (equal? type "states") (equal? type "final states"))
@@ -214,7 +214,7 @@
                       (raise-blame-error
                        blame
                        state
-                       (format "Step three of the design recipe has not been sucecssfully completed.\nThe following state is not a member of your list of final states ~a" finals)))))
+                       (format "Step three of the design recipe has not been sucecssfully completed.\nThe following state is not a member of the given list of final states ~a" finals)))))
     )
 
   ;valid-num-tapes/c: any --> contract
@@ -227,9 +227,9 @@
      #:first-order (lambda (val) (and (integer? val) (> val 0)))
      #:projection (lambda (blame)
                     (lambda (val)
-                      (current-blame-format format-error)
+                      (current-blame-format format-start-error)
                       (raise-blame-error
                        blame
                        val
-                       "Step five of the design recipe has not been successfully completed.\nThe following is not an integer greater than 0")))))
+                       (format "Step five of the design recipe has not been successfully completed.\nThe given number of tapes: ~a is not an integer greater than 0" val))))))
   )

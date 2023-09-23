@@ -4,7 +4,7 @@
 (local-require test-engine/racket-tests)
 
 (define dfa-temp (make-dfa2
-                  '(A B)
+                  '(A b)
                   '(a b)
                   'A
                   '(B)

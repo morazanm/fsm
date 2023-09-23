@@ -50,8 +50,8 @@
     (->i ([states (and/c (is-nonempty-list/c "machine state" "list of machine states")
                          (valid-listof/c valid-state? "machine state" "list of machine states" #:rule "three")
                          (no-duplicates/c "states"))]
-          [sigma (and/c (is-nonempty-list/c "alphabet letter" "machine sigma")
-                        (valid-listof/c valid-alpha? "alphabet letter" "machine sigma" #:rule "one")
+          [sigma (and/c (is-nonempty-list/c "alphabet letter" "input alphabet")
+                        (valid-listof/c valid-alpha? "alphabet letter" "input alphabet" #:rule "one")
                         (no-duplicates/c "sigma"))]
           [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
@@ -113,8 +113,8 @@
     (->i ([states (and/c (is-nonempty-list/c "machine state" "list of machine states")
                          (valid-listof/c valid-state? "machine state" "list of machine states" #:rule "third")
                          (no-duplicates/c "states"))]
-          [sigma (and/c (is-nonempty-list/c "alphabet letter" "machine sigma")
-                        (valid-listof/c valid-alpha? "alphabet letter" "machine sigma" #:rule "one")
+          [sigma (and/c (is-nonempty-list/c "alphabet letter" "input alphabet")
+                        (valid-listof/c valid-alpha? "alphabet letter" "input alphabet" #:rule "one")
                         (no-duplicates/c "sigma"))]
           [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
@@ -168,10 +168,10 @@
     (->i ([states (and/c (is-nonempty-list/c "machine state" "list of machine states")
                          (valid-listof/c valid-state? "machine state" "list of machine states" #:rule "three")
                          (no-duplicates/c "states"))]
-          [sigma (and/c (is-nonempty-list/c "alphabet letter" "machine sigma")
-                        (valid-listof/c valid-alpha? "alphabet letter" "machine sigma" #:rule "one")
+          [sigma (and/c (is-nonempty-list/c "alphabet letter" "input alphabet")
+                        (valid-listof/c valid-alpha? "alphabet letter" "input alphabet" #:rule "one")
                         (no-duplicates/c "sigma"))]
-          [gamma (and/c (valid-listof/c (lambda (g) (or (valid-state? g) (valid-alpha? g))) "stack symbol" "list of stack symbols" #:rule "one")
+          [gamma (and/c (valid-listof/c (lambda (g) (or (valid-state? g) (valid-alpha? g))) "stack symbol" "stack alphabet" #:rule "one")
                         (no-duplicates/c "gamma"))]
           [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
@@ -227,8 +227,8 @@
     (->i ([states (and/c (is-nonempty-list/c "machine state" "list of machine states")
                          (valid-listof/c valid-state? "machine state" "list of machine states" #:rule "three")
                          (no-duplicates/c "states"))]
-          [sigma (and/c (is-nonempty-list/c "alphabet letter" "machine sigma")
-                        (valid-listof/c valid-alpha? "alphabet letter" "machine sigma" #:rule "one")
+          [sigma (and/c (is-nonempty-list/c "alphabet letter" "input alphabet")
+                        (valid-listof/c valid-alpha? "alphabet letter" "input alphabet" #:rule "one")
                         (no-duplicates/c "sigma"))]
           [rules (states
                   sigma) (and/c (listof-rules/c valid-tm-rule-structure?)
@@ -293,7 +293,7 @@
                          (valid-listof/c valid-state? "machine state" "list of machine states" #:rule "three")
                          (no-duplicates/c "states"))]
           [sigma (and/c (is-nonempty-list/c "alphabet letter" "machine-sigma")
-                        (valid-listof/c valid-alpha? "alphabet letter" "machine sigma" #:rule "one")
+                        (valid-listof/c valid-alpha? "alphabet letter" "input alphabet" #:rule "one")
                         (no-duplicates/c "sigma"))]
           [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
