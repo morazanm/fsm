@@ -23,7 +23,7 @@
   ;; Purpose: A flat contract that checks if the input is a list.
   (define (is-a-list/c field-name)
     (make-flat-contract
-     #:name 'is-nonempty-list/c
+     #:name 'is-a-list/c
      #:first-order (lambda (x) (list? x))
      #:projection (lambda (blame)
                     (lambda (x)
@@ -31,7 +31,7 @@
                       (raise-blame-error
                        blame
                        x
-                       (format "Step three of the design recipe has not be succesfully completed, the list of ~a must be a list" field-name)
+                       (format "Step three of the design recipe has not be succesfully completed.\nThe given ~a must be a list" field-name)
                        ))
                     )
      )
