@@ -30,9 +30,9 @@
                       (raise-blame-error
                        blame
                        x
-                       (if (equal? element-name "state")
-                           (format "Step three of the design recipe has not be succesfully completed, the list of ~a cannot be empty" field-name)
-                           (format "Step one of the design recipe has not be succesfully completed, the ~a cannot be empty" field-name))))
+                       (if (or (equal? element-name "mahine state") (equal? element-name "final state"))
+                           (format "Step three of the design recipe has not be succesfully completed, the list of ~a must be a non-empty list" field-name)
+                           (format "Step one of the design recipe has not be succesfully completed, the ~a must be a non-empty list" field-name))))
                     )
      )
     )

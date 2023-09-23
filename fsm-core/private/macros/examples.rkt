@@ -22,7 +22,7 @@
                       ((S ,BLANK) (Y ,BLANK)))
                     'S
                     '(Y N)
-                    'M
+                    'Y
                   #:accepts (list `((a a a) 0) '(a a))
                   #:rejects (list '(b b b b) '(b b))
                   ))
@@ -58,11 +58,11 @@
                            #:rejects (list '(a a a b b))
                            ))
 
-(define a^nb^n (make-ndpda '(S M F)
+(define a^nb^n (make-ndpda2 '(S M F)
                            '(a b)
                            '(a)
                            'S
-                           '(F)
+                           'F
                            `(((S ,EMP ,EMP) (M ,EMP))
                              ((S a ,EMP) (S (a)))
                              ((M b (a)) (M ,EMP))
@@ -130,7 +130,7 @@
                          'Y
                          #:accepts `(((,LM ,BLANK a b c) 1))))
 
-(define EQABC2 (make-mttm2 '(S Y N C D E F g)
+(define EQABC2 (make-mttm2 '(S Y N C D E F)
                             '(a b c)
                             'S
                             '(Y N)
