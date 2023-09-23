@@ -24,7 +24,7 @@
                       (raise-blame-error
                        blame
                        (map (lambda (x) (format "~n~s" x)) (invalid-rules pred rules))
-                       (format "Improperly formatted list of rules")
+                       (format "Rule four of the design recipe was violated.\nThe following rules are improperly formatted.")
                        )
                       )
                     )
@@ -41,7 +41,7 @@
                       (raise-blame-error
                        blame
                        (map (lambda (x) (format "~n~s" x)) (pred2 states sigma rules))
-                       (format "The following rules contain symbols not contained in the states/sigma: ")
+                       (format "Rule four of the design recipe was violated.\nThe following rules contain symbols not contained in the states/sigma: ")
                        )
                       )
                     )
@@ -63,7 +63,7 @@
                       (raise-blame-error
                        blame
                        (incorrect-dfa-rules states sigma rules)
-                       "The following rules have errors, which make them invalid")))))
+                       "Rule four of the design recipe was violated.\nThe following rules have errors, which make them invalid")))))
 
   ;correct-ndpda-rules/c: (listof state) (listof alpha) (listof symbol) --> contract
   ;predicate: (listof x) --> boolean
@@ -82,7 +82,7 @@
                       (raise-blame-error
                        blame
                        (incorrect-ndpda-rules states sigma gamma rules)
-                       "The following rules have errors, which make them invalid")))))
+                       "Rule four of the design recipe was violated.\nThe following rules have errors, which make them invalid")))))
 
   ;correct-tm-rules/c: (listof state) (list of alpha) --> contract
   ;predicate: (listof x) --> boolean
@@ -101,7 +101,7 @@
                       (raise-blame-error
                        blame
                        (incorrect-tm-rules states sigma rules)
-                       "The following rules have errors, which make them invalid")))))
+                       "Rule four of the design recipe was violated.\nThe following rules have errors, which make them invalid")))))
 
   ;correct-mttm-rules/c: (listof state) (listof alpha) --> contract
   ;predicate: (listof x) --> boolean
@@ -120,7 +120,7 @@
                       (raise-blame-error
                        blame
                        (incorrect-mttm-rules states sigma rules)
-                       "The following rules have errors, which make them invalid")))))
+                       "Rule four of the design recipe was violated.\nThe following rules have errors, which make them invalid")))))
 
   ;functional/c: (listof state) (listof sigma) boolean -> contract
   ;predicate: (listof x) --> boolean
@@ -140,7 +140,7 @@
                       (raise-blame-error
                        blame
                        (map (lambda (x) (format "~n~s" x)) (missing-functional rules states sigma))
-                       (format "You must include rules for these state/alphabet letter pairings: ")
+                       (format "Rule four of the design recipe was violated.\nYou must include rules for these state/alphabet letter pairings: ")
                        )
                       )
                     )
@@ -159,7 +159,7 @@
                       (raise-blame-error
                        blame
                        (map (lambda (x) (format "~n~s" x)) (check-duplicates-dfa vals))
-                       (format "There following state/sigma pairs are duplicated in your ~a: " type)
+                       (format "Rule four of the design recipe was violated.\nThere following state/sigma pairs are duplicated in your ~a: " type)
                        )
                       )
                     )
