@@ -62,7 +62,7 @@
                            '(a b)
                            '(a)
                            'S
-                           'F
+                           '(F)
                            `(((S ,EMP ,EMP) (M ,EMP))
                              ((S a ,EMP) (S (a)))
                              ((M b (a)) (M ,EMP))

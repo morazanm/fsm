@@ -17,7 +17,7 @@
     (format "~a: ~a" message value))
   
   (define (format-finals-error blame value message)
-    (format "Step three of the design recipe has not been successfully completed.\nThe following final states are not in ~a, your list of states: ~s" message value))
+    (format "Step three of the design recipe has not been successfully completed.\nThe following final states are not in, ~a, your list of states: ~s" message value))
 
   (define (format-duplicates-error blame value message)
     (format "~a ~a" message value)
