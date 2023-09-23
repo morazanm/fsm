@@ -14,6 +14,8 @@
            functional/c
            no-duplicates-dfa/c)
 
+  (define design-recipe-message "Step four of the design recipe was not successfully completed.")
+
   (define (listof-rules/c pred)
     (make-flat-contract
      #:name 'valid-list-of-rules
@@ -24,7 +26,7 @@
                       (raise-blame-error
                        blame
                        (map (lambda (x) (format "~n~s" x)) (invalid-rules pred rules))
-                       (format "Rule four of the design recipe was violated.\nThe following rules are improperly formatted.")
+                       (format "~a\nThe following rules are improperly formatted." design-recipe-message)
                        )
                       )
                     )
@@ -41,7 +43,7 @@
                       (raise-blame-error
                        blame
                        (map (lambda (x) (format "~n~s" x)) (pred2 states sigma rules))
-                       (format "Rule four of the design recipe was violated.\nThe following rules contain symbols not contained in the states/sigma: ")
+                       (format "~a\nThe following rules contain symbols not contained in the states/sigma: " design-recipe-message)
                        )
                       )
                     )
@@ -63,7 +65,7 @@
                       (raise-blame-error
                        blame
                        (incorrect-dfa-rules states sigma rules)
-                       "Rule four of the design recipe was violated.\nThe following rules have errors, which make them invalid")))))
+                       (format "~a\nThe following rules have errors, which make them invalid" design-recipe-message))))))
 
   ;correct-ndpda-rules/c: (listof state) (listof alpha) (listof symbol) --> contract
   ;predicate: (listof x) --> boolean
@@ -82,7 +84,7 @@
                       (raise-blame-error
                        blame
                        (incorrect-ndpda-rules states sigma gamma rules)
-                       "Rule four of the design recipe was violated.\nThe following rules have errors, which make them invalid")))))
+                       (format "~a\nThe following rules have errors, which make them invalid" design-recipe-message))))))
 
   ;correct-tm-rules/c: (listof state) (list of alpha) --> contract
   ;predicate: (listof x) --> boolean
@@ -101,7 +103,7 @@
                       (raise-blame-error
                        blame
                        (incorrect-tm-rules states sigma rules)
-                       "Rule four of the design recipe was violated.\nThe following rules have errors, which make them invalid")))))
+                       (format "~a\nThe following rules have errors, which make them invalid" design-recipe-message))))))
 
   ;correct-mttm-rules/c: (listof state) (listof alpha) --> contract
   ;predicate: (listof x) --> boolean
@@ -120,7 +122,7 @@
                       (raise-blame-error
                        blame
                        (incorrect-mttm-rules states sigma rules)
-                       "Rule four of the design recipe was violated.\nThe following rules have errors, which make them invalid")))))
+                       (format "~a\nThe following rules have errors, which make them invalid" design-recipe-message))))))
 
   ;functional/c: (listof state) (listof sigma) boolean -> contract
   ;predicate: (listof x) --> boolean
@@ -140,7 +142,7 @@
                       (raise-blame-error
                        blame
                        (map (lambda (x) (format "~n~s" x)) (missing-functional rules states sigma))
-                       (format "Rule four of the design recipe was violated.\nYou must include rules for these state/alphabet letter pairings: ")
+                       (format "~a\nYou must include rules for these state/alphabet letter pairings: " design-recipe-message)
                        )
                       )
                     )
@@ -159,7 +161,7 @@
                       (raise-blame-error
                        blame
                        (map (lambda (x) (format "~n~s" x)) (check-duplicates-dfa vals))
-                       (format "Rule four of the design recipe was violated.\nThere following state/sigma pairs are duplicated in your ~a: " type)
+                       (format "~a\nThere following state/sigma pairs are duplicated in your ~a: " design-recipe-message type)
                        )
                       )
                     )
