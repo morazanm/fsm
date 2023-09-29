@@ -298,7 +298,7 @@ Below are examples of how to use the library.
 
 @subsection{Creating Basic Graphs}
 The simplest way to create a graph is work in steps. First create the graph using @racket[create-graph]. Then
-add the nodes to the graph using either @racket[add-node] or @racket[add-ndoes]. Then add the edges to the graph
+add the nodes to the graph using either @racket[add-node] or @racket[add-nodes]. Then add the edges to the graph
 using @racket[add-edges] or @racket[add-edge]. Last, convert it to the dot language.
 @codeblock{
 (define init-graph (create-graph 'cgraph #:atb (hash 'rankdir "LR")))

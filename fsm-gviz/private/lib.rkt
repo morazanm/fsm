@@ -16,9 +16,15 @@
                 ;; NOTE: a edges label atb is a list since we squash all edges
                 ;; between the same nodes into a single edge
                 (atb (hash/c symbol? any/c)))]
+  [struct subgraph ((name string?)
+                    (node-list (listof node?))
+                    (edge-list (listof edge?))
+                    (subgraph-list (listof subgraph?))
+                    (atb (hash/c symbol? any/c)))]
   [struct graph ((name symbol?)
                  (node-list (listof node?))
                  (edge-list (listof edge?))
+                 (subgraph-list (listof subgraph?))
                  (fmtrs formatters?)
                  (atb (hash/c symbol? any/c)))]
   [create-graph (->* (symbol?)
@@ -71,11 +77,19 @@
                             (hash 'label DEFAULT-EDGE-LABEL-FMTR)))
 
 ; A structure the represents a digraph in the dot language
-(struct graph ([name]
-               [node-list]
-               [edge-list]
-               [fmtrs]
+(struct graph (name
+               node-list
+               edge-list
+               subgraph-list
+               fmtrs
                [atb #:mutable]) #:transparent)
+
+; A structure the represents a subgraph in the dot language
+(struct subgraph (name
+                  node-list
+                  edge-list
+                  subgraph-list
+                  [atb #:mutable]) #:transparent)
 
 ; A structure the represents a node in the dot language
 (struct node ([name]
@@ -126,6 +140,7 @@
   (graph name
          '()
          '()
+         '()
          (formatters
           (combine (formatters-graph fmtrs)
                    (formatters-graph DEFAULT-FORMATTERS))
@@ -149,6 +164,7 @@
                (hash-set atb 'label (stringify-value name)))
          (graph-node-list g))
    (graph-edge-list g)
+   (graph-subgraph-list g)
    (graph-fmtrs g)
    (graph-atb g)))
 
@@ -163,6 +179,7 @@
    (graph-name g)
    (append nodes-to-add (graph-node-list g))
    (graph-edge-list g)
+   (graph-subgraph-list g)
    (graph-fmtrs g)
    (graph-atb g)))
 
@@ -193,6 +210,7 @@
                              (hash-set (edge-atb e)
                                        'label
                                        (cons val (hash-ref (edge-atb e) 'label)))))))
+         (graph-subgraph-list g)
          (graph-fmtrs g)
          (graph-atb g)))
 
@@ -206,6 +224,9 @@
   (foldl (lambda (e a)
            (match-define (list start-node edge-val end-node) e)
            (add-edge a edge-val start-node end-node #:atb atb)) g edgs))
+
+(define (add-subgraph g #:name[name 'none] #:atb [atb DEFAULT-GRAPH])
+  10)
 
 ; clean-string: symbol -> symbol
 ; Purpose: cleans the string to only have valid dot language id symbols
@@ -332,6 +353,7 @@
                   (node 'D #hash((color . "black") (label . "D") (shape . "circle")))
                   (node 'E1 #hash((color . "black") (label . "E-1") (shape . "circle"))))
                  '()
+                 '()
                  DEFAULT-FORMATTERS
                  DEFAULT-GRAPH))
 
@@ -349,6 +371,7 @@
                   (edge 'B 'D #hash((fontsize . 15) (label . (c-1))))
                   (edge 'B 'B #hash((fontsize . 15) (label . (b))))
                   (edge 'A 'B #hash((fontsize . 15) (label . (a)))))
+                 '()
                  DEFAULT-FORMATTERS
                  DEFAULT-GRAPH))
 
