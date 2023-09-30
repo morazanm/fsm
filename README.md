@@ -1,5 +1,5 @@
 # FSM   ![Test + Build Status](https://github.com/morazanm/fsm/actions/workflows/ci.yml/badge.svg) ![Docs](https://github.com/morazanm/fsm/actions/workflows/docs.yml/badge.svg)
-A Library for the Automata Theory Classroom
+A DSL for the Automata Theory Classroom
 
 
 ## Documentation
