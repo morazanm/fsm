@@ -31,6 +31,11 @@
                      (#:fmtrs formatters?
                       #:atb (hash/c symbol? any/c))
                      graph?)]
+
+  [create-subgraph (->* ()
+                        (#:name symbol?
+                         #:atb (hash/c symbol? any/c))
+                        subgraph?)]
   (create-formatters (->* () (#:graph (hash/c symbol? (-> any/c string?))
                               #:node (hash/c symbol? (-> any/c string?))
                               #:edge (hash/c symbol? (-> any/c string?)))
@@ -44,7 +49,7 @@
   [add-edge (->* (graph? (or/c list? any/c) symbol? symbol?)
                  (#:atb (hash/c symbol? any/c))
                  graph?)]
-
+  [add-subgraph (-> (or/c graph? subgraph?) subgraph? (or/c graph? subgraph?))]
   [add-edges (->* (graph? (listof (list/c symbol? any/c symbol?)))
                   (#:atb (hash/c symbol? any/c))
                   graph?)]
@@ -115,6 +120,24 @@
           (edge-end-node edge)
           (hash->str (edge-atb edge) fmtr)))
 
+
+;; subgraph->str: subgraph formatters -> string
+;; returns the string representation of a subgraph
+(define (subgraph->str sg fmtrs)
+  (define name (if (null? (subgraph-name sg)) "" (subgraph-name sg)))
+  (string-append (format "    subgraph ~s {" name) 
+                 (format "    ~a;\n" (hash->str (subgraph-atb sg) (formatters-graph fmtrs) ";\n    "))
+                 (foldl (lambda (n a) (string-append a (node->str n (formatters-node fmtrs))))
+                        ""
+                        (subgraph-node-list sg))
+                 (foldl (lambda (e a) (string-append a (edge->str e (formatters-edge fmtrs))))
+                        ""
+                        (subgraph-edge-list sg))
+                 (foldl (lambda (e a) (string-append a (subgraph->str e fmtrs)))
+                        ""
+                        (subgraph-subgraph-list sg))
+                 "}"))
+
 ;; graph->str: graph -> string
 ;; returns the graphviz representation of a graph as a string
 (define (graph->str g)
@@ -129,14 +152,20 @@
    (foldl (lambda (e a) (string-append a (edge->str e (formatters-edge fmtrs))))
           ""
           (graph-edge-list g))
+   (foldl (lambda (e a) (string-append a (subgraph->str e fmtrs)))
+          ""
+          (graph-subgraph-list g))
    "}"))
 
+;; combine :: hash hash -> hash
+;; combines the two hashes together. If the hashs have the same key the first hash 
+;; is used.
+(define (combine v1 v2) (hash-union v1 v2 #:combine/key (lambda (_k v1 _v2) v1)))
 
 ;; create-graph: symbol -> graph
 ;; name: The name of the graph
 ;; Purpose: Creates a Graph with the given name
 (define (create-graph name #:fmtrs(fmtrs DEFAULT-FORMATTERS) #:atb [atb (hash)])
-  (define (combine v1 v2) (hash-union v1 v2 #:combine/key (lambda (_k v1 _v2) v1)))
   (graph name
          '()
          '()
@@ -153,6 +182,15 @@
 
 (define (create-formatters #:graph[graph (hash)] #:node[node (hash)] #:edge[edge (hash)])
   (formatters graph node edge))
+
+;; create-subgraph :: subgraph
+;; subgraphs can have a optional name, but it is not required
+(define (create-subgraph #:name[name null] #:atb [atb (hash)])
+  (subgraph (if (null? name) name  (clean-string name))
+            '()
+            '()
+            '()
+            (combine atb DEFAULT-GRAPH)))
 
 
 ;; add-node: graph string Optional(hash-map) -> graph
@@ -225,8 +263,24 @@
            (match-define (list start-node edge-val end-node) e)
            (add-edge a edge-val start-node end-node #:atb atb)) g edgs))
 
-(define (add-subgraph g #:name[name 'none] #:atb [atb DEFAULT-GRAPH])
-  10)
+
+;; add-subgraph :: graph | subgraph subgraph -> graph | subgraph
+;; adds a subgraph to either a graph or subgraph
+(define (add-subgraph parent sg)
+  (if (graph? parent)
+    (graph 
+      (graph-name parent)
+      (graph-node-list parent)
+      (graph-edge-list parent)
+      (cons sg (graph-subgraph-list parent))
+      (graph-fmtrs parent)
+      (graph-atb parent))
+    (subgraph 
+      (subgraph-name parent)
+      (subgraph-node-list parent)
+      (subgraph-edge-list parent)
+      (cons sg (subgraph-subgraph-list parent))
+      (subgraph-atb parent))))
 
 ; clean-string: symbol -> symbol
 ; Purpose: cleans the string to only have valid dot language id symbols
@@ -374,10 +428,5 @@
                  '()
                  DEFAULT-FORMATTERS
                  DEFAULT-GRAPH))
-
-
-
-
-
 
   ) ;; end module+ test
