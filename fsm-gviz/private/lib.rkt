@@ -2,6 +2,11 @@
 (require 2htdp/image racket/hash "dot.rkt")
 #| This file handles converting graphs to the dot file equivalent |#
 
+;; custom contract for a graph type. A graph type is either a 
+;; graph or subgraph struct
+(define (graph-type? a)
+  (or (graph? a) (subgraph? a)))
+
 (provide
  stringify-value
  image?
@@ -49,7 +54,7 @@
   [add-edge (->* (graph? (or/c list? any/c) symbol? symbol?)
                  (#:atb (hash/c symbol? any/c))
                  graph?)]
-  [add-subgraph (-> (or/c graph? subgraph?) subgraph? (or/c graph? subgraph?))]
+  [add-subgraph (-> graph-type? subgraph? graph-type?)]
   [add-edges (->* (graph? (listof (list/c symbol? any/c symbol?)))
                   (#:atb (hash/c symbol? any/c))
                   graph?)]
