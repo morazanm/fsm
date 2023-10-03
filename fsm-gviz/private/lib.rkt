@@ -45,19 +45,19 @@
                               #:node (hash/c symbol? (-> any/c string?))
                               #:edge (hash/c symbol? (-> any/c string?)))
                           formatters?))
-  [add-node (->* (graph? symbol?)
+  [add-node (->* (graph-type? symbol?)
                  (#:atb (hash/c symbol? any/c))
-                 graph?)]
-  [add-nodes (->* (graph? (listof symbol?))
+                 graph-type?)]
+  [add-nodes (->* (graph-type? (listof symbol?))
                   (#:atb (hash/c symbol? any/c))
-                  graph?)]
-  [add-edge (->* (graph? (or/c list? any/c) symbol? symbol?)
+                  graph-type?)]
+  [add-edge (->* (graph-type? (or/c list? any/c) symbol? symbol?)
                  (#:atb (hash/c symbol? any/c))
-                 graph?)]
+                 graph-type?)]
   [add-subgraph (-> graph-type? subgraph? graph-type?)]
-  [add-edges (->* (graph? (listof (list/c symbol? any/c symbol?)))
+  [add-edges (->* (graph-type? (listof (list/c symbol? any/c symbol?)))
                   (#:atb (hash/c symbol? any/c))
-                  graph?)]
+                  graph-type?)]
   [graph->bitmap (->* (graph?)
                       (#:directory path?
                        #:filename string?
@@ -191,60 +191,99 @@
 ;; create-subgraph :: subgraph
 ;; subgraphs can have a optional name, but it is not required
 (define (create-subgraph #:name[name null] #:atb [atb (hash)])
-  (subgraph (if (null? name) name  (clean-string name))
+  (subgraph (if (null? name) name (clean-string name))
             '()
             '()
             '()
             (combine atb DEFAULT-GRAPH)))
 
+;; existing-name graph | subgraph string -> boolean
+;; True when the name already exists
+(define (existing-name? parent n)
+  (define name (clean-string n))
+  (define (check-subgraph sg n)
+    (or (equal? sg n)
+        (member n (subgraph-subgraph-list sg) check-subgraph)))
+  (if (graph? parent)
+      (or (equal? name (graph-name parent))
+          (member name (graph-node-list parent) (lambda (v n) (equal? (node-name n) v)))
+          (member name (graph-subgraph-list parent) check-subgraph))
+      (check-subgraph parent n)))
+    
 
-;; add-node: graph string Optional(hash-map) -> graph
+
+;; add-node: graph | subgraph string Optional(hash-map) -> graph | subgraph
 ;; Purpose: adds a node to the given graph
-(define (add-node g name #:atb [atb DEFAULT-NODE])
-  (graph
-   (graph-name g)
-   (cons (node (clean-string name)
-               (hash-set atb 'label (stringify-value name)))
-         (graph-node-list g))
-   (graph-edge-list g)
-   (graph-subgraph-list g)
-   (graph-fmtrs g)
-   (graph-atb g)))
+(define (add-node parent name #:atb [atb DEFAULT-NODE])
+  (when (existing-name? parent name)
+    (error "[Duplicate Name]: Node name already exists on the graph"))
+  (define new-node (node (clean-string name) (hash-set atb 'label (stringify-value name))))
+  (if (graph? parent)
+      (graph
+       (graph-name parent)
+       (cons new-node (graph-node-list parent))
+       (graph-edge-list parent)
+       (graph-subgraph-list parent)
+       (graph-fmtrs parent)
+       (graph-atb parent))
+      (subgraph 
+       (subgraph-name parent)
+       (cons new-node (subgraph-node-list parent))
+       (subgraph-edge-list parent)
+       (subgraph-subgraph-list parent)
+       (subgraph-atb parent))))
 
 
-;; add-nodes: graph listof(symbol) Optional(hash-map) -> graph
+;; add-nodes: graph | subgraph listof(symbol) Optional(hash-map) -> graph | subgraph
 ;; Purpose: adds the list of nodes to the given graph
-(define (add-nodes g names #:atb [atb DEFAULT-NODE])
-  (define nodes-to-add (map (lambda (n) (node (clean-string n)
-                                              (hash-set atb 'label (stringify-value n))))
-                            names))
-  (graph
-   (graph-name g)
-   (append nodes-to-add (graph-node-list g))
-   (graph-edge-list g)
-   (graph-subgraph-list g)
-   (graph-fmtrs g)
-   (graph-atb g)))
+(define (add-nodes parent names #:atb [atb DEFAULT-NODE])
+  (define nodes-to-add 
+    (map (lambda (n)
+           (when (existing-name? parent n)
+             (error "[Duplicate Name]: Node name already exists on the graph"))
+           (node (clean-string n) (hash-set atb 'label (stringify-value n))))
+         names))
+  (if (graph? parent)
+      (graph
+       (graph-name parent)
+       (append nodes-to-add (graph-node-list parent))
+       (graph-edge-list parent)
+       (graph-subgraph-list parent)
+       (graph-fmtrs parent)
+       (graph-atb parent))
+      (subgraph 
+       (subgraph-name parent)
+       (append nodes-to-add (subgraph-node-list parent))
+       (subgraph-edge-list parent)
+       (subgraph-subgraph-list parent)
+       (subgraph-atb parent))))
 
-;; add-edge: graph symbol symbol symbol Optional(hash-map) -> graph
+;; add-edge: graph | subgraph  symbol symbol symbol Optional(hash-map) -> graph | subgraph
 ;; Purpose: adds an edge to the graph
 ;; NOTE: This function assumes that the node exists in the graph structure
 ;; NOTE: a edges label is a list since we squash all edges between the same nodes
 ;; into a single edge
-(define (add-edge g val start-node end-node #:atb [atb DEFAULT-EDGE])
+(define (add-edge parent val start-node end-node #:atb [atb DEFAULT-EDGE])
+  (define (is-subgraph? val parent)
+    (cond
+      [(graph? parent) (member val (graph-subgraph-list parent) is-subgraph?)]
+      [(equal? val (subgraph-name parent)) #t]
+      [else (member val (subgraph-subgraph-list parent) is-subgraph?)]))
   (define start (clean-string start-node))
   (define end (clean-string end-node))
   (define (edge-eq? e) (and (equal? start (edge-start-node e))
                             (equal? end (edge-end-node e))))      
-  (define edge-index (index-where (graph-edge-list g) edge-eq?))
-  (graph (graph-name g)
-         (graph-node-list g)
+  (if (graph? parent)
+      (graph 
+       (graph-name parent)
+       (graph-node-list parent)
+       (let ((edge-index (index-where (graph-edge-list parent) edge-eq?)))
          (if (equal? #f edge-index)
              (cons (edge (clean-string start-node)
                          (clean-string end-node)
                          (hash-set atb 'label (list val)))
-                   (graph-edge-list g))
-             (list-update (graph-edge-list g)
+                   (graph-edge-list parent))
+             (list-update (graph-edge-list parent)
                           edge-index
                           (lambda (e)
                             (edge
@@ -252,40 +291,62 @@
                              (edge-end-node e)
                              (hash-set (edge-atb e)
                                        'label
-                                       (cons val (hash-ref (edge-atb e) 'label)))))))
-         (graph-subgraph-list g)
-         (graph-fmtrs g)
-         (graph-atb g)))
+                                       (cons val (hash-ref (edge-atb e) 'label))))))))
+       (graph-subgraph-list parent)
+       (graph-fmtrs parent)
+       (graph-atb parent))
+      (subgraph 
+       (subgraph-name parent)
+       (subgraph-node-list parent)
+       (let ((edge-index (index-where (subgraph-edge-list parent) edge-eq?)))
+         (if (equal? #f edge-index)
+             (cons (edge (clean-string start-node)
+                         (clean-string end-node)
+                         (hash-set atb 'label (list val)))
+                   (subgraph-edge-list parent))
+             (list-update (subgraph-edge-list parent)
+                          edge-index
+                          (lambda (e)
+                            (edge
+                             (edge-start-node e)
+                             (edge-end-node e)
+                             (hash-set (edge-atb e)
+                                       'label
+                                       (cons val (hash-ref (edge-atb e) 'label))))))))
+       (subgraph-atb parent))))
 
 
-;; add-edges: graph listof(symbol symbol any/c) Optional(hash-map) -> graph
+;; add-edges: graph | subgraph listof(symbol symbol any/c) Optional(hash-map) -> graph | subgraph
 ;; Purpose: adds this list of edges to the graph
 ;; NOTE: This function assumes that the node exists in the graph structure
 ;; NOTE: a edges label is a list since we squash all edges between the same nodes
 ;; into a single edge
-(define (add-edges g edgs #:atb [atb DEFAULT-EDGE])
+(define (add-edges parent edgs #:atb [atb DEFAULT-EDGE])
   (foldl (lambda (e a)
            (match-define (list start-node edge-val end-node) e)
-           (add-edge a edge-val start-node end-node #:atb atb)) g edgs))
+           (add-edge a edge-val start-node end-node #:atb atb)) parent edgs))
 
 
 ;; add-subgraph :: graph | subgraph subgraph -> graph | subgraph
 ;; adds a subgraph to either a graph or subgraph
 (define (add-subgraph parent sg)
+  (when (and (not (null? (subgraph-name sg)))
+             (existing-name? parent (subgraph-name sg)))
+    (error "[Duplicate Name]: Name of subgraph already exists on the graph"))
   (if (graph? parent)
-    (graph 
-      (graph-name parent)
-      (graph-node-list parent)
-      (graph-edge-list parent)
-      (cons sg (graph-subgraph-list parent))
-      (graph-fmtrs parent)
-      (graph-atb parent))
-    (subgraph 
-      (subgraph-name parent)
-      (subgraph-node-list parent)
-      (subgraph-edge-list parent)
-      (cons sg (subgraph-subgraph-list parent))
-      (subgraph-atb parent))))
+      (graph 
+       (graph-name parent)
+       (graph-node-list parent)
+       (graph-edge-list parent)
+       (cons sg (graph-subgraph-list parent))
+       (graph-fmtrs parent)
+       (graph-atb parent))
+      (subgraph 
+       (subgraph-name parent)
+       (subgraph-node-list parent)
+       (subgraph-edge-list parent)
+       (cons sg (subgraph-subgraph-list parent))
+       (subgraph-atb parent))))
 
 ; clean-string: symbol -> symbol
 ; Purpose: cleans the string to only have valid dot language id symbols
@@ -433,5 +494,16 @@
                  '()
                  DEFAULT-FORMATTERS
                  DEFAULT-GRAPH))
+
+
+  (check-exn
+   exn:fail?
+   (lambda () (add-nodes (add-nodes (create-graph 'test) '(A B C D)) '(A))))
+  
+  (check-exn
+   exn:fail?
+   (lambda ()
+     (define sg (create-subgraph #:name 'A))
+     (add-subgraph (add-nodes (create-graph 'test) '(A B C D)) sg)))
 
   ) ;; end module+ test
