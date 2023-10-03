@@ -143,10 +143,11 @@
 ;; add-node: graph string Optional(hash-map) -> graph
 ;; Purpose: adds a node to the given graph
 (define (add-node g name #:atb [atb DEFAULT-NODE])
+  (define nname (stringify-value (hash-ref atb 'label name)))
   (graph
    (graph-name g)
    (cons (node (clean-string name)
-               (hash-set atb 'label (stringify-value name)))
+               (hash-set atb 'label nname))
          (graph-node-list g))
    (graph-edge-list g)
    (graph-fmtrs g)
