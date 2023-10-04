@@ -1,4 +1,7 @@
 #lang racket
 
-(require "visualize.rkt")
-(provide (rename-out (visualize sm-visualize)))
+(require "legacy-gui/visualize.rkt"
+         "gui/backend/server.rkt")
+
+(provide (rename-out (visualize sm-visualize))
+         run-with-prebuilt)

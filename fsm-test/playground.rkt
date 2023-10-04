@@ -1,6 +1,6 @@
-#lang racket
+(module playground "../main.rkt"
 
-(require "../main.rkt")
+
 
 (define a-aUb*
   (make-ndfa '(S F)     ;; the states
@@ -8,19 +8,43 @@
              'S         ;; the staring state
              '(F)       ;; the set of final states
              '((S a F)  ;; the transition functions
-               (F a F))
+               (F a F)
+               (F b F))
              'nodead))
 
+(define tmp
+  (make-ndfa '(S A F)     
+             '(a b)     
+             'S        
+             '(F)       
+             '((S a F)
+               (F a F)
+               (S b A)
+               (A a F)
+               (A b A))
+             'nodead))
 
-(define (SS-INV ci) (empty? ci))
+(define-invariants-for-ndfa a-aUb*
+  (define-invariant S (ci) (empty? ci))
+  (define-invariant F (ci)
+    (define ans (and (not (empty? ci))
+                     (eq? (first ci) 'a)
+                     (andmap (λ (s) (or (eq? s 'a) (eq? s 'b)))
+                             (rest ci))))
+    ans))
 
-(define (FF-INV ci)
-  (define ans (and (not (empty? ci))
-       (eq? (first ci) 'a)
-       (andmap (λ (s) (or (eq? s 'a) (eq? s 'b)))
-               (rest ci))))
-  ans)
-(sm-visualize  a-aUb* (list 'S SS-INV) (list 'F FF-INV))
+
+;(sm-visualize a-aUb* (list 'S SS-INV) (list 'F FF-INV))
+;(sm-visualize! a-aUb*)
+
+#;(sm-visualize3 a-aUb*
+                 (list 'F (inv->string!
+                           (lambda (ci)
+                             (and (not (empty? ci))
+                                  (eq? (first ci) 'a)
+                                  (andmap (λ (s) (or (eq? s 'a) (eq? s 'b)))
+                                          (rest ci))))))
+                 (list 'S (inv->string! (lambda (ci) (empty? ci)))))
 
 ;;---- DFA ----
 (define a*
@@ -33,10 +57,10 @@
               (F b F))
             'nodead))
 
-(sm-visualize a* (list 'S (lambda (v) true))
-            (list 'F (lambda (v) false)))
+#;(sm-visualize2 a* (list 'S (lambda (v) true))
+                 (list 'F (lambda (v) false)))
 
-#;(define pda-numa=numb (make-ndpda '(S M F)
+(define pda-numa=numb (make-ndpda '(S M F)
                                   '(a b)
                                   '(a b)
                                   'S
@@ -47,6 +71,12 @@
                                     ((M b ,EMP) (M (b)))
                                     ((M a (b)) (M ,EMP))
                                     ((M b (a)) (M ,EMP)))))
+
+
+#;(sm-visualize!! pda-numa=numb
+                  (S -> PDA-S-INV)
+                  (F -> PDA-F-INV)
+                  (M -> PDA-M-INV))
 #|
 ;;---- NDFA ----
 ;; valid input: aaabbb 
@@ -225,13 +255,6 @@
                             'Y))
 
 
-;; gets the number of z's in the tape
-(define get-num-of-x (lambda (tape symbol)
-                       (length (filter (lambda (ele)
-                                         (eq? ele symbol)) tape))))
-
-(define implies (lambda (a c)
-                  (or (not a) c)))
 
 ;; takewhile stream-list boolean-procedure
 ;; Purpose: Contines to take from the stream until the boolean procedure is met
@@ -259,81 +282,81 @@
 
 
 ;;num zs before first a = num zs between last a and first b = num zs between last b and first c
+(define-invariants-for-tm a^nb^nc^n2
+  ;; gets the number of z's in the tape
+  (define get-num-of-x (lambda (tape symbol)
+                         (length (filter (lambda (ele)
+                                           (eq? ele symbol)) tape))))
 
-;; The number of z's is divisiable by 3
-;; The number of z's before the first a is less or equal to the number of z's
-(define S-INV (lambda (tape posn)
-                (let ((list-of-xyz (filter (lambda (input) (or (equal? input 'x)
-                                                               (equal? input 'y)
-                                                               (equal? input 'z)))
-                                           tape)))
-                  (and (equal? 0 (modulo (length list-of-xyz) 3))
-                       (or
-                        (let ((num-of-a (get-num-of-x tape 'a)))
-                          (implies (or (eq? (list-ref tape posn) 'c)
-                                       (eq? (list-ref tape posn) 'b))
-                                   (or (< num-of-a
-                                          (get-num-of-x tape 'b))
-                                       (< num-of-a
-                                          (get-num-of-x tape 'c)))))
+  (define implies (lambda (a c)
+                    (or (not a) c)))
+  
+  ;; The number of z's is divisiable by 3
+  ;; The number of z's before the first a is less or equal to the number of z's
+  #;(define-invariant S (tape posn)
+    (let ((list-of-xyz (filter (lambda (input) (or (equal? input 'x)
+                                                   (equal? input 'y)
+                                                   (equal? input 'z)))
+                               tape)))
+      (and (equal? 0 (modulo (length list-of-xyz) 3))
+           (or
+            (let ((num-of-a (get-num-of-x tape 'a)))
+              (implies (or (eq? (list-ref tape posn) 'c)
+                           (eq? (list-ref tape posn) 'b))
+                       (or (< num-of-a
+                              (get-num-of-x tape 'b))
+                           (< num-of-a
+                              (get-num-of-x tape 'c)))))
                       
-                        (implies (equal? (list-ref tape posn) BLANK)
-                                 (equal? tape `(,LM ,BLANK))))))))
+            (implies (equal? (list-ref tape posn) BLANK)
+                     (equal? tape `(,LM ,BLANK)))))))
+
+  ;; the number of z's is one bigger then number of x's and number of y's
+  (define-invariant B (tape posn)
+    (let ((num-z (get-num-of-x tape 'z)))
+      (and (> num-z (get-num-of-x tape 'x))
+           (> num-z (get-num-of-x tape 'y)))))
+
+  ;; the number of x's before the first b is one more then the number of x's after the first b
+  (define-invariant C (tape posn)
+    (let ((num-x (get-num-of-x tape 'x)))
+      (and (= num-x (get-num-of-x tape 'z))
+           (> num-x (get-num-of-x tape 'y)))))
+
+  ;; the number of y's before the first c is one more then the number of y's after the first c
+  (define-invariant D (tape posn)
+    (let ((num-y (get-num-of-x tape 'y)))
+      (and (= num-y (get-num-of-x tape 'z))
+           (= num-y (get-num-of-x tape 'x)))))
 
 
-;; the number of z's is one bigger then number of x's and number of y's
-(define B-INV (lambda (tape posn)
-                (let ((num-z (get-num-of-x tape 'z)))
-                  (and (> num-z (get-num-of-x tape 'x))
-                       (> num-z (get-num-of-x tape 'y))))))
-
-;; the number of x's before the first b is one more then the number of x's after the first b
-(define C-INV (lambda (tape posn)
-                (let ((num-x (get-num-of-x tape 'x)))
-                  (and (= num-x (get-num-of-x tape 'z))
-                       (> num-x (get-num-of-x tape 'y))))))
-
-;; the number of y's before the first c is one more then the number of y's after the first c
-(define D-INV (lambda (tape posn)
-                (let ((num-y (get-num-of-x tape 'y)))
-                  (and (= num-y (get-num-of-x tape 'z))
-                       (= num-y (get-num-of-x tape 'x))))))
-
-
-(define E-INV (lambda (tape posn)
-                (let ((list-of-xyz (filter (lambda (input) (or (equal? input 'x)
-                                                               (equal? input 'y)
-                                                               (equal? input 'z)))
-                                           tape)))
-                  (= (modulo (length list-of-xyz) 3) 0))))
+  (define-invariant E (tape posn)
+    (let ((list-of-xyz (filter (lambda (input) (or (equal? input 'x)
+                                                   (equal? input 'y)
+                                                   (equal? input 'z)))
+                               tape)))
+      (= (modulo (length list-of-xyz) 3) 0)))
                  
 
-(define N-INV (lambda (tape posn)
-                (let ((list-of-xyz (filter (lambda (input) (or (equal? input 'x)
-                                                               (equal? input 'y)
-                                                               (equal? input 'z)))
-                                           tape)))
-                  (not (= (length list-of-xyz)
-                          (sub1 (length tape)))))))
+  (define-invariant N (tape posn)
+    (let ((list-of-xyz (filter (lambda (input) (or (equal? input 'x)
+                                                   (equal? input 'y)
+                                                   (equal? input 'z)))
+                               tape)))
+      (not (= (length list-of-xyz)
+              (sub1 (length tape))))))
 
-(define Y-INV (lambda (tape posn)
-                (let ((list-of-xyz (filter (lambda (input) (or (equal? input 'x)
-                                                               (equal? input 'y)
-                                                               (equal? input 'z)))
-                                           tape)))
-                  (and
-                   (= (length list-of-xyz) (- (length tape) 2))
-                   (= (modulo (length list-of-xyz) 3) 0)))))
+  (define-invariant Y (tape posn)
+    (let ((list-of-xyz (filter (lambda (input) (or (equal? input 'x)
+                                                   (equal? input 'y)
+                                                   (equal? input 'z)))
+                               tape)))
+      (and
+       (= (length list-of-xyz) (- (length tape) 2))
+       (= (modulo (length list-of-xyz) 3) 0)))))
 
-
-(sm-visualize a^nb^nc^n2 (list 'S S-INV)
-              (list 'B B-INV)
-              (list 'C C-INV)
-              (list 'D D-INV)
-              (list 'E E-INV)
-              (list 'N N-INV)
-              (list 'Y Y-INV))
-
+(sm-visualize! a^nb^nc^n2)
+               
 #|
 (define LB (make-tm '(S H)
                     `(a b)
@@ -572,3 +595,4 @@
 
 ;(sm-visualize a*)
 
+) ;; end module playground

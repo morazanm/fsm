@@ -1,9 +1,8 @@
 #lang racket
-(require "../../fsm-gui/components/stateTransitions.rkt"
-         "../../fsm-gui/globals.rkt"
+(require "../test-helpers.rkt"
          "../../fsm-core/private/constants.rkt"
-         "../test-helpers.rkt")
-
+         "../../fsm-gui/legacy-gui/globals.rkt"
+         "../../fsm-gui/legacy-gui/components/stateTransitions.rkt")
 
 (module+ test
   (require rackunit)

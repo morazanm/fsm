@@ -18,11 +18,11 @@
   "./structs/input.rkt"
   "./structs/machine.rkt"
   "./structs/world.rkt"
-  "./components/inputFields.rkt"
   "./components/buttons.rkt"
+  "./components/inputFields.rkt"
   "./components/stateTransitions.rkt"
-  "../fsm-core/interface.rkt"
-  "../fsm-gviz/interface.rkt")
+  "../../fsm-core/interface.rkt"
+  "../../fsm-gviz/interface.rkt")
 
 (provide
  visualize

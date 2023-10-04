@@ -15,9 +15,8 @@ This file contains all the functions associated with a button
   "../globals.rkt"
   "../genCode.rkt"
   "../structs/world.rkt"
-  "../../fsm-core/interface.rkt")
+  "../../../fsm-core/interface.rkt")
 
-(require racket/pretty)
 (provide
  addState
  removeState

@@ -5,15 +5,19 @@
 (module main racket
 
   (require rackunit
+           "module-begin.rkt"
            "fsm-core/interface.rkt"
            "fsm-gviz/interface.rkt"
            "fsm-gui/interface.rkt")
   
   (provide
-   (all-from-out racket)
+   (except-out (all-from-out racket) #%module-begin)
+   (rename-out (module-begin #%module-begin))
    (all-from-out rackunit)
    (all-from-out "fsm-gui/interface.rkt")
+   (all-from-out "module-begin.rkt")
    check-machine
+   check-invariant?
    empties
 
    ; sm constructors
@@ -84,5 +88,18 @@
       (error 'sm-graph "Invalid color option. Must be either 0, 1, or 2. Given ~a" color-blind-mode))
     (fsa->bitmap fsa color-blind-mode))
 
+  (define check-invariant? check-equal?)
+
+
+
+  
+  
+
+
+
+
+
+
+  
  
   ) ; close module

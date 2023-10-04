@@ -25,12 +25,12 @@
                          [inv-false hex-string?]
                          [edge-highlight hex-string?])]
   [struct fsa-adapter ([states (listof symbol?)]
-                       [start (or/c null? symbol?)]
+                       [start (or/c null? boolean? symbol?)]
                        [finals (listof symbol?)]
                        [rules (or/c (listof dfa/ndfa-rule?)
                                     (listof pda/tm-rule?))]
                        [type symbol?]
-                       [accept (or/c boolean? symbol?)]
+                       [accept (or/c null? boolean? symbol?)]
                        [cur-state (or/c boolean? symbol?)]
                        [cur-rule (or/c boolean?
                                        dfa/ndfa-rule?

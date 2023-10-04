@@ -4,7 +4,7 @@
          "../globals.rkt"
          "../structs/state.rkt"
          "../structs/machine.rkt"
-         "../../fsm-gviz/interface.rkt")
+         "../../../fsm-gviz/interface.rkt")
 
 (provide
  scaled-graph

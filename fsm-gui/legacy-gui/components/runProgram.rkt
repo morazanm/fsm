@@ -4,7 +4,7 @@ Created by Joshua Schappel on 12/19/19
   This field contains the runPorgam function. That checks a given machine and determines if the program should run
 |#
 
-(require "../../fsm-core/interface.rkt"
+(require "../../../fsm-core/interface.rkt"
          "../structs/world.rkt"
          "../structs/state.rkt"
          "../structs/machine.rkt"
