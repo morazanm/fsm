@@ -264,55 +264,57 @@
 ;; NOTE: a edges label is a list since we squash all edges between the same nodes
 ;; into a single edge
 (define (add-edge parent val start-node end-node #:atb [atb DEFAULT-EDGE])
+  (define start (clean-string start-node))
+  (define end (clean-string end-node))
   (define (is-subgraph? val parent)
     (cond
       [(graph? parent) (member val (graph-subgraph-list parent) is-subgraph?)]
       [(equal? val (subgraph-name parent)) #t]
       [else (member val (subgraph-subgraph-list parent) is-subgraph?)]))
-  (define start (clean-string start-node))
-  (define end (clean-string end-node))
+  
   (define (edge-eq? e) (and (equal? start (edge-start-node e))
-                            (equal? end (edge-end-node e))))      
+                            (equal? end (edge-end-node e))))
+  (define (add/update-in-list lst)
+    (define edge-index (index-where lst edge-eq?))
+    (cond
+      [(not edge-index)
+       ;; If the node is a edge then we need to add lhead, or ltail attributes
+       ;; and point it to a random node on the subgraph 
+       (define is-subgraph-start? (is-subgraph? start parent))
+       (define is-subgraph-end? (is-subgraph? end parent))
+       (define h1 (hash-union (if is-subgraph-start? (hash 'lhead start) (hash))
+                              (if is-subgraph-end? (hash 'ltail end) (hash))))
+       (cons (edge (if is-subgraph-start?
+                       (node-name (car (subgraph-node-list (car is-subgraph-start?))))
+                       start)
+                   (if is-subgraph-end?
+                       (node-name (car (subgraph-node-list (car is-subgraph-end?))))
+                       end)
+                   (hash-union h1 (hash-set atb 'label (list val))))
+             lst)]
+      [else 
+       (list-update lst
+                    edge-index
+                    (lambda (e)
+                      (edge
+                       (edge-start-node e)
+                       (edge-end-node e)
+                       (hash-set (edge-atb e)
+                                 'label
+                                 (cons val (hash-ref (edge-atb e) 'label))))))]))
+    
   (if (graph? parent)
       (graph 
        (graph-name parent)
        (graph-node-list parent)
-       (let ((edge-index (index-where (graph-edge-list parent) edge-eq?)))
-         (if (equal? #f edge-index)
-             (cons (edge (clean-string start-node)
-                         (clean-string end-node)
-                         (hash-set atb 'label (list val)))
-                   (graph-edge-list parent))
-             (list-update (graph-edge-list parent)
-                          edge-index
-                          (lambda (e)
-                            (edge
-                             (edge-start-node e)
-                             (edge-end-node e)
-                             (hash-set (edge-atb e)
-                                       'label
-                                       (cons val (hash-ref (edge-atb e) 'label))))))))
+       (add/update-in-list (graph-edge-list parent))
        (graph-subgraph-list parent)
        (graph-fmtrs parent)
        (graph-atb parent))
       (subgraph 
        (subgraph-name parent)
        (subgraph-node-list parent)
-       (let ((edge-index (index-where (subgraph-edge-list parent) edge-eq?)))
-         (if (equal? #f edge-index)
-             (cons (edge (clean-string start-node)
-                         (clean-string end-node)
-                         (hash-set atb 'label (list val)))
-                   (subgraph-edge-list parent))
-             (list-update (subgraph-edge-list parent)
-                          edge-index
-                          (lambda (e)
-                            (edge
-                             (edge-start-node e)
-                             (edge-end-node e)
-                             (hash-set (edge-atb e)
-                                       'label
-                                       (cons val (hash-ref (edge-atb e) 'label))))))))
+       (add/update-in-list (subgraph-edge-list parent))
        (subgraph-atb parent))))
 
 
@@ -463,39 +465,69 @@
 (module+ test
   (require rackunit)
 
-  (check-equal? (add-nodes (create-graph 'test) '(|A A| B C D E-1))
-                (graph
-                 'test
-                 (list
-                  (node 'A__A #hash((color . "black") (label . "A A") (shape . "circle")))
-                  (node 'B #hash((color . "black") (label . "B") (shape . "circle")))
-                  (node 'C #hash((color . "black") (label . "C") (shape . "circle")))
-                  (node 'D #hash((color . "black") (label . "D") (shape . "circle")))
-                  (node 'E1 #hash((color . "black") (label . "E-1") (shape . "circle"))))
-                 '()
-                 '()
-                 DEFAULT-FORMATTERS
-                 DEFAULT-GRAPH))
+  (test-equal? "Nodes with spaces in names"
+               (add-nodes (create-graph 'test) '(|A A| B C D E-1))
+               (graph
+                'test
+                (list
+                 (node 'A__A #hash((color . "black") (label . "A A") (shape . "circle")))
+                 (node 'B #hash((color . "black") (label . "B") (shape . "circle")))
+                 (node 'C #hash((color . "black") (label . "C") (shape . "circle")))
+                 (node 'D #hash((color . "black") (label . "D") (shape . "circle")))
+                 (node 'E1 #hash((color . "black") (label . "E-1") (shape . "circle"))))
+                '()
+                '()
+                DEFAULT-FORMATTERS
+                DEFAULT-GRAPH))
 
 
-  (check-equal? (add-edges (add-nodes (create-graph 'test) '(A B C D))
-                           '((A a B) (B b B) (B c-1 D)))
-                (graph
-                 'test
-                 (list
-                  (node 'A #hash((color . "black") (label . "A") (shape . "circle")))
-                  (node 'B #hash((color . "black") (label . "B") (shape . "circle")))
-                  (node 'C #hash((color . "black") (label . "C") (shape . "circle")))
-                  (node 'D #hash((color . "black") (label . "D") (shape . "circle"))))
-                 (list
-                  (edge 'B 'D #hash((fontsize . 15) (label . (c-1))))
-                  (edge 'B 'B #hash((fontsize . 15) (label . (b))))
-                  (edge 'A 'B #hash((fontsize . 15) (label . (a)))))
-                 '()
-                 DEFAULT-FORMATTERS
-                 DEFAULT-GRAPH))
+  (test-equal? "Edges with dashes"
+               (add-edges (add-nodes (create-graph 'test) '(A B C D))
+                          '((A a B) (B b B) (B c-1 D)))
+               (graph
+                'test
+                (list
+                 (node 'A #hash((color . "black") (label . "A") (shape . "circle")))
+                 (node 'B #hash((color . "black") (label . "B") (shape . "circle")))
+                 (node 'C #hash((color . "black") (label . "C") (shape . "circle")))
+                 (node 'D #hash((color . "black") (label . "D") (shape . "circle"))))
+                (list
+                 (edge 'B 'D #hash((fontsize . 15) (label . (c-1))))
+                 (edge 'B 'B #hash((fontsize . 15) (label . (b))))
+                 (edge 'A 'B #hash((fontsize . 15) (label . (a)))))
+                '()
+                DEFAULT-FORMATTERS
+                DEFAULT-GRAPH))
 
 
+  (test-equal? "Subgraphs with edges"
+               (add-edges (add-subgraph (add-nodes (create-graph 'test) '(A B))
+                                        (add-nodes (create-subgraph #:name 'cluster1) '(AA BB)))
+                          '((A a B)
+                            (AA a B)
+                            (cluster1 a B)))
+               (graph
+                'test
+                (list
+                 (node 'A #hash((color . "black") (label . "A") (shape . "circle")))
+                 (node 'B #hash((color . "black") (label . "B") (shape . "circle"))))
+                (list
+                 (edge 'AA 'B #hash((fontsize . 15) (label . (a)) (lhead . cluster1)))
+                 (edge 'AA 'B #hash((fontsize . 15) (label . (a))))
+                 (edge 'A 'B #hash((fontsize . 15) (label . (a)))))
+                (list
+                 (subgraph
+                  'cluster1
+                  (list
+                   (node 'AA #hash((color . "black") (label . "AA") (shape . "circle")))
+                   (node 'BB #hash((color . "black") (label . "BB") (shape . "circle"))))
+                  '()
+                  '()
+                  #hash((rankdir . "LR"))))
+                DEFAULT-FORMATTERS
+                DEFAULT-GRAPH))
+
+  ;; --- Exception Checks Below ---
   (check-exn
    exn:fail?
    (lambda () (add-nodes (add-nodes (create-graph 'test) '(A B C D)) '(A))))
