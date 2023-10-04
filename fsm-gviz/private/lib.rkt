@@ -217,7 +217,7 @@
 (define (add-node parent name #:atb [atb DEFAULT-NODE])
   (when (existing-name? parent name)
     (error "[Duplicate Name]: Node name already exists on the graph"))
-  (define new-node (node (clean-string name) (hash-set atb 'label (stringify-value name))))
+  (define new-node (node (clean-string name) (hash-set atb 'label (stringify-value (hash-ref atb 'label name)))))
   (if (graph? parent)
       (graph
        (graph-name parent)
@@ -495,6 +495,16 @@
                  (edge 'B 'D #hash((fontsize . 15) (label . (c-1))))
                  (edge 'B 'B #hash((fontsize . 15) (label . (b))))
                  (edge 'A 'B #hash((fontsize . 15) (label . (a)))))
+                '()
+                DEFAULT-FORMATTERS
+                DEFAULT-GRAPH))
+
+  (test-equal? "Node with custom label"
+               (add-node (create-graph 'test) 'A #:atb (hash 'label "AA"))
+               (graph
+                'test
+                (list (node 'A #hash((label . "AA"))))
+                '()
                 '()
                 DEFAULT-FORMATTERS
                 DEFAULT-GRAPH))
