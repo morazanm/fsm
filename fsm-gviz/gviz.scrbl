@@ -46,13 +46,30 @@ Below are all the exported library functions from @racket["interface.rkt"].
 }
 }
 
+@defproc[(create-subgraph [#:name name symbol? null]
+                          [#:atb subgraph-attributes (hash/c symbol? any/c) (hash)])
+                          (or/c graph? subgraph?)]{
+  @margin-note{See @secref{subgraph_ex} for an example of using subgraphs.}
+  @margin-note{If you are going to have edges between clusters you need to add the
+  following on the subgraph attributes:
+  @codeblock{#:atb (hash 'compound true)}}
+ Creates a subgraph representation of a @emph{dot language} subgraph. 
+ 
+ @racket[name] is the name of the subgraph. If the name is not provided then an anonymous subgraph is created. If the name starts with @emph{cluster} then a subgraph cluster is created.
+ For more information on subgraphs see @hyperlink["https://graphviz.org/doc/info/lang.html#subgraphs-and-clusters"]{Subgraphs and Clusters}.
 
-@defproc[(add-node [graph graph?]
+
+ @racket[subgraph-attributes] are a hash where the key is a symbol representing a @hyperlink["https://graphviz.org/docs/graph/"]{graph attribute} or 
+ @hyperlink["https://graphviz.org/docs/clusters/"]{cluster attribute} (if the subgraph is a cluster) and the value is the value for that attribute.
+}
+
+
+@defproc[(add-node [parent (or/c graph? subgraph?)]
                    [name symbol?]
                    [#:atb node-attributes (hash/c symbol? any/c) DEFAULT-NODE])
-                   graph?]{
+                   (or/c graph? subgraph?)]{
 
- Adds a node to the provided @racket[graph] where the @racket[name] is the name of the generated @emph{DOT} node and sets
+ Adds a node to the provided @racket[parent] where the @racket[name] is the name of the generated @emph{DOT} node and sets
  the nodes label attribute to the name. Note: Since the @emph{DOT} language does not allow @racket{-} characters
  in node names the dashes are omitted but are still provided for the label.
 
@@ -65,11 +82,11 @@ Below are all the exported library functions from @racket["interface.rkt"].
 
 
 
-@defproc[(add-nodes [graph graph?]
+@defproc[(add-nodes [parent (or/c graph? subgraph?)]
                     [names (listof symbol?)]
                     [#:atb node-attributes (hash/c symbol? any/c) DEFAULT-NODE])
-                    graph?]{
- Adds the list of nodes to the provided @racket[graph] where each value in the @racket[names] is the name of the generated @emph{DOT} node and sets
+                    (or/c graph? subgraph?)]{
+ Adds the list of nodes to the provided @racket[parent] where each value in the @racket[names] is the name of the generated @emph{DOT} node and sets
  the nodes label attribute to the name. Note: Since the @emph{DOT} language does not allow @racket{-} characters
  in node names the dashes are omitted, but are still provided for the label.
 
@@ -85,16 +102,18 @@ Example usage:
 }
 
 
-@defproc[(add-edge [graph graph?]
+@defproc[(add-edge [parent (or/c graph? subgraph?)]
                    [value any/c]
                    [start-node symbol?]
                    [end-node symbol?]
                    [#:atb edge-attributes (hash/c symbol? any/c) (hash 'fontsize 15)])
-                   graph?]{
+                   (or/c graph? subgraph?)]{
 
- Adds a edge to the provided @racket[graph] with a directional arrow from the @racket[start-node] to the @racket[end-node]. The
+ Adds a edge to the provided @racket[parent] with a directional arrow from the @racket[start-node] to the @racket[end-node]. The
  label for the arrow is the @racket[value] that is supplied. The edge structure stores the @racket[value] as a list since we squash
- all edges between the same nodes into a single edge.
+ all edges between the same nodes into a single edge. The @racket[start-node] and @racket[end-node] can be the name of a @emph{cluster subgraph}. 
+ If this is the case then an arrow is drawn from/to the subgraph cluster instead of a node.
+
  @bold{Note}: Since the @emph{DOT} language does not allow @racket{-} characters in node names the dashes are omitted, but
  are still provided for the label.
 
@@ -103,14 +122,15 @@ Example usage:
 }
 
 
-@defproc[(add-edges [graph graph?]
+@defproc[(add-edges [parent (or/c graph? subgraph?)]
                     [edges (listof (list/c symbol? any/c symbol?))]
                     [#:atb edge-attributes (hash/c symbol? any/c) (hash 'fontsize 15)])
-                    graph?]{
+                    (or/c graph? subgraph?)]{
 
  Adds this list of edges to the provided @racket[graph] with a directional arrow from the @racket[start-node] to the @racket[end-node].
  @bold{Note}: Since the @emph{DOT} language does not allow @racket{-} characters in node names the dashes are omitted, but
- are still provided for the label.
+ are still provided for the label. The @racket[start-node] and @racket[end-node] can be the name of a @emph{cluster subgraph}. If this is the case then
+ an arrow is drawn from/to the subgraph cluster instead of a node.
 
  @racket[edges] is a list of triples with the structure @racket[(list start-node end-node value)]
 
@@ -123,6 +143,21 @@ Example usage:
            '((A a B) (B b B) (B c-1 D)))
 }
 }
+
+@defproc[(add-subgraph [parent (or/c graph? subgraph?)]
+                       [subgraph subgraph?])
+                       (or/c graph? subgraph?)]{
+
+ Adds the subgraph the @racket[parent]. When adding a subgraph if the subgraph being added is not an @emph{anonymous subgraph} 
+ then the name must be unique. 
+
+Example usage:
+@codeblock{
+(define sg (create-subgraph #:name 'cluster1))
+(add-subgraph (add-nodes (create-graph 'test) '(A B C D)) sg)
+}
+}
+
 
 
 
@@ -298,7 +333,7 @@ Below are examples of how to use the library.
 
 @subsection{Creating Basic Graphs}
 The simplest way to create a graph is work in steps. First create the graph using @racket[create-graph]. Then
-add the nodes to the graph using either @racket[add-node] or @racket[add-ndoes]. Then add the edges to the graph
+add the nodes to the graph using either @racket[add-node] or @racket[add-nodes]. Then add the edges to the graph
 using @racket[add-edges] or @racket[add-edge]. Last, convert it to the dot language.
 @codeblock{
 (define init-graph (create-graph 'cgraph #:atb (hash 'rankdir "LR")))
@@ -418,3 +453,73 @@ convert it to a string.
 }
 produces
 @centered{@image[#:suffixes @list[".png"]]{scribImgs/simple_graph_with_formatter}}
+
+
+@subsection[#:tag "subgraph_ex"]{Dealing with Subgraphs}
+Subgraphs, specifically cluster graphs, offer a unique way of relating data. Below is an example of a subset of 
+the @hyperlink["https://en.wikibooks.org/wiki/Haskell/Classes_and_types"]{Haskell Typeclass Hierarchy}.
+@codeblock{
+;; name: symbol
+;; types: listof(symbol)
+;; childs: listof(symbol)
+(struct typeclass (name types childs))
+
+;; subgraph-name: string -> string
+;; Creates a subgraph cluster name by appending `cluster` 
+(define (subgraph-name s)
+  (string->symbol (string-append "cluster" (symbol->string s))))
+
+;; typeclass->subgraph: typeclass -> subgraph
+;; Creates a subgraph for the typeclass and appends the `types` as nodes 
+(define (typeclass->subgraph tc)
+  (foldr (lambda (n g)
+           (add-node g (gensym) #:atb(hash 'label n 'fontsize 10)))
+         (create-subgraph
+          #:name (subgraph-name (typeclass-name tc))
+          #:atb (hash 'label (typeclass-name tc)))
+         (typeclass-types tc)))
+  
+
+;; typeclass-edges: typeclass -> listof(string string string)
+;; creates a list of edges of the form: `(from label to)`
+(define (typeclass-edges tc)
+  (define (fmt-edge v)
+    (list (subgraph-name (typeclass-name tc)) "" (subgraph-name v)))
+  (map fmt-edge (typeclass-childs tc)))
+  
+
+
+(define data (list (typeclass 'Eq '(|All Except IO| |(->)|) '(Ord))
+                   (typeclass 'Show '(|All Except IO| |(->)|) null)
+                   (typeclass 'Read '(|All Except IO| |(->)|) null)
+                   (typeclass 'Ord '(|All Except (->)| IO IOError) '(Real))
+                   (typeclass 'Num '(Int Integer Float Double) '(Real Fractional))
+                   (typeclass 'Bounded '(Int Char Bool |()| Ordering tuples) null)
+                   (typeclass 'Enum '(|()| Bool Char Ordering Int Integer Float Double) '(Integral))
+                   (typeclass 'Real '(Int Integer Float Double) '(RealFrac Integral))
+                   (typeclass 'Fractional '(Float  Double) '(Floating Real))
+                   (typeclass 'Integral '(Int Integer) null)
+                   (typeclass 'RealFrac '(Float Double) '(RealFloat))
+                   (typeclass 'Floating '(Float Double) '(RealFloat))
+                   (typeclass 'RealFloat '(Float Double) null)
+                   (typeclass 'Functor '(IO Maybe |[]|) '(Applicative Traversable))
+                   (typeclass 'Applicative '(IO Maybe |[]|) '(Monad))
+                   (typeclass 'Foldable '(Maybe |[]|) '(Traversable))
+                   (typeclass 'Monad '(IO Maybe |[]|) null)
+                   (typeclass 'Traversable '(Maybe |[]|) null)))
+
+;; Create the initial graph
+(define init-graph
+  (create-graph 'typeclasses
+                #:atb(hash 'compound true 'label "Haskell Typeclass Hierarchy")))
+
+;; Add the subgraphs, nodes, and edges to the graph. Then render the image
+(graph->bitmap
+ (add-edges (foldl (lambda (tc g) (add-subgraph g (typeclass->subgraph tc)))
+                   init-graph
+                   data)
+            #:atb (hash 'minlen 2)
+            (append-map typeclass-edges data)))
+}
+produces the following
+@centered{@image[#:suffixes @list[".png"]]{scribImgs/typeclass}}
