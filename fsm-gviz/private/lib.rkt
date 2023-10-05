@@ -446,11 +446,15 @@
 ;; hash->str: hash hash Optional(string) -> string
 ;; Purpose: converts the hash to a graphviz string
 (define (hash->str hash fmtr (spacer ", "))
+  (define (fmt-val val)
+    (if (boolean? val)
+        (if val 'true 'false)
+        val))
   (define (key-val->string key value)
     (define fmtr-fun (hash-ref fmtr key #f))
     (if fmtr-fun
         (format "~s=~s" key (fmtr-fun value))
-        (format "~s=~s" key (if (equal? key 'label) (format "~a" value) value))))
+        (format "~s=~s" key (if (equal? key 'label) (format "~a" (fmt-val value)) (fmt-val value)))))
   (string-join (hash-map hash key-val->string) spacer))
 
 ;; Helper function to convert a value to a string

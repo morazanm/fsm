@@ -50,6 +50,9 @@ Below are all the exported library functions from @racket["interface.rkt"].
                           [#:atb subgraph-attributes (hash/c symbol? any/c) (hash)])
                           (or/c graph? subgraph?)]{
   @margin-note{See @secref{subgraph_ex} for an example of using subgraphs.}
+  @margin-note{If you are going to have edges between clusters you need to add the
+  following on the subgraph attributes:
+  @codeblock{#:atb (hash 'compound true)}}
  Creates a subgraph representation of a @emph{dot language} subgraph. 
  
  @racket[name] is the name of the subgraph. If the name is not provided then an anonymous subgraph is created. If the name starts with @emph{cluster} then a subgraph cluster is created.
@@ -508,7 +511,7 @@ the @hyperlink["https://en.wikibooks.org/wiki/Haskell/Classes_and_types"]{Haskel
 ;; Create the initial graph
 (define init-graph
   (create-graph 'typeclasses
-                #:atb(hash 'compound 'true 'label "Haskell Typeclass Hierarchy")))
+                #:atb(hash 'compound true 'label "Haskell Typeclass Hierarchy")))
 
 ;; Add the subgraphs, nodes, and edges to the graph. Then render the image
 (graph->bitmap
