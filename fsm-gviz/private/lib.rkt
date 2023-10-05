@@ -130,18 +130,18 @@
 ;; returns the string representation of a subgraph
 (define (subgraph->str sg fmtrs)
   (define name (if (null? (subgraph-name sg)) "" (subgraph-name sg)))
-  (string-append (format "    subgraph ~s {" name) 
-                 (format "    ~a;\n" (hash->str (subgraph-atb sg) (formatters-graph fmtrs) ";\n    "))
-                 (foldl (lambda (n a) (string-append a (node->str n (formatters-node fmtrs))))
+  (string-append (format "    subgraph ~s {\n" name) 
+                 (format "        ~a;\n" (hash->str (subgraph-atb sg) (formatters-graph fmtrs) ";\n        "))
+                 (foldl (lambda (n a) (string-append a "    " (node->str n (formatters-node fmtrs))))
                         ""
                         (subgraph-node-list sg))
-                 (foldl (lambda (e a) (string-append a (edge->str e (formatters-edge fmtrs))))
+                 (foldl (lambda (e a) (string-append a "    " (edge->str e (formatters-edge fmtrs))))
                         ""
                         (subgraph-edge-list sg))
-                 (foldl (lambda (e a) (string-append a (subgraph->str e fmtrs)))
+                 (foldl (lambda (e a) (string-append a "    " (subgraph->str e fmtrs)))
                         ""
                         (subgraph-subgraph-list sg))
-                 "}"))
+                 "    }\n"))
 
 ;; graph->str: graph -> string
 ;; returns the graphviz representation of a graph as a string
@@ -195,20 +195,20 @@
             '()
             '()
             '()
-            (combine atb DEFAULT-GRAPH)))
+            atb))
 
 ;; existing-name graph | subgraph string -> boolean
 ;; True when the name already exists
 (define (existing-name? parent n)
   (define name (clean-string n))
-  (define (check-subgraph sg n)
+  (define (check-subgraph n sg)
     (or (equal? sg n)
         (member n (subgraph-subgraph-list sg) check-subgraph)))
   (if (graph? parent)
       (or (equal? name (graph-name parent))
           (member name (graph-node-list parent) (lambda (v n) (equal? (node-name n) v)))
           (member name (graph-subgraph-list parent) check-subgraph))
-      (check-subgraph parent n)))
+      (check-subgraph n parent)))
     
 
 
@@ -282,8 +282,8 @@
        ;; and point it to a random node on the subgraph 
        (define is-subgraph-start? (is-subgraph? start parent))
        (define is-subgraph-end? (is-subgraph? end parent))
-       (define h1 (hash-union (if is-subgraph-start? (hash 'lhead start) (hash))
-                              (if is-subgraph-end? (hash 'ltail end) (hash))))
+       (define h1 (hash-union (if is-subgraph-start? (hash 'ltail start) (hash))
+                              (if is-subgraph-end? (hash 'lhead end) (hash))))
        (cons (edge (if is-subgraph-start?
                        (node-name (car (subgraph-node-list (car is-subgraph-start?))))
                        start)
@@ -522,7 +522,7 @@
                  (node 'A #hash((color . "black") (label . "A") (shape . "circle")))
                  (node 'B #hash((color . "black") (label . "B") (shape . "circle"))))
                 (list
-                 (edge 'AA 'B #hash((fontsize . 15) (label . (a)) (lhead . cluster1)))
+                 (edge 'AA 'B #hash((fontsize . 15) (label . (a)) (ltail . cluster1)))
                  (edge 'AA 'B #hash((fontsize . 15) (label . (a))))
                  (edge 'A 'B #hash((fontsize . 15) (label . (a)))))
                 (list
@@ -533,7 +533,7 @@
                    (node 'BB #hash((color . "black") (label . "BB") (shape . "circle"))))
                   '()
                   '()
-                  #hash((rankdir . "LR"))))
+                  #hash()))
                 DEFAULT-FORMATTERS
                 DEFAULT-GRAPH))
 
