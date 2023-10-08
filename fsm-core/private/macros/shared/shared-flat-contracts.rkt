@@ -52,8 +52,8 @@
                        blame
                        x
                        (if (or (equal? element-name "machine state") (equal? element-name "final state"))
-                           (format "Step three of the design recipe has not be succesfully completed, the list of ~a must be a non-empty list" field-name)
-                           (format "Step one of the design recipe has not be succesfully completed, the ~a must be a non-empty list" field-name))))
+                           (format "Step three of the design recipe has not be succesfully completed.\nThe list of ~a must be a non-empty list" field-name)
+                           (format "Step one of the design recipe has not be succesfully completed\nThe ~a must be a non-empty list" field-name))))
                     )
      )
     )
@@ -74,7 +74,7 @@
                       (raise-blame-error
                        blame
                        vals
-                       (format "~a.\n The following: ~a are not valid ~as in the given ~a"
+                       (format "~a.\nThe following: ~a are not valid ~as in the given ~a"
                                (if (equal? rule "")
                                    ""
                                    (format "Step ~a of the design recipe was not successfully completed" rule))
@@ -141,7 +141,7 @@
                       (raise-blame-error
                        blame
                        start
-                       (format "Step three of the design recipe was not successfully completed.\nFor the given starting state: ~s is not a valid state" start)
+                       (format "Step three of the design recipe was not successfully completed.\nThe given starting state: ~s is not a valid state" start)
                        )
                       )
                     )
@@ -162,7 +162,7 @@
                       (raise-blame-error
                        blame
                        start
-                       (format "Step three of the design recipe has not been successfully completed.\nThe following starting state is not in ~a, the given list of states: ~a" states start)
+                       (format "Step three of the design recipe has not been successfully completed.\nThe following starting state, ~a, is not in the given list of states: ~a" start states)
                        )
                       )
                     )
@@ -184,8 +184,9 @@
                       (current-blame-format format-duplicates-error)
                       (raise-blame-error
                        blame
-                       (return-duplicates vals)
-                       (format "Step ~a of the design recipe has not been sucessfully completed.\nThere following values are duplicated in the given ~a: "
+                       vals
+                       (format "Step ~a of the design recipe has not been sucessfully completed.\nThere following values, ~a, are duplicated in the given ~a: ~a"
+                               (return-duplicates vals)
                                (if (or (equal? type "sigma") (equal? type "gamma"))
                                    "one"
                                    (if (or (equal? type "states") (equal? type "final states"))
@@ -234,8 +235,8 @@
                       (current-blame-format format-error)
                       (raise-blame-error
                        blame
-                       state
-                       (format "Step three of the design recipe has not been sucecssfully completed.\nThe following state is not a member of the given list of final states ~a" finals)))))
+                       finals
+                       (format "Step three of the design recipe has not been sucecssfully completed.\nThe following state, ~a, is not a member of the given list of final states: " state)))))
     )
 
   ;valid-num-tapes/c: any --> contract
