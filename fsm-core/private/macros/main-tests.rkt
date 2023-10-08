@@ -230,6 +230,27 @@ The following final states are not in, (A B C D), your list of states: (F)"))
                             (B a B))
                           #t) (format "Step three of the design recipe has not been successfully completed.
 The following final states are not in, (A B C D), your list of states: (F G)"))
+  ;duplicates
+ (check-error (make-dfa2 '(A B C D)
+                          '(a b c d)
+                          'A
+                          '(B C C)
+                          `((A b C)
+                            (A c D)
+                            (B c D)
+                            (B a B))
+                          #t) (format "Step three of the design recipe has not been sucessfully completed.
+There following values are duplicated in the given final states:  (C)"))
+  (check-error (make-dfa2 '(A B C D)
+                          '(a b c d)
+                          'A
+                          '(B C C B)
+                          `((A b C)
+                            (A c D)
+                            (B c D)
+                            (B a B))
+                          #t) (format "Step three of the design recipe has not been sucessfully completed.
+There following values are duplicated in the given final states:  (B C)"))
   (test)
 
   )
