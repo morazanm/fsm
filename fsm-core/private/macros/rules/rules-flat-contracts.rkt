@@ -26,7 +26,7 @@
                       (raise-blame-error
                        blame
                        (map (lambda (x) (format "~n~s" x)) (invalid-rules pred rules))
-                       (format "~a\nThe following rules are improperly formatted." design-recipe-message)
+                       (format "~a\nThe following rules are improperly formatted" design-recipe-message)
                        )
                       )
                     )
