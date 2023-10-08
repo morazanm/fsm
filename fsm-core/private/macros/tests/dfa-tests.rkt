@@ -240,7 +240,7 @@ The following final states, (F G), are not in your list of states: (A B C D)"))
                             (B c D)
                             (B a B))
                           #t) (format "Step three of the design recipe has not been sucessfully completed.
-There following values are duplicated in the given final states:  (C)"))
+There following values, (C), are duplicated in the given final states:  (B C C)"))
   (check-error (make-dfa2 '(A B C D)
                           '(a b c d)
                           'A
@@ -250,7 +250,7 @@ There following values are duplicated in the given final states:  (C)"))
                             (B c D)
                             (B a B))
                           #t) (format "Step three of the design recipe has not been sucessfully completed.
-There following values are duplicated in the given final states:  (B C)"))
+There following values, (B C), are duplicated in the given final states:  (B C C B)"))
 
   ;;START STATE
   (check-error (make-dfa2 '(A B C D)
@@ -262,7 +262,7 @@ There following values are duplicated in the given final states:  (B C)"))
                             (B c D)
                             (B a B))
                           #t) (format "Step three of the design recipe was not successfully completed.
-For the given starting state: 1 is not a valid state"))
+The given starting state: 1 is not a valid state"))
   (check-error (make-dfa2 '(A B C D)
                           '(a b c d)
                           'a
@@ -272,7 +272,7 @@ For the given starting state: 1 is not a valid state"))
                             (B c D)
                             (B a B))
                           #t) (format "Step three of the design recipe was not successfully completed.
-For the given starting state: a is not a valid state"))
+The given starting state: a is not a valid state"))
   (check-error (make-dfa2 '(A B C D)
                           '(a b c d)
                           '(A)
@@ -282,7 +282,7 @@ For the given starting state: a is not a valid state"))
                             (B c D)
                             (B a B))
                           #t) (format "Step three of the design recipe was not successfully completed.
-For the given starting state: (A) is not a valid state"))
+The given starting state: (A) is not a valid state"))
   (check-error (make-dfa2 '(A B C D)
                           '(a b c d)
                           'F
@@ -292,7 +292,7 @@ For the given starting state: (A) is not a valid state"))
                             (B c D)
                             (B a B))
                           #t) (format "Step three of the design recipe has not been successfully completed.
-The following starting state is not in (A B C D), the given list of states: F"))
+The following starting state, F, is not in the given list of states: (A B C D)"))
 
   ;;RULES
   

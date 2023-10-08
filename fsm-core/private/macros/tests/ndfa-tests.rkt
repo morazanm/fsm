@@ -18,8 +18,8 @@
                             (A c C)
                             (B c B)
                             (B a B))
-                           ) (format "Step three of the design recipe was not successfully completed.
- The following: (1) are not valid machine states in the given list of machine states: (A B C 1)"))
+                          ) (format "Step three of the design recipe was not successfully completed.
+The following: (1) are not valid machine states in the given list of machine states: (A B C 1)"))
   (check-error (make-ndfa2 '(A B C 1 2)
                           '(a b c d)
                           'A
@@ -28,8 +28,8 @@
                             (A c C)
                             (B c B)
                             (B a B))
-                           ) (format "Step three of the design recipe was not successfully completed.
- The following: (1 2) are not valid machine states in the given list of machine states: (A B C 1 2)"))
+                          ) (format "Step three of the design recipe was not successfully completed.
+The following: (1 2) are not valid machine states in the given list of machine states: (A B C 1 2)"))
   ;;Invalid letter
   (check-error (make-ndfa2 '(A B C a)
                           '(a b c d)
@@ -39,8 +39,8 @@
                             (A c C)
                             (B c B)
                             (B a B))
-                           ) (format "Step three of the design recipe was not successfully completed.
- The following: (a) are not valid machine states in the given list of machine states: (A B C a)"))
+                          ) (format "Step three of the design recipe was not successfully completed.
+The following: (a) are not valid machine states in the given list of machine states: (A B C a)"))
   (check-error (make-ndfa2 '(A B C a b)
                           '(a b c d)
                           'A
@@ -49,8 +49,8 @@
                             (A c C)
                             (B c B)
                             (B a B))
-                           ) (format "Step three of the design recipe was not successfully completed.
- The following: (a b) are not valid machine states in the given list of machine states: (A B C a b)"))
+                          ) (format "Step three of the design recipe was not successfully completed.
+The following: (a b) are not valid machine states in the given list of machine states: (A B C a b)"))
   ;;Duplicate states
   (check-error (make-ndfa2 '(A B C A)
                           '(a b c d)
@@ -60,8 +60,8 @@
                             (A c C)
                             (B c B)
                             (B a B))
-                           ) (format "Step three of the design recipe has not been sucessfully completed.
-There following values are duplicated in the given states:  (A)"))
+                          ) (format "Step three of the design recipe has not been sucessfully completed.
+There following values, (A), are duplicated in the given states:  (A B C A)"))
   (check-error (make-ndfa2 '(A B C A A)
                           '(a b c d)
                           'A
@@ -70,8 +70,8 @@ There following values are duplicated in the given states:  (A)"))
                             (A c C)
                             (B c B)
                             (B a B))
-                           ) (format "Step three of the design recipe has not been sucessfully completed.
-There following values are duplicated in the given states:  (A)"))
+                          ) (format "Step three of the design recipe has not been sucessfully completed.
+There following values, (A), are duplicated in the given states:  (A B C A A)"))
   (check-error (make-ndfa2 '(A B B C A A)
                           '(a b c d)
                           'A
@@ -80,8 +80,8 @@ There following values are duplicated in the given states:  (A)"))
                             (A c C)
                             (B c B)
                             (B a B))
-                           ) (format "Step three of the design recipe has not been sucessfully completed.
-There following values are duplicated in the given states:  (A B)"))
+                          ) (format "Step three of the design recipe has not been sucessfully completed.
+There following values, (A B), are duplicated in the given states:  (A B B C A A)"))
   ;;SIGMA
   ;invalid number
   (check-error (make-ndfa2 '(A B C D)
@@ -92,8 +92,8 @@ There following values are duplicated in the given states:  (A B)"))
                             (A c D)
                             (B c D)
                             (B a B))
-                           ) (format "Step one of the design recipe was not successfully completed.
- The following: (1) are not valid alphabet letters in the given input alphabet: (a b c 1)"))
+                          ) (format "Step one of the design recipe was not successfully completed.
+The following: (1) are not valid alphabet letters in the given input alphabet: (a b c 1)"))
   (check-error (make-ndfa2 '(A B C D)
                           '(a b c 1 2)
                           'A
@@ -102,8 +102,8 @@ There following values are duplicated in the given states:  (A B)"))
                             (A c D)
                             (B c D)
                             (B a B))
-                           ) (format "Step one of the design recipe was not successfully completed.
- The following: (1 2) are not valid alphabet letters in the given input alphabet: (a b c 1 2)"))
+                          ) (format "Step one of the design recipe was not successfully completed.
+The following: (1 2) are not valid alphabet letters in the given input alphabet: (a b c 1 2)"))
   ;invalid letter
   (check-error (make-ndfa2 '(A B C D)
                           '(a b c A)
@@ -113,8 +113,8 @@ There following values are duplicated in the given states:  (A B)"))
                             (A c D)
                             (B c D)
                             (B a B))
-                           ) (format "Step one of the design recipe was not successfully completed.
- The following: (A) are not valid alphabet letters in the given input alphabet: (a b c A)"))
+                          ) (format "Step one of the design recipe was not successfully completed.
+The following: (A) are not valid alphabet letters in the given input alphabet: (a b c A)"))
   (check-error (make-ndfa2 '(A B C D)
                           '(a b c A B)
                           'A
@@ -123,8 +123,8 @@ There following values are duplicated in the given states:  (A B)"))
                             (A c D)
                             (B c D)
                             (B a B))
-                           ) (format "Step one of the design recipe was not successfully completed.
- The following: (A B) are not valid alphabet letters in the given input alphabet: (a b c A B)"))
+                          ) (format "Step one of the design recipe was not successfully completed.
+The following: (A B) are not valid alphabet letters in the given input alphabet: (a b c A B)"))
   ;duplicate letter
   (check-error (make-ndfa2 '(A B C D)
                           '(a b c a)
@@ -134,8 +134,8 @@ There following values are duplicated in the given states:  (A B)"))
                             (A c D)
                             (B c D)
                             (B a B))
-                           ) (format "Step one of the design recipe has not been sucessfully completed.
-There following values are duplicated in the given sigma:  (a)"))
+                          ) (format "Step one of the design recipe has not been sucessfully completed.
+There following values, (a), are duplicated in the given sigma:  (a b c a)"))
   (check-error (make-ndfa2 '(A B C D)
                           '(a b c a a)
                           'A
@@ -144,8 +144,8 @@ There following values are duplicated in the given sigma:  (a)"))
                             (A c D)
                             (B c D)
                             (B a B))
-                           ) (format "Step one of the design recipe has not been sucessfully completed.
-There following values are duplicated in the given sigma:  (a)"))
+                          ) (format "Step one of the design recipe has not been sucessfully completed.
+There following values, (a), are duplicated in the given sigma:  (a b c a a)"))
   (check-error (make-ndfa2 '(A B C D)
                           '(a b c a b)
                           'A
@@ -154,8 +154,8 @@ There following values are duplicated in the given sigma:  (a)"))
                             (A c D)
                             (B c D)
                             (B a B))
-                           ) (format "Step one of the design recipe has not been sucessfully completed.
-There following values are duplicated in the given sigma:  (a b)"))
+                          ) (format "Step one of the design recipe has not been sucessfully completed.
+There following values, (a b), are duplicated in the given sigma:  (a b c a b)"))
   ;;FINALS
   ;invalid final state
   (check-error (make-ndfa2 '(A B C D)
@@ -166,8 +166,8 @@ There following values are duplicated in the given sigma:  (a b)"))
                             (A c D)
                             (B c D)
                             (B a B))
-                           ) (format "Step three of the design recipe was not successfully completed.
- The following: (1) are not valid machine states in the given list of machine finals: (B C 1)"))
+                          ) (format "Step three of the design recipe was not successfully completed.
+The following: (1) are not valid machine states in the given list of machine finals: (B C 1)"))
   (check-error (make-ndfa2 '(A B C D)
                           '(a b c d)
                           'A
@@ -176,8 +176,8 @@ There following values are duplicated in the given sigma:  (a b)"))
                             (A c D)
                             (B c D)
                             (B a B))
-                           ) (format "Step three of the design recipe was not successfully completed.
- The following: (1 2) are not valid machine states in the given list of machine finals: (B C 1 2)"))
+                          ) (format "Step three of the design recipe was not successfully completed.
+The following: (1 2) are not valid machine states in the given list of machine finals: (B C 1 2)"))
   ;invalid letter
   (check-error (make-ndfa2 '(A B C D)
                           '(a b c d)
@@ -187,8 +187,8 @@ There following values are duplicated in the given sigma:  (a b)"))
                             (A c D)
                             (B c D)
                             (B a B))
-                           ) (format "Step three of the design recipe was not successfully completed.
- The following: (a) are not valid machine states in the given list of machine finals: (B C a)"))
+                          ) (format "Step three of the design recipe was not successfully completed.
+The following: (a) are not valid machine states in the given list of machine finals: (B C a)"))
   (check-error (make-ndfa2 '(A B C D)
                           '(a b c d)
                           'A
@@ -197,8 +197,8 @@ There following values are duplicated in the given sigma:  (a b)"))
                             (A c D)
                             (B c D)
                             (B a B))
-                           ) (format "Step three of the design recipe was not successfully completed.
- The following: (a a) are not valid machine states in the given list of machine finals: (B C a a)"))
+                          ) (format "Step three of the design recipe was not successfully completed.
+The following: (a a) are not valid machine states in the given list of machine finals: (B C a a)"))
   (check-error (make-ndfa2 '(A B C D)
                           '(a b c d)
                           'A
@@ -207,8 +207,8 @@ There following values are duplicated in the given sigma:  (a b)"))
                             (A c D)
                             (B c D)
                             (B a B))
-                           ) (format "Step three of the design recipe was not successfully completed.
- The following: (a b) are not valid machine states in the given list of machine finals: (B C a b)"))
+                          ) (format "Step three of the design recipe was not successfully completed.
+The following: (a b) are not valid machine states in the given list of machine finals: (B C a b)"))
   ;not in list of states
   (check-error (make-ndfa2 '(A B C D)
                           '(a b c d)
@@ -218,8 +218,8 @@ There following values are duplicated in the given sigma:  (a b)"))
                             (A c D)
                             (B c D)
                             (B a B))
-                           ) (format "Step three of the design recipe has not been successfully completed.
-The following final states are not in, (A B C D), your list of states: (F)"))
+                          ) (format "Step three of the design recipe has not been successfully completed.
+The following final states, (F), are not in your list of states: (A B C D)"))
   (check-error (make-ndfa2 '(A B C D)
                           '(a b c d)
                           'A
@@ -228,8 +228,8 @@ The following final states are not in, (A B C D), your list of states: (F)"))
                             (A c D)
                             (B c D)
                             (B a B))
-                           ) (format "Step three of the design recipe has not been successfully completed.
-The following final states are not in, (A B C D), your list of states: (F G)"))
+                          ) (format "Step three of the design recipe has not been successfully completed.
+The following final states, (F G), are not in your list of states: (A B C D)"))
   ;duplicates
  (check-error (make-ndfa2 '(A B C D)
                           '(a b c d)
@@ -239,8 +239,8 @@ The following final states are not in, (A B C D), your list of states: (F G)"))
                             (A c D)
                             (B c D)
                             (B a B))
-                           ) (format "Step three of the design recipe has not been sucessfully completed.
-There following values are duplicated in the given final states:  (C)"))
+                          ) (format "Step three of the design recipe has not been sucessfully completed.
+There following values, (C), are duplicated in the given final states:  (B C C)"))
   (check-error (make-ndfa2 '(A B C D)
                           '(a b c d)
                           'A
@@ -249,8 +249,8 @@ There following values are duplicated in the given final states:  (C)"))
                             (A c D)
                             (B c D)
                             (B a B))
-                           ) (format "Step three of the design recipe has not been sucessfully completed.
-There following values are duplicated in the given final states:  (B C)"))
+                          ) (format "Step three of the design recipe has not been sucessfully completed.
+There following values, (B C), are duplicated in the given final states:  (B C C B)"))
 
   ;;START STATE
   (check-error (make-ndfa2 '(A B C D)
@@ -261,8 +261,8 @@ There following values are duplicated in the given final states:  (B C)"))
                             (A c D)
                             (B c D)
                             (B a B))
-                           ) (format "Step three of the design recipe was not successfully completed.
-For the given starting state: 1 is not a valid state"))
+                          ) (format "Step three of the design recipe was not successfully completed.
+The given starting state: 1 is not a valid state"))
   (check-error (make-ndfa2 '(A B C D)
                           '(a b c d)
                           'a
@@ -271,8 +271,8 @@ For the given starting state: 1 is not a valid state"))
                             (A c D)
                             (B c D)
                             (B a B))
-                           ) (format "Step three of the design recipe was not successfully completed.
-For the given starting state: a is not a valid state"))
+                          ) (format "Step three of the design recipe was not successfully completed.
+The given starting state: a is not a valid state"))
   (check-error (make-ndfa2 '(A B C D)
                           '(a b c d)
                           '(A)
@@ -281,8 +281,8 @@ For the given starting state: a is not a valid state"))
                             (A c D)
                             (B c D)
                             (B a B))
-                           ) (format "Step three of the design recipe was not successfully completed.
-For the given starting state: (A) is not a valid state"))
+                          ) (format "Step three of the design recipe was not successfully completed.
+The given starting state: (A) is not a valid state"))
   (check-error (make-ndfa2 '(A B C D)
                           '(a b c d)
                           'F
@@ -291,8 +291,8 @@ For the given starting state: (A) is not a valid state"))
                             (A c D)
                             (B c D)
                             (B a B))
-                           ) (format "Step three of the design recipe has not been successfully completed.
-The following starting state is not in (A B C D), the given list of states: F"))
+                          ) (format "Step three of the design recipe has not been successfully completed.
+The following starting state, F, is not in the given list of states: (A B C D)"))
 
   ;;RULES
   
