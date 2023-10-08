@@ -1,5 +1,5 @@
-(module main-tests racket
-  (require "constructors.rkt"
+(module dfa-tests racket
+  (require "../constructors.rkt"
            racket/contract
            )
   (local-require test-engine/racket-tests)
@@ -293,6 +293,8 @@ For the given starting state: (A) is not a valid state"))
                             (B a B))
                           #t) (format "Step three of the design recipe has not been successfully completed.
 The following starting state is not in (A B C D), the given list of states: F"))
+
+  ;;RULES
   
   (test)
 

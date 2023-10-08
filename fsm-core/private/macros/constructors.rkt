@@ -111,7 +111,7 @@
                                #:accepts [accepts '()]
                                #:rejects [rejects '()])
     (->i ([states (and/c (is-nonempty-list/c "machine state" "list of machine states")
-                         (valid-listof/c valid-state? "machine state" "list of machine states" #:rule "third")
+                         (valid-listof/c valid-state? "machine state" "list of machine states" #:rule "three")
                          (no-duplicates/c "states"))]
           [sigma (and/c (is-nonempty-list/c "alphabet letter" "input alphabet")
                         (valid-listof/c valid-alpha? "alphabet letter" "input alphabet" #:rule "one")
