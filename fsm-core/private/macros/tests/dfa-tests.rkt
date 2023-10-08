@@ -61,7 +61,7 @@ The following: (a b) are not valid machine states in the given list of machine s
                             (B c B)
                             (B a B))
                           #t) (format "Step three of the design recipe has not been sucessfully completed.
-There following values are duplicated in the given states:  (A)"))
+There following values, (A), are duplicated in the given states:  (A B C A)"))
   (check-error (make-dfa2 '(A B C A A)
                           '(a b c d)
                           'A
@@ -71,7 +71,7 @@ There following values are duplicated in the given states:  (A)"))
                             (B c B)
                             (B a B))
                           #t) (format "Step three of the design recipe has not been sucessfully completed.
-There following values are duplicated in the given states:  (A)"))
+There following values, (A), are duplicated in the given states:  (A B C A A)"))
   (check-error (make-dfa2 '(A B B C A A)
                           '(a b c d)
                           'A
@@ -81,7 +81,7 @@ There following values are duplicated in the given states:  (A)"))
                             (B c B)
                             (B a B))
                           #t) (format "Step three of the design recipe has not been sucessfully completed.
-There following values are duplicated in the given states:  (A B)"))
+There following values, (A B), are duplicated in the given states:  (A B B C A A)"))
   ;;SIGMA
   ;invalid number
   (check-error (make-dfa2 '(A B C D)
@@ -135,7 +135,7 @@ The following: (A B) are not valid alphabet letters in the given input alphabet:
                             (B c D)
                             (B a B))
                           #t) (format "Step one of the design recipe has not been sucessfully completed.
-There following values are duplicated in the given sigma:  (a)"))
+There following values, (a), are duplicated in the given sigma:  (a b c a)"))
   (check-error (make-dfa2 '(A B C D)
                           '(a b c a a)
                           'A
@@ -145,7 +145,7 @@ There following values are duplicated in the given sigma:  (a)"))
                             (B c D)
                             (B a B))
                           #t) (format "Step one of the design recipe has not been sucessfully completed.
-There following values are duplicated in the given sigma:  (a)"))
+There following values, (a), are duplicated in the given sigma:  (a b c a a)"))
   (check-error (make-dfa2 '(A B C D)
                           '(a b c a b)
                           'A
@@ -155,7 +155,7 @@ There following values are duplicated in the given sigma:  (a)"))
                             (B c D)
                             (B a B))
                           #t) (format "Step one of the design recipe has not been sucessfully completed.
-There following values are duplicated in the given sigma:  (a b)"))
+There following values, (a b), are duplicated in the given sigma:  (a b c a b)"))
   ;;FINALS
   ;invalid final state
   (check-error (make-dfa2 '(A B C D)
@@ -219,7 +219,7 @@ The following: (a b) are not valid machine states in the given list of machine f
                             (B c D)
                             (B a B))
                           #t) (format "Step three of the design recipe has not been successfully completed.
-The following final states are not in, (A B C D), your list of states: (F)"))
+The following final states, (F), are not in your list of states: (A B C D)"))
   (check-error (make-dfa2 '(A B C D)
                           '(a b c d)
                           'A
@@ -229,7 +229,7 @@ The following final states are not in, (A B C D), your list of states: (F)"))
                             (B c D)
                             (B a B))
                           #t) (format "Step three of the design recipe has not been successfully completed.
-The following final states are not in, (A B C D), your list of states: (F G)"))
+The following final states, (F G), are not in your list of states: (A B C D)"))
   ;duplicates
  (check-error (make-dfa2 '(A B C D)
                           '(a b c d)
