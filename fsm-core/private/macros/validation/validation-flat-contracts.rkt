@@ -18,7 +18,7 @@
            has-accept/c
            )
 
-  (define (listof-words/c sigma)
+  (define (listof-words/c sigma type)
     (make-flat-contract
      #:name 'valid-list-of-words
      #:first-order (lambda (words) (listof-words? words))
@@ -28,7 +28,7 @@
                       (raise-blame-error
                        blame
                        words
-                       (format "Not given an accurate list of words")
+                       (format "The ~a word list is not a proper list of words")
                      
                        )
                       )
