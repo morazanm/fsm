@@ -28,7 +28,7 @@
                       (raise-blame-error
                        blame
                        words
-                       (format "The ~a word list is not a proper list of words" type)
+                       (format "The expected ~a is not a list of words" type)
                      
                        )
                       )
