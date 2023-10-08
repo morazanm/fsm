@@ -131,8 +131,8 @@
                               sigma
                               start
                               finals
-                              rules) (and/c (words-in-sigma/c sigma)
-                                            (listof-words/c sigma)
+                              rules) (and/c (listof-words/c sigma)
+                                            (words-in-sigma/c sigma)
                                             (ndfa-input/c states
                                                           sigma
                                                           start
@@ -143,8 +143,8 @@
                               sigma
                               start
                               finals
-                              rules) (and/c (words-in-sigma/c sigma)
-                                            (listof-words/c sigma)
+                              rules) (and/c (listof-words/c sigma)
+                                            (words-in-sigma/c sigma)
                                             (ndfa-input/c states
                                                           sigma
                                                           start
@@ -190,8 +190,8 @@
                               gamma
                               start
                               finals
-                              rules) (and/c (words-in-sigma/c sigma)
-                                            (listof-words/c sigma)
+                              rules) (and/c (listof-words/c sigma)
+                                            (words-in-sigma/c sigma)
                                             (ndpda-input/c states
                                                            sigma
                                                            gamma
@@ -204,8 +204,8 @@
                               gamma
                               start
                               finals
-                              rules) (and/c (words-in-sigma/c sigma)
-                                            (listof-words/c sigma)
+                              rules) (and/c (listof-words/c sigma)
+                                            (words-in-sigma/c sigma)
                                             (ndpda-input/c states
                                                            sigma
                                                            gamma
