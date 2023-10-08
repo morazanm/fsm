@@ -185,13 +185,15 @@
                       (raise-blame-error
                        blame
                        vals
-                       (format "Step ~a of the design recipe has not been sucessfully completed.\nThere following values, ~a, are duplicated in the given ~a: ~a"
-                               (return-duplicates vals)
+                       (format "Step ~a of the design recipe has not been sucessfully completed.\nThere following values, ~a, are duplicated in the given ~a: "
                                (if (or (equal? type "sigma") (equal? type "gamma"))
                                    "one"
                                    (if (or (equal? type "states") (equal? type "final states"))
                                        "three"
-                                       "four")) type)
+                                       "four")) 
+                       (return-duplicates vals)
+                       type
+                       )
                        )
                       )
                     )
