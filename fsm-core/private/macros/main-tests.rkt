@@ -251,6 +251,49 @@ There following values are duplicated in the given final states:  (C)"))
                             (B a B))
                           #t) (format "Step three of the design recipe has not been sucessfully completed.
 There following values are duplicated in the given final states:  (B C)"))
+
+  ;;START STATE
+  (check-error (make-dfa2 '(A B C D)
+                          '(a b c d)
+                          '1
+                          '(B C C B)
+                          `((A b C)
+                            (A c D)
+                            (B c D)
+                            (B a B))
+                          #t) (format "Step three of the design recipe was not successfully completed.
+For the given starting state: 1 is not a valid state"))
+  (check-error (make-dfa2 '(A B C D)
+                          '(a b c d)
+                          'a
+                          '(B C C B)
+                          `((A b C)
+                            (A c D)
+                            (B c D)
+                            (B a B))
+                          #t) (format "Step three of the design recipe was not successfully completed.
+For the given starting state: a is not a valid state"))
+  (check-error (make-dfa2 '(A B C D)
+                          '(a b c d)
+                          '(A)
+                          '(B C C B)
+                          `((A b C)
+                            (A c D)
+                            (B c D)
+                            (B a B))
+                          #t) (format "Step three of the design recipe was not successfully completed.
+For the given starting state: (A) is not a valid state"))
+  (check-error (make-dfa2 '(A B C D)
+                          '(a b c d)
+                          'F
+                          '(B C C B)
+                          `((A b C)
+                            (A c D)
+                            (B c D)
+                            (B a B))
+                          #t) (format "Step three of the design recipe has not been successfully completed.
+The following starting state is not in (A B C D), the given list of states: F"))
+  
   (test)
 
   )
