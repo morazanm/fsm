@@ -19,13 +19,13 @@
                        "a"
                        'A
                        'B
-                       #:atb (hash 'fontsize 20 'style 'solid 'fontcolor 'yellow 'color 'blue)))
+                       #:atb (hash 'fontsize 20 'style 'solid 'fontcolor 'crimson 'color 'crimson)))
 
 (set! cgraph (add-edge cgraph
                        'b
                        'A
                        'B
-                       #:atb (hash 'fontsize 20 'style 'solid 'fontcolor 'crimson)))
+                       #:atb (hash 'fontsize 20 'style 'solid 'fontcolor 'yellow)))
 
 (set! cgraph (add-edge cgraph
                        'b
@@ -33,10 +33,7 @@
                        'A
                        #:atb (hash 'fontsize 20 'style 'solid)))
 
-(let [(res (graph->bitmap cgraph (current-directory) FNAME))]
-  (begin
-    (delete-file (string-append FNAME ".dot"))
-    (delete-file (string-append FNAME ".png"))
-    res))
+(let [(res (graph->bitmap cgraph))]
+    res)
 
 
