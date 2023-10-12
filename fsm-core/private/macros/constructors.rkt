@@ -123,7 +123,7 @@
                                   (valid-finals/c states)
                                   (no-duplicates/c "final states"))]
           [rules (states
-                  sigma) (and/c (listof-rules/c valid-dfa-rule-structure?)
+                  sigma) (and/c correct-dfa-rule-structures/c
                                 (correct-dfa-rules/c states (cons EMP sigma))
                                 (no-duplicates/c "rules"))]
           )
@@ -181,7 +181,7 @@
                                   (no-duplicates/c "final states"))]
           [rules (states
                   sigma
-                  gamma) (and/c (listof-rules/c valid-ndpda-rule-structure?)
+                  gamma) (and/c correct-ndpda-rule-structures/c
                                 (correct-ndpda-rules/c states sigma gamma)
                                 (no-duplicates/c "rules"))]
           )
@@ -231,7 +231,7 @@
                         (valid-listof/c valid-alpha? "alphabet letter" "input alphabet" #:rule "one")
                         (no-duplicates/c "sigma"))]
           [rules (states
-                  sigma) (and/c (listof-rules/c valid-tm-rule-structure?)
+                  sigma) (and/c correct-tm-rule-structures/c
                                 (correct-tm-rules/c states sigma)
                                 (no-duplicates/c "rules"))]
           [start (states) (and/c (valid-start/c states)
@@ -303,7 +303,7 @@
                                   (no-duplicates/c "final states"))]
           [rules (states
                   sigma
-                  num-tapes) (and/c (listof-rules/c (valid-mttm-rule-structure? num-tapes))
+                  num-tapes) (and/c (correct-mttm-rule-structures/c num-tapes)
                                     (correct-mttm-rules/c states sigma)
                                     (no-duplicates/c "rules"))]
           [num-tapes  (and/c valid-num-tapes/c)]

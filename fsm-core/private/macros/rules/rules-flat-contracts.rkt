@@ -10,8 +10,11 @@
            correct-dfa-rules/c
            correct-dfa-rule-structures/c
            correct-ndpda-rules/c
+           correct-ndpda-rule-structures/c
            correct-tm-rules/c
+           correct-tm-rule-structures/c
            correct-mttm-rules/c
+           correct-mttm-rule-structures/c
            functional/c
            no-duplicates-dfa/c)
 
@@ -87,6 +90,25 @@
                        (incorrect-dfa-rules states sigma rules)
                        (format "~a\nThe following rules have errors" design-recipe-message))))))
 
+  ;correct-ndpda-rule-structures/c: contract
+  ;predicate: (listof x) -> boolean
+  ;purpose: Ensures that every element in the list is structured as a valid ndpda rule.
+  ; It checks each rule to see that it is a (list (list state symbol pop) (list state push))
+  (define correct-ndpda-rule-structures/c
+    (make-flat-contract
+     #:name 'correct-ndpda-rule-structures
+     #:first-order (lambda (rules) (empty? (incorrect-ndpda-rule-structures rules)))
+     #:projection (lambda (blame)
+                    (lambda (rules)
+                      (current-blame-format format-incorrect-rules-error)
+                      (if (empty? (incorrect-ndpda-rule-structures rules))
+                          rules
+                          (raise-blame-error
+                           blame
+                           (incorrect-ndpda-rule-structures rules)
+                           (format "~a\nThe following rules have structural errors" design-recipe-message)))
+                      ))))
+
   ;correct-ndpda-rules/c: (listof state) (listof alpha) (listof symbol) --> contract
   ;predicate: (listof x) --> boolean
   ;Purpose: Ensures that every element in the list is a valid pda rule. It checks
@@ -106,6 +128,25 @@
                        (incorrect-ndpda-rules states sigma gamma rules)
                        (format "~a\nThe following rules have errors, which make them invalid" design-recipe-message))))))
 
+  ;correct-tm-rule-structures/c: contract
+  ;predicate: (listof x) -> boolean
+  ;purpose: Ensures that every element in the list is structured as a valid tm rule.
+  ; It checks each rule to see that it is a (list (list state symbol) (list state tm-action))
+  (define correct-tm-rule-structures/c
+    (make-flat-contract
+     #:name 'correct-tm-rule-structures
+     #:first-order (lambda (rules) (empty? (incorrect-tm-rule-structures rules)))
+     #:projection (lambda (blame)
+                    (lambda (rules)
+                      (current-blame-format format-incorrect-rules-error)
+                      (if (empty? (incorrect-tm-rule-structures rules))
+                          rules
+                          (raise-blame-error
+                           blame
+                           (incorrect-tm-rule-structures rules)
+                           (format "~a\nThe following rules have structural errors" design-recipe-message)))
+                      ))))
+
   ;correct-tm-rules/c: (listof state) (list of alpha) --> contract
   ;predicate: (listof x) --> boolean
   ;Purpose: Ensures that every element in the list is a valid tm rule. It checks
@@ -124,6 +165,25 @@
                        blame
                        (incorrect-tm-rules states sigma rules)
                        (format "~a\nThe following rules have errors, which make them invalid" design-recipe-message))))))
+
+  ;correct-tm-rule-structures/c: natnum -> contract
+  ;predicate: (listof x) -> boolean
+  ;purpose: Ensures that every element in the list is structured as a valid mttm rule.
+  ; It checks each rule to see that it is a (list (list state (listof symbol)) (list state (listof tm-action)))
+  (define (correct-mttm-rule-structures/c num-tapes)
+    (make-flat-contract
+     #:name 'correct-mttm-rule-structures
+     #:first-order (lambda (rules) (empty? (incorrect-mttm-rule-structures rules num-tapes)))
+     #:projection (lambda (blame)
+                    (lambda (rules)
+                      (current-blame-format format-incorrect-rules-error)
+                      (if (empty? (incorrect-mttm-rule-structures rules num-tapes))
+                          rules
+                          (raise-blame-error
+                           blame
+                           (incorrect-mttm-rule-structures rules num-tapes)
+                           (format "~a\nThe following rules have structural errors" design-recipe-message)))
+                      ))))
 
   ;correct-mttm-rules/c: (listof state) (listof alpha) --> contract
   ;predicate: (listof x) --> boolean

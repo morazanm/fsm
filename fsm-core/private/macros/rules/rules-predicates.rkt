@@ -16,6 +16,9 @@
            incorrect-tm-rules
            incorrect-mttm-rules
            incorrect-dfa-rule-structures
+           incorrect-ndpda-rule-structures
+           incorrect-tm-rule-structures
+           incorrect-mttm-rule-structures
            valid-dfa-rule-structure?
            valid-ndpda-rule-structure?
            valid-tm-rule-structure?
@@ -235,15 +238,15 @@
         (cond [(or (not (list? elem)) (not (= (length elem) 3)))
                (list (format "The given rule, ~a, does not have the correct structure. A DFA rule must be a list with three elements." elem))]
               [else
-               (append (if (not (valid-state? (first elem)))
-                           (list (format "The first element in the rule, ~a, is not a valid state." (first elem)))
-                           '())
-                       (if (not (valid-alpha? (second elem)))
-                           (list (format "The second element in the rule, ~a, is not a valid alphabet element." (second elem)))
-                           '())
-                       (if (not (valid-state? (third elem)))
-                           (list (format "The third element in the rule, ~a, is not a valid state." (third elem)))
-                           '()))]
+               (append (if (valid-state? (first elem))
+                           '()
+                           (list (format "The first element in the rule, ~a, is not a valid state." (first elem))))
+                       (if (symbol? (second elem))
+                           '()
+                           (list (format "The second element in the rule, ~a, is not a valid alphabet element." (second elem))))
+                       (if (valid-state? (third elem))
+                           '()
+                           (list (format "The third element in the rule, ~a, is not a valid state." (third elem)))))]
               )
         )
       (if (empty? all-errors) '() (list (make-invalid-rule elem all-errors)))
@@ -282,6 +285,64 @@
   ; in the list.
   (define (with-indices lox)
     (map list lox (range (length lox))))
+
+  ;incorrect-ndpda-rule-structures: (listof any) --> (listof invalid-rule)
+  ;purpose: filters the input list of elements, such that any element that is not
+  ; structured as a valid ndpda-rule is returned as an invalid-rule struct containing
+  ; all the offenses.
+  (define (incorrect-ndpda-rule-structures elems)
+    ;validate-ndpda-rule-pop: any --> (listof string)
+    ;purpose: Takes as input an element which is meant to be the push fragment of
+    ; an ndpda rule, and returns a list of any structure errors associated with
+    ; the rule. If the input matches the structure of a valid ndpda rule push, returns
+    ; an empty list.
+    (define (validate-ndpda-rule-pop rule)
+      (cond [(or (not (list? rule)) (not (= (length rule) 3)))
+             (list (format "The first part of the rule, ~a, does not have the correct structure. It must be a list with three elements." rule))]
+            [else
+             (append (if (valid-state? (first rule))
+                         '()
+                         (list (format "The first element in the first part of the rule, ~a, is not a valid state." (first rule))))
+                     (if (or (valid-alpha? (second rule))
+                             (equal? (second rule) EMP))
+                         '()
+                         (list (format "The second element in the first part of the rule, ~a, is not a valid alphabet element." (second rule))))
+                     (if (or (equal? (third rule) EMP)
+                             (and (list? (third rule))
+                                  (andmap valid-alpha? (third rule))))
+                         '()
+                         (list (format "The third element in the first part of the rule, ~a, is not EMP or a list of valid alphabet elements." (third rule)))))]))
+    ;validate-ndpda-rule-push: any --> (listof string)
+    ;purpose: Takes as input an element which is meant to be the pop fragment of
+    ; an ndpda rule, and returns a list of any structure errors associated with
+    ; the rule. If the input matches the structure of a valid ndpda rule pop, returns
+    ; an empty list.
+    (define (validate-ndpda-rule-push rule)
+      (cond [(or (not (list? rule)) (not (= (length rule) 2)))
+             (list (format "The second part of the rule, ~a, does not have the correct structure. It must be a list with two elements."))]
+            [else
+             (append (if (valid-state? (first rule))
+                         '()
+                         (list (format "The first element in the second part of the rule, ~a, is not a valid state." (first rule))))
+                     (if (or (equal? (second rule) EMP)
+                             (and (list? (second rule))
+                                  (andmap valid-alpha? (second rule))))
+                         '()
+                         (list (format "The second element in the second part of the rule, ~a, is not EMP or a list of valid alphabet elements." (second rule)))))]
+            )
+      )
+    ;rule-with-errors: any -> (listof invalid-rule)
+    ;purpose: If there is anything wrong with the structure of the given element,
+    ; which makes it an improperly formatted ndpda rule, returns a list containing
+    ; an invalid-rule with all approprate error messages. If the element is a valid
+    ; ndpda rule, returns an empty list.
+    (define (rule-with-errors elem)
+      (define all-errors
+        (cond [(or (not (list? elem)) (not (= (length elem) 2)))
+               (list (format "The given rule, ~a, does not have the correct structure. An NDPDA rule must be a list with two elements." elem))]
+              [else (append (validate-ndpda-rule-pop (first elem)) (validate-ndpda-rule-push (second elem)))]))
+      (if (empty? all-errors) '() (list (make-invalid-rule elem all-errors))))
+    (flatten (map rule-with-errors elems)))
 
   ;incorrect-ndpda-rules: (listof state) (listof alpha) (listof symbol) (listof pda-rule) --> (listof invalid-rule)
   ;purpose: for all of the rules in the list of pda-rules, returns invalid-rule for any
@@ -325,6 +386,43 @@
       (if (empty? all-errors) '() (list (make-invalid-rule rule all-errors))))
     (flatten (map rule-with-errors rules)))
 
+  ;incorrect-tm-rule-structures: (listof any) --> (listof invalid-rule)
+  ;purpose: Filters the given input list, and for every element that does
+  ; not have the structure of tm, returns an invalid-rule with a list of every offense.
+  (define (incorrect-tm-rule-structures elems)
+    (define (validate-tm-read rule)
+      (cond [(or (not (list? rule)) (not (= (length rule) 2)))
+             (list (format "The first part of the rule, ~a, does not have the correct structure. It must be a list with two elements." rule))]
+            [else
+             (append (if (valid-state? (first rule))
+                         '()
+                         (list (format "The first element in the first part of the rule, ~a, is not a valid state." (first rule))))
+                     (if (symbol? (second rule))
+                         '()
+                         (list (format "The second element in the first part of the rule, ~a, is not a symbol." (second rule)))))]))
+    (define (validate-tm-write rule)
+      (cond [(or (not (list? rule)) (not (= (length rule) 2)))
+             (list (format "The second part of the rule, ~a, does not have the correct structure. It must be a list with two elements." rule))]
+            [else
+             (append (if (valid-state? (first rule))
+                         '()
+                         (list (format "The first element in the second part of the rule, ~a, is not a valid state." (first rule))))
+                     (if (symbol? (second rule))
+                         '()
+                         (list (format "The second element in the second part of the rule, ~a, is not a symbol." (second rule)))))]))
+    ;rule-with-errors: any --> (listof invalid-rule)
+    ;purpose: If there is anything wrong with the structure of the given element,
+    ; which makes it an improperly formatted tm rule, returns a list containing
+    ; an invalid-rule with all approprate error messages. If the element is a valid
+    ; tm rule, returns an empty list.
+    (define (rule-with-errors elem)
+      (define all-errors
+        (cond [(or (not (list? elem)) (not (= (length elem) 2)))
+               (list (format "The given rule, ~a, does not have the correct structure. A TM rule must be a list with two elements." elem))]
+              [else (append (validate-tm-read (first elem)) (validate-tm-write (second elem)))]))
+      (if (empty? all-errors) '() (list (make-invalid-rule elem all-errors))))
+    (flatten (map rule-with-errors elems)))
+
   ;incorrect-tm-rules: (listof state) (listof alpha) (listof tm-rule) --> (listof invalid-rule)
   ;Purpose: For all of the rules in the list of tm-rules, returns an invalid-rule
   ; for any rule that has invalid states, a read element that is not in the sigma
@@ -356,6 +454,48 @@
       (if (empty? all-errors) '() (list (make-invalid-rule rule all-errors))))
     (flatten (map rule-with-errors rules)))
 
+  ;incorrect-mttm-rule-structures: (listof any) natnum --> (listof invalid-rule)
+  ;purpose: Filters the given input list, and for every element that does
+  ; not have the structure of a given mttm with the given number of tapes,
+  ; returns an invalid-rule with a list of every offense.
+  (define (incorrect-mttm-rule-structures elems num-tapes)
+    (define (validate-mttm-read rule)
+      (cond [(or (not (list? rule)) (not (= (length rule) 2)))
+             (list (format "The first part of the rule, ~a, does not have the correct structure. It must be a list with two elements." rule))]
+            [else
+             (append (if (valid-state? (first rule))
+                         '()
+                         (list (format "The first element in the first part of the rule, ~a, is not a valid state." (first rule))))
+                     (if (and (list? (second rule))
+                              (= (length (second rule)) num-tapes)
+                              (andmap symbol? (second rule)))
+                         '()
+                         (list (format "The second element in the first part of the rule, ~a, is not a list of ~a symbols." (second rule) num-tapes))))]))
+    (define (validate-mttm-write rule)
+      (cond [(or (not (list? rule)) (not (= (length rule) 2)))
+             (list (format "The second part of the rule, ~a, does not ahve the correct structure. It must be a list with two elements." rule))]
+            [else
+             (append (if (valid-state? (first rule))
+                         '()
+                         (list (format "The first element in the second part of the rule, ~a, is not a valid state." (first rule))))
+                     (if (and (list (second rule))
+                              (= (length (second rule)) num-tapes)
+                              (andmap symbol? (second rule)))
+                         '()
+                         (list (format "The second element in the second part of the rule, ~a, is not a list of ~a symbols." (second rule) num-tapes))))]))
+    ;rule-with-errors: any --> (listof invalid-rule)
+    ;purpose: If there is anything wrong with the structure of the given element,
+    ; which makes it an improperly formatted ndpda rule, returns a list containing
+    ; an invalid-rule with all approprate error messages. If the element is a valid
+    ; ndpda rule, returns an empty list.
+    (define (rule-with-errors elem)
+      (define all-errors
+        (cond [(or (not (list? elem)) (not (= (length elem) 2)))
+               (list (format "The given rule, ~a, does not have the correct structure. A MTTM rule must be a list with two elements." elem))]
+              [else (append (validate-mttm-read (first elem)) (validate-mttm-write (second elem)))]))
+      (if (empty? all-errors) '() (list (make-invalid-rule elem all-errors))))
+    (flatten (map rule-with-errors elems)))
+    
   ;incorrect-mttm-rules: (listof state) (listof alpha) (listof mttm-rule) --> (listof invalid-rule)
   ;Purpose: For all of the rules in the list of mttm-rules, returns an invalid-rule
   ; for any rule that has invalid states, any read elements that are not in the
