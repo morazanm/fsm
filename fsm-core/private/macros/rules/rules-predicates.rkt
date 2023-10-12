@@ -6,6 +6,7 @@
            "../../fsa.rkt"
            "../../tm.rkt"
            "../../pda.rkt"
+           "../shared/shared-predicates.rkt"
            "../../../../main.rkt")
   (provide add-dead-state-rules
            valid-rules?
@@ -14,6 +15,7 @@
            incorrect-ndpda-rules
            incorrect-tm-rules
            incorrect-mttm-rules
+           incorrect-dfa-rule-structures
            valid-dfa-rule-structure?
            valid-ndpda-rule-structure?
            valid-tm-rule-structure?
@@ -224,7 +226,32 @@
 
   (define-struct invalid-rule (rule errors) #:transparent)
 
-  ;incorrect-dfa-rules: (listof state) (listof alpha) (listof dfa-rule) --> (listof (list (dfa-rule (list boolean boolean boolean)))
+  ;incorrect-dfa-rule-structures: (listof any) --> (listof invalid-rule)
+  ;purpose: filters the input list of elements, such that any element that is not structured
+  ; as a valid dfa-rule is returned as an invalid-rule struct containing all the offenses.
+  (define (incorrect-dfa-rule-structures elems)
+    (define (rule-with-errors elem)
+      (define all-errors
+        (cond [(or (not (list? elem)) (not (= (length elem) 3)))
+               (list (format "The given rule, ~a, does not have the correct structure. A DFA rule must be a list with three elements." elem))]
+              [else
+               (append (if (not (valid-state? (first elem)))
+                           (list (format "The first element in the rule, ~a, is not a valid state." (first elem)))
+                           '())
+                       (if (not (valid-alpha? (second elem)))
+                           (list (format "The second element in the rule, ~a, is not a valid alphabet element." (second elem)))
+                           '())
+                       (if (not (valid-state? (third elem)))
+                           (list (format "The third element in the rule, ~a, is not a valid state." (third elem)))
+                           '()))]
+              )
+        )
+      (if (empty? all-errors) '() (list (make-invalid-rule elem all-errors)))
+      )
+    (flatten (map rule-with-errors elems))
+    )
+
+  ;incorrect-dfa-rules: (listof state) (listof alpha) (listof dfa-rule) --> (listof invalid-rule)
   ;purpose: for all the rules in the list of dfa-rules, returns tuples of all
   ; states and alphabet letters that are invalid (meaning not in the states or sigma)
   (define (incorrect-dfa-rules states sigma rules)

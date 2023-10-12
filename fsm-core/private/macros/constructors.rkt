@@ -61,7 +61,7 @@
                                   (no-duplicates/c "final states"))]
           [rules (states
                   sigma
-                  add-dead) (and/c (listof-rules/c valid-dfa-rule-structure?)
+                  add-dead) (and/c correct-dfa-rule-structures/c
                                    (correct-dfa-rules/c states sigma)
                                    (functional/c states sigma add-dead)
                                    (no-duplicates-dfa/c "rules"))]
