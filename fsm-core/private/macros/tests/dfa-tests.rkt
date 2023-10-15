@@ -313,6 +313,16 @@ The following starting state, F, is not in the given list of states: (A B C D)")
                           'A
                           #t) (format "Step four of the design recipe has not be succesfully completed.
 The given machine rules must be a list: A"))
+
+  (check-error (make-dfa2 '(A B C D)
+                          '(a b c d)
+                          'A
+                          '(B C)
+                          '(A)
+                          #t) (format "Step four of the design recipe was not successfully completed.
+The following rules have structural errors:
+Rule A:
+  The given rule, A, does not have the correct structure. A DFA rule must be a list with three elements."))
   
   (test)
 
