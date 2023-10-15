@@ -9,6 +9,17 @@
 
   ;;valid-listof/c tests
   ;;STATES
+  ;not a list
+  (check-error (make-dfa2 'A
+                          '(a b c d)
+                          'A
+                          '(B C)
+                          `((A b C)
+                            (A c C)
+                            (B c B)
+                            (B a B))
+                          #t) (format "Step three of the design recipe has not be succesfully completed.
+The given machine states must be a list: A"))
   ;;Invalid number
   (check-error (make-dfa2 '(A B C 1)
                           '(a b c d)
@@ -295,6 +306,13 @@ The given starting state: (A) is not a valid state"))
 The following starting state, F, is not in the given list of states: (A B C D)"))
 
   ;;RULES
+  (check-error (make-dfa2 '(A B C D)
+                          '(a b c d)
+                          'A
+                          '(B C)
+                          'A
+                          #t) (format "Step four of the design recipe has not be succesfully completed.
+The given machine rules must be a list: A"))
   
   (test)
 

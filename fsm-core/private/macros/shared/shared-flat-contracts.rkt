@@ -21,7 +21,7 @@
   ;is-a-list//c: string string --> contract
   ;; predicate: any --> boolean
   ;; Purpose: A flat contract that checks if the input is a list.
-  (define (is-a-list/c field-name)
+  (define (is-a-list/c field-name step)
     (make-flat-contract
      #:name 'is-a-list/c
      #:first-order (lambda (x) (list? x))
@@ -31,7 +31,7 @@
                       (raise-blame-error
                        blame
                        x
-                       (format "Step three of the design recipe has not be succesfully completed.\nThe given ~a must be a list" field-name)
+                       (format "Step ~a of the design recipe has not be succesfully completed.\nThe given ~a must be a list" step field-name)
                        ))
                     )
      )
