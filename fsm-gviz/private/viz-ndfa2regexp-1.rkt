@@ -67,6 +67,7 @@
                                           (C a C)
                                           (C b C))))
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
@@ -338,13 +339,6 @@
                            (above
                             (image-struct-img (first (viz-state-pimgs a-vs)))
                             (text (format "Added starting and final state") 20 'black))]
-                          [(= 3 (length (viz-state-pimgs a-vs)))
-                           (above
-                            (image-struct-img (first (viz-state-pimgs a-vs)))
-                            (text (format "Ripped node: ~s" (first (image-struct-state
-                                                                    (first (rest (viz-state-pimgs a-vs))))))
-                                  20
-                                  'black))]
                           [else
                            (above
                             (image-struct-img (first (viz-state-pimgs a-vs)))
@@ -356,7 +350,7 @@
         (height (image-height graph-img))]
     (if (or (> width (image-width E-SCENE))
             (> height (image-height E-SCENE)))
-        (overlay (resize-image graph-img (image-width E-SCENE) (image-height E-SCENE))
+        (overlay (resize-image graph-img (- 10 (image-width E-SCENE)) (- 10 (image-height E-SCENE)))
                  E-SCENE)
         (overlay graph-img E-SCENE))))
 
@@ -374,17 +368,8 @@
   (void))
 
 
-(define aa-ab
-  (make-ndfa 
-   '(S A B F) 
-   '(a b) 
-   'S
-   '(A B)
-   `((S a A)
-     (S a B)
-     (S ,EMP F)
-     (A a A)
-     (B b B))))
 
 (run AT-LEAST-ONE-MISSING)
+;(define D (ndfa->dfa AT-LEAST-ONE-MISSING))
+
 
