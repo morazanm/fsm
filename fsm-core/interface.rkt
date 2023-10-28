@@ -206,9 +206,11 @@
           [else (error "Incorrect input to show-transitions")])))
 
 ; ctm word [natnum] --> (list state natnum tape)
-(define (ctm-run M w . l)
-  (let ((res (ctm-apply M w (if (null? l) 0 (car l)))))
-    (list (tmconfig-state res) (tmconfig-index res) (tmconfig-tape res))))
+(define (ctm-run M w #:trace [trace #f] . l)
+  (let ((res (ctm-apply M w (if (null? l) 0 (car l)) trace)))
+    (if trace
+        res
+        (list (tmconfig-state res) (tmconfig-index res) (tmconfig-tape res)))))
   
 ; fsm fsm word --> boolean
 (define (sm-sameresult? M1 M2 w)
@@ -520,6 +522,24 @@
         tentative)
     )
   )
+
+(define R (make-tm '(S F)
+                   '(d)
+                   `(((S d) (F ,RIGHT))
+                     ((S ,BLANK) (F ,RIGHT)))
+                   'S
+                   '(F)))
+
+(define FBR (combine-tms (list 0
+                               R
+                               (cons BRANCH
+                                     (list (list 'd (list GOTO 0))
+                                           (list BLANK (list GOTO 10))))
+                               10)
+                         (list 'd)))
+
+
+
 
 
 

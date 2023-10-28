@@ -348,7 +348,7 @@
   
   (define (tm-apply m w pos) (m w pos))
   
-  (define (ctm-apply m w pos) (m w pos))
+  (define (ctm-apply m w pos trace) (m w pos trace))
   
   (define (tm-showtransitions m w pos) (m w pos 'transitions))
   
@@ -397,10 +397,14 @@
     (define WRITERS (map (lambda (s)
                            (list s (make-writer s)))
                          (cons BLANK sigma)))
-    
+
+    ;; tape natnum . Boolean --> result
+    ;; Boolean: #t --> trace, #f --> tmconfig
     (lambda (tape i . l)      
       
       (define label? number?)
+
+      (define trace (if (null? l) #f (car l)))
       
       ; ctm --> (listof (list number ctm))
       (define (label-pairs m)
@@ -427,34 +431,66 @@
               [(eq? (caar env) var) (cadar env)]
               [else (apply-env (cdr env) var)]))
       
-      ; ctm env --> tmconfig
+      ; ctm env tmconfig trace --> trace
       ; ASSUMPTION: env is populated with all labels
-      (define (eval m env laststate)
-        (cond [(null? m) (tmconfig laststate i tape)] 
-              [(symbol? (car m)) 
+      (define (eval m env laststate acc)
+        (cond [(null? m) ;; evaluation done
+               (cons (tmconfig laststate i tape) acc)] 
+              [(symbol? (car m)) ;; var means write it to the tape
                (let ((val (apply-env env (car m))))
                  (eval (cons (cadr (assoc val WRITERS)) (cdr m)) env laststate))]
-              [(procedure? (car m)) 
-               (let* ((res ((car m) tape i 'lastconfig)))
+              [(procedure? (car m)) ;; proc means a tm --> run it
+               (let* ((res ((car m) tape i 'lastconfig))) ;; res = last config of tm exected
                  (begin
                    (set! tape (tmconfig-tape res))
                    (set! i (tmconfig-index res))
-                   (eval (cdr m) env (tmconfig-state res))))]
-              [(label? (car m))
-               (eval (cdr m) env laststate)]
-              [(and (list? (car m)) (eq? (caar m) BRANCH)) 
-               (let* ((branches (cdar m))
-                      (the-branch-assoc (assoc (list-ref tape i) branches))
-                      (the-branch (if (null? (cdr the-branch-assoc)) null (cdr the-branch-assoc))))
-                 (eval the-branch env laststate))]
-              [(and (list? (car m)) (eq? (caar m) GOTO)) (eval (apply-env env (cadar m)) env laststate)]
-              [(and (list? (car m)) (list? (caar m)) (eq? (caaar m) VAR))
-               (eval (append (cdar m) (cdr m)) (extend-env (cadaar m) (list-ref tape i) env) laststate)]
+                   (eval (cdr m)
+                         env
+                         (tmconfig-state res)
+                         (if (null? (cdr m))
+                             acc
+                             (cons (tmconfig (tmconfig-state res)
+                                             i
+                                             tape)
+                                   acc)))))]
+              [(label? (car m)) ;; skip labels
+               (eval (cdr m) env laststate acc)]
+              [(and (list? (car m)) (eq? (caar m) BRANCH)) ;; a branch execution
+               (let* ((branches (cdar m)) ;; extract the branches
+                      (the-branch-assoc (assoc (list-ref tape i) branches)) ;; extract the applicable branch assoc
+                      (the-branch (if (null? (cdr the-branch-assoc)) null (cdr the-branch-assoc)))) ;; select the branch ctm
+                 (eval the-branch env laststate (cons (list 'BRANCH (car the-branch-assoc)) acc)))] ;; execute the branch ctm
+              [(and (list? (car m)) (eq? (caar m) GOTO))
+               (eval (apply-env env (cadar m)) env laststate (cons (list 'GOTO (cadar m)) acc))] ;; evaluate ctm jumped to
+              [(and (list? (car m)) (list? (caar m)) (eq? (caaar m) VAR)) ;; var declaration add to env and eval ctm in scope
+               (eval (append (cdar m) (cdr m))
+                     (extend-env (cadaar m) (list-ref tape i) env)
+                     laststate
+                     (cons (list 'VAR (cadaar m) (list-ref tape i)) acc))]
               [else (error (format "~s found unknown element in ctm: ~s" "eval" (car m)))]))
       
-      (if (null? inputctm)
-          (tmconfig HALT i tape)
-          (eval inputctm (label-pairs inputctm) START))))
+      (if trace
+          (if (null? inputctm)
+              (list (tmconfig HALT i tape))
+              (reverse (eval inputctm (label-pairs inputctm) START (list (tmconfig START i tape)))))
+          (if (null? inputctm)
+              (tmconfig HALT i tape)
+              (first (eval inputctm (label-pairs inputctm) START (list (tmconfig START i tape))))))))
+
+  (define R (make-unchecked-tm '(S F)
+                   '(d)
+                   `(((S d) (F ,RIGHT))
+                     ((S ,BLANK) (F ,RIGHT)))
+                   'S
+                   '(F)))
+  
+  (define FBR (combine-tms (list 0
+                               R
+                               (cons BRANCH
+                                     (list (list 'd (list GOTO 0))
+                                           (list BLANK (list GOTO 10))))
+                               10)
+                         (list 'd)))
 
   ; L = a*
   (define Alla (make-unchecked-tm '(S Y N)
