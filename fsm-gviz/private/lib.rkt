@@ -146,18 +146,38 @@
   (graph
    (graph-name g)
    (cons (node (clean-string name)
-               (hash-set atb 'label (stringify-value name)))
+               (hash-set atb 'label (let ((hash-val (hash-ref atb 'label 'unbound)))
+                                      (if (eq? hash-val 'unbound)
+                                          (stringify-value name)
+                                          hash-val))))
          (graph-node-list g))
    (graph-edge-list g)
    (graph-fmtrs g)
    (graph-atb g)))
+
+;; add-node: graph string Optional(hash-map) -> graph
+;; Purpose: adds a node to the given graph
+#;(define (add-node g name #:atb [atb DEFAULT-NODE])
+  (define nname (stringify-value (hash-ref atb 'label name)))
+  (graph
+   (graph-name g)
+   (cons (node (clean-string name)
+               (hash-set atb 'label (stringify-value name))
+               (hash-set atb 'label nname))
+         (graph-node-list g))
+  (graph-edge-list g)
+  (graph-fmtrs g)
+  (graph-atb g)))
 
 
 ;; add-nodes: graph listof(symbol) Optional(hash-map) -> graph
 ;; Purpose: adds the list of nodes to the given graph
 (define (add-nodes g names #:atb [atb DEFAULT-NODE])
   (define nodes-to-add (map (lambda (n) (node (clean-string n)
-                                              (hash-set atb 'label (stringify-value n))))
+                                              (hash-set atb 'label (let ((hash-val (hash-ref atb 'label 'unbound)))
+                                                                     (if (eq? hash-val 'unbound)
+                                                                         (stringify-value n)
+                                                                         hash-val)))))
                             names))
   (graph
    (graph-name g)
