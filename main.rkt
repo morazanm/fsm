@@ -84,5 +84,20 @@
       (error 'sm-graph "Invalid color option. Must be either 0, 1, or 2. Given ~a" color-blind-mode))
     (fsa->bitmap fsa color-blind-mode))
 
+  (define R (make-tm '(S F)
+                   '(d)
+                   `(((S d) (F ,RIGHT))
+                     ((S ,BLANK) (F ,RIGHT)))
+                   'S
+                   '(F)))
+
+(define FBR (combine-tms (list 0
+                               R
+                               (cons BRANCH
+                                     (list (list 'd (list GOTO 0))
+                                           (list BLANK (list GOTO 10))))
+                               10)
+                         (list 'd)))
+
  
   ) ; close module
