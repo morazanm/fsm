@@ -439,12 +439,16 @@
                (cons (tmconfig laststate i tape) acc)] 
               [(symbol? (car m)) ;; var means write it to the tape
                (let ((val (apply-env env (car m))))
-                 (eval (cons (cadr (assoc val WRITERS)) (cdr m)) env laststate acc))]
+                 (eval (cons (cadr (assoc val WRITERS)) (cdr m)) env laststate))]
               [(procedure? (car m)) ;; proc means a tm --> run it
+<<<<<<< HEAD
                (let* ((result ((car m) tape i 'lastconfig))
                       (res (if (tmconfig? result) 
                                result
                                (last result)))) ;; res = last config of tm exected
+=======
+               (let* ((res ((car m) tape i 'lastconfig))) ;; res = last config of tm exected
+>>>>>>> parent of b9dbe4d (Update to ctm eval function)
                  (begin
                    (set! tape (tmconfig-tape res))
                    (set! i (tmconfig-index res))
