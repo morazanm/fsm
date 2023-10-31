@@ -439,7 +439,7 @@
                (cons (tmconfig laststate i tape) acc)] 
               [(symbol? (car m)) ;; var means write it to the tape
                (let ((val (apply-env env (car m))))
-                 (eval (cons (cadr (assoc val WRITERS)) (cdr m)) env laststate))]
+                 (eval (cons (cadr (assoc val WRITERS)) (cdr m)) env laststate acc))]
               [(procedure? (car m)) ;; proc means a tm --> run it
                (let* ((result ((car m) tape i 'lastconfig))
                       (res (if (tmconfig? result) 
