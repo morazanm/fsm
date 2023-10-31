@@ -442,7 +442,7 @@
                  (eval (cons (cadr (assoc val WRITERS)) (cdr m)) env laststate acc))]
               [(procedure? (car m)) ;; proc means a tm --> run it
                (let* ((result ((car m) tape i 'lastconfig))
-                      (res (if (tmconfig? result)
+                      (res (if (tmconfig? result) 
                                result
                                (last result)))) ;; res = last config of tm exected
                  (begin
