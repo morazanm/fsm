@@ -33,7 +33,7 @@ Once fsm is installed you use one of the following two options
 
 
 ### Basic Usage
-Below are some basic examples of how to use fsm. For a more in-depth guide please visit the [fsm documentation](https://htmlpreview.github.io/?https://github.com/morazanm/fsm/blob/master/fsm.html).
+Below are some basic examples of how to use fsm. For a more in-depth guide please visit the [fsm documentation](https://morazanm.github.io/fsm/fsm/index.html).
 
 
 ### Building a DFA
