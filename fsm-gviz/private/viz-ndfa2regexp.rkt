@@ -16,6 +16,20 @@
                       '()
                       '()))
 
+(define A (make-ndfa '(S A B C D E F)
+                      '(a b x)
+                      'S
+                      '(D E)
+                      '((S a A)
+                        (S a F)
+                        (S b B)
+                        (A a C)
+                        (B b C)
+                        (C b D)
+                        (C a E)
+                        (C x C)
+                        (F a C))))
+
 ;; L = ab*
 (define ab* (make-ndfa '(S A)
                        '(a b)
