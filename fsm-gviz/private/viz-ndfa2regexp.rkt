@@ -17,18 +17,18 @@
                       '()))
 
 (define A (make-ndfa '(S A B C D E F)
-                      '(a b x)
-                      'S
-                      '(D E)
-                      '((S a A)
-                        (S a F)
-                        (S b B)
-                        (A a C)
-                        (B b C)
-                        (C b D)
-                        (C a E)
-                        (C x C)
-                        (F a C))))
+                     '(a b x)
+                     'S
+                     '(D E)
+                     '((S a A)
+                       (S a F)
+                       (S b B)
+                       (A a C)
+                       (B b C)
+                       (C b D)
+                       (C a E)
+                       (C x C)
+                       (F a C))))
 
 ;; L = ab*
 (define ab* (make-ndfa '(S A)
@@ -336,10 +336,11 @@
                 (new-upimgs '())]
            (viz-state new-pimgs new-upimgs))]
         [(key=? "up" a-key)
-         (let* [(new-pimgs '())
-                (new-upimgs (reverse (append (reverse (viz-state-upimgs a-vs))
-                                             (viz-state-pimgs a-vs))))]
-           (viz-state new-pimgs new-upimgs))]
+         (if (= (length (viz-state-pimgs a-vs)) 1)
+             a-vs
+             (let* [(new-pimgs  (list (first (reverse (viz-state-pimgs a-vs)))))
+                    (new-upimgs (append (rest (reverse (viz-state-pimgs a-vs))) (viz-state-upimgs a-vs)))]
+               (viz-state new-pimgs new-upimgs)))]
         [else a-vs]))
 
 
@@ -348,7 +349,9 @@
 ;; Purpose: To render the given viz-state
 (define (draw-world a-vs)
   (define graph-img (cond [(empty? (viz-state-pimgs a-vs))
-                           (image-struct-img (first (viz-state-upimgs a-vs)))]
+                           (above
+                            (image-struct-img (first (viz-state-upimgs a-vs)))
+                            (text (format "Starting ndfa") 20 'black))]
                           [(= 1 (length (viz-state-pimgs a-vs)))
                            (above
                             (image-struct-img (first (viz-state-pimgs a-vs)))
