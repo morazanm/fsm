@@ -215,7 +215,13 @@
              a-vs
              (viz-state (list (last (viz-state-upimgs a-vs)))
                         (append (rest (reverse (viz-state-upimgs a-vs)))
-                                (viz-state-pimgs a-vs))))]           
+                                (viz-state-pimgs a-vs))))]
+        [(key=? "up" a-key)
+         (if (empty? (viz-state-pimgs a-vs))
+             a-vs
+             (viz-state (reverse (append (reverse (viz-state-upimgs a-vs))
+                                             (viz-state-pimgs a-vs)))
+                        '()))]
         [else a-vs]))
 
 
@@ -265,5 +271,6 @@
         [on-key process-key]
         [name "FSM: regexp to ndfa visualization"]))
     (void)))
+
 
 

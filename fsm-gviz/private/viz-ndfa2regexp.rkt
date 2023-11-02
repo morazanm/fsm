@@ -320,7 +320,12 @@
          (let* [(new-pimgs (append (reverse (viz-state-upimgs a-vs))
                                    (viz-state-pimgs a-vs)))
                 (new-upimgs '())]
-           (viz-state new-pimgs new-upimgs))]           
+           (viz-state new-pimgs new-upimgs))]
+        [(key=? "up" a-key)
+         (let* [(new-pimgs '())
+                (new-upimgs (reverse (append (reverse (viz-state-upimgs a-vs))
+                                             (viz-state-pimgs a-vs))))]
+           (viz-state new-pimgs new-upimgs))]
         [else a-vs]))
 
 
@@ -387,4 +392,7 @@
      (B b B))))
 
 (run AT-LEAST-ONE-MISSING)
+
+
+
 

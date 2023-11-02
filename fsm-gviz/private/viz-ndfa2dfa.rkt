@@ -424,7 +424,8 @@
                   (cons (first (vst-upimgs a-vst))
                         (vst-pimgs a-vst))))]
         [(key=? "left" a-key)
-         (if (= (length (vst-pimgs a-vst)) 1)
+         (if (or (= (length (vst-pimgs a-vst)) 1)
+                 (= (length (vst-pimgs a-vst)) 0))
              a-vst
              (vst (cons (first (vst-pimgs a-vst))
                         (vst-upimgs a-vst))
@@ -432,7 +433,12 @@
         [(key=? "down" a-key)
          (vst '()
               (append (reverse (vst-upimgs a-vst))
-                      (vst-pimgs a-vst)))]           
+                      (vst-pimgs a-vst)))]
+        [(key=? "up" a-key)
+         (let* [(new-pimgs '())
+                (new-upimgs (reverse (append (reverse (vst-upimgs a-vst))
+                                             (vst-pimgs a-vst))))]
+           (vst new-upimgs new-pimgs))]
         [else a-vst]))
 
 
@@ -633,6 +639,8 @@
         [name 'visualization]))
     (void)))
 
+
+
 (define aa-ab (make-ndfa `(S A B F)
                          '(a b)
                          'S
@@ -656,5 +664,5 @@
                                           (C a C)
                                           (C b C))))
 
-(run aa-ab)
+;(run aa-ab)
 ;(run AT-LEAST-ONE-MISSING)
