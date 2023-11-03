@@ -205,8 +205,7 @@
     (or (equal? sg n)
         (member n (subgraph-subgraph-list sg) check-subgraph)))
   (if (graph? parent)
-      (or (equal? name (graph-name parent))
-          (member name (graph-node-list parent) (lambda (v n) (equal? (node-name n) v)))
+      (or (member name (graph-node-list parent) (lambda (v n) (equal? (node-name n) v)))
           (member name (graph-subgraph-list parent) check-subgraph))
       (check-subgraph n parent)))
     
@@ -240,7 +239,7 @@
   (define nodes-to-add 
     (map (lambda (n)
            (when (existing-name? parent n)
-             (error "[Duplicate Name]: Node name already exists on the graph"))
+             (error "[Duplicate Name]: Edge name already exists on the graph"))
            (node (clean-string n) (hash-set atb 'label (stringify-value n))))
          names))
   (if (graph? parent)
