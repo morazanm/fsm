@@ -1,5 +1,5 @@
 #lang fsm
-(module tm-tests racket
+(module mttm-tests racket
   (require "../constructors.rkt"
            "../../constants.rkt"
            racket/contract
