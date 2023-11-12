@@ -1,4 +1,3 @@
-#lang fsm
 (module mttm-tests racket
   (require "../constructors.rkt"
            "../../constants.rkt"
@@ -143,7 +142,7 @@ There following values, (S Y), are duplicated in the given states:  (S Y Y N S S
                          4
                          'Y
                          ) (format "Step one of the design recipe was not successfully completed.
-The following: (1) are not valid alphabet letters in the given input alphabet: (a b 1)"))
+The following: (1) are not valid lowercase alphabet letters in the given input alphabet: (a b 1)"))
   (check-error (make-mttm2 '(S Y N)
                          `(a b 1 2)
                          'S
@@ -159,7 +158,7 @@ The following: (1) are not valid alphabet letters in the given input alphabet: (
                          4
                          'Y
                          ) (format "Step one of the design recipe was not successfully completed.
-The following: (1 2) are not valid alphabet letters in the given input alphabet: (a b 1 2)"))
+The following: (1 2) are not valid lowercase alphabet letters in the given input alphabet: (a b 1 2)"))
   ;invalid letter
   (check-error (make-mttm2 '(S Y N)
                          `(a b A)
@@ -176,7 +175,7 @@ The following: (1 2) are not valid alphabet letters in the given input alphabet:
                          4
                          'Y
                          ) (format "Step one of the design recipe was not successfully completed.
-The following: (A) are not valid alphabet letters in the given input alphabet: (a b A)"))
+The following: (A) are not valid lowercase alphabet letters in the given input alphabet: (a b A)"))
   (check-error (make-mttm2 '(S Y N)
                          `(a b A B)
                          'S
@@ -192,7 +191,7 @@ The following: (A) are not valid alphabet letters in the given input alphabet: (
                          4
                          'Y
                          ) (format "Step one of the design recipe was not successfully completed.
-The following: (A B) are not valid alphabet letters in the given input alphabet: (a b A B)"))
+The following: (A B) are not valid lowercase alphabet letters in the given input alphabet: (a b A B)"))
   ;duplicate letter
   (check-error (make-mttm2 '(S Y N)
                          `(a b a)

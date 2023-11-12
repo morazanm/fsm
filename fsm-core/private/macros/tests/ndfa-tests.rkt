@@ -93,7 +93,7 @@ There following values, (A B), are duplicated in the given states:  (A B B C A A
                             (B c D)
                             (B a B))
                           ) (format "Step one of the design recipe was not successfully completed.
-The following: (1) are not valid alphabet letters in the given input alphabet: (a b c 1)"))
+The following: (1) are not valid lowercase alphabet letters in the given input alphabet: (a b c 1)"))
   (check-error (make-ndfa2 '(A B C D)
                           '(a b c 1 2)
                           'A
@@ -103,7 +103,7 @@ The following: (1) are not valid alphabet letters in the given input alphabet: (
                             (B c D)
                             (B a B))
                           ) (format "Step one of the design recipe was not successfully completed.
-The following: (1 2) are not valid alphabet letters in the given input alphabet: (a b c 1 2)"))
+The following: (1 2) are not valid lowercase alphabet letters in the given input alphabet: (a b c 1 2)"))
   ;invalid letter
   (check-error (make-ndfa2 '(A B C D)
                           '(a b c A)
@@ -114,7 +114,7 @@ The following: (1 2) are not valid alphabet letters in the given input alphabet:
                             (B c D)
                             (B a B))
                           ) (format "Step one of the design recipe was not successfully completed.
-The following: (A) are not valid alphabet letters in the given input alphabet: (a b c A)"))
+The following: (A) are not valid lowercase alphabet letters in the given input alphabet: (a b c A)"))
   (check-error (make-ndfa2 '(A B C D)
                           '(a b c A B)
                           'A
@@ -124,7 +124,7 @@ The following: (A) are not valid alphabet letters in the given input alphabet: (
                             (B c D)
                             (B a B))
                           ) (format "Step one of the design recipe was not successfully completed.
-The following: (A B) are not valid alphabet letters in the given input alphabet: (a b c A B)"))
+The following: (A B) are not valid lowercase alphabet letters in the given input alphabet: (a b c A B)"))
   ;duplicate letter
   (check-error (make-ndfa2 '(A B C D)
                           '(a b c a)
