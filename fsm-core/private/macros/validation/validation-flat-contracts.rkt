@@ -137,7 +137,7 @@
                                          add-dead
                                          words
                                          accepts?)
-                       (format "Does not ~s the predicted value: " accepts?)
+                       (format "Does not ~s the following words: " accepts?)
                        )
                       )
                     )
@@ -170,7 +170,7 @@
                                           rules
                                           words
                                           accepts?)
-                       (format "Does not ~s the predicted value: " accepts?)
+                       (format "Does not ~s the following words: " accepts?)
                        )
                       )
                     )
@@ -206,7 +206,7 @@
                                            rules
                                            words
                                            accepts?)
-                       (format "Does not ~s the predicted value: " accepts?)
+                       (format "Does not ~s the following words: " accepts?)
                        )
                       )
                     )
@@ -242,7 +242,7 @@
                                         words
                                         accept
                                         accepts?)
-                       (format "Does not ~s the predicted value: " accepts?)
+                       (format "Does not ~s the following words: " accepts?)
                        )
                       )
                     )
@@ -267,7 +267,7 @@
                                           words
                                           accept
                                           accepts?)
-                       (format "Does not ~a the predicted value" accepts?))))))
+                       (format "Does not ~a the following words" accepts?))))))
 
   (define (has-accept/c accept finals)
     (make-flat-contract

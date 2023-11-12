@@ -294,6 +294,29 @@ The given starting state: (A) is not a valid state"))
                           ) (format "Step three of the design recipe has not been successfully completed.
 The following starting state, F, is not in the given list of states: (A B C D)"))
 
+    (check-error (make-dfa2 '(A B)
+                          '(a b)
+                          'A
+                          '(A)
+                          '((A a A)
+                            (B b B)
+                            (A b B)
+                            (B a B))
+                          #t
+                          #:accepts '((a a b a a a))
+                          #:rejects '((b a a a) (a a a a b a))) "Does not accept the following words:  ((a a b a a a))")
+
+  (check-error (make-ndfa2 '(A B)
+                          '(a b)
+                          'A
+                          '(A)
+                          '((A a A)
+                            (B b B)
+                            (A b B)
+                            (B a B))
+                          #:accepts '((a a a a a))
+                          #:rejects '((a a a) (a a a a b a))) "Does not reject the following words:  ((a a a))")
+
   ;;RULES
   
   (test)

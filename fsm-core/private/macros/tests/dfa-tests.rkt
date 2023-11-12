@@ -324,6 +324,30 @@ The following rules have structural errors:
 Rule A:
   The given rule, A, does not have the correct structure. A DFA rule must be a list with three elements.
 "))
+
+  (check-error (make-dfa2 '(A B)
+                          '(a b)
+                          'A
+                          '(A)
+                          '((A a A)
+                            (B b B)
+                            (A b B)
+                            (B a B))
+                          #t
+                          #:accepts '((a a b a a a))
+                          #:rejects '((b a a a) (a a a a b a))) "Does not accept the following words:  ((a a b a a a))")
+
+  (check-error (make-dfa2 '(A B)
+                          '(a b)
+                          'A
+                          '(A)
+                          '((A a A)
+                            (B b B)
+                            (A b B)
+                            (B a B))
+                          #t
+                          #:accepts '((a a a a a))
+                          #:rejects '((a a a) (a a a a b a))) "Does not reject the following words:  ((a a a))")
   
   (test)
 
