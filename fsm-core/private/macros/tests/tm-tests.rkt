@@ -330,7 +330,9 @@ The following starting state, F, is not in the given list of states: (S Y N)"))
                         '(Y)
                         'Y
                         #:accepts `((,LM ,BLANK a b c))
-                        #:rejects `((,LM ,BLANK a b c))) "Does not reject the following words:  ((@ _ a b c))")
+                        #:rejects `((,LM ,BLANK a b c)))
+             (format "Step six of the design recipe has not been successfully completed.
+The constructed machine does not reject the following words:  ((@ _ a b c))"))
 
   (check-error (make-tm2 '(S A B C D E F G H I J K L Y)
                         '(a b c x)
@@ -367,7 +369,9 @@ The following starting state, F, is not in the given list of states: (S Y N)"))
                         '(Y)
                         'Y
                         #:accepts `((,LM ,BLANK a b c c))
-                        #:rejects `((,LM ,BLANK a b c))) "Does not accept the following words:  ((@ _ a b c c))")
+                        #:rejects `((,LM ,BLANK a b c)))
+               (format "Step six of the design recipe has not been successfully completed.
+The constructed machine does not accept the following words:  ((@ _ a b c c))"))
   
   ;;RULES
   
