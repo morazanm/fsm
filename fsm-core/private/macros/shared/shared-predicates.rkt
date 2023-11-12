@@ -126,7 +126,7 @@
   ; and return true, only if all the final states are included
   ; in the list of states
   (define ((valid-finals? states) finals)
-    (and (list? finals) (not (not (andmap (lambda (x) (member x states)) finals)))))
+    (not (not (andmap (lambda (x) (member x states)) finals))))
 
   ;invalid-finals: (listof states) (listof states) --> (listof states)
   ;purpose: take in the states and finals, and return all finals that

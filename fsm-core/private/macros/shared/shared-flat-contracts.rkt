@@ -238,7 +238,7 @@
                       (raise-blame-error
                        blame
                        finals
-                       (format "Step three of the design recipe has not been sucecssfully completed.\nThe following state, ~a, is not a member of the given list of final states: " state)))))
+                       (format "Step three of the design recipe has not been successfully completed.\nThe following state, ~a, is not a member of the given list of final states: " state)))))
     )
 
   ;valid-num-tapes/c: any --> contract
