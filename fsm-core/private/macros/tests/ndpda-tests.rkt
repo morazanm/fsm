@@ -1,6 +1,7 @@
 
 (module ndpda-tests racket
   (require "../constructors.rkt"
+           "../../constants.rkt"
            racket/contract
            )
   (local-require test-engine/racket-tests)
@@ -263,7 +264,36 @@ The given starting state: (A) is not a valid state"))
 The following starting state, F, is not in the given list of states: (A B C D)"))
 
   ;;RULES
+
+  (check-error (make-ndpda2 '(S P Q F)
+                          '(a b c)
+                          '(a b)
+                          'S
+                          '(F)
+                          `(((S ,EMP ,EMP) (P ,EMP))
+                            ((P a ,EMP) (P (a)))
+                            ((P b ,EMP) (P (b)))
+                            ((P c ,EMP) (Q ,EMP))
+                            ((Q a (a)) (Q ,EMP))
+                            ((Q b (b)) (Q ,EMP))
+                            ((Q ,EMP ,EMP) (F ,EMP)))
+                          #:accepts '((a a a a))
+                          #:rejects '((b b b b))) "Does not accept the following words:  ((a a a a))")
   
+    (check-error (make-ndpda2 '(S P Q F)
+                          '(a b c)
+                          '(a b)
+                          'S
+                          '(F)
+                          `(((S ,EMP ,EMP) (P ,EMP))
+                            ((P a ,EMP) (P (a)))
+                            ((P b ,EMP) (P (b)))
+                            ((P c ,EMP) (Q ,EMP))
+                            ((Q a (a)) (Q ,EMP))
+                            ((Q b (b)) (Q ,EMP))
+                            ((Q ,EMP ,EMP) (F ,EMP)))
+                          #:accepts '((c))
+                          #:rejects '((c))) "Does not reject the following words:  ((c))")
   (test)
 
   )

@@ -457,6 +457,105 @@ The given starting state: (A) is not a valid state"))
                          ) (format "Step three of the design recipe has not been successfully completed.
 The following starting state, F, is not in the given list of states: (S Y N)"))
 
+  (check-error (make-mttm2 '(S Y N C D E F G)
+                         '(a b c)
+                         'S
+                         '(Y N)
+                         (list ;; read all blanks and move all R
+                          (list (list 'S (list BLANK BLANK BLANK BLANK))
+                                (list 'C (list RIGHT RIGHT RIGHT RIGHT)))
+                          ;; read a on t0, copy to t1 and then move R on t0 and t1
+                          (list (list 'C (list 'a BLANK BLANK BLANK))
+                                (list 'D (list 'a 'a BLANK BLANK)))
+                          (list (list 'D (list 'a 'a BLANK BLANK))
+                                (list 'C (list RIGHT RIGHT BLANK BLANK)))
+                          ;; read b on t0, copy to t2 and then move R on t0 and t2
+                          (list (list 'C (list 'b BLANK BLANK BLANK))
+                                (list 'E (list 'b BLANK 'b BLANK)))
+                          (list (list 'E (list 'b BLANK 'b BLANK))
+                                (list 'C (list RIGHT BLANK RIGHT BLANK)))
+                          ;; read c on t0, copy to t3 and then move R on t0 and t3
+                          (list (list 'C (list 'c BLANK BLANK BLANK))
+                                (list 'F (list 'c BLANK BLANK 'c)))
+                          (list (list 'F (list 'c BLANK BLANK 'c))
+                                (list 'C (list RIGHT BLANK BLANK RIGHT)))
+                          ;; read BLANK on t0, move L on t1, t2 and t3
+                          (list (list 'C (list BLANK BLANK BLANK BLANK))
+                                (list 'G (list BLANK LEFT LEFT LEFT)))
+                          ;; read BLANK on all tapes, move to Y
+                          (list (list 'G (list BLANK BLANK BLANK BLANK))
+                                (list 'Y (list BLANK BLANK BLANK BLANK)))
+                          ;; read a, b, c on t1, t2, and t3 them move L on t1, t2, t3
+                          (list (list 'G (list BLANK 'a 'b 'c))
+                                (list 'G (list BLANK LEFT LEFT LEFT)))
+                          ;; too many of at least 1 letter
+                          (list (list 'G (list BLANK BLANK 'b 'c))
+                                (list 'N (list BLANK BLANK 'b 'c)))
+                          (list (list 'G (list BLANK 'a BLANK 'c))
+                                (list 'N (list BLANK 'a BLANK 'c)))
+                          (list (list 'G (list BLANK 'a 'b BLANK))
+                                (list 'N (list BLANK 'a 'b BLANK)))
+                          (list (list 'G (list BLANK BLANK BLANK 'c))
+                                (list 'N (list BLANK BLANK BLANK 'c)))
+                          (list (list 'G (list BLANK BLANK 'b BLANK))
+                                (list 'N (list BLANK BLANK 'b BLANK)))
+                          (list (list 'G (list BLANK 'a BLANK BLANK))
+                                (list 'N (list BLANK 'a BLANK BLANK))))
+                         4
+                         'Y
+                         #:accepts `((,LM ,BLANK a b c c))
+                         #:rejects `((,LM ,BLANK a b c)))
+               "Does not accept the following words ((@ _ a b c c))")
+
+    (check-error (make-mttm2 '(S Y N C D E F G)
+                         '(a b c)
+                         'S
+                         '(Y N)
+                         (list ;; read all blanks and move all R
+                          (list (list 'S (list BLANK BLANK BLANK BLANK))
+                                (list 'C (list RIGHT RIGHT RIGHT RIGHT)))
+                          ;; read a on t0, copy to t1 and then move R on t0 and t1
+                          (list (list 'C (list 'a BLANK BLANK BLANK))
+                                (list 'D (list 'a 'a BLANK BLANK)))
+                          (list (list 'D (list 'a 'a BLANK BLANK))
+                                (list 'C (list RIGHT RIGHT BLANK BLANK)))
+                          ;; read b on t0, copy to t2 and then move R on t0 and t2
+                          (list (list 'C (list 'b BLANK BLANK BLANK))
+                                (list 'E (list 'b BLANK 'b BLANK)))
+                          (list (list 'E (list 'b BLANK 'b BLANK))
+                                (list 'C (list RIGHT BLANK RIGHT BLANK)))
+                          ;; read c on t0, copy to t3 and then move R on t0 and t3
+                          (list (list 'C (list 'c BLANK BLANK BLANK))
+                                (list 'F (list 'c BLANK BLANK 'c)))
+                          (list (list 'F (list 'c BLANK BLANK 'c))
+                                (list 'C (list RIGHT BLANK BLANK RIGHT)))
+                          ;; read BLANK on t0, move L on t1, t2 and t3
+                          (list (list 'C (list BLANK BLANK BLANK BLANK))
+                                (list 'G (list BLANK LEFT LEFT LEFT)))
+                          ;; read BLANK on all tapes, move to Y
+                          (list (list 'G (list BLANK BLANK BLANK BLANK))
+                                (list 'Y (list BLANK BLANK BLANK BLANK)))
+                          ;; read a, b, c on t1, t2, and t3 them move L on t1, t2, t3
+                          (list (list 'G (list BLANK 'a 'b 'c))
+                                (list 'G (list BLANK LEFT LEFT LEFT)))
+                          ;; too many of at least 1 letter
+                          (list (list 'G (list BLANK BLANK 'b 'c))
+                                (list 'N (list BLANK BLANK 'b 'c)))
+                          (list (list 'G (list BLANK 'a BLANK 'c))
+                                (list 'N (list BLANK 'a BLANK 'c)))
+                          (list (list 'G (list BLANK 'a 'b BLANK))
+                                (list 'N (list BLANK 'a 'b BLANK)))
+                          (list (list 'G (list BLANK BLANK BLANK 'c))
+                                (list 'N (list BLANK BLANK BLANK 'c)))
+                          (list (list 'G (list BLANK BLANK 'b BLANK))
+                                (list 'N (list BLANK BLANK 'b BLANK)))
+                          (list (list 'G (list BLANK 'a BLANK BLANK))
+                                (list 'N (list BLANK 'a BLANK BLANK))))
+                         4
+                         'Y
+                         #:accepts `(((,LM ,BLANK a a b b c c) 1))
+                         #:rejects `(((,LM ,BLANK a b c) 1)))
+               "Does not reject the following words (((@ _ a b c) 1))")
   ;;RULES
   
   (test)
