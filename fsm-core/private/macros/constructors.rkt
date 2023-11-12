@@ -74,7 +74,7 @@
                               finals
                               rules
                               add-dead) (and/c (words-in-sigma/c sigma)
-                                               (listof-words/c sigma "accpets")
+                                               (listof-words/c "accpets")
                                                (dfa-input/c states
                                                             sigma
                                                             start
@@ -88,7 +88,7 @@
                               finals
                               rules
                               add-dead) (and/c (words-in-sigma/c sigma)
-                                               (listof-words/c sigma "rejects")
+                                               (listof-words/c "rejects")
                                                (dfa-input/c states
                                                             sigma
                                                             start
@@ -133,7 +133,7 @@
                               sigma
                               start
                               finals
-                              rules) (and/c (listof-words/c sigma "accpets")
+                              rules) (and/c (listof-words/c "accpets")
                                             (words-in-sigma/c sigma)
                                             (ndfa-input/c states
                                                           sigma
@@ -145,7 +145,7 @@
                               sigma
                               start
                               finals
-                              rules) (and/c (listof-words/c sigma "rejects")
+                              rules) (and/c (listof-words/c "rejects")
                                             (words-in-sigma/c sigma)
                                             (ndfa-input/c states
                                                           sigma
@@ -194,7 +194,7 @@
                               gamma
                               start
                               finals
-                              rules) (and/c (listof-words/c sigma "accpets")
+                              rules) (and/c (listof-words/c "accpets")
                                             (words-in-sigma/c sigma)
                                             (ndpda-input/c states
                                                            sigma
@@ -208,7 +208,7 @@
                               gamma
                               start
                               finals
-                              rules) (and/c (listof-words/c sigma "rejects")
+                              rules) (and/c (listof-words/c "rejects")
                                             (words-in-sigma/c sigma)
                                             (ndpda-input/c states
                                                            sigma

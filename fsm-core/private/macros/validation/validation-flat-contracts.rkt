@@ -18,7 +18,7 @@
            has-accept/c
            )
 
-  (define (listof-words/c sigma type)
+  (define (listof-words/c type)
     (make-flat-contract
      #:name 'valid-list-of-words
      #:first-order (lambda (words) (listof-words? words))
