@@ -76,6 +76,7 @@
                                           (S ,EMP C)
                                           (A b A)
                                           (A c A)
+                                          (A a A)
                                           (B a B)
                                           (B c B)
                                           (C a C)
@@ -167,10 +168,10 @@
        lor))
 
 ;; (listof ndfa-rule) → dgraph
-;; Purpose: Create a dgraph from the given ndfa (for the ones that are already regexo)
+;; Purpose: Create a dgraph from the given ndfa (for the ones that are already regexp)
 (define (make-dgraph-unions lor)
   (map (λ (r) (if (eq? (second r) EMP)
-                  (list (first r) (empty-regexp) (third r))
+                  (list (first r) (printable-regexp (empty-regexp)) (third r))
                   (list (first r)
                         (second r)
                         (third r))))
@@ -249,6 +250,36 @@
                                  )))
          graph
          loe))
+
+;; create-edges-special
+;; graph (listof edge) -> graph
+;; Purpose: To create graph of edges
+(define (create-edges-special graph loe)
+  (foldl (λ (rule result)
+           (add-edge result
+                     (second rule)
+                     (first rule)
+                     (third rule)
+                     #:atb (hash 'fontsize 14
+                                 'style 'solid
+                                 'fontname "Sans"
+                                 )))
+         graph
+         loe))
+
+;; create-graph-img-special
+;; (listof state) dgraph state state -> img
+;; Purpose: To create a graph img for the given dgraph using
+;;          news as the start state and newf as the final state
+(define (create-graph-img-special los loe news newf)
+  (graph->bitmap
+   (create-edges-special
+    (create-nodes
+     (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+     los
+     news
+     newf)
+    loe)))
 
 
 ;; create-graph-img
@@ -330,8 +361,8 @@
 ;; Purpose: To return a union of all symbols in a list
 (define (make-unions los)
   (if (= 1 (length los))
-      (singleton-regexp (symbol->string (first los)))
-      (union-regexp (singleton-regexp (symbol->string (first los))) (make-unions (rest los)))))
+      (symbol->string (first los))
+      (string-append (symbol->string (first los)) " U " (make-unions (rest los)))))
 
 ;; to-union
 ;; (listof edges) -> (listof edges with regexp labels)
@@ -342,10 +373,10 @@
          #;(dd (display (format "~s \n" hash-l)))]
     (map (λ (x) (if (< (length (rest x)) 1)
                     (list (first (first x))
-                          (singleton-regexp (symbol->string (first (rest x))))
+                          (string->symbol (first (rest x)))
                           (second (first x)))
                     (list (first (first x))
-                          (make-unions (reverse (rest x)))
+                          (string->symbol (make-unions (reverse (rest x))))
                           (second (first x)))))
          hash-l)))
                  
@@ -361,11 +392,11 @@
                                (sm-finals M))))
          (changed-rules (to-union (append (sm-rules M) new-rules)))
          #;(dd (display (format "~s \n" changed-rules)))]
-    (image-struct (create-graph-img
+    (image-struct (create-graph-img-special
                    (if (not (member DEAD (sm-states M)))
                        (sm-states M)
                        (cons DEAD (remove DEAD (sm-states M))))
-                   (make-dgraph-unions changed-rules) ;; TODO: needs a function to convert all these rules into regexp
+                   (make-dgraph-unions changed-rules) 
                    new-start
                    new-final)
                   (if (not (member DEAD (sm-states M)))
