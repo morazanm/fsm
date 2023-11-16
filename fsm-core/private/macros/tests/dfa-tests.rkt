@@ -242,7 +242,7 @@ The following final states, (F), are not in your list of states: (A B C D)"))
                           #t) (format "Step three of the design recipe has not been successfully completed.
 The following final states, (F G), are not in your list of states: (A B C D)"))
   ;duplicates
- (check-error (make-dfa2 '(A B C D)
+  (check-error (make-dfa2 '(A B C D)
                           '(a b c d)
                           'A
                           '(B C C)
@@ -335,7 +335,9 @@ Rule A:
                             (B a B))
                           #t
                           #:accepts '((a a b a a a))
-                          #:rejects '((b a a a) (a a a a b a))) "Does not accept the following words:  ((a a b a a a))")
+                          #:rejects '((b a a a) (a a a a b a)))
+               (format "Step six of the design recipe has not been successfully completed.
+The constructed machine does not accept the following words:  ((a a b a a a))"))
 
   (check-error (make-dfa2 '(A B)
                           '(a b)
@@ -347,7 +349,9 @@ Rule A:
                             (B a B))
                           #t
                           #:accepts '((a a a a a))
-                          #:rejects '((a a a) (a a a a b a))) "Does not reject the following words:  ((a a a))")
+                          #:rejects '((a a a) (a a a a b a)))
+               (format "Step six of the design recipe has not been successfully completed.
+The constructed machine does not reject the following words:  ((a a a))"))
   
   (test)
 

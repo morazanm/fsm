@@ -108,6 +108,9 @@
      )
     )
 
+  (define (accepts/rejects-formatter accepts?)
+    (format "Step six of the design recipe has not been successfully completed.\nThe constructed machine does not ~s the following words: " accepts?))
+
   (define (dfa-input/c states
                        sigma
                        start
@@ -137,7 +140,7 @@
                                          add-dead
                                          words
                                          accepts?)
-                       (format "Does not ~s the following words: " accepts?)
+                       (accepts/rejects-formatter accepts?)
                        )
                       )
                     )
@@ -170,7 +173,7 @@
                                           rules
                                           words
                                           accepts?)
-                       (format "Does not ~s the following words: " accepts?)
+                       (accepts/rejects-formatter accepts?)
                        )
                       )
                     )
@@ -206,7 +209,7 @@
                                            rules
                                            words
                                            accepts?)
-                       (format "Does not ~s the following words: " accepts?)
+                       (accepts/rejects-formatter accepts?)
                        )
                       )
                     )
@@ -242,7 +245,7 @@
                                         words
                                         accept
                                         accepts?)
-                       (format "Does not ~s the following words: " accepts?)
+                       (accepts/rejects-formatter accepts?)
                        )
                       )
                     )
@@ -267,7 +270,7 @@
                                           words
                                           accept
                                           accepts?)
-                       (format "Does not ~a the following words" accepts?))))))
+                       (accepts/rejects-formatter accepts?))))))
 
   (define (has-accept/c accept finals)
     (make-flat-contract
