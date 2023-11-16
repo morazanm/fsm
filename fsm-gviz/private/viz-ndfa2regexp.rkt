@@ -166,6 +166,16 @@
                         (third r))))
        lor))
 
+;; (listof ndfa-rule) → dgraph
+;; Purpose: Create a dgraph from the given ndfa (for the ones that are already regexo)
+(define (make-dgraph-unions lor)
+  (map (λ (r) (if (eq? (second r) EMP)
+                  (list (first r) (empty-regexp) (third r))
+                  (list (first r)
+                        (second r)
+                        (third r))))
+       lor))
+
 
 
 ;; ndfa → regexp
@@ -291,6 +301,55 @@
                         (cons DEAD (remove DEAD (sm-states M))))
                     (make-dgraph (append (sm-rules M) new-rules)) '())))
 
+;; add-edges-to-hash
+;; hash (listof edges) -> hash
+;; Purpose: To add edges to the hash table
+(define (add-edges-to-hash hash loe)
+  (let* [(current-hash (begin
+                         (if (hash-has-key? hash (list (first (first loe))
+                                                       (third (first loe))))                             
+                             (hash-set! hash (list (first (first loe))
+                                                   (third (first loe)))
+                                        (append (list (second (first loe)))
+                                                (hash-ref hash (list (first (first loe))
+                                                                     (third (first loe))))))
+                             (hash-set! hash (list (first (first loe))
+                                                   (third (first loe)))
+                                        (list (second (first loe)))))
+                         hash))
+         #;(dd (display (format "~s \n" current-hash)))]
+    (if (= (length loe) 1)
+        current-hash
+        (add-edges-to-hash current-hash (rest loe)))))
+               
+               
+
+
+;; make-unions
+;; (listof symbol) -> regexp
+;; Purpose: To return a union of all symbols in a list
+(define (make-unions los)
+  (if (= 1 (length los))
+      (singleton-regexp (symbol->string (first los)))
+      (union-regexp (singleton-regexp (symbol->string (first los))) (make-unions (rest los)))))
+
+;; to-union
+;; (listof edges) -> (listof edges with regexp labels)
+;; Purpose: To turn all loops on multiple edges into unions
+(define (to-union loe)
+  (let* [(hash-t (add-edges-to-hash (make-hash) loe))
+         (hash-l (reverse (hash->list hash-t)))
+         #;(dd (display (format "~s \n" hash-l)))]
+    (map (λ (x) (if (< (length (rest x)) 1)
+                    (list (first (first x))
+                          (singleton-regexp (symbol->string (first (rest x))))
+                          (second (first x)))
+                    (list (first (first x))
+                          (make-unions (reverse (rest x)))
+                          (second (first x)))))
+         hash-l)))
+                 
+
 ;; make-init-graph-img
 ;; ndfa -> img
 ;; Purpose: To create the image of the initial ndfa graph
@@ -299,12 +358,14 @@
          (new-final (generate-symbol 'F (sm-states M)))
          (new-rules (cons (list new-start EMP (sm-start M))
                           (map (λ (fst) (list fst EMP new-final))
-                               (sm-finals M))))]
+                               (sm-finals M))))
+         (changed-rules (to-union (append (sm-rules M) new-rules)))
+         #;(dd (display (format "~s \n" changed-rules)))]
     (image-struct (create-graph-img
                    (if (not (member DEAD (sm-states M)))
                        (sm-states M)
                        (cons DEAD (remove DEAD (sm-states M))))
-                   (make-dgraph (append (sm-rules M) new-rules))
+                   (make-dgraph-unions changed-rules) ;; TODO: needs a function to convert all these rules into regexp
                    new-start
                    new-final)
                   (if (not (member DEAD (sm-states M)))
@@ -315,6 +376,7 @@
 ;; viz-state key --> viz-state
 ;; Purpose: Move the visualization on step forward, one step
 ;;          backwards, or to the end.
+
 (define (process-key a-vs a-key)
   (cond [(key=? "right" a-key)
          (if (empty? (viz-state-upimgs a-vs))
@@ -408,7 +470,7 @@
      (A a A)
      (B b B))))
 
-(run AT-LEAST-ONE-MISSING)
+;(run AT-LEAST-ONE-MISSING)
 
 
 
