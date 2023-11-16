@@ -69,7 +69,7 @@
                           rules
                           (raise-blame-error
                            blame
-                           (incorrect-dfa-rule-structures rules)
+                           (list (car (incorrect-dfa-rule-structures rules)))
                            (format "~a\nThe following rules have structural errors" design-recipe-message)))
                       ))))
 
@@ -87,7 +87,7 @@
                       (current-blame-format format-incorrect-rules-error)
                       (raise-blame-error
                        blame
-                       (incorrect-dfa-rules states sigma rules)
+                       (list (car (incorrect-dfa-rules states sigma rules)))
                        (format "~a\nThe following rules have errors" design-recipe-message))))))
 
   ;correct-ndpda-rule-structures/c: contract
@@ -105,7 +105,7 @@
                           rules
                           (raise-blame-error
                            blame
-                           (incorrect-ndpda-rule-structures rules)
+                           (list (car (incorrect-ndpda-rule-structures rules)))
                            (format "~a\nThe following rules have structural errors" design-recipe-message)))
                       ))))
 
@@ -125,7 +125,7 @@
                       (current-blame-format format-incorrect-rules-error)
                       (raise-blame-error
                        blame
-                       (incorrect-ndpda-rules states sigma gamma rules)
+                       (list (car (incorrect-ndpda-rules states sigma gamma rules)))
                        (format "~a\nThe following rules have errors, which make them invalid" design-recipe-message))))))
 
   ;correct-tm-rule-structures/c: contract
@@ -143,7 +143,7 @@
                           rules
                           (raise-blame-error
                            blame
-                           (incorrect-tm-rule-structures rules)
+                           (list (car (incorrect-tm-rule-structures rules)))
                            (format "~a\nThe following rules have structural errors" design-recipe-message)))
                       ))))
 
@@ -163,7 +163,7 @@
                       (current-blame-format format-incorrect-rules-error)
                       (raise-blame-error
                        blame
-                       (incorrect-tm-rules states sigma rules)
+                       (list (car (incorrect-tm-rules states sigma rules)))
                        (format "~a\nThe following rules have errors, which make them invalid" design-recipe-message))))))
 
   ;correct-tm-rule-structures/c: natnum -> contract
@@ -181,7 +181,7 @@
                           rules
                           (raise-blame-error
                            blame
-                           (incorrect-mttm-rule-structures rules num-tapes)
+                           (list (car (incorrect-mttm-rule-structures rules num-tapes)))
                            (format "~a\nThe following rules have structural errors" design-recipe-message)))
                       ))))
 
@@ -201,7 +201,7 @@
                       (current-blame-format format-incorrect-rules-error)
                       (raise-blame-error
                        blame
-                       (incorrect-mttm-rules states sigma rules)
+                       (list (car (incorrect-mttm-rules states sigma rules)))
                        (format "~a\nThe following rules have errors, which make them invalid" design-recipe-message))))))
 
   ;functional/c: (listof state) (listof sigma) boolean -> contract

@@ -2,6 +2,37 @@
 (require "constructors.rkt"
          "../constants.rkt")
 (local-require test-engine/racket-tests)
+
+(define dfa1 (make-dfa2 '(A B C)
+                       '(a b c)
+                       'a
+                       '(B C D)
+                       '((A b D)
+                         (A a c)
+                         (B 1 B)
+                         (B a c))))
+
+(define tm2 (make-tm2 '(S Y N)
+                     `(a b)
+                     `(((S a) (S ,RIGHT))
+                       ((S b) (N b))
+                       ((S ,BLANK) (Y ,BLANK)))
+                     'S
+                     '(Y M)
+                     'Y))
+
+(define ndpda1 (make-ndpda2 '(S M F)
+                           '(a b)
+                           '(a)
+                           '(S-1)
+                           '(F)
+                           `(((S ,EMP ,EMP) (M ,EMP))
+                             ((S a ,EMP) (S (a)))
+                             ((M b (a)) (M ,EMP))
+                             ((M ,EMP ,EMP) (F ,EMP)))))
+
+
+
 (make-dfa2 '(A B C D)
            '(a b c d)
            'A
