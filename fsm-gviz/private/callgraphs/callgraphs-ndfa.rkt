@@ -1,5 +1,5 @@
 #lang fsm
-(require "../lib.rkt" "cg-defs2.rkt" "mk-cg-edges-function.rkt")
+(require "../lib.rkt" "cg-defs.rkt" "mk-cg-edges-function.rkt")
 (provide make-ndfa-cg-edges dot-nodes dot-trans computation-diagram-fsa)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; make-ndfa-cg-edges
