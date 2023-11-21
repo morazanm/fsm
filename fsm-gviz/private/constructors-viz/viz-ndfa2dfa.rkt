@@ -1,6 +1,6 @@
 #lang fsm
 
-(require "../../fsm-core/interface.rkt" "lib.rkt")
+(require "../../../fsm-core/interface.rkt" "../lib.rkt")
 (require 2htdp/universe rackunit)
 (require (rename-in racket/gui/base
                     [make-color loc-make-color]
@@ -9,7 +9,7 @@
 
 (define FNAME "fsm")
 
-(require "../../fsm-core/interface.rkt" "lib.rkt" "../../fsm-gui/graphViz/main.rkt")
+(require "../../../fsm-core/interface.rkt" "../lib.rkt" "../../../fsm-gui/graphViz/main.rkt")
 (require 2htdp/universe rackunit)
 (require (rename-in racket/gui/base
                     [make-color loc-make-color]

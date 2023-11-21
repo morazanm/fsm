@@ -1,12 +1,13 @@
 #lang fsm
 
-(require "../../fsm-core/interface.rkt" "lib.rkt" "../../fsm-gui/graphViz/main.rkt")
+(require "../../../fsm-core/interface.rkt" "../lib.rkt" "../../../fsm-gui/graphViz/main.rkt")
 (require 2htdp/universe rackunit)
 (require (rename-in racket/gui/base
                     [make-color loc-make-color]
                     [make-pen loc-make-pen]))
 (require 2htdp/image)
 (require "run-viz.rkt")
+(provide concat-viz)
 
 (define FNAME "fsm")
 
