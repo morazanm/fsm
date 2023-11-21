@@ -5,6 +5,7 @@
                     [make-color loc-make-color]
                     [make-pen loc-make-pen]))
 (require 2htdp/image)
+(require "run-viz.rkt")
 
 (define FNAME "fsm")
 
@@ -218,17 +219,10 @@
                  E-SCENE)
         (overlay (viz-state-pgi a-vs) E-SCENE))))
 
-;; run-function
-;; run-function
-(define (run M N)
-  (begin
-    (big-bang
-        (viz-state (create-graph-img M N) (make-init-grph-img M N))
-      [on-draw draw-world]
-      [on-key process-key]
-      [name "FSM: union visualization"]))
-  (void))
-
+;; union-viz
+;; fsa fsa -> void
+(define (union-viz M N)
+  (run-viz (viz-state (create-graph-img M N) (make-init-grph-img M N)) draw-world process-key 'union-viz))
 
 
 

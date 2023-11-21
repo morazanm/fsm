@@ -5,6 +5,7 @@
                     [make-color loc-make-color]
                     [make-pen loc-make-pen]))
 (require 2htdp/image)
+(require "run-viz.rkt")
 
 (define FNAME "fsm")
 
@@ -191,13 +192,7 @@
                  E-SCENE)
         (overlay (viz-state-pgi a-vs) E-SCENE))))
 
-;; run-function
-;; run-function
-(define (run M)
-  (begin
-    (big-bang
-        (viz-state (create-graph-img M) (make-init-grph-img M))
-      [on-draw draw-world]
-      [on-key process-key]
-      [name "FSM: kleenestar visualization"]))
-  (void))
+;;kleenestar-viz
+;; fsa -> void
+(define (kleenestar-viz M)
+  (run-viz (viz-state (create-graph-img M) (make-init-grph-img M)) draw-world process-key 'kleenestar-viz))

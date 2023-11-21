@@ -6,6 +6,7 @@
                     [make-color loc-make-color]
                     [make-pen loc-make-pen]))
 (require 2htdp/image)
+(require "run-viz.rkt")
 
 (define FNAME "fsm")
 
@@ -347,8 +348,7 @@
                              (hash-set! hash (list (first (first loe))
                                                    (third (first loe)))
                                         (list (second (first loe)))))
-                         hash))
-         #;(dd (display (format "~s \n" current-hash)))]
+                         hash))]
     (if (= (length loe) 1)
         current-hash
         (add-edges-to-hash current-hash (rest loe)))))
@@ -369,8 +369,7 @@
 ;; Purpose: To turn all loops on multiple edges into unions
 (define (to-union loe)
   (let* [(hash-t (add-edges-to-hash (make-hash) loe))
-         (hash-l (reverse (hash->list hash-t)))
-         #;(dd (display (format "~s \n" hash-l)))]
+         (hash-l (reverse (hash->list hash-t)))]
     (map (λ (x) (if (< (length (rest x)) 1)
                     (list (first (first x))
                           (string->symbol (first (rest x)))
@@ -390,8 +389,7 @@
          (new-rules (cons (list new-start EMP (sm-start M))
                           (map (λ (fst) (list fst EMP new-final))
                                (sm-finals M))))
-         (changed-rules (to-union (append (sm-rules M) new-rules)))
-         #;(dd (display (format "~s \n" changed-rules)))]
+         (changed-rules (to-union (append (sm-rules M) new-rules)))]
     (image-struct (create-graph-img-special
                    (if (not (member DEAD (sm-states M)))
                        (sm-states M)
@@ -476,17 +474,15 @@
         (overlay graph-img E-SCENE))))
 
 
-;; run-function
+
+;; ndfa2regexp-viz
 ;; ndfa --> (void)
-(define (run M)
-  (begin
-    (big-bang
-        (viz-state (list (image-struct (sm-graph M) '()))
-                   (cons (make-init-graph-img M) (rest (create-graph-imgs M))))
-      [on-draw draw-world]
-      [on-key process-key]
-      [name "FSM: ndfa to regexp visualization"]))
-  (void))
+(define (ndfa2regexp-viz M)
+  (run-viz (viz-state (list (image-struct (sm-graph M) '()))
+                      (cons (make-init-graph-img M) (rest (create-graph-imgs M))))
+           draw-world
+           process-key
+           'ndfa2regexp))
 
 
 (define aa-ab

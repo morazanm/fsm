@@ -5,6 +5,7 @@
                     [make-color loc-make-color]
                     [make-pen loc-make-pen]))
 (require 2htdp/image)
+(require "run-viz.rkt")
 
 (define FNAME "fsm")
 
@@ -220,7 +221,7 @@
          (if (empty? (viz-state-pimgs a-vs))
              a-vs
              (viz-state (reverse (append (reverse (viz-state-upimgs a-vs))
-                                             (viz-state-pimgs a-vs)))
+                                         (viz-state-pimgs a-vs)))
                         '()))]
         [else a-vs]))
 
@@ -248,9 +249,9 @@
                      E-SCENE)
             (overlay (first (viz-state-upimgs a-vs)) E-SCENE)))))
 
-
-;; run-function
-(define (run regexp)
+;; regexp2ndfa-viz
+;; regexp -> void
+(define (regexp2ndfa-viz regexp)
   (let* [(logedges (append
                     (list
                      (last (dgraph2logedges
@@ -264,13 +265,7 @@
                                     (list (list 'S (simplify-regexp regexp) 'F))
                                     '())))))
          (loimgs (create-graph-imgs logedges))]
-    (begin
-      (big-bang
-          (viz-state loimgs '())
-        [on-draw draw-world]
-        [on-key process-key]
-        [name "FSM: regexp to ndfa visualization"]))
-    (void)))
+    (run-viz (viz-state loimgs '()) draw-world process-key 'regexp2ndfa)))
 
 
 

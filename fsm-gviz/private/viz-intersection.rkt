@@ -5,6 +5,7 @@
                     [make-color loc-make-color]
                     [make-pen loc-make-pen]))
 (require 2htdp/image)
+(require "run-viz.rkt")
 
 (define FNAME "fsm")
 
@@ -369,18 +370,12 @@
                  E-SCENE)
         (overlay (first (viz-state-pgi a-vs)) E-SCENE))))
 
-;; run-function
-;; run-function
-(define (run M N)
-  (begin
-    (big-bang
-        (let* [(imgs (create-graph-imgs M N))
-               #;(d (displayln imgs))]
-          (viz-state imgs (list (make-init-grph-img M N))))
-      [on-draw draw-world]
-      [on-key process-key]
-      [name "FSM: intersection visualization"]))
-  (void))
+
+;; intersection-viz
+;; fsa fsa -> void
+(define (intersection-viz M N)
+  (let* [(imgs (create-graph-imgs M N))]
+    (run-viz (viz-state imgs (list (make-init-grph-img M N))) draw-world process-key 'intersection-viz)))
 
 (define no-one-el (make-dfa '(S A B C D E F G)
                             '(a b c)

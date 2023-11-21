@@ -5,6 +5,7 @@
                     [make-color loc-make-color]
                     [make-pen loc-make-pen]))
 (require 2htdp/image)
+(require "run-viz.rkt")
 
 (define FNAME "fsm")
 
@@ -175,22 +176,16 @@
                  E-SCENE)
         (overlay (first (viz-state-pgi a-vs)) E-SCENE))))
 
-;; run-function
-;; run-function
-(define (run M)
-  (begin
-    (big-bang
-        (viz-state (if (eq? (sm-type M) 'dfa)
-                       (list (create-graph-img M))
-                       (let [(machine (ndfa->dfa M))]
-                         (list (above (sm-graph machine)
-                                      (text "MD: M converted to a dfa" 20 'black))
-                               (create-graph-img machine))))
-                   (list (make-init-grph-img M)))
-      [on-draw draw-world]
-      [on-key process-key]
-      [name "FSM: complement visualization"]))
-  (void))
+;; complement-viz
+;; fsa -> void
+(define (complement-viz M)
+  (run-viz (viz-state (if (eq? (sm-type M) 'dfa)
+                          (list (create-graph-img M))
+                          (let [(machine (ndfa->dfa M))]
+                            (list (above (sm-graph machine)
+                                         (text "MD: M converted to a dfa" 20 'black))
+                                  (create-graph-img machine))))
+                      (list (make-init-grph-img M))) draw-world process-key 'complement-viz))
 
 (define no-one-el (make-dfa '(S A B C D E F G)
                             '(a b c)

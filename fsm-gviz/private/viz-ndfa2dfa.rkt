@@ -15,6 +15,7 @@
                     [make-color loc-make-color]
                     [make-pen loc-make-pen]))
 (require 2htdp/image)
+(require "run-viz.rkt")
 
 
 
@@ -611,33 +612,27 @@
   (ormap (λ (s) (member s sm-finals)) sss))
 
 
-
-
-;; ndfa --> etc
-(define (run M)
-  (begin
-    (let* [(ss-edges (compute-ss-edges M))
-           (super-start-state (compute-empties (list (sm-start M))
-                                               (sm-rules M)
-                                               '()))
-           (init-hedges (compute-all-hedges (sm-rules M) super-start-state '()))
-           (etc (make-etc ss-edges
-                          '()
-                          (list (first (first ss-edges)))
-                          M
-                          init-hedges
-                          '()
-                          (remove init-hedges (sm-rules M))))
-           (low (reverse (create-etcs etc '())))
-           (imgs (create-all-imgs low))
-           ]
-      (big-bang
-          (make-vst (rest imgs)
-                    (list (first imgs)))                
-        [on-draw draw-etc]
-        [on-key process-key]
-        [name 'visualization]))
-    (void)))
+;; ndfa2dfa-viz 
+;; ndfa -> void
+(define (ndfa2dfa-viz M)
+  (let* [(ss-edges (compute-ss-edges M))
+         (super-start-state (compute-empties (list (sm-start M))
+                                             (sm-rules M)
+                                             '()))
+         (init-hedges (compute-all-hedges (sm-rules M) super-start-state '()))
+         (etc (make-etc ss-edges
+                        '()
+                        (list (first (first ss-edges)))
+                        M
+                        init-hedges
+                        '()
+                        (remove init-hedges (sm-rules M))))
+         (low (reverse (create-etcs etc '())))
+         (imgs (create-all-imgs low))]
+    (run-viz (make-vst (rest imgs) (list (first imgs)))
+             draw-etc
+             process-key
+             'ndfa2dfa-viz)))
 
 
 
