@@ -1,6 +1,5 @@
 #lang fsm
 (require "../lib.rkt"
-         ;"../../../fsm-gui/graphViz/main.rkt"
          2htdp/universe rackunit
          (rename-in racket/gui/base
                     [make-color loc-make-color]

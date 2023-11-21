@@ -1,26 +1,17 @@
 #lang fsm
 
-(require "../lib.rkt")
-(require 2htdp/universe rackunit)
-(require (rename-in racket/gui/base
+(require "../lib.rkt"
+         2htdp/universe
+         rackunit
+         (rename-in racket/gui/base
                     [make-color loc-make-color]
-                    [make-pen loc-make-pen]))
-(require 2htdp/image)
+                    [make-pen loc-make-pen])
+         2htdp/image
+         "run-viz.rkt")
+
 (provide ndfa2dfa-viz)
 
 (define FNAME "fsm")
-
-(require "../../../fsm-core/interface.rkt" "../lib.rkt" "../../../fsm-gui/graphViz/main.rkt")
-(require 2htdp/universe rackunit)
-(require (rename-in racket/gui/base
-                    [make-color loc-make-color]
-                    [make-pen loc-make-pen]))
-(require 2htdp/image)
-(require "run-viz.rkt")
-
-
-
-
 
 ;;;;;;;;; FUNCTION NDFA->DFA THAT RETURNS A SORTED LIST OF RULES ;;;;;;;;;;;
 
