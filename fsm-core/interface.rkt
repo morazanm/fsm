@@ -82,6 +82,10 @@
  ; regexp transformers
  fsa->regexp
 
+ ; constructor visualizations
+ complement-viz union-viz kleenestar-viz intersection-viz
+ concat-viz ndfa2dfa-viz regexp2ndfa-viz ndfa2regexp-viz
+
  ; some helpful functions
  los->symbol symbol->list generate-symbol symbol->fsmlos symbol-upcase
 
