@@ -1,6 +1,6 @@
 #lang fsm
 (require 2htdp/image)
-(require "lib.rkt" "cg-defs2.rkt" "mk-cg-edges-function.rkt")
+(require "../lib.rkt" "cg-defs2.rkt" "mk-cg-edges-function.rkt")
 (provide make-pda-cg-edges dot-nodes dot-trans computation-diagram-pda)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; make-pda-cg-edges
