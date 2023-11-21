@@ -7,6 +7,7 @@
                     [make-pen loc-make-pen]))
 (require 2htdp/image)
 (require "run-viz.rkt")
+(provide ndfa2regexp-viz)
 
 (define FNAME "fsm")
 

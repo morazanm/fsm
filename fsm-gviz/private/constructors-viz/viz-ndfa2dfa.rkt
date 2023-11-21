@@ -6,6 +6,7 @@
                     [make-color loc-make-color]
                     [make-pen loc-make-pen]))
 (require 2htdp/image)
+(provide ndfa2dfa-viz)
 
 (define FNAME "fsm")
 

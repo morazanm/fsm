@@ -6,6 +6,7 @@
                     [make-pen loc-make-pen]))
 (require 2htdp/image)
 (require "run-viz.rkt")
+(provide kleenestar-viz)
 
 (define FNAME "fsm")
 
