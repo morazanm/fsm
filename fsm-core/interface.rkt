@@ -20,7 +20,9 @@
   "private/grammar-getters.rkt" 
   "private/regexp-predicate.rkt"
   "private/abstract-predicate.rkt"
-  "private/mtape-tm.rkt")
+  "private/mtape-tm.rkt"
+  "private/constructor-viz.rkt"
+  )
   
 (provide
  check-machine
