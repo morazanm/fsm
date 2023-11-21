@@ -1,6 +1,6 @@
 #lang fsm
 (require 2htdp/image)
-(require "lib.rkt")
+(require "lib.rkt" "cg-defs2.rkt")
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; tms
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -356,11 +356,7 @@
 
 ;; PRE:  tape = (@ w) and i = 1
 ;; POST: tape = (@ _ w) and i = |w|+2
-<<<<<<< Updated upstream
-(define w->_w (combine-tms
-=======
 (define warrow_w (combine-tms
->>>>>>> Stashed changes
                (list FBR
                      0
                      L
@@ -381,11 +377,7 @@
                '(a b d)))
 
 ;.................................................
-<<<<<<< Updated upstream
-                     
-=======
 #|             
->>>>>>> Stashed changes
 ;; Tests for w->_w
 (check-equal? (rest (ctm-run w->_w '(@ a b a) 1))
               '(5 (@ _ a b a _)))
@@ -393,11 +385,7 @@
               '(2 (@ _ _)))
 (check-equal? (rest (ctm-run w->_w '(@ a b b a) 1))
               '(6 (@ _ a b b a _)))
-<<<<<<< Updated upstream
-
-=======
 |#
->>>>>>> Stashed changes
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Design and implement a ctm that shifts its input word one space to the left.
 
@@ -424,11 +412,7 @@
                '(a b d)))
 
 ;.................................................
-<<<<<<< Updated upstream
-                     
-=======
                
->>>>>>> Stashed changes
 ;; Tests for _w->w
 (check-equal? (rest (ctm-run _w->w '(@ _ a b a) 1))
               '(5 (@ a b a _ _)))
@@ -449,16 +433,10 @@
 ;; POST: tape = '(@ _ (_^|ad*|) _ _ (ad* * bd*) _) and i = |ad*| + |ad* * bd*| + 4
 (define MULT (combine-tms
               (list R
-<<<<<<< Updated upstream
-                    (cons BRANCH (list (list 'd WB (list GOTO 0))
-                                       (list '_ R (list GOTO 3))))
-                    0
-=======
                     (cons BRANCH (list (list 'd (list GOTO 0))
                                        (list '_ (list GOTO 3))))
                     0
                     WB
->>>>>>> Stashed changes
                     R
                     (cons BRANCH (list (list 'd (list GOTO 1))
                                        (list '_ (list GOTO 2))))
@@ -475,16 +453,6 @@
                     FBR
                     (list GOTO 4)
                     3
-<<<<<<< Updated upstream
-                    (cons BRANCH (list (list '_ (list GOTO 4))
-                                       (list 'd
-                                             WB
-                                             R
-                                             (list GOTO 3))))
-                    4
-                    FBL
-                    w->_w
-=======
                     R
                     6
                     WB
@@ -494,16 +462,11 @@
                     4
                     FBL
                     warrow_w
->>>>>>> Stashed changes
                     FBR)           
               '(d)))
 
 ;.................................................
-<<<<<<< Updated upstream
-                     
-=======
                   
->>>>>>> Stashed changes
 ;; Tests for MULT
 (check-equal? (rest (ctm-run MULT '(@ _ d _ d d) 1))
               '(7 (@ _ _ _ _ d d _)))
@@ -516,11 +479,7 @@
 (check-equal? (rest (ctm-run MULT '(@ _ d d _ d d) 1))
               '(10 (@ _ _ _ _ _ d d d d _)))
 (check-equal? (rest (ctm-run MULT '(@ _ _) 1))
-<<<<<<< Updated upstream
-              '(4 (@ _ _ _ _)))
-=======
               '(5 (@ _ _ _ _ _)))
->>>>>>> Stashed changes
 (check-equal? (rest (ctm-run MULT '(@ _ _ d d _) 1))
               '(6 (@ _ _ _ _ _ _)))
 (check-equal? (rest (ctm-run MULT '(@ _ d _ _) 1))
@@ -592,11 +551,7 @@
 
 ;; (listof ctm) -> (listof node)
 ;; Purpose: Given a ctm, create a list of nodes in dot format
-<<<<<<< Updated upstream
-(define (dot-nodes ctm)
-=======
 #;(define (dot-nodes ctm)
->>>>>>> Stashed changes
   ;; (listof symbol) integer -> (listof integer)
   ;; Purpose: Depending on a list's length, create a list of integers following that length
   (define (int-for-var list int)
@@ -644,9 +599,6 @@
                          `((color ,a-color) (shape ,a-shape) (label ,a-label)))
                    (new-node (cdr ctm) (+ int 1))))]))
   (new-node ctm 0))
-<<<<<<< Updated upstream
-       
-=======
 (define (dot-nodes ctm)
   ;; (listof symbol) integer -> (listof integer)
   ;; Purpose: Depending on a list's length, create a list of integers following that length
@@ -703,7 +655,6 @@
                    (new-node (cdr ctm) (+ int 1) label-acc)))]))
   (new-node ctm 0 '()))
 
->>>>>>> Stashed changes
 ;.................................................
 
 ;; Tests for dot-nodes
@@ -798,8 +749,6 @@
           [(equal? 'BRANCH (cadr (cadr ctm)))
            (find-branch-to-state (cadr ctm) acc int)]
           [(equal? 'GOTO (cadr (cadr ctm)))
-<<<<<<< Updated upstream
-=======
            (string-append (symbol->string (car (goto-label (caddr (cadr ctm)) acc))) (number->string (goto-int (caddr (cadr ctm)) acc int)))]
           [else
            (symbol->string (caddr (cadr ctm)))]))
@@ -832,6 +781,7 @@
                                              (cadr (car branch))))
                                  (style "dashed"))))
                    (find-branch-edges from-state (cdr branch) acc int))]))
+                   ;(new-edge (cdr (goto-label (caddr (caddr (car branch))) acc)) acc (goto-int (caddr (caddr (car branch))) acc 0) label-acc))]))
   ;; (listof ctm) (listof ctm) integer -> (listof edge)
   ;; Purpose: Given a ctm list and an accumulator that contains the initial given ctm list, and an integer, create the list of edges
   (define (new-edge ctm acc int label-acc)
@@ -843,9 +793,11 @@
               [(and (symbol? (car ctm))
                     (pair? (cadr ctm))
                     (equal? 'BRANCH (cadr (cadr ctm))))
+              ;(let ((labels (filter number? (caddr (cadr ctm)))))
                (append (find-branch-edges (string-append (symbol->string (car ctm))
                                                          (number->string int))
                                           (caddr (cadr ctm)) acc int)
+                     ;(map (lambda (x) (new-edge (goto-label x acc) (goto-int x acc 0))) labels)
                        (new-edge (cdr ctm) acc (+ 1 int) label-acc))]         
               #;[(symbol? (car ctm))
                (if (and (pair? (cadr ctm))
@@ -856,6 +808,18 @@
                                (find-to-state ctm acc int)
                                '((label "") (style "solid")))                
                          (new-edge (cdr ctm) acc (+ 1 int) label-acc)))]
+              [(and (symbol? (car ctm))
+                    (pair? (cadr ctm))
+                    (equal? 'GOTO (cadr (cadr ctm)))
+                    (not (null? (goto-label (caddr (cadr ctm)) acc))))
+
+               (cons (list (string-append (symbol->string (car ctm)) (number->string int))
+                               (string-append (symbol->string (car (goto-label (caddr (cadr ctm)) acc))) (number->string (goto-int (caddr (cadr ctm)) acc 0)))
+                               '((label "") (style "solid"))) 
+                ;(new-edge (goto-label (caddr (cadr ctm)) acc) acc (goto-int (caddr (cadr ctm)) acc 0) label-acc)
+                       (new-edge (cdr (goto-label (caddr (cadr ctm)) acc)) acc (add1 (goto-int (caddr (cadr ctm)) acc 0)) label-acc))]
+                       ;(new-edge (cdr ctm) acc (+ 1 int) label-acc))]
+              
               [(symbol? (car ctm))
                (if (and (pair? (cadr ctm))
                         (equal? 'GOTO (cadr (cadr ctm)))
@@ -869,6 +833,8 @@
                     (< 1 (count (lambda (x) (= (car ctm) x)) label-acc))) '()]
               [(number? (car ctm)) (new-edge (cdr ctm) acc int (cons (car ctm) label-acc))]
               [(equal? 'BRANCH (cadr (car ctm))) (new-edge (cdr ctm) acc int label-acc)]
+              #;[(equal? 'GOTO (cadr (car ctm)))
+               (new-edge (goto-label (caddr (car ctm)) acc) acc int label-acc)]
               [(equal? 'GOTO (cadr (car ctm)))
                (new-edge (goto-label (caddr (car ctm)) acc) acc int label-acc)]
               [(equal? 'VAR (cadr (cadr (car ctm))))
@@ -932,7 +898,6 @@
           [(equal? 'BRANCH (cadr (cadr ctm)))
            (find-branch-to-state (cadr ctm) acc int)]
           [(equal? 'GOTO (cadr (cadr ctm)))
->>>>>>> Stashed changes
            (find-to-state (goto-label (caddr (cadr ctm)) acc) acc int)]
           [else
            (symbol->string (caddr (cadr ctm)))]))
@@ -953,11 +918,7 @@
   ;; Purpose: Given the source state, the branch, the full accumulated ctm and an integer, make a list of edges from the branch
   (define (find-branch-edges from-state branch acc int)
     (cond [(null? branch) '()]
-<<<<<<< Updated upstream
-          [(equal? (car branch) 'list) (find-branch-edges from-state (cdr branch) acc int)]
-=======
           [(equal? (car branch) 'list) (find-branch-edges from-state (filter (lambda (x) (not (equal? (caddr (caddr x)) (last acc)))) (cdr branch)) acc int)]
->>>>>>> Stashed changes
           [else 
            (append (list (list from-state
                                (string-append (find-branch-to-state 
@@ -971,11 +932,7 @@
                    (find-branch-edges from-state (cdr branch) acc int))]))
   ;; (listof ctm) (listof ctm) integer -> (listof edge)
   ;; Purpose: Given a ctm list and an accumulator that contains the initial given ctm list, and an integer, create the list of edges
-<<<<<<< Updated upstream
-  (define (new-edge ctm acc int)
-=======
   (define (new-edge ctm acc int label-acc)
->>>>>>> Stashed changes
     (if (empty? ctm)
         '()
         (cond [(and (symbol? (car ctm))
@@ -984,11 +941,7 @@
                (append (find-branch-edges (string-append (symbol->string (car ctm))
                                                          (number->string int))
                                           (caddr (cadr ctm)) acc int)
-<<<<<<< Updated upstream
-                       (new-edge (cdr ctm) acc (+ 1 int)))]         
-=======
                        (new-edge (cdr ctm) acc (+ 1 int) label-acc))]         
->>>>>>> Stashed changes
               [(symbol? (car ctm))
                (if (and (pair? (cadr ctm))
                         (equal? 'GOTO (cadr (cadr ctm)))
@@ -997,17 +950,6 @@
                    (cons (list (string-append (symbol->string (car ctm)) (number->string int))
                                (find-to-state ctm acc int)
                                '((label "") (style "solid")))                
-<<<<<<< Updated upstream
-                         (new-edge (cdr ctm) acc (+ 1 int))))]            
-              [(or (number? (car ctm))
-                   (equal? 'BRANCH (cadr (car ctm)))) (new-edge (cdr ctm) acc int)]
-              [(equal? 'GOTO (cadr (car ctm)))
-               (new-edge (goto-label (caddr (car ctm)) acc) acc int)]
-              [(equal? 'VAR (cadr (cadr (car ctm))))
-               (append (find-var-edges (car ctm) acc int)
-                       (new-edge (cdr ctm) acc (+ int (- (length (car ctm)) 3))))])))
-  (new-edge ctm ctm 0))
-=======
                          (new-edge (cdr ctm) acc (+ 1 int) label-acc)))]
               #;[(and (number? (car ctm))
                     (< 30 (count (lambda (x) (= (car ctm) x)) label-acc)))
@@ -1020,7 +962,6 @@
                (append (find-var-edges (car ctm) acc int)
                        (new-edge (cdr ctm) acc (+ int (- (length (car ctm)) 3)) label-acc))])))
   (new-edge ctm ctm 0 '()))
->>>>>>> Stashed changes
 
 ;.................................................
 
@@ -1070,17 +1011,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-<<<<<<< Updated upstream
-(transition-diagram-ctm COPYL)
-
-
-
-
-
-
-
-
-=======
 (define FBRL '(0
                R
                (cons BRANCH
@@ -1218,12 +1148,11 @@
 (transition-diagram-ctm FBRL)
 (transition-diagram-ctm FBLL)
 (transition-diagram-ctm TWICERL)
-;(transition-diagram-ctm MULTL)
 (transition-diagram-ctm WARROW_L)
 (transition-diagram-ctm _WARROWL)
-;(transition-diagram-ctm MULTL)
+(transition-diagram-ctm MULTL)
 
-(ctm-run COPY '(_ a b _) 1 #:trace #t)
+;(ctm-run COPY '(_ a b _) 1 #:trace #t)
 
 #|(define (trace-of-edges trace edges)
   (if (empty? trace)
@@ -1231,7 +1160,7 @@
       (append (filter (lambda (x) (option x|#
 
 
-'(("FBL0" "R1" ((label "") (style "solid")))
+#;'(("FBL0" "R1" ((label "") (style "solid")))
   ("R1" "FBR9" ((label BLANK) (style "dashed")))
   ("R1" "WB2" ((label a) (style "dashed")))
   ("R1" "WB2" ((label b) (style "dashed")))
@@ -1249,7 +1178,7 @@
   ("L10" "R12" ((label b) (style "dashed")))
   ("L10" "R12" ((label d) (style "dashed"))))
 
-'(FBL
+#;'(FBL
   0
   R
   (cons BRANCH (list (list BLANK (list GOTO 2)) (list 'a (list GOTO 1)) (list 'b (list GOTO 1)) (list 'd (list GOTO 1))))
@@ -1267,7 +1196,7 @@
   (list GOTO 5)
   5)
 
-(define COPY-TRACE
+#;(define COPY-TRACE
 '((tmconfig 'H 0 '(_ a b _))
  (tmconfig 'F 1 '(_ a b _))
  '(BRANCH a)
@@ -1350,30 +1279,37 @@
   ;; Purpose: Returns the traced edges in order
   ;; Accumulator invariant:
   ;;  stored-val = stores the destination state, which is the source state of the following edge
-  ;;  edges = list of all edges 
+  ;;  edges = list of all edges
   (define (follow-trace trace edges stored-val)
     (cond [(or (empty? trace)
                (empty? (cdr trace))
                (equal? stored-val "")) '()]
-          [(or (equal? 'GOTO (car (cadr (car trace))))
-               (equal? 'BRANCH (car (cadr (car trace))))
-               (equal? 'VAR (car (cadr (car trace)))))
-           (follow-trace (cdr trace) edges stored-val)]  
-          [(and ;(equal? 'tmconfig (car (car trace)))
-            (tmconfig? (car (car trace)))
-                (equal? 'BRANCH (car (cadr (cadr trace)))))
-           (let ((new-edge (filter (lambda (x) (and (equal? (car x) stored-val)
-                                                    (equal? (cadr (car (caddr x))) (cadr (cadr (cadr trace)))))) edges)))
+          [(and (struct? (car trace))
+                (struct? (cadr trace)))
+           (let ((new-edge (filter (lambda (x) (equal? (car x) stored-val)) edges)))
              (append new-edge
                      (follow-trace (cdr trace) edges (if (empty? new-edge)
                                                          ""
-                                                         (cadr (car new-edge))))))]         
-          [else (let ((new-edge (filter (lambda (x) (equal? (car x) stored-val)) edges)))
-                  (append new-edge
-                          (follow-trace (cdr trace) edges (if (empty? new-edge)
-                                                              ""
-                                                              (cadr (car new-edge))))))]))
-  (follow-trace (ctm-run ctm tape head #:trace #t) (dot-edges ctmlist) (car (car (dot-edges ctmlist)))))
+                                                         (cadr (car new-edge))))))]
+          [(and (struct? (car trace))
+                (equal? 'BRANCH (car (cadr trace))))
+           (let ((new-edge (filter (lambda (x) (and (equal? (car x) stored-val)
+                                                    (equal? (cadr (car (caddr x))) (cadr (cadr trace))))) edges)))
+             (append new-edge
+                     (follow-trace (cdr trace) edges (if (empty? new-edge)
+                                                         ""
+                                                         (cadr (car new-edge))))))]
+          [(struct? (car trace))
+           (let ((new-edge (filter (lambda (x) (equal? (car x) stored-val)) edges)))
+             (append new-edge
+                     (follow-trace (cdr trace) edges (if (empty? new-edge)
+                                                         ""
+                                                         (cadr (car new-edge))))))]
+          [(or (equal? 'GOTO (car (car trace)))
+               (equal? 'BRANCH (car (car trace)))
+               (equal? 'VAR (car (car trace))))
+           (follow-trace (cdr trace) edges stored-val)]))
+  (follow-trace (cdr (ctm-run ctm tape head #:trace #t)) (dot-edges ctmlist) (car (car (dot-edges ctmlist)))))
 
 
 (define COPY-COMPUTATION
@@ -1399,8 +1335,10 @@
     ("L10" "R12" ((label b) (style "dashed")))))
 
 ;(follow-trace COPY-TRACE COPY-EDGES2 "FBL0")
-(computation-edges COPY COPYL '(_ a b _) 1)
+;(computation-edges COPY COPYL '(_ a b) 1)
+
+(check-equal? (computation-edges COPY COPYL2 '(_ a b) 1) COPY-COMPUTATION)
  
 
+
                                           
->>>>>>> Stashed changes
