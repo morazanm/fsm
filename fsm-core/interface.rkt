@@ -22,6 +22,7 @@
   "private/abstract-predicate.rkt"
   "private/mtape-tm.rkt"
   "private/constructor-viz.rkt"
+  "private/call-graphs.rkt"
   )
   
 (provide
@@ -83,8 +84,11 @@
  fsa->regexp
 
  ; constructor visualizations
- complement-viz union-viz kleenestar-viz intersection-viz
- concat-viz ndfa2dfa-viz regexp2ndfa-viz ndfa2regexp-viz
+ fsa-comp-viz fsa-union-viz fsa-ks-viz fsa-intersect-viz
+ fsa-concat-viz ndfa->dfa-viz regexp->ndfa-viz ndfa->regexp-viz
+
+ ; call graphs
+ sm-callgraph
 
  ; some helpful functions
  los->symbol symbol->list generate-symbol symbol->fsmlos symbol-upcase
@@ -544,9 +548,42 @@
                                10)
                          (list 'd)))
 
+(define palindrome (make-tm '(S A B C D E F H I J Y)
+                            '(a b x)
+                            `(((A x) (B ,RIGHT))
+                              ((B a) (B ,RIGHT))
+                              ((B b) (B ,RIGHT))
+                              ((B a) (J x))
+                              ((D x) (E ,RIGHT))
+                              ((E a) (E ,RIGHT))
+                              ((E b) (E ,RIGHT))
+                              ((E b) (J x))
+                              ((F b) (F ,LEFT))
+                              ((F a) (F ,LEFT))
+                              ((F x) (F ,LEFT))
+                              ((F ,BLANK) (C ,RIGHT))
+                              ((H a) (H ,RIGHT))
+                              ((H ,BLANK) (Y ,BLANK))
+                              ((I b) (I ,RIGHT))
+                              ((I ,BLANK) (Y ,BLANK))
+                              ((J x) (J ,RIGHT))
+                              ((J ,BLANK) (F ,LEFT))
+                              ((S ,BLANK) (C ,RIGHT))
+                              ((C a) (A x))
+                              ((C b) (D x))
+                              ((C a) (H ,RIGHT))
+                              ((C b) (I ,RIGHT))
+                              ((C x) (C ,RIGHT))
+                              ((C ,BLANK) (Y ,BLANK))
+                              ((I x) (I ,RIGHT))
+                              ((H x) (H ,RIGHT)))
+                            'S
+                            '(Y)
+                            'Y))
 
 
 
-
+(sm-callgraph palindrome '(_ a b b a) #:pos 1 #:threshold 10)
+(sm-callgraph palindrome '(_ a b b a) #:pos 1 #:threshold 10 #:cb 'deut)
 
 

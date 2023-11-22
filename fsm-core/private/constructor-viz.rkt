@@ -9,14 +9,30 @@
            "../../fsm-gviz/private/constructors-viz/viz-ndfa2regexp.rkt"
            )
 
-  (provide complement-viz
-           union-viz
-           kleenestar-viz
-           intersection-viz
-           concat-viz
-           ndfa2dfa-viz
-           regexp2ndfa-viz
-           ndfa2regexp-viz
+  (provide fsa-comp-viz
+           fsa-union-viz
+           fsa-ks-viz
+           fsa-intersect-viz
+           fsa-concat-viz
+           ndfa->dfa-viz
+           regexp->ndfa-viz
+           ndfa->regexp-viz
            )
+
+  (define fsa-comp-viz complement-viz)
+
+  (define fsa-union-viz union-viz)
+
+  (define fsa-ks-viz kleenestar-viz)
+
+  (define fsa-intersect-viz intersection-viz)
+
+  (define fsa-concat-viz concat-viz)
+
+  (define ndfa->dfa-viz ndfa2dfa-viz)
+
+  (define regexp->ndfa-viz regexp2ndfa-viz)
+
+  (define ndfa->regexp-viz ndfa2regexp-viz)
 
 )

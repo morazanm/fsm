@@ -1,6 +1,6 @@
 #lang fsm
 (require "../lib.rkt" "cg-defs.rkt" "mk-cg-edges-function.rkt")
-(provide make-ndfa-cg-edges dot-nodes dot-trans computation-diagram-fsa)
+(provide make-ndfa-cg-edges dot-nodes-fsa dot-trans-fsa computation-diagram-fsa)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; make-ndfa-cg-edges
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -205,7 +205,7 @@
 ;; Color blindness:
 ;;  0 - default colors
 ;;  1 - Deuteranopia
-(define (dot-nodes M new-rules int)
+(define (dot-nodes-fsa M new-rules int)
   (let* [(start-state (sm-start M))
          (edge-states (remove-duplicates
                        (append (map (lambda (r) (ndfa-Edge-fromst r))
@@ -259,7 +259,7 @@
 ;; (listof ndfa-Edge) -> (listof trans)
 ;; Purpose: Given a machine's edges, creates a list of
 ;;          transitions in dot format
-(define (dot-trans new-rules)
+(define (dot-trans-fsa new-rules)
   ;; (listof ndfa-Edge) -> (listof trans)
   ;; Purpose: Given a list of edges, creates
   ;;          a list of transitions
@@ -307,7 +307,7 @@
                       (fontcolor (second (fourth (second a-node))))]
                  (add-node a-graph state #:atb (hash 'color color 'shape shape 'fontcolor fontcolor)))) 
              cgraph   
-             (dot-nodes M new-rules int)))
+             (dot-nodes-fsa M new-rules int)))
       (set! cgraph
             (foldl
              (lambda (a-trans a-graph)
@@ -320,7 +320,7 @@
                                  "dashed"))] 
                  (add-edge a-graph label state1 state2 #:atb (hash 'fontsize fontsize 'style style))))
              cgraph
-             (dot-trans new-rules)))
+             (dot-trans-fsa new-rules)))
       (let [(res (graph->bitmap cgraph))]
         res))))
 
