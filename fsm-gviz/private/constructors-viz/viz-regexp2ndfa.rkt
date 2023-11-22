@@ -195,37 +195,6 @@
                               (gedge-edge (first gedges)))
             (create-graph-imgs (rest gedges)))))
 
-;; process-key
-;; viz-state key --> viz-state
-;; Purpose: Move the visualization on step forward, one step
-;;          backwards, or to the end.
-(define (process-key a-vs a-key)
-  (cond [(key=? "right" a-key)
-         (if (empty? (rest (viz-state-upimgs a-vs)))
-             a-vs
-             (viz-state (rest (viz-state-upimgs a-vs))
-                        (cons (first (viz-state-upimgs a-vs))
-                              (viz-state-pimgs a-vs))))]
-        [(key=? "left" a-key)
-         (if (empty? (viz-state-pimgs a-vs))
-             a-vs
-             (viz-state (cons (first (viz-state-pimgs a-vs))
-                              (viz-state-upimgs a-vs))
-                        (rest (viz-state-pimgs a-vs))))]
-        [(key=? "down" a-key)
-         (if (empty? (rest (viz-state-upimgs a-vs)))
-             a-vs
-             (viz-state (list (last (viz-state-upimgs a-vs)))
-                        (append (rest (reverse (viz-state-upimgs a-vs)))
-                                (viz-state-pimgs a-vs))))]
-        [(key=? "up" a-key)
-         (if (empty? (viz-state-pimgs a-vs))
-             a-vs
-             (viz-state (reverse (append (reverse (viz-state-upimgs a-vs))
-                                         (viz-state-pimgs a-vs)))
-                        '()))]
-        [else a-vs]))
-
 
 
 ;; draw-img
@@ -266,7 +235,7 @@
                                     (list (list 'S (simplify-regexp regexp) 'F))
                                     '())))))
          (loimgs (create-graph-imgs logedges))]
-    (run-viz (viz-state loimgs '()) draw-world process-key 'regexp2ndfa)))
+    (run-viz (viz-state loimgs '()) draw-world 'regexp2ndfa)))
 
 
 

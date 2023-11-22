@@ -63,9 +63,9 @@
 
 (define E-SCENE (empty-scene 1250 600))
 
-;; upgi are unprocessed graphs
-;; pgi are processed graph images
-(struct viz-state (upgi pgi))
+;; upimgs are unprocessed graphs
+;; pimgs are processed graph images
+(struct viz-state (upimgs pimgs))
 
 ;; make-node-graph
 ;; graph los start final -> graph
@@ -167,35 +167,21 @@
                                          M (sm-start M)))
     (text "Starting ndfa \n" 20 'black))
    E-SCENE))
-
-
-;; process-key
-;; viz-state key --> viz-state
-;; Purpose: Move the visualization on step forward, one step
-;;          backwards, or to the end.
-(define (process-key a-vs a-key)
-  (cond [(key=? "right" a-key)
-         (viz-state (viz-state-pgi a-vs)
-                    (viz-state-upgi a-vs))]
-        [(key=? "left" a-key)
-         (viz-state (viz-state-pgi a-vs)
-                    (viz-state-upgi a-vs))]           
-        [else a-vs]))
      
 
 ;; draw-world
 ;; viz-state -> img
 ;; Purpose: To render the given viz-state
 (define (draw-world a-vs)
-  (let [(width (image-width (viz-state-pgi a-vs)))
-        (height (image-height (viz-state-pgi a-vs)))]
+  (let [(width (image-width (first (viz-state-pimgs a-vs))))
+        (height (image-height (first (viz-state-pimgs a-vs))))]
     (if (or (> width (image-width E-SCENE))
             (> height (image-height E-SCENE)))
-        (overlay (resize-image (viz-state-pgi a-vs) (image-width E-SCENE) (image-height E-SCENE))
+        (overlay (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE))
                  E-SCENE)
-        (overlay (viz-state-pgi a-vs) E-SCENE))))
+        (overlay (first (viz-state-pimgs a-vs)) E-SCENE))))
 
 ;;kleenestar-viz
 ;; fsa -> void
 (define (kleenestar-viz M)
-  (run-viz (viz-state (create-graph-img M) (make-init-grph-img M)) draw-world process-key 'kleenestar-viz))
+  (run-viz (viz-state (list (create-graph-img M)) (list (make-init-grph-img M))) draw-world 'kleenestar-viz))

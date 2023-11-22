@@ -211,7 +211,7 @@
 
 ;; pimgs is a list of processed graph images
 ;; upimgs is a list of unprocessed graph images
-(struct viz-state (pimgs upimgs))
+(struct viz-state (upimgs pimgs))
 
 ;; create-nodes
 ;; graph (listof state) state state -> graph
@@ -403,39 +403,6 @@
                       (sm-states M)
                       DEAD))))
 
-;; process-key
-;; viz-state key --> viz-state
-;; Purpose: Move the visualization on step forward, one step
-;;          backwards, or to the end.
-
-(define (process-key a-vs a-key)
-  (cond [(key=? "right" a-key)
-         (if (empty? (viz-state-upimgs a-vs))
-             a-vs
-             (let* [(new-pimgs (cons (first (viz-state-upimgs a-vs))
-                                     (viz-state-pimgs a-vs)))
-                    (new-upimgs (rest (viz-state-upimgs a-vs)))]           
-               (viz-state new-pimgs new-upimgs)))]
-        [(key=? "left" a-key)
-         (if (= (length (viz-state-pimgs a-vs)) 1)
-             a-vs
-             (let* [(new-pimgs (rest (viz-state-pimgs a-vs)))
-                    (new-upimgs (cons (first (viz-state-pimgs a-vs))
-                                      (viz-state-upimgs a-vs)))]
-               (viz-state new-pimgs new-upimgs)))]
-        [(key=? "down" a-key)
-         (let* [(new-pimgs (append (reverse (viz-state-upimgs a-vs))
-                                   (viz-state-pimgs a-vs)))
-                (new-upimgs '())]
-           (viz-state new-pimgs new-upimgs))]
-        [(key=? "up" a-key)
-         (if (= (length (viz-state-pimgs a-vs)) 1)
-             a-vs
-             (let* [(new-pimgs  (list (first (reverse (viz-state-pimgs a-vs)))))
-                    (new-upimgs (append (rest (reverse (viz-state-pimgs a-vs))) (viz-state-upimgs a-vs)))]
-               (viz-state new-pimgs new-upimgs)))]
-        [else a-vs]))
-
 
 ;; draw-img
 ;; viz-state -> img
@@ -480,10 +447,9 @@
 ;; ndfa2regexp-viz
 ;; ndfa --> (void)
 (define (ndfa2regexp-viz M)
-  (run-viz (viz-state (list (image-struct (sm-graph M) '()))
-                      (cons (make-init-graph-img M) (rest (create-graph-imgs M))))
+  (run-viz (viz-state (cons (make-init-graph-img M) (rest (create-graph-imgs M)))
+                      (list (image-struct (sm-graph M) '())))
            draw-world
-           process-key
            'ndfa2regexp))
 
 
