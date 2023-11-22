@@ -233,10 +233,10 @@
 
 (define-struct etc (up-edges ad-edges incl-nodes M hedges fedges bledges))
 
-;; vst (visualization state) is a structure that consists of
+;; viz-state (visualization state) is a structure that consists of
 ;; upimgs - unprocessed graph images
 ;; pimgs - processed graph images
-(define-struct vst (upimgs pimgs))
+(define-struct viz-state (upimgs pimgs))
 
 
 ;; add-included-node
@@ -404,36 +404,6 @@
                                   (first ad-edges))
               (compute-down-fedges rules (rest ad-edges)))))
 
-      
-
-;; etc key -> etc
-;; Purpose: To return the next etc based on
-;; the given key
-(define (process-key a-vst a-key)
-  (cond [(key=? "right" a-key)
-         (if (empty? (vst-upimgs a-vst))
-             a-vst
-             (vst (rest (vst-upimgs a-vst))
-                  (cons (first (vst-upimgs a-vst))
-                        (vst-pimgs a-vst))))]
-        [(key=? "left" a-key)
-         (if (or (= (length (vst-pimgs a-vst)) 1)
-                 (= (length (vst-pimgs a-vst)) 0))
-             a-vst
-             (vst (cons (first (vst-pimgs a-vst))
-                        (vst-upimgs a-vst))
-                  (rest (vst-pimgs a-vst))))]
-        [(key=? "down" a-key)
-         (vst '()
-              (append (reverse (vst-upimgs a-vst))
-                      (vst-pimgs a-vst)))]
-        [(key=? "up" a-key)
-         (let* [(new-pimgs '())
-                (new-upimgs (reverse (append (reverse (vst-upimgs a-vst))
-                                             (vst-pimgs a-vst))))]
-           (vst new-upimgs new-pimgs))]
-        [else a-vst]))
-
 
 
 ;; (listof symbols) -> graph
@@ -593,9 +563,9 @@
 ;; etc -> img
 ;; Purpose: To draw a etc image
 (define (draw-etc a-etc)
-  (if (empty? (vst-pimgs a-etc))
-      (first (vst-upimgs a-etc))
-      (first (vst-pimgs a-etc))))
+  (if (empty? (viz-state-pimgs a-etc))
+      (first (viz-state-upimgs a-etc))
+      (first (viz-state-pimgs a-etc))))
 
 
 ;; contains-final-state-run?
@@ -621,9 +591,8 @@
                         (remove init-hedges (sm-rules M))))
          (low (reverse (create-etcs etc '())))
          (imgs (create-all-imgs low))]
-    (run-viz (make-vst (rest imgs) (list (first imgs)))
+    (run-viz (make-viz-state (rest imgs) (list (first imgs)))
              draw-etc
-             process-key
              'ndfa2dfa-viz)))
 
 

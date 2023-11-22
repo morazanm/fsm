@@ -5,6 +5,7 @@
                     [make-color loc-make-color]
                     [make-pen loc-make-pen])
          2htdp/image
+         "definitions-viz.rkt"
          "run-viz.rkt")
 (provide complement-viz)
 
@@ -61,9 +62,9 @@
 
 (define E-SCENE (empty-scene 1250 600))
 
-;; upgi are unprocessed graphs
-;; pgi are processed graph images
-(struct viz-state (upgi pgi))
+;; upimgs are unprocessed graphs
+;; pimgs are processed graph images
+(struct viz-state (upimgs pimgs))
 
 ;; make-node-graph
 ;; graph los start final -> graph
@@ -139,43 +140,19 @@
         (text "DM: input machine" 20 'black)
         (text "M: input machine" 20 'black)))
    E-SCENE))
-
-
-;; process-key
-;; viz-state key --> viz-state
-;; Purpose: Move the visualization on step forward, one step
-;;          backwards, or to the end.
-(define (process-key a-vs a-key)
-  (cond [(key=? "right" a-key)
-         (if (empty? (viz-state-upgi a-vs))
-             a-vs
-             (viz-state (rest (viz-state-upgi a-vs))
-                        (cons (first (viz-state-upgi a-vs))
-                              (viz-state-pgi a-vs))))]
-        [(key=? "left" a-key)
-         (if (= (length (viz-state-pgi a-vs)) 1)
-             a-vs
-             (viz-state (cons (first (viz-state-pgi a-vs))
-                              (viz-state-upgi a-vs))
-                        (rest (viz-state-pgi a-vs))))]
-        [(key=? "down" a-key)
-         (viz-state '()
-                    (append (reverse (viz-state-upgi a-vs))
-                            (viz-state-pgi a-vs)))]
-        [else a-vs]))
      
 
 ;; draw-world
 ;; viz-state -> img
 ;; Purpose: To render the given viz-state
 (define (draw-world a-vs)
-  (let [(width (image-width (first (viz-state-pgi a-vs))))
-        (height (image-height (first (viz-state-pgi a-vs))))]
+  (let [(width (image-width (first (viz-state-pimgs a-vs))))
+        (height (image-height (first (viz-state-pimgs a-vs))))]
     (if (or (> width (image-width E-SCENE))
             (> height (image-height E-SCENE)))
-        (overlay (resize-image (first (viz-state-pgi a-vs)) (image-width E-SCENE) (image-height E-SCENE))
+        (overlay (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE))
                  E-SCENE)
-        (overlay (first (viz-state-pgi a-vs)) E-SCENE))))
+        (overlay (first (viz-state-pimgs a-vs)) E-SCENE))))
 
 ;; complement-viz
 ;; fsa -> void
@@ -186,7 +163,7 @@
                             (list (above (sm-graph machine)
                                          (text "MD: M converted to a dfa" 20 'black))
                                   (create-graph-img machine))))
-                      (list (make-init-grph-img M))) draw-world process-key 'complement-viz))
+                      (list (make-init-grph-img M))) draw-world 'complement-viz))
 
 (define no-one-el (make-dfa '(S A B C D E F G)
                             '(a b c)

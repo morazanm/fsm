@@ -127,9 +127,9 @@
 
 (define E-SCENE (empty-scene 1250 600))
 
-;; upgi are unprocessed graphs
-;; pgi are processed graph images
-(struct viz-state (upgi pgi))
+;; upimgs are unprocessed graphs
+;; pimgs are processed graph images
+(struct viz-state (upimgs pimgs))
 
 
 ;; create-node-graph
@@ -333,51 +333,27 @@
                          (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
                                             N)
                          N))))
-
-
-;; process-key
-;; viz-state key --> viz-state
-;; Purpose: Move the visualization on step forward, one step
-;;          backwards, or to the end.
-(define (process-key a-vs a-key)
-  (cond [(key=? "right" a-key)
-         (if (empty? (viz-state-upgi a-vs))
-             a-vs
-             (viz-state (rest (viz-state-upgi a-vs))
-                        (cons (first  (viz-state-upgi a-vs))
-                              (viz-state-pgi a-vs))))]
-        [(key=? "left" a-key)
-         (if (= (length (viz-state-pgi a-vs)) 1)
-             a-vs
-             (viz-state (cons (first (viz-state-pgi a-vs))
-                              (viz-state-upgi a-vs))
-                        (rest (viz-state-pgi a-vs))))]
-        [(key=? "down" a-key)
-         (viz-state '()
-                    (append (reverse (viz-state-upgi a-vs))
-                            (viz-state-pgi a-vs)))]
-        [else a-vs]))
      
 
 ;; draw-world
 ;; viz-state -> img
 ;; Purpose: To render the given viz-state
 (define (draw-world a-vs)
-  (let [(width (image-width (first (viz-state-pgi a-vs))))
-        (height (image-height (first (viz-state-pgi a-vs))))]
+  (let [(width (image-width (first (viz-state-pimgs a-vs))))
+        (height (image-height (first (viz-state-pimgs a-vs))))]
     (if (or (> width (image-width E-SCENE))
             (> height (image-height E-SCENE)))
-        (overlay (resize-image (first (viz-state-pgi a-vs)) (- (image-width E-SCENE) 5)
+        (overlay (resize-image (first (viz-state-pimgs a-vs)) (- (image-width E-SCENE) 5)
                                (- (image-height E-SCENE) 5))
                  E-SCENE)
-        (overlay (first (viz-state-pgi a-vs)) E-SCENE))))
+        (overlay (first (viz-state-pimgs a-vs)) E-SCENE))))
 
 
 ;; intersection-viz
 ;; fsa fsa -> void
 (define (intersection-viz M N)
   (let* [(imgs (create-graph-imgs M N))]
-    (run-viz (viz-state imgs (list (make-init-grph-img M N))) draw-world process-key 'intersection-viz)))
+    (run-viz (viz-state imgs (list (make-init-grph-img M N))) draw-world 'intersection-viz)))
 
 (define no-one-el (make-dfa '(S A B C D E F G)
                             '(a b c)
