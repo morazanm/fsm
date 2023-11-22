@@ -206,5 +206,8 @@
 ;; concat-viz
 ;; fsa fsa -> void
 (define (concat-viz M N)
-  (run-viz (viz-state (list (create-graph-img M N)) (list (make-init-grph-img M N))) draw-world 'concat-viz))
+  (let [(renamed-machine (if (ormap (λ (x) (member x (sm-states M))) (sm-states N))
+                             (sm-rename-states (sm-states M) N)
+                             N))]
+  (run-viz (viz-state (list (create-graph-img M renamed-machine)) (list (make-init-grph-img M N))) draw-world 'concat-viz)))
 
