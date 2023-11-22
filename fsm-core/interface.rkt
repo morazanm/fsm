@@ -583,7 +583,16 @@
 
 
 
-(sm-callgraph palindrome '(_ a b b a) #:pos 1 #:threshold 10)
-(sm-callgraph palindrome '(_ a b b a) #:pos 1 #:threshold 10 #:cb 'deut)
+;(sm-callgraph palindrome '(_ a b b a) #:pos 1 #:threshold 10)
+;(sm-callgraph palindrome '(_ a b b a) #:pos 1 #:threshold 10 #:cb 'deut)
+
+(define ab* (make-ndfa '(S A)
+                       '(a b)
+                       'S
+                       '(A)
+                       '((S a A)
+                         (A b A))))
+
+
 
 
