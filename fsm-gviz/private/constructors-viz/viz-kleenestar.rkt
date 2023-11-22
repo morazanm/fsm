@@ -6,6 +6,7 @@
                     [make-color loc-make-color]
                     [make-pen loc-make-pen])
          2htdp/image
+         "definitions-viz.rkt"
          "run-viz.rkt")
 
 (provide kleenestar-viz)
@@ -63,9 +64,6 @@
 
 (define E-SCENE (empty-scene 1250 600))
 
-;; upimgs are unprocessed graphs
-;; pimgs are processed graph images
-(struct viz-state (upimgs pimgs))
 
 ;; make-node-graph
 ;; graph los start final -> graph

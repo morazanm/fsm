@@ -7,6 +7,7 @@
                     [make-color loc-make-color]
                     [make-pen loc-make-pen])
          2htdp/image
+         "definitions-viz.rkt"
          "run-viz.rkt")
 
 (provide ndfa2dfa-viz)
@@ -232,12 +233,6 @@
 ;; bledges - a list of black/unvisited edges in the ndfa graph
 
 (define-struct etc (up-edges ad-edges incl-nodes M hedges fedges bledges))
-
-;; viz-state (visualization state) is a structure that consists of
-;; upimgs - unprocessed graph images
-;; pimgs - processed graph images
-(define-struct viz-state (upimgs pimgs))
-
 
 ;; add-included-node
 ;; (listof states) rule -> (listof states)
@@ -591,7 +586,7 @@
                         (remove init-hedges (sm-rules M))))
          (low (reverse (create-etcs etc '())))
          (imgs (create-all-imgs low))]
-    (run-viz (make-viz-state (rest imgs) (list (first imgs)))
+    (run-viz (viz-state (rest imgs) (list (first imgs)))
              draw-etc
              'ndfa2dfa-viz)))
 

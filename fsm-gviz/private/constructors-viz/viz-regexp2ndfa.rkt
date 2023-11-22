@@ -5,6 +5,7 @@
                     [make-color loc-make-color]
                     [make-pen loc-make-pen])
          2htdp/image
+         "definitions-viz.rkt"
          "run-viz.rkt")
 (provide regexp2ndfa-viz)
 
@@ -102,10 +103,6 @@
                        next-edge
                        (cons (gedge grph edge) acc)))]))]))
   (bfs dgraph edge '()))
-
-;; updg are unprocessed dgraphs
-;; pdg are processed dgraphs
-(struct viz-state (upimgs pimgs))
 
 
 ;; create-nodes

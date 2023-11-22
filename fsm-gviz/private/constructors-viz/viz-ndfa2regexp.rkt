@@ -7,6 +7,7 @@
                     [make-color loc-make-color]
                     [make-pen loc-make-pen])
          2htdp/image
+         "definitions-viz.rkt"
          "run-viz.rkt")
 (provide ndfa2regexp-viz)
 
@@ -208,10 +209,6 @@
 ;; img is the graph image
 ;; state is the state being ripped
 (struct image-struct (img state))
-
-;; pimgs is a list of processed graph images
-;; upimgs is a list of unprocessed graph images
-(struct viz-state (upimgs pimgs))
 
 ;; create-nodes
 ;; graph (listof state) state state -> graph

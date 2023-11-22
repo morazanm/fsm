@@ -593,6 +593,13 @@
                        '((S a A)
                          (A b A))))
 
+(define ab2* (make-ndfa '(Y Z)
+                       '(a b)
+                       'Y
+                       '(Z)
+                       '((Y a Z)
+                         (Z b Z))))
+
 
 
 
