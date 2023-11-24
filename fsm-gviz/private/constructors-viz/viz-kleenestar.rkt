@@ -175,9 +175,8 @@
         (height (image-height (first (viz-state-pimgs a-vs))))]
     (if (or (> width (image-width E-SCENE))
             (> height (image-height E-SCENE)))
-        (overlay (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE))
-                 E-SCENE)
-        (overlay (first (viz-state-pimgs a-vs)) E-SCENE))))
+        (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE))
+        (first (viz-state-pimgs a-vs)))))
 
 ;;kleenestar-viz
 ;; fsa -> void

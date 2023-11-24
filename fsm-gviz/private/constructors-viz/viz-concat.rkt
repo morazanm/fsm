@@ -165,9 +165,9 @@
                                                      (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
                                                      new-states new-start new-finals) M N))
                     (text "Concatenation of the ndfas \n" 20 'black)
-                    (text (format "Generated starting state: ~a \n" new-start) 20 'black)
-                    (text (format "Generated final state(s): ~a \n" new-finals) 20 'black)
-                    (text (format "Added edge: ~a \n" edge-added) 20 'black))
+                    (text (format "Starting state: ~a \n" new-start) 20 'black)
+                    (text (format "Final state(s): ~a \n" new-finals) 20 'black)
+                    (text (format "Generated edge: ~a \n" edge-added) 20 'black))
              E-SCENE)))
      
 ;; make-init-grph-img
@@ -199,9 +199,8 @@
         (height (image-height (first (viz-state-pimgs a-vs))))]
     (if (or (> width (image-width E-SCENE))
             (> height (image-height E-SCENE)))
-        (overlay (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE))
-                 E-SCENE)
-        (overlay (first (viz-state-pimgs a-vs)) E-SCENE))))
+        (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE))
+        (first (viz-state-pimgs a-vs)))))
 
 ;; concat-viz
 ;; fsa fsa -> void
@@ -209,5 +208,5 @@
   (let [(renamed-machine (if (ormap (λ (x) (member x (sm-states M))) (sm-states N))
                              (sm-rename-states (sm-states M) N)
                              N))]
-  (run-viz (viz-state (list (create-graph-img M renamed-machine)) (list (make-init-grph-img M N))) draw-world 'concat-viz)))
+    (run-viz (viz-state (list (create-graph-img M renamed-machine)) (list (make-init-grph-img M N))) draw-world 'concat-viz)))
 
