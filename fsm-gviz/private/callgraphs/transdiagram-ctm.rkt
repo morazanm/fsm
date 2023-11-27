@@ -1147,13 +1147,13 @@
                          (list GOTO 0))
                    3))
 
-(transition-diagram-ctm COPYL)
-(transition-diagram-ctm FBRL)
-(transition-diagram-ctm FBLL)
-(transition-diagram-ctm TWICERL)
-(transition-diagram-ctm WARROW_L)
-(transition-diagram-ctm _WARROWL)
-(transition-diagram-ctm MULTL)
+;(transition-diagram-ctm COPYL)
+;(transition-diagram-ctm FBRL)
+;(transition-diagram-ctm FBLL)
+;(transition-diagram-ctm TWICERL)
+;(transition-diagram-ctm WARROW_L)
+;(transition-diagram-ctm _WARROWL)
+;(transition-diagram-ctm MULTL)
 
 ;(ctm-run COPY '(_ a b _) 1 #:trace #t)
 
