@@ -80,7 +80,6 @@
                                           (S ,EMP C)
                                           (A b A)
                                           (A c A)
-                                          (A a A)
                                           (B a B)
                                           (B c B)
                                           (C a C)
