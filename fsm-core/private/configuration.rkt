@@ -7,7 +7,7 @@
 
 (module config racket
   (provide wi-config state-config mk-config member-config? first-config-path rest-path empty-path?
-           printable-path tmconfig tmconfig-state tmconfig-index tmconfig-tape)
+           printable-path tmconfig tmconfig-state tmconfig-index tmconfig-tape tmconfig?)
   
   ; A configuration (config) is (list word-index state).
   ; A path is a (listof config).
