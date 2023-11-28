@@ -2,7 +2,7 @@
 (require 2htdp/image)
 (require "../lib.rkt" "cg-defs.rkt")
 
-(provide computation-edges)
+(provide computation-edges transition-diagram-ctm dot-nodes dot-edges)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; tms
