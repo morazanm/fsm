@@ -23,7 +23,6 @@
   "private/mtape-tm.rkt"
   "private/constructor-viz.rkt"
   "private/call-graphs.rkt"
-  "private/configuration.rkt"
   )
   
 (provide
@@ -220,10 +219,6 @@
 (define (ctm-run M w #:trace [trace #f] . l)
   (let ((res (ctm-apply M w (if (null? l) 0 (car l)) trace)))
     (if trace
-        #;(map (λ (e) (if (tmconfig? e)
-                        (list (tmconfig-state e) (tmconfig-index e) (tmconfig-tape e))
-                        e))
-             res)
         res
         (list (tmconfig-state res) (tmconfig-index res) (tmconfig-tape res)))))
   
@@ -599,27 +594,27 @@
                          (A b A))))
 
 (define ab2* (make-ndfa '(Y Z)
-                        '(a b)
-                        'Y
-                        '(Z)
-                        '((Y a Z)
-                          (Z b Z))))
+                       '(a b)
+                       'Y
+                       '(Z)
+                       '((Y a Z)
+                         (Z b Z))))
 
-(define R (make-unchecked-tm '(S F)
-                             '(a b)
-                             `(((S a) (F ,RIGHT))
-                               ((S b) (F ,RIGHT))
-                               ((S ,BLANK) (F ,RIGHT)))
-                             'S
-                             '(F)))
-  
+
+(define R (make-tm '(S F)
+                   '(a b)
+                   `(((S a) (F ,RIGHT))
+                     ((S b) (F ,RIGHT))
+                     ((S ,BLANK) (F ,RIGHT)))
+                   'S
+                   '(F)))
+
 (define FBR (combine-tms (list 0 R (cons BRANCH
                                          (list (list 'a (list GOTO 0))
                                                (list 'b (list GOTO 0))
                                                (list LM (list GOTO 0))
                                                (list BLANK ))))
                          (list 'a 'b LM)))
-
 
 
 
