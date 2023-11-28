@@ -3,7 +3,7 @@
 ; Written by: Marco T. Morazan
 
 (module tm racket
-  (require "constants.rkt" "misc.rkt" "word.rkt")
+  (require "constants.rkt" "misc.rkt" "word.rkt" "configuration.rkt")
   (provide tm-rename-states
            make-unchecked-tm
            combine-tms
@@ -219,7 +219,7 @@
   
   ; tmconfig
   ; A tmconfig is a structure, (tmconfig a b c), where a is a state, b is a natnum, and c (listof symbol)
-  (struct tmconfig (state index tape) #:transparent)
+  ;(struct tmconfig (state index tape) #:transparent)
   
   ; (listof state) (listof symbol) (listof (list state symbol) (list state symbol)) state (listof state) --> tm
   ; FOR LANGUAGE RECOGNIZERS:
