@@ -220,11 +220,11 @@
 (define (ctm-run M w #:trace [trace #f] . l)
   (let ((res (ctm-apply M w (if (null? l) 0 (car l)) trace)))
     (if trace
-        (map (λ (e) (if (tmconfig? e)
+        #;(map (λ (e) (if (tmconfig? e)
                         (list (tmconfig-state e) (tmconfig-index e) (tmconfig-tape e))
                         e))
              res)
-        ;res
+        res
         (list (tmconfig-state res) (tmconfig-index res) (tmconfig-tape res)))))
   
 ; fsm fsm word --> boolean
