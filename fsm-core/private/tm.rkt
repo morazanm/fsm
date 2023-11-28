@@ -478,19 +478,19 @@
               (first (eval inputctm (label-pairs inputctm) START (list (tmconfig START i tape))))))))
 
   (define R (make-unchecked-tm '(S F)
-                   '(d)
-                   `(((S d) (F ,RIGHT))
+                   '(a b)
+                   `(((S a) (F ,RIGHT))
+                     ((S b) (F ,RIGHT))
                      ((S ,BLANK) (F ,RIGHT)))
                    'S
                    '(F)))
   
-  (define FBR (combine-tms (list 0
-                               R
-                               (cons BRANCH
-                                     (list (list 'd (list GOTO 0))
-                                           (list BLANK (list GOTO 10))))
-                               10)
-                         (list 'd)))
+  (define FBR (combine-tms (list 0 R (cons BRANCH
+                                         (list (list 'a (list GOTO 0))
+                                               (list 'b (list GOTO 0))
+                                               (list LM (list GOTO 0))
+                                               (list BLANK ))))
+                         (list 'a 'b LM)))
 
   ; L = a*
   (define Alla (make-unchecked-tm '(S Y N)
