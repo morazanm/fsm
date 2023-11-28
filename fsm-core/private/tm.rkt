@@ -438,6 +438,85 @@
                (cons (tmconfig laststate i tape) acc)] 
               [(symbol? (car m)) ;; var means write it to the tape
                (let ((val (apply-env env (car m))))
+                 (eval (cons (cadr (assoc val WRITERS)) (cdr m)) env laststate acc))]
+              [(procedure? (car m)) ;; proc means a tm --> run it
+               (let* ((result ((car m) tape i 'lastconfig))
+                      (res (if (tmconfig? result) 
+                               result
+                               (last result)))) ;; res = last config of tm exected
+                 (begin
+                   (set! tape (tmconfig-tape res))
+                   (set! i (tmconfig-index res))
+                   (eval (cdr m)
+                         env
+                         (tmconfig-state res)
+                         (if (null? (cdr m))
+                             acc
+                             (cons (tmconfig (tmconfig-state res)
+                                             i
+                                             tape)
+                                   acc)))))]
+              [(label? (car m)) ;; skip labels
+               (eval (cdr m) env laststate acc)]
+              [(and (list? (car m)) (eq? (caar m) BRANCH)) ;; a branch execution
+               (let* ((branches (cdar m)) ;; extract the branches
+                      (the-branch-assoc (assoc (list-ref tape i) branches)) ;; extract the applicable branch assoc
+                      (the-branch (if (null? (cdr the-branch-assoc)) null (cdr the-branch-assoc)))) ;; select the branch ctm
+                 (eval the-branch env laststate (cons (list 'BRANCH (car the-branch-assoc)) acc)))] ;; execute the branch ctm
+              [(and (list? (car m)) (eq? (caar m) GOTO))
+               (eval (apply-env env (cadar m)) env laststate (cons (list 'GOTO (cadar m)) acc))] ;; evaluate ctm jumped to
+              [(and (list? (car m)) (list? (caar m)) (eq? (caaar m) VAR)) ;; var declaration add to env and eval ctm in scope
+               (eval (append (cdar m) (cdr m))
+                     (extend-env (cadaar m) (list-ref tape i) env)
+                     laststate
+                     (cons (list 'VAR (cadaar m) (list-ref tape i)) acc))]
+              [else (error (format "~s found unknown element in ctm: ~s" "eval" (car m)))]))
+      
+      (if trace
+          (if (null? inputctm)
+              (list (tmconfig HALT i tape))
+              (reverse (eval inputctm (label-pairs inputctm) START (list (tmconfig START i tape)))))
+          (if (null? inputctm)
+              (tmconfig HALT i tape)
+              (first (eval inputctm (label-pairs inputctm) START (list (tmconfig START i tape)))))))
+    #;(lambda (tape i . l)      
+      
+      (define label? number?)
+
+      (define trace (if (null? l) #f (car l)))
+      
+      ; ctm --> (listof (list number ctm))
+      (define (label-pairs m)
+        (cond [(null? m) null]
+              [(procedure? (car m)) (label-pairs (cdr m))]
+              [(label? (car m)) (cons (list (car m) (cdr m)) (label-pairs (cdr m)))]
+              [(symbol? (car m)) (label-pairs (cdr m))]
+              [(and (list? (car m)) (eq? (caar m) BRANCH)) 
+               (append-map (lambda (ctm) (label-pairs ctm)) (cons (cdr m) (map cdr (cdar m))))]
+              [(and (list? (car m)) (eq? (caar m) GOTO)) (label-pairs (cdr m))]        
+              [(and (list? (car m)) (list? (caar m)) (eq? (caaar m) VAR)) (append (label-pairs (cdar m)) (label-pairs (cdr m)))]
+              [else (error (format "~s found unknown element in ctm: ~s" "label-pairs" (car m)))]))
+      
+      
+      (define (mt-env) null)
+      
+      (define (extend-env var val env)
+        (cons (list var val) env))
+      
+      (define mt-env? null?)
+      
+      (define (apply-env env var)
+        (cond [(mt-env? env) (error (format "While running a ctm found an unbound variable or label: ~s" var))]
+              [(eq? (caar env) var) (cadar env)]
+              [else (apply-env (cdr env) var)]))
+      
+      ; ctm env tmconfig trace --> trace
+      ; ASSUMPTION: env is populated with all labels
+      (define (eval m env laststate acc)
+        (cond [(null? m) ;; evaluation done
+               (cons (tmconfig laststate i tape) acc)] 
+              [(symbol? (car m)) ;; var means write it to the tape
+               (let ((val (apply-env env (car m))))
                  (eval (cons (cadr (assoc val WRITERS)) (cdr m)) env laststate))]
               [(procedure? (car m)) ;; proc means a tm --> run it
                (let* ((res ((car m) tape i 'lastconfig))) ;; res = last config of tm exected
