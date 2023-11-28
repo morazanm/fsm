@@ -7,7 +7,7 @@
 
 (module config racket
   (provide wi-config state-config mk-config member-config? first-config-path rest-path empty-path?
-           printable-path)
+           printable-path tmconfig tmconfig-state tmconfig-index tmconfig-tape)
   
   ; A configuration (config) is (list word-index state).
   ; A path is a (listof config).
@@ -36,4 +36,8 @@
   ; word path --> (listof (list word state))
   (define (printable-path w p)
     (reverse (map (lambda (c) (list (list-tail w (wi-config c)) (state-config c))) p)))
+
+  ; tmconfig
+  ; A tmconfig is a structure, (tmconfig a b c), where a is a state, b is a natnum, and c (listof symbol)
+  (struct tmconfig (state index tape) #:transparent)
   )
