@@ -609,12 +609,18 @@
     (if (null? list)
         '()
         (cons (+ 1 int)
-              (int-for-var (cdr list) (+ 1 int)))))  
+              (int-for-var (cdr list) (+ 1 int)))))
+    ;; integer (listof ctm) -> (listof ctm)
+  ;; Purpose: Given a label, return the rest of the given ctm list (acc) after reaching that label
+  (define (goto-label label ctm)
+    (if (equal? label (car ctm))
+        (cdr ctm)    
+        (goto-label label (cdr ctm))))
   ;; (listof ctm) integer -> (listof node)
   ;; Purpose: Helper function to dot-nodes
   ;; Accumulator invariant:
   ;; 
-  (define (new-node ctm int label-acc)
+  (define (new-node ctm acc int label-acc)
     (cond [(null? ctm) '()]
           [(symbol? ctm)
            (list (list (string-append (symbol->string ctm) (number->string int))
@@ -623,20 +629,21 @@
                 (member (car ctm) label-acc))
            '()]
           [(number? (car ctm))
-           (new-node (cdr ctm) int (cons (car ctm) label-acc))]
+           (new-node (cdr ctm) acc int (cons (car ctm) label-acc))]
           [(and (pair? (car ctm))
                     (or (equal? (cadr (car ctm)) 'GOTO)
-                        (equal? (cadr (car ctm)) 'BRANCH))) (new-node (cdr ctm) int label-acc)]
+                        (equal? (cadr (car ctm)) 'BRANCH))) (new-node (cdr ctm) acc int label-acc)]
           [(and (pair? (car ctm))
                 (equal? (cadr (cadr (car ctm))) VAR))
            (append (append-map (lambda (x x2) (new-node (if (pair? x)
                                                             (cdr x)
                                                             x)
+                                                        acc
                                                         x2
                                                         label-acc))
                                (drop-right (cddr (car ctm)) 1)
                                (int-for-var (drop-right (cddr (car ctm)) 1) (- int 1)))
-                   (new-node (cdr ctm) (+ int (length (drop-right (cddr (car ctm)) 1))) label-acc))]
+                   (new-node (cdr ctm) acc (+ int (length (drop-right (cddr (car ctm)) 1))) label-acc))]
           [else 
            (let* [(a-node
                    (string-append (symbol->string (car ctm)) (number->string int)))
@@ -645,18 +652,30 @@
                          [(and (> (length ctm) 1)
                                (pair? (cadr ctm))
                                (equal? (cadr (cadr ctm)) 'BRANCH)) "goldenrod1"]
+                         [(and (> (length ctm) 1)
+                               (pair? (cadr ctm))
+                               (equal? (cadr (cadr ctm)) 'GOTO)
+                               (if (pair? (goto-label (caddr (cadr ctm)) acc))
+                                   (pair? (car (goto-label (caddr (cadr ctm)) acc)))
+                                   #f)) "goldenrod1"]
                          [else "black"]))
                   (a-shape
                    (cond [(and (> (length ctm) 1)
                                (pair? (cadr ctm))
                                (equal? (cadr (cadr ctm)) 'BRANCH)) "diamond"]
+                         [(and (> (length ctm) 1)
+                               (pair? (cadr ctm))
+                               (equal? (cadr (cadr ctm)) 'GOTO)
+                               (if (pair? (goto-label (caddr (cadr ctm)) acc))
+                                   (pair? (car (goto-label (caddr (cadr ctm)) acc)))
+                                   #f)) "diamond"]
                          [else "rectangle"]))
                   (a-label
                    (symbol->string (car ctm)))]
              (cons (list a-node
                          `((color ,a-color) (shape ,a-shape) (label ,a-label)))
-                   (new-node (cdr ctm) (+ int 1) label-acc)))]))
-  (new-node ctm 0 '()))
+                   (new-node (cdr ctm) acc (+ int 1) label-acc)))]))
+  (new-node ctm ctm 0 '()))
 
 ;.................................................
 
@@ -814,16 +833,50 @@
               [(and (symbol? (car ctm))
                     (pair? (cadr ctm))
                     (equal? 'GOTO (cadr (cadr ctm)))
+                    
+                    (not (null? (goto-label (caddr (cadr ctm)) acc)))
+                    (pair? (car (goto-label (caddr (cadr ctm)) acc)))
+                    (equal? 'BRANCH (cadr (car (goto-label (caddr (cadr ctm)) acc)))))
+
+               (append #;(list (string-append (symbol->string (car ctm)) (number->string int))
+                           (string-append (find-branch-edges (string-append (symbol->string (car ctm))
+                                                                            (number->string int))
+                                                             (goto-label (caddr (cadr ctm)) acc) acc int) (number->string (goto-int (caddr (cadr ctm)) acc 0)))
+                     '((label "") (style "solid")))
+                    
+                 
+                      (find-branch-edges (string-append (symbol->string (car ctm))
+                                                        (number->string int))
+
+                                        
+                                         (filter
+                                          (lambda (x)
+                                            (not (null? (goto-label (caddr (caddr x)) acc))))
+                                          (cdr (caddr (car (goto-label (caddr (cadr ctm)) acc)))))
+                                
+                      
+                                         acc
+                                         int)
+                             
+                      ;(new-edge (goto-label (caddr (cadr ctm)) acc) acc (goto-int (caddr (cadr ctm)) acc 0) label-acc)
+                      (new-edge (cdr (goto-label (caddr (cadr ctm)) acc)) acc (goto-int (caddr (cadr ctm)) acc 0) label-acc)
+                      (new-edge (cdr ctm) acc (add1 int) label-acc))]
+              [(and (symbol? (car ctm))
+                    (pair? (cadr ctm))
+                    (equal? 'GOTO (cadr (cadr ctm)))
                     (not (null? (goto-label (caddr (cadr ctm)) acc))))
 
                (cons (list (string-append (symbol->string (car ctm)) (number->string int))
                                (string-append (symbol->string (car (goto-label (caddr (cadr ctm)) acc))) (number->string (goto-int (caddr (cadr ctm)) acc 0)))
                                '((label "") (style "solid"))) 
-                ;(new-edge (goto-label (caddr (cadr ctm)) acc) acc (goto-int (caddr (cadr ctm)) acc 0) label-acc)
-                       (new-edge (cdr (goto-label (caddr (cadr ctm)) acc)) acc (add1 (goto-int (caddr (cadr ctm)) acc 0)) label-acc))]
+                     ;(new-edge (goto-label (caddr (cadr ctm)) acc) acc (goto-int (caddr (cadr ctm)) acc 0) label-acc)
+                     (append (new-edge (cdr (goto-label (caddr (cadr ctm)) acc)) acc (add1 (goto-int (caddr (cadr ctm)) acc 0)) label-acc)
+                             (new-edge (cdr ctm) acc (add1 int) label-acc)))]
+ 
                        ;(new-edge (cdr ctm) acc (+ 1 int) label-acc))]
               
               [(symbol? (car ctm))
+               
                (if (and (pair? (cadr ctm))
                         (equal? 'GOTO (cadr (cadr ctm)))
                         (null? (goto-label (caddr (cadr ctm)) acc)))
@@ -833,17 +886,22 @@
                                '((label "") (style "solid")))                
                          (new-edge (cdr ctm) acc (+ 1 int) label-acc)))]
               [(and (number? (car ctm))
-                    (< 1 (count (lambda (x) (= (car ctm) x)) label-acc))) '()]
+                    (= 1 (count (lambda (x) (= (car ctm) x)) label-acc)))
+               '()
+               #;(list (string-append (symbol->string (car ctm)) (number->string int))
+                               (string-append (symbol->string (car (goto-label (caddr (cadr ctm)) acc))) (number->string (goto-int (caddr (cadr ctm)) acc 0)))
+                               '((label "") (style "solid")))]
               [(number? (car ctm)) (new-edge (cdr ctm) acc int (cons (car ctm) label-acc))]
               [(equal? 'BRANCH (cadr (car ctm))) (new-edge (cdr ctm) acc int label-acc)]
               #;[(equal? 'GOTO (cadr (car ctm)))
                (new-edge (goto-label (caddr (car ctm)) acc) acc int label-acc)]
               [(equal? 'GOTO (cadr (car ctm)))
-               (new-edge (goto-label (caddr (car ctm)) acc) acc int label-acc)]
+               (append (new-edge (goto-label (caddr (car ctm)) acc) acc (goto-int (caddr (car ctm)) acc 0) label-acc)
+                       (new-edge (cdr ctm) acc int label-acc))]
               [(equal? 'VAR (cadr (cadr (car ctm))))
                (append (find-var-edges (car ctm) acc int)
                        (new-edge (cdr ctm) acc (+ int (- (length (car ctm)) 3)) label-acc))])))
-  (new-edge ctm ctm 0 '()))
+  (remove-duplicates (new-edge ctm ctm 0 '())))
 #;(define (dot-edges ctm)
   ;; integer (listof ctm) -> (listof ctm)
   ;; Purpose: Given a label, return the rest of the given ctm list (acc) after reaching that label
@@ -1114,6 +1172,25 @@
                 warrow_w
                 FBR))
 
+(define MULT-ACC
+  '(FBL
+   0
+   R
+   (cons BRANCH (list (list _ (list GOTO 2)) (list 'a (list GOTO 1)) (list 'b (list GOTO 1)) (list 'd (list GOTO 1))))
+   1
+   (list (list VAR 'k) WB FBR FBR 'k FBL FBL 'k (list GOTO 0))
+   2
+   FBR
+   L
+   (cons BRANCH (list (list _ (list GOTO 3)) (list 'a (list GOTO 4)) (list 'b (list GOTO 4)) (list 'd (list GOTO 4))))
+   3
+   RR
+   (list GOTO 5)
+   4
+   R
+   (list GOTO 5)
+   5))
+
 (define  WARROW_L '(FBR
                    0
                    L
@@ -1147,13 +1224,13 @@
                          (list GOTO 0))
                    3))
 
-;(transition-diagram-ctm COPYL)
-;(transition-diagram-ctm FBRL)
-;(transition-diagram-ctm FBLL)
-;(transition-diagram-ctm TWICERL)
-;(transition-diagram-ctm WARROW_L)
-;(transition-diagram-ctm _WARROWL)
-;(transition-diagram-ctm MULTL)
+(transition-diagram-ctm COPYL)
+(transition-diagram-ctm FBRL)
+(transition-diagram-ctm FBLL)
+(transition-diagram-ctm TWICERL)
+(transition-diagram-ctm WARROW_L)
+(transition-diagram-ctm _WARROWL)
+(transition-diagram-ctm MULTL)
 
 ;(ctm-run COPY '(_ a b _) 1 #:trace #t)
 
