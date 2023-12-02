@@ -623,6 +623,8 @@
   ;;  label-acc = list of all labels visited
   (define (new-node ctm acc int label-acc)
     (cond [(null? ctm) '()]
+          [(equal? 'list (car ctm))
+           (new-node (cdr ctm) acc int label-acc)]
           [(symbol? ctm)
            (let ((labell (substring (symbol->string ctm) 4 (string-length (symbol->string ctm)))))
            (list (list (string-append (symbol->string ctm) (number->string int))
@@ -896,14 +898,19 @@
   (define (new-edge ctm acc int label-acc)
     (if (empty? ctm)
         '()
-        (cond [(and (symbol? (car ctm))
-                    (= (length ctm) 1))
+        (cond 
+
+              [(or (and (symbol? (car ctm))
+                        (= (length ctm) 1))
+                   (and (= (length ctm) 2)
+                        (number? (cadr ctm))))
                '()]
-          
+    
               
               [(and (symbol? (car ctm))
                     (pair? (cadr ctm))
                     (equal? 'BRANCH (cadr (cadr ctm))))
+                
               ;(let ((labels (filter number? (caddr (cadr ctm)))))
                (append (find-branch-edges (string-append (symbol->string (car ctm))
                                                          (number->string int))
@@ -933,7 +940,7 @@
                                                              (goto-label (caddr (cadr ctm)) acc) acc int) (number->string (goto-int (caddr (cadr ctm)) acc 0)))
                      '((label "") (style "solid")))
                     
-                 
+                
                       (find-branch-edges (string-append (symbol->string (car ctm))
                                                         (number->string int))
 
@@ -965,11 +972,10 @@
                        ;(new-edge (cdr ctm) acc (+ 1 int) label-acc))]
               
               [(symbol? (car ctm))
-               
                (if (and (pair? (cadr ctm))
                         (equal? 'GOTO (cadr (cadr ctm)))
                         (null? (goto-label (caddr (cadr ctm)) acc)))
-                   '()
+                   (new-edge (cdr ctm) acc (add1 int) label-acc)
                    (cons (list (string-append (symbol->string (car ctm)) (number->string int))
                                (find-to-state ctm acc int)
                                '((label "") (style "solid")))                
@@ -990,7 +996,12 @@
               [(equal? 'VAR (cadr (cadr (car ctm))))
                (append (find-var-edges (car ctm) acc int)
                        (new-edge (cdr ctm) acc (+ int (- (length (car ctm)) 3)) label-acc))])))
-  (label-for-var4 (remove-duplicates (new-edge ctm ctm 0 '()))))
+  (label-for-var4 (remove-duplicates (new-edge (if (equal? 'list (car ctm))
+                                                   (cdr ctm)
+                                                   ctm)
+                                               (if (equal? 'list (car ctm))
+                                                   (cdr ctm)
+                                                   ctm) 0 '()))))
 #;(define (dot-edges ctm)
   ;; integer (listof ctm) -> (listof ctm)
   ;; Purpose: Given a label, return the rest of the given ctm list (acc) after reaching that label
@@ -1510,6 +1521,65 @@
 
 ;(check-equal? (computation-edges COPY COPYL2 '(_ a b) 1) COPY-COMPUTATION)
  
+(define RGHT (make-tm '(S F)
+                      '(i)
+                      `(((S ,BLANK) (F ,RIGHT))
+                        ((S i) (F ,RIGHT)))
+                      'S
+                      '(F)))
 
+(define LFT (make-tm '(S F)
+                     '(i)
+                     `(((S ,BLANK) (F ,LEFT))
+                       ((S i) (F ,LEFT)))
+                     'S
+                     '(F)))
 
-                                          
+(define FBL2 (make-tm '(S F A)
+                      '(i)
+                      `(((S ,BLANK) (A ,LEFT))
+                        ((A i) (A ,LEFT))
+                        ((A ,BLANK) (F ,BLANK)))
+                      'S
+                      '(F)))
+
+(define SHIFTL (make-tm '(S F A B C)
+                        '(i)
+                        `(((S ,BLANK) (A ,RIGHT))
+                          ((A i) (B ,BLANK))
+                          ((A ,BLANK) (F ,LEFT))
+                          ((B ,BLANK) (C ,LEFT))
+                          ((C ,BLANK) (C i))
+                          ((C i) (S ,RIGHT)))
+                        'S
+                        '(F)))
+
+(define ADDL '(list FBL2
+                    SHIFTL
+                    RGHT
+                    (cons BRANCH (list (list '_ (list GOTO 10))
+                                       (list 'i   (list GOTO 5))))
+                    5
+                    LFT
+                    (list GOTO 20)
+                    10
+                    LFT
+                    LFT
+                    20))
+;;  PRE: tape = (LM BLANK a BLANK b BLANK) and head on first blank after b
+;; POST: tape = (LM BLANK a+b BLANK) and head on first blank after a+b
+(define ADD2 (combine-tms (list FBL2
+                               SHIFTL
+                               RGHT
+                               (cons BRANCH (list (list BLANK (list GOTO 10))
+                                                  (list 'i   (list GOTO 5))))
+                               5
+                               LFT
+                               (list GOTO 20)
+                               10
+                               LFT
+                               LFT
+                               20)
+                         '(i)))
+
+(transition-diagram-ctm ADDL)                             
