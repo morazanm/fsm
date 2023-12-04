@@ -1435,6 +1435,214 @@
     (list GOTO 5)
     5))
 
+
+;; (listof ctm) -> (listof edge)
+;; Purpose: Given a ctm, create a list of edges in dot format
+;; Accumulator Invariants:
+;;  acc = given ctm list
+(define (dot-edges2 ctm)
+  ;; integer (listof ctm) -> (listof ctm)
+  ;; Purpose: Given a label, return the rest of the given ctm list (acc) after reaching that label
+  (define (goto-label label ctm)
+    (if (equal? label (car ctm))
+        (cdr ctm)    
+        (goto-label label (cdr ctm))))
+  ;; integer (listof ctm) integer -> integer
+  ;; Purpose: Given a label, traverse a ctm list to find the number of the first tm after that label
+  ;; Accumulator invariants:
+  ;;  int = starts with 0 and counts all tms traversed 
+  (define (goto-int label ctm int)
+    (cond [(equal? label (car ctm)) int]
+          [(number? (car ctm)) (goto-int label (cdr ctm) int)]
+          [(symbol? (car ctm)) (goto-int label (cdr ctm) (+ 1 int))]
+          [(equal? (cadr (car ctm)) 'BRANCH) (goto-int label (cdr ctm) int)]
+          [(equal? (cadr (car ctm)) 'GOTO) (goto-int label (cdr ctm) int)]
+          [(equal? (cadr (cadr (car ctm))) 'VAR) (goto-int label (cdr ctm) (+ int (- (length (car ctm)) 3)))])) 
+  ;; (listof symbol) (listof ctm) integer -> (listof edge)
+  ;; Purpose: Given a var list, the full ctm list, and the current integer count, create the necessary edges 
+  (define (find-var-edges vars acc int)
+    ;; (listof symbol) integer -> (listof integer)
+    ;; Purpose: Depending on a list's length, create a list of integers starting at the given int and ending at the given list's length
+    (define (int-for-var list int)
+      (if (null? list)
+          '()
+          (cons (+ 1 int)
+                (int-for-var (cdr list) (+ 1 int)))))
+    (let ((var (symbol->string (car (cdr (caddr (cadr vars)))))))
+      (append (append-map (lambda (x x2 x3) (list (list (string-append "var" var (symbol->string (if (pair? x)
+                                                                                                     (car (cdr x))
+                                                                                                     x))
+                                                                       (number->string x3))
+                                                        (string-append "var" var (symbol->string (if (pair? x2)
+                                                                                                     (car (cdr x2))
+                                                                                                     x2))
+                                                                       (number->string (+ 1 x3)))
+                                                        '((label "") (style "solid")))))
+                          (drop (drop-right vars 2) 2)
+                          (drop (drop-right vars 1) 3)
+                          (int-for-var (drop (drop-right vars 2) 2) (- int 1)))
+              (list (list (string-append "var" var (symbol->string (if (pair? (last (drop-right vars 1)))
+                                                                       (car (cdr (last (drop-right vars 1))))
+                                                                       (last (drop-right vars 1))))
+                                         (number->string (+ int (length (drop (drop-right vars 2) 2)))))
+                          (string-append (symbol->string (car (goto-label (caddr (last vars)) acc)))
+                                         (number->string (goto-int (caddr (last vars)) acc 0)))
+                          '((label "") (style "solid")))))))
+  ;; (listof ctm) (listof ctm) integer -> string      
+  ;; Purpose: Given a ctm, the full accumulator ctm, and an integer find the destination state
+  (define (find-to-state ctm acc int)
+    (cond [(symbol? (cadr ctm))
+           (string-append (symbol->string (cadr ctm)) (number->string (+ 1 int)))]
+          [(number? (cadr ctm))
+           (find-to-state (cdr ctm) acc int)]
+          [(equal? 'BRANCH (cadr (cadr ctm)))
+           (find-branch-to-state (cadr ctm) acc int)]
+          [(equal? 'GOTO (cadr (cadr ctm)))
+           (string-append (symbol->string (car (goto-label (caddr (cadr ctm)) acc))) (number->string (goto-int (caddr (cadr ctm)) acc int)))]
+          [else
+           (symbol->string (caddr (cadr ctm)))]))
+  ;; (listof ctm) (listof ctm) integer -> string      
+  ;; Purpose: Given a ctm, the full accumulator ctm, and an integer find the destination state in the case of branches
+  (define (find-branch-to-state ctm acc int)
+    (cond [(symbol? (car ctm))
+           (symbol->string (car ctm))]
+          [(number? (car ctm))
+           (find-branch-to-state (cdr ctm) acc int)]
+          [(equal? 'VAR (cadr (cadr (car ctm))))
+           (string-append "var" (symbol->string (car (cdr (caddr (cadr (car ctm)))))) (symbol->string (caddr (car ctm))))]
+          [(equal? 'BRANCH (cadr (car ctm)))
+           (find-branch-to-state (cadr ctm) acc int)]
+          [(equal? 'GOTO (cadr (car ctm)))
+           (find-branch-to-state (goto-label (caddr (car ctm)) acc) acc int)]
+          [else
+           (symbol->string (caddr (car ctm)))]))
+  ;; string (listof ctm) (listof ctm) integer -> (listof edge)
+  ;; Purpose: Given the source state, the branch, the full accumulated ctm and an integer, make a list of edges from the branch
+  (define (find-branch-edges from-state branch acc int)
+    (cond [(null? branch) '()]
+          [(equal? (car branch) 'list) (find-branch-edges from-state (filter (lambda (x) (not (equal? (caddr (caddr x)) (last acc)))) (cdr branch)) acc int)]
+          [else 
+           (append (list (list from-state
+                               (string-append (find-branch-to-state 
+                                               (goto-label (caddr (caddr (car branch))) acc)
+                                               acc int)
+                                              (number->string (goto-int (caddr (caddr (car branch))) acc 0)))
+                               `((label ,(if (pair? (cadr (car branch)))
+                                             (car (cdr (cadr (car branch))))
+                                             (cadr (car branch))))
+                                 (style "dashed"))))
+                   (find-branch-edges from-state (cdr branch) acc int))]))
+  ;(new-edge (cdr (goto-label (caddr (caddr (car branch))) acc)) acc (goto-int (caddr (caddr (car branch))) acc 0) label-acc))]))
+  ;; (listof ctm) (listof ctm) integer -> (listof edge)
+  ;; Purpose: Given a ctm list and an accumulator that contains the initial given ctm list, and an integer, create the list of edges
+  (define (new-edge ctm acc int label-acc)
+    (if (empty? ctm)
+        '()
+        (cond 
+
+          [(or (and (symbol? (car ctm))
+                    (= (length ctm) 1))
+               (and (= (length ctm) 2)
+                    (number? (cadr ctm))))
+           '()]
+    
+              
+          [(and (symbol? (car ctm))
+                (pair? (cadr ctm))
+                (equal? 'BRANCH (cadr (cadr ctm))))
+                
+           ;(let ((labels (filter number? (caddr (cadr ctm)))))
+           (append (find-branch-edges (string-append (symbol->string (car ctm))
+                                                     (number->string int))
+                                      (caddr (cadr ctm)) acc int)
+                   ;(map (lambda (x) (new-edge (goto-label x acc) (goto-int x acc 0))) labels)
+                   (new-edge (cdr ctm) acc (+ 1 int) label-acc))]         
+          #;[(symbol? (car ctm))
+             (if (and (pair? (cadr ctm))
+                      (equal? 'GOTO (cadr (cadr ctm)))
+                      (null? (goto-label (caddr (cadr ctm)) acc)))
+                 '()
+                 (cons (list (string-append (symbol->string (car ctm)) (number->string int))
+                             (find-to-state ctm acc int)
+                             '((label "") (style "solid")))                
+                       (new-edge (cdr ctm) acc (+ 1 int) label-acc)))]
+          [(and (symbol? (car ctm))
+                (pair? (cadr ctm))
+                (equal? 'GOTO (cadr (cadr ctm)))
+                    
+                (not (null? (goto-label (caddr (cadr ctm)) acc)))
+                (pair? (car (goto-label (caddr (cadr ctm)) acc)))
+                (equal? 'BRANCH (cadr (car (goto-label (caddr (cadr ctm)) acc)))))
+
+           (append #;(list (string-append (symbol->string (car ctm)) (number->string int))
+                           (string-append (find-branch-edges (string-append (symbol->string (car ctm))
+                                                                            (number->string int))
+                                                             (goto-label (caddr (cadr ctm)) acc) acc int) (number->string (goto-int (caddr (cadr ctm)) acc 0)))
+                           '((label "") (style "solid")))
+                    
+                
+                   (find-branch-edges (string-append (symbol->string (car ctm))
+                                                     (number->string int))
+
+                                        
+                                      (filter
+                                       (lambda (x)
+                                         (not (null? (goto-label (caddr (caddr x)) acc))))
+                                       (cdr (caddr (car (goto-label (caddr (cadr ctm)) acc)))))
+                                
+                      
+                                      acc
+                                      int)
+                             
+                   ;(new-edge (goto-label (caddr (cadr ctm)) acc) acc (goto-int (caddr (cadr ctm)) acc 0) label-acc)
+                   (new-edge (cdr (goto-label (caddr (cadr ctm)) acc)) acc (goto-int (caddr (cadr ctm)) acc 0) label-acc)
+                   (new-edge (cdr ctm) acc (add1 int) label-acc))]
+          [(and (symbol? (car ctm))
+                (pair? (cadr ctm))
+                (equal? 'GOTO (cadr (cadr ctm)))
+                (not (null? (goto-label (caddr (cadr ctm)) acc))))
+
+           (cons (list (string-append (symbol->string (car ctm)) (number->string int))
+                       (string-append (symbol->string (car (goto-label (caddr (cadr ctm)) acc))) (number->string (goto-int (caddr (cadr ctm)) acc 0)))
+                       '((label "") (style "solid"))) 
+                 ;(new-edge (goto-label (caddr (cadr ctm)) acc) acc (goto-int (caddr (cadr ctm)) acc 0) label-acc)
+                 (append (new-edge (cdr (goto-label (caddr (cadr ctm)) acc)) acc (add1 (goto-int (caddr (cadr ctm)) acc 0)) label-acc)
+                         (new-edge (cdr ctm) acc (add1 int) label-acc)))]
+ 
+          ;(new-edge (cdr ctm) acc (+ 1 int) label-acc))]
+              
+          [(symbol? (car ctm))
+           (if (and (pair? (cadr ctm))
+                    (equal? 'GOTO (cadr (cadr ctm)))
+                    (null? (goto-label (caddr (cadr ctm)) acc)))
+               (new-edge (cdr ctm) acc (add1 int) label-acc)
+               (cons (list (string-append (symbol->string (car ctm)) (number->string int))
+                           (find-to-state ctm acc int)
+                           '((label "") (style "solid")))                
+                     (new-edge (cdr ctm) acc (+ 1 int) label-acc)))]
+          [(and (number? (car ctm))
+                (= 1 (count (lambda (x) (= (car ctm) x)) label-acc)))
+           '()
+           #;(list (string-append (symbol->string (car ctm)) (number->string int))
+                   (string-append (symbol->string (car (goto-label (caddr (cadr ctm)) acc))) (number->string (goto-int (caddr (cadr ctm)) acc 0)))
+                   '((label "") (style "solid")))]
+          [(number? (car ctm)) (new-edge (cdr ctm) acc int (cons (car ctm) label-acc))]
+          [(equal? 'BRANCH (cadr (car ctm))) (new-edge (cdr ctm) acc int label-acc)]
+          #;[(equal? 'GOTO (cadr (car ctm)))
+             (new-edge (goto-label (caddr (car ctm)) acc) acc int label-acc)]
+          [(equal? 'GOTO (cadr (car ctm)))
+           (append (new-edge (goto-label (caddr (car ctm)) acc) acc (goto-int (caddr (car ctm)) acc 0) label-acc)
+                   (new-edge (cdr ctm) acc int label-acc))]
+          [(equal? 'VAR (cadr (cadr (car ctm))))
+           (append (find-var-edges (car ctm) acc int)
+                   (new-edge (cdr ctm) acc (+ int (- (length (car ctm)) 3)) label-acc))])))
+  (remove-duplicates (new-edge (if (equal? 'list (car ctm))
+                                                   (cdr ctm)
+                                                   ctm)
+                                               (if (equal? 'list (car ctm))
+                                                   (cdr ctm)
+                                                   ctm) 0 '())))
+
 (define COPY-EDGES2
   '(("FBL0" "R1" ((label "") (style "solid")))
     ("R1" "FBR9" ((label _) (style "dashed")))
@@ -1463,6 +1671,35 @@
   ;; Accumulator invariant:
   ;;  stored-val = stores the destination state, which is the source state of the following edge
   ;;  edges = list of all edges
+  #;(define (follow-trace trace edges stored-vale)
+    (cond [(or (empty? trace)
+               (empty? (cdr trace))
+               (equal? stored-val "")) '()]
+          [(and (struct? (car trace))
+                (struct? (cadr trace)))
+           (let ((new-edge (filter (lambda (x) (equal? (car x) stored-val)) edges)))
+             (append new-edge
+                     (follow-trace (cdr trace) edges (if (empty? new-edge)
+                                                         ""
+                                                         (cadr (car new-edge))))))]
+          [(and (struct? (car trace))
+                (equal? 'BRANCH (car (cadr trace))))
+           (let ((new-edge (filter (lambda (x) (and (equal? (car x) stored-val)
+                                                    (equal? (cadr (car (caddr x))) (cadr (cadr trace))))) edges)))
+             (append new-edge
+                     (follow-trace (cdr trace) edges (if (empty? new-edge)
+                                                         ""
+                                                         (cadr (car new-edge))))))]
+          [(struct? (car trace))
+           (let ((new-edge (filter (lambda (x) (equal? (car x) stored-val)) edges)))
+             (append new-edge
+                     (follow-trace (cdr trace) edges (if (empty? new-edge)
+                                                         ""
+                                                         (cadr (car new-edge))))))]
+          [(or (equal? 'GOTO (car (car trace)))
+               (equal? 'BRANCH (car (car trace)))
+               (equal? 'VAR (car (car trace))))
+           (follow-trace (cdr trace) edges stored-val)]))
   (define (follow-trace trace edges stored-val)
     (cond [(or (empty? trace)
                (empty? (cdr trace))
@@ -1492,7 +1729,7 @@
                (equal? 'BRANCH (car (car trace)))
                (equal? 'VAR (car (car trace))))
            (follow-trace (cdr trace) edges stored-val)]))
-  (follow-trace (cdr (ctm-run ctm tape head #:trace #t)) (dot-edges ctmlist) (car (car (dot-edges ctmlist)))))
+  (follow-trace (cdr (ctm-run ctm tape head #:trace #t)) (dot-edges2 ctmlist) (car (car (dot-edges2 ctmlist)))))
 
 
 (define COPY-COMPUTATION
@@ -1518,7 +1755,7 @@
     ("L10" "R12" ((label b) (style "dashed")))))
 
 ;(follow-trace COPY-TRACE COPY-EDGES2 "FBL0")
-;(computation-edges COPY COPYL '(_ a b) 1)
+;(computation-edges COPY COPYL2 '(_ a b) 1)
 
 ;(check-equal? (computation-edges COPY COPYL2 '(_ a b) 1) COPY-COMPUTATION)
  
