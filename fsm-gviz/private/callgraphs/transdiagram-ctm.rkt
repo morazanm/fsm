@@ -1,6 +1,6 @@
 #lang fsm
 (require 2htdp/image)
-(require "../lib.rkt" "cg-defs.rkt")
+(require "../lib.rkt" "cg-defs.rkt" "viz-ctm.rkt")
 
 (provide computation-edges transition-diagram-ctm dot-nodes dot-edges)
 
