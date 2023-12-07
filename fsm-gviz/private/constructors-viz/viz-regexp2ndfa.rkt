@@ -198,23 +198,13 @@
 ;; viz-state -> img
 ;; Purpose: To render the given viz-state
 (define (draw-world a-vs)
-  (if (empty? (viz-state-upimgs a-vs))
-      (let [(width (image-width (first (viz-state-pimgs a-vs))))
-            (height (image-height (first (viz-state-pimgs a-vs))))]
-        (if (or (> width (image-width E-SCENE))
-                (> height (image-height E-SCENE)))
-            (overlay (resize-image (first (viz-state-pimgs a-vs)) (- (image-width E-SCENE) 10)
-                                   (- (image-height E-SCENE) 10))
-                     E-SCENE)
-            (overlay (first (viz-state-pimgs a-vs)) E-SCENE)))
-      (let [(width (image-width (first (viz-state-upimgs a-vs))))
-            (height (image-height (first (viz-state-upimgs a-vs))))]
-        (if (or (> width (image-width E-SCENE))
-                (> height (image-height E-SCENE)))
-            (overlay (resize-image (first (viz-state-upimgs a-vs)) (- (image-width E-SCENE) 10)
-                                   (- (image-height E-SCENE) 10))
-                     E-SCENE)
-            (overlay (first (viz-state-upimgs a-vs)) E-SCENE)))))
+  (let [(width (image-width (first (viz-state-pimgs a-vs))))
+        (height (image-height (first (viz-state-pimgs a-vs))))]
+    (if (or (> width (image-width E-SCENE))
+            (> height (image-height E-SCENE)))
+        (overlay (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE))
+                 E-SCENE)
+        (overlay (first (viz-state-pimgs a-vs)) E-SCENE))))
 
 ;; regexp2ndfa-viz
 ;; regexp -> void
@@ -232,7 +222,7 @@
                                     (list (list 'S (simplify-regexp regexp) 'F))
                                     '())))))
          (loimgs (create-graph-imgs logedges))]
-    (run-viz (viz-state loimgs '()) draw-world 'regexp2ndfa)))
+    (run-viz (viz-state (rest loimgs) (list (first loimgs))) draw-world 'regexp2ndfa)))
 
 
 
