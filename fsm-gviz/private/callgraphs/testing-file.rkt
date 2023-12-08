@@ -112,3 +112,31 @@
               `(5 (@ _ a b a _ a)))
 
 ;;; END SWAP MACHINE
+
+;;; WRITE TWICE TO THE R MACHINE
+
+(define R (make-tm '(S F)
+                   '(a b)
+                   `(((S a) (F ,RIGHT))
+                     ((S b) (F ,RIGHT))
+                     ((S ,BLANK) (F ,RIGHT)))
+                   'S
+                   '(F)))
+
+(define L (make-tm '(S H)
+                   `(a b)
+                   `(((S a) (H ,LEFT))
+                     ((S b) (H ,LEFT))
+                     ((S ,BLANK) (H ,LEFT)))
+                   'S
+                   '(H)))
+
+(define WTWICEL '(((VAR x)
+                   R
+                   x
+                   R
+                   x)))
+
+(define WTWICE (combine-tms
+                (list (list (list VAR 'x) R 'x R 'x))
+                `(a b)))
