@@ -21,11 +21,20 @@
 
 (define R3 (kleenestar-regexp R2))
 
-(define R4 (kleenestar-regexp (union-regexp R3 R2)))
+(define R4 (kleenestar-regexp (union-regexp R3 (singleton-regexp "c"))))
 
 (define R5 (concat-regexp (singleton-regexp "m") R0))
 
 (define R6 (kleenestar-regexp R5))
+
+(define R7 (union-regexp (kleenestar-regexp R1) R4))
+
+(define R8 (union-regexp (kleenestar-regexp
+                          (concat-regexp (singleton-regexp "m") R1))
+                         (union-regexp
+                          (kleenestar-regexp
+                           (concat-regexp (singleton-regexp "m") R1))
+                          (singleton-regexp "a"))))
 
 (define E-SCENE (empty-scene 1250 600))
 
@@ -57,6 +66,7 @@
   ;; Purpose: To create a list of dgraphs with  the expanded edge removed
   ;; and replaced with the appropriate edges
   (define (bfs grph edge acc)
+    
     (cond [(only-simple-edges? grph) (cons (gedge grph edge) acc)]
           [(and (not (null? issimp?))
                 (first issimp?))
