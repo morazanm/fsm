@@ -21,20 +21,13 @@
 
 (define R3 (kleenestar-regexp R2))
 
-(define R4 (kleenestar-regexp (union-regexp R3 (singleton-regexp "c"))))
+(define R4 (kleenestar-regexp (union-regexp R3 R2)))
 
 (define R5 (concat-regexp (singleton-regexp "m") R0))
 
 (define R6 (kleenestar-regexp R5))
 
-(define R7 (union-regexp (kleenestar-regexp R1) R4))
-
-(define R8 (union-regexp (kleenestar-regexp
-                          (concat-regexp (singleton-regexp "m") R1))
-                         (union-regexp
-                          (kleenestar-regexp
-                           (concat-regexp (singleton-regexp "m") R1))
-                          (singleton-regexp "a"))))
+(define R7 (union-regexp R0 R5))
 
 (define E-SCENE (empty-scene 1250 600))
 
@@ -66,7 +59,6 @@
   ;; Purpose: To create a list of dgraphs with  the expanded edge removed
   ;; and replaced with the appropriate edges
   (define (bfs grph edge acc)
-    
     (cond [(only-simple-edges? grph) (cons (gedge grph edge) acc)]
           [(and (not (null? issimp?))
                 (first issimp?))
@@ -203,6 +195,53 @@
             (create-graph-imgs (rest gedges)))))
 
 
+;; create-init-nodes
+;; graph dgraph -> graph
+;; Purpose: To add the nodes to the graph
+(define (create-init-nodes graph)
+  (add-node
+   (add-node
+    graph
+    'F
+    #:atb (hash 'color 'black                                   
+                'shape 'doublecircle
+                'fontcolor 'black
+                'font "Sans"))
+   'S
+   #:atb (hash 'color 'darkgreen                                   
+               'shape 'circle
+               'fontcolor 'black
+               'font "Sans")))
+
+;; create-edges
+;; graph (listof edge) -> graph
+;; Purpose: To create graph of edges
+(define (create-init-edges graph dgraph)
+  (add-edge graph
+            (printable-regexp (second dgraph))
+            (first dgraph)
+            (third dgraph)
+            #:atb (hash 'fontsize 14
+                        'style 'solid
+                        'fontname "Sans"
+                        )))
+
+
+
+;; create-init-graph
+;; list -> img
+;; Purpose: To create an initial graph image
+(define (create-init-graph a-list)
+  (above
+   (graph->bitmap
+    (create-init-edges
+     (create-init-nodes
+      (create-graph 'dgraph #:atb (hash 'rankdir "LR"
+                                        'font "Sans")))
+     a-list))
+   (text "Starting NDFA" 24 'black)))
+
+
 
 ;; draw-img
 ;; viz-state -> img
@@ -221,9 +260,9 @@
 (define (regexp2ndfa-viz regexp)
   (let* [(logedges (append
                     (list
-                     (last (dgraph2logedges
-                            (list (list 'S regexp 'F)) 
-                            '()))
+                     #;(last (dgraph2logedges
+                              (list (list 'S regexp 'F)) 
+                              '()))
                      (last (dgraph2logedges
                             (list (list 'S (simplify-regexp regexp) 'F)) 
                             '()
@@ -232,7 +271,7 @@
                                     (list (list 'S (simplify-regexp regexp) 'F))
                                     '())))))
          (loimgs (create-graph-imgs logedges))]
-    (run-viz (viz-state (rest loimgs) (list (first loimgs))) draw-world 'regexp2ndfa)))
+    (run-viz (viz-state loimgs (list (create-init-graph (list 'S regexp 'F)))) draw-world 'regexp2ndfa)))
 
 
 
