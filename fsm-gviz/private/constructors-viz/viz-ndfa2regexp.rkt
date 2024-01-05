@@ -451,13 +451,12 @@
 
 (define aa-ab
   (make-ndfa 
-   '(S A B F) 
+   '(S A B) 
    '(a b) 
    'S
    '(A B)
    `((S a A)
      (S a B)
-     (S ,EMP F)
      (A a A)
      (B b B))))
 
