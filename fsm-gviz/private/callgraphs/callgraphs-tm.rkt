@@ -438,48 +438,6 @@
 ;.................................................
 
 
-(define EQABC
-  (make-mttm '(S Y N C D E F G)
-             '(a b c)
-             'S
-             '(Y N)
-             (list
-              (list (list 'S (list BLANK BLANK BLANK BLANK))
-                    (list 'C (list RIGHT RIGHT RIGHT RIGHT)))
-              (list (list 'C (list 'a BLANK BLANK BLANK))
-                    (list 'D (list 'a 'a BLANK BLANK)))
-              (list (list 'D (list 'a 'a BLANK BLANK))
-                    (list 'C (list RIGHT RIGHT BLANK BLANK)))
-              (list (list 'C (list 'b BLANK BLANK BLANK))
-                    (list 'E (list 'b BLANK 'b BLANK)))
-              (list (list 'E (list 'b BLANK 'b BLANK))
-                    (list 'C (list RIGHT BLANK RIGHT BLANK)))
-              (list (list 'C (list 'c BLANK BLANK BLANK))
-                    (list 'F (list 'c BLANK BLANK 'c)))
-              (list (list 'F (list 'c BLANK BLANK 'c))
-                    (list 'C (list RIGHT BLANK BLANK RIGHT)))
-              (list (list 'C (list BLANK BLANK BLANK BLANK))
-                    (list 'G (list BLANK LEFT LEFT LEFT)))
-              (list (list 'G (list BLANK BLANK BLANK BLANK))
-                    (list 'Y (list BLANK BLANK BLANK BLANK)))
-              (list (list 'G (list BLANK 'a 'b 'c))
-                    (list 'G (list BLANK LEFT LEFT LEFT)))
-              (list (list 'G (list BLANK BLANK 'b 'c))
-                    (list 'N (list BLANK BLANK 'b 'c)))
-              (list (list 'G (list BLANK 'a BLANK 'c))
-                    (list 'N (list BLANK 'a BLANK 'c)))
-              (list (list 'G (list BLANK 'a 'b BLANK))
-                    (list 'N (list BLANK 'a 'b BLANK)))
-              (list (list 'G (list BLANK BLANK BLANK 'c))
-                    (list 'N (list BLANK BLANK BLANK 'c)))
-              (list (list 'G (list BLANK BLANK 'b BLANK))
-                    (list 'N (list BLANK BLANK 'b BLANK)))
-              (list (list 'G (list BLANK 'a BLANK BLANK))
-                    (list 'N (list BLANK 'a BLANK BLANK))))
-             4
-             'Y))
-
-
 
 
 

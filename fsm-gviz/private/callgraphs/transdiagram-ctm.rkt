@@ -554,54 +554,6 @@
 
 ;; (listof ctm) -> (listof node)
 ;; Purpose: Given a ctm, create a list of nodes in dot format
-#;(define (dot-nodes ctm)
-    ;; (listof symbol) integer -> (listof integer)
-    ;; Purpose: Depending on a list's length, create a list of integers following that length
-    (define (int-for-var list int)
-      (if (null? list)
-          '()
-          (cons (+ 1 int)
-                (int-for-var (cdr list) (+ 1 int)))))  
-    ;; (listof ctm) integer -> (listof node)
-    ;; Purpose: Helper function to dot-nodes
-    (define (new-node ctm int)
-      (cond [(null? ctm) '()]
-            [(symbol? ctm)
-             (list (list (string-append (symbol->string ctm) (number->string int))
-                         `((color "black") (shape "rectangle") (label ,(symbol->string ctm)))))]              
-            [(or (number? (car ctm))
-                 (and (pair? (car ctm))
-                      (or (equal? (cadr (car ctm)) 'GOTO)
-                          (equal? (cadr (car ctm)) 'BRANCH)))) (new-node (cdr ctm) int)]
-            [(and (pair? (car ctm))
-                  (equal? (cadr (cadr (car ctm))) VAR))
-             (append (append-map (lambda (x x2) (new-node (if (pair? x)
-                                                              (cdr x)
-                                                              x)
-                                                          x2))
-                                 (drop-right (cddr (car ctm)) 1)
-                                 (int-for-var (drop-right (cddr (car ctm)) 1) (- int 1)))
-                     (new-node (cdr ctm) (+ int (length (drop-right (cddr (car ctm)) 1)))))]
-            [else 
-             (let* [(a-node
-                     (string-append (symbol->string (car ctm)) (number->string int)))
-                    (a-color
-                     (cond [(= int 0) "forestgreen"]
-                           [(and (> (length ctm) 1)
-                                 (pair? (cadr ctm))
-                                 (equal? (cadr (cadr ctm)) 'BRANCH)) "goldenrod1"]
-                           [else "black"]))
-                    (a-shape
-                     (cond [(and (> (length ctm) 1)
-                                 (pair? (cadr ctm))
-                                 (equal? (cadr (cadr ctm)) 'BRANCH)) "diamond"]
-                           [else "rectangle"]))
-                    (a-label
-                     (symbol->string (car ctm)))]
-               (cons (list a-node
-                           `((color ,a-color) (shape ,a-shape) (label ,a-label)))
-                     (new-node (cdr ctm) (+ int 1))))]))
-    (new-node ctm 0))
 (define (dot-nodes ctm)
   ;; (listof symbol) integer -> (listof integer)
   ;; Purpose: Depending on a list's length, create a list of integers following that length
@@ -904,7 +856,8 @@
           [(or (and (symbol? (car ctm))
                     (= (length ctm) 1))
                (and (= (length ctm) 2)
-                    (number? (cadr ctm))))
+                    (number? (cadr ctm))
+                    (not (list? (cadr (car ctm))))))
            '()]
     
               
@@ -1543,7 +1496,8 @@
           [(or (and (symbol? (car ctm))
                     (= (length ctm) 1))
                (and (= (length ctm) 2)
-                    (number? (cadr ctm))))
+                    (number? (cadr ctm))
+                    (not (list? (cadr (car ctm))))))
            '()]
     
               
@@ -1853,3 +1807,11 @@
                5))
 
 ;(transition-diagram-ctm COPY3)
+
+
+#;(define WTWICEL '
+                  (list (list VAR 'x) R x R x (list GOTO 1))
+                  1
+                  )
+;(transition-diagram-ctm WTWICEL)
+
