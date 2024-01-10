@@ -150,8 +150,6 @@
 
 ;.................................................
 
-;; M -> (listof edge)
-;; Purpose: Generate a list of edges
 #;(define (dot-edges M)
   ;; (listof trans) -> (listof edge)
   ;; Purpose: Convert one transition into edges
@@ -172,6 +170,8 @@
                      (if (not (empty? (cdr l))) " " "")
                      (list->string2 (cdr l)))))
 
+;; M -> (listof edge)
+;; Purpose: Generate a list of edges
 (define (dot-edges M)
   ;; (listof trans) -> (listof edge)
   ;; Purpose: Convert one transition into edges

@@ -13,64 +13,13 @@
                    'S
                    '(F)))
 
-;.................................................
-;; Move-left machine 
-
-;; PRE:  tape = (LM w) AND i=k≥1, where w in {a b BLANK}*
-;; POST: tape = (LM w) AND i=k-1
-(define L (make-tm '(S H)
-                   '(a b)
-                   `(((S a) (H ,LEFT))
-                     ((S b) (H ,LEFT))
-                     ((S ,BLANK) (H ,LEFT)))
-                   'S
-                   '(H)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Composed Turing machine (ctm)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; PRE: tape = (LM w) AND i=k>0 AND tape[i]=s, where w in {a b BLANK}*
 ;;      AND s in (a b BLANK)
-;; POST: tape = (LM w) AND i=k AND tape[i]=a
-(define Wa (make-tm '(S H)
-                    '(a b)
-                    `(((S a) (H a))
-                      ((S b) (H a))
-                      ((S ,BLANK) (H a)))
-                    'S
-                    '(H)))
-
-;; Tests for Wa
-(check-equal? (last (sm-showtransitions Wa `(,LM b) 1))
-              `(H 1 (,LM a)))
-(check-equal? (last (sm-showtransitions Wa `(,LM b a ,BLANK a) 3))
-              `(H 3 (,LM b a a a)))
-
-;.................................................
-
-;; PRE: tape = (LM w) AND i=k>0 AND tape[i]=s, where w in {a b BLANK}*
-;;      AND s in (a b BLANK)
-;; POST: tape = (LM w) AND i=k AND tape[i]=b
-(define Wb (make-tm '(S H)
-                    '(a b)
-                    `(((S a) (H b))
-                      ((S b) (H b))
-                      ((S ,BLANK) (H b)))
-                    'S
-                    '(H)))
-
-;; Tests for Wb
-(check-equal? (last (sm-showtransitions Wb `(,LM ,BLANK ,BLANK) 2))
-              `(H 2 (,LM ,BLANK b)))
-(check-equal? (last (sm-showtransitions Wb `(,LM b b b b) 3))
-              `(H 3 (,LM b b b b)))
-
-;.................................................
-
-;; PRE: tape = (LM w) AND i=k>0 AND tape[i]=s, where w in {a b BLANK}*
-;;      AND s in (a b BLANK)
-;; POST: tape = (LM w) AND i=k AND tape[i]=BLANK
+;; POST: tape = (LM w') AND i=k AND tape[i]=BLANK
 (define WB (make-tm '(S H)
                     '(a b)
                     `(((S a) (H ,BLANK))
@@ -84,66 +33,6 @@
               `(H 1 (,LM ,BLANK a)))
 (check-equal? (last (sm-showtransitions WB `(,LM a b b b) 3))
               `(H 3 (,LM a b ,BLANK b)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; PRE:  tape = (LM w) AND i=k>0 AND w in (a b BLANK)*
-;; POST: tape = (LM w) AND i=k+2 AND w in (a b BLANK)*
-(define RR (combine-tms (list R R) '(a b)))
-
-;; Tests for RR
-(check-equal? (ctm-run RR `(,LM b a a) 1)
-              `(F 3 (,LM b a a)))
-(check-equal? (ctm-run RR `(,LM a a a) 2)
-              `(F 4 (,LM a a a ,BLANK)))
-(check-equal? (ctm-run RR `(,LM a b b a) 3)
-              `(F 5 (,LM a b b a ,BLANK)))
-(check-equal? (ctm-run RR `(,LM b) 1)
-              `(F 3 (,LM b ,BLANK ,BLANK)))
-
-;.................................................
-
-;; PRE:  tape = (LM w) AND i=k>0 AND w in (a b BLANK)*
-;; POST: tape = (LM w) AND i>k AND tape[i] = BLANK AND tape[k+1..i-1] /= BLANK
-(define FBR (combine-tms
-             (list 0
-                   R
-                   (cons BRANCH
-                         (list (list 'a (list GOTO 0))
-                               (list 'b (list GOTO 0))
-                               (list BLANK (list GOTO 10))))
-                   10)
-             (list 'a 'b)))
-
-;; Tests for FBR
-(check-equal? (ctm-run FBR `(,LM ,BLANK) 1)
-              `(F 2 (,LM ,BLANK ,BLANK)))
-(check-equal? (ctm-run FBR `(,LM a a b b b ,BLANK a a) 2)
-              `(F 6 (,LM a a b b b ,BLANK a a)))
-(check-equal? (ctm-run FBR `(,LM ,BLANK ,BLANK b b) 3)
-              `(F 5 (,LM ,BLANK ,BLANK b b ,BLANK)))
-
-;.................................................
-
-;; PRE:  tape = (LM w) AND i=k>0 AND w in (a b BLANK)∗
-;;              AND there exists j<i such that tape[j]=BLANK
-;; POST: tape = (LM w) AND i<k AND tape[i]=BLANK AND tape[i+1..|w|] != BLANK
-(define FBL (combine-tms
-             (list 0
-                   L
-                   (cons BRANCH
-                         (list (list 'a (list GOTO 0))
-                               (list 'b (list GOTO 0))
-                               (list BLANK (list GOTO 1))
-                               (list LM (list GOTO 0))))
-                   1)
-             (list 'a 'b)))
-
-;; Tests for FBL
-(check-equal? (ctm-run FBL `(,LM ,BLANK a a b) 4)
-              `(H 1 (,LM ,BLANK a a b)))
-(check-equal? (ctm-run FBL `(,LM a ,BLANK a b ,BLANK b a b b) 8)
-              `(H 5 (,LM a ,BLANK a b ,BLANK b a b b)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; copy(w) = w BLANK w
@@ -161,12 +50,12 @@
 ;; POST: tape = (LM BLANK w BLANK w BLANK) and head on blank after second w 
 (define COPY (combine-tms
               (list FBL
-                    0
+                    0 ;; Traverse the input word until the BLANK after the word is reached
                     R
                     (cons BRANCH (list (list BLANK (list GOTO 2))
                                        (list 'a (list GOTO 1))
                                        (list 'b (list GOTO 1))))
-                    1
+                    1 ;; Copy element 
                     (list (list VAR 'k)
                           WB
                           FBR
@@ -176,16 +65,16 @@
                           FBL
                           'k
                           (list GOTO 0))
-                    2
+                    2 ;; Adjust head position
                     FBR
                     L
                     (cons BRANCH (list (list BLANK (list GOTO 3))
                                        (list 'a (list GOTO 4))
                                        (list 'b (list GOTO 4))))
-                    3
+                    3 ;; Move head twice if copying BLANK
                     RR
                     (list GOTO 5)
-                    4
+                    4 ;; Move head once if copying a or b
                     R
                     (list GOTO 5)
                     5)

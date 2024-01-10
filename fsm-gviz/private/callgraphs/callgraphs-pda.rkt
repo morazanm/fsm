@@ -497,7 +497,7 @@
 (define (computation-diagram-pda M word . optargs)
   (define fname "fsm")
   ;; Definitions for Threshold
-  (define DEFAULT-THRESH 8)
+  (define DEFAULT-THRESH 25)
   (define MIN-THRESH 2)
   (define threshold
     (cond [(empty? optargs) DEFAULT-THRESH]
