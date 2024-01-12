@@ -82,7 +82,7 @@
                       (raise-blame-error
                        blame
                        (invalid-words-tm words sigma)
-                       (format-error blame "The following words contain symbols not included in the sigma" )
+                       (format-error blame "The following words contain symbols not included in sigma" )
                      
                        )
                       )
