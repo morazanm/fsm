@@ -181,8 +181,8 @@
            (read (cadr (car l)))
            (action (cadr (cadr l)))
            (labell (string-append "[(" (list->string2 read) ")(" (list->string2 action) ")]")))
-      (list (list fromst tost `((fontsize 15) (label ,labell))))))
-  (append-map edge (sm-rules M)))
+      (list fromst tost `((fontsize 15) (label ,labell)))))
+  (map edge (sm-rules M)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
