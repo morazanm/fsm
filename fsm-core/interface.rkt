@@ -20,7 +20,9 @@
   "private/grammar-getters.rkt" 
   "private/regexp-predicate.rkt"
   "private/abstract-predicate.rkt"
-  "private/mtape-tm.rkt")
+  "private/mtape-tm.rkt"
+  "private/constructor-viz.rkt"
+  "private/call-graphs.rkt")
   
 (provide
  check-machine
@@ -79,6 +81,13 @@
 
  ; regexp transformers
  fsa->regexp
+
+ ; constructor visualizations
+ fsa-complement-viz fsa-union-viz fsa-ks-viz fsa-intersect-viz
+ fsa-concat-viz ndfa->dfa-viz regexp->ndfa-viz ndfa->regexp-viz
+
+ ; call graphs
+ sm-callgraph 
 
  ; some helpful functions
  los->symbol symbol->list generate-symbol symbol->fsmlos symbol-upcase
