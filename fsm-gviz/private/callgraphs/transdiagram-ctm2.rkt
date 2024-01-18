@@ -174,7 +174,7 @@
                           (a-style "solid")]
                      (list fromst tost
                            `((label ,a-label) (style ,a-style)))))))
-    (var-exp (var tm)
+    #;(var-exp (var tm)
              (list tm tm
                    `((label ,(format "var=~a" var)) (style "solid"))))
     (else '())))
@@ -427,15 +427,6 @@
                          (list GOTO 0))
                    3))
 
-
-(transition-diagram-ctm COPYL2)
-(transition-diagram-ctm FBRL)
-(transition-diagram-ctm FBLL)
-(transition-diagram-ctm TWICERL)
-(transition-diagram-ctm WARROW_L)
-(transition-diagram-ctm _WARROWL)
-(transition-diagram-ctm MULTL)
-
 (define SWAPL '(list (list (list VAR 'i)
                              R
                              (list (list VAR 'j)
@@ -443,7 +434,18 @@
                                    L
                                    j))))
 
+#|
+(transition-diagram-ctm COPYL2)
+(transition-diagram-ctm FBRL)
+(transition-diagram-ctm FBLL)
+(transition-diagram-ctm TWICERL)
+(transition-diagram-ctm WARROW_L)
+(transition-diagram-ctm _WARROWL)
+(transition-diagram-ctm MULTL)
 (transition-diagram-ctm SWAPL)
+|#
+
+
 
 
 

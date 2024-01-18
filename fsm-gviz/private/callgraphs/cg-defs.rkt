@@ -78,6 +78,15 @@
 
 (struct tm-stuci [state tape head cl] #:transparent)
 
+;.................................................
+;; mttm
+
+;; A mttm configuration is represented as a struct,
+;; mttm-stuci, containing a state, a list of tapes, the head's
+;; positions, and a computation length.
+
+(struct mttm-stuci [state tapes heads cl] #:transparent)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; ndfa-Edges
 
@@ -135,6 +144,20 @@
 (struct tm-spedge [fromst read tost action] #:transparent)
 (struct tm-cutoff-edge [fromst read tost action] #:transparent)
 (struct tm-cutoff-spedge [fromst read tost action] #:transparent)
+
+;.................................................
+;; mttm-Edges
+
+;; An mttm-Edge is either:
+;; 1. (mttm-edge state (listof symb) state (listof symb))
+;; 2. (mttm-spedge state (listof symb) state (listof symb))
+;; 3. (mttm-cutoff-edge state (listof symb) state (listof symb))
+;; 4. (mttm-cutoff-spedge state (listof symb) state (listof symb))
+
+(struct mttm-edge [fromst reads tost actions] #:transparent)
+(struct mttm-spedge [fromst reads tost actions] #:transparent)
+(struct mttm-cutoff-edge [fromst reads tost actions] #:transparent)
+(struct mttm-cutoff-spedge [fromst reads tost actions] #:transparent)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; ndfa

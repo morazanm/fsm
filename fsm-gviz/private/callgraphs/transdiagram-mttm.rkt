@@ -135,6 +135,30 @@
                     (list 'Y (list BLANK BLANK))))
              2))
 
+;; Tests for ww
+(check-equal? (cadr (sm-apply ww `(,LM ,BLANK) 1))
+              `(2 (,LM ,BLANK ,BLANK)))
+(check-equal? (cadr (sm-apply ww `(,LM ,BLANK a a a) 1))
+              `(8 (,LM ,BLANK a a a a a a ,BLANK)))
+(check-equal? (cadr (sm-apply ww `(,LM ,BLANK a b) 1))
+              `(6 (,LM ,BLANK a b a b ,BLANK)))
+(check-equal? (cadr (sm-apply ww `(,LM ,BLANK) 1))
+              `(2 (,LM ,BLANK ,BLANK)))
+(check-equal? (cadr (sm-apply ww `(,LM ,BLANK a b a b a b) 1))
+              `(14 (,LM ,BLANK a b a b a b a b a b a b ,BLANK)))
+
+(check-equal? (cadr (sm-apply ww `(,LM ,BLANK a) 1))
+              `(4 (,LM ,BLANK a a ,BLANK)))
+(check-equal? (cadr (sm-apply ww `(,LM ,BLANK b b b b b) 1))
+              `(12 (,LM ,BLANK b b b b b b b b b b ,BLANK)))
+(check-equal? (cadr (sm-apply ww `(,LM ,BLANK a b b a a b a b b) 1))
+              `(20 (,LM ,BLANK a b b a a b a b b a b b a a b a b b ,BLANK)))
+(check-equal? (cadr (sm-apply ww `(,LM ,BLANK b b b a) 1))
+              `(10 (,LM ,BLANK b b b a b b b a ,BLANK)))
+(check-equal? (cadr (sm-apply ww `(,LM ,BLANK b a b) 1))
+              `(8 (,LM ,BLANK b a b b a b ,BLANK)))
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; M -> (listof node)
@@ -149,17 +173,6 @@
      (map (lambda (x) (list x `((color "black") (shape "circle") (label ,x)))) rest-states))))
 
 ;.................................................
-
-#;(define (dot-edges M)
-  ;; (listof trans) -> (listof edge)
-  ;; Purpose: Convert one transition into edges
-  (define (edge l)
-    (let* ((fromst (car (car l)))
-           (tost (car (cadr l)))
-           (labels (map (lambda (x y) (string-append "[" (symbol->string x) " " (symbol->string y) "]")) (cadr (car l)) (cadr (cadr l)))))
-      (append-map (lambda (z) (list (list fromst tost `((fontsize 15) (label ,z))))) labels)))
-  ;(remove-duplicates (append-map edge (sm-rules M))))
-  (append-map edge (sm-rules M)))
 
 ;; list -> string
 ;; Purpose: Convert given list to a string
@@ -223,8 +236,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(transition-diagram-mttm EQABC)
-(transition-diagram-mttm ww)
+;(transition-diagram-mttm EQABC)
+;(transition-diagram-mttm ww)
 
 
 
