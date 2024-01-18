@@ -1,4 +1,7 @@
-#lang fsm
+;#lang fsm
+
+(module viz-complement fsm
+  
 (require "../lib.rkt"
          2htdp/universe rackunit
          (rename-in racket/gui/base
@@ -191,6 +194,6 @@
                               (G c G))
                             'no-dead))
 
-
+)
 
 
