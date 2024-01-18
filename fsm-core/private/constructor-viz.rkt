@@ -9,7 +9,7 @@
            "../../fsm-gviz/private/constructors-viz/viz-ndfa2regexp.rkt"
            )
 
-  (provide fsa-comp-viz
+  (provide fsa-complement-viz
            fsa-union-viz
            fsa-ks-viz
            fsa-intersect-viz
@@ -19,7 +19,7 @@
            ndfa->regexp-viz
            )
 
-  (define fsa-comp-viz complement-viz)
+  (define fsa-complement-viz complement-viz)
 
   (define fsa-union-viz union-viz)
 

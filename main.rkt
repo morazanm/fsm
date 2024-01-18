@@ -70,7 +70,7 @@
    fsa->regexp
 
    ; constructor visualizations
-   fsa-comp-viz fsa-union-viz fsa-ks-viz fsa-intersect-viz
+   fsa-complement-viz fsa-union-viz fsa-ks-viz fsa-intersect-viz
    fsa-concat-viz ndfa->dfa-viz regexp->ndfa-viz ndfa->regexp-viz
 
    ; call graphs
