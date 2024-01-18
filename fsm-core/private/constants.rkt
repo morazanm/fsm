@@ -10,7 +10,7 @@
   
   (define DEAD 'ds) ; the symbol for the dead state.
   
-  (define START 'S) ; the symbol for the start state.
+  (define START 's) ; the symbol for the start state.
   
   (define NUM-TESTS 100) ; the default number of tests for testing functions
   

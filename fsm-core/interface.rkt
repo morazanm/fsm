@@ -20,10 +20,7 @@
   "private/grammar-getters.rkt" 
   "private/regexp-predicate.rkt"
   "private/abstract-predicate.rkt"
-  "private/mtape-tm.rkt"
-  "private/constructor-viz.rkt"
-  "private/call-graphs.rkt"
-  )
+  "private/mtape-tm.rkt")
   
 (provide
  check-machine
@@ -82,13 +79,6 @@
 
  ; regexp transformers
  fsa->regexp
-
- ; constructor visualizations
- fsa-complement-viz fsa-union-viz fsa-ks-viz fsa-intersect-viz
- fsa-concat-viz ndfa->dfa-viz regexp->ndfa-viz ndfa->regexp-viz
-
- ; call graphs
- sm-callgraph
 
  ; some helpful functions
  los->symbol symbol->list generate-symbol symbol->fsmlos symbol-upcase
@@ -221,6 +211,11 @@
     (if trace
         res
         (list (tmconfig-state res) (tmconfig-index res) (tmconfig-tape res)))))
+
+;; ctm word [natnum] --> (list state natnum tape)
+;(define (ctm-run M w . l)
+;  (let ((res (ctm-apply M w (if (null? l) 0 (car l)))))
+;    (list (tmconfig-state res) (tmconfig-index res) (tmconfig-tape res))))
   
 ; fsm fsm word --> boolean
 (define (sm-sameresult? M1 M2 w)
@@ -533,145 +528,6 @@
     )
   )
 
-#;(define R (make-tm '(S F)
-                   '(d)
-                   `(((S d) (F ,RIGHT))
-                     ((S ,BLANK) (F ,RIGHT)))
-                   'S
-                   '(F)))
-
-#;(define FBR (combine-tms (list 0
-                               R
-                               (cons BRANCH
-                                     (list (list 'd (list GOTO 0))
-                                           (list BLANK (list GOTO 10))))
-                               10)
-                         (list 'd)))
-
-(define palindrome (make-tm '(S A B C D E F H I J Y)
-                            '(a b x)
-                            `(((A x) (B ,RIGHT))
-                              ((B a) (B ,RIGHT))
-                              ((B b) (B ,RIGHT))
-                              ((B a) (J x))
-                              ((D x) (E ,RIGHT))
-                              ((E a) (E ,RIGHT))
-                              ((E b) (E ,RIGHT))
-                              ((E b) (J x))
-                              ((F b) (F ,LEFT))
-                              ((F a) (F ,LEFT))
-                              ((F x) (F ,LEFT))
-                              ((F ,BLANK) (C ,RIGHT))
-                              ((H a) (H ,RIGHT))
-                              ((H ,BLANK) (Y ,BLANK))
-                              ((I b) (I ,RIGHT))
-                              ((I ,BLANK) (Y ,BLANK))
-                              ((J x) (J ,RIGHT))
-                              ((J ,BLANK) (F ,LEFT))
-                              ((S ,BLANK) (C ,RIGHT))
-                              ((C a) (A x))
-                              ((C b) (D x))
-                              ((C a) (H ,RIGHT))
-                              ((C b) (I ,RIGHT))
-                              ((C x) (C ,RIGHT))
-                              ((C ,BLANK) (Y ,BLANK))
-                              ((I x) (I ,RIGHT))
-                              ((H x) (H ,RIGHT)))
-                            'S
-                            '(Y)
-                            'Y))
-
-
-
-;(sm-callgraph palindrome '(_ a b b a) #:pos 1 #:threshold 10)
-;(sm-callgraph palindrome '(_ a b b a) #:pos 1 #:threshold 10 #:cb 'deut)
-
-(define ab* (make-ndfa '(S A)
-                       '(a b)
-                       'S
-                       '(A)
-                       '((S a A)
-                         (A b A))))
-
-(define ab2* (make-ndfa '(Y Z)
-                       '(a b)
-                       'Y
-                       '(Z)
-                       '((Y a Z)
-                         (Z b Z))))
-
-
-(define R (make-tm '(S F)
-                   '(a b)
-                   `(((S a) (F ,RIGHT))
-                     ((S b) (F ,RIGHT))
-                     ((S ,BLANK) (F ,RIGHT)))
-                   'S
-                   '(F)))
-
-(define L (make-tm '(S H)
-                   `(a b ,LM)
-                   `(((S a) (H ,LEFT))
-                     ((S b) (H ,LEFT))
-                     ((S ,BLANK) (H ,LEFT)))
-                   'S
-                   '(H)))
-
-(define FBR (combine-tms (list 0 R (cons BRANCH
-                                         (list (list 'a (list GOTO 0))
-                                               (list 'b (list GOTO 0))
-                                               (list LM (list GOTO 0))
-                                               (list BLANK ))))
-                         (list 'a 'b LM)))
-
-(define RR (combine-tms (list R R) '(a b)))
-
-(define FBL (combine-tms (list 0 L (cons BRANCH
-                                         (list (list 'a (list GOTO 0))
-                                               (list 'b (list GOTO 0))
-                                               (list LM (list GOTO 0))
-                                               (list BLANK ))))
-                         (list 'a 'b LM)))
-
-(define WB (make-tm '(S H)
-                    `(a b ,LM)
-                    `(((S a) (H ,BLANK))
-                      ((S b) (H ,BLANK))
-                      ((S ,BLANK) (H ,BLANK)))
-                    'S
-                    '(H)))
-
-(define COPY (combine-tms
-              (list FBL 
-                    0 
-                    R 
-                    (cons BRANCH (list (list BLANK (list GOTO 2))                                                                
-                                       (list 'a (list GOTO 1))
-                                       (list 'b (list GOTO 1))))
-                    1
-                    (list (list VAR 'k)
-                          WB
-                          FBR
-                          FBR
-                          'k
-                          FBL
-                          FBL
-                          'k
-                          (list GOTO 0))
-                    2
-                    FBR
-                    L
-                    (cons BRANCH (list (list BLANK (list GOTO 3))
-                                       (list 'a (list GOTO 4))
-                                       (list 'b (list GOTO 4))))
-                    3
-                    RR
-                    (list GOTO 5)
-                    4
-                    R
-                    (list GOTO 5)
-                    5)
-              `(a b)))
 
 
 
