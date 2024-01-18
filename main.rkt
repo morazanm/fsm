@@ -69,6 +69,13 @@
    ; regexp transformers
    fsa->regexp
 
+   ; constructor visualizations
+   fsa-complement-viz fsa-union-viz fsa-ks-viz fsa-intersect-viz
+   fsa-concat-viz ndfa->dfa-viz regexp->ndfa-viz ndfa->regexp-viz
+
+   ; call graphs
+   sm-callgraph
+
    ; some helpful functions
    los->symbol symbol->list generate-symbol symbol->fsmlos symbol-upcase
 
@@ -83,6 +90,21 @@
     (when (or (< color-blind-mode 0) (> color-blind-mode 2))
       (error 'sm-graph "Invalid color option. Must be either 0, 1, or 2. Given ~a" color-blind-mode))
     (fsa->bitmap fsa color-blind-mode))
+
+  (define R (make-tm '(S F)
+                     '(d)
+                     `(((S d) (F ,RIGHT))
+                       ((S ,BLANK) (F ,RIGHT)))
+                     'S
+                     '(F)))
+
+  (define FBR (combine-tms (list 0
+                                 R
+                                 (cons BRANCH
+                                       (list (list 'd (list GOTO 0))
+                                             (list BLANK (list GOTO 10))))
+                                 10)
+                           (list 'd)))
 
  
   ) ; close module
