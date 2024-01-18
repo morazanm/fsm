@@ -428,7 +428,7 @@
                          (list GOTO 0))
                    3))
 
-#;(define SWAP
+(define SWAP
   (combine-tms
    (list (list (list VAR 'i)
                'R
@@ -493,7 +493,7 @@
                (equal? 'BRANCH (car (car trace)))
                (equal? 'VAR (car (car trace))))
            (follow-trace (cdr trace) edges stored-val)]))
-  (follow-trace (cdr (ctm-run ctm tape head #:trace #t)) (dot-edges ctmlist) (car (car (dot-edges ctmlist)))))
+  (follow-trace (cdr (ctm-run ctm tape head #:trace #t)) (clean-list (dot-edges (parse-program ctmlist))) (car (car (clean-list (dot-edges (parse-program ctmlist)))))))
 
 
 
