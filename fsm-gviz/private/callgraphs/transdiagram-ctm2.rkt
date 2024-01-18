@@ -2,6 +2,7 @@
 (require eopl)
 (require 2htdp/image)
 (require "../lib.rkt" "cg-defs.rkt")
+(provide computation-edges transition-diagram-ctm dot-nodes dot-edges)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; datatype
 
@@ -427,6 +428,16 @@
                          (list GOTO 0))
                    3))
 
+#;(define SWAP
+  (combine-tms
+   (list (list (list VAR 'i)
+               'R
+               (list (list VAR 'j)
+                     'i
+                     'L
+                     'j)))
+   '(a b)))
+
 (define SWAPL '(list (list (list VAR 'i)
                              R
                              (list (list VAR 'j)
@@ -445,7 +456,44 @@
 (transition-diagram-ctm SWAPL)
 |#
 
-
+;; ctm (listof ctm) tape int -> (listof edge)
+;; Purpose: Given a ctm, a ctm list, a tape, and a head position, returns the edges traversed in the computation
+(define (computation-edges ctm ctmlist tape head) 
+  ;; (listof trace) (listof edge) string -> (listof edge)
+  ;; Purpose: Returns the traced edges in order
+  ;; Accumulator invariant:
+  ;;  stored-val = stores the destination state, which is the source state of the following edge
+  ;;  edges = list of all edges
+  (define (follow-trace trace edges stored-val)
+    (cond [(or (empty? trace)
+               (empty? (cdr trace))
+               (equal? stored-val "")) '()]
+          [(and (struct? (car trace))
+                (struct? (cadr trace)))
+           (let ((new-edge (filter (lambda (x) (equal? (car x) stored-val)) edges)))
+             (append new-edge
+                     (follow-trace (cdr trace) edges (if (empty? new-edge)
+                                                         ""
+                                                         (cadr (car new-edge))))))]
+          [(and (struct? (car trace))
+                (equal? 'BRANCH (car (cadr trace))))
+           (let ((new-edge (filter (lambda (x) (and (equal? (car x) stored-val)
+                                                    (equal? (cadr (car (caddr x))) (cadr (cadr trace))))) edges)))
+             (append new-edge
+                     (follow-trace (cdr trace) edges (if (empty? new-edge)
+                                                         ""
+                                                         (cadr (car new-edge))))))]
+          [(struct? (car trace))
+           (let ((new-edge (filter (lambda (x) (equal? (car x) stored-val)) edges)))
+             (append new-edge
+                     (follow-trace (cdr trace) edges (if (empty? new-edge)
+                                                         ""
+                                                         (cadr (car new-edge))))))]
+          [(or (equal? 'GOTO (car (car trace)))
+               (equal? 'BRANCH (car (car trace)))
+               (equal? 'VAR (car (car trace))))
+           (follow-trace (cdr trace) edges stored-val)]))
+  (follow-trace (cdr (ctm-run ctm tape head #:trace #t)) (dot-edges ctmlist) (car (car (dot-edges ctmlist)))))
 
 
 
