@@ -7,7 +7,8 @@
   (require rackunit
            "fsm-core/interface.rkt"
            "fsm-gviz/interface.rkt"
-           "fsm-gui/interface.rkt")
+           "fsm-gui/interface.rkt"
+           "viz-constructors/viz-complement.rkt")
   
   (provide
    (all-from-out racket)
@@ -68,6 +69,9 @@
  
    ; regexp transformers
    fsa->regexp
+
+   ; viz constructors
+   complement-viz
 
    ; some helpful functions
    los->symbol symbol->list generate-symbol symbol->fsmlos symbol-upcase
