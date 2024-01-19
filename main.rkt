@@ -7,15 +7,7 @@
   (require rackunit
            "fsm-core/interface.rkt"
            "fsm-gviz/interface.rkt"
-           "fsm-gui/interface.rkt"
-           "constructors-viz/viz-complement.rkt"
-           "constructors-viz/viz-concat.rkt"
-           "constructors-viz/viz-intersection.rkt"
-           "constructors-viz/viz-kleenestar.rkt"
-           "constructors-viz/viz-ndfa2dfa.rkt"
-           "constructors-viz/viz-ndfa2regexp.rkt"
-           "constructors-viz/viz-regexp2ndfa.rkt"
-           "constructors-viz/viz-union.rkt")
+           "fsm-gui/interface.rkt")
   
   (provide
    (all-from-out racket)
@@ -76,10 +68,6 @@
  
    ; regexp transformers
    fsa->regexp
-
-   ; viz construction
-   complement-viz union-viz concat-viz intersection-viz
-   kleenestar-viz ndfa2dfa-viz ndfa2regexp-viz regexp2ndfa-viz
 
    ; some helpful functions
    los->symbol symbol->list generate-symbol symbol->fsmlos symbol-upcase
