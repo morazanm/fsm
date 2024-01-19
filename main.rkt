@@ -8,7 +8,7 @@
            "fsm-core/interface.rkt"
            "fsm-gviz/interface.rkt"
            "fsm-gui/interface.rkt"
-           ;"constructors-viz/viz-complement.rkt"
+           "constructors-viz/viz-complement.rkt"
            "constructors-viz/viz-concat.rkt"
            "constructors-viz/viz-intersection.rkt"
            "constructors-viz/viz-kleenestar.rkt"
@@ -78,7 +78,7 @@
    fsa->regexp
 
    ; viz construction
-   union-viz concat-viz intersection-viz
+   complement-viz union-viz concat-viz intersection-viz
    kleenestar-viz ndfa2dfa-viz ndfa2regexp-viz regexp2ndfa-viz
 
    ; some helpful functions
