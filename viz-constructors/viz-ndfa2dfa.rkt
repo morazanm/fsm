@@ -8,7 +8,8 @@
                     [make-pen loc-make-pen])
          2htdp/image
          "definitions-viz.rkt"
-         "run-viz.rkt")
+         "run-viz.rkt"
+         "../fsm-core/interface.rkt")
 
 (provide ndfa2dfa-viz)
 
