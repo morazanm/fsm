@@ -10,7 +10,8 @@
          2htdp/image
          "definitions-viz.rkt"
          "run-viz.rkt"
-         "fsm-core/interface.rkt")
+         "../fsm-core/interface.rkt"
+         "../sm-graph.rkt")
 (provide complement-viz)
 
 (define FNAME "fsm")
