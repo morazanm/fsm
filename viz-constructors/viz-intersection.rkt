@@ -1,4 +1,4 @@
-#lang fsm
+#lang racket
 (require "../fsm-gviz/private/lib.rkt"
          2htdp/universe
          rackunit

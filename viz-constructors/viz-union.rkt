@@ -1,4 +1,4 @@
-#lang fsm
+#lang racket
 (require "../fsm-gviz/private/lib.rkt"
          2htdp/universe rackunit
          (rename-in racket/gui/base
@@ -6,7 +6,8 @@
                     [make-pen loc-make-pen])
          2htdp/image
          "definitions-viz.rkt"
-         "run-viz.rkt")
+         "run-viz.rkt"
+         "../fsm-core/interface.rkt")
 
 (provide union-viz)
 
