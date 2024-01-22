@@ -2,7 +2,7 @@
 (require eopl)
 (require 2htdp/image)
 (require "../lib.rkt" "cg-defs.rkt")
-(provide computation-edges transition-diagram-ctm dot-nodes dot-edges)
+(provide computation-edges transition-diagram-ctm dot-nodes dot-edges clean-list parse-program)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; datatype
 
@@ -478,7 +478,10 @@
           [(and (struct? (car trace))
                 (equal? 'BRANCH (car (cadr trace))))
            (let ((new-edge (filter (lambda (x) (and (equal? (car x) stored-val)
-                                                    (equal? (cadr (car (caddr x))) (cadr (cadr trace))))) edges)))
+                                                    (if (equal? (cadr (cadr trace)) '_)
+                                                        (or (equal? (cadr (car (caddr x))) "_")
+                                                            (equal? (cadr (car (caddr x))) "BLANK"))
+                                                        (equal? (string->symbol (cadr (car (caddr x)))) (cadr (cadr trace)))))) edges)))
              (append new-edge
                      (follow-trace (cdr trace) edges (if (empty? new-edge)
                                                          ""
@@ -494,10 +497,6 @@
                (equal? 'VAR (car (car trace))))
            (follow-trace (cdr trace) edges stored-val)]))
   (follow-trace (cdr (ctm-run ctm tape head #:trace #t)) (clean-list (dot-edges (parse-program ctmlist))) (car (car (clean-list (dot-edges (parse-program ctmlist)))))))
-
-
-
-
 
 
 
