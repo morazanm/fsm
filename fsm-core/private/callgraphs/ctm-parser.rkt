@@ -1,7 +1,7 @@
 #lang fsm
 (require eopl)
 (require 2htdp/image)
-(require "../lib.rkt" "cg-defs.rkt")
+(require "../../../fsm-gviz/private/lib.rkt" "cg-defs.rkt")
 
 (define-datatype expression expression?
   (ctmd-exp
