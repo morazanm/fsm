@@ -1,6 +1,8 @@
-#lang fsm
+#lang racket
 (require 2htdp/image)
-(require "../lib.rkt" "cg-defs.rkt" "mk-cg-edges-function.rkt")
+(require "../../../fsm-gviz/private/lib.rkt" "cg-defs.rkt"
+         "mk-cg-edges-function.rkt" "../misc.rkt"
+         "../../interface.rkt")
 (provide make-pda-cg-edges dot-nodes-pda dot-trans-pda computation-diagram-pda)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; make-pda-cg-edges
