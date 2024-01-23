@@ -1,4 +1,4 @@
-#lang fsm
+#lang racket
 
 (provide mk-cg-edges-function)
 

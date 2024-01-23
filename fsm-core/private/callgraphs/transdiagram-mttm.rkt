@@ -1,6 +1,7 @@
-#lang fsm
+#lang racket
 (require 2htdp/image)
-(require "../lib.rkt" "cg-defs.rkt")
+(require "../../../fsm-gviz/private/lib.rkt" "cg-defs.rkt"
+         "../../interface.rkt" rackunit)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; multitape-tm
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

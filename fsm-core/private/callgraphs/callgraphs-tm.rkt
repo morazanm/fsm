@@ -1,6 +1,7 @@
-#lang fsm
+#lang racket
 (require 2htdp/image)
-(require "../lib.rkt" "cg-defs.rkt" "mk-cg-edges-function.rkt")
+(require "../../../fsm-gviz/private/lib.rkt" "cg-defs.rkt"
+         "mk-cg-edges-function.rkt" "../../interface.rkt")
 (provide make-tm-cg-edges dot-nodes-tm dot-trans-tm computation-diagram-tm)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; make-tm-cg-edges

@@ -1,5 +1,6 @@
-#lang fsm
-(require "cg-defs.rkt" "callgraphs-pda.rkt")
+#lang racket
+(require "cg-defs.rkt" "callgraphs-pda.rkt"
+         "../../interface.rkt" rackunit)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; L = {a^i b^j | i ≤ j ≤ 2i}

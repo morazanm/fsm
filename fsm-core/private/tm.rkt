@@ -8,7 +8,7 @@
            make-unchecked-tm
            combine-tms
            tm-union tm-concat tm-kleenestar tm-complement tm-intersection
-           ctm-apply tmconfig-state tmconfig-index tmconfig-tape
+           ctm-apply tmconfig-state tmconfig-index tmconfig-tape tmconfig?
            tm-apply tm-showtransitions tm-test
            )
   

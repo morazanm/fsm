@@ -1,4 +1,4 @@
-#lang fsm
+#lang racket
 (require eopl)
 (require 2htdp/image)
 (require "../../../fsm-gviz/private/lib.rkt" "cg-defs.rkt")

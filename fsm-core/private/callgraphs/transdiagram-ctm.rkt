@@ -1,6 +1,7 @@
 #lang fsm
-(require 2htdp/image)
-(require "../lib.rkt" "cg-defs.rkt")
+(require 2htdp/image rackunit)
+(require "../../../fsm-gviz/private/lib.rkt" "cg-defs.rkt"
+         "../../interface.rkt")
 
 (provide computation-edges transition-diagram-ctm dot-nodes dot-edges)
 
