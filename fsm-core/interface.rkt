@@ -20,7 +20,12 @@
   "private/grammar-getters.rkt" 
   "private/regexp-predicate.rkt"
   "private/abstract-predicate.rkt"
-  "private/mtape-tm.rkt")
+  "private/mtape-tm.rkt"
+  "private/sm-apply.rkt"
+  "private/callgraphs/callgraphs-ndfa.rkt"
+  "private/callgraphs/callgraphs-pda.rkt"
+  "private/callgraphs/callgraphs-tm.rkt"
+  "private/callgraphs/transdiagram-mttm.rkt")
   
 (provide
  check-machine
@@ -84,7 +89,13 @@
  los->symbol symbol->list generate-symbol symbol->fsmlos symbol-upcase
 
  ; constants
- EMP DEAD RIGHT LEFT LM BLANK BRANCH GOTO ARROW VAR)
+ EMP DEAD RIGHT LEFT LM BLANK BRANCH GOTO ARROW VAR
+
+ ; sm-apply
+ sm-apply
+
+ ; call graphs
+ #;sm-cmpgraph)
 ; Primitive constructors imported from other modules
   
 ; (listof state) fsm --> fsm
@@ -181,7 +192,7 @@
           [else (error "Unknown grammar type")])))
   
 ; fsm word [natnum] --> 'accept or 'reject
-(define (sm-apply M w . l)
+#;(define (sm-apply M w . l)
   (let ((head (if (null? l) 0 (car l)))
         (t1 (sm-type M)))
     (cond [(or (eq? t1 'dfa)
@@ -193,7 +204,7 @@
           [else (error "Incorrect input to apply-fsm")])))
   
 ; fsm word [natnum] --> path
-(define (sm-showtransitions M w . l)  
+#;(define (sm-showtransitions M w . l)  
   (let ((head (if (null? l) 0 (car l)))
         (t1 (sm-type M)))
     (cond [(or (eq? t1 'dfa)
