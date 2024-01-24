@@ -82,6 +82,9 @@
    complement-viz concat-viz intersection-viz kleenestar-viz
    ndfa2dfa-viz ndfa2regexp-viz regexp2ndfa-viz union-viz
 
+   ; computation graphs
+   sm-cmpgraph
+
    ; some helpful functions
    los->symbol symbol->list generate-symbol symbol->fsmlos symbol-upcase
 

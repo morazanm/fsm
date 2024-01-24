@@ -202,13 +202,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; M (listof ndfa-Edge) integer -> (listof node)
+;; M (listof ndfa-Edge) (list symbol) -> (listof node)
 ;; Purpose: Given a machine and a list of edges, creates a list of
 ;;          nodes in dot format. The integer determines the color setting. 
 ;; Color blindness:
 ;;  0 - default colors
 ;;  1 - Deuteranopia
-(define (dot-nodes-fsa M new-rules int)
+(define (dot-nodes-fsa M new-rules cb)
   (let* [(start-state (sm-start M))
          (edge-states (remove-duplicates
                        (append (map (lambda (r) (ndfa-Edge-fromst r))
@@ -233,11 +233,11 @@
           (let* [(a-color
                   (cond [(= 1 (length all-states)) "crimson"]
                         [(member (first los) end-states) "crimson"]
-                        [(and (or (empty? int)
-                                  (= 0 (ndfa-rule-fromst int)))
+                        [(and (or (empty? cb)
+                                  (= 0 (ndfa-rule-fromst cb)))
                               (eq? (ndfa-rule-fromst los) start-state)) "forestgreen"]
-                        [(and (not (empty? int))
-                              (= 1 (first int))
+                        [(and (not (empty? cb))
+                              (= 1 (first cb))
                               (eq? (ndfa-rule-fromst los) start-state)) "dodgerblue"]
                         [else "black"]))
                  (a-shape
@@ -249,9 +249,9 @@
                   (cond [(or (and (eq? (ndfa-rule-fromst los) start-state)
                                   (member (ndfa-rule-fromst los) end-states))
                              (= 1 (length all-states)))
-                         (cond [(or (empty? int)
-                                    (= 0 (first int))) "forestgreen"]
-                               [(= 1 (first int)) "dodgerblue"])]
+                         (cond [(or (empty? cb)
+                                    (= 0 (first cb))) "forestgreen"]
+                               [(= 1 (first cb)) "dodgerblue"])]
                         [else "black"]))]
             (cons (list (ndfa-rule-fromst los) `((color ,a-color) (shape ,a-shape) (label ,a-label) (fontcolor ,a-fontcolor))) 
                   (new-node (rest los))))))
@@ -285,13 +285,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; computation-diagram-fsa
 
-;; fsm word [integer] -> image
+;; fsm word [symbol] -> image
 ;; Purpose: Given a machine and a word, creates a .png file from
 ;;          a .dot file, and returns a bitmap.
 ;; Color blindness:
-;;  0 - default colors
-;;  1 - Deuteranopia
-(define (computation-diagram-fsa M word . int)
+;;  'default - default colors
+;;  'deut - Deuteranopia
+(define (computation-diagram-fsa M word . cb)
   (define fname "fsm")
   ;; image
   ;; Purpose: Stores a graph image 
@@ -310,7 +310,7 @@
                       (fontcolor (second (fourth (second a-node))))]
                  (add-node a-graph state #:atb (hash 'color color 'shape shape 'fontcolor fontcolor)))) 
              cgraph   
-             (dot-nodes-fsa M new-rules int)))
+             (dot-nodes-fsa M new-rules cb)))
       (set! cgraph
             (foldl
              (lambda (a-trans a-graph)

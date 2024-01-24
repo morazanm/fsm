@@ -94,9 +94,23 @@
  ; sm-apply
  sm-apply
 
- ; call graphs
- #;sm-cmpgraph)
+ ; computation graphs
+ sm-cmpgraph)
 ; Primitive constructors imported from other modules
+
+; sm word [natnum] --> image
+(define (sm-cmpgraph M w #:palette [p 'default] #:cutoff [c 25] . headpos)
+  (let ((t1 (sm-type M)))
+    (cond [(or (eq? t1 'dfa)
+               (eq? t1 'ndfa))
+           (computation-diagram-fsa M w p)]
+          [(eq? t1 'pda)
+           (computation-diagram-pda M w (list c p))]
+          [(or (eq? t1 'tm) (eq? t1 'tm-language-recognizer))
+           (computation-diagram-tm M w (if (empty? headpos) 0 (first headpos)) . (list c p))]
+          [(or (eq? t1 'mttm) (eq? t1 'mttm-language-recognizer))
+           (error "Computation graphs for mttms coming soon!")]
+          [else (error "Unknown machine type given to sm-cmpgraph.")])))
   
 ; (listof state) fsm --> fsm
 (define (sm-rename-states sts m)
