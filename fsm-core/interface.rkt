@@ -499,8 +499,10 @@
                               #:accepts [accepts '()]
                               #:rejects [rejects '()])
     make-dfa/c
-    (if add-dead (make-unchecked-dfa states sigma start finals all-rules add-dead)
-        (make-unchecked-dfa states sigma start finals all-rules))
+    (if (null? add-dead)
+        (make-unchecked-dfa states sigma start finals rules)
+        (make-unchecked-dfa states sigma start finals rules add-dead)
+        )
     )
 
   
