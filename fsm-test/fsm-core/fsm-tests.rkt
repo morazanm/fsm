@@ -116,6 +116,7 @@
 ; L = a*/b* 
 (define ndfa-inter-a*-b* (sm-intersection dfa-a* dfa-b*))
 
+
 (check-equal? (sm-apply ndfa-inter-a*-b* ' (a b a a b)) 'reject)
 (check-equal? (sm-apply ndfa-inter-a*-b* ' (b b b)) 'reject)
 (check-equal? (sm-apply ndfa-inter-a*-b* ' (a a a)) 'reject)
