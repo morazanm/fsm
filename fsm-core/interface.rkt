@@ -495,7 +495,7 @@
   ;; Purpose: Eventually, will construct a multi-tape turing-machine from the given
   ;; DFA inputs, but for now just parses inputs and constructs an unchecked-dfa.
   (define/contract (make-dfa states sigma start finals rules
-                              [add-dead #t]
+                              [add-dead 'no-dead]
                               #:accepts [accepts '()]
                               #:rejects [rejects '()])
     make-dfa/c
