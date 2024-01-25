@@ -92,7 +92,7 @@
  EMP DEAD RIGHT LEFT LM BLANK BRANCH GOTO ARROW VAR
 
  ; sm-apply
- sm-apply
+ ; sm-apply
 
  ; computation graphs
  sm-cmpgraph)
