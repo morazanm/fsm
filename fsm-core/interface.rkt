@@ -506,7 +506,7 @@
         (make-unchecked-tm states sigma rules start finals accept))
     )
 
-  (define/contract (make-mttm states sigma start finals rules num-tapes
+  (define/contract (make-mttm2 states sigma start finals rules num-tapes
                                [accept 'null]
                                #:accepts [accepts '()]
                                #:rejects [rejects '()])
