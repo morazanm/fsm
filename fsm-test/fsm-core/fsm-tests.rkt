@@ -168,7 +168,7 @@
 (check-equal? (sm-apply nota*Unotb* ' ( a )) 'accept)
 (check-equal? (sm-apply nota*Unotb* ' (b b b)) 'accept)
 (check-equal? (sm-apply nota*Unotb* ' (a a a)) 'accept)
-(check-equal? (sm-apply nota*Unotb* ' (a b b a a )) 'accept)
+(check-equal? (sm-apply nota*Unotb* ' (a b b a a)) 'accept)
 
 ; L = (a*b*)*
 (define ndfa-kleenestar-concat-a*b* (sm-kleenestar ndfa-concat-a*b*))
