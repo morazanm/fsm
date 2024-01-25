@@ -1,5 +1,5 @@
 #lang racket
-(require "../interface.rkt")
+(require "../../fsm-core/interface.rkt")
 (require rackunit)
 
 (define tm-WriteI (make-tm '(S H) 

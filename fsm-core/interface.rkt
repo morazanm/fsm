@@ -23,6 +23,11 @@
   "private/mtape-tm.rkt"
   "private/macros/constructors.rkt"
   "private/sm-apply.rkt")
+  "private/sm-apply.rkt"
+  "private/callgraphs/callgraphs-ndfa.rkt"
+  "private/callgraphs/callgraphs-pda.rkt"
+  "private/callgraphs/callgraphs-tm.rkt"
+  "private/callgraphs/transdiagram-mttm.rkt")
   
 (provide
  check-machine
@@ -86,8 +91,28 @@
  los->symbol symbol->list generate-symbol symbol->fsmlos symbol-upcase
 
  ; constants
- EMP DEAD RIGHT LEFT LM BLANK BRANCH GOTO ARROW VAR)
+ EMP DEAD RIGHT LEFT LM BLANK BRANCH GOTO ARROW VAR
+
+ ; sm-apply
+ ; sm-apply
+
+ ; computation graphs
+ sm-cmpgraph)
 ; Primitive constructors imported from other modules
+
+; sm word [natnum] --> image
+(define (sm-cmpgraph M w #:palette [p 'default] #:cutoff [c 25] . headpos)
+  (let ((t1 (sm-type M)))
+    (cond [(or (eq? t1 'dfa)
+               (eq? t1 'ndfa))
+           (computation-diagram-fsa M w p)]
+          [(eq? t1 'pda)
+           (computation-diagram-pda M w (list c p))]
+          [(or (eq? t1 'tm) (eq? t1 'tm-language-recognizer))
+           (computation-diagram-tm M w (if (empty? headpos) 0 (first headpos)) . (list c p))]
+          [(or (eq? t1 'mttm) (eq? t1 'mttm-language-recognizer))
+           (error "Computation graphs for mttms coming soon!")]
+          [else (error "Unknown machine type given to sm-cmpgraph.")])))
   
 ; (listof state) fsm --> fsm
 (define (sm-rename-states sts m)
@@ -207,10 +232,17 @@
 ;          ;[(eq? t1 'dfst) (M 'show-transitions)]
 ;          [else (error "Incorrect input to show-transitions")])))
 
-; ctm word [natnum] --> (list state natnum tape)
-(define (ctm-run M w . l)
-  (let ((res (ctm-apply M w (if (null? l) 0 (car l)))))
-    (list (tmconfig-state res) (tmconfig-index res) (tmconfig-tape res))))
+; ctm word [trace Boolean] [natnum] --> (list state natnum tape)
+(define (ctm-run M w #:trace [trace #f] . l)
+  (let ((res (ctm-apply M w (if (null? l) 0 (car l)) trace)))
+    (if trace
+        res
+        (list (tmconfig-state res) (tmconfig-index res) (tmconfig-tape res)))))
+
+;; ctm word [natnum] --> (list state natnum tape)
+;(define (ctm-run M w . l)
+;  (let ((res (ctm-apply M w (if (null? l) 0 (car l)))))
+;    (list (tmconfig-state res) (tmconfig-index res) (tmconfig-tape res))))
   
 ; fsm fsm word --> boolean
 (define (sm-sameresult? M1 M2 w)

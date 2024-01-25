@@ -7,7 +7,16 @@
   (require rackunit
            "fsm-core/interface.rkt"
            "fsm-gviz/interface.rkt"
-           "fsm-gui/interface.rkt")
+           "fsm-gui/interface.rkt"
+           "viz-constructors/viz-complement.rkt"
+           "viz-constructors/viz-concat.rkt"
+           "viz-constructors/viz-intersection.rkt"
+           "viz-constructors/viz-kleenestar.rkt"
+           "viz-constructors/viz-ndfa2dfa.rkt"
+           "viz-constructors/viz-ndfa2regexp.rkt"
+           "viz-constructors/viz-regexp2ndfa.rkt"
+           "viz-constructors/viz-union.rkt"
+           "sm-graph.rkt")
   
   (provide
    (all-from-out racket)
@@ -69,6 +78,13 @@
    ; regexp transformers
    fsa->regexp
 
+   ; viz constructors
+   complement-viz concat-viz intersection-viz kleenestar-viz
+   ndfa2dfa-viz ndfa2regexp-viz regexp2ndfa-viz union-viz
+
+   ; computation graphs
+   sm-cmpgraph
+
    ; some helpful functions
    los->symbol symbol->list generate-symbol symbol->fsmlos symbol-upcase
 
@@ -79,7 +95,7 @@
   ;; sm-graph :: fsa optional(number) -> bitmap
   ;; draws a graph of the given machine and returns the bitmap so it
   ;; can be displayed in the DrRacket Terminal
-  (define (sm-graph fsa #:color [color-blind-mode 0])
+  #;(define (sm-graph fsa #:color [color-blind-mode 0])
     (when (or (< color-blind-mode 0) (> color-blind-mode 2))
       (error 'sm-graph "Invalid color option. Must be either 0, 1, or 2. Given ~a" color-blind-mode))
     (fsa->bitmap fsa color-blind-mode))

@@ -1,5 +1,5 @@
-# FSM   ![Build Status](https://github.com/morazanm/fsm/actions/workflows/build.yml/badge.svg) ![Test Status](https://github.com/morazanm/fsm/actions/workflows/ci.yml/badge.svg) ![Docs](https://github.com/morazanm/fsm/actions/workflows/docs.yml/badge.svg)
-A Library for the Automata Theory Classroom
+# FSM   ![Test + Build Status](https://github.com/morazanm/fsm/actions/workflows/ci.yml/badge.svg) ![Docs](https://github.com/morazanm/fsm/actions/workflows/docs.yml/badge.svg)
+A DSL for the Automata Theory Classroom
 
 
 ## Documentation
@@ -20,7 +20,10 @@ If you wish to contribute to `fsm` please read the [contribution docs](fsm-docs/
 - [Functional Automata - Formal Languages for Computer Science Students](https://arxiv.org/abs/1412.4878)
 - [FSM Error Messages](https://arxiv.org/abs/1906.11421v1)
 - [Visual Designing and Debugging of Deterministic Finite-State Machines in FSM](https://arxiv.org/abs/2008.09254)
-
+- [Regular Expressions in a CS Formal Languages Course](https://arxiv.org/abs/2308.06969v1)
+- [Visualizing a Nondeterministic to Deterministic Finite-State Machine Transformation](https://arxiv.org/abs/2310.08248)
+- [Visualizing Why Nondeterministic Finite-State Automata Reject](https://arxiv.org/abs/2310.08025)
+- [Composing Turing Machines in FSM](https://dl.acm.org/doi/10.1145/3622780.3623647)
 
 ## Getting Started
 Once fsm is installed you use one of the following two options
@@ -30,7 +33,7 @@ Once fsm is installed you use one of the following two options
 
 
 ### Basic Usage
-Below are some basic examples of how to use fsm. For a more in-depth guide please visit the [fsm documentation](https://htmlpreview.github.io/?https://github.com/morazanm/fsm/blob/master/fsm.html).
+Below are some basic examples of how to use fsm. For a more in-depth guide please visit the [fsm documentation](https://morazanm.github.io/fsm/fsm/index.html).
 
 
 ### Building a DFA
