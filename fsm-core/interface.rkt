@@ -501,8 +501,8 @@
     make-dfa/c
     (define all-rules
       (if add-dead
-          (add-dead-state-rules rules states sigma)
-          rules))
+          rules
+          (add-dead-state-rules rules states sigma)))
     (if add-dead (make-unchecked-dfa states sigma start finals all-rules add-dead)
         (make-unchecked-dfa states sigma start finals all-rules))
     )
