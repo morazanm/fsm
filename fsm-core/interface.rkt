@@ -22,7 +22,7 @@
   "private/abstract-predicate.rkt"
   "private/mtape-tm.rkt"
   "private/macros/constructors.rkt"
-  "private/sm-apply.rkt")
+  "private/sm-apply.rkt"
   "private/sm-apply.rkt"
   "private/callgraphs/callgraphs-ndfa.rkt"
   "private/callgraphs/callgraphs-pda.rkt"
