@@ -202,7 +202,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; M (listof ndfa-Edge) integer -> (listof node)
+;; M (listof ndfa-Edge) (list symbol) -> (listof node)
 ;; Purpose: Given a machine and a list of edges, creates a list of
 ;;          nodes in dot format. The integer determines the color setting. 
 ;; Color blindness:
@@ -234,10 +234,10 @@
                   (cond [(= 1 (length all-states)) "crimson"]
                         [(member (first los) end-states) "crimson"]
                         [(and (or (empty? cb)
-                                  (eq? 'default (first cb)))
+                                  (= 0 (ndfa-rule-fromst cb)))
                               (eq? (ndfa-rule-fromst los) start-state)) "forestgreen"]
                         [(and (not (empty? cb))
-                              (eq? 'deut (first cb))
+                              (= 1 (first cb))
                               (eq? (ndfa-rule-fromst los) start-state)) "dodgerblue"]
                         [else "black"]))
                  (a-shape
@@ -250,8 +250,8 @@
                                   (member (ndfa-rule-fromst los) end-states))
                              (= 1 (length all-states)))
                          (cond [(or (empty? cb)
-                                    (eq? 'default (first cb))) "forestgreen"]
-                               [(eq? 'deut (first cb)) "dodgerblue"])]
+                                    (= 0 (first cb))) "forestgreen"]
+                               [(= 1 (first cb)) "dodgerblue"])]
                         [else "black"]))]
             (cons (list (ndfa-rule-fromst los) `((color ,a-color) (shape ,a-shape) (label ,a-label) (fontcolor ,a-fontcolor))) 
                   (new-node (rest los))))))
@@ -285,12 +285,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; computation-diagram-fsa
 
-;; fsm word [integer] -> image
+;; fsm word [symbol] -> image
 ;; Purpose: Given a machine and a word, creates a .png file from
 ;;          a .dot file, and returns a bitmap.
 ;; Color blindness:
-;;  0 - default colors
-;;  1 - Deuteranopia
+;;  'default - default colors
+;;  'deut - Deuteranopia
 (define (computation-diagram-fsa M word . cb)
   (define fname "fsm")
   ;; image
@@ -333,3 +333,4 @@
 
 
              
+

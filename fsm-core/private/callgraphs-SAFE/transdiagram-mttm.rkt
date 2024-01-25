@@ -8,22 +8,19 @@
 ;; multitape-tm
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; M -> (listof node)
 ;; Purpose: Generate a list of nodes
 (define (dot-nodes M)
   (let* ((start-state (sm-start M))
-         (final-states (if (not (eq? 'mttm-language-recognizer M))
-                           (sm-finals M)
-                           (filter (lambda (x) (not (eq? x (sm-accept M)))) (sm-finals M))))
-         (rest-states (filter (lambda (x) (not (member x (append (list start-state) final-states)))) (sm-states M)))
-         (accept-state (if (eq? 'mttm-language-recognizer M)
-                           (sm-accept M)
-                           '())))
+         (final-states (sm-finals M))
+         (rest-states (filter (lambda (x) (not (member x (append (list start-state) final-states)))) (sm-states M))))
     (append
      (list (list start-state `((color "forestgreen") (shape "circle") (label ,start-state))))
      (map (lambda (x) (list x `((color "black") (shape "doublecircle") (label ,x)))) final-states)
-     (map (lambda (x) (list x `((color "black") (shape "circle") (label ,x)))) rest-states)
-     (if (not (null? accept-state)) (list (list accept-state `((color "black") (shape "doubleoctagon") (label ,accept-state)))) '()))))
+     (map (lambda (x) (list x `((color "black") (shape "circle") (label ,x)))) rest-states))))
 
 ;.................................................
 
@@ -89,7 +86,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
+;(transition-diagram-mttm EQABC)
+;(transition-diagram-mttm ww)
 
 
 
