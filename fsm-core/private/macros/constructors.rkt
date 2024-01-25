@@ -57,7 +57,7 @@
                                                     (functional/c states sigma add-dead)
                                                     (no-duplicates-dfa/c "rules"))]
                            )
-                          ([add-dead boolean?]
+                          ([add-dead (lambda (x) (equal? 'no-dead x))]
                            #:accepts [accepts (states
                                                sigma
                                                start
