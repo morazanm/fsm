@@ -40,10 +40,10 @@
                        '(M)
                        '((F s S)
                          (S m M)
-                         (M f F)) 'nodead))
+                         (M f F))))
 
 (define Ma (make-tm '(S H)                  ;the states
-                    `(a b ,LM)              ;the alphabet
+                    `(a b)              ;the alphabet
                     `(((S ,LM) (S ,RIGHT))  ;the transition relation
                       ((S a) (H a))
                       ((S b) (H a))
