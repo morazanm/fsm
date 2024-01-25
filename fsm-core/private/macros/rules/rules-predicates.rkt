@@ -2,12 +2,8 @@
   (require racket/contract
            rackunit
            "../../constants.rkt"
-           "../../sm-getters.rkt"
-           "../../fsa.rkt"
-           "../../tm.rkt"
-           "../../pda.rkt"
            "../shared/shared-predicates.rkt"
-           "../../../../main.rkt")
+           )
   (provide add-dead-state-rules
            valid-rules?
            invalid-rules

@@ -7,17 +7,14 @@
            "shared/shared-predicates.rkt"
            "validation/validation-predicates.rkt"
            "error-formatting.rkt"
-           "../fsa.rkt"
-           "../pda.rkt"
-           "../tm.rkt"
-           "../mtape-tm.rkt"
            racket/contract
            )
-  (provide make-dfa2
-           make-ndfa2
-           make-ndpda2
-           make-tm2
-           make-mttm2
+  (provide make-dfa/c
+           make-ndfa/c
+           make-ndpda/c
+           make-tm/c
+           make-mttm/c
+           add-dead-state-rules
            )
 
   ;; Using the existing set of rules, the entire machine set of states, and the
@@ -93,78 +90,7 @@
          
                           [result dfa?]))
 
-  ;; make-dfa: states alphabet state states rules (boolean) -> machine
-  ;; Purpose: Eventually, will construct a multi-tape turing-machine from the given
-  ;; DFA inputs, but for now just parses inputs and constructs an unchecked-dfa.
-  (define/contract (make-dfa2 states sigma start finals rules
-                              [add-dead #t]
-                              #:accepts [accepts '()]
-                              #:rejects [rejects '()])
-    make-dfa/c
-    #;(->i ([states (and/c (is-a-list/c "machine states" "three")
-                         (valid-listof/c valid-state? "machine state" "list of machine states" #:rule "three")
-                         (no-duplicates/c "states"))]
-          [sigma (and/c (is-a-list/c "machine alphabet" "one")
-                        (valid-listof/c valid-alpha? "lowercase alphabet letter" "input alphabet" #:rule "one")
-                        (no-duplicates/c "sigma"))]
-          [start (states) (and/c (valid-start/c states)
-                                 (start-in-states/c states))]
-          [finals (states) (and/c (is-a-list/c "machine final states" "three")
-                                  (valid-listof/c valid-state? "machine state" "list of machine finals" #:rule "three")
-                                  (valid-finals/c states)
-                                  (no-duplicates/c "final states"))]
-          [rules (states
-                  sigma
-                  add-dead) (and/c (is-a-list/c "machine rules" "four")
-                                   correct-dfa-rule-structures/c
-                                   (correct-dfa-rules/c states sigma)
-                                   (functional/c states sigma add-dead)
-                                   (no-duplicates-dfa/c "rules"))]
-          )
-         ([add-dead boolean?]
-          #:accepts [accepts (states
-                              sigma
-                              start
-                              finals
-                              rules
-                              add-dead) (and/c (words-in-sigma/c sigma)
-                                               (listof-words/c "accpets")
-                                               (dfa-input/c states
-                                                            sigma
-                                                            start
-                                                            finals
-                                                            rules
-                                                            add-dead
-                                                            'accept))]
-          #:rejects [rejects (states
-                              sigma
-                              start
-                              finals
-                              rules
-                              add-dead) (and/c (words-in-sigma/c sigma)
-                                               (listof-words/c "rejects")
-                                               (dfa-input/c states
-                                                            sigma
-                                                            start
-                                                            finals
-                                                            rules
-                                                            add-dead
-                                                            'reject))]
-          )
-         
-         [result dfa?])
-    (define all-rules
-      (if add-dead
-          (add-dead-state-rules rules states sigma)
-          rules))
-    (make-unchecked-dfa states sigma start finals all-rules add-dead)
-    )
-
-  
-
-  (define/contract (make-ndfa2 states sigma start finals rules
-                               #:accepts [accepts '()]
-                               #:rejects [rejects '()])
+  (define make-ndfa/c
     (->i ([states (and/c (is-a-list/c "machine states" "three")
                          (valid-listof/c valid-state? "machine state" "list of machine states" #:rule "three")
                          (no-duplicates/c "states"))]
@@ -209,18 +135,9 @@
                                                           'reject))]
           )
          
-         [result ndfa?])
-  
-    (make-unchecked-ndfa states sigma start finals rules)
-    )
+         [result ndfa?]))
 
-  ;; Purpose: Constructs an ndpda given a set of states, a machine alphabet,
-  ;; set of stack symbols, a start state, a list of final states, and a list
-  ;; of ndpda rules. The function checks that all fields are valid before
-  ;; constructing the ndpda.
-  (define/contract (make-ndpda2 states sigma gamma start finals rules
-                                #:accepts [accepts '()]
-                                #:rejects [rejects '()])
+  (define make-ndpda/c
     (->i ([states (and/c (is-a-list/c "machine states" "three")
                          (valid-listof/c valid-state? "machine state" "list of machine states" #:rule "three")
                          (no-duplicates/c "states"))]
@@ -272,16 +189,9 @@
                                                            rules
                                                            'reject))]
           )
-         [result ndpda?])
-    (make-unchecked-ndpda states sigma gamma start finals rules)
-    )
+         [result ndpda?]))
 
-   
-  (define/contract (make-tm2 states sigma rules start finals
-                             [accept 'null]
-                             #:accepts [accepts '()]
-                             #:rejects [rejects '()]
-                             )
+  (define make-tm/c
     (->i ([states (and/c (is-a-list/c "machine states" "three")
                          (valid-listof/c valid-state? "machine state" "list of machine states" #:rule "three")
                          (no-duplicates/c "states"))]
@@ -337,17 +247,9 @@
                                                          'reject))]
           )
          
-         [result tm?])
-  
-    (if (equal? accept 'null)
-        (make-unchecked-tm states sigma rules start finals)
-        (make-unchecked-tm states sigma rules start finals accept))
-    )
+         [result tm?]))
 
-  (define/contract (make-mttm2 states sigma start finals rules num-tapes
-                               [accept 'null]
-                               #:accepts [accepts '()]
-                               #:rejects [rejects '()])
+  (define make-mttm/c
     (->i ([states (and/c (is-a-list/c "machine states" "three")
                          (valid-listof/c valid-state? "machine state" "list of machine states" #:rule "three")
                          (no-duplicates/c "states"))]
@@ -409,9 +311,5 @@
                                                            'reject))]
           )
          [result mttm?]
-         )
-    (if (equal? accept 'null)
-        (make-mttm states sigma start finals rules num-tapes)
-        (make-mttm states sigma start finals rules num-tapes accept))
-    )
+         ))
   )

@@ -3,7 +3,7 @@
          "../constants.rkt")
 (local-require test-engine/racket-tests)
 
-(define dfa1 (make-dfa2 '(A B C)
+(define dfa1 (make-ndfa2 '(A B C)
                        '(a b c)
                        'a
                        '(B C D)
