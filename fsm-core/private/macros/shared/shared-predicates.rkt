@@ -2,11 +2,7 @@
   (require racket/contract
            rackunit
            "../../constants.rkt"
-           "../../sm-getters.rkt"
-           "../../fsa.rkt"
-           "../../tm.rkt"
-           "../../pda.rkt"
-           "../../../../main.rkt")
+           "../../sm-getters.rkt")
   (provide dfa?
            ndfa?
            ndpda?

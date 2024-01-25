@@ -1,11 +1,13 @@
 (module validation-predicates racket
   (require racket/contract
+           rackunit
            "../../constants.rkt"
            "../../sm-getters.rkt"
            "../../fsa.rkt"
            "../../tm.rkt"
            "../../pda.rkt"
-           "../../../../main.rkt")
+           "../../sm-apply.rkt"
+           "../../mtape-tm.rkt")
   (provide listof-words?
            listof-words-tm?
            words-in-sigma?

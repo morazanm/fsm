@@ -2,7 +2,6 @@
   (require "validation-predicates.rkt"
            "../error-formatting.rkt"
            "../../constants.rkt"
-           "../../fsa.rkt"
            racket/contract
            )
   (provide listof-words/c
