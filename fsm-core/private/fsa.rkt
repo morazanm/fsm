@@ -55,14 +55,14 @@
     (let [(dead (if (member DEAD states)
                     (generate-symbol 'D states)
                     DEAD))]
-      (concrete-dfsa (if (null? adddead) ; add dead state if optional argument is missing
+      (concrete-dfsa (if (or (null? adddead) (equal? adddead 'no-dead)) ; add dead state if optional argument is missing
                          (cons dead states)
                          states)
                      sigma
                      start
                      finals
                      (append deltas 
-                             (if (null? adddead)
+                             (if (or (null? adddead) (equal? adddead 'no-dead))
                                  (new-dead-rules (cons dead states) sigma deltas dead)
                                  null))))) ; add dead state  transitions if optional argument is missing
   
