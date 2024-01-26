@@ -12,11 +12,13 @@
 ;; Purpose: Generate a list of nodes
 (define (dot-nodes M)
   (let* ((start-state (sm-start M))
-         (final-states (if (not (eq? 'mttm-language-recognizer M))
-                           (sm-finals M)
+         (final-states (if (not (eq? 'mttm-language-recognizer (sm-type M)))
+                           (sm-finals M)                      
                            (filter (lambda (x) (not (eq? x (sm-accept M)))) (sm-finals M))))
-         (rest-states (filter (lambda (x) (not (member x (append (list start-state) final-states)))) (sm-states M)))
-         (accept-state (if (eq? 'mttm-language-recognizer M)
+         (dd (displayln (format "~s\n~s" (sm-finals M) final-states)))
+         (rest-states (filter (lambda (x) (and (not (member x (append (list start-state) final-states)))
+                                               (not (eq? x (sm-accept M))))) (sm-states M)))
+         (accept-state (if (eq? 'mttm-language-recognizer (sm-type M))
                            (sm-accept M)
                            '())))
     (append
