@@ -294,7 +294,7 @@ The given starting state: (A) is not a valid state"))
                           ) (format "Step three of the design recipe has not been successfully completed.
 The following starting state, F, is not in the given list of states: (A B C D)"))
 
-    (check-error (make-dfa2 '(A B)
+    (check-error (make-ndfa '(A B)
                           '(a b)
                           'A
                           '(A)
@@ -302,7 +302,6 @@ The following starting state, F, is not in the given list of states: (A B C D)")
                             (B b B)
                             (A b B)
                             (B a B))
-                          #t
                           #:accepts '((a a b a a a))
                           #:rejects '((b a a a) (a a a a b a)))
                  (format "Step six of the design recipe has not been successfully completed.
