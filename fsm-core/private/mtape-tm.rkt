@@ -1,7 +1,7 @@
 
 (module mttm racket
   (require "constants.rkt" "misc.rkt" "word.rkt")
-  (provide make-mttm
+  (provide make-unchecked-mttm
            mttm-get-states
            mttm-get-sigma
            mttm-get-start
@@ -23,7 +23,7 @@
 
   ;; (listof state) (listof alpha) state state (listof mttm-rule)
   ;; Assume: Rules are for k tapes
-  (define (make-mttm sts alpha start finals rules k . accept)
+  (define (make-unchecked-mttm sts alpha start finals rules k . accept)
     (define sigma (if (member LM alpha) alpha (cons LM alpha)))
     (define accept-state (if (null? accept) (void) (car accept)))
     (define (show-transitions w t1pos)

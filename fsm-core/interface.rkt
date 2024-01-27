@@ -107,9 +107,9 @@
                (eq? t1 'ndfa))
            (computation-diagram-fsa M w p)]
           [(eq? t1 'pda)
-           (computation-diagram-pda M w (list c p))]
+           (computation-diagram-pda M w c p)]
           [(or (eq? t1 'tm) (eq? t1 'tm-language-recognizer))
-           (computation-diagram-tm M w (if (empty? headpos) 0 (first headpos)) . (list c p))]
+           (computation-diagram-tm M w (if (empty? headpos) 0 (first headpos)) c p)]
           [(or (eq? t1 'mttm) (eq? t1 'mttm-language-recognizer))
            (error "Computation graphs for mttms coming soon!")]
           [else (error "Unknown machine type given to sm-cmpgraph.")])))
@@ -538,14 +538,14 @@
         (make-unchecked-tm states sigma rules start finals accept))
     )
 
-  (define/contract (make-mttm2 states sigma start finals rules num-tapes
+  (define/contract (make-mttm states sigma start finals rules num-tapes
                                [accept 'null]
                                #:accepts [accepts '()]
                                #:rejects [rejects '()])
     make-mttm/c
     (if (equal? accept 'null)
-        (make-mttm states sigma start finals rules num-tapes)
-        (make-mttm states sigma start finals rules num-tapes accept))
+        (make-unchecked-mttm states sigma start finals rules num-tapes)
+        (make-unchecked-mttm states sigma start finals rules num-tapes accept))
     )
 
 

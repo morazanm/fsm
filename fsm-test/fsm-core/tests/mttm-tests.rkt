@@ -1,6 +1,5 @@
 (module mttm-tests racket
-  (require "../constructors.rkt"
-           "../../constants.rkt"
+  (require "../../../main.rkt"
            racket/contract
            )
   (local-require test-engine/racket-tests)
@@ -11,7 +10,7 @@
   ;;valid-listof/c tests
   ;;STATES
   ;;Invalid number
-  (check-error (make-mttm2 '(S Y N 1)
+  (check-error (make-mttm '(S Y N 1)
                            `(a b)
                            'S
                            '(Y N)
@@ -27,7 +26,7 @@
                            'Y
                            ) (format "Step three of the design recipe was not successfully completed.
 The following: (1) are not valid machine states in the given list of machine states: (S Y N 1)"))
-  (check-error (make-mttm2 '(S Y N 1 2)
+  (check-error (make-mttm '(S Y N 1 2)
                            `(a b)
                            'S
                            '(Y N)
@@ -44,7 +43,7 @@ The following: (1) are not valid machine states in the given list of machine sta
                            ) (format "Step three of the design recipe was not successfully completed.
 The following: (1 2) are not valid machine states in the given list of machine states: (S Y N 1 2)"))
   ;;Invalid letter
-  (check-error (make-mttm2 '(S Y N a)
+  (check-error (make-mttm '(S Y N a)
                            `(a b)
                            'S
                            '(Y N)
@@ -60,7 +59,7 @@ The following: (1 2) are not valid machine states in the given list of machine s
                            'Y
                            ) (format "Step three of the design recipe was not successfully completed.
 The following: (a) are not valid machine states in the given list of machine states: (S Y N a)"))
-  (check-error (make-mttm2 '(S Y N a b)
+  (check-error (make-mttm '(S Y N a b)
                            `(a b)
                            'S
                            '(Y N)
@@ -77,7 +76,7 @@ The following: (a) are not valid machine states in the given list of machine sta
                            ) (format "Step three of the design recipe was not successfully completed.
 The following: (a b) are not valid machine states in the given list of machine states: (S Y N a b)"))
   ;;Duplicate states
-  (check-error (make-mttm2 '(S Y N S)
+  (check-error (make-mttm '(S Y N S)
                            `(a b)
                            'S
                            '(Y N)
@@ -93,7 +92,7 @@ The following: (a b) are not valid machine states in the given list of machine s
                            'Y
                            ) (format "Step three of the design recipe has not been sucessfully completed.
 There following values, (S), are duplicated in the given states:  (S Y N S)"))
-  (check-error (make-mttm2 '(S Y N S S)
+  (check-error (make-mttm '(S Y N S S)
                            `(a b)
                            'S
                            '(Y N)
@@ -109,7 +108,7 @@ There following values, (S), are duplicated in the given states:  (S Y N S)"))
                            'Y
                            ) (format "Step three of the design recipe has not been sucessfully completed.
 There following values, (S), are duplicated in the given states:  (S Y N S S)"))
-  (check-error (make-mttm2 '(S Y Y N S S)
+  (check-error (make-mttm '(S Y Y N S S)
                            `(a b)
                            'S
                            '(Y N)
@@ -127,7 +126,7 @@ There following values, (S), are duplicated in the given states:  (S Y N S S)"))
 There following values, (S Y), are duplicated in the given states:  (S Y Y N S S)"))
   ;;SIGMA
   ;invalid number
-  (check-error (make-mttm2 '(S Y N)
+  (check-error (make-mttm '(S Y N)
                            `(a b 1)
                            'S
                            '(Y N)
@@ -143,7 +142,7 @@ There following values, (S Y), are duplicated in the given states:  (S Y Y N S S
                            'Y
                            ) (format "Step one of the design recipe was not successfully completed.
 The following: (1) are not valid lowercase alphabet letters in the given input alphabet: (a b 1)"))
-  (check-error (make-mttm2 '(S Y N)
+  (check-error (make-mttm '(S Y N)
                            `(a b 1 2)
                            'S
                            '(Y N)
@@ -160,7 +159,7 @@ The following: (1) are not valid lowercase alphabet letters in the given input a
                            ) (format "Step one of the design recipe was not successfully completed.
 The following: (1 2) are not valid lowercase alphabet letters in the given input alphabet: (a b 1 2)"))
   ;invalid letter
-  (check-error (make-mttm2 '(S Y N)
+  (check-error (make-mttm '(S Y N)
                            `(a b A)
                            'S
                            '(Y N)
@@ -176,7 +175,7 @@ The following: (1 2) are not valid lowercase alphabet letters in the given input
                            'Y
                            ) (format "Step one of the design recipe was not successfully completed.
 The following: (A) are not valid lowercase alphabet letters in the given input alphabet: (a b A)"))
-  (check-error (make-mttm2 '(S Y N)
+  (check-error (make-mttm '(S Y N)
                            `(a b A B)
                            'S
                            '(Y N)
@@ -193,7 +192,7 @@ The following: (A) are not valid lowercase alphabet letters in the given input a
                            ) (format "Step one of the design recipe was not successfully completed.
 The following: (A B) are not valid lowercase alphabet letters in the given input alphabet: (a b A B)"))
   ;duplicate letter
-  (check-error (make-mttm2 '(S Y N)
+  (check-error (make-mttm '(S Y N)
                            `(a b a)
                            'S
                            '(Y N)
@@ -209,7 +208,7 @@ The following: (A B) are not valid lowercase alphabet letters in the given input
                            'Y
                            ) (format "Step one of the design recipe has not been sucessfully completed.
 There following values, (a), are duplicated in the given sigma:  (a b a)"))
-  (check-error (make-mttm2 '(S Y N)
+  (check-error (make-mttm '(S Y N)
                            `(a b a a)
                            'S
                            '(Y N)
@@ -225,7 +224,7 @@ There following values, (a), are duplicated in the given sigma:  (a b a)"))
                            'Y
                            ) (format "Step one of the design recipe has not been sucessfully completed.
 There following values, (a), are duplicated in the given sigma:  (a b a a)"))
-  (check-error (make-mttm2 '(S Y N)
+  (check-error (make-mttm '(S Y N)
                            `(a b a b)
                            'S
                            '(Y N)
@@ -243,7 +242,7 @@ There following values, (a), are duplicated in the given sigma:  (a b a a)"))
 There following values, (a b), are duplicated in the given sigma:  (a b a b)"))
   ;;FINALS
   ;invalid final state
-  (check-error (make-mttm2 '(S Y N)
+  (check-error (make-mttm '(S Y N)
                            `(a b)
                            'S
                            '(Y N 1)
@@ -259,7 +258,7 @@ There following values, (a b), are duplicated in the given sigma:  (a b a b)"))
                            'Y
                            ) (format "Step three of the design recipe was not successfully completed.
 The following: (1) are not valid machine states in the given list of machine finals: (Y N 1)"))
-  (check-error (make-mttm2 '(S Y N)
+  (check-error (make-mttm '(S Y N)
                            `(a b)
                            'S
                            '(Y N 1 2)
@@ -276,7 +275,7 @@ The following: (1) are not valid machine states in the given list of machine fin
                            ) (format "Step three of the design recipe was not successfully completed.
 The following: (1 2) are not valid machine states in the given list of machine finals: (Y N 1 2)"))
   ;invalid letter
-  (check-error (make-mttm2 '(S Y N)
+  (check-error (make-mttm '(S Y N)
                            `(a b)
                            'S
                            '(Y N a)
@@ -292,7 +291,7 @@ The following: (1 2) are not valid machine states in the given list of machine f
                            'Y
                            ) (format "Step three of the design recipe was not successfully completed.
 The following: (a) are not valid machine states in the given list of machine finals: (Y N a)"))
-  (check-error (make-mttm2 '(S Y N)
+  (check-error (make-mttm '(S Y N)
                            `(a b)
                            'S
                            '(Y N a a)
@@ -308,7 +307,7 @@ The following: (a) are not valid machine states in the given list of machine fin
                            'Y
                            ) (format "Step three of the design recipe was not successfully completed.
 The following: (a a) are not valid machine states in the given list of machine finals: (Y N a a)"))
-  (check-error (make-mttm2 '(S Y N)
+  (check-error (make-mttm '(S Y N)
                            `(a b)
                            'S
                            '(Y N a b)
@@ -325,7 +324,7 @@ The following: (a a) are not valid machine states in the given list of machine f
                            ) (format "Step three of the design recipe was not successfully completed.
 The following: (a b) are not valid machine states in the given list of machine finals: (Y N a b)"))
   ;not in list of states
-  (check-error (make-mttm2 '(S Y N)
+  (check-error (make-mttm '(S Y N)
                            `(a b)
                            'S
                            '(Y N F)
@@ -341,7 +340,7 @@ The following: (a b) are not valid machine states in the given list of machine f
                            'Y
                            ) (format "Step three of the design recipe has not been successfully completed.
 The following final states, (F), are not in your list of states: (S Y N)"))
-  (check-error (make-mttm2 '(S Y N)
+  (check-error (make-mttm '(S Y N)
                            `(a b)
                            'S
                            '(Y N F G)
@@ -358,7 +357,7 @@ The following final states, (F), are not in your list of states: (S Y N)"))
                            ) (format "Step three of the design recipe has not been successfully completed.
 The following final states, (F G), are not in your list of states: (S Y N)"))
   ;duplicates
-  (check-error (make-mttm2 '(S Y N)
+  (check-error (make-mttm '(S Y N)
                            `(a b)
                            'S
                            '(Y N N)
@@ -374,7 +373,7 @@ The following final states, (F G), are not in your list of states: (S Y N)"))
                            'Y
                            ) (format "Step three of the design recipe has not been sucessfully completed.
 There following values, (N), are duplicated in the given final states:  (Y N N)"))
-  (check-error (make-mttm2 '(S Y N)
+  (check-error (make-mttm '(S Y N)
                            `(a b)
                            'S
                            '(Y N N Y)
@@ -392,7 +391,7 @@ There following values, (N), are duplicated in the given final states:  (Y N N)"
 There following values, (Y N), are duplicated in the given final states:  (Y N N Y)"))
 
   ;;START STATE
-  (check-error (make-mttm2 '(S Y N)
+  (check-error (make-mttm '(S Y N)
                            `(a b)
                            '1
                            '(Y N)
@@ -408,7 +407,7 @@ There following values, (Y N), are duplicated in the given final states:  (Y N N
                            'Y
                            ) (format "Step three of the design recipe was not successfully completed.
 The given starting state: 1 is not a valid state"))
-  (check-error (make-mttm2 '(S Y N)
+  (check-error (make-mttm '(S Y N)
                            `(a b)
                            'a
                            '(Y N)
@@ -424,7 +423,7 @@ The given starting state: 1 is not a valid state"))
                            'Y
                            ) (format "Step three of the design recipe was not successfully completed.
 The given starting state: a is not a valid state"))
-  (check-error (make-mttm2 '(S Y N)
+  (check-error (make-mttm '(S Y N)
                            `(a b)
                            '(A)
                            '(Y N)
@@ -440,7 +439,7 @@ The given starting state: a is not a valid state"))
                            'Y
                            ) (format "Step three of the design recipe was not successfully completed.
 The given starting state: (A) is not a valid state"))
-  (check-error (make-mttm2 '(S Y N)
+  (check-error (make-mttm '(S Y N)
                            `(a b)
                            'F
                            '(Y N)
@@ -457,7 +456,7 @@ The given starting state: (A) is not a valid state"))
                            ) (format "Step three of the design recipe has not been successfully completed.
 The following starting state, F, is not in the given list of states: (S Y N)"))
 
-  (check-error (make-mttm2 '(S Y N C D E F G)
+  (check-error (make-mttm '(S Y N C D E F G)
                            '(a b c)
                            'S
                            '(Y N)
@@ -508,7 +507,7 @@ The following starting state, F, is not in the given list of states: (S Y N)"))
                (format "Step six of the design recipe has not been successfully completed.
 The constructed machine does not accept the following words:  ((@ _ a b c c))"))
 
-  (check-error (make-mttm2 '(S Y N C D E F G)
+  (check-error (make-mttm '(S Y N C D E F G)
                            '(a b c)
                            'S
                            '(Y N)

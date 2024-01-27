@@ -332,7 +332,7 @@
                              num-tapes
                              accept
                              accepts?) words)
-    (define temp-machine (make-mttm states sigma start finals rules num-tapes accept))
+    (define temp-machine (make-unchecked-mttm states sigma start finals rules num-tapes accept))
     (andmap (lambda (word) (equal? (apply-input-tm temp-machine word) accepts?)) words)
     )
 
@@ -350,7 +350,7 @@
                              words
                              accept
                              accepts?)
-    (define temp-machine (make-mttm states sigma start finals rules num-tapes accept))
+    (define temp-machine (make-unchecked-mttm states sigma start finals rules num-tapes accept))
     (filter (lambda (word) (equal? (apply-input-tm temp-machine word) (if (equal? 'accept accepts?) 'reject 'accept))) words))
 
   (module+ test

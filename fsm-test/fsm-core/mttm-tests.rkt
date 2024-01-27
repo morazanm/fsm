@@ -3,23 +3,23 @@
 
 
 
-(define ADD (make-mttm '(S A T U V)
-                       `(I)
+(define ADD (make-mttm '(S A T U V H Q)
+                       `(i)
                        'S
                        '(H)
                        `(((S (,BLANK ,BLANK ,BLANK)) (A (R R R)))
-                         ((A (I ,BLANK ,BLANK)) (A (,BLANK I ,BLANK)))
-                         ((A (,BLANK I ,BLANK)) (A (R R ,BLANK)))
+                         ((A (i ,BLANK ,BLANK)) (A (,BLANK i ,BLANK)))
+                         ((A (,BLANK i ,BLANK)) (A (R R ,BLANK)))
                          ((A (,BLANK ,BLANK ,BLANK)) (T (R ,BLANK ,BLANK)))
-                         ((T (I ,BLANK ,BLANK)) (T (,BLANK ,BLANK I)))
-                         ((T (,BLANK ,BLANK I)) (T (R ,BLANK R)))
+                         ((T (i ,BLANK ,BLANK)) (T (,BLANK ,BLANK i)))
+                         ((T (,BLANK ,BLANK i)) (T (R ,BLANK R)))
                          ((T (,BLANK ,BLANK ,BLANK)) (Q (L ,BLANK ,BLANK)))
                          ((Q (,BLANK ,BLANK ,BLANK)) (U (L L L)))
-                         ((U (,BLANK I I)) (U (I I ,BLANK)))
-                         ((U (I I ,BLANK)) (U (L I L)))
-                         ((U (,BLANK I ,BLANK)) (V (,BLANK I ,BLANK)))
-                         ((V (,BLANK I ,BLANK)) (V (I ,BLANK ,BLANK)))
-                         ((V (I ,BLANK ,BLANK)) (V (L L ,BLANK)))
+                         ((U (,BLANK i i)) (U (i i ,BLANK)))
+                         ((U (i i ,BLANK)) (U (L i L)))
+                         ((U (,BLANK i ,BLANK)) (V (,BLANK i ,BLANK)))
+                         ((V (,BLANK i ,BLANK)) (V (i ,BLANK ,BLANK)))
+                         ((V (i ,BLANK ,BLANK)) (V (L L ,BLANK)))
                          ((V (,BLANK ,BLANK ,BLANK)) (H (,BLANK ,BLANK ,BLANK))))
                        3))
 
@@ -33,7 +33,7 @@
 ;; HOW: Skip a's; copy b's, c's, d's to T2, T3, and T4. move all heaps to
 ;;      starting blank, match a's, b's, c's, and d's
 (define a^nb^nc^nd^n (make-mttm
-                      '(S A Y N)
+                      '(S A Y N Q F B C D E)
                       '(a b c d)
                       'S
                       '(Y N)
@@ -59,7 +59,6 @@
                         ((B (b b ,BLANK ,BLANK)) (B (R R ,BLANK ,BLANK)))
                         ((B (c ,BLANK ,BLANK ,BLANK)) (C (c ,BLANK ,BLANK ,BLANK)))
                         ;; No c's reject
-                        ((B (,BLANK ,BLANK ,BLANK ,BLANK)) (N (,BLANK ,BLANK ,BLANK ,BLANK)))
                         ((B (a ,BLANK ,BLANK ,BLANK)) (N (a ,BLANK ,BLANK ,BLANK)))
                         ((B (d ,BLANK ,BLANK ,BLANK)) (N (d ,BLANK ,BLANK ,BLANK)))
                         ;; Copy the c's on T1 to T3
@@ -105,144 +104,144 @@
 (module+ test 
   (require rackunit rackunit/text-ui)
   
-  (check-equal? (sm-states ADD) (list 'S 'A 'T 'U 'V))
-  (check-equal? (sm-sigma ADD) (list 'I))
+  (check-equal? (sm-states ADD) (list 'S 'A 'T 'U 'V 'H 'Q))
+  (check-equal? (sm-sigma ADD) (list 'i))
   (check-equal? (sm-start ADD) 'S)
   (check-equal? (sm-finals ADD) '(H))
   (check-equal? (sm-rules ADD)
                 (list
                  (list (list 'S (list '_ '_ '_)) (list 'A (list 'R 'R 'R)))
-                 (list (list 'A (list 'I '_ '_)) (list 'A (list '_ 'I '_)))
-                 (list (list 'A (list '_ 'I '_)) (list 'A (list 'R 'R '_)))
+                 (list (list 'A (list 'i '_ '_)) (list 'A (list '_ 'i '_)))
+                 (list (list 'A (list '_ 'i '_)) (list 'A (list 'R 'R '_)))
                  (list (list 'A (list '_ '_ '_)) (list 'T (list 'R '_ '_)))
-                 (list (list 'T (list 'I '_ '_)) (list 'T (list '_ '_ 'I)))
-                 (list (list 'T (list '_ '_ 'I)) (list 'T (list 'R '_ 'R)))
+                 (list (list 'T (list 'i '_ '_)) (list 'T (list '_ '_ 'i)))
+                 (list (list 'T (list '_ '_ 'i)) (list 'T (list 'R '_ 'R)))
                  (list (list 'T (list '_ '_ '_)) (list 'Q (list 'L '_ '_)))
                  (list (list 'Q (list '_ '_ '_)) (list 'U (list 'L 'L 'L)))
-                 (list (list 'U (list '_ 'I 'I)) (list 'U (list 'I 'I '_)))
-                 (list (list 'U (list 'I 'I '_)) (list 'U (list 'L 'I 'L)))
-                 (list (list 'U (list '_ 'I '_)) (list 'V (list '_ 'I '_)))
-                 (list (list 'V (list '_ 'I '_)) (list 'V (list 'I '_ '_)))
-                 (list (list 'V (list 'I '_ '_)) (list 'V (list 'L 'L '_)))
+                 (list (list 'U (list '_ 'i 'i)) (list 'U (list 'i 'i '_)))
+                 (list (list 'U (list 'i 'i '_)) (list 'U (list 'L 'i 'L)))
+                 (list (list 'U (list '_ 'i '_)) (list 'V (list '_ 'i '_)))
+                 (list (list 'V (list '_ 'i '_)) (list 'V (list 'i '_ '_)))
+                 (list (list 'V (list 'i '_ '_)) (list 'V (list 'L 'L '_)))
                  (list (list 'V (list '_ '_ '_)) (list 'H (list '_ '_ '_)))))
   (check-equal? (sm-numtapes ADD) 3)
-  (check-equal? (sm-apply ADD `(,BLANK I I I ,BLANK I I))
+  (check-equal? (sm-apply ADD `(,BLANK i i i ,BLANK i i))
                 (list
                  'H
-                 (list 0 (list '_ 'I 'I 'I 'I 'I '_ '_))
+                 (list 0 (list '_ 'i 'i 'i 'i 'i '_ '_))
                  (list 0 (list '_ '_ '_ '_ '_))
                  (list 0 (list '_ '_ '_ '_))))
-  (check-equal? (sm-showtransitions ADD `(,BLANK I I I ,BLANK I I))
+  (check-equal? (sm-showtransitions ADD `(,BLANK i i i ,BLANK i i))
                 (list
-                 (list 'S (list 0 (list '_ 'I 'I 'I '_ 'I 'I)) (list 0 (list '_)) (list 0 (list '_)))
-                 (list 'A (list 1 (list '_ 'I 'I 'I '_ 'I 'I)) (list 1 (list '_ '_)) (list 1 (list '_ '_)))
-                 (list 'A (list 1 (list '_ '_ 'I 'I '_ 'I 'I)) (list 1 (list '_ 'I)) (list 1 (list '_ '_)))
-                 (list 'A (list 2 (list '_ '_ 'I 'I '_ 'I 'I)) (list 2 (list '_ 'I '_)) (list 1 (list '_ '_)))
-                 (list 'A (list 2 (list '_ '_ '_ 'I '_ 'I 'I)) (list 2 (list '_ 'I 'I)) (list 1 (list '_ '_)))
-                 (list 'A (list 3 (list '_ '_ '_ 'I '_ 'I 'I)) (list 3 (list '_ 'I 'I '_)) (list 1 (list '_ '_)))
-                 (list 'A (list 3 (list '_ '_ '_ '_ '_ 'I 'I)) (list 3 (list '_ 'I 'I 'I)) (list 1 (list '_ '_)))
+                 (list 'S (list 0 (list '_ 'i 'i 'i '_ 'i 'i)) (list 0 (list '_)) (list 0 (list '_)))
+                 (list 'A (list 1 (list '_ 'i 'i 'i '_ 'i 'i)) (list 1 (list '_ '_)) (list 1 (list '_ '_)))
+                 (list 'A (list 1 (list '_ '_ 'i 'i '_ 'i 'i)) (list 1 (list '_ 'i)) (list 1 (list '_ '_)))
+                 (list 'A (list 2 (list '_ '_ 'i 'i '_ 'i 'i)) (list 2 (list '_ 'i '_)) (list 1 (list '_ '_)))
+                 (list 'A (list 2 (list '_ '_ '_ 'i '_ 'i 'i)) (list 2 (list '_ 'i 'i)) (list 1 (list '_ '_)))
+                 (list 'A (list 3 (list '_ '_ '_ 'i '_ 'i 'i)) (list 3 (list '_ 'i 'i '_)) (list 1 (list '_ '_)))
+                 (list 'A (list 3 (list '_ '_ '_ '_ '_ 'i 'i)) (list 3 (list '_ 'i 'i 'i)) (list 1 (list '_ '_)))
                  (list
                   'A
-                  (list 4 (list '_ '_ '_ '_ '_ 'I 'I))
-                  (list 4 (list '_ 'I 'I 'I '_))
+                  (list 4 (list '_ '_ '_ '_ '_ 'i 'i))
+                  (list 4 (list '_ 'i 'i 'i '_))
                   (list 1 (list '_ '_)))
                  (list
                   'T
-                  (list 5 (list '_ '_ '_ '_ '_ 'I 'I))
-                  (list 4 (list '_ 'I 'I 'I '_))
+                  (list 5 (list '_ '_ '_ '_ '_ 'i 'i))
+                  (list 4 (list '_ 'i 'i 'i '_))
                   (list 1 (list '_ '_)))
                  (list
                   'T
-                  (list 5 (list '_ '_ '_ '_ '_ '_ 'I))
-                  (list 4 (list '_ 'I 'I 'I '_))
-                  (list 1 (list '_ 'I)))
+                  (list 5 (list '_ '_ '_ '_ '_ '_ 'i))
+                  (list 4 (list '_ 'i 'i 'i '_))
+                  (list 1 (list '_ 'i)))
                  (list
                   'T
-                  (list 6 (list '_ '_ '_ '_ '_ '_ 'I))
-                  (list 4 (list '_ 'I 'I 'I '_))
-                  (list 2 (list '_ 'I '_)))
+                  (list 6 (list '_ '_ '_ '_ '_ '_ 'i))
+                  (list 4 (list '_ 'i 'i 'i '_))
+                  (list 2 (list '_ 'i '_)))
                  (list
                   'T
                   (list 6 (list '_ '_ '_ '_ '_ '_ '_))
-                  (list 4 (list '_ 'I 'I 'I '_))
-                  (list 2 (list '_ 'I 'I)))
+                  (list 4 (list '_ 'i 'i 'i '_))
+                  (list 2 (list '_ 'i 'i)))
                  (list
                   'T
                   (list 7 (list '_ '_ '_ '_ '_ '_ '_ '_))
-                  (list 4 (list '_ 'I 'I 'I '_))
-                  (list 3 (list '_ 'I 'I '_)))
+                  (list 4 (list '_ 'i 'i 'i '_))
+                  (list 3 (list '_ 'i 'i '_)))
                  (list
                   'Q
                   (list 6 (list '_ '_ '_ '_ '_ '_ '_ '_))
-                  (list 4 (list '_ 'I 'I 'I '_))
-                  (list 3 (list '_ 'I 'I '_)))
+                  (list 4 (list '_ 'i 'i 'i '_))
+                  (list 3 (list '_ 'i 'i '_)))
                  (list
                   'U
                   (list 5 (list '_ '_ '_ '_ '_ '_ '_ '_))
-                  (list 3 (list '_ 'I 'I 'I '_))
-                  (list 2 (list '_ 'I 'I '_)))
+                  (list 3 (list '_ 'i 'i 'i '_))
+                  (list 2 (list '_ 'i 'i '_)))
                  (list
                   'U
-                  (list 5 (list '_ '_ '_ '_ '_ 'I '_ '_))
-                  (list 3 (list '_ 'I 'I 'I '_))
-                  (list 2 (list '_ 'I '_ '_)))
+                  (list 5 (list '_ '_ '_ '_ '_ 'i '_ '_))
+                  (list 3 (list '_ 'i 'i 'i '_))
+                  (list 2 (list '_ 'i '_ '_)))
                  (list
                   'U
-                  (list 4 (list '_ '_ '_ '_ '_ 'I '_ '_))
-                  (list 3 (list '_ 'I 'I 'I '_))
-                  (list 1 (list '_ 'I '_ '_)))
+                  (list 4 (list '_ '_ '_ '_ '_ 'i '_ '_))
+                  (list 3 (list '_ 'i 'i 'i '_))
+                  (list 1 (list '_ 'i '_ '_)))
                  (list
                   'U
-                  (list 4 (list '_ '_ '_ '_ 'I 'I '_ '_))
-                  (list 3 (list '_ 'I 'I 'I '_))
+                  (list 4 (list '_ '_ '_ '_ 'i 'i '_ '_))
+                  (list 3 (list '_ 'i 'i 'i '_))
                   (list 1 (list '_ '_ '_ '_)))
                  (list
                   'U
-                  (list 3 (list '_ '_ '_ '_ 'I 'I '_ '_))
-                  (list 3 (list '_ 'I 'I 'I '_))
+                  (list 3 (list '_ '_ '_ '_ 'i 'i '_ '_))
+                  (list 3 (list '_ 'i 'i 'i '_))
                   (list 0 (list '_ '_ '_ '_)))
                  (list
                   'V
-                  (list 3 (list '_ '_ '_ '_ 'I 'I '_ '_))
-                  (list 3 (list '_ 'I 'I 'I '_))
+                  (list 3 (list '_ '_ '_ '_ 'i 'i '_ '_))
+                  (list 3 (list '_ 'i 'i 'i '_))
                   (list 0 (list '_ '_ '_ '_)))
                  (list
                   'V
-                  (list 3 (list '_ '_ '_ 'I 'I 'I '_ '_))
-                  (list 3 (list '_ 'I 'I '_ '_))
+                  (list 3 (list '_ '_ '_ 'i 'i 'i '_ '_))
+                  (list 3 (list '_ 'i 'i '_ '_))
                   (list 0 (list '_ '_ '_ '_)))
                  (list
                   'V
-                  (list 2 (list '_ '_ '_ 'I 'I 'I '_ '_))
-                  (list 2 (list '_ 'I 'I '_ '_))
+                  (list 2 (list '_ '_ '_ 'i 'i 'i '_ '_))
+                  (list 2 (list '_ 'i 'i '_ '_))
                   (list 0 (list '_ '_ '_ '_)))
                  (list
                   'V
-                  (list 2 (list '_ '_ 'I 'I 'I 'I '_ '_))
-                  (list 2 (list '_ 'I '_ '_ '_))
+                  (list 2 (list '_ '_ 'i 'i 'i 'i '_ '_))
+                  (list 2 (list '_ 'i '_ '_ '_))
                   (list 0 (list '_ '_ '_ '_)))
                  (list
                   'V
-                  (list 1 (list '_ '_ 'I 'I 'I 'I '_ '_))
-                  (list 1 (list '_ 'I '_ '_ '_))
+                  (list 1 (list '_ '_ 'i 'i 'i 'i '_ '_))
+                  (list 1 (list '_ 'i '_ '_ '_))
                   (list 0 (list '_ '_ '_ '_)))
                  (list
                   'V
-                  (list 1 (list '_ 'I 'I 'I 'I 'I '_ '_))
+                  (list 1 (list '_ 'i 'i 'i 'i 'i '_ '_))
                   (list 1 (list '_ '_ '_ '_ '_))
                   (list 0 (list '_ '_ '_ '_)))
                  (list
                   'V
-                  (list 0 (list '_ 'I 'I 'I 'I 'I '_ '_))
+                  (list 0 (list '_ 'i 'i 'i 'i 'i '_ '_))
                   (list 0 (list '_ '_ '_ '_ '_))
                   (list 0 (list '_ '_ '_ '_)))
                  (list
                   'H
-                  (list 0 (list '_ 'I 'I 'I 'I 'I '_ '_))
+                  (list 0 (list '_ 'i 'i 'i 'i 'i '_ '_))
                   (list 0 (list '_ '_ '_ '_ '_))
                   (list 0 (list '_ '_ '_ '_)))))
 
-  (check-equal? (sm-states a^nb^nc^nd^n) (list 'S 'A 'Y 'N))
+  (check-equal? (sm-states a^nb^nc^nd^n) (list 'S 'A 'Y 'N 'Q 'F 'B 'C 'D 'E))
   (check-equal? (sm-sigma a^nb^nc^nd^n) (list 'a 'b 'c 'd))
   (check-equal? (sm-start a^nb^nc^nd^n) 'S)
   (check-equal? (sm-finals a^nb^nc^nd^n) '(Y N))
@@ -263,7 +262,6 @@
                  (list (list 'B (list '_ '_ '_ '_)) (list 'N (list '_ '_ '_ '_)))
                  (list (list 'B (list 'b 'b '_ '_)) (list 'B (list 'R 'R '_ '_)))
                  (list (list 'B (list 'c '_ '_ '_)) (list 'C (list 'c '_ '_ '_)))
-                 (list (list 'B (list '_ '_ '_ '_)) (list 'N (list '_ '_ '_ '_)))
                  (list (list 'B (list 'a '_ '_ '_)) (list 'N (list 'a '_ '_ '_)))
                  (list (list 'B (list 'd '_ '_ '_)) (list 'N (list 'd '_ '_ '_)))
                  (list (list 'C (list 'c '_ '_ '_)) (list 'C (list 'c '_ 'c '_)))
@@ -483,7 +481,7 @@
                   (list 0 (list '_ 'c 'c '_))
                   (list 0 (list '_ 'd 'd '_)))
                  'accept))
-  (check-equal? (sm-sameresult? ADD ADD `(,BLANK I I I ,BLANK I I I)) #true)
+  (check-equal? (sm-sameresult? ADD ADD `(,BLANK i i i ,BLANK i i i)) #true)
 
   ;; Exception Checks Below:
   (check-exn exn:fail? (lambda () (sm-sameresult? ADD a^nb^nc^nd^n `(,BLANK a a b b c c d d))))
