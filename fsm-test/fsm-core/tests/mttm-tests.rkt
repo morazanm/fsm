@@ -1,6 +1,5 @@
 (module mttm-tests racket
-  (require "../constructors.rkt"
-           "../../constants.rkt"
+  (require "../../../main.rkt"
            racket/contract
            )
   (local-require test-engine/racket-tests)
