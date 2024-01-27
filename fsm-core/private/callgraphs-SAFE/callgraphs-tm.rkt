@@ -284,9 +284,7 @@
                               (eq? (first los) start-state)) "dodgerblue"]
                         [else "black"]))
                  (a-shape
-                  (cond [(and (eq? (sm-type M) 'tm-language-recognizer)
-                              (eq? (first los) (sm-accept M))) "doubleoctagon"]
-                        [(member (first los) final-states) "doublecircle"]
+                  (cond [(member (first los) final-states) "doublecircle"]
                         [else "circle"]))
                  (a-label
                   (symbol->string (first los)))
