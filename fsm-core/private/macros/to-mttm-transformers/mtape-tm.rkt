@@ -1,7 +1,7 @@
 
 (module mttm racket
-  (require "constants.rkt" "misc.rkt" "word.rkt")
-  (provide make-unchecked-mttm
+  (require "../../constants.rkt" "../../misc.rkt" "../../word.rkt")
+  (provide make-mttm
            mttm-get-states
            mttm-get-sigma
            mttm-get-start
@@ -23,25 +23,28 @@
 
   ;; (listof state) (listof alpha) state state (listof mttm-rule)
   ;; Assume: Rules are for k tapes
-  (define (make-unchecked-mttm sts alpha start finals rules k . accept)
+  (define (make-mttm sts alpha start finals rules k . accept)
     (define sigma (if (member LM alpha) alpha (cons LM alpha)))
     (define accept-state (if (null? accept) (void) (car accept)))
     (define (show-transitions w t1pos)
       ;; (listof mttm-config) --> (listof tmconfig)
       (define (run paths)
-        ;(display (format "PATHS: ~s\n" paths))
+        ;(displayln "NEW PATHS...")
+        ;(for-each (λ (p) (displayln (format "~s\n\n" p))) paths)
+        ;(displayln (format "\n"))
+        ;(display (format "PATHS: ~s\n\n" paths))
         (if (empty? paths)
             (cond [(void? accept-state)
                    (error "Turing machine exhausted all computation paths without reaching a halting state.")]
                   [else (list 'reject)])
             (let* ((currpath (first paths))
-                   ;(d (displayln (format "First of urrent path: ~s\n" (first currpath))))
+                   ;(d (displayln (format "First two of curr path: ~s ~s\n" (first currpath) (if (> (length currpath) 1) (second currpath) (void)))))
                    (currstate (first (first currpath))))
               (if (member currstate finals)
                   (cond [(void? accept-state) currpath] ;; if not a lang recog halt
                         [(eq? currstate accept-state)   ;; if lang recog add 'accept
                          (cons 'accept currpath)]
-                        [else (run (rest paths))]) ;; else add 'reject
+                        [else (run (rest paths))]) ;; explore the rest of the computations
                   (let* ((pos-tapes (rest (first currpath)))
                          ;(ddd (display (format "pos-tapes: ~s\n" pos-tapes)))
                          (posns (map first pos-tapes))
@@ -85,6 +88,7 @@
                                                          tapes
                                                          actions))))
                                           rls))
+                         ;(ddd (displayln (format "newconfigs: ~s\n" newconfigs)))
                          (newpaths (map (λ (config) (cons config currpath)) newconfigs)))
                     (run (append (rest paths) newpaths)))))))
       (let* ((init-config (cons start
@@ -123,9 +127,9 @@
   (define (mttm-get-rules M) (M 'get-rules))
   (define (mttm-what-am-i M) (M 'whatami))
   (define (mttm-get-accept M) (M 'get-accept))
-  (define (mttm-apply M w . t1pos) ((M 'apply) w (if (null? t1pos) 0 (car t1pos))))
+  (define (mttm-apply M w . t1pos) ((M 'apply) (if (empty? w) `(,BLANK) w) (if (null? t1pos) 0 (car t1pos))))
   (define (mttm-show-transitions M w . t1pos)
-    ((M 'show-transitions) w (if (null? t1pos) 0 (car t1pos))))
+    ((M 'show-transitions) (if (empty? w) `(,BLANK) w) (if (null? t1pos) 0 (car t1pos))))
 
   
   ) ; closes module

@@ -116,6 +116,7 @@
 ; L = a*/b* 
 (define ndfa-inter-a*-b* (sm-intersection dfa-a* dfa-b*))
 
+
 (check-equal? (sm-apply ndfa-inter-a*-b* ' (a b a a b)) 'reject)
 (check-equal? (sm-apply ndfa-inter-a*-b* ' (b b b)) 'reject)
 (check-equal? (sm-apply ndfa-inter-a*-b* ' (a a a)) 'reject)
@@ -168,7 +169,7 @@
 (check-equal? (sm-apply nota*Unotb* ' ( a )) 'accept)
 (check-equal? (sm-apply nota*Unotb* ' (b b b)) 'accept)
 (check-equal? (sm-apply nota*Unotb* ' (a a a)) 'accept)
-(check-equal? (sm-apply nota*Unotb* ' (a b b a a )) 'accept)
+(check-equal? (sm-apply nota*Unotb* ' (a b b a a)) 'accept)
 
 ; L = (a*b*)*
 (define ndfa-kleenestar-concat-a*b* (sm-kleenestar ndfa-concat-a*b*))
@@ -306,7 +307,7 @@
 (check-equal? (sm-apply pda-kleenestar-eq#asndbs '( b a b a a a b b )) 'accept)
 
 ; L = wcw^R
-(define pda-wCwreverse (make-ndpda '(S M M2 F)
+(define pda-wCwreverse (make-ndpda '(S M N F)
                                    '(a b c)
                                    '(a b)
                                    'S
@@ -314,10 +315,10 @@
                                    `(((S ,EMP ,EMP) (M ,EMP))
                                      ((M a ,EMP) (M (a)))
                                      ((M b ,EMP) (M (b)))
-                                     ((M c ,EMP) (M2 ,EMP))
-                                     ((M2 b (b)) (M2 ,EMP))
-                                     ((M2 a (a)) (M2 ,EMP))
-                                     ((M2 ,EMP ,EMP) (F ,EMP)))))
+                                     ((M c ,EMP) (N ,EMP))
+                                     ((N b (b)) (N ,EMP))
+                                     ((N a (a)) (N ,EMP))
+                                     ((N ,EMP ,EMP) (F ,EMP)))))
 
 (check-equal? (sm-apply pda-wCwreverse '()) 'reject)
 (check-equal? (sm-apply pda-wCwreverse '(b)) 'reject)
