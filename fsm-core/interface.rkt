@@ -21,6 +21,8 @@
   "private/regexp-predicate.rkt"
   "private/abstract-predicate.rkt"
   "private/mtape-tm.rkt"
+  "private/macros/constructors.rkt"
+  "private/sm-apply.rkt"
   "private/sm-apply.rkt"
   "private/callgraphs/callgraphs-ndfa.rkt"
   "private/callgraphs/callgraphs-pda.rkt"
@@ -209,30 +211,30 @@
           [(eq? t1 'csg) (error (format "Converting a Context-Sensitive Grammar to a Turing machine is not yet implemented....stay tuned!"))]
           [else (error "Unknown grammar type")])))
   
-; fsm word [natnum] --> 'accept or 'reject
-#;(define (sm-apply M w . l)
-  (let ((head (if (null? l) 0 (car l)))
-        (t1 (sm-type M)))
-    (cond [(or (eq? t1 'dfa)
-               (eq? t1 'ndfa))
-           (apply-fsa M w)]
-          [(eq? t1 'pda) (apply-pda M w)]
-          [(or (eq? t1 'tm) (eq? t1 'tm-language-recognizer)) (tm-apply M w head)]
-          [(or (eq? t1 'mttm) (eq? t1 'mttm-language-recognizer)) (mttm-apply M w head)]
-          [else (error "Incorrect input to apply-fsm")])))
-  
-; fsm word [natnum] --> path
-#;(define (sm-showtransitions M w . l)  
-  (let ((head (if (null? l) 0 (car l)))
-        (t1 (sm-type M)))
-    (cond [(or (eq? t1 'dfa)
-               (eq? t1 'ndfa))
-           (show-transitions-fsa M w)]
-          [(eq? t1 'pda) (show-transitions-pda M w)]
-          [(or (eq? t1 'tm) (eq? t1 'tm-language-recognizer)) (tm-showtransitions M w head)]
-          [(or (eq? t1 'mttm) (eq? t1 'mttm-language-recognizer)) (mttm-show-transitions M w head)]
-          ;[(eq? t1 'dfst) (M 'show-transitions)]
-          [else (error "Incorrect input to show-transitions")])))
+;; fsm word [natnum] --> 'accept or 'reject
+;(define (sm-apply M w . l)
+;  (let ((head (if (null? l) 0 (car l)))
+;        (t1 (sm-type M)))
+;    (cond [(or (eq? t1 'dfa)
+;               (eq? t1 'ndfa))
+;           (apply-fsa M w)]
+;          [(eq? t1 'pda) (apply-pda M w)]
+;          [(or (eq? t1 'tm) (eq? t1 'tm-language-recognizer)) (tm-apply M w head)]
+;          [(or (eq? t1 'mttm) (eq? t1 'mttm-language-recognizer)) (mttm-apply M w head)]
+;          [else (error "Incorrect input to apply-fsm")])))
+;  
+;; fsm word [natnum] --> path
+;(define (sm-showtransitions M w . l)  
+;  (let ((head (if (null? l) 0 (car l)))
+;        (t1 (sm-type M)))
+;    (cond [(or (eq? t1 'dfa)
+;               (eq? t1 'ndfa))
+;           (show-transitions-fsa M w)]
+;          [(eq? t1 'pda) (show-transitions-pda M w)]
+;          [(or (eq? t1 'tm) (eq? t1 'tm-language-recognizer)) (tm-showtransitions M w head)]
+;          [(or (eq? t1 'mttm) (eq? t1 'mttm-language-recognizer)) (mttm-show-transitions M w head)]
+;          ;[(eq? t1 'dfst) (M 'show-transitions)]
+;          [else (error "Incorrect input to show-transitions")])))
 
 ; ctm word [trace Boolean] [natnum] --> (list state natnum tape)
 (define (ctm-run M w #:trace [trace #f] . l)
@@ -406,92 +408,148 @@
 
 ;new constructors with contracts
 
-; make-dfa: (listof state) alphabet state (listof state) (listof rule)) [symbol] --> dfa
-(define (make-dfa states sigma start finals deltas . adddead)
-  (cond [(equal? true (check-machine states sigma finals deltas start 'dfa))
-         (if (null? adddead)
-             (make-unchecked-dfa states
-                                 sigma
-                                 start
-                                 finals
-                                 deltas)
-             (make-unchecked-dfa states
-                                 sigma
-                                 start
-                                 finals
-                                 deltas
-                                 adddead))]
-        [else (begin (newline) (error"Check above message for error"))])
-  )
+;; make-dfa: (listof state) alphabet state (listof state) (listof rule)) [symbol] --> dfa
+;(define (make-dfa states sigma start finals deltas . adddead)
+;  (cond [(equal? true (check-machine states sigma finals deltas start 'dfa))
+;         (if (null? adddead)
+;             (make-unchecked-dfa states
+;                                 sigma
+;                                 start
+;                                 finals
+;                                 deltas)
+;             (make-unchecked-dfa states
+;                                 sigma
+;                                 start
+;                                 finals
+;                                 deltas
+;                                 adddead))]
+;        [else (begin (newline) (error"Check above message for error"))])
+;  )
+;
+;; make-ndfa: (listof states) alphabet state (listof state) (listof rule)
+;;            --> ndfa
+;(define (make-ndfa states sigma start finals deltas . adddead)
+;  (cond [(equal? true (check-machine states sigma finals deltas start 'ndfa))
+;         (if (null? adddead)
+;             (make-unchecked-ndfa states
+;                                  sigma
+;                                  start
+;                                  finals
+;                                  deltas)
+;             (make-unchecked-ndfa states
+;                                  sigma
+;                                  start
+;                                  finals
+;                                  deltas
+;                                  adddead))]
+;        [else (begin (newline) (error"Check above message for error"))])
+;  )
+;
+;; make-ndpda: (listof states) alphabet alphabet state (listof states) (listof pdarules) --> ndpda
+;(define (make-ndpda states sigma gamma start finals deltas) ;. adddead)
+;  (cond [(check-machine states sigma finals deltas start 'pda gamma)
+;         (make-unchecked-ndpda states
+;                               sigma
+;                               gamma
+;                               start
+;                               finals
+;                               deltas)
+;         #;(if (null? adddead)
+;               (make-unchecked-ndpda states
+;                                     sigma
+;                                     gamma
+;                                     start
+;                                     finals
+;                                     deltas)
+;               (make-unchecked-ndpda states
+;                                     sigma
+;                                     gamma
+;                                     start
+;                                     finals
+;                                     deltas
+;                                     adddead))]
+;        [else (begin (newline) (error "Check above message for error"))])
+;  )
+;  
+;;make-tm (listof state) (listof symbol) (listof (list state symbol) (list state symbol)) (listof state) state --> tm
+;(define (make-tm states sigma delta start finals . accept)
+;  (cond [(equal? (check-machine states
+;                                sigma
+;                                finals
+;                                delta
+;                                start
+;                                'tm) #t)
+;         (if (null? accept) (make-unchecked-tm states
+;                                               sigma
+;                                               delta
+;                                               start
+;                                               finals)
+;             (if (member (car accept) finals)
+;                 (make-unchecked-tm
+;                  states
+;                  sigma
+;                  delta
+;                  start
+;                  finals
+;                  (car accept))
+;                 (begin (newline) (error (format "accept state: ~s, not in final states" accept)))))]
+;        [else (begin (newline) (error"Check above message for error"))])) 
 
-; make-ndfa: (listof states) alphabet state (listof state) (listof rule)
-;            --> ndfa
-(define (make-ndfa states sigma start finals deltas . adddead)
-  (cond [(equal? true (check-machine states sigma finals deltas start 'ndfa))
-         (if (null? adddead)
-             (make-unchecked-ndfa states
-                                  sigma
-                                  start
-                                  finals
-                                  deltas)
-             (make-unchecked-ndfa states
-                                  sigma
-                                  start
-                                  finals
-                                  deltas
-                                  adddead))]
-        [else (begin (newline) (error"Check above message for error"))])
-  )
+  ;; make-dfa: states alphabet state states rules (boolean) -> machine
+  ;; Purpose: Eventually, will construct a multi-tape turing-machine from the given
+  ;; DFA inputs, but for now just parses inputs and constructs an unchecked-dfa.
+  (define/contract (make-dfa states sigma start finals rules
+                              [add-dead '()]
+                              #:accepts [accepts '()]
+                              #:rejects [rejects '()])
+    make-dfa/c
+    (if (null? add-dead)
+        (make-unchecked-dfa states sigma start finals rules)
+        (make-unchecked-dfa states sigma start finals rules add-dead)
+        )
+    )
 
-; make-ndpda: (listof states) alphabet alphabet state (listof states) (listof pdarules) --> ndpda
-(define (make-ndpda states sigma gamma start finals deltas) ;. adddead)
-  (cond [(check-machine states sigma finals deltas start 'pda gamma)
-         (make-unchecked-ndpda states
-                               sigma
-                               gamma
-                               start
-                               finals
-                               deltas)
-         #;(if (null? adddead)
-               (make-unchecked-ndpda states
-                                     sigma
-                                     gamma
-                                     start
-                                     finals
-                                     deltas)
-               (make-unchecked-ndpda states
-                                     sigma
-                                     gamma
-                                     start
-                                     finals
-                                     deltas
-                                     adddead))]
-        [else (begin (newline) (error "Check above message for error"))])
-  )
   
-;make-tm (listof state) (listof symbol) (listof (list state symbol) (list state symbol)) (listof state) state --> tm
-(define (make-tm states sigma delta start finals . accept)
-  (cond [(equal? (check-machine states
-                                sigma
-                                finals
-                                delta
-                                start
-                                'tm) #t)
-         (if (null? accept) (make-unchecked-tm states
-                                               sigma
-                                               delta
-                                               start
-                                               finals)
-             (if (member (car accept) finals)
-                 (make-unchecked-tm
-                  states
-                  sigma
-                  delta
-                  start
-                  finals
-                  (car accept))
-                 (begin (newline) (error (format "accept state: ~s, not in final states" accept)))))]
-        [else (begin (newline) (error"Check above message for error"))])) 
+
+  (define/contract (make-ndfa states sigma start finals rules
+                               #:accepts [accepts '()]
+                               #:rejects [rejects '()])
+    make-ndfa/c
+    (make-unchecked-ndfa states sigma start finals rules)
+    )
+
+  ;; Purpose: Constructs an ndpda given a set of states, a machine alphabet,
+  ;; set of stack symbols, a start state, a list of final states, and a list
+  ;; of ndpda rules. The function checks that all fields are valid before
+  ;; constructing the ndpda.
+  (define/contract (make-ndpda states sigma gamma start finals rules
+                                #:accepts [accepts '()]
+                                #:rejects [rejects '()])
+    make-ndpda/c
+    (make-unchecked-ndpda states sigma gamma start finals rules)
+    )
+
+   
+  (define/contract (make-tm states sigma rules start finals
+                             [accept 'null]
+                             #:accepts [accepts '()]
+                             #:rejects [rejects '()]
+                             )
+    make-tm/c
+    (if (equal? accept 'null)
+        (make-unchecked-tm states sigma rules start finals)
+        (make-unchecked-tm states sigma rules start finals accept))
+    )
+
+  (define/contract (make-mttm states sigma start finals rules num-tapes
+                               [accept 'null]
+                               #:accepts [accepts '()]
+                               #:rejects [rejects '()])
+    make-mttm/c
+    (if (equal? accept 'null)
+        (make-unchecked-mttm states sigma start finals rules num-tapes)
+        (make-unchecked-mttm states sigma start finals rules num-tapes accept))
+    )
 
 
 ;(make-cfg V sigma R S), where V and sigma are a (listof symbol), R
