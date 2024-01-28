@@ -25,7 +25,8 @@
   "private/callgraphs/callgraphs-ndfa.rkt"
   "private/callgraphs/callgraphs-pda.rkt"
   "private/callgraphs/callgraphs-tm.rkt"
-  "private/callgraphs/transdiagram-mttm.rkt")
+  "private/callgraphs/transdiagram-mttm.rkt"
+  "private/callgraphs/viz-ctm.rkt")
   
 (provide
  check-machine
@@ -93,6 +94,9 @@
 
  ; sm-apply
  ; sm-apply
+
+ ; ctm-viz
+ ctm-viz
 
  ; computation graphs
  sm-cmpgraph)

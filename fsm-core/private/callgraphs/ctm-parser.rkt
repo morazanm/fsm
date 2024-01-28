@@ -279,7 +279,7 @@
       (find-first-int (cdr l) (add1 int))))
       
 
-(parse-program COPYL2)
+;(parse-program COPYL2)
 
 (define (dot-nodes exp)
   (cases expression exp
@@ -306,7 +306,7 @@
         (else (cons (car l)
                     (clean-list (cdr l))))))
 
-(clean-list (dot-edges
+#;(clean-list (dot-edges
              (ctmd-exp
               (list
                (tm-exp 'FBL 0 '("R2"))
@@ -360,7 +360,7 @@
     (let [(res (graph->bitmap cgraph))]
       res)))
 
-(transition-diagram-ctm COPYL2)
+;(transition-diagram-ctm COPYL2)
 
 
 
@@ -394,8 +394,8 @@
                            (list BLANK (list GOTO 10))))
                10))
 
-(clean-list (dot-nodes (parse-program FBRL)))
-(clean-list (dot-edges (parse-program FBRL)))
+;(clean-list (dot-nodes (parse-program FBRL)))
+;(clean-list (dot-edges (parse-program FBRL)))
 
 (define FBLL '(0
                L
@@ -542,13 +542,13 @@
                    3))
 
 
-(transition-diagram-ctm COPYL2)
-(transition-diagram-ctm FBRL)
-(transition-diagram-ctm FBLL)
-(transition-diagram-ctm TWICERL)
-(transition-diagram-ctm WARROW_L)
-(transition-diagram-ctm _WARROWL)
-(transition-diagram-ctm MULTL)
+;(transition-diagram-ctm COPYL2)
+;(transition-diagram-ctm FBRL)
+;(transition-diagram-ctm FBLL)
+;(transition-diagram-ctm TWICERL)
+;(transition-diagram-ctm WARROW_L)
+;(transition-diagram-ctm _WARROWL)
+;(transition-diagram-ctm MULTL)
 
 
 #;(define swap (combine-tms (list (list (list VAR 'i)
@@ -566,7 +566,7 @@
                                  L
                                  j))))
 
-'(list (list (list VAR 'i)
+#;'(list (list (list VAR 'i)
              R
              (list (list VAR 'j)
                    i

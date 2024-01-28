@@ -85,6 +85,9 @@
    ; computation graphs
    sm-cmpgraph
 
+   ; ctm-viz
+   ctm-viz
+
    ; some helpful functions
    los->symbol symbol->list generate-symbol symbol->fsmlos symbol-upcase
 
