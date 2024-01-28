@@ -305,9 +305,9 @@
                          (list (format "The second element in the first part of the rule, ~a, is not a valid alphabet element." (second rule))))
                      (if (or (equal? (third rule) EMP)
                              (and (list? (third rule))
-                                  (andmap valid-alpha? (third rule))))
+                                  (andmap valid-gamma? (third rule))))
                          '()
-                         (list (format "The third element in the first part of the rule, ~a, is not EMP or a list of valid alphabet elements." (third rule)))))]))
+                         (list (format "The third element in the first part of the rule, ~a, is not EMP or a list of valid gamma elements." (third rule)))))]))
     ;validate-ndpda-rule-push: any --> (listof string)
     ;purpose: Takes as input an element which is meant to be the pop fragment of
     ; an ndpda rule, and returns a list of any structure errors associated with
@@ -322,9 +322,9 @@
                          (list (format "The first element in the second part of the rule, ~a, is not a valid state." (first rule))))
                      (if (or (equal? (second rule) EMP)
                              (and (list? (second rule))
-                                  (andmap valid-alpha? (second rule))))
+                                  (andmap valid-gamma? (second rule))))
                          '()
-                         (list (format "The second element in the second part of the rule, ~a, is not EMP or a list of valid alphabet elements." (second rule)))))]
+                         (list (format "The second element in the second part of the rule, ~a, is not EMP or a list of valid gamma elements." (second rule)))))]
             )
       )
     ;rule-with-errors: any -> (listof invalid-rule)

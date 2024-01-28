@@ -13,6 +13,7 @@
            valid-non-dead-state?
            valid-state?
            valid-alpha?
+           valid-gamma?
            start-in-states?
            valid-start?
            valid-finals?
@@ -92,6 +93,13 @@
          (not (not (regexp-match regex-pattern (symbol->string x))))
          )
     )
+
+  ;valid-gamma?: something --> boolean
+  ;purpose: takes in anything and makes sure that it is either a gamma element,
+  ; that is: it is either an alphabet character or state
+  (define (valid-gamma? x)
+    (and (symbol? x)
+         (or (valid-alpha? x) (valid-state? x))))
 
   ;start-in-states?: (listof symbols) --> (symbol --> boolean)
   ;purpose: to take in the list of states, and then the start state,

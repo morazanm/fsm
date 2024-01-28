@@ -511,7 +511,6 @@
                                #:accepts [accepts '()]
                                #:rejects [rejects '()])
     make-ndfa/c
-  
     (make-unchecked-ndfa states sigma start finals rules)
     )
 
