@@ -1,9 +1,9 @@
 #lang racket
-(require fsm "../test-helpers.rkt")
+(require "../../main.rkt" "../test-helpers.rkt")
 
 
 (define R (make-tm '(S H)
-                   `(a b ,LM)
+                   `(a b)
                    `(;((S ,LM) (S ,RIGHT))
                      ((S a) (H ,RIGHT))
                      ((S b) (H ,RIGHT))
@@ -12,7 +12,7 @@
                    '(H)))
 
 (define L (make-tm '(S H)
-                   `(a b ,LM)
+                   `(a b)
                    `(;((S ,LM) (S ,RIGHT))
                      ((S a) (H ,LEFT))
                      ((S b) (H ,LEFT))
@@ -27,7 +27,7 @@
                       '(S)))
 
 (define Mblank (make-tm '(S H)
-                        `(a b ,LM)
+                        `(a b)
                         `(;((S ,LM) (S ,RIGHT))
                           ((S a) (H ,BLANK))
                           ((S b) (H ,BLANK))
