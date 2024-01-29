@@ -130,12 +130,14 @@ To visualize a dfa or ndfa create a new file and require fsm. Then provide one o
 - [Marco T. Morazán](https://github.com/morazanm)
 - [Joshua Schappel](https://github.com/jschappel)
 
-## Notable Contributers 
+## Notable Contributors 
 - [Marco T. Morazán](https://github.com/morazanm)
 - Rosario Antunez
 - [Josephine A. Des Rosiers](https://github.com/josdes)
 - [Joshua Schappel](https://github.com/jschappel)
 - [Sachin Mahashabde](https://github.com/sachinmahashabde)
+- [Tijana Minic](https://github.com/tijanaminic1)
+- [Oliwia Kempinski](https://github.com/oliwial23)
 
 ## License
 Copyright (c) 2020 by Marco T. Morazan
