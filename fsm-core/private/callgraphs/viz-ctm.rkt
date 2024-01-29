@@ -154,7 +154,7 @@
                                                 (third (first new-ptape)))
                                  (square 30 'solid 'white)
                                  (if (and (not (equal? (first new-pvar) '(label "")))
-                                          (not (equal? (first new-pvar)  "dummy"))
+                                          (not (equal? (first new-pvar)  '(label "dummy")))
                                           (not (equal? (first new-pvar) 'list)))
                                      (text (format "k = ~a" (second (first new-pvar))) 20 'black)
                                      (text "" 20 'black))
@@ -387,6 +387,12 @@
       (cons (first (third (first loe)))
             (extract-labels (rest loe)))))
 
+;; loe -> loe
+;; Purpose: To fix the blank label in computation edges
+(define (fix-blank-label loe)
+  (map (λ (rule) (if (equal? (second (first (third rule))) "_")
+                     (list (first rule) (second rule) (list '(label "BLANK") (second (third rule))))
+                     rule)) loe))
 
 
 ;; draw-img
@@ -413,13 +419,19 @@
 ;; ctm-viz
 ;; ctm a-list (listof symbol) number -> void
 (define (ctm-viz ctm ctm-list tape head)
-  (let* [(ce (computation-edges ctm ctm-list tape head))
+  (let* [(ce (fix-blank-label (computation-edges ctm ctm-list tape head))
+             #;(computation-edges ctm ctm-list tape head))
          (last-node (second (last ce)))
-         (comp-edges (cons '("dummy-edge" "edge-dummy" (list "dummy" "dummy"))
-                           (append ce
-                                   (list (list last-node "edge-dummy" (list "dummy" "dummy"))))
-                           ))
-         (loedges (clean-list (dot-edges (parse-program ctm-list))))
+         (comp-edges (append (list (list "dummy-edge" "edge-dummy" (list '(label "dummy")'(style "dummy"))))
+                             ce
+                             (list (list last-node "edge-dummy" (list '(label "dummy") '(style "dummy"))))
+                             )
+                     #;(cons '("dummy-edge" "edge-dummy" (list "dummy" "dummy"))
+                             (append ce
+                                     (list (list last-node "edge-dummy" (list "dummy" "dummy"))))
+                             ))
+         (loedges (fix-blank-label (clean-list (dot-edges (parse-program ctm-list))))
+                  #;(clean-list (dot-edges (parse-program ctm-list))))
          (lonodes (clean-list (dot-nodes (parse-program ctm-list))))
          (lotraces (filter (λ (x) (tmconfig? x)) (ctm-apply ctm tape head #t)))
          (loimgs (create-graph-imgs loedges lonodes comp-edges))
