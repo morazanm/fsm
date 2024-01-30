@@ -17,6 +17,7 @@ If you wish to contribute to `fsm` please read the [contribution docs](fsm-docs/
 
 
 ## Publications
+- [Programming-Based Formal Languages and Automata Theory](https://link.springer.com/book/10.1007/978-3-031-43973-5)
 - [Functional Automata - Formal Languages for Computer Science Students](https://arxiv.org/abs/1412.4878)
 - [FSM Error Messages](https://arxiv.org/abs/1906.11421v1)
 - [Visual Designing and Debugging of Deterministic Finite-State Machines in FSM](https://arxiv.org/abs/2008.09254)
@@ -130,12 +131,14 @@ To visualize a dfa or ndfa create a new file and require fsm. Then provide one o
 - [Marco T. Morazán](https://github.com/morazanm)
 - [Joshua Schappel](https://github.com/jschappel)
 
-## Notable Contributers 
+## Notable Contributors 
 - [Marco T. Morazán](https://github.com/morazanm)
 - Rosario Antunez
 - [Josephine A. Des Rosiers](https://github.com/josdes)
 - [Joshua Schappel](https://github.com/jschappel)
 - [Sachin Mahashabde](https://github.com/sachinmahashabde)
+- [Tijana Minic](https://github.com/tijanaminic1)
+- [Oliwia Kempinski](https://github.com/oliwial23)
 
 ## License
 Copyright (c) 2020 by Marco T. Morazan
