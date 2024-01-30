@@ -32,6 +32,28 @@
 
 (define E-SCENE (empty-scene 1250 600))
 
+(define E-SCENE-TOOLS (overlay (beside (above (above (triangle 30 'solid 'black)
+                                                     (rectangle 10 30 'solid 'black))
+                                              (square 20 'solid 'white)
+                                              (text "Restart the visualization" 18 'black))
+                                       (square 40 'solid 'white)
+                                       (above (beside (rectangle 30 10 'solid 'black)
+                                                      (rotate 270 (triangle 30 'solid 'black)))
+                                              (square 20 'solid 'white)
+                                              (text "Move one step forward" 18 'black))
+                                       (square 40 'solid 'white)
+                                       (above (beside (rotate 90 (triangle 30 'solid 'black))
+                                                      (rectangle 30 10 'solid 'black))
+                                              (square 20 'solid 'white)
+                                              (text "Move one step backward" 18 'black))
+                                       (square 40 'solid 'white)
+                                       (above (above (rectangle 10 30 'solid 'black)
+                                                     (rotate 180 (triangle 30 'solid 'black)))
+                                              (square 20 'solid 'white)
+                                              (text "Complete the visualization" 18 'black))
+                                       )
+                               (empty-scene 1250 100)))
+
 ;; grph is a (listof img) of graphs used to build an ndfa from regexp
 ;; edge is an edge that has been expanded to build an ndfa from regexp
 (struct gedge (grph edge))
@@ -244,7 +266,7 @@
 
 
 
-;; draw-img
+;; draw-world
 ;; viz-state -> img
 ;; Purpose: To render the given viz-state
 (define (draw-world a-vs)
@@ -252,9 +274,9 @@
         (height (image-height (first (viz-state-pimgs a-vs))))]
     (if (or (> width (image-width E-SCENE))
             (> height (image-height E-SCENE)))
-        (overlay (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE))
-                 E-SCENE)
-        (overlay (first (viz-state-pimgs a-vs)) E-SCENE))))
+        (above (overlay (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE))
+                                       E-SCENE) E-SCENE-TOOLS)
+        (above (overlay (first (viz-state-pimgs a-vs)) E-SCENE) E-SCENE-TOOLS))))
 
 ;; regexp2ndfa-viz
 ;; regexp -> void

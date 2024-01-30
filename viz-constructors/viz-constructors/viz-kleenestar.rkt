@@ -65,6 +65,28 @@
 
 (define E-SCENE (empty-scene 1250 600))
 
+(define E-SCENE-TOOLS (overlay (beside (above (above (triangle 30 'solid 'black)
+                                                     (rectangle 10 30 'solid 'black))
+                                              (square 20 'solid 'white)
+                                              (text "Restart the visualization" 18 'black))
+                                       (square 40 'solid 'white)
+                                       (above (beside (rectangle 30 10 'solid 'black)
+                                                      (rotate 270 (triangle 30 'solid 'black)))
+                                              (square 20 'solid 'white)
+                                              (text "Move one step forward" 18 'black))
+                                       (square 40 'solid 'white)
+                                       (above (beside (rotate 90 (triangle 30 'solid 'black))
+                                                      (rectangle 30 10 'solid 'black))
+                                              (square 20 'solid 'white)
+                                              (text "Move one step backward" 18 'black))
+                                       (square 40 'solid 'white)
+                                       (above (above (rectangle 10 30 'solid 'black)
+                                                     (rotate 180 (triangle 30 'solid 'black)))
+                                              (square 20 'solid 'white)
+                                              (text "Complete the visualization" 18 'black))
+                                       )
+                               (empty-scene 1250 100)))
+
 
 ;; make-node-graph
 ;; graph los start final -> graph
@@ -176,8 +198,8 @@
         (height (image-height (first (viz-state-pimgs a-vs))))]
     (if (or (> width (image-width E-SCENE))
             (> height (image-height E-SCENE)))
-        (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE))
-        (first (viz-state-pimgs a-vs)))))
+        (above (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE)) E-SCENE-TOOLS)
+        (above (first (viz-state-pimgs a-vs)) E-SCENE-TOOLS))))
 
 ;;kleenestar-viz
 ;; fsa -> void
