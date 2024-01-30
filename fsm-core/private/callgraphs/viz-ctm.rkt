@@ -479,7 +479,6 @@
                              (text (format "k = ~a" (second (first lovars))) 20 'black)
                              (text "" 20 'black))
                          ))
-         #;(dd (display (format "~s" lovars)))
          
          
                   
