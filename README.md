@@ -17,6 +17,7 @@ If you wish to contribute to `fsm` please read the [contribution docs](fsm-docs/
 
 
 ## Publications
+- [Programming-Based Formal Languages and Automata Theory](https://link.springer.com/book/10.1007/978-3-031-43973-5)
 - [Functional Automata - Formal Languages for Computer Science Students](https://arxiv.org/abs/1412.4878)
 - [FSM Error Messages](https://arxiv.org/abs/1906.11421v1)
 - [Visual Designing and Debugging of Deterministic Finite-State Machines in FSM](https://arxiv.org/abs/2008.09254)
