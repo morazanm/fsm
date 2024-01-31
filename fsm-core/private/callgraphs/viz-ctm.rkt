@@ -150,12 +150,11 @@
                                                     (second (first new-ptape))
                                                     (third (first new-ptape)))
                                      (square 30 'solid 'white)
-                                     (if (and (not (equal? (first new-pvar) '(label "")))
-                                              (not (equal? (first new-pvar)  '(label "dummy")))
-                                              (not (equal? (first new-pvar) '(label "BLANK")))
-                                              (not (equal? (first new-pvar) 'list)))
-                                         (text (format "k = ~a" (second (first new-pvar))) 20 'black)
-                                         (text "" 20 'black))
+                                     (cond [(tmconfig? (first new-pvar)) (text "" 20 'black)]
+                                           [(equal? (first (first new-pvar)) 'VAR)
+                                            (text (format "~a = ~a" (second (first new-pvar)) (third (first new-pvar))) 20 'black)]
+                                           [else (text "" 20 'black)]
+                                           )
                                      ) 
                               (if (= 1 (length (var-uvar (viz-state-var a-vs))))
                                   (viz-state-var a-vs) 
@@ -180,12 +179,11 @@
                                                 (second (first new-ptape))
                                                 (third (first new-ptape)))
                                  (square 30 'solid 'white)
-                                 (if (and (not (equal? (first new-pvar) '(label "")))
-                                          (not (equal? (first new-pvar)  '(label "dummy")))
-                                          (not (equal? (first new-pvar) '(label "BLANK")))
-                                          (not (equal? (first new-pvar) 'list)))
-                                     (text (format "k = ~a" (second (first new-pvar))) 20 'black)
-                                     (text "" 20 'black))
+                                 (cond [(tmconfig? (first new-pvar)) (text "" 20 'black)]
+                                       [(equal? (first (first new-pvar)) 'VAR)
+                                        (text (format "~a = ~a" (second (first new-pvar)) (third (first new-pvar))) 20 'black)]
+                                       [else (text "" 20 'black)]
+                                       )
                                  )
                           (if (= 1 (length (var-pvar (viz-state-var a-vs))))
                               (viz-state-var a-vs) 
@@ -228,12 +226,11 @@
                                                 (second (first new-ptape))
                                                 (third (first new-ptape)))
                                  (square 30 'solid 'white)
-                                 (if (and (not (equal? (first (var-pvar (viz-state-var a-vs))) '(label "")))
-                                          (not (equal? (first (var-pvar (viz-state-var a-vs))) '(label "dummy")))
-                                          (not (equal? (first (var-pvar (viz-state-var a-vs))) '(label "BLANK")))
-                                          (not (equal? (first (var-pvar (viz-state-var a-vs))) 'list)))
-                                     (text (format "k = ~a" (second (first (var-pvar (viz-state-var a-vs))))) 20 'black)
-                                     (text "" 20 'black))
+                                 (cond [(tmconfig? (first (var-pvar (viz-state-var a-vs)))) (text "" 20 'black)]
+                                       [(equal? (first (first (var-pvar (viz-state-var a-vs)))) 'VAR)
+                                        (text (format "~a = ~a" (second (first (var-pvar (viz-state-var a-vs)))) (third (first (var-pvar (viz-state-var a-vs))))) 20 'black)]
+                                       [else (text "" 20 'black)]
+                                       )
                                  )
                           (var (rest (append (reverse (var-pvar (viz-state-var a-vs)))
                                              (var-uvar (viz-state-var a-vs))))
@@ -262,12 +259,11 @@
                                                     (second (first (tapelist-ptape new-tapelist)))
                                                     (third (first (tapelist-ptape new-tapelist))))
                                      (square 30 'solid 'white)
-                                     (if (and (not (equal? (first (var-pvar (viz-state-var a-vs))) '(label "")))
-                                              (not (equal? (first (var-pvar (viz-state-var a-vs))) '(label "dummy")))
-                                              (not (equal? (first (var-pvar (viz-state-var a-vs))) '(label "BLANK")))
-                                              (not (equal? (first (var-pvar (viz-state-var a-vs))) 'list)))
-                                         (text (format "k = ~a" (first (var-pvar (viz-state-var a-vs)))) 20 'black)
-                                         (text "" 20 'black))
+                                     (cond [(tmconfig? (first (var-pvar (viz-state-var a-vs)))) (text "" 20 'black)]
+                                           [(equal? (first (first (var-pvar (viz-state-var a-vs)))) 'VAR)
+                                            (text (format "~a = ~a" (second (first (var-pvar (viz-state-var a-vs)))) (third (first (var-pvar (viz-state-var a-vs))))) 20 'black)]
+                                           [else (text "" 20 'black)]
+                                           )
                                      ))
                           (viz-state-var a-vs)))
              a-vs)]
@@ -294,12 +290,12 @@
                                                     (sub1 (second (first (tapelist-ptape (viz-state-tapelist a-vs)))))
                                                     (third (first (tapelist-ptape (viz-state-tapelist a-vs)))))
                                      (square 30 'solid 'white)
-                                     (if (and (not (equal? (first (var-pvar (viz-state-var a-vs))) '(label "")))
-                                              (not (equal? (first (var-pvar (viz-state-var a-vs))) '(label "dummy")))
-                                              (not (equal? (first (var-pvar (viz-state-var a-vs))) 'list))
-                                              (not (equal? (first (var-pvar (viz-state-var a-vs))) '(label "BLANK"))))
-                                         (text (format "k = ~a" (second (first (var-pvar (viz-state-var a-vs))))) 20 'black)
-                                         (text "" 20 'black))
+                                     (cond [(tmconfig? (first (var-pvar (viz-state-var a-vs)))) (text "" 20 'black)]
+                                           [(equal? (first (first (var-pvar (viz-state-var a-vs)))) 'VAR)
+                                            (text (format "~a = ~a" (second (first (var-pvar (viz-state-var a-vs)))) (third (first (var-pvar (viz-state-var a-vs))))) 20 'black)]
+                                           [else (text "" 20 'black)]
+                                           )
+                                     
                                      ))
                           (viz-state-var a-vs))))]
         
@@ -412,11 +408,11 @@
 ;; extract-labels
 ;; loe -> lol
 ;; Purpose: To extract a list of labels from edges
-(define (extract-labels loe)
-  (if (empty? loe)
-      '()
-      (cons (first (third (first loe)))
-            (extract-labels (rest loe)))))
+#;(define (extract-labels loe)
+    (if (empty? loe)
+        '()
+        (cons (first (third (first loe)))
+              (extract-labels (rest loe)))))
 
 ;; loe -> loe
 ;; Purpose: To fix the blank label in computation edges
@@ -452,34 +448,25 @@
 ;; ctm-viz
 ;; ctm a-list (listof symbol) number -> void
 (define (ctm-viz ctm ctm-list tape head)
-  (let* [(ce (fix-blank-label (computation-edges ctm ctm-list tape head))
-             #;(computation-edges ctm ctm-list tape head))
+  (let* [(ce (fix-blank-label (computation-edges ctm ctm-list tape head)))
          (last-node (second (last ce)))
          (comp-edges (append (list (list "dummy-edge" "edge-dummy" (list '(label "dummy")'(style "dummy"))))
                              ce
                              (list (list last-node "edge-dummy" (list '(label "dummy") '(style "dummy"))))
-                             )
-                     #;(cons '("dummy-edge" "edge-dummy" (list "dummy" "dummy"))
-                             (append ce
-                                     (list (list last-node "edge-dummy" (list "dummy" "dummy"))))
                              ))
-         (loedges (fix-blank-label (clean-list (dot-edges (parse-program ctm-list))))
-                  #;(clean-list (dot-edges (parse-program ctm-list))))
+         (loedges (fix-blank-label (clean-list (dot-edges (parse-program ctm-list)))))
          (lonodes (clean-list (dot-nodes (parse-program ctm-list))))
          (lotraces (filter (λ (x) (tmconfig? x)) (ctm-apply ctm tape head #t)))
          (loimgs (create-graph-imgs loedges lonodes comp-edges))
          (tapes (create-tape lotraces))
-         (lovars (extract-labels comp-edges))
+         (lovars (ctm-apply ctm tape head #t))
          (tapeimg (above (make-tape-img (first (first tapes)) (second (first tapes)) (third (first tapes)))
                          (square 30 'solid 'white)
-                         (if (and (not (equal? (first lovars) '(label "")))
-                                  (not (equal? (first lovars) '(label "dummy")))
-                                  (not (equal? (first lovars) '(label "BLANK")))
-                                  (not (equal? (first lovars) 'list)))
-                             (text (format "k = ~a" (second (first lovars))) 20 'black)
-                             (text "" 20 'black))
-                         ))
-         
+                         (cond [(tmconfig? (first lovars)) (text "" 20 'black)]
+                               [(equal? 'VAR (first (first lovars)))
+                                (text (format "~a = ~a" (second (first lovars)) (third (first lovars))) 20 'black)]
+                               [else (text "" 20 'black)]
+                               )))
          
                   
          ]
