@@ -116,43 +116,45 @@
 ;; make-node-graph
 ;; graph los start final -> graph
 ;; Purpose: To make a node graph
-(define (make-node-graph graph los s f)
+(define (make-node-graph graph lon)
   (foldl (λ (state result)
            (add-node
             result
             state
-            #:atb (hash 'color (cond [(and (eq? state s)
-                                           (member state f))
-                                      'violet]
-                                     [(eq? state s) 'darkgreen]
-                                     [(member state f)
-                                      'violet] 
-                                     [else 'black])
-                        'shape (if (member state f)
-                                   'doublecircle
-                                   'circle)
-                        'label (if (equal? state '())
-                                   'ds  
-                                   state)
+            #:atb (hash 'color 'black
+                        'shape 'circle
+                        'label state
                         'fontcolor 'black
                         'font "Sans")))
          graph
-         los))
+         lon))
 
 ;; make-edge-graph
 ;; graph ndfa ndfa -> graph
 ;; Purpose: To make an edge graph
 (define (make-edge-graph graph loe)
-  (foldl (λ (rule result) (add-edge result
-                                    (second rule)
-                                    (if (equal? (first rule) '())
-                                        'ds
-                                        (first rule))
-                                    (if (equal? (third rule) '())
-                                        'ds
-                                        (third rule))
-                                    #:atb (hash 'fontsize 20
-                                                'style 'solid )))
+  (foldl (λ (rule result) (if (not (symbol? (first rule)))
+                              (begin
+                                (add-edge result
+                                          ""
+                                          (first (first rule))
+                                          (second (first rule))
+                                          #:atb (hash 'fontsize 20
+                                                      'style 'solid ))
+                                (add-edge result
+                                          ""
+                                          (first (first rule))
+                                          (second (second rule))
+                                          #:atb (hash 'fontsize 20
+                                                      'style 'solid )))
+                              (begin
+                                (add-edge result
+                                          ""
+                                          (first rule)
+                                          (second rule)
+                                          #:atb (hash 'fontsize 20
+                                                      'style 'solid )))))
+                              
          graph
          loe))
 
@@ -161,19 +163,22 @@
 ;; create-graph-img
 ;; ndfa -> img
 ;; Purpose: To create a graph image for complement
-(define (create-graph-img)
-  (let* [(new-finals '(T R E W))]
-    (overlay (graph->bitmap (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
-                                                              '(a b c d) 
-                                                              'a
-                                                              '())
-                                             `((T "" b)(T "" R)(T "" a))))
-             E-SCENE)))
+(define (create-graph-img loe lon)
+  (overlay (graph->bitmap (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
+                                                            lon)
+                                           loe))
+           E-SCENE))
 
 
 ;; create-graph-imgs
 ;; (listof level) (listof node) -> (listof image)
 ;; Purpose: To create a list of graph images built level by level
+(define (create-graph-imgs loe lon)
+  (if (empty? loe)
+      empty
+      (cons (create-graph-img loe lon)
+            (create-graph-imgs loe lon))))
+
          
 ;; rg-viz
 ;; 
@@ -182,7 +187,7 @@
             (extracted-edges (create-edges w-der))
             (loe (rename-edges extracted-edges))
             (lon (extract-nodes loe))
-            (graph-imgs (create-graph-images loe lon))]
+            (graph-imgs (create-graph-imgs loe lon))]
       (run-viz (viz-state (rest graph-imgs) (list (first graph-imgs)))
                draw-world 'rg-ctm)))
 
