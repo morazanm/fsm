@@ -54,6 +54,65 @@
                                (empty-scene 1250 100)))
 
 
+
+;; viz-state is a structure that has
+;; upimgs - unprocessed graph images
+;; pimgs - processed graph images
+(struct viz-state (upimgs pimgs))
+
+
+;; create-edges
+;; (listof level) <=> (listof (listof edge))
+;; (listof symbol) -> (listof (listof edge))
+;; Purpose: To create edges of the graph and group them by levels
+(define (create-edges wd)
+  (cond [(empty? wd)
+         '()]
+        [(= 1 (length wd))
+         (list (list (list (last (first wd))
+                           null)))]
+        [(= 2 (length wd))
+         (list (list (list (last (first wd))
+                           (last (second wd)))))]
+        [else (append (list (map (λ (x) (list (last (first wd)) x)) (take-right (second wd) 2)))
+                      (create-edges (rest wd)))]))
+
+;; rename-edges
+;; (listof level) -> (listof level)
+;; Purpose: To rename the nonterminals that reoccur in extracted edges
+(define (rename-edges exe)
+  (define (rnm-lvl lvl acc)
+    (cond [(empty? lvl)
+           '()]
+          [(= 1 (length lvl))
+           (list (list (first acc) (second (first lvl))) acc)]
+          [(member (second (second lvl)) acc)
+           (let [(new-symbol (generate-symbol (second (second lvl)) acc))]
+             (list (list (list (first acc)(second (first lvl)))
+                         (list (first acc) new-symbol))
+                   (cons new-symbol acc)))]
+          [else (list (list (list (first acc)(second (first lvl)))
+                            (list (first acc) (second (second lvl))))
+                      (cons (second (second lvl)) acc))]))
+  (define (rnm-lvls exe accum)
+    (if (empty? exe)
+        '()
+        (let* [(new-level-accum (rnm-lvl (first exe) accum))
+               (new-level (first new-level-accum))
+               (new-accum (second new-level-accum))]
+          (cons new-level
+                (rnm-lvls (rest exe) new-accum)))))
+  (rnm-lvls exe (list (first (first (first exe))))))
+
+
+;; extract-nodes
+;; (listof level) -> (listof node)
+;; Purpose: To extract nodes from the list of edges - check if this is right
+(define (extract-nodes loe)
+  (map (λ (el) (if (list? (first el))
+                   (first (first el))
+                   (first el))) loe))
+
 ;; make-node-graph
 ;; graph los start final -> graph
 ;; Purpose: To make a node graph
@@ -105,25 +164,39 @@
 (define (create-graph-img)
   (let* [(new-finals '(T R E W))]
     (overlay (graph->bitmap (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
-                                                              '(T R E W) 
-                                                              'T
+                                                              '(a b c d) 
+                                                              'a
                                                               '())
-                                             `((E "" W)(R "" E)(T "" a)(T "" R)(E "" w)(R "" w)(W "" w))))
+                                             `((T "" b)(T "" R)(T "" a))))
              E-SCENE)))
 
 
+;; create-graph-imgs
+;; (listof level) (listof node) -> (listof image)
+;; Purpose: To create a list of graph images built level by level
+         
+;; rg-viz
+;; 
+#;(define (rg-viz rg word)
+    (let* [ (w-der (map symbol->fsmlos  (filter (λ (x) (not (equal? x '->))) (grammar-derive rg word))))
+            (extracted-edges (create-edges w-der))
+            (loe (rename-edges extracted-edges))
+            (lon (extract-nodes loe))
+            (graph-imgs (create-graph-images loe lon))]
+      (run-viz (viz-state (rest graph-imgs) (list (first graph-imgs)))
+               draw-world 'rg-ctm)))
 
-#|
-
-Use grammar-derive to extract the derivation and then generate the rules from there. Then, modify the list of rules to
-generate a new symbol every time a nonterminal repeats. With that new list of edges generate the graph. Figure out how to place
-terminals on the left side of the graph rather than right. Figure out if labels look prettier.
 
 
-
-|#
-
-
+;; vst --> void
+#;(define (run-viz a-vs draw-etc a-name)
+    (begin
+      (big-bang
+          a-vs                
+        [on-draw draw-etc]
+        [on-key process-key]
+        [name a-name]))
+    (void))
 
 
 

@@ -453,23 +453,21 @@
 ;; ctm a-list (listof symbol) number -> void
 (define (ctm-viz ctm ctm-list tape head)
   (let* [(ce (fix-blank-label (computation-edges ctm ctm-list tape head))
-             #;(computation-edges ctm ctm-list tape head))
+             )
          (last-node (second (last ce)))
          (comp-edges (append (list (list "dummy-edge" "edge-dummy" (list '(label "dummy")'(style "dummy"))))
                              ce
                              (list (list last-node "edge-dummy" (list '(label "dummy") '(style "dummy"))))
                              )
-                     #;(cons '("dummy-edge" "edge-dummy" (list "dummy" "dummy"))
-                             (append ce
-                                     (list (list last-node "edge-dummy" (list "dummy" "dummy"))))
-                             ))
+                     )
          (loedges (fix-blank-label (clean-list (dot-edges (parse-program ctm-list))))
-                  #;(clean-list (dot-edges (parse-program ctm-list))))
+                  )
          (lonodes (clean-list (dot-nodes (parse-program ctm-list))))
          (lotraces (filter (λ (x) (tmconfig? x)) (ctm-apply ctm tape head #t)))
          (loimgs (create-graph-imgs loedges lonodes comp-edges))
          (tapes (create-tape lotraces))
-         (lovars (extract-labels comp-edges))
+         (lovars (filter (λ (x) (or (tmconfig? x)
+                                    (equal? (first x) 'VAR))) (ctm-apply ctm tape head #t)))
          (tapeimg (above (make-tape-img (first (first tapes)) (second (first tapes)) (third (first tapes)))
                          (square 30 'solid 'white)
                          (if (and (not (equal? (first lovars) '(label "")))
@@ -478,10 +476,7 @@
                                   (not (equal? (first lovars) 'list)))
                              (text (format "k = ~a" (second (first lovars))) 20 'black)
                              (text "" 20 'black))
-                         ))
-         
-         
-                  
+                         ))        
          ]
     (run-viz (viz-state (graph (rest loimgs) (list (first loimgs)))
                         (tapelist (rest tapes) (list (first tapes)))
