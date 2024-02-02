@@ -104,14 +104,43 @@
                 (rnm-lvls (rest exe) new-accum)))))
   (rnm-lvls exe (list (first (first (first exe))))))
 
+;; rename-nodes
+;; (listof level) -> (listof level)
+;; Purpose: To rename the terminals that reoccur in extracted edges
+(define (rename-nodes exe)
+  (define (rnm-lvl lvl acc)
+    (cond [(empty? lvl)
+           '()]
+          [(and (symbol? (first lvl)) (member (second lvl) acc))
+           (let [(new-symbol (generate-symbol (second lvl) acc))]
+             (list (list (first lvl) new-symbol) acc))]
+          [(and (symbol? (first lvl)) (not (member (second lvl) acc)))
+           (list (list (first lvl) (second lvl))
+                 (cons (second lvl) acc))]
+          [(member (second (first lvl)) acc)
+           (let [(new-symbol (generate-symbol (second (first lvl)) acc))]
+             (list (list (list (first (first lvl)) new-symbol)
+                         (second lvl))
+                   (cons new-symbol acc)))]
+          [else (list (list (first lvl)
+                            (second lvl))
+                      (cons (second (first lvl)) acc))]))
+  (define (rnm-lvls exe accum)
+    (if (empty? exe)
+        '()
+        (let* [(new-level-accum (rnm-lvl (first exe) accum))
+               (new-level (first new-level-accum))
+               (new-accum (second new-level-accum))]
+          (cons new-level
+                (rnm-lvls (rest exe) new-accum)))))
+  (rnm-lvls exe (list (second (first (first exe))))))
+
 
 ;; extract-nodes
 ;; (listof level) -> (listof node)
 ;; Purpose: To extract nodes from the list of edges - check if this is right
 (define (extract-nodes loe)
-  (map (λ (el) (if (list? (first el))
-                   (first (first el))
-                   (first el))) loe))
+  (remove-duplicates (flatten loe)))
 
 ;; make-node-graph
 ;; graph los start final -> graph
@@ -173,11 +202,11 @@
 ;; create-graph-imgs
 ;; (listof level) (listof node) -> (listof image)
 ;; Purpose: To create a list of graph images built level by level
-(define (create-graph-imgs loe lon)
-  (if (empty? loe)
-      empty
-      (cons (create-graph-img loe lon)
-            (create-graph-imgs loe lon))))
+#;(define (create-graph-imgs loe lon)
+    (if (empty? loe)
+        empty
+        (cons (create-graph-img loe lon)
+              (create-graph-imgs loe lon))))
 
          
 ;; rg-viz
@@ -186,7 +215,7 @@
     (let* [ (w-der (map symbol->fsmlos  (filter (λ (x) (not (equal? x '->))) (grammar-derive rg word))))
             (extracted-edges (create-edges w-der))
             (loe (rename-edges extracted-edges))
-            (lon (extract-nodes loe))
+            (lon (extract-nodes (rename-nodes loe)))
             (graph-imgs (create-graph-imgs loe lon))]
       (run-viz (viz-state (rest graph-imgs) (list (first graph-imgs)))
                draw-world 'rg-ctm)))
