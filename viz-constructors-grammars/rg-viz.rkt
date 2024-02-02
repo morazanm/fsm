@@ -142,6 +142,13 @@
 (define (extract-nodes loe)
   (remove-duplicates (flatten loe)))
 
+;; extract-nodes-by-lvl
+;; level (listof node) -> (listof node)
+;; Purpose: To extract nodes from the lon that are in the level
+(define (extract-nodes-by-lvl lon level)
+  (let* [(nil (flatten level))]
+    (filter (λ (node) (member node nil)) lon)))
+
 ;; make-node-graph
 ;; graph los start final -> graph
 ;; Purpose: To make a node graph
@@ -202,11 +209,11 @@
 ;; create-graph-imgs
 ;; (listof level) (listof node) -> (listof image)
 ;; Purpose: To create a list of graph images built level by level
-#;(define (create-graph-imgs loe lon)
-    (if (empty? loe)
-        empty
-        (cons (create-graph-img loe lon)
-              (create-graph-imgs loe lon))))
+(define (create-graph-imgs loe lon)
+  (if (empty? loe)
+      empty
+      (cons (create-graph-img (first loe) (extract-nodes-by-lvl lon (first loe)))
+            (create-graph-imgs (rest loe) lon))))
 
          
 ;; rg-viz
