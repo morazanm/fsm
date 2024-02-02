@@ -166,30 +166,16 @@
          lon))
 
 ;; make-edge-graph
-;; graph ndfa ndfa -> graph
+;; graph (listof level) -> graph
 ;; Purpose: To make an edge graph
 (define (make-edge-graph graph loe)
-  (foldl (λ (rule result) (if (not (symbol? (first rule)))
-                              (begin
-                                (add-edge result
-                                          ""
-                                          (first (first rule))
-                                          (second (first rule))
-                                          #:atb (hash 'fontsize 20
-                                                      'style 'solid ))
-                                (add-edge result
-                                          ""
-                                          (first (first rule))
-                                          (second (second rule))
-                                          #:atb (hash 'fontsize 20
-                                                      'style 'solid )))
-                              (begin
-                                (add-edge result
-                                          ""
-                                          (first rule)
-                                          (second rule)
-                                          #:atb (hash 'fontsize 20
-                                                      'style 'solid )))))
+  (foldl (λ (rule result) 
+           (add-edge result
+                     ""
+                     (first rule)
+                     (second rule)
+                     #:atb (hash 'fontsize 20
+                                 'style 'solid )))
                               
          graph
          loe))
@@ -210,10 +196,13 @@
 ;; (listof level) (listof node) -> (listof image)
 ;; Purpose: To create a list of graph images built level by level
 (define (create-graph-imgs loe lon)
-  (if (empty? loe)
-      empty
-      (cons (create-graph-img (first loe) (extract-nodes-by-lvl lon (first loe)))
-            (create-graph-imgs (rest loe) lon))))
+  (cond [(empty? loe)
+         empty]
+        [(= (length loe) 1)
+         (cons (create-graph-img (list (first loe)) (extract-nodes-by-lvl lon (first loe)))
+               (create-graph-imgs (rest loe) (extract-nodes-by-lvl lon (rest loe))))]
+        [else (cons (create-graph-img (first loe) (extract-nodes-by-lvl lon (first loe)))
+                    (create-graph-imgs (rest loe) (extract-nodes-by-lvl lon (rest loe))))]))
 
 ;; process-key
 ;; viz-state key --> viz-state
