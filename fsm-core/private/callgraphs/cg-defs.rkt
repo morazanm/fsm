@@ -47,6 +47,23 @@
 
  ;; tm-tape
  mcons-set-i! tape-at-i tape-left-i tape-right-i create-tape add-blank create-tape-copy
+
+ ;; mttm-stucis
+ mttm-stuci mttm-stuci? mttm-stuci-state mttm-stuci-tapes mttm-stuci-heads mttm-stuci-cl
+ mttm-stucis-equal?
+ 
+ ;; mttm-Edges
+ mttm-edge  mttm-edge?  mttm-edge-fromst  mttm-edge-reads  mttm-edge-tost  mttm-edge-actions
+ mttm-spedge  mttm-spedge?  mttm-spedge-fromst  mttm-spedge-reads  mttm-spedge-tost  mttm-spedge-actions
+ mttm-cutoff-edge  mttm-cutoff-edge?  mttm-cutoff-edge-fromst  mttm-cutoff-edge-reads  mttm-cutoff-edge-tost  mttm-cutoff-edge-actions
+ mttm-cutoff-spedge  mttm-cutoff-spedge?  mttm-cutoff-spedge-fromst  mttm-cutoff-spedge-reads  mttm-cutoff-spedge-tost  mttm-cutoff-spedge-actions
+ mttm-Edge-fromst mttm-Edge-tost mttm-Edge-actions mttm-Edge-reads mttm-Edges-equal?
+
+ ;; mttm-rule observers
+ mttm-rule-fromst mttm-rule-reads mttm-rule-tost mttm-rule-actions
+ 
+ ;; mttm-tape
+ tapes-at-i
  
  )
 
@@ -608,6 +625,86 @@
 (check-equal? (tm-rule-action '((Q b) (Q a))) 'a)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; mttm
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; mttm-Edge-fromst
+
+(define (mttm-Edge-fromst E)
+  (cond [(mttm-edge? E) (mttm-edge-fromst E)]
+        [(mttm-spedge? E) (mttm-spedge-fromst E)]
+        [(mttm-cutoff-edge? E) (mttm-cutoff-edge-fromst E)]
+        [else (mttm-cutoff-spedge-fromst E)]))
+
+;.................................................
+;; mttm-Edge-reads
+
+(define (mttm-Edge-reads E)
+  (cond [(mttm-edge? E) (mttm-edge-reads E)]
+        [(mttm-spedge? E) (mttm-spedge-reads E)]
+        [(mttm-cutoff-edge? E) (mttm-cutoff-edge-reads E)]
+        [else (mttm-cutoff-spedge-reads E)]))
+
+;.................................................
+;; mttm-Edge-tost
+
+(define (mttm-Edge-tost E)
+  (cond [(mttm-edge? E) (mttm-edge-tost E)]
+        [(mttm-spedge? E) (mttm-spedge-tost E)]
+        [(mttm-cutoff-edge? E) (mttm-cutoff-edge-tost E)]
+        [else (mttm-cutoff-spedge-tost E)]))
+
+;.................................................
+;; mttm-Edge-actions
+
+(define (mttm-Edge-actions E)
+  (cond [(mttm-edge? E) (mttm-edge-actions E)]
+        [(mttm-spedge? E) (mttm-spedge-actions E)]
+        [(mttm-cutoff-edge? E) (mttm-cutoff-edge-actions E)]
+        [else (mttm-cutoff-spedge-actions E)]))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; mttm-Edges-equal?
+
+(define (mttm-Edges-equal? e1 e2)
+  (and (equal? (mttm-Edge-fromst e1) (mttm-Edge-fromst e2))
+       (equal? (mttm-Edge-reads e1) (mttm-Edge-reads e2))
+       (equal? (mttm-Edge-tost e1) (mttm-Edge-tost e2))
+       (equal? (mttm-Edge-actions e1) (mttm-Edge-actions e2))))
+
+;.................................................
+;; mttm-stucis-equal?
+
+(define (mttm-stucis-equal? s1 s2)
+  (and (eq? (mttm-stuci-state s1) (mttm-stuci-state s2))
+       (equal? (mttm-stuci-tapes s1) (mttm-stuci-tapes s2))
+       (equal? (mttm-stuci-heads s1) (mttm-stuci-heads s2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; mttm-rule-fromst
+
+(define (mttm-rule-fromst r)
+  (first (first r)))
+  
+;.................................................
+;; mttm-rule-reads
+
+(define (mttm-rule-reads r)
+  (second (first r)))
+
+;.................................................
+;; mttm-rule-tost
+
+(define (mttm-rule-tost r)
+  (first (second r)))
+
+;.................................................
+;; mttm-rule-actions
+
+(define (mttm-rule-actions r)
+  (second (second r)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; mcons-set-i!
 
 ;; Sample tape
@@ -676,6 +773,29 @@
               '_)
 
 ;.................................................
+;; tapes-at-i
+
+;; mttm-stuci -> symbol
+;; Purpose: Given a mttm-stuci return the element at the stuci's head position on the tape
+(define (tapes-at-i stuci)
+  (local (;; (mlistof X) natnum -> X
+          ;; Purpose: Find element at i on given mttm tape
+          (define (mttm-tape-at-i tape i)
+            (cond [(empty? tape) '_]
+                  [(= i 0) (mcar tape)]
+                  [else (mttm-tape-at-i (mcdr tape) (sub1 i))])))
+    (let* [(tapes (mttm-stuci-tapes stuci))
+           (is (mttm-stuci-heads stuci))]         
+      (map (lambda (x y) (mttm-tape-at-i x y)) tapes is))))
+
+;; Tests for tape-at-i
+(check-equal? (tapes-at-i (mttm-stuci 'S (list TAPE (mcons '_ '())) '(0 0) 10)) '(@ _))
+(check-equal? (tapes-at-i (mttm-stuci 'B (list TAPE (mcons '_ '()) (mcons '_ (mcons 'b (mcons 'c '())))) '(1 2 2) 10)) '(_ _ c))
+(check-equal? (tapes-at-i (mttm-stuci 'Q (list TAPE) '(2) 10)) '(x))
+(check-equal? (tapes-at-i (mttm-stuci 'Q (list (mcons '@ (mcons '_ (mcons 'a (mcons 'b (mcons 'c (mcons 'd (mcons 'e (mcons 'f '()))))))))) '(8) 10))
+              '(_))
+
+;.................................................
 ;; tape-left-i
 
 ;; tm-stuci -> symbol
@@ -736,7 +856,9 @@
                 '()
                 (mcons (first word)
                        (create-tape-helper (rest word)))))]
-    (mcons '@ (create-tape-helper word))))
+    (cond [(null? word) (mcons '@ '())]
+          [(eq? '@ (car word)) (create-tape-helper word)]
+          [else (mcons '@ (create-tape-helper word))])))
 
 ;; Tests for create-tape
 (check-equal? (create-tape '(_ x x x x x x))
@@ -745,6 +867,8 @@
               (mcons '@ (mcons 'a (mcons 'b (mcons 'c (mcons 'd (mcons 'e (mcons 'f '()))))))))
 (check-equal? (create-tape '())
               (mcons '@ '()))
+(check-equal? (create-tape '(@ _ a b c))
+              (mcons '@ (mcons '_ (mcons 'a (mcons 'b (mcons 'c '()))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; add-blank
@@ -785,7 +909,6 @@
               (mcons '@ '()))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 
 
 
