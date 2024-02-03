@@ -279,7 +279,8 @@
       (let* [(new-up-levels (rest (dgrph-up-levels a-dgrph)))
              (new-ad-levels (cons (first (dgrph-up-levels a-dgrph))
                                   (dgrph-ad-levels a-dgrph)))
-             (new-nodes (extract-nodes new-ad-levels))]
+             (new-nodes (extract-nodes new-ad-levels))
+             (dd (display (format "~s \n ~s" new-ad-levels new-nodes)))]
         (create-dgrphs
          (dgrph new-up-levels                      
                 new-ad-levels
