@@ -61,6 +61,13 @@
 (struct viz-state (upimgs pimgs))
 
 
+;; dgrph is a structure that has
+;; up-levels - unprocessed levels
+;; ad-levels - levels added to the graph
+;; nodes - nodes in the graph
+(struct dgrph (up-levels ad-levels nodes))
+
+
 ;; create-edges
 ;; (listof level) <=> (listof (listof edge))
 ;; (listof symbol) -> (listof (listof edge))
@@ -185,24 +192,20 @@
 ;; create-graph-img
 ;; ndfa -> img
 ;; Purpose: To create a graph image for complement
-(define (create-graph-img loe lon)
+(define (create-graph-img a-dgrph)
   (overlay (graph->bitmap (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
-                                                            lon)
-                                           loe))
-           E-SCENE))
+                                                            (dgrph-nodes a-dgrph))
+                                           (dgrph-ad-levels a-dgrph))
+                          E-SCENE)))
 
 
 ;; create-graph-imgs
 ;; (listof level) (listof node) -> (listof image)
 ;; Purpose: To create a list of graph images built level by level
-(define (create-graph-imgs loe lon)
-  (cond [(empty? loe)
-         empty]
-        [(= (length loe) 1)
-         (cons (create-graph-img (list (first loe)) (extract-nodes-by-lvl lon (first loe)))
-               (create-graph-imgs (rest loe) (extract-nodes-by-lvl lon (rest loe))))]
-        [else (cons (create-graph-img (first loe) (extract-nodes-by-lvl lon (first loe)))
-                    (create-graph-imgs (rest loe) (extract-nodes-by-lvl lon (rest loe))))]))
+(define (create-graph-imgs lod)
+  (if (empty? lod)
+      '()
+      (cons (create-graph-img (first lod)) (create-graph-imgs (rest lod)))))
 
 ;; process-key
 ;; viz-state key --> viz-state
@@ -267,6 +270,22 @@
    (/ resize-height src-height)
    img))
 
+;; create-dgraphs
+;; etc (listof etc) -> (listof etc)
+;; Purpose: To create all the etcs for graph imgs
+(define (create-dgrphs a-dgrph lod)
+  (if (empty? (dgrph-up-levels a-dgrph))
+      (cons a-dgrph lod)
+      (let* [(new-up-levels (rest (dgrph-up-levels a-dgrph)))
+             (new-ad-levels (cons (first (dgrph-up-levels a-dgrph))
+                                  (dgrph-ad-levels a-dgrph)))
+             (new-nodes (extract-nodes new-ad-levels))]
+        (create-dgrphs
+         (dgrph new-up-levels                      
+                new-ad-levels
+                new-nodes)
+         (cons a-dgrph lod)))))
+
 ;; draw-img
 ;; viz-state -> img
 ;; Purpose: To render the given viz-state
@@ -287,10 +306,11 @@
 (define (rg-viz rg word)
   (let* [ (w-der (map symbol->fsmlos  (filter (λ (x) (not (equal? x '->))) (grammar-derive rg word))))
           (extracted-edges (create-edges w-der))
-          (loe (rename-edges extracted-edges))
-          (lon (extract-nodes (rename-nodes loe)))
-          (graph-imgs (create-graph-imgs loe lon))]
-    (run-viz (viz-state (rest graph-imgs) (list (first graph-imgs)))
+          (loe (rename-nodes (rename-edges extracted-edges)))
+          (dgraph (dgrph loe '() '()))
+          (lod (reverse (create-dgrphs dgraph loe)))
+          (imgs (create-graph-imgs lod))]
+    (run-viz (viz-state (rest imgs) (list (first imgs)))
              draw-world 'rg-ctm)))
 
 
