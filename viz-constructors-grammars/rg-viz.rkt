@@ -31,7 +31,7 @@
 
 (define E-SCENE (empty-scene 600 800))
 
-(define E-SCENE-TOOLS (overlay (beside (above (above (triangle 30 'solid 'black)
+(define E-SCENE-TOOLS (overlay (above (above (above (triangle 30 'solid 'black)
                                                      (rectangle 10 30 'solid 'black))
                                               (square 20 'solid 'white)
                                               (text "Restart the visualization" 18 'black))
@@ -51,7 +51,7 @@
                                               (square 20 'solid 'white)
                                               (text "Complete the visualization" 18 'black))
                                        )
-                               (empty-scene 1250 100)))
+                               (empty-scene 250 800)))
 
 
 
@@ -333,8 +333,8 @@
         (height (image-height (first (viz-state-pimgs a-vs))))]
     (if (or (> width (image-width E-SCENE))
             (> height (image-height E-SCENE)))
-        (above (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE)) E-SCENE-TOOLS)
-        (above (first (viz-state-pimgs a-vs)) E-SCENE-TOOLS))))
+        (beside E-SCENE-TOOLS (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE)))
+        (beside E-SCENE-TOOLS (first (viz-state-pimgs a-vs))))))
 
          
 ;; rg-viz
