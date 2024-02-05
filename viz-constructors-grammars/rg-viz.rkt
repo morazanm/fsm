@@ -166,7 +166,9 @@
             state
             #:atb (hash 'color 'black
                         'shape 'circle
-                        'label state
+                        'label (if (char-upper-case? (string-ref (symbol->string state) 0))
+                                   state
+                                   (string->symbol (string (string-ref (symbol->string state) 0))))
                         'fontcolor 'black
                         'font "Sans")))
          graph
@@ -183,7 +185,8 @@
                                            (first (first rule))
                                            (second (first rule))
                                            #:atb (hash 'fontsize 20
-                                                       'style 'solid )))
+                                                       'style 'solid
+                                                       ))) 
                                )
                              graph
                              loe))]
@@ -195,7 +198,9 @@
                            (first (second rule))           
                            (second (second rule))
                            #:atb (hash 'fontsize 20
-                                       'style 'solid ))))
+                                       'style 'solid
+                                       ))) 
+             )
            first-foldr
            loe)))
            
