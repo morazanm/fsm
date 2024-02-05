@@ -176,13 +176,28 @@
 ;; graph (listof level) -> graph
 ;; Purpose: To make an edge graph
 (define (make-edge-graph graph loe)
-  (foldl (λ (rule result) 
-           (add-edge result
-                     ""
-                     (first rule)
-                     (second rule)
-                     #:atb (hash 'fontsize 20
-                                 'style 'solid )))
+  (foldl (λ (rule result)
+           (if (empty? (second rule))
+               (begin
+                 (add-edge result
+                           ""
+                           (first (first rule))
+                           (second (first rule))
+                           #:atb (hash 'fontsize 20
+                                       'style 'solid )))
+               (begin
+                 (add-edge result
+                           ""
+                           (first (first rule))
+                           (second (first rule))
+                           #:atb (hash 'fontsize 20
+                                       'style 'solid ))
+                 (add-edge result
+                           ""
+                           (first (first rule))           
+                           (second (second rule))
+                           #:atb (hash 'fontsize 20
+                                       'style 'solid )))))
                               
          graph
          loe))
@@ -193,10 +208,12 @@
 ;; ndfa -> img
 ;; Purpose: To create a graph image for complement
 (define (create-graph-img a-dgrph)
-  (overlay (graph->bitmap (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
-                                                            (dgrph-nodes a-dgrph))
-                                           (dgrph-ad-levels a-dgrph))
-                          E-SCENE)))
+  (let [(nodes (dgrph-nodes a-dgrph))
+        (levels (dgrph-ad-levels a-dgrph))]
+    (overlay (graph->bitmap (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
+                                                              nodes)
+                                             levels))
+             E-SCENE)))
 
 
 ;; create-graph-imgs
@@ -271,8 +288,8 @@
    img))
 
 ;; create-dgraphs
-;; etc (listof etc) -> (listof etc)
-;; Purpose: To create all the etcs for graph imgs
+;; dgrph (listof dgrph) -> (listof dgrph)
+;; Purpose: To create all the dgrphs for graph imgs
 (define (create-dgrphs a-dgrph lod)
   (if (empty? (dgrph-up-levels a-dgrph))
       (cons a-dgrph lod)
@@ -280,12 +297,13 @@
              (new-ad-levels (cons (first (dgrph-up-levels a-dgrph))
                                   (dgrph-ad-levels a-dgrph)))
              (new-nodes (extract-nodes new-ad-levels))
-             (dd (display (format "~s \n ~s" new-ad-levels new-nodes)))]
+             ]
         (create-dgrphs
          (dgrph new-up-levels                      
                 new-ad-levels
                 new-nodes)
-         (cons a-dgrph lod)))))
+         (cons a-dgrph lod))
+        )))
 
 ;; draw-img
 ;; viz-state -> img
@@ -307,9 +325,13 @@
 (define (rg-viz rg word)
   (let* [ (w-der (map symbol->fsmlos  (filter (λ (x) (not (equal? x '->))) (grammar-derive rg word))))
           (extracted-edges (create-edges w-der))
-          (loe (rename-nodes (rename-edges extracted-edges)))
+          (renamed (rename-nodes (rename-edges extracted-edges)))
+          (loe (map (λ (el) (if (symbol? (first el))
+                                (list el '())
+                                el)) renamed))
           (dgraph (dgrph loe '() '()))
-          (lod (reverse (create-dgrphs dgraph loe)))
+          (lod (reverse (create-dgrphs dgraph '())))
+          (dd (display (format "~s" lod)))
           (imgs (create-graph-imgs lod))]
     (run-viz (viz-state (rest imgs) (list (first imgs)))
              draw-world 'rg-ctm)))
