@@ -332,7 +332,7 @@
           (dgraph (dgrph loe '() '()))
           (lod (reverse (create-dgrphs dgraph '())))
           (dd (display (format "~s" lod)))
-          (imgs (create-graph-imgs lod))]
+          (imgs (rest (create-graph-imgs lod)))]
     (run-viz (viz-state (rest imgs) (list (first imgs)))
              draw-world 'rg-ctm)))
 
