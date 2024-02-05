@@ -308,6 +308,20 @@
          (cons a-dgrph lod))
         )))
 
+;; create-first-img
+;; node -> img
+;; Purpose: To create the first graph img
+(define (create-first-img node)
+  (overlay (graph->bitmap (add-node
+                           (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
+                           node
+                           #:atb (hash 'color 'black
+                                       'shape 'circle
+                                       'label node
+                                       'fontcolor 'black
+                                       'font "Sans")))
+           E-SCENE))
+
 ;; draw-img
 ;; viz-state -> img
 ;; Purpose: To render the given viz-state
@@ -334,7 +348,8 @@
                                 el)) renamed))
           (dgraph (dgrph loe '() '()))
           (lod (reverse (create-dgrphs dgraph '())))
-          (imgs (rest (create-graph-imgs lod)))]
+          (first-img (create-first-img (first (extract-nodes loe))))
+          (imgs (cons first-img (rest (create-graph-imgs lod))))]
     (run-viz (viz-state (rest imgs) (list (first imgs)))
              draw-world 'rg-ctm)))
 
