@@ -176,31 +176,29 @@
 ;; graph (listof level) -> graph
 ;; Purpose: To make an edge graph
 (define (make-edge-graph graph loe)
-  (foldl (λ (rule result)
-           (if (empty? (second rule))
-               (begin
+  (let* [(first-foldr (foldl (λ (rule result)
+                               (begin
+                                 (add-edge result
+                                           ""
+                                           (first (first rule))
+                                           (second (first rule))
+                                           #:atb (hash 'fontsize 20
+                                                       'style 'solid )))
+                               )
+                             graph
+                             loe))]
+    (foldr (λ (rule result)
+             (if (empty? (second rule))
+                 result
                  (add-edge result
                            ""
-                           (first (first rule))
-                           (second (first rule))
-                           #:atb (hash 'fontsize 20
-                                       'style 'solid )))
-               (begin
-                 (add-edge result
-                           ""
-                           (first (first rule))
-                           (second (first rule))
-                           #:atb (hash 'fontsize 20
-                                       'style 'solid ))
-                 (add-edge result
-                           ""
-                           (first (first rule))           
+                           (first (second rule))           
                            (second (second rule))
                            #:atb (hash 'fontsize 20
-                                       'style 'solid )))))
-                              
-         graph
-         loe))
+                                       'style 'solid ))))
+           first-foldr
+           loe)))
+           
 
 
 
@@ -331,7 +329,6 @@
                                 el)) renamed))
           (dgraph (dgrph loe '() '()))
           (lod (reverse (create-dgrphs dgraph '())))
-          (dd (display (format "~s" lod)))
           (imgs (rest (create-graph-imgs lod)))]
     (run-viz (viz-state (rest imgs) (list (first imgs)))
              draw-world 'rg-ctm)))
