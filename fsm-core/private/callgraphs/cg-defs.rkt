@@ -629,6 +629,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; mttm-Edge-fromst
 
+;; mttm-Edge -> symbol
+;; Purpose: Extract the from state from the given edge 
 (define (mttm-Edge-fromst E)
   (cond [(mttm-edge? E) (mttm-edge-fromst E)]
         [(mttm-spedge? E) (mttm-spedge-fromst E)]
@@ -638,6 +640,8 @@
 ;.................................................
 ;; mttm-Edge-reads
 
+;; mttm-Edge -> (listof symbol)
+;; Purpose: Extract the read elements from the given edge 
 (define (mttm-Edge-reads E)
   (cond [(mttm-edge? E) (mttm-edge-reads E)]
         [(mttm-spedge? E) (mttm-spedge-reads E)]
@@ -647,6 +651,8 @@
 ;.................................................
 ;; mttm-Edge-tost
 
+;; mttm-Edge -> symbol
+;; Purpose: Extract the to state from the given edge 
 (define (mttm-Edge-tost E)
   (cond [(mttm-edge? E) (mttm-edge-tost E)]
         [(mttm-spedge? E) (mttm-spedge-tost E)]
@@ -656,6 +662,8 @@
 ;.................................................
 ;; mttm-Edge-actions
 
+;; mttm-Edge -> (listof symbol)
+;; Purpose: Extract the action elements from the given edge 
 (define (mttm-Edge-actions E)
   (cond [(mttm-edge? E) (mttm-edge-actions E)]
         [(mttm-spedge? E) (mttm-spedge-actions E)]
@@ -666,6 +674,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; mttm-Edges-equal?
 
+;; mttm-Edge mttm-Edge -> Boolean
+;; Purpose: Check whether two edges are the same
 (define (mttm-Edges-equal? e1 e2)
   (and (equal? (mttm-Edge-fromst e1) (mttm-Edge-fromst e2))
        (equal? (mttm-Edge-reads e1) (mttm-Edge-reads e2))
@@ -675,6 +685,8 @@
 ;.................................................
 ;; mttm-stucis-equal?
 
+;; mttm-stuci mttm-stuci -> Boolean
+;; Purpose: Check whether two stucis are the same
 (define (mttm-stucis-equal? s1 s2)
   (and (eq? (mttm-stuci-state s1) (mttm-stuci-state s2))
        (equal? (mttm-stuci-tapes s1) (mttm-stuci-tapes s2))
@@ -683,24 +695,32 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; mttm-rule-fromst
 
+;; rule -> symbol
+;; Purpose: Extract the from state from a rule
 (define (mttm-rule-fromst r)
   (first (first r)))
   
 ;.................................................
 ;; mttm-rule-reads
 
+;; rule -> (listof symbol)
+;; Purpose: Extract the read elements from a rule
 (define (mttm-rule-reads r)
   (second (first r)))
 
 ;.................................................
 ;; mttm-rule-tost
 
+;; rule -> symbol
+;; Purpose: Extract the to state from a rule
 (define (mttm-rule-tost r)
   (first (second r)))
 
 ;.................................................
 ;; mttm-rule-actions
 
+;; rule -> (listof symbol)
+;; Purpose: Extract the action elements from a rule
 (define (mttm-rule-actions r)
   (second (second r)))
 
