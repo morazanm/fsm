@@ -216,12 +216,10 @@
                                     (equal? (tapes-at-i stuci) (mttm-Edge-reads e))))
                    edges)))
     (cut-off
-     (begin ;(displayln edges)
-            ;(displayln to-visit)
-            ;(displayln visited)
      (if (empty? to-visit)
          '()
-         (let* [(new-stucis (add-to-stucis-helper edges (first to-visit)))]
+         (let* [(new-stucis (filter (lambda (x) (not (member (mttm-stuci-state x) (sm-finals M))))
+                                    (add-to-stucis-helper edges (first to-visit))))]
            (if (or (empty? new-stucis)
                    (ormap (lambda (s) 
                             (ormap (lambda (s2) (mttm-stucis-equal? s s2)) 
@@ -231,19 +229,16 @@
                (append new-stucis
                        (add-to-stucis edges (rest to-visit)
                                       (append new-stucis
-                                              visited)))))))
+                                              visited))))))
      threshold)) 
   ;; mttm-stuci -> (listof mttm-Edge)
   ;; Purpose: Given a mttm-stuci, creates all possible edges for that
   ;;          mttm-stuci
   (define (add-to-edges stuci)
-    (begin (displayln stuci)
-    
     (let* [(new-rules
             (filter (lambda (e) (and (eq? (mttm-rule-fromst e) (mttm-stuci-state stuci))
                                      (equal? (mttm-rule-reads e) (tapes-at-i stuci))))
                     (sm-rules M)))]
-      (displayln new-rules)
       ;; (mlistof X) natnum -> X
       ;; Purpose: Find element at i on given mttm tape
       (define (mttm-tape-at-i tape i)
@@ -283,7 +278,8 @@
       ;; rule -> Boolean
       ;; Purpose: Given a rule, determines whether the machine halts
       (define (machine-halts? rule)
-        (empty? (future-rules rule)))
+        (let ((r (filter (lambda (x) (not (member (mttm-rule-fromst x) (sm-finals M)))) (future-rules rule))))
+          (empty? r)))
       ;; rule -> tm-Edge
       ;; Purpose: Given a machine rule, determines which mttm-Edge subtype to use
       ;; How: If the machine halts in the state, we use a mttm-spedge.
@@ -306,7 +302,7 @@
                                (mttm-rule-actions rule))]))
       (if (empty? new-rules)
           '()
-          (map (lambda (e) (mttm-Edge e)) new-rules)))))
+          (map (lambda (e) (mttm-Edge e)) new-rules))))
   ;; (listof mttm-stuci) (listof mttm-stuci) -> (listof mttm-Edge)
   ;; Purpose: Given lists of to-visit and visited mttm-stucis, appends all possible
   ;;          edges in the machine
@@ -343,39 +339,42 @@
   (define (mttm-remove-redundant-edges-on-accept edges)
     ;; (listof sm-showtransitions) -> (listof mttm-Edge)
     ;; Purpose: Given sm-showtransitions, makes a list of edges according to that one accepting computation
-    #;(define (edges-on-accept st)
+    (define (edges-on-accept st)
       (let* [(fromst (first (first st)))]      
-        (if (or (and (eq? (sm-type M) 'tm-language-recognizer)
+        (if (or (and (eq? (sm-type M) 'mttm-language-recognizer)
                      (eq? fromst (sm-accept M)))
-                (and (eq? (sm-type M) 'tm)
+                (and (eq? (sm-type M) 'mttm)
                      (member fromst (sm-finals M))))
             '()
             (let* [(tost (first (second st)))
-                   (head-from (second (first st)))
-                   (head-to (second (second st)))
-                   (read (list-ref (third (first st)) head-from))
-                   (action (cond [(eq? head-from head-to)
-                                  (list-ref (third (second st)) head-to)]
-                                 [(< head-from head-to) 'R]
-                                 [else 'L]))]
-              (if (or (and (eq? (sm-type M) 'tm-language-recognizer)
+                   (heads-from (map (lambda (x) (first x)) (cdr (first st))))
+                   (heads-to (map (lambda (x) (first x)) (cdr (second st))))
+                   (reads (map (lambda (x y) (list-ref (cadr y) x)) heads-from (cdr (first st)))) 
+                   (actions (map (lambda (hfr hto y) (cond [(eq? hfr hto)
+                                                            (list-ref (cadr y) hto)]
+                                                           [(< hfr hto) 'R]
+                                                           [else 'L]))
+                                 heads-from heads-to (cdr (first st))))]
+              (if (or (and (eq? (sm-type M) 'mttm-language-recognizer)
                            (eq? tost (sm-accept M)))
-                      (and (eq? (sm-type M) 'tm)
+                      (and (eq? (sm-type M) 'mttm)
                            (member tost (sm-finals M))))
-                  (cons (tm-spedge fromst read tost action)
+                  (cons (mttm-spedge fromst reads tost actions)
                         (edges-on-accept (rest st)))
-                  (cons (tm-edge fromst read tost action)
+                  (cons (mttm-edge fromst reads tost actions)
                         (edges-on-accept (rest st))))))))
-    #;(if (or (and (eq? (sm-type M) 'tm-language-recognizer)
-                 (ormap (lambda (r) (eq? (tm-Edge-tost r) (sm-accept M)))
-                        (append (filter tm-spedge? edges)
-                                (filter tm-cutoff-spedge? edges))))
-            (and (eq? (sm-type M) 'tm)
-                 (ormap (lambda (r) (member (tm-Edge-tost r) (sm-finals M)))
-                        (append (filter tm-spedge? edges)
-                                (filter tm-cutoff-spedge? edges)))))
-        (remove-duplicates (edges-on-accept (sm-showtransitions M (cons '@ word) head)))
-        edges) edges)
+    (if (or (and (eq? (sm-type M) 'mttm-language-recognizer)
+                 (ormap (lambda (r) (eq? (mttm-Edge-tost r) (sm-accept M)))
+                        (append (filter mttm-spedge? edges)
+                                (filter mttm-cutoff-spedge? edges))))
+            (and (eq? (sm-type M) 'mttm)
+                 (ormap (lambda (r) (member (mttm-Edge-tost r) (sm-finals M)))
+                        (append (filter mttm-spedge? edges)
+                                (filter mttm-cutoff-spedge? edges)))))
+        (remove-duplicates (edges-on-accept (sm-showtransitions M (if (eq? LM (car word))
+                                                                      word
+                                                                      (cons '@ word)) head)))
+        edges))
   ;; (listof mttm-Edge) -> (listof mttm-Edge)
   ;; Purpose: Given a list of edges removes duplicates. The order of prioritization from
   ;;          highest to lowest is: mttm-cutoff-spedge, both mttm-spedge and mttm-cutoff-edge, mttm-edge
@@ -493,7 +492,9 @@
                               (eq? (first los) start-state)) "dodgerblue"]
                         [else "black"]))
                  (a-shape
-                  (cond [(member (first los) final-states) "doublecircle"]
+                  (cond [(and (eq? (sm-type M) 'mttm-language-recognizer)
+                              (eq? (sm-accept M) (first los))) "doubleoctagon"]
+                        [(member (first los) final-states) "doublecircle"]
                         [else "circle"]))
                  (a-label
                   (symbol->string (first los)))
@@ -597,6 +598,8 @@
                 (member (second optargs) COLOR-LIST))
            (second optargs)]
           [else DEFAULT-COLOR]))
+  ;; Def for fontsize
+  (define mttm-FONTSIZE 8)
   (let* [(new-rules (make-mttm-cg-edges M word head threshold))]
     ;; word -> word
     ;; Purpose: If neccessary, adds a left-end marker
@@ -649,9 +652,8 @@
              (lambda (a-trans a-graph)
                (let* [(state1 (first a-trans))
                       (state2 (second a-trans))
-                      (fontsize (second (first (third a-trans))))
                       (label (second (second (third a-trans))))]
-                 (add-edge a-graph label state1 state2 #:atb (hash 'fontsize fontsize))))
+                 (add-edge a-graph label state1 state2 #:atb (hash 'fontsize mttm-FONTSIZE))))
              cgraph
              (dot-trans-mttm M new-rules)))
       (let [(res (graph->bitmap cgraph))] 
@@ -659,15 +661,60 @@
 
 ;.................................................
 
-(make-mttm-cg-edges ww '(@ _ a) 1 100)
-(make-mttm-cg-edges ww '(@ _ a b c) 1 100)
 
-(make-mttm-cg-edges EQABC '(@ _ a b c) 1 100)
-(make-mttm-cg-edges EQABC '(@ _ a b b) 1 100)
-
+(sm-graph ww)
 (computation-diagram-mttm ww '(_ a) 1)
+(computation-diagram-mttm ww '(_ a b a) 1)
 (sm-graph EQABC)
 (computation-diagram-mttm EQABC '(@ _ a b c) 1)
 (computation-diagram-mttm EQABC '(@ _ a b b) 1)
 
+(define EQABC2
+  (make-mttm '(S Y N C D E F G)
+             '(a b c)
+             'S
+             '(Y N)
+             (list
+              (list (list 'S (list BLANK BLANK BLANK BLANK))
+                    (list 'C (list RIGHT RIGHT RIGHT RIGHT)))
+              (list (list 'C (list 'a BLANK BLANK BLANK))
+                    (list 'D (list 'a 'a BLANK BLANK)))
+              (list (list 'D (list 'a 'a BLANK BLANK))
+                    (list 'C (list RIGHT RIGHT BLANK BLANK)))
+              (list (list 'C (list 'b BLANK BLANK BLANK))
+                    (list 'E (list 'b BLANK 'b BLANK)))
+              (list (list 'E (list 'b BLANK 'b BLANK))
+                    (list 'C (list RIGHT BLANK RIGHT BLANK)))
+              (list (list 'C (list 'c BLANK BLANK BLANK))
+                    (list 'F (list 'c BLANK BLANK 'c)))
+              (list (list 'F (list 'c BLANK BLANK 'c))
+                    (list 'C (list RIGHT BLANK BLANK RIGHT)))
+              (list (list 'C (list BLANK BLANK BLANK BLANK))
+                    (list 'G (list BLANK LEFT LEFT LEFT)))
+              (list (list 'G (list BLANK BLANK BLANK BLANK))
+                    (list 'Y (list BLANK BLANK BLANK BLANK)))
+              (list (list 'G (list BLANK 'a 'b 'c))
+                    (list 'G (list BLANK LEFT LEFT LEFT)))
+              (list (list 'G (list BLANK BLANK 'b 'c))
+                    (list 'N (list BLANK BLANK 'b 'c)))
+              (list (list 'G (list BLANK 'a BLANK 'c))
+                    (list 'N (list BLANK 'a BLANK 'c)))
+              (list (list 'G (list BLANK 'a 'b BLANK))
+                    (list 'N (list BLANK 'a 'b BLANK)))
+              (list (list 'G (list BLANK BLANK BLANK 'c))
+                    (list 'N (list BLANK BLANK BLANK 'c)))
+              (list (list 'G (list BLANK BLANK 'b BLANK))
+                    (list 'N (list BLANK BLANK 'b BLANK)))
+              (list (list 'G (list BLANK 'a BLANK BLANK))
+                    (list 'N (list BLANK 'a BLANK BLANK)))
+              (list (list 'N (list BLANK BLANK BLANK BLANK))
+                    (list 'G (list BLANK BLANK BLANK BLANK)))
+              (list (list 'Y (list BLANK BLANK BLANK BLANK))
+                    (list 'G (list BLANK BLANK BLANK BLANK)))
+              (list (list 'G (list BLANK BLANK BLANK BLANK))
+                    (list 'N (list BLANK BLANK BLANK BLANK))))
+             4
+             'Y))
 
+(sm-graph EQABC2)
+(computation-diagram-mttm EQABC2 '(@ _ a b c) 1)
