@@ -33,6 +33,11 @@
     (tm-exp (s i n) #t)
     (else #f)))
 
+(define (var-exp? exp)
+  (cases expression exp
+    (var-exp (v t) #t)
+    (else #f)))
+
 ;; any -> throws error
 ;; Purpose: Throw an error in case of invalid syntax
 (define (report-invalid-ctm-syntax datum)
@@ -82,7 +87,7 @@
                                      (car (cdr (car branch)))
                                      (car branch)))))
     (list fromst tost
-          `((label ,a-label) (style "dashed")))))
+          `((label ,a-label) (style "dashed") (color "black") (headlabel "")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; parser
@@ -132,6 +137,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+
 ;; exp -> (listof node)
 ;; Purpose: Create one node
 (define (node exp first-int)
@@ -149,6 +155,8 @@
                    (a-label
                     (symbol->string sym))]
               (list a-node `((color ,a-color) (shape ,a-shape) (label ,a-label)))))
+    #;(var-exp (v tm)
+             (list tm `((color "black") (shape "rectangle") (label ,(string-append tm "\n" (format "var=~a" v))))))
     (else '())))
 
 ;.................................................
@@ -174,10 +182,10 @@
                           (a-label "")
                           (a-style "solid")]
                      (list fromst tost
-                           `((label ,a-label) (style ,a-style)))))))
-    #;(var-exp (var tm)
+                           `((label ,a-label) (style ,a-style) (color "black") (headlabel "")))))))
+    (var-exp (var tm)
              (list tm tm
-                   `((label ,(format "var=~a" var)) (style "solid"))))
+                   `((label "") (style "solid") (color "white") (headlabel ,(format "var=~a" var)))))
     (else '())))
     
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -205,7 +213,7 @@
          (cons (list (car (car l)) (cadr (car l)))
                (append (adjust-var (cdr (car l)))
                        (adjust-var (cdr l)))))
-        (else (cons (car l) (adjust-var (cdr l))))))
+        (else (cons (car l) (adjust-var (cdr l)))))) 
 
 ;; list list -> list
 ;; Purpose: Create a list of consecutive integers matching the ctmd list length
@@ -297,8 +305,10 @@
                     (label (if (symbol? (second (first (third a-trans))))
                                (symbol->string (second (first (third a-trans))))
                                (second (first (third a-trans)))))
-                    (style (second (second (third a-trans))))] 
-               (add-edge a-graph label state1 state2 #:atb (hash 'style style))))
+                    (style (second (second (third a-trans))))
+                    (color (second (third (third a-trans))))
+                    (headlabel (second (fourth (third a-trans))))] 
+               (add-edge a-graph label state1 state2 #:atb (hash 'style style 'color color 'headlabel headlabel))))
            cgraph
            (clean-list (dot-edges (parse-program ctm)))))
     (let [(res (graph->bitmap cgraph))]
@@ -438,12 +448,12 @@
                      'j)))
    '(a b)))
 
-(define SWAPL '(list (list (list VAR 'i)
-                             R
+(define SWAPL (list (list (list VAR 'i)
+                             'R
                              (list (list VAR 'j)
-                                   i
-                                   L
-                                   j))))
+                                   'i
+                                   'L
+                                   'j))))
 
 #|
 (transition-diagram-ctm COPYL2)
@@ -499,8 +509,8 @@
   (follow-trace (cdr (ctm-run ctm tape head #:trace #t)) (clean-list (dot-edges (parse-program ctmlist))) (car (car (clean-list (dot-edges (parse-program ctmlist)))))))
 
 
-
-
+(transition-diagram-ctm COPYL2)
+(transition-diagram-ctm SWAPL)
 
 
 
