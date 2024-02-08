@@ -387,13 +387,13 @@
     
     ; symbol --> tm
     (define (make-writer a)
-      (make-unchecked-tm '(s h) 
+      (make-unchecked-tm '(S H) 
                          sigma 
                          (map (lambda (symb)
-                                (list (list 's symb) (list 'h a)))
+                                (list (list 'S symb) (list 'H a)))
                               (cons BLANK sigma))
-                         's
-                         '(h)))
+                         'S
+                         '(H)))
     
     (define WRITERS (map (lambda (s)
                            (list s (make-writer s)))
@@ -481,63 +481,6 @@
               (tmconfig HALT i tape)
               (first (eval inputctm (label-pairs inputctm) START (list (tmconfig START i tape))))))))
 
-  ;    (lambda (tape i . l)      
-  ;      
-  ;      (define label? number?)
-  ;      
-  ;      ; ctm --> (listof (list number ctm))
-  ;      (define (label-pairs m)
-  ;        (cond [(null? m) null]
-  ;              [(procedure? (car m)) (label-pairs (cdr m))]
-  ;              [(label? (car m)) (cons (list (car m) (cdr m)) (label-pairs (cdr m)))]
-  ;              [(symbol? (car m)) (label-pairs (cdr m))]
-  ;              [(and (list? (car m)) (eq? (caar m) BRANCH)) 
-  ;               (append-map (lambda (ctm) (label-pairs ctm)) (cons (cdr m) (map cdr (cdar m))))]
-  ;              [(and (list? (car m)) (eq? (caar m) GOTO)) (label-pairs (cdr m))]        
-  ;              [(and (list? (car m)) (list? (caar m)) (eq? (caaar m) VAR)) (append (label-pairs (cdar m)) (label-pairs (cdr m)))]
-  ;              [else (error (format "~s found unknown element in ctm: ~s" "label-pairs" (car m)))]))
-  ;      
-  ;      
-  ;      (define (mt-env) null)
-  ;      
-  ;      (define (extend-env var val env)
-  ;        (cons (list var val) env))
-  ;      
-  ;      (define mt-env? null?)
-  ;      
-  ;      (define (apply-env env var)
-  ;        (cond [(mt-env? env) (error (format "While running a ctm found an unbound variable or label: ~s" var))]
-  ;              [(eq? (caar env) var) (cadar env)]
-  ;              [else (apply-env (cdr env) var)]))
-  ;      
-  ;      ; ctm env --> tmconfig
-  ;      ; ASSUMPTION: env is populated with all labels
-  ;      (define (eval m env laststate)
-  ;        (cond [(null? m) (tmconfig laststate i tape)] 
-  ;              [(symbol? (car m)) 
-  ;               (let ((val (apply-env env (car m))))
-  ;                 (eval (cons (cadr (assoc val WRITERS)) (cdr m)) env laststate))]
-  ;              [(procedure? (car m)) 
-  ;               (let* ((res ((car m) tape i 'lastconfig)))
-  ;                 (begin
-  ;                   (set! tape (tmconfig-tape res))
-  ;                   (set! i (tmconfig-index res))
-  ;                   (eval (cdr m) env (tmconfig-state res))))]
-  ;              [(label? (car m))
-  ;               (eval (cdr m) env laststate)]
-  ;              [(and (list? (car m)) (eq? (caar m) BRANCH)) 
-  ;               (let* ((branches (cdar m))
-  ;                      (the-branch-assoc (assoc (list-ref tape i) branches))
-  ;                      (the-branch (if (null? (cdr the-branch-assoc)) null (cdr the-branch-assoc))))
-  ;                 (eval the-branch env laststate))]
-  ;              [(and (list? (car m)) (eq? (caar m) GOTO)) (eval (apply-env env (cadar m)) env laststate)]
-  ;              [(and (list? (car m)) (list? (caar m)) (eq? (caaar m) VAR))
-  ;               (eval (append (cdar m) (cdr m)) (extend-env (cadaar m) (list-ref tape i) env) laststate)]
-  ;              [else (error (format "~s found unknown element in ctm: ~s" "eval" (car m)))]))
-  ;      
-  ;      (if (null? inputctm)
-  ;          (tmconfig HALT i tape)
-  ;          (eval inputctm (label-pairs inputctm) START))))
 
   ; L = a*
   (define Alla (make-unchecked-tm '(S Y N)
