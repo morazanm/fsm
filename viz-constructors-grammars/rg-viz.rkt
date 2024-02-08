@@ -166,9 +166,7 @@
             state
             #:atb (hash 'color 'black
                         'shape 'circle
-                        'label (if (char-upper-case? (string-ref (symbol->string state) 0))
-                                   state
-                                   (string->symbol (string (string-ref (symbol->string state) 0))))
+                        'label (string->symbol (string (string-ref (symbol->string state) 0)))
                         'fontcolor 'black
                         'font "Sans")))
          graph
