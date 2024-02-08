@@ -32,25 +32,25 @@
 (define E-SCENE (empty-scene 600 800))
 
 (define E-SCENE-TOOLS (overlay (above (above (above (triangle 30 'solid 'black)
-                                                     (rectangle 10 30 'solid 'black))
-                                              (square 20 'solid 'white)
-                                              (text "Restart the visualization" 18 'black))
-                                       (square 40 'solid 'white)
-                                       (above (beside (rectangle 30 10 'solid 'black)
-                                                      (rotate 270 (triangle 30 'solid 'black)))
-                                              (square 20 'solid 'white)
-                                              (text "Move one step forward" 18 'black))
-                                       (square 40 'solid 'white)
-                                       (above (beside (rotate 90 (triangle 30 'solid 'black))
-                                                      (rectangle 30 10 'solid 'black))
-                                              (square 20 'solid 'white)
-                                              (text "Move one step backward" 18 'black))
-                                       (square 40 'solid 'white)
-                                       (above (above (rectangle 10 30 'solid 'black)
-                                                     (rotate 180 (triangle 30 'solid 'black)))
-                                              (square 20 'solid 'white)
-                                              (text "Complete the visualization" 18 'black))
-                                       )
+                                                    (rectangle 10 30 'solid 'black))
+                                             (square 20 'solid 'white)
+                                             (text "Restart the visualization" 18 'black))
+                                      (square 40 'solid 'white)
+                                      (above (beside (rectangle 30 10 'solid 'black)
+                                                     (rotate 270 (triangle 30 'solid 'black)))
+                                             (square 20 'solid 'white)
+                                             (text "Move one step forward" 18 'black))
+                                      (square 40 'solid 'white)
+                                      (above (beside (rotate 90 (triangle 30 'solid 'black))
+                                                     (rectangle 30 10 'solid 'black))
+                                             (square 20 'solid 'white)
+                                             (text "Move one step backward" 18 'black))
+                                      (square 40 'solid 'white)
+                                      (above (above (rectangle 10 30 'solid 'black)
+                                                    (rotate 180 (triangle 30 'solid 'black)))
+                                             (square 20 'solid 'white)
+                                             (text "Complete the visualization" 18 'black))
+                                      )
                                (empty-scene 250 800)))
 
 
@@ -65,7 +65,21 @@
 ;; up-levels - unprocessed levels
 ;; ad-levels - levels added to the graph
 ;; nodes - nodes in the graph
-(struct dgrph (up-levels ad-levels nodes))
+;; leafs - leaf node in each graph
+(struct dgrph (up-levels ad-levels nodes leafs))
+
+
+;; upper-lower
+;; symbol -> symbol
+;; Purpose: Converts the CAPS of the symbol
+(define (upper-lower symbol)
+  (if (char-upper-case? (string-ref (symbol->string symbol) 0))
+      (string->symbol (string-append (string (char-downcase (string-ref (symbol->string symbol) 0)))
+                                     (symbol->string symbol)))
+      (string->symbol (string-append (string (char-upcase (string-ref (symbol->string symbol) 0)))
+                                     (symbol->string symbol)))))
+            
+      
 
 
 ;; create-edges
@@ -157,7 +171,7 @@
     (filter (λ (node) (member node nil)) lon)))
 
 ;; make-node-graph
-;; graph los start final -> graph
+;; graph lon leaf -> graph
 ;; Purpose: To make a node graph
 (define (make-node-graph graph lon)
   (foldl (λ (state result)
@@ -201,6 +215,24 @@
              )
            first-foldr
            loe)))
+
+
+
+;; (listof level) -> (listof node)
+;; Takes in loe from rg-viz and returns the bottom most leaf nodes
+(define (leaf-nodes levels)
+  (define (leaf-nodes-helper levels)
+    (if (empty? levels)
+        '()
+        (if (empty? (first levels))
+            (leaf-nodes-helper (rest levels))
+            (cons (second (first levels)) (leaf-nodes-helper (rest levels)))
+            )
+        )
+    )
+  (if (empty? levels)
+      '()      
+      (last (map leaf-nodes-helper levels))))
            
 
 
@@ -209,8 +241,9 @@
 ;; ndfa -> img
 ;; Purpose: To create a graph image for complement
 (define (create-graph-img a-dgrph)
-  (let [(nodes (dgrph-nodes a-dgrph))
-        (levels (dgrph-ad-levels a-dgrph))]
+  (let* [(nodes (dgrph-nodes a-dgrph))
+         (levels (dgrph-ad-levels a-dgrph))
+         (leaf (dgrph-leafs a-dgrph))]
     (overlay (graph->bitmap (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
                                                               nodes)
                                              levels))
@@ -298,11 +331,13 @@
              (new-ad-levels (cons (first (dgrph-up-levels a-dgrph))
                                   (dgrph-ad-levels a-dgrph)))
              (new-nodes (extract-nodes new-ad-levels))
+             (new-leafs (leaf-nodes new-ad-levels))
              ]
         (create-dgrphs
          (dgrph new-up-levels                      
                 new-ad-levels
-                new-nodes)
+                new-nodes
+                new-leafs)
          (cons a-dgrph lod))
         )))
 
@@ -344,7 +379,7 @@
           (loe (map (λ (el) (if (symbol? (first el))
                                 (list el '())
                                 el)) renamed))
-          (dgraph (dgrph loe '() '()))
+          (dgraph (dgrph loe '() '() '()))
           (lod (reverse (create-dgrphs dgraph '())))
           (first-img (create-first-img (first (extract-nodes loe))))
           (imgs (cons first-img (rest (create-graph-imgs lod))))]
