@@ -3,7 +3,7 @@
 
 #lang scribble/manual
 
-@(require (for-label racket setup/collects))
+@(require (for-label (only-in racket [regexp racket-regexp]) setup/collects))
 
 @title{FSM}
 @author[(author+email "Marco T. Morazán" "morazanm@shu.edu")]
@@ -67,10 +67,13 @@ variable to abstract over the currently read symbol.
 
 
 
-@defidform[alphabet] A list of numbers or symbols representing lowercase letters in the Roman alphabet.
+@defidform[alphabet] A list of symbols representing lowercase letters in the Roman alphabet.
 
 @defidform[word]{
  A @italic{(listof symbol)}. Each symbol is a member of the same alphabet.}
+
+@defidform[letter]{
+ A string of length one representing a lowercase letter in the Roman alphabet.}
 
 @defidform[state]  
 An uppercase letter (e.g., A) or a symbol comprised of an uppercase 
@@ -627,12 +630,16 @@ word are returned.
 
 @section{Regular Expression Constructors}
 
+@defproc[(null-regexp)
+         regexp]{Builds the regular expression for the empty language.}
+
 @defproc[(empty-regexp)
-         regexp]{Builds the regular expression for the empty string.}
+         regexp]{Builds the regular expression for the language that only contains the
+                 empty string.}
 
 @defproc[(singleton-regexp [a letter])
-         regexp]{Builds the regular expression for a single
- letter string.}
+         regexp]{Builds the regular expression for the language that only has a single
+                 word of length 1 representing the given letter.}
 
 @defproc[(union-regexp [r1 regexp] [r2 regexp])
          regexp]{Builds a union regular expression from the given
