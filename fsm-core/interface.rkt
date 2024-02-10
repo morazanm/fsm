@@ -481,15 +481,6 @@
   (cond [(equal? true (check-grammar nts sigma delta state 'rg)) (make-unchecked-rg nts sigma delta state)]
         [else (begin (newline) (error"Check above message for error"))])
   )
-
-
-(define (singleton-regexp a)
-  (local [(define tentative (make-unchecked-singleton a))
-          (define final (valid-regexp? tentative))]
-    (if (string? final) (error final)
-        tentative)
-    )
-  )
   
 (define (concat-regexp a b)
   (local [(define tentative (if (and (regexp? a) (regexp? b)) (make-unchecked-concat a b)
