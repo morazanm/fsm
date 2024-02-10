@@ -173,8 +173,8 @@
 ;; make-node-graph
 ;; graph lon leaf -> graph
 ;; Purpose: To make a node graph
-(define (make-node-graph graph lon)
-  (foldl (λ (state result)
+(define (make-node-graph graph lon leaf)
+  (foldr (λ (state result)
            (add-node
             result
             state
@@ -189,8 +189,8 @@
 ;; make-edge-graph
 ;; graph (listof level) -> graph
 ;; Purpose: To make an edge graph
-(define (make-edge-graph graph loe)
-  (let* [(first-foldr (foldl (λ (rule result)
+(define (make-edge-graph graph loe leaf)
+  (let* [(first-foldr (foldr (λ (rule result)
                                (begin
                                  (add-edge result
                                            ""
@@ -243,10 +243,28 @@
 (define (create-graph-img a-dgrph)
   (let* [(nodes (dgrph-nodes a-dgrph))
          (levels (dgrph-ad-levels a-dgrph))
-         (leaf (dgrph-leafs a-dgrph))]
+         (leaf (dgrph-leafs a-dgrph))
+         (new-nodes (map (λ (node) (if (member node leaf)
+                                       (upper-lower node)
+                                       node)) nodes))
+         (new-levels (map (λ (level) (cond [(empty? (second level)) level]
+                                           [(member (second (second level)) leaf)
+                                            (list (list (first (first level))
+                                                        (second (first level)))
+                                                  (list (first (second level))
+                                                        (upper-lower (second (second level)))))]
+                                           [(member (second (first level)) leaf)
+                                            (list (list (first (first level))
+                                                        (upper-lower (second (first level))))
+                                                  (list (first (second level))
+                                                        (second (second level))))]
+                                           [else level])) levels))
+         (ddd (display (format "~s \n\n ~s \n\n ~s \n\n" new-nodes new-levels leaf))) 
+                                            
+         ]
     (overlay (graph->bitmap (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
-                                                              nodes)
-                                             levels))
+                                                              nodes leaf)
+                                             levels leaf))
              E-SCENE)))
 
 
@@ -331,7 +349,7 @@
              (new-ad-levels (cons (first (dgrph-up-levels a-dgrph))
                                   (dgrph-ad-levels a-dgrph)))
              (new-nodes (extract-nodes new-ad-levels))
-             (new-leafs (leaf-nodes new-ad-levels))
+             (new-leafs (leaf-nodes (reverse new-ad-levels)))
              ]
         (create-dgrphs
          (dgrph new-up-levels                      
