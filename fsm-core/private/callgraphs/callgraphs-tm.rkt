@@ -391,25 +391,25 @@
     (define cgraph (create-graph 'cgraph #:atb (hash 'rankdir "LR" 'label (cond [(and (eq? (sm-type M) 'tm)
                                                                                       (not (empty? (append (filter tm-cutoff-edge? new-rules)
                                                                                                            (filter tm-cutoff-spedge? new-rules)))))
-                                                                                 (format "All computations on '~a cut off at threshold ~a" (cons LM word) threshold)]
+                                                                                 (format "All computations on '~a cut off at threshold ~a" word threshold)]
                                                                                 [(and (eq? (sm-type M) 'tm-language-recognizer)
                                                                                       (not (empty? (append (filter tm-cutoff-edge? new-rules)
                                                                                                            (filter tm-cutoff-spedge? new-rules)))))
-                                                                                 (format "All computations on '~a cut off at threshold ~a" (cons LM word) threshold)]
+                                                                                 (format "All computations on '~a cut off at threshold ~a" word threshold)]
                                                                                 [(and (eq? (sm-type M) 'tm)
                                                                                       (ormap (lambda (e) (member (tm-Edge-tost e) (sm-finals M)))
                                                                                              (append (filter tm-spedge? new-rules)
                                                                                                      (filter tm-cutoff-spedge? new-rules))))
-                                                                                 (format "Machine reaches a halting state on: '~a" (cons LM word))]
+                                                                                 (format "Machine reaches a halting state on: '~a" word)]
                                                                                 [(eq? (sm-type M) 'tm)
-                                                                                 (format "Machine fails to reach a halting state on: '~a" (cons LM word))]
+                                                                                 (format "Machine fails to reach a halting state on: '~a" word)]
                                                                                 [(and (eq? (sm-type M) 'tm-language-recognizer)
                                                                                       (ormap (lambda (r) (eq? (tm-Edge-tost r) (sm-accept M)))
                                                                                              (append (filter tm-spedge? new-rules)
                                                                                                      (filter tm-cutoff-spedge? new-rules))))
-                                                                                 (format "Machine accepts on: '~a" (cons LM word))]
+                                                                                 (format "Machine accepts on: '~a" word)]
                                                                                 [else
-                                                                                 (format "Machine rejects on: '~a" (cons LM word))])
+                                                                                 (format "Machine rejects on: '~a" word)])
                                                      'fontsize 13)
                                  #:fmtrs (formatters (hash) (hash) (hash 'label one-rule-per-line)))) 
     (begin

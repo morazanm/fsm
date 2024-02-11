@@ -506,7 +506,9 @@
                (equal? 'BRANCH (car (car trace)))
                (equal? 'VAR (car (car trace))))
            (follow-trace (cdr trace) edges stored-val)]))
-  (follow-trace (cdr (ctm-run ctm tape head #:trace #t)) (clean-list (dot-edges (parse-program ctmlist))) (car (car (clean-list (dot-edges (parse-program ctmlist)))))))
+  (follow-trace (cdr (ctm-run ctm tape head #:trace #t))
+                (filter (lambda (x) (not (equal? "white" (cadr (caddr (caddr x)))))) (clean-list (dot-edges (parse-program ctmlist))))
+                (car (car (clean-list (dot-edges (parse-program ctmlist)))))))
 
 
 ;(transition-diagram-ctm COPYL2)
