@@ -155,7 +155,8 @@
                                              (equal? (first new-pvar) '(label "BLANK"))
                                              (tmconfig? (first new-pvar)))
                                          (text "" 20 'black)
-                                         (text (format "k = ~a" (first new-pvar)) 20 'black))
+                                         (text (format "~a = ~a" (second (first (first new-pvar)) )
+                                                   (third (first (first new-pvar)))) 20 'black))
                                      ) 
                               (if (= 1 (length (var-uvar (viz-state-var a-vs))))
                                   (viz-state-var a-vs) 
@@ -185,7 +186,8 @@
                                          (equal? (first new-pvar) '(label "BLANK"))
                                          (tmconfig? (first new-pvar)))
                                      (text "" 20 'black)
-                                     (text (format "k = ~a" (first new-pvar)) 20 'black))
+                                     (text (format "~a = ~a" (second (first (first new-pvar)) )
+                                                   (third (first (first new-pvar)))) 20 'black))
                                  )
                           (if (= 1 (length (var-pvar (viz-state-var a-vs))))
                               (viz-state-var a-vs) 
@@ -233,7 +235,8 @@
                                          (equal? (first (var-uvar (viz-state-var a-vs))) '(label "BLANK"))
                                          (tmconfig? (first (var-uvar (viz-state-var a-vs)))))
                                      (text "" 20 'black)
-                                     (text (format "k = ~a" (first (var-uvar (viz-state-var a-vs)))) 20 'black))
+                                     (text (format "~a = ~a" (second (first (first (var-uvar (viz-state-var a-vs)))))
+                                                   (third (first (first (var-uvar (viz-state-var a-vs)))))) 20 'black))
                                  )
                           (var (rest (append (reverse (var-pvar (viz-state-var a-vs)))
                                              (var-uvar (viz-state-var a-vs))))
@@ -267,7 +270,8 @@
                                              (equal? (first (var-uvar (viz-state-var a-vs))) '(label "BLANK"))
                                              (tmconfig? (first (var-uvar (viz-state-var a-vs)))))
                                          (text "" 20 'black)
-                                         (text (format "k = ~a" (first (var-uvar (viz-state-var a-vs)))) 20 'black))
+                                         (text (format "~a = ~a" (second (first (first (var-uvar (viz-state-var a-vs)))))
+                                                       (third (first (first (var-uvar (viz-state-var a-vs)))))) 20 'black))
                                      ))
                           (viz-state-var a-vs)))
              a-vs)]
@@ -299,7 +303,9 @@
                                              (equal? (first (var-uvar (viz-state-var a-vs))) '(label "BLANK"))
                                              (tmconfig? (first (var-uvar (viz-state-var a-vs)))))
                                          (text "" 20 'black)
-                                         (text (format "k = ~a" (first (var-uvar (viz-state-var a-vs)))) 20 'black))
+                                         (text (format "~a = ~a" (second (first (first (var-uvar (viz-state-var a-vs)))))
+                                                       (third (first (first (var-uvar (viz-state-var a-vs)))))) 20 'black))
+                                     
                                      
                                      ))
                           (viz-state-var a-vs))))]
@@ -419,6 +425,21 @@
       (cons (first (third (first loe)))
             (extract-labels (rest loe)))))
 
+;; replace-vars
+;; (listof trace/var) -> (listof trace-var)
+;; Purpose: To replace the tmconfigs in the list with vars in the right place
+(define (replace-vars lov)
+  (if (empty? lov)
+      '()
+      (cond [(empty? (rest lov))
+             (cons (first lov) (replace-vars (rest lov)))]
+            [(and (tmconfig? (first lov))
+                  (list? (first (rest lov))))
+             (cons (list (first (rest lov)) (first lov)) (replace-vars (rest lov)))]
+            [(list? (first lov))
+             (cons "x" (replace-vars (rest lov)))]
+            [else (cons (first lov) (replace-vars (rest lov)))])))
+
 ;; loe -> loe
 ;; Purpose: To fix the blank label in computation edges
 (define (fix-blank-label loe)
@@ -466,20 +487,20 @@
          (lotraces (filter (λ (x) (tmconfig? x)) (ctm-apply ctm tape head #t)))
          (loimgs (create-graph-imgs loedges lonodes comp-edges))
          (tapes (create-tape lotraces))
-         (lovars (filter (λ (x) (or (tmconfig? x)
-                                    (equal? (first x) 'VAR))) (ctm-apply ctm tape head #t)))
+         (lovars-not-replaced (filter (λ (x) (or (tmconfig? x)
+                                                 (equal? (first x) 'VAR))) (ctm-apply ctm tape head #t)))
+         (lovars (filter (λ (x) (not (equal? x "x"))) (replace-vars lovars-not-replaced)))
          (everything-message (if (or (equal? (first lovars) '(label ""))
                                      (equal? (first lovars) '(label "dummy"))
                                      (equal? (first lovars) '(label "BLANK"))
                                      (tmconfig? (first lovars)))
                                  (text "" 20 'black)
-                                 (text (format "k = ~a" (first lovars)) 20 'black))
+                                 (text (format "~a = ~a" (second (first (first lovars))) (third (first (first lovars)))) 20 'black))
                              )
          (tapeimg (above (make-tape-img (first (first tapes)) (second (first tapes)) (third (first tapes)))
                          (square 30 'solid 'white)
                          everything-message
                          ))
-         (dd (display (format "~s" lovars)))
          ]
     (run-viz (viz-state (graph (rest loimgs) (list (first loimgs)))
                         (tapelist (rest tapes) (list (first tapes)))
