@@ -102,10 +102,13 @@
                                     (string->symbol (second rule))
                                     #:atb (hash 'fontsize 14
                                                 'style (second (second (third rule)))
-                                                'color (if (and (equal? (first rule) (first edge))
-                                                                (equal? (second rule) (second edge)))
-                                                           'dodgerblue2
-                                                           'black)
+                                                'color (if (equal? (second (third (third rule))) "white")
+                                                           (second (third (third rule)))
+                                                           (if (and (equal? (first rule) (first edge))
+                                                                    (equal? (second rule) (second edge)))
+                                                               'dodgerblue2
+                                                               (second (third (third edge)))))
+                                                'headlabel (second (fourth (third rule)))
                                                 )))
          dgraph
          loe))
@@ -206,14 +209,15 @@
                                          (graph-pimgs (viz-state-graph a-vs))))
                           (tapelist new-utape
                                     new-ptape)
-                          (above (make-tape-img (first (first new-ptape))
-                                                (second (first new-ptape))
-                                                (third (first new-ptape)))
+                          (above (make-tape-img (first (first new-utape))
+                                                (second (first new-utape))
+                                                (third (first new-utape)))
                                  (square 30 'solid 'white)
                                  (text "The machine halts" 20 'purple))
-                          (var '()
-                               (append (reverse (var-uvar (viz-state-var a-vs)))
-                                       (var-pvar (viz-state-var a-vs)))))))]
+                          (var (list (first (append (reverse (var-uvar (viz-state-var a-vs)))
+                                       (var-pvar (viz-state-var a-vs)))))
+                               (rest (append (reverse (var-uvar (viz-state-var a-vs)))
+                                       (var-pvar (viz-state-var a-vs))))))))]
         [(key=? "up" a-key)
          (if (= (length (graph-pimgs (viz-state-graph a-vs))) 1)
              a-vs
@@ -445,7 +449,8 @@
 ;; Purpose: To fix the blank label in computation edges
 (define (fix-blank-label loe)
   (map (λ (rule) (if (equal? (second (first (third rule))) "_")
-                     (list (first rule) (second rule) (list '(label "BLANK") (second (third rule))))
+                     (list (first rule) (second rule)
+                           (list '(label "BLANK") (second (third rule)) (third (third rule)) (fourth (third rule))))
                      rule)) loe))
 
 
@@ -477,9 +482,9 @@
 (define (ctm-viz ctm ctm-list tape head)
   (let* [(ce (fix-blank-label (computation-edges ctm ctm-list tape head)))
          (last-node (second (last ce)))
-         (comp-edges (append (list (list "dummy-edge" "edge-dummy" (list '(label "dummy")'(style "dummy"))))
+         (comp-edges (append (list (list "dummy-edge" "edge-dummy" (list '(label "dummy")'(style "dummy") '(color "black") '(headlabel ""))))
                              ce
-                             (list (list last-node "edge-dummy" (list '(label "dummy") '(style "dummy"))))
+                             (list (list last-node "edge-dummy" (list '(label "dummy") '(style "dummy")'(color "black")'(headlabel ""))))
                              )
                      )
          (loedges (fix-blank-label (clean-list (dot-edges (parse-program ctm-list))))
@@ -502,7 +507,6 @@
                          (square 30 'solid 'white)
                          everything-message
                          ))
-         (dd (display (format "~s" lovars)))
          ]
     (run-viz (viz-state (graph (rest loimgs) (list (first loimgs)))
                         (tapelist (rest tapes) (list (first tapes)))
