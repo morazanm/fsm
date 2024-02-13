@@ -2,6 +2,9 @@
   (require "validation-predicates.rkt"
            "../error-formatting.rkt"
            "../../constants.rkt"
+           "../../regular-grammar.rkt"
+           "../../cfg.rkt"
+           "../../csg.rkt"
            racket/contract
            )
   (provide listof-words/c
@@ -15,6 +18,11 @@
            tm-input/c
            mttm-input/c
            has-accept/c
+
+           ;; grammars
+           rg-input/c
+           cfg-input/c
+           csg-input/c
            )
 
   (define (listof-words/c type)
@@ -287,4 +295,62 @@
                     )
      )
     )
+
+  ;; grammars
+  (define (rg-input/c states sigma rules start accepts?)
+    (make-flat-contract
+     #:name 'rg-accepting-correctly
+     #:first-order (check-input-grammar states sigma rules start accepts? make-unchecked-rg)
+     #:projection (lambda (blame)
+                    (lambda (words)
+                      (current-blame-format format-accepts-error)
+                      (raise-blame-error
+                       blame
+                       (return-input-grammar states
+                                          sigma
+                                          rules
+                                          start
+                                          accepts?
+                                          make-unchecked-rg
+                                          rg-derive
+                                          )
+                       (accepts/rejects-formatter accepts?))))))
+
+  (define (cfg-input/c states sigma rules start accepts?)
+    (make-flat-contract
+     #:name 'cfg-accepting-correctly
+     #:first-order (check-input-grammar states sigma rules start accepts? make-unchecked-cfg)
+     #:projection (lambda (blame)
+                    (lambda (words)
+                      (current-blame-format format-accepts-error)
+                      (raise-blame-error
+                       blame
+                       (return-input-grammar states
+                                          sigma
+                                          rules
+                                          start
+                                          accepts?
+                                          make-unchecked-cfg
+                                          cfg-derive
+                                          )
+                       (accepts/rejects-formatter accepts?))))))
+
+  (define (csg-input/c states sigma rules start accepts?)
+    (make-flat-contract
+     #:name 'csg-accepting-correctly
+     #:first-order (check-input-grammar states sigma rules start accepts? make-unchecked-csg csg-derive)
+     #:projection (lambda (blame)
+                    (lambda (words)
+                      (current-blame-format format-accepts-error)
+                      (raise-blame-error
+                       blame
+                       (return-input-grammar states
+                                          sigma
+                                          rules
+                                          start
+                                          accepts?
+                                          make-unchecked-csg
+                                          csg-derive
+                                          )
+                       (accepts/rejects-formatter accepts?))))))
   )

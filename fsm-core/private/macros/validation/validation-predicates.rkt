@@ -28,6 +28,8 @@
            return-input-tm
            check-input-mttm
            return-input-mttm
+           check-input-grammar
+           return-input-grammar
            )
 
   ;listof-words?: (listof something) --> boolean
@@ -352,6 +354,60 @@
                              accepts?)
     (define temp-machine (make-unchecked-mttm states sigma start finals rules num-tapes accept))
     (filter (lambda (word) (equal? (apply-input-tm temp-machine word) (if (equal? 'accept accepts?) 'reject 'accept))) words))
+
+  ;; Grammars
+  ;check-input-grammar:
+  ; (listof states) (listof alphabet) (listof rg-rules) symbol boolean
+  ; --> [(listof (listof symbols)) --> boolean]
+  ;purpose: to take in all the components of a grammar, and then a list
+  ; of words to check in that grammar, then run those words through the grammar
+  ; and make sure that they either accept or reject
+  ; This ensures that this can be used for both accept lists
+  ; and rejects lists.
+  (define (check-input-grammar states
+                               sigma
+                               rules
+                               start
+                               accepts?
+                               constructor
+                               derive)
+    (lambda (words)
+      (define temp-grammar (constructor states
+                                        sigma
+                                        rules
+                                        start))
+      (andmap (lambda (x) (if accepts?
+                              (lambda (x) (symbol? (derive temp-grammar x)))
+                              (lambda (x) (string? (derive temp-grammar x)))
+                              )
+                words)
+              )
+      )
+    )
+
+  ;return-input-grammar:
+  ; (listof states) sigma (listof rules) symbol (listof (listof symbols) boolean
+  ; --> (listof (listof symbols))
+  ;purpose: builds the machine and finds all the words from the input
+  ; list of words that don't accept/reject (based on accepts?)
+  (define (return-input-grammar states
+                                sigma
+                                rules
+                                start
+                                words
+                                accepts?
+                                constructor
+                                derive)
+    (define temp-machine (constructor states
+                                      sigma
+                                      rules
+                                      start))
+    (filter (if accepts?
+                (lambda (x) (symbol? (derive temp-machine x)))
+                (lambda (x) (string? (derive temp-machine x)))
+                )
+            words)
+    )
 
   (module+ test
 
