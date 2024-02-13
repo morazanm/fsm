@@ -25,8 +25,8 @@
                         (no-duplicates/c "sigma"))]
           [delta (states
                   sigma) (and/c (is-a-list/c "machine nonterminals" "four")
-                                correct-grammar-rule-structures/c
-                                no-emp-rhs/c
+                                (lambda (x) (correct-grammar-rule-structures/c))
+                                (lambda (x) (no-emp-rhs/c))
                                 (correct-rg-rules/c states (cons EMP sigma))
                                 (no-duplicates/c "rules"))]
           [start (states) (and/c (valid-start/c states)
@@ -68,7 +68,7 @@
                         (no-duplicates/c "sigma"))]
           [delta (states
                   sigma) (and/c (is-a-list/c "machine nonterminals" "four")
-                                correct-grammar-rule-structures/c
+                                (lambda (x) (correct-grammar-rule-structures/c))
                                 (correct-cfg-rules/c states (cons EMP sigma))
                                 (no-duplicates/c "rules"))]
           [start (states) (and/c (valid-start/c states)
@@ -110,7 +110,7 @@
                         (no-duplicates/c "sigma"))]
           [delta (states
                   sigma) (and/c (is-a-list/c "machine nonterminals" "four")
-                                correct-grammar-rule-structures/c
+                                (lambda (x) (correct-grammar-rule-structures/c))
                                 (correct-csg-rules/c states (cons EMP sigma))
                                 (no-duplicates/c "rules"))]
           [start (states) (and/c (valid-start/c states)
