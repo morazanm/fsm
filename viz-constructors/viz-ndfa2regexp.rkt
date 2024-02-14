@@ -459,7 +459,7 @@
     (if (or (> width (image-width E-SCENE))
             (> height (image-height E-SCENE)))
         (above (overlay (resize-image graph-img (image-width E-SCENE) (image-height E-SCENE))
-                                       E-SCENE) E-SCENE-TOOLS)
+                        E-SCENE) E-SCENE-TOOLS)
         (above (overlay graph-img E-SCENE) E-SCENE-TOOLS))))
 
 
@@ -475,14 +475,15 @@
 
 (define aa-ab
   (make-ndfa 
-   '(S A B) 
+   '(S A B F) 
    '(a b) 
    'S
    '(A B)
    `((S a A)
      (S a B)
      (A a A)
-     (B b B))))
+     (B b B)
+     (S ,EMP F))))
 
 ;(run AT-LEAST-ONE-MISSING)
 

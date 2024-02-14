@@ -42,9 +42,9 @@
                                               (square 20 'solid 'white)
                                               (text "Complete the visualization" 18 'black))
                                        (square 40 'solid 'white)
-                                       (above (text "S - scroll tape left one space" 18 'black)
+                                       (above (text "s - scroll tape left one space" 18 'black)
                                               (square 10 'solid 'white)
-                                              (text "D - scroll tape right one space" 18 'black))
+                                              (text "d - scroll tape right one space" 18 'black))
                                        )
                                (empty-scene 1250 100)))
 
@@ -131,7 +131,8 @@
                                     (text "The machine halts" 20 'purple)))
                     (new-uvar (rest (var-uvar (viz-state-var a-vs))))
                     (new-pvar (cons (first (var-uvar (viz-state-var a-vs)))
-                                    (var-pvar (viz-state-var a-vs))))]
+                                    (var-pvar (viz-state-var a-vs))))
+                    ]
                (if (= 1 (length (graph-upimgs (viz-state-graph a-vs))))
                    (viz-state (graph (rest (graph-upimgs (viz-state-graph a-vs)))
                                      (cons (first (graph-upimgs (viz-state-graph a-vs)))
@@ -161,7 +162,7 @@
                                          (text (format "~a = ~a" (second (first (first new-pvar)) )
                                                        (third (first (first new-pvar)))) 20 'black))
                                      ) 
-                              (if (= 1 (length (var-uvar (viz-state-var a-vs))))
+                              (if (empty? (var-uvar (viz-state-var a-vs)))
                                   (viz-state-var a-vs) 
                                   (var new-uvar
                                        new-pvar))))
@@ -193,7 +194,7 @@
                                      (text (format "~a = ~a" (second (first (first new-pvar)))
                                                    (third (first (first new-pvar)))) 20 'black))
                                  )
-                          (if (= 1 (length (var-pvar (viz-state-var a-vs))))
+                          (if (= (length (var-pvar (viz-state-var a-vs))) 1)
                               (viz-state-var a-vs) 
                               (var new-uvar                             
                                    new-pvar)))))]
