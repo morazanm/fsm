@@ -42,9 +42,9 @@
                                               (square 20 'solid 'white)
                                               (text "Complete the visualization" 18 'black))
                                        (square 40 'solid 'white)
-                                       (above (text "S - scroll tape left one space" 18 'black)
+                                       (above (text "s - scroll tape left one space" 18 'black)
                                               (square 10 'solid 'white)
-                                              (text "D - scroll tape right one space" 18 'black))
+                                              (text "d - scroll tape right one space" 18 'black))
                                        )
                                (empty-scene 1250 100)))
 
