@@ -587,6 +587,7 @@
     )
   
   (define (valid-rg-right? elem states sigma)
+    (define temp (begin (display "\n here i am") #t))
     (define los (symbol->fsmlos elem))
     (if (= (length los) 1)
         (member (car los) sigma)
