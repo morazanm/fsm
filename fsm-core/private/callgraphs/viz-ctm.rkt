@@ -10,12 +10,12 @@
                     [make-color loc-make-color]
                     [make-pen loc-make-pen])
          2htdp/image
-         "transdiagram-ctm2.rkt")
+         "transdiagram-ctm2.rkt"
+         )
 
 (provide ctm-viz)
 
 (define FNAME "fsm")
-
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -162,7 +162,9 @@
                                                        (third (first (first new-pvar)))) 20 'black))
                                      ) 
                               (if (= 1 (length (var-uvar (viz-state-var a-vs))))
-                                  (viz-state-var a-vs) 
+                                  (var new-uvar
+                                       new-pvar)
+                                  ;(viz-state-var a-vs) 
                                   (var new-uvar
                                        new-pvar))))
                ))]

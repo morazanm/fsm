@@ -1,8 +1,13 @@
-#lang fsm
+#lang racket
 (require eopl)
 (require 2htdp/image)
-(require "../../../fsm-gviz/private/lib.rkt" "cg-defs.rkt")
+(require "../../../fsm-gviz/private/lib.rkt" "cg-defs.rkt"
+         ;"../../../main.rkt"
+         "../tm.rkt"
+         "../constants.rkt"
+         )
 (provide computation-edges transition-diagram-ctm dot-nodes dot-edges clean-list parse-program)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; datatype
 

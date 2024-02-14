@@ -6,7 +6,7 @@
   (require "constants.rkt" "misc.rkt" "word.rkt")
   (provide tm-rename-states
            make-unchecked-tm
-           combine-tms
+           combine-tms ctm-run
            tm-union tm-concat tm-kleenestar tm-complement tm-intersection
            ctm-apply tmconfig-state tmconfig-index tmconfig-tape tmconfig?
            tm-apply tm-showtransitions tm-test
@@ -480,7 +480,13 @@
           (if (null? inputctm)
               (tmconfig HALT i tape)
               (first (eval inputctm (label-pairs inputctm) START (list (tmconfig START i tape))))))))
-
+  
+  ; ctm word [trace Boolean] [natnum] --> (list state natnum tape)
+(define (ctm-run M w #:trace [trace #f] . l)
+  (let ((res (ctm-apply M w (if (null? l) 0 (car l)) trace)))
+    (if trace
+        res
+        (list (tmconfig-state res) (tmconfig-index res) (tmconfig-tape res)))))
   ;    (lambda (tape i . l)      
   ;      
   ;      (define label? number?)

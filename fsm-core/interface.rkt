@@ -236,13 +236,6 @@
 ;          ;[(eq? t1 'dfst) (M 'show-transitions)]
 ;          [else (error "Incorrect input to show-transitions")])))
 
-; ctm word [trace Boolean] [natnum] --> (list state natnum tape)
-(define (ctm-run M w #:trace [trace #f] . l)
-  (let ((res (ctm-apply M w (if (null? l) 0 (car l)) trace)))
-    (if trace
-        res
-        (list (tmconfig-state res) (tmconfig-index res) (tmconfig-tape res)))))
-
 ;; ctm word [natnum] --> (list state natnum tape)
 ;(define (ctm-run M w . l)
 ;  (let ((res (ctm-apply M w (if (null? l) 0 (car l)))))
