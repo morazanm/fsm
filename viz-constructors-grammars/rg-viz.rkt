@@ -74,10 +74,8 @@
 ;; Purpose: Converts the CAPS of the symbol
 (define (upper-lower symbol)
   (if (char-upper-case? (string-ref (symbol->string symbol) 0))
-      (string->symbol (string-append (string (char-downcase (string-ref (symbol->string symbol) 0)))
-                                     (symbol->string symbol)))
-      (string->symbol (string-append (string (char-upcase (string-ref (symbol->string symbol) 0)))
-                                     (symbol->string symbol)))))
+      (string->symbol (string-downcase (symbol->string symbol)))
+      (string->symbol (string-upcase (symbol->string symbol)))))
             
       
 
@@ -180,11 +178,13 @@
             state
             #:atb (hash 'color 'black
                         'shape 'circle
-                        'label (string->symbol (string (string-ref (symbol->string state) 0)))
+                        'label (if (member (upper-lower state) leaf)
+                                   (upper-lower (string->symbol (string (string-ref (symbol->string state) 0))))
+                                   (string->symbol (string (string-ref (symbol->string state) 0))))
                         'fontcolor 'black
                         'font "Sans")))
          graph
-         lon))
+         lon))  
 
 ;; make-edge-graph
 ;; graph (listof level) -> graph
@@ -259,12 +259,12 @@
                                                   (list (first (second level))
                                                         (second (second level))))]
                                            [else level])) levels))
-         (ddd (display (format "~s \n\n ~s \n\n ~s \n\n" new-nodes new-levels leaf))) 
+         (dd (display (format "~s" new-levels)))
                                             
          ]
     (overlay (graph->bitmap (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
                                                               nodes leaf)
-                                             levels leaf))
+                                             new-levels leaf))
              E-SCENE)))
 
 
