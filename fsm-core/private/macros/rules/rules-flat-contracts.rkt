@@ -257,18 +257,18 @@
 
   ;; GRAMMARS
 
-  (define (no-emp-rhs/c)
+  (define (no-emp-rhs/c start)
     (make-flat-contract
      #:name 'emp-check-for-rg
-     #:first-order (lambda (rules) (empty? (check-rhs-rg rules)))
+     #:first-order (lambda (rules) (empty? (check-rhs-rg rules start)))
      #:projection (lambda (blame)
                     (lambda (rules)
                       (current-blame-format format-incorrect-rules-error)
-                      (if (empty? (incorrect-rhs-rg rules))
+                      (if (empty? (incorrect-rhs-rg rules start))
                           rules
                           (raise-blame-error
                            blame
-                           (list (car (incorrect-rhs-rg rules)))
+                           (list (car (incorrect-rhs-rg rules start)))
                            (format "~a\nThe following rules cannot have EMP in their RHS" design-recipe-message)))
                       ))))
   

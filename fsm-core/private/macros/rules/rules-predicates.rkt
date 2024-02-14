@@ -578,19 +578,20 @@
 
 
   ;; GRAMMARS
-  (define (check-rhs-rg rules)
-    (ormap (lambda (x) (equal? EMP (caddr x))) rules)
+  (define (check-rhs-rg rules start)
+    (ormap (lambda (x) (and (not (equal? (car x) start)) (equal? EMP (caddr x)))) rules)
     )
 
-  (define (incorrect-rhs-rg rules)
-    (filter (lambda (x) (equal? EMP (caddr x))) rules)
+  (define (incorrect-rhs-rg rules start)
+    (filter (lambda (x) (and (not (equal? (car x) start)) (equal? EMP (caddr x)))) rules)
     )
   
   (define (valid-rg-right? elem states sigma)
     (define los (symbol->fsmlos elem))
     (if (= (length los) 1)
         (member (car los) sigma)
-        (and (member (car los) sigma)
+        (and (= (length los) 2)
+             (member (car los) sigma)
              (member (cadr los) states)))
     )
 

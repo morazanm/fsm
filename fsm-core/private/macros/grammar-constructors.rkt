@@ -24,9 +24,10 @@
                         (valid-listof/c valid-alpha? "lowercase alphabet letter" "input alphabet" #:rule "one")
                         (no-duplicates/c "sigma"))]
           [delta (states
-                  sigma) (and/c (is-a-list/c "machine nonterminals" "four")
+                  sigma
+                  start) (and/c (is-a-list/c "machine nonterminals" "four")
                                 (lambda (x) (correct-grammar-rule-structures/c))
-                                (lambda (x) (no-emp-rhs/c))
+                                (no-emp-rhs/c start)
                                 (correct-rg-rules/c states (cons EMP sigma))
                                 (no-duplicates/c "rules"))]
           [start (states) (and/c (valid-start/c states)
