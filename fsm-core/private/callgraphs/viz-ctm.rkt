@@ -131,7 +131,8 @@
                                     (text "The machine halts" 20 'purple)))
                     (new-uvar (rest (var-uvar (viz-state-var a-vs))))
                     (new-pvar (cons (first (var-uvar (viz-state-var a-vs)))
-                                    (var-pvar (viz-state-var a-vs))))]
+                                    (var-pvar (viz-state-var a-vs))))
+                    ]
                (if (= 1 (length (graph-upimgs (viz-state-graph a-vs))))
                    (viz-state (graph (rest (graph-upimgs (viz-state-graph a-vs)))
                                      (cons (first (graph-upimgs (viz-state-graph a-vs)))
@@ -139,11 +140,10 @@
                               (tapelist new-utape
                                         new-ptape)
                               message
-                              (if (= 1 (length (var-uvar (viz-state-var a-vs))))
+                              (if (empty? (length (var-uvar (viz-state-var a-vs))))
                                   (viz-state-var a-vs)                                  
-                                  (var (rest (var-uvar (viz-state-var a-vs)))
-                                       (cons (first (var-uvar (viz-state-var a-vs)))
-                                             (var-pvar (viz-state-var a-vs))))))
+                                  (var new-uvar
+                                       new-pvar)))
                    (viz-state (graph (rest (graph-upimgs (viz-state-graph a-vs)))
                                      (cons (first (graph-upimgs (viz-state-graph a-vs)))
                                            (graph-pimgs (viz-state-graph a-vs))))
@@ -161,10 +161,8 @@
                                          (text (format "~a = ~a" (second (first (first new-pvar)) )
                                                        (third (first (first new-pvar)))) 20 'black))
                                      ) 
-                              (if (= 1 (length (var-uvar (viz-state-var a-vs))))
-                                  (var new-uvar
-                                       new-pvar)
-                                  ;(viz-state-var a-vs) 
+                              (if (empty? (length (var-uvar (viz-state-var a-vs))))
+                                  (viz-state-var a-vs) 
                                   (var new-uvar
                                        new-pvar))))
                ))]
@@ -202,31 +200,31 @@
         [(key=? "down" a-key)
          (if (empty? (graph-upimgs (viz-state-graph a-vs)))
              a-vs
-             (let* [(new-utape (list (first (append (reverse (tapelist-utape (viz-state-tapelist a-vs)))
-                                                    (tapelist-ptape (viz-state-tapelist a-vs))))))
-                    (new-ptape (rest (append (reverse (tapelist-utape (viz-state-tapelist a-vs)))
-                                             (tapelist-ptape (viz-state-tapelist a-vs)))))]
+             (let* [(new-utape '())
+                    (new-ptape (append (reverse (tapelist-utape (viz-state-tapelist a-vs)))
+                                       (tapelist-ptape (viz-state-tapelist a-vs))))]
                (viz-state (graph '()
                                  (append (reverse (graph-upimgs (viz-state-graph a-vs)))
                                          (graph-pimgs (viz-state-graph a-vs))))
                           (tapelist new-utape
                                     new-ptape)
-                          (above (make-tape-img (first (first new-utape))
-                                                (second (first new-utape))
-                                                (third (first new-utape)))
+                          (above (make-tape-img (first (first new-ptape))
+                                                (second (first new-ptape))
+                                                (third (first new-ptape)))
                                  (square 30 'solid 'white)
                                  (text "The machine halts" 20 'purple))
-                          (var (list (first (append (reverse (var-uvar (viz-state-var a-vs)))
-                                       (var-pvar (viz-state-var a-vs)))))
-                               (rest (append (reverse (var-uvar (viz-state-var a-vs)))
-                                       (var-pvar (viz-state-var a-vs))))))))]
+                          (var '()
+                               (append (reverse (var-uvar (viz-state-var a-vs)))
+                                       (var-pvar (viz-state-var a-vs)))))))]
         [(key=? "up" a-key)
          (if (= (length (graph-pimgs (viz-state-graph a-vs))) 1)
              a-vs
              (let* [(new-utape (rest (append (reverse (tapelist-ptape (viz-state-tapelist a-vs)))
                                              (tapelist-utape (viz-state-tapelist a-vs)))))
                     (new-ptape (list (first (append (reverse (tapelist-ptape (viz-state-tapelist a-vs)))
-                                                    (tapelist-utape (viz-state-tapelist a-vs))))))]
+                                                    (tapelist-utape (viz-state-tapelist a-vs))))))
+                    (new-pvar (list (first (append (reverse (var-pvar (viz-state-var a-vs)))
+                                                   (var-uvar (viz-state-var a-vs))))))]
                (viz-state (graph (rest (append (reverse (graph-pimgs (viz-state-graph a-vs)))
                                                (graph-upimgs (viz-state-graph a-vs))))
                                  (list (first (append (reverse (graph-pimgs (viz-state-graph a-vs)))
@@ -237,13 +235,13 @@
                                                 (second (first new-ptape))
                                                 (third (first new-ptape)))
                                  (square 30 'solid 'white)
-                                 (if (or (equal? (first (var-uvar (viz-state-var a-vs))) '(label ""))
-                                         (equal? (first (var-uvar (viz-state-var a-vs))) '(label "dummy"))
-                                         (equal? (first (var-uvar (viz-state-var a-vs))) '(label "BLANK"))
-                                         (tmconfig? (first (var-uvar (viz-state-var a-vs)))))
+                                 (if (or (equal? (first new-pvar) '(label ""))
+                                         (equal? (first new-pvar) '(label "dummy"))
+                                         (equal? (first new-pvar) '(label "BLANK"))
+                                         (tmconfig? (first new-pvar)))
                                      (text "" 20 'black)
-                                     (text (format "~a = ~a" (second (first (first (var-uvar (viz-state-var a-vs)))))
-                                                   (third (first (first (var-uvar (viz-state-var a-vs)))))) 20 'black))
+                                     (text (format "~a = ~a" (second (first (first new-pvar)))
+                                                   (third (first (first new-pvar)))) 20 'black))
                                  )
                           (var (rest (append (reverse (var-pvar (viz-state-var a-vs)))
                                              (var-uvar (viz-state-var a-vs))))
@@ -497,7 +495,9 @@
          (tapes (create-tape lotraces))
          (lovars-not-replaced (filter (λ (x) (or (tmconfig? x)
                                                  (equal? (first x) 'VAR))) (ctm-apply ctm tape head #t)))
-         (lovars (filter (λ (x) (not (equal? x "x"))) (replace-vars lovars-not-replaced)))
+         (lovars (if (number? (last ctm-list))
+                     (reverse (rest (reverse (filter (λ (x) (not (equal? x "x"))) (replace-vars lovars-not-replaced)))))
+                     (filter (λ (x) (not (equal? x "x"))) (replace-vars lovars-not-replaced))))
          (everything-message (if (or (equal? (first lovars) '(label ""))
                                      (equal? (first lovars) '(label "dummy"))
                                      (equal? (first lovars) '(label "BLANK"))

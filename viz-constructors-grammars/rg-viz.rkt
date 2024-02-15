@@ -259,12 +259,11 @@
                                                   (list (first (second level))
                                                         (second (second level))))]
                                            [else level])) levels))
-         (dd (display (format "~s" new-levels)))
                                             
          ]
     (overlay (graph->bitmap (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
                                                               nodes leaf)
-                                             new-levels leaf))
+                                             levels leaf))
              E-SCENE)))
 
 
