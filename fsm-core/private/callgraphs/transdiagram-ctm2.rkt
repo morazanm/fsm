@@ -138,7 +138,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-;; exp -> (listof node)
+;; exp integer -> (listof node)
 ;; Purpose: Create one node
 (define (node exp first-int)
   (cases expression exp
@@ -302,9 +302,11 @@
            (lambda (a-trans a-graph)
              (let* [(state1 (string->symbol (first a-trans)))
                     (state2 (string->symbol (second a-trans)))
-                    (label (if (symbol? (second (first (third a-trans))))
-                               (symbol->string (second (first (third a-trans))))
-                               (second (first (third a-trans)))))
+                    (label (cond ((equal? "_" (second (first (third a-trans)))) "BLANK")
+                                 ((symbol? (second (first (third a-trans))))
+                                  (symbol->string (second (first (third a-trans)))))
+                                 (else 
+                                  (second (first (third a-trans))))))
                     (style (second (second (third a-trans))))
                     (color (second (third (third a-trans))))
                     (headlabel (second (fourth (third a-trans))))] 
@@ -321,13 +323,13 @@
   '(list FBL
          0
          R
-         (cons BRANCH (list (list _ (list GOTO 2)) (list 'a (list GOTO 1)) (list 'b (list GOTO 1)) (list 'd (list GOTO 1))))
+         (cons BRANCH (list (list _ (list GOTO 2)) (list 'a (list GOTO 1)) (list 'b (list GOTO 1))))
          1
          (list (list VAR k) WB FBR FBR k FBL FBL k (list GOTO 0))
          2
          FBR
          L
-         (cons BRANCH (list (list _ (list GOTO 3)) (list 'a (list GOTO 4)) (list 'b (list GOTO 4)) (list 'd (list GOTO 4))))
+         (cons BRANCH (list (list _ (list GOTO 3)) (list 'a (list GOTO 4)) (list 'b (list GOTO 4))))
          3
          RR
          (list GOTO 5)
