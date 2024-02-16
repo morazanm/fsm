@@ -38,6 +38,21 @@
     (var-exp (v t) #t)
     (else #f)))
 
+(define (branch-exp? exp)
+  (cases expression exp
+    (branch-exp (b) #t)
+    (else #f)))
+
+(define (label-exp? exp)
+  (cases expression exp
+    (label-exp (b) #t)
+    (else #f)))
+
+(define (branch-list exp)
+  (cases expression exp
+    (branch-exp (l) l)
+    (else (error "not a branch"))))
+
 ;; any -> throws error
 ;; Purpose: Throw an error in case of invalid syntax
 (define (report-invalid-ctm-syntax datum)
@@ -146,7 +161,8 @@
             (let* [(a-node
                     (string-append (symbol->string sym) (number->string int)))
                    (a-color
-                    (cond [(= int first-int) "forestgreen"]
+                    (cond [(and (integer? first-int)
+                                (= int first-int)) "forestgreen"]
                           [(pair? (car next-tm)) "goldenrod1"]                           
                           [else "black"]))
                    (a-shape
@@ -229,7 +245,14 @@
   (if (tm-exp? (car l))
       int
       (find-first-int (cdr l) (add1 int))))
-     
+
+;; list -> exp
+;; Purpose: Find the first exp that is not a label
+(define (first-elem l)
+  (cond ((empty? l) (error "invalid ctm syntax: add machines to syntax"))
+        ((label-exp? (car l)) (first-elem (cdr l)))
+        (else (car l))))
+  
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; ctmd -> program
@@ -250,7 +273,10 @@
 (define (dot-nodes exp)
   (cases expression exp
     (ctmd-exp (l)
-              (map (lambda (x) (node x (find-first-int l 0))) l))
+              (if (branch-exp? (first-elem l))
+                  (append (list (list "dummy" '((color "forestgreen") (shape "diamond") (label ""))))
+                          (map (lambda (x) (node x "branch-start")) l))
+                  (map (lambda (x) (node x (find-first-int l 0))) l)))
     (else '())))
 
 ;; expression -> list
@@ -258,7 +284,10 @@
 (define (dot-edges exp)
   (cases expression exp
     (ctmd-exp (l)
-              (map (lambda (x) (edge x l l)) l))
+              (if (branch-exp? (first-elem l))
+                  (append (map (lambda (x) (branch-edges "dummy" x l l)) (branch-list (first-elem l)))   
+                          (map (lambda (x) (edge x l l)) l))
+              (map (lambda (x) (edge x l l)) l)))
     (else '())))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -517,7 +546,21 @@
 ;(transition-diagram-ctm SWAPL)
 
 
-
+(define C
+  '(list 7 8 (cons BRANCH (list (list _ (list GOTO 2)) (list 'a (list GOTO 1)) (list 'b (list GOTO 1))))
+         1
+         (list (list VAR k) WB FBR FBR k FBL FBL k (list GOTO 0))
+         2
+         FBR
+         L
+         (cons BRANCH (list (list _ (list GOTO 3)) (list 'a (list GOTO 4)) (list 'b (list GOTO 4))))
+         3
+         RR
+         (list GOTO 5)
+         4
+         R
+         (list GOTO 5)
+         5))
 
 
 
