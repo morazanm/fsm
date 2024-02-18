@@ -21,6 +21,7 @@
   "private/regexp-predicate.rkt"
   "private/abstract-predicate.rkt"
   "private/mtape-tm.rkt"
+  "private/macros/regexp-contracts.rkt"
   "private/macros/constructors.rkt"
   "private/sm-apply.rkt"
   "private/sm-apply.rkt"
@@ -574,45 +575,34 @@
         [else (begin (newline) (error"Check above message for error"))])
   )
 
+;; singleton-regexp: string --> singleton-regexp
+;; purpose: Given a lowercase Roman alphabet character, constructs a singleton
+;;          regular expression for that letter.
+(define/contract (singleton-regexp a)
+  singleton-regexp/c
+  (make-unchecked-singleton a))
 
-(define (singleton-regexp a)
-  (local [(define tentative (make-unchecked-singleton a))
-          (define final (valid-regexp? tentative))]
-    (if (string? final) (error final)
-        tentative)
-    )
+;; concat-regexp: regexp regexp --> concat-regexp
+;; purpose: Constructs the regular expression whose language contains words
+;;          that are the concatenation of one word from L(a) and a word from L(b).
+(define/contract (concat-regexp a b)
+  concat-regexp/c
+  (make-unchecked-concat a b))
+
+;; union-regexp: regexp regexp --> union-regexp
+;; purpose: Constructs a regular expression whose language contains all the words
+;;          from L(a) and L(b).
+(define/contract (union-regexp a b)
+  union-regexp/c
+  (make-unchecked-union a b)
   )
-  
-(define (concat-regexp a b)
-  (local [(define tentative (if (and (regexp? a) (regexp? b)) (make-unchecked-concat a b)
-                                (if (regexp? a) (format "~s must be a regexp to be a valid second input to concat-regexp ~s ~s" b a b)
-                                    (format "~s must be a regexp to be a valid first input to concat-regexp ~s ~s" a a b))))
-          (define final (if (string? tentative) tentative
-                            (valid-regexp? tentative)))]
-    (if (string? final) (error final)
-        tentative)
-    )
-  )
-  
-(define (union-regexp a b)
-  (local [(define tentative (if (and (regexp? a) (regexp? b)) (make-unchecked-union a b)
-                                (if (regexp? a) (format "~s must be a regexp to be a valid second input to union-regexp ~s ~s" b a b)
-                                    (format "~s must be a regexp to be a valid first input to union-regexp ~s ~s" a a b))))
-          (define final (if (string? tentative) tentative
-                            (valid-regexp? tentative)))]
-    (if (string? final) (error final)
-        tentative)
-    )
-  )
-  
-(define (kleenestar-regexp a)
-  (local [(define tentative (if (regexp? a) (make-unchecked-kleenestar a)
-                                (format "~s must be a regexp to be a valid input to kleenestar-regexp" a)))
-          (define final (if (string? tentative) tentative
-                            (valid-regexp? tentative)))]
-    (if (string? final) (error final)
-        tentative)
-    )
+
+;; kleenestar-regexp: regexp --> kleenestar-regexp
+;; purpose: Constructs a regular expression who language contains any word
+;;          that is constructed by concatenating zero or more words from L(a).
+(define/contract (kleenestar-regexp a)
+  kleenestar-regexp/c
+  (make-unchecked-kleenestar a)
   )
 
 
