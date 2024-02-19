@@ -562,7 +562,7 @@
          (list GOTO 5)
          5))
 
-
+(define A '(1 2 3))
 
 
 
