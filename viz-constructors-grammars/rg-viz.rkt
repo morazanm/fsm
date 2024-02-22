@@ -356,18 +356,20 @@
 ;; rg-viz
 ;; 
 (define (rg-viz rg word)
-  (let* [ (w-der (map symbol->fsmlos  (filter (λ (x) (not (equal? x '->))) (grammar-derive rg word))))
-          (extracted-edges (create-edges w-der))
-          (renamed (rename-nodes (rename-edges extracted-edges)))
-          (loe (map (λ (el) (if (symbol? (first el))
-                                (list el '())
-                                el)) renamed))
-          (dgraph (dgrph loe '() '()))
-          (lod (reverse (create-dgrphs dgraph '())))
-          (first-img (create-first-img (first (extract-nodes loe))))
-          (imgs (cons first-img (rest (create-graph-imgs lod))))]
-    (run-viz (viz-state (rest imgs) (list (first imgs)))
-             draw-world 'rg-ctm)))
+  (if (string? (grammar-derive rg word))
+      (grammar-derive rg word)
+      (let* [ (w-der (map symbol->fsmlos  (filter (λ (x) (not (equal? x '->))) (grammar-derive rg word))))
+              (extracted-edges (create-edges w-der))
+              (renamed (rename-nodes (rename-edges extracted-edges)))
+              (loe (map (λ (el) (if (symbol? (first el))
+                                    (list el '())
+                                    el)) renamed))
+              (dgraph (dgrph loe '() '()))
+              (lod (reverse (create-dgrphs dgraph '())))
+              (first-img (create-first-img (first (extract-nodes loe))))
+              (imgs (cons first-img (rest (create-graph-imgs lod))))]
+        (run-viz (viz-state (rest imgs) (list (first imgs)))
+                 draw-world 'rg-ctm))))
 
 
 
