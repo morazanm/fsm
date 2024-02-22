@@ -156,7 +156,9 @@
                (new-accum (second new-level-accum))]
           (cons new-level
                 (rnm-lvls (rest exe) new-accum)))))
-  (rnm-lvls exe (list (second (first (first exe))))))
+  (if (= 1 (length exe))
+      exe
+      (rnm-lvls exe (list (second (first (first exe)))))))
 
 
 ;; extract-nodes
