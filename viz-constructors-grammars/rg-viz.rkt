@@ -65,21 +65,20 @@
 ;; up-levels - unprocessed levels
 ;; ad-levels - levels added to the graph
 ;; nodes - nodes in the graph
-;; leafs - leaf node in each graph
 (struct dgrph (up-levels ad-levels nodes))
 
 
-;; upper-lower
+;; upper?
 ;; symbol -> Boolean
 ;; Purpose: Determines if a symbol is upper case
-(define (upper-lower symbol)
+(define (upper? symbol)
   (char-upper-case? (string-ref (symbol->string symbol) 0)))
 
 
-;; lower-upper
+;; lower?
 ;; symbol -> Boolean
 ;; Purpose: Determines if a symbol is down case
-(define (lower-upper symbol)
+(define (lower? symbol)
   (not (char-upper-case? (string-ref (symbol->string symbol) 0))))
             
       
@@ -174,7 +173,7 @@
     (filter (λ (node) (member node nil)) lon)))
 
 ;; make-node-graph
-;; graph lon leaf -> graph
+;; graph lon -> graph
 ;; Purpose: To make a node graph
 (define (make-node-graph graph lon)
   (foldr (λ (state result)
@@ -226,8 +225,8 @@
 ;; ndfa -> img
 ;; Purpose: To create a graph image for complement
 (define (create-graph-img a-dgrph)
-  (let* [(nodes (append (filter upper-lower (dgrph-nodes a-dgrph))
-                        (filter lower-upper (dgrph-nodes a-dgrph))))
+  (let* [(nodes (append (filter upper? (dgrph-nodes a-dgrph))
+                        (filter lower? (dgrph-nodes a-dgrph))))
          (levels (reverse (map reverse (dgrph-ad-levels a-dgrph))))
                                             
          ]
@@ -238,7 +237,7 @@
 
 
 ;; create-graph-imgs
-;; (listof level) (listof node) -> (listof image)
+;; (listof dgraph) -> (listof image)
 ;; Purpose: To create a list of graph images built level by level
 (define (create-graph-imgs lod)
   (if (empty? lod)
@@ -341,9 +340,7 @@
                                        'font "Sans")))
            E-SCENE))
 
-;; draw-img
-;; viz-state -> img
-;; Purpose: To render the given viz-state
+
 ;; draw-world
 ;; viz-state -> img
 ;; Purpose: To render the given viz-state
