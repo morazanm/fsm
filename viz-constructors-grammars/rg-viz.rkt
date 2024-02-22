@@ -66,16 +66,21 @@
 ;; ad-levels - levels added to the graph
 ;; nodes - nodes in the graph
 ;; leafs - leaf node in each graph
-(struct dgrph (up-levels ad-levels nodes leafs))
+(struct dgrph (up-levels ad-levels nodes))
 
 
 ;; upper-lower
-;; symbol -> symbol
-;; Purpose: Converts the CAPS of the symbol
+;; symbol -> Boolean
+;; Purpose: Determines if a symbol is upper case
 (define (upper-lower symbol)
-  (if (char-upper-case? (string-ref (symbol->string symbol) 0))
-      (string->symbol (string-downcase (symbol->string symbol)))
-      (string->symbol (string-upcase (symbol->string symbol)))))
+  (char-upper-case? (string-ref (symbol->string symbol) 0)))
+
+
+;; lower-upper
+;; symbol -> Boolean
+;; Purpose: Determines if a symbol is down case
+(define (lower-upper symbol)
+  (not (char-upper-case? (string-ref (symbol->string symbol) 0))))
             
       
 
@@ -171,16 +176,14 @@
 ;; make-node-graph
 ;; graph lon leaf -> graph
 ;; Purpose: To make a node graph
-(define (make-node-graph graph lon leaf)
+(define (make-node-graph graph lon)
   (foldr (λ (state result)
            (add-node
             result
             state
             #:atb (hash 'color 'black
                         'shape 'circle
-                        'label (if (member (upper-lower state) leaf)
-                                   (upper-lower (string->symbol (string (string-ref (symbol->string state) 0))))
-                                   (string->symbol (string (string-ref (symbol->string state) 0))))
+                        'label (string->symbol (string (string-ref (symbol->string state) 0)))
                         'fontcolor 'black
                         'font "Sans")))
          graph
@@ -189,16 +192,17 @@
 ;; make-edge-graph
 ;; graph (listof level) -> graph
 ;; Purpose: To make an edge graph
-(define (make-edge-graph graph loe leaf)
+(define (make-edge-graph graph loe)
   (let* [(first-foldr (foldr (λ (rule result)
-                               (begin
-                                 (add-edge result
-                                           ""
-                                           (first (first rule))
-                                           (second (first rule))
-                                           #:atb (hash 'fontsize 20
-                                                       'style 'solid
-                                                       ))) 
+                               (if (empty? (first rule))
+                                   result
+                                   (add-edge result
+                                             ""
+                                             (first (first rule))
+                                             (second (first rule))
+                                             #:atb (hash 'fontsize 20
+                                                         'style 'solid
+                                                         ))) 
                                )
                              graph
                              loe))]
@@ -211,29 +215,10 @@
                            (second (second rule))
                            #:atb (hash 'fontsize 20
                                        'style 'solid
-                                       ))) 
-             )
+                                       )) 
+                 ))
            first-foldr
            loe)))
-
-
-
-;; (listof level) -> (listof node)
-;; Takes in loe from rg-viz and returns the bottom most leaf nodes
-(define (leaf-nodes levels)
-  (define (leaf-nodes-helper levels)
-    (if (empty? levels)
-        '()
-        (if (empty? (first levels))
-            (leaf-nodes-helper (rest levels))
-            (cons (second (first levels)) (leaf-nodes-helper (rest levels)))
-            )
-        )
-    )
-  (if (empty? levels)
-      '()      
-      (last (map leaf-nodes-helper levels))))
-           
 
 
 
@@ -241,29 +226,14 @@
 ;; ndfa -> img
 ;; Purpose: To create a graph image for complement
 (define (create-graph-img a-dgrph)
-  (let* [(nodes (dgrph-nodes a-dgrph))
-         (levels (dgrph-ad-levels a-dgrph))
-         (leaf (dgrph-leafs a-dgrph))
-         (new-nodes (map (λ (node) (if (member node leaf)
-                                       (upper-lower node)
-                                       node)) nodes))
-         (new-levels (map (λ (level) (cond [(empty? (second level)) level]
-                                           [(member (second (second level)) leaf)
-                                            (list (list (first (first level))
-                                                        (second (first level)))
-                                                  (list (first (second level))
-                                                        (upper-lower (second (second level)))))]
-                                           [(member (second (first level)) leaf)
-                                            (list (list (first (first level))
-                                                        (upper-lower (second (first level))))
-                                                  (list (first (second level))
-                                                        (second (second level))))]
-                                           [else level])) levels))
+  (let* [(nodes (append (filter upper-lower (dgrph-nodes a-dgrph))
+                        (filter lower-upper (dgrph-nodes a-dgrph))))
+         (levels (reverse (map reverse (dgrph-ad-levels a-dgrph))))
                                             
          ]
     (overlay (graph->bitmap (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
-                                                              nodes leaf)
-                                             levels leaf))
+                                                              nodes)
+                                             levels))
              E-SCENE)))
 
 
@@ -348,13 +318,12 @@
              (new-ad-levels (cons (first (dgrph-up-levels a-dgrph))
                                   (dgrph-ad-levels a-dgrph)))
              (new-nodes (extract-nodes new-ad-levels))
-             (new-leafs (leaf-nodes (reverse new-ad-levels)))
              ]
         (create-dgrphs
          (dgrph new-up-levels                      
                 new-ad-levels
                 new-nodes
-                new-leafs)
+                )
          (cons a-dgrph lod))
         )))
 
@@ -396,7 +365,7 @@
           (loe (map (λ (el) (if (symbol? (first el))
                                 (list el '())
                                 el)) renamed))
-          (dgraph (dgrph loe '() '() '()))
+          (dgraph (dgrph loe '() '()))
           (lod (reverse (create-dgrphs dgraph '())))
           (first-img (create-first-img (first (extract-nodes loe))))
           (imgs (cons first-img (rest (create-graph-imgs lod))))]
