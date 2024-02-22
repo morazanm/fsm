@@ -225,8 +225,8 @@
 ;; ndfa -> img
 ;; Purpose: To create a graph image for complement
 (define (create-graph-img a-dgrph)
-  (let* [(nodes (append (filter upper? (dgrph-nodes a-dgrph))
-                        (filter lower? (dgrph-nodes a-dgrph))))
+  (let* [(nodes (append (filter lower? (dgrph-nodes a-dgrph))
+                        (filter upper? (dgrph-nodes a-dgrph))))
          (levels (reverse (map reverse (dgrph-ad-levels a-dgrph))))
                                             
          ]
