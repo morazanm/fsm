@@ -29,7 +29,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define E-SCENE (empty-scene 600 800))
+(define E-SCENE (empty-scene 1200 800))
 
 (define E-SCENE-TOOLS (overlay (above (above (above (triangle 30 'solid 'black)
                                                     (rectangle 10 30 'solid 'black))
@@ -53,12 +53,16 @@
                                       )
                                (empty-scene 250 800)))
 
+;; pinhole is a structure that has
+;; x coordinate
+;; y coordinate
+(struct pinhole (x y))
 
 
 ;; viz-state is a structure that has
 ;; upimgs - unprocessed graph images
 ;; pimgs - processed graph images
-(struct viz-state (upimgs pimgs))
+(struct viz-state (upimgs pimgs pinhole))
 
 
 ;; dgrph is a structure that has
@@ -229,13 +233,11 @@
 (define (create-graph-img a-dgrph)
   (let* [(nodes (append (filter lower? (dgrph-nodes a-dgrph))
                         (filter upper? (dgrph-nodes a-dgrph))))
-         (levels (reverse (map reverse (dgrph-ad-levels a-dgrph))))
-                                            
+         (levels (reverse (map reverse (dgrph-ad-levels a-dgrph))))                                  
          ]
-    (overlay (graph->bitmap (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
-                                                              nodes)
-                                             levels))
-             E-SCENE)))
+    (graph->bitmap (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
+                                                     nodes)
+                                    levels))))
 
 
 ;; create-graph-imgs
@@ -248,7 +250,7 @@
 
 ;; process-key
 ;; viz-state key --> viz-state
-;; Purpose: Move the visualization on step forward, one step
+;; Purpose: Move the visualization one step forward, one step
 ;;          backwards, or to the end.
 (define (process-key a-vs a-key)
   (cond [(key=? "right" a-key)
@@ -256,58 +258,61 @@
              a-vs
              (viz-state (rest (viz-state-upimgs a-vs))
                         (cons (first (viz-state-upimgs a-vs))
-                              (viz-state-pimgs a-vs))))]
+                              (viz-state-pimgs a-vs))
+                        (pinhole 600 400)))]
         [(key=? "left" a-key)
          (if (= (length (viz-state-pimgs a-vs)) 1)
              a-vs
              (viz-state (cons (first (viz-state-pimgs a-vs))
                               (viz-state-upimgs a-vs))
                         (rest (viz-state-pimgs a-vs))
+                        (pinhole 600 400)
                         ))]
         [(key=? "down" a-key)
          (if (empty? (viz-state-upimgs a-vs))
              a-vs
              (viz-state '()
                         (append (reverse (viz-state-upimgs a-vs))
-                                (viz-state-pimgs a-vs))))]
+                                (viz-state-pimgs a-vs))
+                        (pinhole 600 400)))]
         [(key=? "up" a-key)
          (if (= (length (viz-state-pimgs a-vs)) 1)
              a-vs
              (viz-state (rest (append (reverse (viz-state-pimgs a-vs))
                                       (viz-state-upimgs a-vs)))
                         (list (first (append (reverse (viz-state-pimgs a-vs))
-                                             (viz-state-upimgs a-vs))))))]
+                                             (viz-state-upimgs a-vs))))
+                        (pinhole 600 400)))]
         [else a-vs]))
 
-;; resize-image :: image -> int -> int -> image
-;; Scales a image to the given dimentions. This solution was adapted from
-;; one of the answers found here: https://stackoverflow.com/questions/3008772/how-to-smart-resize-a-displayed-image-to-original-aspect-ratio
-(define (resize-image img max-width max-height)
-  (define src-width (image-width img))
-  (define src-height (image-height img))
-  (define resize-width src-width)
-  (define resize-height src-height)
-  (define aspect (/ resize-width resize-height))
-  (define scale (min
-                 (/ max-width src-width) ; scale-x
-                 (/ max-height src-height))) ;scale-y
+;; process-drag
+;; posn-x posn-y a-vs
+;; Purpose: To process the dragging motion
+(define (process-drag x y a-vs)
+  (pinhole (if (>= x 0)
+               (if (> x (pinhole-x (viz-state-pinhole a-vs)))
+                   (- (- x 250) (abs (- x (pinhole-x (viz-state-pinhole a-vs)))))
+                   (+ (- x 250) (abs (- x (pinhole-x (viz-state-pinhole a-vs))))))
+               (if (> x (pinhole-x (viz-state-pinhole a-vs)))
+                   (+ (- x 250) (abs (- x (pinhole-x (viz-state-pinhole a-vs)))))
+                   (- (- x 250) (abs (- x (pinhole-x (viz-state-pinhole a-vs)))))))
+           (if (>= y 0)
+               (if (> y (pinhole-y (viz-state-pinhole a-vs)))
+                   (- y (abs (- y (pinhole-y (viz-state-pinhole a-vs)))))
+                   (+ y (abs (- y (pinhole-y (viz-state-pinhole a-vs))))))
+               (if (> y (pinhole-y (viz-state-pinhole a-vs)))
+                   (+ y (abs (- y (pinhole-y (viz-state-pinhole a-vs)))))
+                   (- y (abs (- y (pinhole-y (viz-state-pinhole a-vs)))))))))
 
-  (set! resize-width (* resize-width scale))
-  (set! resize-height (* resize-height scale))
-  
-  (when (> resize-width max-width)
-    (set! resize-width max-width)
-    (set! resize-height (/ resize-width aspect)))
-
-  (when (> resize-height max-height)
-    (set! aspect (/ resize-width resize-height))
-    (set! resize-height max-height)
-    (set! resize-width (* resize-height aspect)))
-
-  (scale/xy
-   (/ resize-width src-width)
-   (/ resize-height src-height)
-   img))
+;; process-mouse
+;; viz-state mouse-event -> viz-state
+;; Purpose: Drag the visualization image to observe the graphic
+(define (process-mouse a-vs x y me)
+  (cond [(mouse=? "drag" me)
+         (viz-state (viz-state-upimgs a-vs)
+                    (viz-state-pimgs a-vs)
+                    (process-drag x y a-vs))]
+        [else a-vs]))
 
 ;; create-dgraphs
 ;; dgrph (listof dgrph) -> (listof dgrph)
@@ -332,27 +337,24 @@
 ;; node -> img
 ;; Purpose: To create the first graph img
 (define (create-first-img node)
-  (overlay (graph->bitmap (add-node
-                           (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
-                           node
-                           #:atb (hash 'color 'black
-                                       'shape 'circle
-                                       'label node
-                                       'fontcolor 'black
-                                       'font "Sans")))
-           E-SCENE))
+  (graph->bitmap (add-node
+                  (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
+                  node
+                  #:atb (hash 'color 'black
+                              'shape 'circle
+                              'label node
+                              'fontcolor 'black
+                              'font "Sans"))))
 
 
 ;; draw-world
 ;; viz-state -> img
 ;; Purpose: To render the given viz-state
 (define (draw-world a-vs)
-  (let [(width (image-width (first (viz-state-pimgs a-vs))))
-        (height (image-height (first (viz-state-pimgs a-vs))))]
-    (if (or (> width (image-width E-SCENE))
-            (> height (image-height E-SCENE)))
-        (beside E-SCENE-TOOLS (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE)))
-        (beside E-SCENE-TOOLS (first (viz-state-pimgs a-vs))))))
+  (beside E-SCENE-TOOLS (place-image (first (viz-state-pimgs a-vs))
+                                     (pinhole-x (viz-state-pinhole a-vs))
+                                     (pinhole-y (viz-state-pinhole a-vs))
+                                     E-SCENE)))
 
          
 ;; rg-viz
@@ -360,7 +362,8 @@
 (define (rg-viz rg word)
   (if (string? (grammar-derive rg word))
       (grammar-derive rg word)
-      (let* [ (w-der (map symbol->fsmlos  (filter (λ (x) (not (equal? x '->))) (grammar-derive rg word))))
+      (let* [ (w-der (map symbol->fsmlos  (filter (λ (x) (not (equal? x '->)))
+                                                  (grammar-derive rg word))))
               (extracted-edges (create-edges w-der))
               (renamed (rename-nodes (rename-edges extracted-edges)))
               (loe (map (λ (el) (if (symbol? (first el))
@@ -370,7 +373,7 @@
               (lod (reverse (create-dgrphs dgraph '())))
               (first-img (create-first-img (first (extract-nodes loe))))
               (imgs (cons first-img (rest (create-graph-imgs lod))))]
-        (run-viz (viz-state (rest imgs) (list (first imgs)))
+        (run-viz (viz-state (rest imgs) (list (first imgs)) (pinhole 600 400))
                  draw-world 'rg-ctm))))
 
 
@@ -382,6 +385,7 @@
         a-vs                
       [on-draw draw-etc]
       [on-key process-key]
+      [on-mouse process-mouse]
       [name a-name]))
   (void))
 
