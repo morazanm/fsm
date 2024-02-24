@@ -305,96 +305,104 @@
 ;; posn-x posn-y a-vs
 ;; Purpose: To process the dragging motion
 #;(define (process-drag x y a-vs)
-  (pinhole (if (> x (pinhole-x (viz-state-pinhole a-vs)))
-               (- (- x 250) (abs (- x (pinhole-x (viz-state-pinhole a-vs)))))
-               (+ (- x 250) (abs (- x (pinhole-x (viz-state-pinhole a-vs))))))
-           (if (> y (pinhole-y (viz-state-pinhole a-vs)))
-               (- y (abs (- y (pinhole-y (viz-state-pinhole a-vs)))))
-               (+ y (abs (- y (pinhole-y (viz-state-pinhole a-vs))))))
-           ))
+    (pinhole (if (> x (pinhole-x (viz-state-pinhole a-vs)))
+                 (- (- x 250) (abs (- x (pinhole-x (viz-state-pinhole a-vs)))))
+                 (+ (- x 250) (abs (- x (pinhole-x (viz-state-pinhole a-vs))))))
+             (if (> y (pinhole-y (viz-state-pinhole a-vs)))
+                 (- y (abs (- y (pinhole-y (viz-state-pinhole a-vs)))))
+                 (+ y (abs (- y (pinhole-y (viz-state-pinhole a-vs))))))
+             ))
 ;; viz-state int int MouseEvent
 ;; Updates viz-state as to whether the mouse is currently being pressed while on the visualization
-(define (process-mouse a-vs x y mouse-event) (cond [(string=? mouse-event "button-down") (viz-state (viz-state-upimgs a-vs)
-                                                                                                    (viz-state-pimgs a-vs)
-                                                                                                    (viz-state-image-posn a-vs)
-                                                                                                    (viz-state-curr-mouse-posn a-vs)
-                                                                                                    (posn x y)
-                                                                                                    #t)
-                                                                                         ]
-                                                   [(string=? mouse-event "button-up") (viz-state (viz-state-upimgs a-vs)
-                                                                                                  (viz-state-pimgs a-vs)
-                                                                                                  (viz-state-image-posn a-vs)
-                                                                                                  (viz-state-curr-mouse-posn a-vs)
-                                                                                                  (posn x y)
-                                                                                                  #f)
-                                                                                       ]
-                                                   ;; Want to keep the mouse updating while it is being dragged
-                                                   [(string=? mouse-event "drag") (viz-state (viz-state-upimgs a-vs)
-                                                                                             (viz-state-pimgs a-vs)
-                                                                                             (viz-state-image-posn a-vs)
-                                                                                             (viz-state-curr-mouse-posn a-vs)
-                                                                                             (posn x y)
-                                                                                             #t)
-                                                                                  ]
+(define (process-mouse a-vs x y mouse-event)
+  (cond [(string=? mouse-event "button-down")
+         (viz-state (viz-state-upimgs a-vs)
+                    (viz-state-pimgs a-vs)
+                    (viz-state-image-posn a-vs)
+                    (viz-state-curr-mouse-posn a-vs)
+                    (posn x y)
+                    #t)
+         ]
+        [(string=? mouse-event "button-up")
+         (viz-state (viz-state-upimgs a-vs)
+                    (viz-state-pimgs a-vs)
+                    (viz-state-image-posn a-vs)
+                    (viz-state-curr-mouse-posn a-vs)
+                    (posn x y)
+                    #f)
+         ]
+        ;; Want to keep the mouse updating while it is being dragged
+        [(string=? mouse-event "drag")
+         (viz-state (viz-state-upimgs a-vs)
+                    (viz-state-pimgs a-vs)
+                    (viz-state-image-posn a-vs)
+                    (viz-state-curr-mouse-posn a-vs)
+                    (posn x y)
+                    #t)
+         ]
                                                    
-                                                   ;; Can happen in both clicked and unclicked states so leave it in whatever it was
-                                                   [(string=? mouse-event "move") (viz-state (viz-state-upimgs a-vs)
-                                                                                             (viz-state-pimgs a-vs)
-                                                                                             (viz-state-image-posn a-vs)
-                                                                                             (viz-state-curr-mouse-posn a-vs)
-                                                                                             (posn x y)
-                                                                                             (viz-state-mouse-pressed a-vs)
-                                                                                             )
-                                                                                  ]
+        ;; Can happen in both clicked and unclicked states so leave it in whatever it was
+        [(string=? mouse-event "move")
+         (viz-state (viz-state-upimgs a-vs)
+                    (viz-state-pimgs a-vs)
+                    (viz-state-image-posn a-vs)
+                    (viz-state-curr-mouse-posn a-vs)
+                    (posn x y)
+                    (viz-state-mouse-pressed a-vs)
+                    )
+         ]
 
-                                                   ;; This one is ambigious, think its better to leave as whatever it already was
-                                                   [(string=? mouse-event "enter") (viz-state (viz-state-upimgs a-vs)
-                                                                                              (viz-state-pimgs a-vs)
-                                                                                              (viz-state-image-posn a-vs)
-                                                                                              (viz-state-curr-mouse-posn a-vs)
-                                                                                              (posn x y)
-                                                                                              (viz-state-mouse-pressed a-vs)
-                                                                                              )
-                                                                                   ]
+        ;; This one is ambigious, think its better to leave as whatever it already was
+        [(string=? mouse-event "enter")
+         (viz-state (viz-state-upimgs a-vs)
+                    (viz-state-pimgs a-vs)
+                    (viz-state-image-posn a-vs)
+                    (viz-state-curr-mouse-posn a-vs)
+                    (posn x y)
+                    (viz-state-mouse-pressed a-vs)
+                    )
+         ]
 
-                                                   ;; Stop updating if the mouse leaves the visualization screen
-                                                   [(string=? mouse-event "leave") (viz-state (viz-state-upimgs a-vs)
-                                                                                              (viz-state-pimgs a-vs)
-                                                                                              (viz-state-image-posn a-vs)
-                                                                                              (viz-state-curr-mouse-posn a-vs)
-                                                                                              (posn x y)
-                                                                                              #f)
-                                                                                   ]
-                                                   [else (error "This shouldn't even be possible")]
-                                                   )
+        ;; Stop updating if the mouse leaves the visualization screen
+        [(string=? mouse-event "leave")
+         (viz-state (viz-state-upimgs a-vs)
+                    (viz-state-pimgs a-vs)
+                    (viz-state-image-posn a-vs)
+                    (viz-state-curr-mouse-posn a-vs)
+                    (posn x y)
+                    #f)
+         ]
+        [else (error "This shouldn't even be possible")]
+        )
   )
 
 ;; viz-state
 ;; Updates the position of the image displayed based on the movement of the mouse
-(define (process-tick a-vs) (local [
-                                    ;; Determines the movement of the mouse that occured since the last tick
-                                    (define x-diff (- (posn-x (viz-state-curr-mouse-posn a-vs)) (posn-x (viz-state-dest-mouse-posn a-vs))))
-                                    (define y-diff (- (posn-y (viz-state-curr-mouse-posn a-vs)) (posn-y (viz-state-dest-mouse-posn a-vs))))
+(define (process-tick a-vs)
+  (local [
+          ;; Determines the movement of the mouse that occured since the last tick
+          (define x-diff (- (posn-x (viz-state-curr-mouse-posn a-vs)) (posn-x (viz-state-dest-mouse-posn a-vs))))
+          (define y-diff (- (posn-y (viz-state-curr-mouse-posn a-vs)) (posn-y (viz-state-dest-mouse-posn a-vs))))
 
-                                    (define new-img-x (- (posn-x (viz-state-image-posn a-vs)) x-diff))
-                                    (define new-img-y (- (posn-y (viz-state-image-posn a-vs)) y-diff))
-                                    ]
-                              (if (viz-state-mouse-pressed a-vs)
-                                  (viz-state (viz-state-upimgs a-vs)
-                                             (viz-state-pimgs a-vs)
-                                             ;; New image position
-                                             (posn new-img-x new-img-y)
-                                             (viz-state-dest-mouse-posn a-vs)
-                                             (viz-state-dest-mouse-posn a-vs)
-                                             (viz-state-mouse-pressed a-vs))
-                                  (viz-state (viz-state-upimgs a-vs)
-                                             (viz-state-pimgs a-vs)
-                                             (viz-state-image-posn a-vs)
-                                             (viz-state-dest-mouse-posn a-vs)
-                                             (viz-state-dest-mouse-posn a-vs)
-                                             (viz-state-mouse-pressed a-vs))
-                                  )
-                              )
+          (define new-img-x (- (posn-x (viz-state-image-posn a-vs)) x-diff))
+          (define new-img-y (- (posn-y (viz-state-image-posn a-vs)) y-diff))
+          ]
+    (if (viz-state-mouse-pressed a-vs)
+        (viz-state (viz-state-upimgs a-vs)
+                   (viz-state-pimgs a-vs)
+                   ;; New image position
+                   (posn new-img-x new-img-y)
+                   (viz-state-dest-mouse-posn a-vs)
+                   (viz-state-dest-mouse-posn a-vs)
+                   (viz-state-mouse-pressed a-vs))
+        (viz-state (viz-state-upimgs a-vs)
+                   (viz-state-pimgs a-vs)
+                   (viz-state-image-posn a-vs)
+                   (viz-state-dest-mouse-posn a-vs)
+                   (viz-state-dest-mouse-posn a-vs)
+                   (viz-state-mouse-pressed a-vs))
+        )
+    )
   )
 
 ;; create-dgraphs
