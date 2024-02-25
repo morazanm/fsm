@@ -656,7 +656,7 @@
                     (list (format "The left hand side, ~a, is not in the given list of nonterminals." from-state))
                     '())
                 (if (not (valid-rg-right? to-state states sigma))
-                    (list (format "The right hand side, ~a, is not an alphabet character, or valid alphabet member+nonterminal combination." to-state))
+                    (list (format "The right hand side, ~a, is not an alphabet character, combination of valid defined nonterminals and terminals." to-state))
                     '())))
       (if (empty? all-errors) '() (list (make-invalid-rule rule all-errors))))
     (flatten (map rule-with-errors rules)))
