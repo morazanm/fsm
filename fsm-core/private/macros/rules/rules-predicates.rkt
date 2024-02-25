@@ -663,7 +663,7 @@
       (define to-state (third rule))
       (define all-errors
         (append (if (not (member from-state states))
-                    (list (format "The left hand side, ~a, is not in the given list of nonterminals." from-state))
+                    (list (format "The left hand side, ~a, is not a single nonterminal from the list of nonterminals." from-state))
                     '())
                 (if (not (valid-rg-right? to-state states sigma))
                     (list (format "The right hand side, ~a, is not an alphabet character, or combination of valid defined nonterminals and terminals." to-state))
@@ -695,7 +695,7 @@
                     (list (format "The left hand side, ~a, is not in the given list of nonterminals." from-state))
                     '())
                 (if (not (valid-cfg-right? to-state states sigma))
-                    (list (format "The following members ~a of right hand side, ~a, are not an alphabet character, or combination of valid defined nonterminals and terminals."
+                    (list (format "The following members ~a of right hand side, ~a, is not an alphabet character, or combination of valid defined nonterminals and terminals."
                                   (invalid-cfg-right? to-state states sigma)
                                   to-state))
                     '())))
@@ -723,13 +723,13 @@
       (define to-state (third rule))
       (define all-errors
         (append (if (not (valid-csg-left? from-state states sigma))
-                    (list (format "The following members ~a of the left hand side, ~a, are not a combination of valid defined nonterminals and terminals."
+                    (list (format "The following members ~a of the left hand side, ~a, is not a combination of valid defined nonterminals and terminals."
                                   (invalid-csg-left? from-state states sigma)
                                   from-state))
                     '())
                 (if (not (valid-cfg-right? to-state states sigma))
-                    (list (format "The following members ~a of the right hand side, ~a, are not an alphabet character, or combination of valid defined nonterminals and terminals."
-                                  (invalid-cfg-right? to-state states sigma)
+                    (list (format "The following members ~a of the right hand side, ~a, is not an alphabet character, or combination of valid defined nonterminals and terminals."
+                                  (invalid-c to-state states sigma)
                                   to-state))
                     '())))
       (if (empty? all-errors) '() (list (make-invalid-rule rule all-errors))))
