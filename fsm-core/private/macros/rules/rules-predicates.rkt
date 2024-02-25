@@ -587,7 +587,6 @@
     )
   
   (define (valid-rg-right? elem states sigma)
-    (define temp (begin (display "\n here i am") #t))
     (define los (symbol->fsmlos elem))
     (if (= (length los) 1)
         (member (car los) sigma)
@@ -600,11 +599,22 @@
     (define los (symbol->fsmlos elem))
     (andmap (lambda (x) (member x (append states sigma))) los))
 
+  (define (invalid-cfg-right? elem states sigma)
+    (define los (symbol->fsmlos elem))
+    (filter (lambda (x) (not (member x (append states sigma)))) los))
+
+  
   (define (valid-csg-left? elem states sigma)
     (define los (symbol->fsmlos elem))
     (if (member (car los) states)
         (andmap (lambda (x) (member x (append states sigma))) los)
         #f))
+
+  (define (invalid-csg-left? elem states sigma)
+    (define los (symbol->fsmlos elem))
+    (append (if (not (member (car los) states)) (list (car los)) '()) 
+            (filter (lambda (x) (not (member x (append states sigma)))) los))
+    )
 
   
   ;incorrect-grammar-rule-structures: (listof any) --> (listof invalid-rule)
@@ -685,7 +695,9 @@
                     (list (format "The left hand side, ~a, is not in the given list of nonterminals." from-state))
                     '())
                 (if (not (valid-cfg-right? to-state states sigma))
-                    (list (format "The right hand side, ~a, is not an alphabet character, or combination of valid defined nonterminals and terminals." to-state))
+                    (list (format "The following members ~a of right hand side, ~a, is not an alphabet character, or combination of valid defined nonterminals and terminals."
+                                  (invalid-cfg-right? to-state states sigma)
+                                  to-state))
                     '())))
       (if (empty? all-errors) '() (list (make-invalid-rule rule all-errors))))
     (flatten (map rule-with-errors rules)))
@@ -711,10 +723,14 @@
       (define to-state (third rule))
       (define all-errors
         (append (if (not (valid-csg-left? from-state states sigma))
-                    (list (format "The left hand side, ~a, is not a combination of valid defined nonterminals and terminals." from-state))
+                    (list (format "The following members ~a of the left hand side, ~a, is not a combination of valid defined nonterminals and terminals."
+                                  (invalid-csg-left? from-state states sigma)
+                                  from-state))
                     '())
                 (if (not (valid-cfg-right? to-state states sigma))
-                    (list (format "The right hand side, ~a, is not an alphabet character, or combination of valid defined nonterminals and terminals." to-state))
+                    (list (format "The following members ~a of the right hand side, ~a, is not an alphabet character, or combination of valid defined nonterminals and terminals."
+                                  (invalid-cfg-right? to-state states sigma)
+                                  to-state))
                     '())))
       (if (empty? all-errors) '() (list (make-invalid-rule rule all-errors))))
     (flatten (map rule-with-errors rules)))
