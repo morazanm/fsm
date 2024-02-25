@@ -13,16 +13,16 @@
    "a")
   (check-error
    (singleton-regexp "abc")
-   "A singleton-regexp must be a single lowercase Roman alphabet character, but found: abc")
+   "The argument to a singleton-regexp must be a single lowercase Roman alphabet character, but found: \"abc\"")
   (check-error
    (singleton-regexp 5)
-   "A singleton-regexp must be a single lowercase Roman alphabet character, but found: 5")
+   "The argument to a singleton-regexp must be a single lowercase Roman alphabet character, but found: 5")
   (check-error
    (singleton-regexp "A")
-   "A singleton-regexp must be a single lowercase Roman alphabet character, but found: A")
+   "The argument to a singleton-regexp must be a single lowercase Roman alphabet character, but found: \"A\"")
   (check-error
    (singleton-regexp "*")
-   "A singleton-regexp must be a single lowercase Roman alphabet character, but found: *")
+   "The argument to a singleton-regexp must be a single lowercase Roman alphabet character, but found: \"*\"")
 
   (define singleton-a (singleton-regexp "a"))
   (define singleton-b (singleton-regexp "b"))
@@ -37,10 +37,10 @@
    singleton-b)
   (check-error
    (concat-regexp "a" singleton-b)
-   "The first input to a concat-regexp must be a valid regular expression, but found: a")
+   "The first argument to concat-regexp must be a regular expression, but found: \"a\"")
   (check-error
    (concat-regexp singleton-a 7)
-   "The second input to a concat-regexp must be a valid regular expression, but found: 7")
+   "The second argument to concat-regexp must be a regular expression, but found: 7")
 
   (define concat-ab (concat-regexp singleton-a singleton-b))
 
@@ -53,10 +53,10 @@
    singleton-c)
   (check-error
    (union-regexp "ab" singleton-c)
-   "The first input to a union-regexp must be a valid regular expression, but found: ab")
+   "The first argument to union-regexp must be a regular expression, but found: \"ab\"")
   (check-error
    (union-regexp concat-ab 8)
-   "The second input to a union-regexp must be a valid regular expression, but found: 8")
+   "The second argument to union-regexp must be a regular expression, but found: 8")
 
   ;; kleenestar-regexp tests
   (check-expect
@@ -64,7 +64,7 @@
    singleton-a)
   (check-error
    (kleenestar-regexp (kleenestar-regexp "a"))
-   "The input to a kleenestar-regexp must be a valid regular expression, but found: a")
+   "The argument to a kleenestar-regexp must be a regular expression, but found: \"a\"")
   
   (test)
 

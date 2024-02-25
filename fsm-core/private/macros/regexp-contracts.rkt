@@ -29,7 +29,7 @@
                           (raise-blame-error
                            blame
                            x
-                           (format "A singleton-regexp must be a single lowercase Roman alphabet character, but found")))))))
+                           (format "The argument to a singleton-regexp must be a single lowercase Roman alphabet character, but found")))))))
 
   ;; singleton-regexp/c
   (define singleton-regexp/c
@@ -53,18 +53,18 @@
 
   ;; concat-regexp/c
   (define concat-regexp/c
-    (->i ([r1 (valid-regexp/c "The first input to a concat-regexp must be a valid regular expression, but found")]
-          [r2 (valid-regexp/c "The second input to a concat-regexp must be a valid regular expression, but found")])
+    (->i ([r1 (valid-regexp/c "The first argument to concat-regexp must be a regular expression, but found")]
+          [r2 (valid-regexp/c "The second argument to concat-regexp must be a regular expression, but found")])
          [result concat-regexp?]))
 
   ;; union-regexp/c
   (define union-regexp/c
-    (->i ([r1 (valid-regexp/c "The first input to a union-regexp must be a valid regular expression, but found")]
-          [r2 (valid-regexp/c "The second input to a union-regexp must be a valid regular expression, but found")])
+    (->i ([r1 (valid-regexp/c "The first argument to union-regexp must be a regular expression, but found")]
+          [r2 (valid-regexp/c "The second argument to union-regexp must be a regular expression, but found")])
          [result union-regexp?]))
 
   ;; kleenestar-regexp/c
   (define kleenestar-regexp/c
-    (->i ([r1 (valid-regexp/c "The input to a kleenestar-regexp must be a valid regular expression, but found")])
+    (->i ([r1 (valid-regexp/c "The argument to a kleenestar-regexp must be a regular expression, but found")])
          [result kleenestar-regexp?]))
   )
