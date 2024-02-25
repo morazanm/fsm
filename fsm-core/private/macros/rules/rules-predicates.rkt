@@ -729,7 +729,7 @@
                     '())
                 (if (not (valid-cfg-right? to-state states sigma))
                     (list (format "The following members ~a of the right hand side, ~a, is not an alphabet character, or combination of valid defined nonterminals and terminals."
-                                  (invalid-c to-state states sigma)
+                                  (invalid-cfg-right? to-state states sigma)
                                   to-state))
                     '())))
       (if (empty? all-errors) '() (list (make-invalid-rule rule all-errors))))
