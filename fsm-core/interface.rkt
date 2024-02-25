@@ -510,9 +510,4 @@
 ;;          that is constructed by concatenating zero or more words from L(a).
 (define/contract (kleenestar-regexp a)
   kleenestar-regexp/c
-  (make-unchecked-kleenestar a)
-  )
-
-
-
-
+  (make-unchecked-kleenestar a))

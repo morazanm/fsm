@@ -29,7 +29,7 @@
                           (raise-blame-error
                            blame
                            x
-                           (format "The argument to a singleton-regexp must be a single lowercase Roman alphabet character, but found")))))))
+                           (format "The argument to singleton-regexp must be a single lowercase Roman alphabet character, but found")))))))
 
   ;; singleton-regexp/c
   (define singleton-regexp/c
@@ -65,6 +65,6 @@
 
   ;; kleenestar-regexp/c
   (define kleenestar-regexp/c
-    (->i ([r1 (valid-regexp/c "The argument to a kleenestar-regexp must be a regular expression, but found")])
+    (->i ([r1 (valid-regexp/c "The argument to kleenestar-regexp must be a regular expression, but found")])
          [result kleenestar-regexp?]))
   )
