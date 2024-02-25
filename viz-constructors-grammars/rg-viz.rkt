@@ -117,11 +117,11 @@
          '()]
         [(= 2 (length w-der))
          (append (list (string-append (symbol->string (last (first w-der)))
-                                      "->"
+                                      " → "
                                       (symbol->string (last (second w-der)))))
                  (create-rules (rest w-der)))]
         [else (append  (list (string-append (symbol->string (last (first w-der)))
-                                            "->"
+                                            " → "
                                             (string-append (first (map symbol->string (take-right (second w-der) 2)))
                                                            (second (map symbol->string (take-right (second w-der) 2))))))
                        (create-rules (rest w-der)))]))
