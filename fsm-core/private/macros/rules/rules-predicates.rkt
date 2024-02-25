@@ -695,7 +695,7 @@
                     (list (format "The left hand side, ~a, is not a single nonterminal from the list of nonterminals." from-state))
                     '())
                 (if (not (valid-cfg-right? to-state states sigma))
-                    (list (format "The following members ~a of right hand side, ~a, is not an alphabet character, or combination of valid defined nonterminals and terminals."
+                    (list (format "The following members ~a of right hand side, ~a, are not in your list of terminals or nonterminals."
                                   (invalid-cfg-right? to-state states sigma)
                                   to-state))
                     '())))
@@ -728,7 +728,7 @@
                                   from-state))
                     '())
                 (if (not (valid-cfg-right? to-state states sigma))
-                    (list (format "The following members ~a of the right hand side, ~a, is not an alphabet character, or combination of valid defined nonterminals and terminals."
+                    (list (format "The following ~a of the right hand side, ~a, are not in your list of terminals or nonterminals."
                                   (invalid-cfg-right? to-state states sigma)
                                   to-state))
                     '())))
