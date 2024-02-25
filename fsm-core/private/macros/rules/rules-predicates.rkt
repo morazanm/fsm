@@ -603,7 +603,7 @@
   (define (valid-csg-left? elem states sigma)
     (define los (symbol->fsmlos elem))
     (if (member (car los) states)
-        (andmap (lambda (x) (member (append states sigma))) los)
+        (andmap (lambda (x) (member x (append states sigma))) los)
         #f))
 
   
@@ -616,15 +616,13 @@
         (cond [(or (not (list? elem)) (not (= (length elem) 3)))
                (list (format "The given rule, ~a, does not have the correct structure. A grammar rule must be a list with three elements." elem))]
               [else
-               (append (if (and (symbol? (first elem))
-                                (= (length (symbol->fsmlos (first elem))) 1))
+               (append (if (symbol? (first elem))
                            '()
                            (list (format "The first element in the rule, ~a, is not a single symbol." (first elem))))
                        (if (equal? ARROW (second elem))
                            '()
                            (list (format "The second element in the rule, ~a, is not the expected ARROW symbol." (second elem))))
-                       (if (and (symbol? (third elem))
-                                (<= (length (symbol->fsmlos (third elem))) 2))
+                       (if (symbol? (third elem))
                            '()
                            (list (format "The third element in the rule, ~a, is not a symbol with 2 or less elements." (third elem)))))]
               )

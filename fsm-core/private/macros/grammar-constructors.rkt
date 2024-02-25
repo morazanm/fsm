@@ -113,7 +113,8 @@
                   sigma) (and/c (is-a-list/c "machine nonterminals" "three")
                                 correct-grammar-rule-structures/c
                                 (correct-csg-rules/c states (cons EMP sigma))
-                                (no-duplicates/c "rules"))]
+                                (no-duplicates/c "rules")
+                                )]
           [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
           )

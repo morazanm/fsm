@@ -1,0 +1,98 @@
+#lang racket
+(require
+  "../interface.rkt"
+  )
+  
+(provide)
+;; L = {w | w in (a b)* AND  w has more b than a}
+(define numb>numa (make-cfg '(S A)
+                            '(a b)
+                            `((S ,ARROW b)
+                              (S ,ARROW AbA)
+                              (A ,ARROW AaAbA)
+                              (A ,ARROW AbAaA)
+                              (A ,ARROW ,EMP)
+                              (A ,ARROW bA))
+                            'S))
+(define AE (make-cfg '(S I)
+                     '(p t x y z)
+                     `((S ,ARROW SpS)
+                       (S ,ARROW StS)
+                       (S ,ARROW I)
+                       (I ,ARROW x)
+                       (I ,ARROW y)
+                       (I ,ARROW z))
+                     'S))
+
+(define MULT3-as (make-cfg '(S B C)
+                           '(a b)
+                           `((S ,ARROW ,EMP)
+                             (S ,ARROW aB)
+                             (S ,ARROW bS)
+                             (B ,ARROW aC)
+                             (B ,ARROW bB)
+                             (C ,ARROW aS)
+                             (C ,ARROW bC))
+                           'S))
+
+;; L {w | w in (a b)*}
+(define RG (make-rg '(S A)
+                    '(a b)
+                    `((S ,ARROW ,EMP)
+                      (S ,ARROW aA)
+                      (A ,ARROW bS))
+                    'S))
+
+;; L = {ε} U ba*
+(define EMP-U-ba* (make-rg '(S A)
+                           '(a b)
+                           `((S ,ARROW ,EMP)
+                             (S ,ARROW b)
+                             (S ,ARROW bA)
+                             (A ,ARROW a)
+                             (A ,ARROW aA))
+                           'S))
+
+
+;; L = a^nb^n
+(define a2nb2n (make-cfg '(S)
+                         '(a b)
+                         `((S ,ARROW ,EMP)
+                           (S ,ARROW aSb))
+                         'S))
+
+(define anbncn-csg
+  (make-csg '(S A B C G H I) 
+            '(a b c) 
+            `((S ,ARROW ABCS) 
+              (S ,ARROW G)
+              (BA ,ARROW AB) 
+              (CA ,ARROW AC) 
+              (CB ,ARROW BC)
+              (CG ,ARROW Gc) 
+              (G  ,ARROW H) 
+              (BH ,ARROW Hb) 
+              (H ,ARROW I)
+              (AI ,ARROW Ia) 
+              (I ,ARROW ,EMP)) 
+            'S))
+
+(define anbn (make-csg '(S A B)
+                       '(a b)
+                       `((S ,ARROW AAaAAB)
+                         (AAaAAA ,ARROW aSb)
+                         (AAaAAA ,ARROW ,EMP)
+                         (B ,ARROW A))
+                       'S))
+
+(define ADD-CSG2 (make-csg '(S A E I)
+                           '(b i)
+                           `((S ,ARROW AbAbE)
+                             (A ,ARROW ,EMP)
+                             (A ,ARROW iIA)
+                             (Ii ,ARROW iI)
+                             (Ib ,ARROW bI)
+                             (IE ,ARROW Ei)
+                             (E ,ARROW ,EMP))
+                           'S))
+
