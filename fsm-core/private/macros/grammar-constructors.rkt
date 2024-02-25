@@ -142,6 +142,6 @@
 
 
          
-         [result (lambda (x) (equal? 'cfg (grammar-type x)))]))
+         [result (lambda (x) (equal? 'csg (grammar-type x)))]))
 
   )
