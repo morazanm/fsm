@@ -34,7 +34,7 @@
   
   ; (listof csg-rule) --> (listof (list symbol -> symbol))
   (define (unparse-csg-rules rls)
-    (map (lambda (r) (list (fsmlos->symbol (csg-rule-lhs r)) ARROW (fsmlos->symbol (csg-rule-rhs r)))) rls))
+    (map (lambda (r) (list (los->symbol (csg-rule-lhs r)) ARROW (los->symbol (csg-rule-rhs r)))) rls))
   
   ;(listof (list (listof symbol) '-> (listof symbol))) --> (listof csg-rule)
   (define (parse-csg-rules R)
