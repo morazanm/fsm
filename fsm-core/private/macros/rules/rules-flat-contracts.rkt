@@ -276,7 +276,7 @@
   ;predicate: (listof x) -> boolean
   ;purpose: Ensures that every element in the list is structured as a valid mttm rule.
   ; It checks each rule to see that it is a (list (list state (listof symbol)) (list state (listof tm-action)))
-  (define (correct-grammar-rule-structures/c)
+  (define correct-grammar-rule-structures/c
     (make-flat-contract
      #:name 'correct-grammar-rule-structures
      #:first-order (lambda (rules) (empty? (incorrect-grammar-rule-structures rules)))
