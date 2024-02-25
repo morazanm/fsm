@@ -692,7 +692,7 @@
       (define to-state (third rule))
       (define all-errors
         (append (if (not (member from-state states))
-                    (list (format "The left hand side, ~a, is not in the given list of nonterminals." from-state))
+                    (list (format "The left hand side, ~a, is not a single nonterminal from the list of nonterminals." from-state))
                     '())
                 (if (not (valid-cfg-right? to-state states sigma))
                     (list (format "The following members ~a of right hand side, ~a, is not an alphabet character, or combination of valid defined nonterminals and terminals."
