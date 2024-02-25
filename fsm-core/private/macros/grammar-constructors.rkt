@@ -17,15 +17,15 @@
 
   (define make-rg/c
     (->i ([states (and/c (is-a-list/c "nonterminals" "two")
-                      (valid-listof/c valid-state? "nonterminal" "list of machine nonterminals" #:rule "two")
+                      (valid-listof/c valid-state? "nonterminal" "list of grammar nonterminals" #:rule "two")
                       (no-duplicates/c "nonterminals")
                       )]
-          [sigma (and/c (is-a-list/c "machine alphabet" "one")
+          [sigma (and/c (is-a-list/c "grammar alphabet" "one")
                         (valid-listof/c valid-alpha? "lowercase alphabet letter" "input alphabet" #:rule "one")
                         (no-duplicates/c "sigma"))]
           [delta (states
                   sigma
-                  start) (and/c (is-a-list/c "machine nonterminals" "three")
+                  start) (and/c (is-a-list/c "grammar nonterminals" "three")
                                 correct-grammar-rule-structures/c
                                 (no-emp-rhs/c start)
                                 (correct-rg-rules/c states (cons EMP sigma))
@@ -61,14 +61,14 @@
 
   (define make-cfg/c
     (->i ([states (and/c (is-a-list/c "nonterminals" "two")
-                      (valid-listof/c valid-state? "nonterminal" "list of machine nonterminals" #:rule "two")
+                      (valid-listof/c valid-state? "nonterminal" "list of grammar nonterminals" #:rule "two")
                       (no-duplicates/c "nonterminals")
                       )]
-          [sigma (and/c (is-a-list/c "machine alphabet" "one")
+          [sigma (and/c (is-a-list/c "grammar alphabet" "one")
                         (valid-listof/c valid-alpha? "lowercase alphabet letter" "input alphabet" #:rule "one")
                         (no-duplicates/c "sigma"))]
           [delta (states
-                  sigma) (and/c (is-a-list/c "machine nonterminals" "three")
+                  sigma) (and/c (is-a-list/c "grammar nonterminals" "three")
                                 correct-grammar-rule-structures/c
                                 (correct-cfg-rules/c states (cons EMP sigma))
                                 (no-duplicates/c "rules"))]
@@ -103,14 +103,14 @@
 
   (define make-csg/c
     (->i ([states (and/c (is-a-list/c "nonterminals" "two")
-                      (valid-listof/c valid-state? "nonterminal" "list of machine nonterminals" #:rule "two")
+                      (valid-listof/c valid-state? "nonterminal" "list of grammar nonterminals" #:rule "two")
                       (no-duplicates/c "nonterminals")
                       )]
-          [sigma (and/c (is-a-list/c "machine alphabet" "one")
+          [sigma (and/c (is-a-list/c "grammar alphabet" "one")
                         (valid-listof/c valid-alpha? "lowercase alphabet letter" "input alphabet" #:rule "one")
                         (no-duplicates/c "sigma"))]
           [delta (states
-                  sigma) (and/c (is-a-list/c "machine nonterminals" "three")
+                  sigma) (and/c (is-a-list/c "grammar nonterminals" "three")
                                 correct-grammar-rule-structures/c
                                 (correct-csg-rules/c states (cons EMP sigma))
                                 (no-duplicates/c "rules")
