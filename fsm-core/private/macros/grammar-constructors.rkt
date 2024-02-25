@@ -17,7 +17,7 @@
 
   (define make-rg/c
     (->i ([states (and/c (is-a-list/c "nonterminals" "two")
-                      (valid-listof/c valid-state? "nonterminal" "list of grammar nonterminals" #:rule "two")
+                      (valid-listof/c valid-state? "nonterminal" "list of nonterminals" #:rule "two")
                       (no-duplicates/c "nonterminals")
                       )]
           [sigma (and/c (is-a-list/c "grammar alphabet" "one")
@@ -61,7 +61,7 @@
 
   (define make-cfg/c
     (->i ([states (and/c (is-a-list/c "nonterminals" "two")
-                      (valid-listof/c valid-state? "nonterminal" "list of grammar nonterminals" #:rule "two")
+                      (valid-listof/c valid-state? "nonterminal" "list of nonterminals" #:rule "two")
                       (no-duplicates/c "nonterminals")
                       )]
           [sigma (and/c (is-a-list/c "grammar alphabet" "one")
@@ -103,7 +103,7 @@
 
   (define make-csg/c
     (->i ([states (and/c (is-a-list/c "nonterminals" "two")
-                      (valid-listof/c valid-state? "nonterminal" "list of grammar nonterminals" #:rule "two")
+                      (valid-listof/c valid-state? "nonterminal" "list of nonterminals" #:rule "two")
                       (no-duplicates/c "nonterminals")
                       )]
           [sigma (and/c (is-a-list/c "grammar alphabet" "one")
