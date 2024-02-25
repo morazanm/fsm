@@ -15,7 +15,7 @@
   (define (valid-alpha-string? x)
     (define regex-pattern (regexp "^[a-z]$"))
     (and (string? x)
-         (not (not (regexp-match regex-pattern x)))))
+         (regexp-match regex-pattern x)))
 
   (define valid-singleton/c
     (make-flat-contract
