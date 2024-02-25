@@ -53,7 +53,7 @@
                                       )
                                (empty-scene 250 800)))
 
-;; pinhole is a structure that has
+;; posn is a structure that has
 ;; x coordinate
 ;; y coordinate
 (struct posn (x y))
@@ -260,7 +260,7 @@
              (viz-state (rest (viz-state-upimgs a-vs))
                         (cons (first (viz-state-upimgs a-vs))
                               (viz-state-pimgs a-vs))
-                        (posn 600 400)
+                        (viz-state-image-posn a-vs)
                         (viz-state-curr-mouse-posn a-vs)
                         (viz-state-dest-mouse-posn a-vs)
                         (viz-state-mouse-pressed a-vs)
@@ -271,7 +271,7 @@
              (viz-state (cons (first (viz-state-pimgs a-vs))
                               (viz-state-upimgs a-vs))
                         (rest (viz-state-pimgs a-vs))
-                        (posn 600 400)
+                        (viz-state-image-posn a-vs)
                         (viz-state-curr-mouse-posn a-vs)
                         (viz-state-dest-mouse-posn a-vs)
                         (viz-state-mouse-pressed a-vs)
@@ -301,17 +301,6 @@
                         ))]
         [else a-vs]))
 
-;; process-drag
-;; posn-x posn-y a-vs
-;; Purpose: To process the dragging motion
-#;(define (process-drag x y a-vs)
-    (pinhole (if (> x (pinhole-x (viz-state-pinhole a-vs)))
-                 (- (- x 250) (abs (- x (pinhole-x (viz-state-pinhole a-vs)))))
-                 (+ (- x 250) (abs (- x (pinhole-x (viz-state-pinhole a-vs))))))
-             (if (> y (pinhole-y (viz-state-pinhole a-vs)))
-                 (- y (abs (- y (pinhole-y (viz-state-pinhole a-vs)))))
-                 (+ y (abs (- y (pinhole-y (viz-state-pinhole a-vs))))))
-             ))
 ;; viz-state int int MouseEvent
 ;; Updates viz-state as to whether the mouse is currently being pressed while on the visualization
 (define (process-mouse a-vs x y mouse-event)
@@ -372,7 +361,7 @@
                     (posn x y)
                     #f)
          ]
-        [else (error "This shouldn't even be possible")]
+        [else a-vs]
         )
   )
 
