@@ -14,8 +14,8 @@
   ;;          and false for every other input.
   (define (valid-alpha-string? x)
     (define regex-pattern (regexp "^[a-z]$"))
-    (and (string? x)
-         (regexp-match regex-pattern x)))
+    (not (false? (and (string? x)
+                      (regexp-match regex-pattern x)))))
 
   (define valid-singleton/c
     (make-flat-contract
@@ -66,5 +66,5 @@
   ;; kleenestar-regexp/c
   (define kleenestar-regexp/c
     (->i ([r1 (valid-regexp/c "The input to a kleenestar-regexp must be a valid regular expression, but found")])
-        [result kleenestar-regexp?]))
+         [result kleenestar-regexp?]))
   )
