@@ -69,7 +69,7 @@
 ;; up-levels - unprocessed levels
 ;; ad-levels - levels added to the graph
 ;; nodes - nodes in the graph
-(struct dgrph (up-levels ad-levels nodes))
+(struct dgrph (up-levels ad-levels nodes hedges))
 
 
 ;; upper?
@@ -181,12 +181,14 @@
 ;; make-node-graph
 ;; graph lon -> graph
 ;; Purpose: To make a node graph
-(define (make-node-graph graph lon)
+(define (make-node-graph graph lon hedge-nodes)
   (foldr (λ (state result)
            (add-node
             result
             state
-            #:atb (hash 'color 'black
+            #:atb (hash 'color (if (member state hedge-nodes)
+                                   'violet
+                                   'black)
                         'shape 'circle
                         'label (string->symbol (string (string-ref (symbol->string state) 0)))
                         'fontcolor 'black
@@ -197,7 +199,7 @@
 ;; make-edge-graph
 ;; graph (listof level) -> graph
 ;; Purpose: To make an edge graph
-(define (make-edge-graph graph loe)
+(define (make-edge-graph graph loe hedges)
   (let* [(first-foldr (foldr (λ (rule result)
                                (if (empty? (first rule))
                                    result
@@ -207,6 +209,9 @@
                                              (second (first rule))
                                              #:atb (hash 'fontsize 20
                                                          'style 'solid
+                                                         'color (if (member (first rule) hedges)
+                                                                    'violet
+                                                                    'black)
                                                          ))) 
                                )
                              graph
@@ -220,6 +225,9 @@
                            (second (second rule))
                            #:atb (hash 'fontsize 20
                                        'style 'solid
+                                       'color (if (member (first rule) hedges)
+                                                  'violet
+                                                  'black)
                                        )) 
                  ))
            first-foldr
@@ -233,11 +241,15 @@
 (define (create-graph-img a-dgrph)
   (let* [(nodes (append (filter lower? (dgrph-nodes a-dgrph))
                         (filter upper? (dgrph-nodes a-dgrph))))
-         (levels (reverse (map reverse (dgrph-ad-levels a-dgrph))))                                  
+         (levels (reverse (map reverse (dgrph-ad-levels a-dgrph))))
+         (hedges (dgrph-hedges a-dgrph))
+         (hedge-nodes (map (λ (x) (if (empty? x)
+                                      '()
+                                      (second x))) (dgrph-hedges a-dgrph)))
          ]
     (graph->bitmap (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
-                                                     nodes)
-                                    levels))))
+                                                     nodes hedge-nodes) 
+                                    levels hedges))))
 
 
 ;; create-graph-imgs
@@ -404,11 +416,13 @@
              (new-ad-levels (cons (first (dgrph-up-levels a-dgrph))
                                   (dgrph-ad-levels a-dgrph)))
              (new-nodes (extract-nodes new-ad-levels))
+             (new-hedges (first (dgrph-up-levels a-dgrph)))
              ]
         (create-dgrphs
          (dgrph new-up-levels                      
                 new-ad-levels
                 new-nodes
+                new-hedges
                 )
          (cons a-dgrph lod))
         )))
@@ -449,7 +463,7 @@
               (loe (map (λ (el) (if (symbol? (first el))
                                     (list el '())
                                     el)) renamed))
-              (dgraph (dgrph loe '() '()))
+              (dgraph (dgrph loe '() '() '()))
               (lod (reverse (create-dgrphs dgraph '())))
               (first-img (create-first-img (first (extract-nodes loe))))
               (imgs (cons first-img (rest (create-graph-imgs lod))))]
