@@ -8,18 +8,18 @@
   (provide 
    )
 
-  (make-ndpda '(S P Q F)
-              '(a b c)
-              '(a b S)
-              'S
-              '(F)
-              `(((S ,EMP ,EMP) (P ,EMP))
-                ((P a ,EMP) (P (S a)))
-                ((P b ,EMP) (P (b)))
-                ((P c ,EMP) (Q ,EMP))
-                ((Q a (a)) (Q ,EMP))
-                ((Q b (b)) (Q ,EMP))
-                ((Q ,EMP ,EMP) (F ,EMP))))
+  (define some-machine (make-ndpda '(S P Q F)
+                                   '(a b c)
+                                   '(a b S)
+                                   'S
+                                   '(F)
+                                   `(((S ,EMP ,EMP) (P ,EMP))
+                                     ((P a ,EMP) (P (S a)))
+                                     ((P b ,EMP) (P (b)))
+                                     ((P c ,EMP) (Q ,EMP))
+                                     ((Q a (a)) (Q ,EMP))
+                                     ((Q b (b)) (Q ,EMP))
+                                     ((Q ,EMP ,EMP) (F ,EMP)))))
   
   ;;valid-listof/c tests
   ;;STATES
