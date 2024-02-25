@@ -69,7 +69,10 @@
 ;; up-levels - unprocessed levels
 ;; ad-levels - levels added to the graph
 ;; nodes - nodes in the graph
-(struct dgrph (up-levels ad-levels nodes hedges))
+;; hedges - highlighted edges of the graph
+;; up-rules - unprocessed grammar rules
+;; p-rules - processed grammar rules
+(struct dgrph (up-levels ad-levels nodes hedges up-rules p-rules))
 
 
 ;; upper?
@@ -103,6 +106,25 @@
                            (last (second wd)))))]
         [else (append (list (map (λ (x) (list (last (first wd)) x)) (take-right (second wd) 2)))
                       (create-edges (rest wd)))]))
+
+
+;; create-rules
+;; (listof symbol) -> (listof string)
+(define (create-rules w-der)
+  (cond [(empty? w-der)
+         '()]
+        [(= 1 (length w-der))
+         '()]
+        [(= 2 (length w-der))
+         (append (list (string-append (symbol->string (last (first w-der)))
+                                      "->"
+                                      (symbol->string (last (second w-der)))))
+                 (create-rules (rest w-der)))]
+        [else (append  (list (string-append (symbol->string (last (first w-der)))
+                                            "->"
+                                            (string-append (first (map symbol->string (take-right (second w-der) 2)))
+                                                           (second (map symbol->string (take-right (second w-der) 2))))))
+                       (create-rules (rest w-der)))]))
 
 ;; rename-edges
 ;; (listof level) -> (listof level)
@@ -247,9 +269,12 @@
                                       '()
                                       (second x))) (dgrph-hedges a-dgrph)))
          ]
-    (graph->bitmap (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
-                                                     nodes hedge-nodes) 
-                                    levels hedges))))
+    (above (graph->bitmap (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
+                                                            nodes hedge-nodes) 
+                                           levels hedges))
+           (square 30 'solid 'white)
+           (text (format "The rule used: ~a" (first (dgrph-p-rules a-dgrph)))
+                 20 'black))))
 
 
 ;; create-graph-imgs
@@ -417,12 +442,17 @@
                                   (dgrph-ad-levels a-dgrph)))
              (new-nodes (extract-nodes new-ad-levels))
              (new-hedges (first (dgrph-up-levels a-dgrph)))
+             (new-up-rules (rest (dgrph-up-rules a-dgrph)))
+             (new-p-rules (cons (first (dgrph-up-rules a-dgrph))
+                                (dgrph-p-rules a-dgrph)))
              ]
         (create-dgrphs
          (dgrph new-up-levels                      
                 new-ad-levels
                 new-nodes
                 new-hedges
+                new-up-rules
+                new-p-rules
                 )
          (cons a-dgrph lod))
         )))
@@ -445,10 +475,11 @@
 ;; viz-state -> img
 ;; Purpose: To render the given viz-state
 (define (draw-world a-vs)
-  (beside E-SCENE-TOOLS (place-image (first (viz-state-pimgs a-vs))
-                                     (posn-x (viz-state-image-posn a-vs))
-                                     (posn-y (viz-state-image-posn a-vs))
-                                     E-SCENE)))
+  (beside E-SCENE-TOOLS  (place-image (first (viz-state-pimgs a-vs))
+                                      (posn-x (viz-state-image-posn a-vs))
+                                      (posn-y (viz-state-image-posn a-vs))
+                                      E-SCENE)
+          ))
 
          
 ;; rg-viz
@@ -456,14 +487,15 @@
 (define (rg-viz rg word)
   (if (string? (grammar-derive rg word))
       (grammar-derive rg word)
-      (let* [ (w-der (map symbol->fsmlos  (filter (λ (x) (not (equal? x '->)))
-                                                  (grammar-derive rg word))))
+      (let* [ (w-der (map symbol->fsmlos (filter (λ (x) (not (equal? x '->)))
+                                                 (grammar-derive rg word))))
+              (rules (cons "" (create-rules w-der)))
               (extracted-edges (create-edges w-der))
               (renamed (rename-nodes (rename-edges extracted-edges)))
               (loe (map (λ (el) (if (symbol? (first el))
                                     (list el '())
                                     el)) renamed))
-              (dgraph (dgrph loe '() '() '()))
+              (dgraph (dgrph loe '() '() '() (rest rules) (list (first rules))))
               (lod (reverse (create-dgrphs dgraph '())))
               (first-img (create-first-img (first (extract-nodes loe))))
               (imgs (cons first-img (rest (create-graph-imgs lod))))]
