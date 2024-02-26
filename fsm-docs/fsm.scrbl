@@ -769,6 +769,12 @@ word are returned.
          symbol]{Generates a random symbol that starts with seed
  and that is not in the given list of symbols.}
 
+@defproc[(gen-state [l (listof state)])
+         state]{Generates a state not in the given list of states.}
+
+@defproc[(gen-nt [l (listof nt)])
+         state]{Generates a nonterminal not in the given list of nonterminals.}
+
 @defproc[(symbol-upcase [s symbol])
          symbol]{Builds a symbol that is the same as the given symbol,
  but with all characters in uppercase.}
