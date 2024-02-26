@@ -72,7 +72,11 @@
 ;; hedges - highlighted edges of the graph
 ;; up-rules - unprocessed grammar rules
 ;; p-rules - processed grammar rules
+<<<<<<< Updated upstream
 (struct dgrph (up-levels ad-levels nodes hedges prev-hedges up-rules p-rules))
+=======
+(struct dgrph (up-levels ad-levels nodes hedges up-rules p-rules))
+>>>>>>> Stashed changes
 
 
 ;; upper?
@@ -203,14 +207,22 @@
 ;; make-node-graph
 ;; graph lon -> graph
 ;; Purpose: To make a node graph
+<<<<<<< Updated upstream
 (define (make-node-graph graph lon hedge-nodes prev-hedge-nodes)
+=======
+(define (make-node-graph graph lon hedge-nodes yield-node)
+>>>>>>> Stashed changes
   (foldr (λ (state result)
            (add-node
             result
             state
             #:atb (hash 'color (cond [(member state hedge-nodes)
                                       'violet]
+<<<<<<< Updated upstream
                                      [(member state prev-hedge-nodes)
+=======
+                                     [(member state yield-node)
+>>>>>>> Stashed changes
                                       'orange]
                                      [else 'black])
                         'shape 'circle
@@ -223,7 +235,11 @@
 ;; make-edge-graph
 ;; graph (listof level) -> graph
 ;; Purpose: To make an edge graph
+<<<<<<< Updated upstream
 (define (make-edge-graph graph loe hedges prev-hedges)
+=======
+(define (make-edge-graph graph loe hedges)
+>>>>>>> Stashed changes
   (let* [(first-foldr (foldr (λ (rule result)
                                (if (empty? (first rule))
                                    result
@@ -233,11 +249,17 @@
                                              (second (first rule))
                                              #:atb (hash 'fontsize 20
                                                          'style 'solid
+<<<<<<< Updated upstream
                                                          'color (cond [(member (first rule) hedges)
                                                                        'violet]
                                                                       [(member (first rule) prev-hedges)
                                                                        'orange]
                                                                       [else 'black])
+=======
+                                                         'color (if (member (first rule) hedges)
+                                                                    'violet
+                                                                    'black)
+>>>>>>> Stashed changes
                                                          ))) 
                                )
                              graph
@@ -251,11 +273,17 @@
                            (second (second rule))
                            #:atb (hash 'fontsize 20
                                        'style 'solid
+<<<<<<< Updated upstream
                                        'color (cond [(member (first rule) hedges)
                                                      'violet]
                                                     [(member (first rule) prev-hedges)
                                                      'orange]
                                                     [else 'black])
+=======
+                                       'color (if (member (first rule) hedges)
+                                                  'violet
+                                                  'black)
+>>>>>>> Stashed changes
                                        )) 
                  ))
            first-foldr
@@ -271,6 +299,7 @@
                         (filter upper? (dgrph-nodes a-dgrph))))
          (levels (reverse (map reverse (dgrph-ad-levels a-dgrph))))
          (hedges (dgrph-hedges a-dgrph))
+<<<<<<< Updated upstream
          (prev-hedges (dgrph-prev-hedges a-dgrph))
          (prev-hedge-nodes (map (λ (x) (if (empty? x)
                                            '()
@@ -284,6 +313,20 @@
                                            levels hedges prev-hedges))
            (square 30 'solid 'white)
            (text (format "The rule used: ~a" (first (dgrph-p-rules a-dgrph)))
+=======
+         (hedge-nodes (map (λ (x) (if (empty? x)
+                                      '()
+                                      (second x))) hedges))
+         (yield-node (map (λ (x) (if (empty? x)
+                                     '()
+                                     (first x))) hedges))
+         ]
+    (above (graph->bitmap (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
+                                                            nodes hedge-nodes yield-node) 
+                                           levels hedges))
+           (square 30 'solid 'white)
+           (text (format "The rule used:" (first (dgrph-p-rules a-dgrph)))
+>>>>>>> Stashed changes
                  20 'black))))
 
 
@@ -452,9 +495,12 @@
                                   (dgrph-ad-levels a-dgrph)))
              (new-nodes (extract-nodes new-ad-levels))
              (new-hedges (first (dgrph-up-levels a-dgrph)))
+<<<<<<< Updated upstream
              (prev-hedges (if (empty? (dgrph-ad-levels a-dgrph))
                               '()
                               (first (dgrph-ad-levels a-dgrph))))
+=======
+>>>>>>> Stashed changes
              (new-up-rules (rest (dgrph-up-rules a-dgrph)))
              (new-p-rules (cons (first (dgrph-up-rules a-dgrph))
                                 (dgrph-p-rules a-dgrph)))
@@ -464,7 +510,10 @@
                 new-ad-levels
                 new-nodes
                 new-hedges
+<<<<<<< Updated upstream
                 prev-hedges
+=======
+>>>>>>> Stashed changes
                 new-up-rules
                 new-p-rules
                 )
@@ -509,7 +558,11 @@
               (loe (map (λ (el) (if (symbol? (first el))
                                     (list el '())
                                     el)) renamed))
+<<<<<<< Updated upstream
               (dgraph (dgrph loe '() '() '() '() (rest rules) (list (first rules))))
+=======
+              (dgraph (dgrph loe '() '() '() (rest rules) (list (first rules))))
+>>>>>>> Stashed changes
               (lod (reverse (create-dgrphs dgraph '())))
               (first-img (create-first-img (first (extract-nodes loe))))
               (imgs (cons first-img (rest (create-graph-imgs lod))))]
