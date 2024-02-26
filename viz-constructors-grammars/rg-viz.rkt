@@ -72,7 +72,7 @@
 ;; hedges - highlighted edges of the graph
 ;; up-rules - unprocessed grammar rules
 ;; p-rules - processed grammar rules
-(struct dgrph (up-levels ad-levels nodes hedges up-rules p-rules))
+(struct dgrph (up-levels ad-levels nodes hedges prev-hedges up-rules p-rules))
 
 
 ;; upper?
@@ -203,14 +203,16 @@
 ;; make-node-graph
 ;; graph lon -> graph
 ;; Purpose: To make a node graph
-(define (make-node-graph graph lon hedge-nodes)
+(define (make-node-graph graph lon hedge-nodes prev-hedge-nodes)
   (foldr (λ (state result)
            (add-node
             result
             state
-            #:atb (hash 'color (if (member state hedge-nodes)
-                                   'violet
-                                   'black)
+            #:atb (hash 'color (cond [(member state hedge-nodes)
+                                      'violet]
+                                     [(member state prev-hedge-nodes)
+                                      'orange]
+                                     [else 'black])
                         'shape 'circle
                         'label (string->symbol (string (string-ref (symbol->string state) 0)))
                         'fontcolor 'black
@@ -221,7 +223,7 @@
 ;; make-edge-graph
 ;; graph (listof level) -> graph
 ;; Purpose: To make an edge graph
-(define (make-edge-graph graph loe hedges)
+(define (make-edge-graph graph loe hedges prev-hedges)
   (let* [(first-foldr (foldr (λ (rule result)
                                (if (empty? (first rule))
                                    result
@@ -231,9 +233,11 @@
                                              (second (first rule))
                                              #:atb (hash 'fontsize 20
                                                          'style 'solid
-                                                         'color (if (member (first rule) hedges)
-                                                                    'violet
-                                                                    'black)
+                                                         'color (cond [(member (first rule) hedges)
+                                                                       'violet]
+                                                                      [(member (first rule) prev-hedges)
+                                                                       'orange]
+                                                                      [else 'black])
                                                          ))) 
                                )
                              graph
@@ -247,9 +251,11 @@
                            (second (second rule))
                            #:atb (hash 'fontsize 20
                                        'style 'solid
-                                       'color (if (member (first rule) hedges)
-                                                  'violet
-                                                  'black)
+                                       'color (cond [(member (first rule) hedges)
+                                                     'violet]
+                                                    [(member (first rule) prev-hedges)
+                                                     'orange]
+                                                    [else 'black])
                                        )) 
                  ))
            first-foldr
@@ -265,13 +271,17 @@
                         (filter upper? (dgrph-nodes a-dgrph))))
          (levels (reverse (map reverse (dgrph-ad-levels a-dgrph))))
          (hedges (dgrph-hedges a-dgrph))
+         (prev-hedges (dgrph-prev-hedges a-dgrph))
+         (prev-hedge-nodes (map (λ (x) (if (empty? x)
+                                           '()
+                                           (second x))) prev-hedges))
          (hedge-nodes (map (λ (x) (if (empty? x)
                                       '()
-                                      (second x))) (dgrph-hedges a-dgrph)))
+                                      (second x))) hedges))
          ]
     (above (graph->bitmap (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
-                                                            nodes hedge-nodes) 
-                                           levels hedges))
+                                                            nodes hedge-nodes prev-hedge-nodes) 
+                                           levels hedges prev-hedges))
            (square 30 'solid 'white)
            (text (format "The rule used: ~a" (first (dgrph-p-rules a-dgrph)))
                  20 'black))))
@@ -442,6 +452,9 @@
                                   (dgrph-ad-levels a-dgrph)))
              (new-nodes (extract-nodes new-ad-levels))
              (new-hedges (first (dgrph-up-levels a-dgrph)))
+             (prev-hedges (if (empty? (dgrph-ad-levels a-dgrph))
+                              '()
+                              (first (dgrph-ad-levels a-dgrph))))
              (new-up-rules (rest (dgrph-up-rules a-dgrph)))
              (new-p-rules (cons (first (dgrph-up-rules a-dgrph))
                                 (dgrph-p-rules a-dgrph)))
@@ -451,6 +464,7 @@
                 new-ad-levels
                 new-nodes
                 new-hedges
+                prev-hedges
                 new-up-rules
                 new-p-rules
                 )
@@ -495,7 +509,7 @@
               (loe (map (λ (el) (if (symbol? (first el))
                                     (list el '())
                                     el)) renamed))
-              (dgraph (dgrph loe '() '() '() (rest rules) (list (first rules))))
+              (dgraph (dgrph loe '() '() '() '() (rest rules) (list (first rules))))
               (lod (reverse (create-dgrphs dgraph '())))
               (first-img (create-first-img (first (extract-nodes loe))))
               (imgs (cons first-img (rest (create-graph-imgs lod))))]
