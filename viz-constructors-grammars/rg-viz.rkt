@@ -62,7 +62,7 @@
 ;; viz-state is a structure that has
 ;; upimgs - unprocessed graph images
 ;; pimgs - processed graph images
-(struct viz-state (upimgs pimgs image-posn curr-mouse-posn dest-mouse-posn mouse-pressed))
+(struct viz-state (upimgs pimgs image-posn curr-mouse-posn dest-mouse-posn mouse-pressed dgraph))
 
 
 ;; dgrph is a structure that has
@@ -274,16 +274,10 @@
                                      '()
                                      (first x))) hedges))
          ]
-    (above (graph->bitmap (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
-                                                            nodes hedge-nodes yield-node) 
-                                           levels hedges))
-           (square 30 'solid 'white)
-           (if (equal? "" (first (dgrph-p-rules a-dgrph)))
-               (text "" 24 'white)
-               (beside (text "The rule used:" 24 'black)
-                       (text (format " ~a" (substring (first (dgrph-p-rules a-dgrph)) 0 1)) 24 'orange)
-                       (text (format " ~a" (substring (first (dgrph-p-rules a-dgrph)) 1)) 24 'violet)
-                       )))))
+    (graph->bitmap (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
+                                                     nodes hedge-nodes yield-node) 
+                                    levels hedges))
+    ))
 
 
 ;; create-graph-imgs
@@ -310,6 +304,7 @@
                         (viz-state-curr-mouse-posn a-vs)
                         (viz-state-dest-mouse-posn a-vs)
                         (viz-state-mouse-pressed a-vs)
+                        (viz-state-dgraph a-vs)
                         ))]
         [(key=? "left" a-key)
          (if (= (length (viz-state-pimgs a-vs)) 1)
@@ -321,6 +316,7 @@
                         (viz-state-curr-mouse-posn a-vs)
                         (viz-state-dest-mouse-posn a-vs)
                         (viz-state-mouse-pressed a-vs)
+                        (viz-state-dgraph a-vs)
                         ))]
         [(key=? "down" a-key)
          (if (empty? (viz-state-upimgs a-vs))
@@ -332,6 +328,7 @@
                         (viz-state-curr-mouse-posn a-vs)
                         (viz-state-dest-mouse-posn a-vs)
                         (viz-state-mouse-pressed a-vs)
+                        (viz-state-dgraph a-vs)
                         ))]
         [(key=? "up" a-key)
          (if (= (length (viz-state-pimgs a-vs)) 1)
@@ -344,6 +341,7 @@
                         (viz-state-curr-mouse-posn a-vs)
                         (viz-state-dest-mouse-posn a-vs)
                         (viz-state-mouse-pressed a-vs)
+                        (viz-state-dgraph a-vs)
                         ))]
         [else a-vs]))
 
@@ -356,7 +354,8 @@
                     (viz-state-image-posn a-vs)
                     (viz-state-curr-mouse-posn a-vs)
                     (posn x y)
-                    #t)
+                    #t
+                    (viz-state-dgraph a-vs))
          ]
         [(string=? mouse-event "button-up")
          (viz-state (viz-state-upimgs a-vs)
@@ -364,7 +363,8 @@
                     (viz-state-image-posn a-vs)
                     (viz-state-curr-mouse-posn a-vs)
                     (posn x y)
-                    #f)
+                    #f
+                    (viz-state-dgraph a-vs))
          ]
         ;; Want to keep the mouse updating while it is being dragged
         [(string=? mouse-event "drag")
@@ -373,7 +373,8 @@
                     (viz-state-image-posn a-vs)
                     (viz-state-curr-mouse-posn a-vs)
                     (posn x y)
-                    #t)
+                    #t
+                    (viz-state-dgraph a-vs))
          ]
                                                    
         ;; Can happen in both clicked and unclicked states so leave it in whatever it was
@@ -384,6 +385,7 @@
                     (viz-state-curr-mouse-posn a-vs)
                     (posn x y)
                     (viz-state-mouse-pressed a-vs)
+                    (viz-state-dgraph a-vs)
                     )
          ]
 
@@ -395,6 +397,7 @@
                     (viz-state-curr-mouse-posn a-vs)
                     (posn x y)
                     (viz-state-mouse-pressed a-vs)
+                    (viz-state-dgraph a-vs)
                     )
          ]
 
@@ -405,7 +408,8 @@
                     (viz-state-image-posn a-vs)
                     (viz-state-curr-mouse-posn a-vs)
                     (posn x y)
-                    #f)
+                    #f
+                    (viz-state-dgraph a-vs))
          ]
         [else a-vs]
         )
@@ -429,13 +433,15 @@
                    (posn new-img-x new-img-y)
                    (viz-state-dest-mouse-posn a-vs)
                    (viz-state-dest-mouse-posn a-vs)
-                   (viz-state-mouse-pressed a-vs))
+                   (viz-state-mouse-pressed a-vs)
+                   (viz-state-dgraph a-vs))
         (viz-state (viz-state-upimgs a-vs)
                    (viz-state-pimgs a-vs)
                    (viz-state-image-posn a-vs)
                    (viz-state-dest-mouse-posn a-vs)
                    (viz-state-dest-mouse-posn a-vs)
-                   (viz-state-mouse-pressed a-vs))
+                   (viz-state-mouse-pressed a-vs)
+                   (viz-state-dgraph a-vs))
         )
     )
   )
@@ -484,7 +490,13 @@
 ;; viz-state -> img
 ;; Purpose: To render the given viz-state
 (define (draw-world a-vs)
-  (beside E-SCENE-TOOLS  (place-image (first (viz-state-pimgs a-vs))
+  (beside E-SCENE-TOOLS  (place-image (above (first (viz-state-pimgs a-vs))
+                                             (if (equal? "" (first (dgrph-p-rules (viz-state-dgraph a-vs))))
+                                                 (text "" 24 'white)
+                                                 (beside (text "The rule used:" 24 'black)
+                                                         (text (format " ~a" (substring (first (dgrph-p-rules (viz-state-dgraph a-vs))) 0 1)) 24 'orange)
+                                                         (text (format " ~a" (substring (first (dgrph-p-rules (viz-state-dgraph a-vs))) 1)) 24 'violet)
+                                                         )))
                                       (posn-x (viz-state-image-posn a-vs))
                                       (posn-y (viz-state-image-posn a-vs))
                                       E-SCENE)
@@ -508,7 +520,7 @@
               (lod (reverse (create-dgrphs dgraph '())))
               (first-img (create-first-img (first (extract-nodes loe))))
               (imgs (cons first-img (rest (create-graph-imgs lod))))]
-        (run-viz (viz-state (rest imgs) (list (first imgs)) (posn 600 400) (posn 0 0) (posn 0 0) #f)
+        (run-viz (viz-state (rest imgs) (list (first imgs)) (posn 600 400) (posn 0 0) (posn 0 0) #f dgraph)
                  draw-world 'rg-ctm))))
 
 
