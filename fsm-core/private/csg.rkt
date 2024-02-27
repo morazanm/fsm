@@ -126,12 +126,12 @@
     ; generate-table: (listof symbol) (listof symbol) --> (listof (list symb symb))
     #;(define (generate-table nts1 nts2)
         (map (lambda (s) (list s (generate-symbol s nts1))) nts2))
-    (define (generate-table nts1 nts2)
+    (define (generate-table disallowed nts2)
       (if (empty? nts2)
           '()
-          (let ((new-nt (gen-nt nts1)))
+          (let ((new-nt (gen-nt disallowed)))
             (cons (list (first nts2) new-nt)
-                  (generate-table (cons new-nt nts1) (rest nts2))))))
+                  (generate-table (cons new-nt disallowed) (rest nts2))))))
     
     ; update-rls: symb symb (listof rule)->(listof rule)
     (define (update-rls old new lr)
@@ -147,7 +147,7 @@
             [else (generate-new-rls (cdr nts) t (update-rls (car nts) (cadr (assoc (car nts) t)) lrs))]))
     
     (let* ((nts2 (csg-getv csg2))
-           (table (generate-table nts1 nts2))
+           (table (generate-table (append nts1 nts2) nts2))
            (rules (csg-getrules csg2))
            (new-rules (generate-new-rls nts2 table rules))
            (unparsed-new-rules (unparse-csg-rules new-rules))
@@ -174,7 +174,8 @@
     (let* ((newg2 (csg-rename-nts (csg-getv g1) g2))
            (newnts (append (csg-getv g1) (csg-getv newg2)))
            (newsigma (remove-duplicates (append (csg-getsigma g1) (csg-getsigma newg2))))
-           (newS (generate-symbol 'S newnts))
+           (newS (gen-nt newnts)
+                 #;(generate-symbol 'S newnts))
            (newV (cons newS newnts))
            (newR (cons (csg-rule (list newS) (list (csg-getstart g1) (csg-getstart newg2)))
                        (append (csg-getrules g1) (csg-getrules newg2)))))
@@ -190,7 +191,7 @@
   ;                             (csg-getrules g1)))))
   ;      (csg newV newsigma newR newS)))
 
-  (define CSG-an-bn-cn (make-csg '(S A B C G H I) 
+  #;(define CSG-an-bn-cn (make-csg '(S A B C G H I) 
                                  '(a b c) 
                                  `( (S ,ARROW ABCS) (S ,ARROW G)
                                                     (BA ,ARROW AB) (CA ,ARROW AC)
@@ -199,5 +200,23 @@
                                                     (BH ,ARROW Hb) (H ,ARROW I)
                                                     (AI ,ARROW Ia) (I ,ARROW ,EMP)) 
                                  'S))
+
+  (define G1 (make-unchecked-csg '(S) 
+                                 '(a b) 
+                                 (list (list 'S ARROW EMP) 
+                                       (list 'aSb ARROW 'aaSbb) 
+                                       (list 'S ARROW 'aSb)) 
+                                 'S))
+
+  (define G2 (make-unchecked-csg '(S A B C G H I) 
+                                 '(a b c) 
+                                 `( (S -> ABCS) (S -> G)
+                                                (BA -> AB) (CA -> AC) (CB -> BC)
+                                                (CG -> Gc) (G -> H) 
+                                                (BH -> Hb) (H -> I)
+                                                (AI -> Ia) (I -> ,EMP)) 
+                                 'S))
+
+  (define G4 (csg-rename-nts (csg-getv G1) G2))
   
   ) ;;; closes module

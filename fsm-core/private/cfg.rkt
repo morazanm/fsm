@@ -146,7 +146,9 @@
   
   ;cfg-union : cfg cfg -> cfg
   (define (cfg-union g1 g2)
-    (let* ((newg2 (cfg-rename-nts (cfg-get-nts g1) g2))
+    (let* ((newg2 (cfg-rename-nts (append (cfg-get-nts g1)
+                                          (cfg-get-nts g2))
+                                  g2))
            (newnts (append (cfg-get-nts g1) (cfg-get-nts newg2)))
            (newsigma (remove-duplicates (append (cfg-get-alphabet g1) (cfg-get-alphabet newg2))))
            (newS (gen-symbol 'S newnts))
@@ -158,7 +160,9 @@
   
   ;cfg-concatenation: cfg cfg -> cfg
   (define (cfg-concat g1 g2)
-    (let* ((newg2 (cfg-rename-nts (cfg-get-nts g1) g2))
+    (let* ((newg2 (cfg-rename-nts (append (cfg-get-nts g1)
+                                          (cfg-get-nts g2))
+                                  g2))
            (newnts (append (cfg-get-nts g1) (cfg-get-nts newg2)))
            (newsigma (remove-duplicates (append (cfg-get-alphabet g1) (cfg-get-alphabet newg2))))
            (newS (gen-symbol 'S newnts))

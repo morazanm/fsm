@@ -84,7 +84,9 @@
   (define (tm-union m1 m2)
     (cond [(and (eq? (tm-whatami? m1) 'tm-language-recognizer)
                 (eq? (tm-whatami? m2) 'tm-language-recognizer))
-           (let* ((rm2 (tm-rename-states (tm-getstates m2) m2))
+           (let* ((rm2 (tm-rename-states (append (tm-getstates m1)
+                                                 (tm-getstates m2))
+                                         m2))
                   (m1-rules (remove-LM-rule-unparsed-tm-rules (tm-getrules m1)))
                   (rm2-rules (remove-LM-rule-unparsed-tm-rules (tm-getrules rm2)))
                   (new-sigma (remove-duplicates (append (tm-getalphabet m1) (tm-getalphabet rm2))))
@@ -129,7 +131,9 @@
   ; ASSUMPTION: ***** The given tms are language recognizers *****
   ; *** BUG: m1 only reaches Y by seeing a blank the concat machine never reaches m2's start state ***
   (define (tm-concat m1 m2)
-    (let* ((rm2 (tm-rename-states (tm-getstates m2) m2))
+    (let* ((rm2 (tm-rename-states (append (tm-getstates m1)
+                                          (tm-getstates m2))
+                                  m2))
            (m1-reject (tm-getreject m1))
            (m1-rules (remove-LM-rule-unparsed-tm-rules (tm-getrules m1)))
            (rm2-rules (remove-LM-rule-unparsed-tm-rules (tm-getrules rm2)))
