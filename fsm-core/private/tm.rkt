@@ -39,9 +39,18 @@
   
   ; tm (listof states) --> tm
   (define (tm-rename-states sts m)
+
+    (define (generate-rename-table disallowed sts)
+      (if (empty? sts)
+          '()
+          (let ((new-st (gen-state disallowed)))
+            (cons (list (first sts) new-st)
+                  (generate-rename-table (cons new-st disallowed) (rest sts))))))
+    
     (let* (
-           (rename-table (map (lambda (s) (list s (generate-symbol s sts)))
-                              (tm-getstates m)))
+           (rename-table (generate-rename-table (tm-getstates m) (tm-getstates m))
+                         #;(map (lambda (s) (list s (generate-symbol s sts)))
+                                (tm-getstates m)))
            (new-states (map (lambda (s) (cadr (assoc s rename-table)))
                             (tm-getstates m)))
            (new-start (cadr (assoc (tm-getstart m) rename-table)))

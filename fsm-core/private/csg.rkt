@@ -67,7 +67,7 @@
                                   (helper lhs rhs (+ i 1))))]
                        [else (helper lhs rhs (+ i 1))]))]))
       (let ((res (helper (csg-rule-lhs r) (csg-rule-rhs r) i)))
-          res))
+        res))
     
     ; (listof symbol) (listof csg-rule) --> (listof (listof symbol))
     (define (apply-one-step curr rls)
@@ -124,8 +124,14 @@
       (map (lambda (s) (if (eq? s old) new s)) los))
     
     ; generate-table: (listof symbol) (listof symbol) --> (listof (list symb symb))
+    #;(define (generate-table nts1 nts2)
+        (map (lambda (s) (list s (generate-symbol s nts1))) nts2))
     (define (generate-table nts1 nts2)
-      (map (lambda (s) (list s (generate-symbol s nts1))) nts2))
+      (if (empty? nts2)
+          '()
+          (let ((new-nt (gen-nt nts1)))
+            (cons (list (first nts2) new-nt)
+                  (generate-table (cons new-nt nts1) (rest nts2))))))
     
     ; update-rls: symb symb (listof rule)->(listof rule)
     (define (update-rls old new lr)
@@ -174,24 +180,24 @@
                        (append (csg-getrules g1) (csg-getrules newg2)))))
       (csg newV newsigma newR newS)))
 
-;  ;cfg-star: csg -> csg
-;  (define (csg-star g1)
-;    (let* ((newsigma (csg-getsigma g1))
-;           (newS (gen-symbol 'S (csg-getv g1)))
-;           (newV (cons newS (csg-getv g1)))
-;           (newR (cons (csg-rule (list newS) (list EMP))
-;                       (cons (csg-rule (list newS) (list (csg-getstart g1) newS))
-;                             (csg-getrules g1)))))
-;      (csg newV newsigma newR newS)))
+  ;  ;cfg-star: csg -> csg
+  ;  (define (csg-star g1)
+  ;    (let* ((newsigma (csg-getsigma g1))
+  ;           (newS (gen-symbol 'S (csg-getv g1)))
+  ;           (newV (cons newS (csg-getv g1)))
+  ;           (newR (cons (csg-rule (list newS) (list EMP))
+  ;                       (cons (csg-rule (list newS) (list (csg-getstart g1) newS))
+  ;                             (csg-getrules g1)))))
+  ;      (csg newV newsigma newR newS)))
 
   (define CSG-an-bn-cn (make-csg '(S A B C G H I) 
-                               '(a b c) 
-                               `( (S ,ARROW ABCS) (S ,ARROW G)
-                                                  (BA ,ARROW AB) (CA ,ARROW AC)
-                                                  (CB ,ARROW BC)
-                                                  (CG ,ARROW Gc) (G ,ARROW H) 
-                                                  (BH ,ARROW Hb) (H ,ARROW I)
-                                                  (AI ,ARROW Ia) (I ,ARROW ,EMP)) 
-                               'S))
+                                 '(a b c) 
+                                 `( (S ,ARROW ABCS) (S ,ARROW G)
+                                                    (BA ,ARROW AB) (CA ,ARROW AC)
+                                                    (CB ,ARROW BC)
+                                                    (CG ,ARROW Gc) (G ,ARROW H) 
+                                                    (BH ,ARROW Hb) (H ,ARROW I)
+                                                    (AI ,ARROW Ia) (I ,ARROW ,EMP)) 
+                                 'S))
   
   ) ;;; closes module
