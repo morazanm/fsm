@@ -70,6 +70,8 @@
 ;; mouse-pressed - boolean indicating whether the mouse is pressed
 ;; up-dgraph - unprocessed dgraphs
 ;; p-dgraph - processed dgraphs
+;; up-yield - unprocessed yield
+;; p-yield - processed yield
 (struct viz-state (upimgs pimgs image-posn curr-mouse-posn
                           dest-mouse-posn mouse-pressed
                           up-dgraph p-dgraph up-yield p-yield))
@@ -305,76 +307,89 @@
 ;;          backwards, or to the end.
 (define (process-key a-vs a-key)
   (cond [(key=? "right" a-key)
-         (if (empty? (viz-state-upimgs a-vs))
-             a-vs
-             (viz-state (rest (viz-state-upimgs a-vs))
-                        (cons (first (viz-state-upimgs a-vs))
-                              (viz-state-pimgs a-vs))
-                        (viz-state-image-posn a-vs)
-                        (viz-state-curr-mouse-posn a-vs)
-                        (viz-state-dest-mouse-posn a-vs)
-                        (viz-state-mouse-pressed a-vs)
-                        (rest (viz-state-up-dgraph a-vs))
-                        (cons (first (viz-state-up-dgraph a-vs))
-                              (viz-state-p-dgraph a-vs))
-                        (rest (viz-state-up-yield a-vs))
-                        (cons (first (viz-state-up-yield a-vs))
-                              (viz-state-p-yield a-vs))
-                        ))]
-        [(key=? "left" a-key)
-         (if (= (length (viz-state-pimgs a-vs)) 1)
-             a-vs
-             (viz-state (cons (first (viz-state-pimgs a-vs))
-                              (viz-state-upimgs a-vs))
-                        (rest (viz-state-pimgs a-vs))
-                        (viz-state-image-posn a-vs)
-                        (viz-state-curr-mouse-posn a-vs)
-                        (viz-state-dest-mouse-posn a-vs)
-                        (viz-state-mouse-pressed a-vs)
-                        (cons (first (viz-state-p-dgraph a-vs))
-                              (viz-state-up-dgraph a-vs))
-                        (rest (viz-state-p-dgraph a-vs))
-                        (cons (first (viz-state-p-yield a-vs))
-                              (viz-state-up-yield a-vs))
-                        (rest (viz-state-p-yield a-vs))
-                        ))]
-        [(key=? "down" a-key)
-         (if (empty? (viz-state-upimgs a-vs))
-             a-vs
-             (viz-state '()
-                        (append (reverse (viz-state-upimgs a-vs))
+         (let* [(new-up-yield (if (empty? (viz-state-up-yield a-vs))
+                                  '()
+                                  (rest (viz-state-up-yield a-vs))))
+                (new-p-yield (if (empty? (viz-state-up-yield a-vs))
+                                 (viz-state-p-yield a-vs)
+                                 (cons (first (viz-state-up-yield a-vs))
+                                       (viz-state-p-yield a-vs))))
+                ]
+           (if (empty? (viz-state-upimgs a-vs))
+               a-vs
+               (viz-state (rest (viz-state-upimgs a-vs))
+                          (cons (first (viz-state-upimgs a-vs))
                                 (viz-state-pimgs a-vs))
-                        (posn 600 400)
-                        (viz-state-curr-mouse-posn a-vs)
-                        (viz-state-dest-mouse-posn a-vs)
-                        (viz-state-mouse-pressed a-vs)
-                        '()
-                        (append (reverse (viz-state-up-dgraph a-vs))
+                          (viz-state-image-posn a-vs)
+                          (viz-state-curr-mouse-posn a-vs)
+                          (viz-state-dest-mouse-posn a-vs)
+                          (viz-state-mouse-pressed a-vs)
+                          (rest (viz-state-up-dgraph a-vs))
+                          (cons (first (viz-state-up-dgraph a-vs))
                                 (viz-state-p-dgraph a-vs))
-                        '()
-                        (append (reverse (viz-state-up-yield a-vs))
-                                (viz-state-p-yield a-vs))
-                        ))]
+                          new-up-yield
+                          new-p-yield
+                          )))]
+        [(key=? "left" a-key)
+         (let* [(new-up-yield (cons (first (viz-state-p-yield a-vs))
+                                    (viz-state-up-yield a-vs)))
+                (new-p-yield (rest (viz-state-p-yield a-vs)))]
+           (if (= (length (viz-state-pimgs a-vs)) 1)
+               a-vs
+               (viz-state (cons (first (viz-state-pimgs a-vs))
+                                (viz-state-upimgs a-vs))
+                          (rest (viz-state-pimgs a-vs))
+                          (viz-state-image-posn a-vs)
+                          (viz-state-curr-mouse-posn a-vs)
+                          (viz-state-dest-mouse-posn a-vs)
+                          (viz-state-mouse-pressed a-vs)
+                          (cons (first (viz-state-p-dgraph a-vs))
+                                (viz-state-up-dgraph a-vs))
+                          (rest (viz-state-p-dgraph a-vs))
+                          (cons (first (viz-state-p-yield a-vs))
+                                (viz-state-up-yield a-vs))
+                          (rest (viz-state-p-yield a-vs))
+                          )))]
+        [(key=? "down" a-key)
+         (let [(new-p-yield (append (reverse (viz-state-up-yield a-vs))
+                                    (viz-state-p-yield a-vs)))]
+           (if (empty? (viz-state-upimgs a-vs))
+               a-vs
+               (viz-state '()
+                          (append (reverse (viz-state-upimgs a-vs))
+                                  (viz-state-pimgs a-vs))
+                          (posn 625 300)
+                          (viz-state-curr-mouse-posn a-vs)
+                          (viz-state-dest-mouse-posn a-vs)
+                          (viz-state-mouse-pressed a-vs)
+                          '()
+                          (append (reverse (viz-state-up-dgraph a-vs))
+                                  (viz-state-p-dgraph a-vs))
+                          '()
+                          new-p-yield
+                          )))]
         [(key=? "up" a-key)
-         (if (= (length (viz-state-pimgs a-vs)) 1)
-             a-vs
-             (viz-state (rest (append (reverse (viz-state-pimgs a-vs))
-                                      (viz-state-upimgs a-vs)))
-                        (list (first (append (reverse (viz-state-pimgs a-vs))
-                                             (viz-state-upimgs a-vs))))
-                        (posn 600 400)
-                        (viz-state-curr-mouse-posn a-vs)
-                        (viz-state-dest-mouse-posn a-vs)
-                        (viz-state-mouse-pressed a-vs)
-                        (rest (append (reverse (viz-state-p-dgraph a-vs))
-                                      (viz-state-up-dgraph a-vs)))
-                        (list (first (append (reverse (viz-state-p-dgraph a-vs))
-                                             (viz-state-up-dgraph a-vs))))
-                        (rest (append (reverse (viz-state-p-yield a-vs))
-                                      (viz-state-up-yield a-vs)))
-                        (list (first (append (reverse (viz-state-p-yield a-vs))
-                                             (viz-state-up-yield a-vs))))
-                        ))]
+         (let* [(new-up-yield (rest (append (reverse (viz-state-p-yield a-vs))
+                                            (viz-state-up-yield a-vs))))
+                (new-p-yield (list (first (append (reverse (viz-state-p-yield a-vs))
+                                                  (viz-state-up-yield a-vs)))))]
+           (if (= (length (viz-state-pimgs a-vs)) 1)
+               a-vs
+               (viz-state (rest (append (reverse (viz-state-pimgs a-vs))
+                                        (viz-state-upimgs a-vs)))
+                          (list (first (append (reverse (viz-state-pimgs a-vs))
+                                               (viz-state-upimgs a-vs))))
+                          (posn 625 300)
+                          (viz-state-curr-mouse-posn a-vs)
+                          (viz-state-dest-mouse-posn a-vs)
+                          (viz-state-mouse-pressed a-vs)
+                          (rest (append (reverse (viz-state-p-dgraph a-vs))
+                                        (viz-state-up-dgraph a-vs)))
+                          (list (first (append (reverse (viz-state-p-dgraph a-vs))
+                                               (viz-state-up-dgraph a-vs))))
+                          new-up-yield
+                          new-p-yield
+                          )))]
         [else a-vs]))
 
 ;; viz-state int int MouseEvent
@@ -582,7 +597,7 @@
         (run-viz (viz-state (rest imgs) (list (first imgs))
                             (posn 625 300) (posn 0 0) (posn 0 0)
                             #f (rest lod) (list (first lod))
-                            (rest w-der) (first (list w-der)))
+                            (rest w-der) (first w-der))
                  draw-world 'rg-ctm))))
 
 
