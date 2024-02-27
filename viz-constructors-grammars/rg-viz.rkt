@@ -1,14 +1,11 @@
 #lang racket
-(require ;racket/logging
-         "../fsm-gviz/private/lib.rkt" 
+(require "../fsm-gviz/private/lib.rkt" 
          2htdp/universe rackunit
          (rename-in racket/gui/base
                     [make-color loc-make-color]
                     [make-pen loc-make-pen])
          2htdp/image
-         "../fsm-core/interface.rkt"
-         math/matrix
-         math/array)
+         "../fsm-core/interface.rkt")
 
 (define FNAME "fsm")
 
@@ -65,14 +62,17 @@
 ;; viz-state is a structure that has
 ;; upimgs - unprocessed graph images
 ;; pimgs - processed graph images
-(struct viz-state (upimgs pimgs curr-img image-posn scale-factor curr-mouse-posn dest-mouse-posn mouse-pressed))
+(struct viz-state (upimgs pimgs image-posn curr-mouse-posn dest-mouse-posn mouse-pressed))
 
 
 ;; dgrph is a structure that has
 ;; up-levels - unprocessed levels
 ;; ad-levels - levels added to the graph
 ;; nodes - nodes in the graph
-(struct dgrph (up-levels ad-levels nodes hedges))
+;; hedges - highlighted edges of the graph
+;; up-rules - unprocessed grammar rules
+;; p-rules - processed grammar rules
+(struct dgrph (up-levels ad-levels nodes hedges up-rules p-rules))
 
 
 ;; upper?
@@ -106,6 +106,25 @@
                            (last (second wd)))))]
         [else (append (list (map (λ (x) (list (last (first wd)) x)) (take-right (second wd) 2)))
                       (create-edges (rest wd)))]))
+
+
+;; create-rules
+;; (listof symbol) -> (listof string)
+(define (create-rules w-der)
+  (cond [(empty? w-der)
+         '()]
+        [(= 1 (length w-der))
+         '()]
+        [(= 2 (length w-der))
+         (append (list (string-append (symbol->string (last (first w-der)))
+                                      " → "
+                                      (symbol->string (last (second w-der)))))
+                 (create-rules (rest w-der)))]
+        [else (append  (list (string-append (symbol->string (last (first w-der)))
+                                            " → "
+                                            (string-append (first (map symbol->string (take-right (second w-der) 2)))
+                                                           (second (map symbol->string (take-right (second w-der) 2))))))
+                       (create-rules (rest w-der)))]))
 
 ;; rename-edges
 ;; (listof level) -> (listof level)
@@ -184,14 +203,16 @@
 ;; make-node-graph
 ;; graph lon -> graph
 ;; Purpose: To make a node graph
-(define (make-node-graph graph lon hedge-nodes)
+(define (make-node-graph graph lon hedge-nodes yield-node)
   (foldr (λ (state result)
            (add-node
             result
             state
-            #:atb (hash 'color (if (member state hedge-nodes)
-                                   'violet
-                                   'black)
+            #:atb (hash 'color (cond [(member state hedge-nodes)
+                                      'violet]
+                                     [(member state yield-node)
+                                      'orange]
+                                     [else 'black])
                         'shape 'circle
                         'label (string->symbol (string (string-ref (symbol->string state) 0)))
                         'fontcolor 'black
@@ -248,11 +269,21 @@
          (hedges (dgrph-hedges a-dgrph))
          (hedge-nodes (map (λ (x) (if (empty? x)
                                       '()
-                                      (second x))) (dgrph-hedges a-dgrph)))
+                                      (second x))) hedges))
+         (yield-node (map (λ (x) (if (empty? x)
+                                     '()
+                                     (first x))) hedges))
          ]
-    (graph->bitmap (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
-                                                     nodes hedge-nodes) 
-                                    levels hedges))))
+    (above (graph->bitmap (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
+                                                            nodes hedge-nodes yield-node) 
+                                           levels hedges))
+           (square 30 'solid 'white)
+           (if (equal? "" (first (dgrph-p-rules a-dgrph)))
+               (text "" 24 'white)
+               (beside (text "The rule used:" 24 'black)
+                       (text (format " ~a" (substring (first (dgrph-p-rules a-dgrph)) 0 1)) 24 'orange)
+                       (text (format " ~a" (substring (first (dgrph-p-rules a-dgrph)) 1)) 24 'violet)
+                       )))))
 
 
 ;; create-graph-imgs
@@ -263,145 +294,6 @@
       '()
       (cons (create-graph-img (first lod)) (create-graph-imgs (rest lod)))))
 
-;; resize-image :: image -> int -> int -> image
-;; Scales a image to the given dimentions
-(define (resize-image img max-width max-height)
-  (define src-width (image-width img))
-  (define src-height (image-height img))
-  (define aspect (/ src-width src-height))
-  (define scale (min
-                 (/ max-width src-width) ; scale-x
-                 (/ max-height src-height))) ;scale-y
-
-  (define scaled-width (* src-width scale))
-  (define scaled-height (* src-height scale))
-
-  (cond [(and (> scaled-width max-width)
-              (<= scaled-height max-height)
-              )
-         (scale/xy
-          (/ max-width src-width)
-          (/ (/ scaled-width aspect) src-height)
-          img)
-         ]
-        [(and (<= scaled-width max-width)
-              (> scaled-height max-height)
-              )
-         (let ([scaled-aspect (/ scaled-width scaled-height)])
-           (scale/xy
-            (/ (* scaled-height scaled-aspect) src-width)
-            (/ max-height src-height)
-            img)
-           )
-         ]
-        [(and (> scaled-width max-width)
-              (> scaled-height max-height)
-              )
-         (let* (
-                [new-scaled-height (/ max-width aspect)]
-                [scaled-aspect (/ max-width new-scaled-height)]
-                )
-           (scale/xy
-            (/ (* max-height scaled-aspect) src-width)
-            (/ max-height src-height)
-            img)
-           )
-         ]
-        [(and (<= scaled-width max-width)
-              (<= scaled-height max-height)
-              )
-         (scale/xy
-          (/ scaled-width src-width)
-          (/ scaled-height src-height)
-          img)
-         ]
-        )
-  )
-
-(define (make-viz-img img img-posn scale-factor) (beside E-SCENE-TOOLS (place-image (scale scale-factor img)
-                                                                                    (posn-x img-posn)
-                                                                                    (posn-y img-posn)
-                                                                                    E-SCENE))
-  )
-#;(define (make-zoom-out-coord a-vs) (local [
-                                       ;; Determines the movement of the mouse that occured since the last tick
-                                       (define x-diff (* 0.1 (- (- (posn-x (viz-state-curr-mouse-posn a-vs)) 250) 600)))
-                                       (define y-diff (* 0.1 (- (posn-y (viz-state-curr-mouse-posn a-vs)) 400)))
-
-                                       (define new-img-x (- (* 0.9 (posn-x (viz-state-image-posn a-vs))) x-diff))
-                                       (define new-img-y (- (* 0.9 (posn-y (viz-state-image-posn a-vs))) y-diff))
-                                       ]
-                                 (posn new-img-x new-img-y)
-                                 )
-  )
-(define (make-zoom-out-coord a-vs) (local [
-                                       ;; Determines the movement of the mouse that occured since the last tick
-                                       (define x-diff (* 0.1 (- (posn-x (viz-state-curr-mouse-posn a-vs)) 250)))
-                                       (define y-diff (* 0.1 (posn-y (viz-state-curr-mouse-posn a-vs))))
-                                       (define new-img-x (- (* 0.9 (posn-x (viz-state-image-posn a-vs))) x-diff))
-                                       (define new-img-y (- (* 0.9 (posn-y (viz-state-image-posn a-vs)))  y-diff))
-                                       ]
-                                 (posn new-img-x new-img-y)
-                                 )
-  )
-(define (make-zoom-in-coord a-vs) (local [
-                                       ;; Determines the movement of the mouse that occured since the last tick
-                                       (define x-diff (* 0.1 (- (posn-x (viz-state-curr-mouse-posn a-vs)) 250)))
-                                       (define y-diff (* 0.1 (posn-y (viz-state-curr-mouse-posn a-vs))))
-
-                                       (define new-img-x (-  (* 1.1 (posn-x (viz-state-image-posn a-vs))) x-diff))
-                                       (define new-img-y (-  (* 1.1 (posn-y (viz-state-image-posn a-vs))) y-diff))
-                                       ]
-                                 (posn new-img-x new-img-y)
-                                 )
-  )
-
-(define (zoom-again a-vs scale-diff) (local [
-                                             (define first-translate (matrix
-                                                                      [
-                                                                       [1 0 (- (posn-x (viz-state-curr-mouse-posn a-vs)) 600)]
-                                                                       [0 1 (- (posn-y (viz-state-curr-mouse-posn a-vs)) 400)]
-                                                                       [0 0 1]
-                                                                       ]
-                                                                      )
-                                               )
-                                             (define first-scale (matrix
-                                                                  [
-                                                                   [scale-diff 0 0]
-                                                                   [0 scale-diff 0]
-                                                                   [0 0 1]
-                                                                   ]
-                                                                  )
-                                               )
-                                             (define second-translate (matrix
-                                                                       [
-                                                                        [1 0 (* -1 (- (posn-x (viz-state-curr-mouse-posn a-vs)) 600))]
-                                                                        [0 1 (* -1 (- (posn-y (viz-state-curr-mouse-posn a-vs)) 600))]
-                                                                        [0 0 1]
-                                                                        ]
-                                                                       )
-                                               )
-                                             (define final-result (matrix* (matrix* (matrix* first-translate first-scale) second-translate) (matrix [
-                                                                                                                                                     [(- (posn-x (viz-state-image-posn a-vs)) 600)]
-                                                                                                                                                     [(- (posn-y (viz-state-image-posn a-vs)) 400)]
-                                                                                                                                                     [1]
-                                                                                                                                                     ]
-                                                                                                                                                    )
-                                                                           )
-                                               )
-                                             ]
-                                       #;(begin (println (format "~s ~s" (posn-x second-translate) (posn-y second-translate)))
-                                              (println (format "~s" scale-diff))
-                                              (println (format "~s ~s" (posn-x (viz-state-image-posn a-vs)) (posn-y (viz-state-image-posn a-vs))))
-                                              (println (format "~s ~s" (posn-x (viz-state-curr-mouse-posn a-vs)) (posn-y (viz-state-curr-mouse-posn a-vs))))
-                                              second-translate
-                                              )
-                                       (begin ;(println (format "~s" (matrix* (matrix* first-translate first-scale) second-translate)))
-                                              (println (format "~s" (viz-state-scale-factor a-vs)))
-                                              (posn (+ (matrix-ref final-result 0 0) 10) (matrix-ref final-result 1 0))
-                                              )
-                                       )
-  )
 ;; TODO fix these hard coded center points
 ;; process-key
 ;; viz-state key --> viz-state
@@ -411,100 +303,49 @@
   (cond [(key=? "right" a-key)
          (if (empty? (viz-state-upimgs a-vs))
              a-vs
-             (let ([new-pimgs (cons (first (viz-state-upimgs a-vs))
-                              (viz-state-pimgs a-vs))])
-               (viz-state (rest (viz-state-upimgs a-vs))
-                          new-pimgs
-                          (make-viz-img (first new-pimgs) (posn 600 400) 1)
-                          (posn 600 400)
-                          1
-                          (viz-state-curr-mouse-posn a-vs)
-                          (viz-state-dest-mouse-posn a-vs)
-                          (viz-state-mouse-pressed a-vs)
-                          ))
-             )]
+             (viz-state (rest (viz-state-upimgs a-vs))
+                        (cons (first (viz-state-upimgs a-vs))
+                              (viz-state-pimgs a-vs))
+                        (viz-state-image-posn a-vs)
+                        (viz-state-curr-mouse-posn a-vs)
+                        (viz-state-dest-mouse-posn a-vs)
+                        (viz-state-mouse-pressed a-vs)
+                        ))]
         [(key=? "left" a-key)
          (if (= (length (viz-state-pimgs a-vs)) 1)
              a-vs
-             (let ([new-pimgs (rest (viz-state-pimgs a-vs))])
-                    (viz-state (cons (first (viz-state-pimgs a-vs))
+             (viz-state (cons (first (viz-state-pimgs a-vs))
                               (viz-state-upimgs a-vs))
-                        new-pimgs
-                        (make-viz-img (first new-pimgs) (posn 600 400) 1)
-                        (posn 600 400)
-                        1
+                        (rest (viz-state-pimgs a-vs))
+                        (viz-state-image-posn a-vs)
                         (viz-state-curr-mouse-posn a-vs)
                         (viz-state-dest-mouse-posn a-vs)
                         (viz-state-mouse-pressed a-vs)
-                        ))
-             )]
+                        ))]
         [(key=? "down" a-key)
          (if (empty? (viz-state-upimgs a-vs))
              a-vs
-             (let ([new-pimgs (append (reverse (viz-state-upimgs a-vs))
-                                (viz-state-pimgs a-vs))])
-                    (viz-state '()
-                               new-pimgs
-                               (make-viz-img (first new-pimgs) (posn 600 400) 1)
-                               (posn 600 400)
-                               1
-                               (viz-state-curr-mouse-posn a-vs)
-                               (viz-state-dest-mouse-posn a-vs)
-                               (viz-state-mouse-pressed a-vs)
-                               )
-               )
-             )]
-        [(key=? "up" a-key)
-         (if (= (length (viz-state-pimgs a-vs)) 1)
-             a-vs
-             (let ([new-pimgs (list (first (append (reverse (viz-state-pimgs a-vs))
-                                             (viz-state-upimgs a-vs))))])
-                    (viz-state (rest (append (reverse (viz-state-pimgs a-vs))
-                                      (viz-state-upimgs a-vs)))
-                        new-pimgs
-                        (make-viz-img (first new-pimgs) (posn 600 400) 1)
+             (viz-state '()
+                        (append (reverse (viz-state-upimgs a-vs))
+                                (viz-state-pimgs a-vs))
                         (posn 600 400)
-                        1
                         (viz-state-curr-mouse-posn a-vs)
                         (viz-state-dest-mouse-posn a-vs)
                         (viz-state-mouse-pressed a-vs)
-                        )
-               )
-             )]
-        [(key=? "w" a-key)
-         (viz-state (viz-state-upimgs a-vs)
-                    (viz-state-pimgs a-vs)
-                    (make-viz-img (first (viz-state-pimgs a-vs))
-                                  #;(zoom-again a-vs (+ 1 (- (* (viz-state-scale-factor a-vs) 1.1) (viz-state-scale-factor a-vs))))
-                                  (let ([zoom-posn (zoom-again a-vs (/ (- (* (viz-state-scale-factor a-vs) 1.025) (viz-state-scale-factor a-vs)) (viz-state-scale-factor a-vs) ))])
-                                    (posn (+ 600 (posn-x zoom-posn)) (+ (posn-y zoom-posn) 400))
-                                    )
-                                  (* (viz-state-scale-factor a-vs) 1.1)
-                                  )
-                    (let ([zoom-posn (zoom-again a-vs (/ (- (* (viz-state-scale-factor a-vs) 1.025) (viz-state-scale-factor a-vs)) (viz-state-scale-factor a-vs) ))])
-                                    (posn (+ 600 (posn-x zoom-posn)) (+ (posn-y zoom-posn) 400))
-                                    )
-                    #;(zoom-again a-vs (+ 1 (- (* (viz-state-scale-factor a-vs) 1.1) (viz-state-scale-factor a-vs))))
-                    (* (viz-state-scale-factor a-vs) 1.1)
-                    (viz-state-curr-mouse-posn a-vs)
-                    (viz-state-dest-mouse-posn a-vs)
-                    (viz-state-mouse-pressed a-vs)
-                    )
-         ]
-        [(key=? "s" a-key)
-         (viz-state (viz-state-upimgs a-vs)
-                    (viz-state-pimgs a-vs)
-                    (make-viz-img (first (viz-state-pimgs a-vs)) (make-zoom-out-coord a-vs) (* (viz-state-scale-factor a-vs) 0.9))
-                    (make-zoom-out-coord a-vs)
-                    (* (viz-state-scale-factor a-vs) 0.9)
-                    (viz-state-curr-mouse-posn a-vs)
-                    (viz-state-dest-mouse-posn a-vs)
-                    (viz-state-mouse-pressed a-vs)
-                    )
-         ]
-        [else a-vs]
-        )
-  )
+                        ))]
+        [(key=? "up" a-key)
+         (if (= (length (viz-state-pimgs a-vs)) 1)
+             a-vs
+             (viz-state (rest (append (reverse (viz-state-pimgs a-vs))
+                                      (viz-state-upimgs a-vs)))
+                        (list (first (append (reverse (viz-state-pimgs a-vs))
+                                             (viz-state-upimgs a-vs))))
+                        (posn 600 400)
+                        (viz-state-curr-mouse-posn a-vs)
+                        (viz-state-dest-mouse-posn a-vs)
+                        (viz-state-mouse-pressed a-vs)
+                        ))]
+        [else a-vs]))
 
 ;; viz-state int int MouseEvent
 ;; Updates viz-state as to whether the mouse is currently being pressed while on the visualization
@@ -512,9 +353,7 @@
   (cond [(string=? mouse-event "button-down")
          (viz-state (viz-state-upimgs a-vs)
                     (viz-state-pimgs a-vs)
-                    (viz-state-curr-img a-vs)
                     (viz-state-image-posn a-vs)
-                    (viz-state-scale-factor a-vs)
                     (viz-state-curr-mouse-posn a-vs)
                     (posn x y)
                     #t)
@@ -522,9 +361,7 @@
         [(string=? mouse-event "button-up")
          (viz-state (viz-state-upimgs a-vs)
                     (viz-state-pimgs a-vs)
-                    (viz-state-curr-img a-vs)
                     (viz-state-image-posn a-vs)
-                    (viz-state-scale-factor a-vs)
                     (viz-state-curr-mouse-posn a-vs)
                     (posn x y)
                     #f)
@@ -533,9 +370,7 @@
         [(string=? mouse-event "drag")
          (viz-state (viz-state-upimgs a-vs)
                     (viz-state-pimgs a-vs)
-                    (viz-state-curr-img a-vs)
                     (viz-state-image-posn a-vs)
-                    (viz-state-scale-factor a-vs)
                     (viz-state-curr-mouse-posn a-vs)
                     (posn x y)
                     #t)
@@ -545,9 +380,7 @@
         [(string=? mouse-event "move")
          (viz-state (viz-state-upimgs a-vs)
                     (viz-state-pimgs a-vs)
-                    (viz-state-curr-img a-vs)
                     (viz-state-image-posn a-vs)
-                    (viz-state-scale-factor a-vs)
                     (viz-state-curr-mouse-posn a-vs)
                     (posn x y)
                     (viz-state-mouse-pressed a-vs)
@@ -558,9 +391,7 @@
         [(string=? mouse-event "enter")
          (viz-state (viz-state-upimgs a-vs)
                     (viz-state-pimgs a-vs)
-                    (viz-state-curr-img a-vs)
                     (viz-state-image-posn a-vs)
-                    (viz-state-scale-factor a-vs)
                     (viz-state-curr-mouse-posn a-vs)
                     (posn x y)
                     (viz-state-mouse-pressed a-vs)
@@ -571,9 +402,7 @@
         [(string=? mouse-event "leave")
          (viz-state (viz-state-upimgs a-vs)
                     (viz-state-pimgs a-vs)
-                    (viz-state-curr-img a-vs)
                     (viz-state-image-posn a-vs)
-                    (viz-state-scale-factor a-vs)
                     (viz-state-curr-mouse-posn a-vs)
                     (posn x y)
                     #f)
@@ -596,17 +425,14 @@
     (if (viz-state-mouse-pressed a-vs)
         (viz-state (viz-state-upimgs a-vs)
                    (viz-state-pimgs a-vs)
-                   (make-viz-img (first (viz-state-pimgs a-vs)) (posn new-img-x new-img-y) (viz-state-scale-factor a-vs))
+                   ;; New image position
                    (posn new-img-x new-img-y)
-                   (viz-state-scale-factor a-vs)
                    (viz-state-dest-mouse-posn a-vs)
                    (viz-state-dest-mouse-posn a-vs)
                    (viz-state-mouse-pressed a-vs))
         (viz-state (viz-state-upimgs a-vs)
                    (viz-state-pimgs a-vs)
-                   (viz-state-curr-img a-vs)
                    (viz-state-image-posn a-vs)
-                   (viz-state-scale-factor a-vs)
                    (viz-state-dest-mouse-posn a-vs)
                    (viz-state-dest-mouse-posn a-vs)
                    (viz-state-mouse-pressed a-vs))
@@ -625,12 +451,17 @@
                                   (dgrph-ad-levels a-dgrph)))
              (new-nodes (extract-nodes new-ad-levels))
              (new-hedges (first (dgrph-up-levels a-dgrph)))
+             (new-up-rules (rest (dgrph-up-rules a-dgrph)))
+             (new-p-rules (cons (first (dgrph-up-rules a-dgrph))
+                                (dgrph-p-rules a-dgrph)))
              ]
         (create-dgrphs
          (dgrph new-up-levels                      
                 new-ad-levels
                 new-nodes
                 new-hedges
+                new-up-rules
+                new-p-rules
                 )
          (cons a-dgrph lod))
         )))
@@ -652,12 +483,12 @@
 ;; draw-world
 ;; viz-state -> img
 ;; Purpose: To render the given viz-state
-(define (draw-world a-vs) (viz-state-curr-img a-vs))
-#;(define (draw-world a-vs)
-  (beside E-SCENE-TOOLS (place-image (first (viz-state-pimgs a-vs))
-                                     (posn-x (viz-state-image-posn a-vs))
-                                     (posn-y (viz-state-image-posn a-vs))
-                                     E-SCENE)))
+(define (draw-world a-vs)
+  (beside E-SCENE-TOOLS  (place-image (first (viz-state-pimgs a-vs))
+                                      (posn-x (viz-state-image-posn a-vs))
+                                      (posn-y (viz-state-image-posn a-vs))
+                                      E-SCENE)
+          ))
 
          
 ;; rg-viz
@@ -665,28 +496,19 @@
 (define (rg-viz rg word)
   (if (string? (grammar-derive rg word))
       (grammar-derive rg word)
-      (let* [ (w-der (map symbol->fsmlos  (filter (λ (x) (not (equal? x '->)))
-                                                  (grammar-derive rg word))))
+      (let* [ (w-der (map symbol->fsmlos (filter (λ (x) (not (equal? x '->)))
+                                                 (grammar-derive rg word))))
+              (rules (cons "" (create-rules w-der)))
               (extracted-edges (create-edges w-der))
               (renamed (rename-nodes (rename-edges extracted-edges)))
               (loe (map (λ (el) (if (symbol? (first el))
                                     (list el '())
                                     el)) renamed))
-              (dgraph (dgrph loe '() '() '()))
+              (dgraph (dgrph loe '() '() '() (rest rules) (list (first rules))))
               (lod (reverse (create-dgrphs dgraph '())))
               (first-img (create-first-img (first (extract-nodes loe))))
               (imgs (cons first-img (rest (create-graph-imgs lod))))]
-        (run-viz (viz-state (rest imgs)
-                            (list (first imgs))
-                            (beside E-SCENE-TOOLS (place-image (first imgs)
-                                                               600
-                                                               400
-                                                               E-SCENE))
-                            (posn 600 400)
-                            1
-                            (posn 0 0)
-                            (posn 0 0)
-                            #f)
+        (run-viz (viz-state (rest imgs) (list (first imgs)) (posn 600 400) (posn 0 0) (posn 0 0) #f)
                  draw-world 'rg-ctm))))
 
 
@@ -705,7 +527,7 @@
 
 
 
-; (rg-viz even-bs-odd-as '(a a a a a b b b b a a a a a a))
+
 
 
 
