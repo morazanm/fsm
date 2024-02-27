@@ -64,6 +64,12 @@
 ;; viz-state is a structure that has
 ;; upimgs - unprocessed graph images
 ;; pimgs - processed graph images
+;; image-posn - position of the graph image
+;; curr-mouse-posn - position of the mouse
+;; dest-mouse-posn - position where the mouse is dragged
+;; mouse-pressed - boolean indicating whether the mouse is pressed
+;; up-dgraph - unprocessed dgraphs
+;; p-dgraph - processed dgraphs
 (struct viz-state (upimgs pimgs image-posn curr-mouse-posn
                           dest-mouse-posn mouse-pressed
                           up-dgraph p-dgraph))
