@@ -72,7 +72,7 @@
 ;; p-dgraph - processed dgraphs
 (struct viz-state (upimgs pimgs image-posn curr-mouse-posn
                           dest-mouse-posn mouse-pressed
-                          up-dgraph p-dgraph))
+                          up-dgraph p-dgraph up-yield p-yield))
 
 
 ;; dgrph is a structure that has
@@ -317,6 +317,9 @@
                         (rest (viz-state-up-dgraph a-vs))
                         (cons (first (viz-state-up-dgraph a-vs))
                               (viz-state-p-dgraph a-vs))
+                        (rest (viz-state-up-yield a-vs))
+                        (cons (first (viz-state-up-yield a-vs))
+                              (viz-state-p-yield a-vs))
                         ))]
         [(key=? "left" a-key)
          (if (= (length (viz-state-pimgs a-vs)) 1)
@@ -331,6 +334,9 @@
                         (cons (first (viz-state-p-dgraph a-vs))
                               (viz-state-up-dgraph a-vs))
                         (rest (viz-state-p-dgraph a-vs))
+                        (cons (first (viz-state-p-yield a-vs))
+                              (viz-state-up-yield a-vs))
+                        (rest (viz-state-p-yield a-vs))
                         ))]
         [(key=? "down" a-key)
          (if (empty? (viz-state-upimgs a-vs))
@@ -345,6 +351,9 @@
                         '()
                         (append (reverse (viz-state-up-dgraph a-vs))
                                 (viz-state-p-dgraph a-vs))
+                        '()
+                        (append (reverse (viz-state-up-yield a-vs))
+                                (viz-state-p-yield a-vs))
                         ))]
         [(key=? "up" a-key)
          (if (= (length (viz-state-pimgs a-vs)) 1)
@@ -361,6 +370,10 @@
                                       (viz-state-up-dgraph a-vs)))
                         (list (first (append (reverse (viz-state-p-dgraph a-vs))
                                              (viz-state-up-dgraph a-vs))))
+                        (rest (append (reverse (viz-state-p-yield a-vs))
+                                      (viz-state-up-yield a-vs)))
+                        (list (first (append (reverse (viz-state-p-yield a-vs))
+                                             (viz-state-up-yield a-vs))))
                         ))]
         [else a-vs]))
 
@@ -375,7 +388,9 @@
                     (posn x y)
                     #t
                     (viz-state-up-dgraph a-vs)
-                    (viz-state-p-dgraph a-vs))
+                    (viz-state-p-dgraph a-vs)
+                    (viz-state-up-yield a-vs)
+                    (viz-state-p-yield a-vs))
          ]
         [(string=? mouse-event "button-up")
          (viz-state (viz-state-upimgs a-vs)
@@ -385,7 +400,9 @@
                     (posn x y)
                     #f
                     (viz-state-up-dgraph a-vs)
-                    (viz-state-p-dgraph a-vs))
+                    (viz-state-p-dgraph a-vs)
+                    (viz-state-up-yield a-vs)
+                    (viz-state-p-yield a-vs))
          ]
         ;; Want to keep the mouse updating while it is being dragged
         [(string=? mouse-event "drag")
@@ -396,7 +413,9 @@
                     (posn x y)
                     #t
                     (viz-state-up-dgraph a-vs)
-                    (viz-state-p-dgraph a-vs))
+                    (viz-state-p-dgraph a-vs)
+                    (viz-state-up-yield a-vs)
+                    (viz-state-p-yield a-vs))
          ]
                                                    
         ;; Can happen in both clicked and unclicked states so leave it in whatever it was
@@ -409,6 +428,8 @@
                     (viz-state-mouse-pressed a-vs)
                     (viz-state-up-dgraph a-vs)
                     (viz-state-p-dgraph a-vs)
+                    (viz-state-up-yield a-vs)
+                    (viz-state-p-yield a-vs)
                     )
          ]
 
@@ -422,6 +443,8 @@
                     (viz-state-mouse-pressed a-vs)
                     (viz-state-up-dgraph a-vs)
                     (viz-state-p-dgraph a-vs)
+                    (viz-state-up-yield a-vs)
+                    (viz-state-p-yield a-vs)
                     )
          ]
 
@@ -434,7 +457,9 @@
                     (posn x y)
                     #f
                     (viz-state-up-dgraph a-vs)
-                    (viz-state-p-dgraph a-vs))
+                    (viz-state-p-dgraph a-vs)
+                    (viz-state-up-yield a-vs)
+                    (viz-state-p-yield a-vs))
          ]
         [else a-vs]
         )
@@ -460,7 +485,9 @@
                    (viz-state-dest-mouse-posn a-vs)
                    (viz-state-mouse-pressed a-vs)
                    (viz-state-up-dgraph a-vs)
-                   (viz-state-p-dgraph a-vs))
+                   (viz-state-p-dgraph a-vs)
+                   (viz-state-up-yield a-vs)
+                   (viz-state-p-yield a-vs))
         (viz-state (viz-state-upimgs a-vs)
                    (viz-state-pimgs a-vs)
                    (viz-state-image-posn a-vs)
@@ -468,7 +495,9 @@
                    (viz-state-dest-mouse-posn a-vs)
                    (viz-state-mouse-pressed a-vs)
                    (viz-state-up-dgraph a-vs)
-                   (viz-state-p-dgraph a-vs))
+                   (viz-state-p-dgraph a-vs)
+                   (viz-state-up-yield a-vs)
+                   (viz-state-p-yield a-vs))
         )
     )
   )
@@ -521,13 +550,14 @@
                       (posn-x (viz-state-image-posn a-vs))
                       (posn-y (viz-state-image-posn a-vs))
                       E-SCENE)
-         (overlay (if (equal? "" (first (dgrph-p-rules (first (viz-state-p-dgraph a-vs)))))
-                      (text "" 24 'white)
-                      (beside (text "The rule used:" 24 'black)
-                              (text (format " ~a" (substring (first (dgrph-p-rules (first (viz-state-p-dgraph a-vs)))) 0 1)) 24 'orange)
-                              (text (format " ~a" (substring (first (dgrph-p-rules (first (viz-state-p-dgraph a-vs)))) 1)) 24 'violet)
-                              ))
-                  (empty-scene 1250 70))
+         (overlay (above (if (equal? "" (first (dgrph-p-rules (first (viz-state-p-dgraph a-vs)))))
+                             (text "" 24 'white)
+                             (beside (text "The rule used:" 24 'black)
+                                     (text (format " ~a" (substring (first (dgrph-p-rules (first (viz-state-p-dgraph a-vs)))) 0 1)) 24 'orange)
+                                     (text (format " ~a" (substring (first (dgrph-p-rules (first (viz-state-p-dgraph a-vs)))) 1)) 24 'violet)
+                                     ))
+                         (text (format "Current yield: ~a" (first (viz-state-p-yield a-vs))) 24 'black))
+                  (empty-scene 1250 100))
          E-SCENE-TOOLS))
 
          
@@ -547,8 +577,12 @@
               (dgraph (dgrph loe '() '() '() (rest rules) (list (first rules))))
               (lod (reverse (create-dgrphs dgraph '())))
               (first-img (create-first-img (first (extract-nodes loe))))
-              (imgs (cons first-img (rest (create-graph-imgs lod))))]
-        (run-viz (viz-state (rest imgs) (list (first imgs)) (posn 600 400) (posn 0 0) (posn 0 0) #f (rest lod) (list (first lod)))
+              (imgs (cons first-img (rest (create-graph-imgs lod))))
+              ]
+        (run-viz (viz-state (rest imgs) (list (first imgs))
+                            (posn 625 300) (posn 0 0) (posn 0 0)
+                            #f (rest lod) (list (first lod))
+                            (rest w-der) (first (list w-der)))
                  draw-world 'rg-ctm))))
 
 
