@@ -433,9 +433,16 @@
   
   ; pda --> pda
   (define (rename-states-pda los m)
+    
+    (define (generate-rename-table disallowed sts)
+      (if (empty? sts)
+          '()
+          (let ((new-st (gen-state disallowed)))
+            (cons (list (first sts) new-st)
+                  (generate-rename-table (cons new-st disallowed) (rest sts))))))
+    
     (let* ((sts (pda-getstates m))
-           (rename-table (map (lambda (s) (list s (generate-symbol s los)))
-                              sts))
+           (rename-table (generate-rename-table sts sts))
            (new-states (map (lambda (s) (cadr (assoc s rename-table))) sts))
            (new-start (cadr (assoc (pda-getstart m) rename-table)))
            (new-finals (map (lambda (s) (cadr (assoc s rename-table))) (pda-getfinals m)))

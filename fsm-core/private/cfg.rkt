@@ -196,7 +196,8 @@
     (define (cfg-update-rule nt1 nt2 rls2 newnt2 newS)      
       (cond [(null? nt2) (list newnt2 rls2 newS)]
             [(member (car nt2) nt1) 
-             (let* ((newsym (gen-symbol (car nt2) (append nt1 nt2 newnt2 (list newS))))
+             (let* ((newsym (gen-nt (append nt1 nt2 newnt2 (list newS)))
+                            #;(gen-symbol (car nt2) (append nt1 nt2 newnt2 (list newS))))
                     (newrls2 (update-rl (car nt2) newsym rls2)))
                (cfg-update-rule nt1 (cdr nt2) newrls2 (cons newsym newnt2) (if (eq? (car nt2) newS) newsym newS)))]
             [else (cfg-update-rule nt1 (cdr nt2) rls2 (cons (car nt2) newnt2) newS)]))

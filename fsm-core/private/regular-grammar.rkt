@@ -87,7 +87,12 @@
   ; rg-rename-nts : (listof symbol) rg -> rg       
   (define (rg-rename-nts nts1 g2)
     (define (generate-table nts1 nts2)
-      (map (lambda (s) (list s (generate-symbol s nts1))) nts2))
+      (if (empty? nts2)
+          '()
+          (let ((new-nt (gen-nt nts1)))
+            (cons (list (first nts2) new-nt)
+                  (generate-table (cons new-nt nts1) (rest nts2)))))
+      #;(map (lambda (s) (list s (generate-symbol s nts1))) nts2))
     
     (define (update-rg-rule rule table)
       (cond [(erule? rule) (erule (cadr (assoc (erule-lhs rule) table)))]
