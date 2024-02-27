@@ -29,29 +29,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define E-SCENE (empty-scene 1200 800))
+(define E-SCENE (empty-scene 1250 600))
 
-(define E-SCENE-TOOLS (overlay (above (above (above (triangle 30 'solid 'black)
-                                                    (rectangle 10 30 'solid 'black))
-                                             (square 20 'solid 'white)
-                                             (text "Restart the visualization" 18 'black))
-                                      (square 40 'solid 'white)
-                                      (above (beside (rectangle 30 10 'solid 'black)
-                                                     (rotate 270 (triangle 30 'solid 'black)))
-                                             (square 20 'solid 'white)
-                                             (text "Move one step forward" 18 'black))
-                                      (square 40 'solid 'white)
-                                      (above (beside (rotate 90 (triangle 30 'solid 'black))
-                                                     (rectangle 30 10 'solid 'black))
-                                             (square 20 'solid 'white)
-                                             (text "Move one step backward" 18 'black))
-                                      (square 40 'solid 'white)
-                                      (above (above (rectangle 10 30 'solid 'black)
-                                                    (rotate 180 (triangle 30 'solid 'black)))
-                                             (square 20 'solid 'white)
-                                             (text "Complete the visualization" 18 'black))
-                                      )
-                               (empty-scene 250 800)))
+(define E-SCENE-TOOLS (overlay (beside (above (above (triangle 30 'solid 'black)
+                                                     (rectangle 10 30 'solid 'black))
+                                              (square 20 'solid 'white)
+                                              (text "Restart the visualization" 18 'black))
+                                       (square 40 'solid 'white)
+                                       (above (beside (rectangle 30 10 'solid 'black)
+                                                      (rotate 270 (triangle 30 'solid 'black)))
+                                              (square 20 'solid 'white)
+                                              (text "Move one step forward" 18 'black))
+                                       (square 40 'solid 'white)
+                                       (above (beside (rotate 90 (triangle 30 'solid 'black))
+                                                      (rectangle 30 10 'solid 'black))
+                                              (square 20 'solid 'white)
+                                              (text "Move one step backward" 18 'black))
+                                       (square 40 'solid 'white)
+                                       (above (above (rectangle 10 30 'solid 'black)
+                                                     (rotate 180 (triangle 30 'solid 'black)))
+                                              (square 20 'solid 'white)
+                                              (text "Complete the visualization" 18 'black))
+                                       (square 40 'solid 'white)
+                                       
+                                       )
+                               (empty-scene 1250 100)))
 
 ;; posn is a structure that has
 ;; x coordinate
@@ -62,7 +64,9 @@
 ;; viz-state is a structure that has
 ;; upimgs - unprocessed graph images
 ;; pimgs - processed graph images
-(struct viz-state (upimgs pimgs image-posn curr-mouse-posn dest-mouse-posn mouse-pressed dgraph))
+(struct viz-state (upimgs pimgs image-posn curr-mouse-posn
+                          dest-mouse-posn mouse-pressed
+                          up-dgraph p-dgraph))
 
 
 ;; dgrph is a structure that has
@@ -304,7 +308,9 @@
                         (viz-state-curr-mouse-posn a-vs)
                         (viz-state-dest-mouse-posn a-vs)
                         (viz-state-mouse-pressed a-vs)
-                        (viz-state-dgraph a-vs)
+                        (rest (viz-state-up-dgraph a-vs))
+                        (cons (first (viz-state-up-dgraph a-vs))
+                              (viz-state-p-dgraph a-vs))
                         ))]
         [(key=? "left" a-key)
          (if (= (length (viz-state-pimgs a-vs)) 1)
@@ -316,7 +322,9 @@
                         (viz-state-curr-mouse-posn a-vs)
                         (viz-state-dest-mouse-posn a-vs)
                         (viz-state-mouse-pressed a-vs)
-                        (viz-state-dgraph a-vs)
+                        (cons (first (viz-state-p-dgraph a-vs))
+                              (viz-state-up-dgraph a-vs))
+                        (rest (viz-state-p-dgraph a-vs))
                         ))]
         [(key=? "down" a-key)
          (if (empty? (viz-state-upimgs a-vs))
@@ -328,7 +336,9 @@
                         (viz-state-curr-mouse-posn a-vs)
                         (viz-state-dest-mouse-posn a-vs)
                         (viz-state-mouse-pressed a-vs)
-                        (viz-state-dgraph a-vs)
+                        '()
+                        (append (reverse (viz-state-up-dgraph a-vs))
+                                (viz-state-p-dgraph a-vs))
                         ))]
         [(key=? "up" a-key)
          (if (= (length (viz-state-pimgs a-vs)) 1)
@@ -341,7 +351,10 @@
                         (viz-state-curr-mouse-posn a-vs)
                         (viz-state-dest-mouse-posn a-vs)
                         (viz-state-mouse-pressed a-vs)
-                        (viz-state-dgraph a-vs)
+                        (rest (append (reverse (viz-state-p-dgraph a-vs))
+                                      (viz-state-up-dgraph a-vs)))
+                        (list (first (append (reverse (viz-state-p-dgraph a-vs))
+                                             (viz-state-up-dgraph a-vs))))
                         ))]
         [else a-vs]))
 
@@ -355,7 +368,8 @@
                     (viz-state-curr-mouse-posn a-vs)
                     (posn x y)
                     #t
-                    (viz-state-dgraph a-vs))
+                    (viz-state-up-dgraph a-vs)
+                    (viz-state-p-dgraph a-vs))
          ]
         [(string=? mouse-event "button-up")
          (viz-state (viz-state-upimgs a-vs)
@@ -364,7 +378,8 @@
                     (viz-state-curr-mouse-posn a-vs)
                     (posn x y)
                     #f
-                    (viz-state-dgraph a-vs))
+                    (viz-state-up-dgraph a-vs)
+                    (viz-state-p-dgraph a-vs))
          ]
         ;; Want to keep the mouse updating while it is being dragged
         [(string=? mouse-event "drag")
@@ -374,7 +389,8 @@
                     (viz-state-curr-mouse-posn a-vs)
                     (posn x y)
                     #t
-                    (viz-state-dgraph a-vs))
+                    (viz-state-up-dgraph a-vs)
+                    (viz-state-p-dgraph a-vs))
          ]
                                                    
         ;; Can happen in both clicked and unclicked states so leave it in whatever it was
@@ -385,7 +401,8 @@
                     (viz-state-curr-mouse-posn a-vs)
                     (posn x y)
                     (viz-state-mouse-pressed a-vs)
-                    (viz-state-dgraph a-vs)
+                    (viz-state-up-dgraph a-vs)
+                    (viz-state-p-dgraph a-vs)
                     )
          ]
 
@@ -397,7 +414,8 @@
                     (viz-state-curr-mouse-posn a-vs)
                     (posn x y)
                     (viz-state-mouse-pressed a-vs)
-                    (viz-state-dgraph a-vs)
+                    (viz-state-up-dgraph a-vs)
+                    (viz-state-p-dgraph a-vs)
                     )
          ]
 
@@ -409,7 +427,8 @@
                     (viz-state-curr-mouse-posn a-vs)
                     (posn x y)
                     #f
-                    (viz-state-dgraph a-vs))
+                    (viz-state-up-dgraph a-vs)
+                    (viz-state-p-dgraph a-vs))
          ]
         [else a-vs]
         )
@@ -434,14 +453,16 @@
                    (viz-state-dest-mouse-posn a-vs)
                    (viz-state-dest-mouse-posn a-vs)
                    (viz-state-mouse-pressed a-vs)
-                   (viz-state-dgraph a-vs))
+                   (viz-state-up-dgraph a-vs)
+                   (viz-state-p-dgraph a-vs))
         (viz-state (viz-state-upimgs a-vs)
                    (viz-state-pimgs a-vs)
                    (viz-state-image-posn a-vs)
                    (viz-state-dest-mouse-posn a-vs)
                    (viz-state-dest-mouse-posn a-vs)
                    (viz-state-mouse-pressed a-vs)
-                   (viz-state-dgraph a-vs))
+                   (viz-state-up-dgraph a-vs)
+                   (viz-state-p-dgraph a-vs))
         )
     )
   )
@@ -490,17 +511,18 @@
 ;; viz-state -> img
 ;; Purpose: To render the given viz-state
 (define (draw-world a-vs)
-  (beside E-SCENE-TOOLS  (place-image (above (first (viz-state-pimgs a-vs))
-                                             (if (equal? "" (first (dgrph-p-rules (viz-state-dgraph a-vs))))
-                                                 (text "" 24 'white)
-                                                 (beside (text "The rule used:" 24 'black)
-                                                         (text (format " ~a" (substring (first (dgrph-p-rules (viz-state-dgraph a-vs))) 0 1)) 24 'orange)
-                                                         (text (format " ~a" (substring (first (dgrph-p-rules (viz-state-dgraph a-vs))) 1)) 24 'violet)
-                                                         )))
-                                      (posn-x (viz-state-image-posn a-vs))
-                                      (posn-y (viz-state-image-posn a-vs))
-                                      E-SCENE)
-          ))
+  (above (place-image (first (viz-state-pimgs a-vs))     
+                      (posn-x (viz-state-image-posn a-vs))
+                      (posn-y (viz-state-image-posn a-vs))
+                      E-SCENE)
+         (overlay (if (equal? "" (first (dgrph-p-rules (first (viz-state-p-dgraph a-vs)))))
+                      (text "" 24 'white)
+                      (beside (text "The rule used:" 24 'black)
+                              (text (format " ~a" (substring (first (dgrph-p-rules (first (viz-state-p-dgraph a-vs)))) 0 1)) 24 'orange)
+                              (text (format " ~a" (substring (first (dgrph-p-rules (first (viz-state-p-dgraph a-vs)))) 1)) 24 'violet)
+                              ))
+                  (empty-scene 1250 70))
+         E-SCENE-TOOLS))
 
          
 ;; rg-viz
@@ -520,7 +542,7 @@
               (lod (reverse (create-dgrphs dgraph '())))
               (first-img (create-first-img (first (extract-nodes loe))))
               (imgs (cons first-img (rest (create-graph-imgs lod))))]
-        (run-viz (viz-state (rest imgs) (list (first imgs)) (posn 600 400) (posn 0 0) (posn 0 0) #f dgraph)
+        (run-viz (viz-state (rest imgs) (list (first imgs)) (posn 600 400) (posn 0 0) (posn 0 0) #f (rest lod) (list (first lod)))
                  draw-world 'rg-ctm))))
 
 
