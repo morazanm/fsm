@@ -227,18 +227,8 @@
                              (square 20 'solid 'white)
                              (if (or (> width1 (image-width E-SCENE))
                                      (> height1 (image-height E-SCENE)))
-                                 (resize-image (graph->bitmap (make-first-edge-graph (make-node-graph
-                                                                                      (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                                                      (sm-states N)
-                                                                                      (sm-start N)
-                                                                                      (sm-finals N))
-                                                                                     N (sm-start N))) (image-width E-SCENE) (image-height E-SCENE))
-                                 (graph->bitmap (make-first-edge-graph (make-node-graph
-                                                                        (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                                        (sm-states N)
-                                                                        (sm-start N)
-                                                                        (sm-finals N))
-                                                                       N (sm-start N))))
+                                 (resize-image graph1 (image-width E-SCENE) (image-height E-SCENE))
+                                 graph1)
                              )
                   
                      (square 50 'solid 'white)
@@ -246,18 +236,8 @@
                              (square 20 'solid 'white)
                              (if (or (> width2 (image-width E-SCENE))
                                      (> height2 (image-height E-SCENE)))
-                                 (resize-image (graph->bitmap (make-second-edge-graph (make-node-graph
-                                                                                       (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                                                       (sm-states M)
-                                                                                       (sm-start M)
-                                                                                       (sm-finals M))
-                                                                                      M (sm-start M))) (image-width E-SCENE) (image-height E-SCENE))
-                                 (graph->bitmap (make-second-edge-graph (make-node-graph
-                                                                         (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                                         (sm-states M)
-                                                                         (sm-start M)
-                                                                         (sm-finals M))
-                                                                        M (sm-start M)))))
+                                 (resize-image graph2 (image-width E-SCENE) (image-height E-SCENE))
+                                 graph2))
                      )
              E-SCENE)))
      
