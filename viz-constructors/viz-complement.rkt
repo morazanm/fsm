@@ -139,15 +139,14 @@
   ;; Purpose: To create a graph image for complement
   (define (create-graph-img M)
     (let* [(new-finals (filter (λ (s) (not (member s (sm-finals M)))) (sm-states M)))]
-      (overlay (above (graph->bitmap (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                                       (sm-states M) 
-                                                                       (sm-start M)
-                                                                       new-finals)
-                                                      M))
-                      (text "Complement of MD" 20 'black)
-                      (text (format "New final states: ~a" new-finals) 20 'black)
-                      (text (format "Starting state: ~a" (sm-start M)) 20 'black))
-               E-SCENE)))
+      (above (graph->bitmap (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                                              (sm-states M) 
+                                                              (sm-start M)
+                                                              new-finals)
+                                             M))
+             (text "Complement of MD" 20 'black)
+             (text (format "New final states: ~a" new-finals) 20 'black)
+             (text (format "Starting state: ~a" (sm-start M)) 20 'black))))
 
 
 
@@ -156,13 +155,11 @@
   ;; ndfa ndfa -> img
   ;; Purpose: To draw the graph of the initial ndfa's
   (define (make-init-grph-img M)
-    (overlay
-     (above
-      (sm-graph M)
-      (if (eq? (sm-type M) 'dfa)
-          (text "DM: input machine" 20 'black)
-          (text "M: input machine" 20 'black)))
-     E-SCENE))
+    (above
+     (sm-graph M)
+     (if (eq? (sm-type M) 'dfa)
+         (text "DM: input machine" 20 'black)
+         (text "M: input machine" 20 'black))))
      
 
   ;; draw-world
