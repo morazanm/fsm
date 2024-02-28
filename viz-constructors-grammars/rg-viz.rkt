@@ -72,7 +72,7 @@
 ;; p-dgraph - processed dgraphs
 ;; up-yield - unprocessed yield
 ;; p-yield - processed yield
-(struct viz-state (upimgs pimgs image-posn curr-mouse-posn
+(struct viz-state (upimgs pimgs curr-image image-posn scale-factor curr-mouse-posn
                           dest-mouse-posn mouse-pressed
                           up-dgraph p-dgraph up-yield p-yield))
 
@@ -300,6 +300,23 @@
       '()
       (cons (create-graph-img (first lod)) (create-graph-imgs (rest lod)))))
 
+
+(define (make-viz-img img img-posn scale-factor dgrph p-yield) (above (place-image (scale scale-factor img)     
+                                                                          (posn-x img-posn)
+                                                                          (posn-y img-posn)
+                                                                          E-SCENE)
+                                                             (overlay (above (if (equal? "" (first (dgrph-p-rules (first dgrph))))
+                                                                                 (text "" 24 'white)
+                                                                                 (beside (text "The rule used:" 24 'black)
+                                                                                         (text (format " ~a" (substring (first (dgrph-p-rules (first dgrph))) 0 1)) 24 'orange)
+                                                                                         (text (format " ~a" (substring (first (dgrph-p-rules (first dgrph))) 1)) 24 'violet)
+                                                                                         ))
+                                                                             (text (format "Current yield: ~a" (first p-yield)) 24 'black))
+                                                                      (empty-scene 1250 100))
+                                                             E-SCENE-TOOLS)
+  )
+
+
 ;; TODO fix these hard coded center points
 ;; process-key
 ;; viz-state key --> viz-state
@@ -307,20 +324,24 @@
 ;;          backwards, or to the end.
 (define (process-key a-vs a-key)
   (cond [(key=? "right" a-key)
-         (let* [(new-up-yield (if (empty? (viz-state-up-yield a-vs))
-                                  '()
-                                  (rest (viz-state-up-yield a-vs))))
-                (new-p-yield (if (empty? (viz-state-up-yield a-vs))
-                                 (viz-state-p-yield a-vs)
-                                 (cons (first (viz-state-up-yield a-vs))
-                                       (viz-state-p-yield a-vs))))
-                ]
-           (if (empty? (viz-state-upimgs a-vs))
-               a-vs
+         
+         (if (empty? (viz-state-upimgs a-vs))
+             a-vs
+             (let* [(new-up-yield (if (empty? (viz-state-up-yield a-vs))
+                                      '()
+                                      (rest (viz-state-up-yield a-vs))))
+                    (new-p-yield (if (empty? (viz-state-up-yield a-vs))
+                                     (viz-state-p-yield a-vs)
+                                     (cons (first (viz-state-up-yield a-vs))
+                                           (viz-state-p-yield a-vs))))
+                    (new-pimgs (cons (first (viz-state-upimgs a-vs))
+                                     (viz-state-pimgs a-vs)))
+                    ]
                (viz-state (rest (viz-state-upimgs a-vs))
-                          (cons (first (viz-state-upimgs a-vs))
-                                (viz-state-pimgs a-vs))
+                          new-pimgs
+                          (make-viz-img (first new-pimgs) (viz-state-image-posn a-vs) (viz-state-scale-factor a-vs) (viz-state-p-dgraph a-vs) new-p-yield)
                           (viz-state-image-posn a-vs)
+                          (viz-state-scale-factor a-vs)
                           (viz-state-curr-mouse-posn a-vs)
                           (viz-state-dest-mouse-posn a-vs)
                           (viz-state-mouse-pressed a-vs)
@@ -329,36 +350,49 @@
                                 (viz-state-p-dgraph a-vs))
                           new-up-yield
                           new-p-yield
-                          )))]
+                          ))
+             )
+         ]
         [(key=? "left" a-key)
-         (let* [(new-up-yield (cons (first (viz-state-p-yield a-vs))
-                                    (viz-state-up-yield a-vs)))
-                (new-p-yield (rest (viz-state-p-yield a-vs)))]
+        
            (if (= (length (viz-state-pimgs a-vs)) 1)
                a-vs
-               (viz-state (cons (first (viz-state-pimgs a-vs))
-                                (viz-state-upimgs a-vs))
-                          (rest (viz-state-pimgs a-vs))
-                          (viz-state-image-posn a-vs)
-                          (viz-state-curr-mouse-posn a-vs)
-                          (viz-state-dest-mouse-posn a-vs)
-                          (viz-state-mouse-pressed a-vs)
-                          (cons (first (viz-state-p-dgraph a-vs))
-                                (viz-state-up-dgraph a-vs))
-                          (rest (viz-state-p-dgraph a-vs))
-                          (cons (first (viz-state-p-yield a-vs))
-                                (viz-state-up-yield a-vs))
-                          (rest (viz-state-p-yield a-vs))
-                          )))]
+               (let* [(new-up-yield (cons (first (viz-state-p-yield a-vs))
+                                          (viz-state-up-yield a-vs)))
+                      (new-p-yield (rest (viz-state-p-yield a-vs)))
+                      (new-pimgs (rest (viz-state-pimgs a-vs)))
+                      ]
+                 (viz-state (cons (first (viz-state-pimgs a-vs))
+                                  (viz-state-upimgs a-vs))
+                            new-pimgs
+                            (make-viz-img (first new-pimgs) (viz-state-image-posn a-vs) (viz-state-scale-factor a-vs) (viz-state-p-dgraph a-vs) new-p-yield)
+                            (viz-state-image-posn a-vs)
+                            (viz-state-scale-factor a-vs)
+                            (viz-state-curr-mouse-posn a-vs)
+                            (viz-state-dest-mouse-posn a-vs)
+                            (viz-state-mouse-pressed a-vs)
+                            (cons (first (viz-state-p-dgraph a-vs))
+                                  (viz-state-up-dgraph a-vs))
+                            (rest (viz-state-p-dgraph a-vs))
+                            (cons (first (viz-state-p-yield a-vs))
+                                  (viz-state-up-yield a-vs))
+                            (rest (viz-state-p-yield a-vs))
+                            ))
+               )
+         ]
         [(key=? "down" a-key)
-         (let [(new-p-yield (append (reverse (viz-state-up-yield a-vs))
-                                    (viz-state-p-yield a-vs)))]
-           (if (empty? (viz-state-upimgs a-vs))
-               a-vs
+         (if (empty? (viz-state-upimgs a-vs))
+             a-vs
+             (let [(new-p-yield (append (reverse (viz-state-up-yield a-vs))
+                                        (viz-state-p-yield a-vs)))
+                   (new-pimgs (append (reverse (viz-state-upimgs a-vs))
+                                      (viz-state-pimgs a-vs)))
+                   ]
                (viz-state '()
-                          (append (reverse (viz-state-upimgs a-vs))
-                                  (viz-state-pimgs a-vs))
+                          new-pimgs
+                          (make-viz-img (first new-pimgs) (viz-state-image-posn a-vs) (viz-state-scale-factor a-vs) (viz-state-p-dgraph a-vs) new-p-yield)
                           (posn 625 300)
+                          (viz-state-scale-factor a-vs)
                           (viz-state-curr-mouse-posn a-vs)
                           (viz-state-dest-mouse-posn a-vs)
                           (viz-state-mouse-pressed a-vs)
@@ -367,29 +401,69 @@
                                   (viz-state-p-dgraph a-vs))
                           '()
                           new-p-yield
-                          )))]
+                          ))
+             )
+         ]
         [(key=? "up" a-key)
-         (let* [(new-up-yield (rest (append (reverse (viz-state-p-yield a-vs))
-                                            (viz-state-up-yield a-vs))))
-                (new-p-yield (list (first (append (reverse (viz-state-p-yield a-vs))
-                                                  (viz-state-up-yield a-vs)))))]
+         
            (if (= (length (viz-state-pimgs a-vs)) 1)
                a-vs
-               (viz-state (rest (append (reverse (viz-state-pimgs a-vs))
-                                        (viz-state-upimgs a-vs)))
-                          (list (first (append (reverse (viz-state-pimgs a-vs))
-                                               (viz-state-upimgs a-vs))))
-                          (posn 625 300)
-                          (viz-state-curr-mouse-posn a-vs)
-                          (viz-state-dest-mouse-posn a-vs)
-                          (viz-state-mouse-pressed a-vs)
-                          (rest (append (reverse (viz-state-p-dgraph a-vs))
-                                        (viz-state-up-dgraph a-vs)))
-                          (list (first (append (reverse (viz-state-p-dgraph a-vs))
-                                               (viz-state-up-dgraph a-vs))))
-                          new-up-yield
-                          new-p-yield
-                          )))]
+               (let* [(new-up-yield (rest (append (reverse (viz-state-p-yield a-vs))
+                                                  (viz-state-up-yield a-vs))))
+                      (new-p-yield (list (first (append (reverse (viz-state-p-yield a-vs))
+                                                        (viz-state-up-yield a-vs)))))
+                      (new-pimgs (list (first (append (reverse (viz-state-pimgs a-vs))
+                                                      (viz-state-upimgs a-vs)))))
+                      ]
+                 (viz-state (rest (append (reverse (viz-state-pimgs a-vs))
+                                          (viz-state-upimgs a-vs)))
+                            new-pimgs
+                            (make-viz-img (first new-pimgs) (viz-state-image-posn a-vs) (viz-state-scale-factor a-vs) (viz-state-p-dgraph a-vs) new-p-yield)
+                            (posn 625 300)
+                            (viz-state-scale-factor a-vs)
+                            (viz-state-curr-mouse-posn a-vs)
+                            (viz-state-dest-mouse-posn a-vs)
+                            (viz-state-mouse-pressed a-vs)
+                            (rest (append (reverse (viz-state-p-dgraph a-vs))
+                                          (viz-state-up-dgraph a-vs)))
+                            (list (first (append (reverse (viz-state-p-dgraph a-vs))
+                                                 (viz-state-up-dgraph a-vs))))
+                            new-up-yield
+                            new-p-yield
+                            )
+                 )
+               )
+         ]
+        [(key=? "w" a-key)
+         (viz-state (viz-state-upimgs a-vs)
+                    (viz-state-pimgs a-vs)
+                    (make-viz-img (first (viz-state-pimgs a-vs)) (viz-state-image-posn a-vs) (* 1.1 (viz-state-scale-factor a-vs)) (viz-state-p-dgraph a-vs) (viz-state-p-yield a-vs))
+                    (viz-state-image-posn a-vs)
+                    (* (viz-state-scale-factor a-vs) 1.1)
+                    (viz-state-curr-mouse-posn a-vs)
+                    (viz-state-dest-mouse-posn a-vs)
+                    (viz-state-mouse-pressed a-vs)
+                    (viz-state-up-dgraph a-vs)
+                    (viz-state-p-dgraph a-vs)
+                    (viz-state-up-yield a-vs)
+                    (viz-state-p-yield a-vs)
+                    )
+         ]
+        [(key=? "s" a-key)
+         (viz-state (viz-state-upimgs a-vs)
+                    (viz-state-pimgs a-vs)
+                    (make-viz-img (first (viz-state-pimgs a-vs)) (viz-state-image-posn a-vs) (* 0.9 (viz-state-scale-factor a-vs)) (viz-state-p-dgraph a-vs) (viz-state-p-yield a-vs))
+                    (viz-state-image-posn a-vs)
+                    (* (viz-state-scale-factor a-vs) 0.9)
+                    (viz-state-curr-mouse-posn a-vs)
+                    (viz-state-dest-mouse-posn a-vs)
+                    (viz-state-mouse-pressed a-vs)
+                    (viz-state-up-dgraph a-vs)
+                    (viz-state-p-dgraph a-vs)
+                    (viz-state-up-yield a-vs)
+                    (viz-state-p-yield a-vs)
+                    )
+         ]
         [else a-vs]))
 
 ;; viz-state int int MouseEvent
@@ -398,7 +472,9 @@
   (cond [(string=? mouse-event "button-down")
          (viz-state (viz-state-upimgs a-vs)
                     (viz-state-pimgs a-vs)
+                    (viz-state-curr-image a-vs)
                     (viz-state-image-posn a-vs)
+                    (viz-state-scale-factor a-vs)
                     (viz-state-curr-mouse-posn a-vs)
                     (posn x y)
                     #t
@@ -410,7 +486,9 @@
         [(string=? mouse-event "button-up")
          (viz-state (viz-state-upimgs a-vs)
                     (viz-state-pimgs a-vs)
+                    (viz-state-curr-image a-vs)
                     (viz-state-image-posn a-vs)
+                    (viz-state-scale-factor a-vs)
                     (viz-state-curr-mouse-posn a-vs)
                     (posn x y)
                     #f
@@ -423,7 +501,9 @@
         [(string=? mouse-event "drag")
          (viz-state (viz-state-upimgs a-vs)
                     (viz-state-pimgs a-vs)
+                    (viz-state-curr-image a-vs)
                     (viz-state-image-posn a-vs)
+                    (viz-state-scale-factor a-vs)
                     (viz-state-curr-mouse-posn a-vs)
                     (posn x y)
                     #t
@@ -437,7 +517,9 @@
         [(string=? mouse-event "move")
          (viz-state (viz-state-upimgs a-vs)
                     (viz-state-pimgs a-vs)
+                    (viz-state-curr-image a-vs)
                     (viz-state-image-posn a-vs)
+                    (viz-state-scale-factor a-vs)
                     (viz-state-curr-mouse-posn a-vs)
                     (posn x y)
                     (viz-state-mouse-pressed a-vs)
@@ -452,7 +534,9 @@
         [(string=? mouse-event "enter")
          (viz-state (viz-state-upimgs a-vs)
                     (viz-state-pimgs a-vs)
+                    (viz-state-curr-image a-vs)
                     (viz-state-image-posn a-vs)
+                    (viz-state-scale-factor a-vs)
                     (viz-state-curr-mouse-posn a-vs)
                     (posn x y)
                     (viz-state-mouse-pressed a-vs)
@@ -467,7 +551,9 @@
         [(string=? mouse-event "leave")
          (viz-state (viz-state-upimgs a-vs)
                     (viz-state-pimgs a-vs)
+                    (viz-state-curr-image a-vs)
                     (viz-state-image-posn a-vs)
+                    (viz-state-scale-factor a-vs)
                     (viz-state-curr-mouse-posn a-vs)
                     (posn x y)
                     #f
@@ -494,8 +580,9 @@
     (if (viz-state-mouse-pressed a-vs)
         (viz-state (viz-state-upimgs a-vs)
                    (viz-state-pimgs a-vs)
-                   ;; New image position
+                   (make-viz-img (first (viz-state-pimgs a-vs)) (posn new-img-x new-img-y) (viz-state-scale-factor a-vs) (viz-state-p-dgraph a-vs) (viz-state-p-yield a-vs))
                    (posn new-img-x new-img-y)
+                   (viz-state-scale-factor a-vs)
                    (viz-state-dest-mouse-posn a-vs)
                    (viz-state-dest-mouse-posn a-vs)
                    (viz-state-mouse-pressed a-vs)
@@ -505,7 +592,9 @@
                    (viz-state-p-yield a-vs))
         (viz-state (viz-state-upimgs a-vs)
                    (viz-state-pimgs a-vs)
+                   (viz-state-curr-image a-vs)
                    (viz-state-image-posn a-vs)
+                   (viz-state-scale-factor a-vs)
                    (viz-state-dest-mouse-posn a-vs)
                    (viz-state-dest-mouse-posn a-vs)
                    (viz-state-mouse-pressed a-vs)
@@ -560,20 +649,7 @@
 ;; draw-world
 ;; viz-state -> img
 ;; Purpose: To render the given viz-state
-(define (draw-world a-vs)
-  (above (place-image (first (viz-state-pimgs a-vs))     
-                      (posn-x (viz-state-image-posn a-vs))
-                      (posn-y (viz-state-image-posn a-vs))
-                      E-SCENE)
-         (overlay (above (if (equal? "" (first (dgrph-p-rules (first (viz-state-p-dgraph a-vs)))))
-                             (text "" 24 'white)
-                             (beside (text "The rule used:" 24 'black)
-                                     (text (format " ~a" (substring (first (dgrph-p-rules (first (viz-state-p-dgraph a-vs)))) 0 1)) 24 'orange)
-                                     (text (format " ~a" (substring (first (dgrph-p-rules (first (viz-state-p-dgraph a-vs)))) 1)) 24 'violet)
-                                     ))
-                         (text (format "Current yield: ~a" (first (viz-state-p-yield a-vs))) 24 'black))
-                  (empty-scene 1250 100))
-         E-SCENE-TOOLS))
+(define (draw-world a-vs) (viz-state-curr-image a-vs))
 
          
 ;; rg-viz
@@ -595,7 +671,8 @@
               (imgs (cons first-img (rest (create-graph-imgs lod))))
               ]
         (run-viz (viz-state (rest imgs) (list (first imgs))
-                            (posn 625 300) (posn 0 0) (posn 0 0)
+                            (make-viz-img (first imgs) (posn 625 300) 1 (list (first lod)) (first w-der))
+                            (posn 625 300) 1 (posn 0 0) (posn 0 0)
                             #f (rest lod) (list (first lod))
                             (rest w-der) (first w-der))
                  draw-world 'rg-ctm))))
@@ -617,7 +694,7 @@
 
 
 
-
+; (rg-viz even-bs-odd-as '(a a a a a b b b b a a a a a a))
 
 
 
