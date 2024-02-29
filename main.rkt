@@ -39,7 +39,7 @@
 
    ;; sm graph
    sm-graph
-   
+    
    ; sm testers
    sm-sameresult? sm-testequiv? sm-test
 
