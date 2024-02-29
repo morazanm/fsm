@@ -146,9 +146,7 @@
   
   ;cfg-union : cfg cfg -> cfg
   (define (cfg-union g1 g2)
-    (let* ((newg2 (cfg-rename-nts (append (cfg-get-nts g1)
-                                          (cfg-get-nts g2))
-                                  g2))
+    (let* ((newg2 (cfg-rename-nts (cfg-get-nts g1) g2))
            (newnts (append (cfg-get-nts g1) (cfg-get-nts newg2)))
            (newsigma (remove-duplicates (append (cfg-get-alphabet g1) (cfg-get-alphabet newg2))))
            (newS (gen-symbol 'S newnts))
@@ -160,9 +158,7 @@
   
   ;cfg-concatenation: cfg cfg -> cfg
   (define (cfg-concat g1 g2)
-    (let* ((newg2 (cfg-rename-nts (append (cfg-get-nts g1)
-                                          (cfg-get-nts g2))
-                                  g2))
+    (let* ((newg2 (cfg-rename-nts (cfg-get-nts g1) g2))
            (newnts (append (cfg-get-nts g1) (cfg-get-nts newg2)))
            (newsigma (remove-duplicates (append (cfg-get-alphabet g1) (cfg-get-alphabet newg2))))
            (newS (gen-symbol 'S newnts))
@@ -200,8 +196,7 @@
     (define (cfg-update-rule nt1 nt2 rls2 newnt2 newS)      
       (cond [(null? nt2) (list newnt2 rls2 newS)]
             [(member (car nt2) nt1) 
-             (let* ((newsym (gen-nt (append nt1 nt2 newnt2 (list newS)))
-                            #;(gen-symbol (car nt2) (append nt1 nt2 newnt2 (list newS))))
+             (let* ((newsym (gen-symbol (car nt2) (append nt1 nt2 newnt2 (list newS))))
                     (newrls2 (update-rl (car nt2) newsym rls2)))
                (cfg-update-rule nt1 (cdr nt2) newrls2 (cons newsym newnt2) (if (eq? (car nt2) newS) newsym newS)))]
             [else (cfg-update-rule nt1 (cdr nt2) rls2 (cons (car nt2) newnt2) newS)]))

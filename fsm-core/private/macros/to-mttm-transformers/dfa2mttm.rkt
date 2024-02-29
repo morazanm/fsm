@@ -63,7 +63,6 @@
                       (F a ,DEAD)
                       (F b F)
                       (C a ,DEAD)
-                      (C b ,DEAD)
                       (,DEAD a ,DEAD)
                       (,DEAD b ,DEAD))
                     'no-dead))

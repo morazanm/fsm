@@ -90,7 +90,6 @@
 
  ; some helpful functions
  los->symbol symbol->list generate-symbol symbol->fsmlos symbol-upcase
- gen-state gen-nt
 
  ; constants
  EMP DEAD RIGHT LEFT LM BLANK BRANCH GOTO ARROW VAR
@@ -608,3 +607,7 @@
         tentative)
     )
   )
+
+
+
+

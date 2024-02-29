@@ -3,7 +3,7 @@
 
 #lang scribble/manual
 
-@(require (for-label (only-in racket [regexp racket-regexp]) setup/collects))
+@(require (for-label racket setup/collects))
 
 @title{FSM}
 @author[(author+email "Marco T. Morazán" "morazanm@shu.edu")]
@@ -67,13 +67,10 @@ variable to abstract over the currently read symbol.
 
 
 
-@defidform[alphabet] A list of symbols representing lowercase letters in the Roman alphabet.
+@defidform[alphabet] A list of numbers or symbols representing lowercase letters in the Roman alphabet.
 
 @defidform[word]{
  A @italic{(listof symbol)}. Each symbol is a member of the same alphabet.}
-
-@defidform[letter]{
- A string of length one representing a lowercase letter in the Roman alphabet.}
 
 @defidform[state]  
 An uppercase letter (e.g., A) or a symbol comprised of an uppercase 
@@ -630,16 +627,12 @@ word are returned.
 
 @section{Regular Expression Constructors}
 
-@defproc[(null-regexp)
-         regexp]{Builds the regular expression for the empty language.}
-
 @defproc[(empty-regexp)
-         regexp]{Builds the regular expression for the language that only contains the
-                 empty string.}
+         regexp]{Builds the regular expression for the empty string.}
 
 @defproc[(singleton-regexp [a letter])
-         regexp]{Builds the regular expression for the language that only has a single
-                 word of length 1 representing the given letter.}
+         regexp]{Builds the regular expression for a single
+ letter string.}
 
 @defproc[(union-regexp [r1 regexp] [r2 regexp])
          regexp]{Builds a union regular expression from the given
@@ -768,12 +761,6 @@ word are returned.
 @defproc[(generate-symbol [seed symbol] [l (listof symbol)])
          symbol]{Generates a random symbol that starts with seed
  and that is not in the given list of symbols.}
-
-@defproc[(gen-state [l (listof state)])
-         state]{Generates a state not in the given list of states.}
-
-@defproc[(gen-nt [l (listof nt)])
-         state]{Generates a nonterminal not in the given list of nonterminals.}
 
 @defproc[(symbol-upcase [s symbol])
          symbol]{Builds a symbol that is the same as the given symbol,

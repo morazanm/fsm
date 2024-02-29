@@ -31,5 +31,5 @@
     (cond [(rg? g) 'rg]
           [(cfg? g) 'cfg]
           [(csg? g) 'csg]
-          [else (error (format "In grammar-gettype: Unknown grammar type. Given: ~a" g))]))
+          [else (error (format "In grammar-gettype: Unknown grammar type."))]))
   )

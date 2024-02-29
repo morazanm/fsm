@@ -129,7 +129,7 @@
          graph
          (cons (list new-start EMP (sm-start M))
                (append (sm-rules M)
-                       (map (λ (f) (list f EMP (sm-start M)))
+                       (map (λ (f) (list f EMP new-start))
                             (sm-finals M))))))
 
 ;; make-init-edge-graph

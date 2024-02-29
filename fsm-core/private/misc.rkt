@@ -6,7 +6,7 @@
   (require "string.rkt" "constants.rkt")
   (provide remove-duplicates los->symbol generate-symbol symbol-upcase equiv-los? 
            not-in-l2 symbol->list sublist subst-in-list gen-symbol get-differences
-           symbol->fsmlos gen-state gen-nt)
+           symbol->fsmlos)
   
   ; string --> los
   (define (string->fsmlos str)
@@ -63,34 +63,24 @@
     (let ((str (symbol->string s)))
       (build-list (string-length str) 
                   (lambda (i) (string->symbol (substring str i (+ i 1)))))))
-
-  ;; (listof state) --> state
-  ;; Purpose: To generate a state name not in the given list of states
-  (define (gen-state disallowed)
-    (define STS '(A B C D E F G H I J K L M N O P Q R S T U V W X Y Z))
-
-    ;; state natnum --> symbol
-    ;; Purpose: To append a dash and the given natnum to the given state
-    (define (concat-n s n)
-      (string->symbol (string-append (symbol->string s) "-" (number->string n))))
-
-    ;; natnum (listof states) --> state
-    ;; Purpose: Generate an allowed state
-    (define (gen-helper n s-choices)
-      (if (not (empty? s-choices))
-          (first s-choices)
-          (gen-helper (add1 n)
-                      (filter (λ (s) (not (member s disallowed)))
-                              (map (λ (s) (concat-n s n)) STS)))))
-
-    (gen-helper 0 (filter (λ (a) (not (member a disallowed))) STS)))
-
-  (define gen-nt gen-state)
   
   ; symbol (listof symbol) --> symbol
   (define (generate-symbol s los)
     (let ((new-symb (if (member s los)
-                        (string->symbol (string-append (symbol->string (gensym (string->symbol (string-append (symbol->string s) "-"))))))
+                          (string->symbol (string-append (symbol->string (gensym (string->symbol (string-append (symbol->string s) "-"))))))
+                          s))
+          #;(new-symb (if (member s los)
+                        #;(string->symbol (string-append (symbol->string (gensym (string->symbol (string-append (symbol->string s) "-"))))))
+                        (let [(lochar (string->list (symbol->string s)))]
+                          (string->symbol
+                           (string-append
+                            (symbol->string
+                             (gensym (if (member #\- lochar)
+                                         (string->symbol
+                                          (string-append (list->string (takef lochar
+                                                                              (λ (c) (not (eq? c #\-)))))
+                                                         "-"))
+                                         s))))))
                         s)))
       (if (not (member new-symb los))
           new-symb
