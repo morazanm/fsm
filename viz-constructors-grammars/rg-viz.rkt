@@ -31,7 +31,8 @@
 
 (define E-SCENE (empty-scene 1250 600))
 
-(define E-SCENE-TOOLS (overlay (beside (above (above (triangle 30 'solid 'black)
+(define E-SCENE-TOOLS ;(overlay
+                       (beside (above (above (triangle 30 'solid 'black)
                                                      (rectangle 10 30 'solid 'black))
                                               (square 20 'solid 'white)
                                               (text "Restart the visualization" 18 'black))
@@ -53,7 +54,8 @@
                                        (square 40 'solid 'white)
                                        
                                        )
-                               (empty-scene (image-width E-SCENE) 100)))
+                               ;(empty-scene (image-width E-SCENE) 100))
+  )
 
 (define FONT-SIZE 20)
 
@@ -987,7 +989,8 @@
                               (posn-y (viz-state-image-posn a-vs))
                               E-SCENE)
                          )
-         (INSTRUCTIONS (overlay (above (if (equal? "" (first (dgrph-p-rules (first (viz-state-p-dgraph a-vs)))))
+         (INSTRUCTIONS ;(overlay
+                        (above (if (equal? "" (first (dgrph-p-rules (first (viz-state-p-dgraph a-vs)))))
                                      (text "" FONT-SIZE 'white)
                                      (beside (text "The rule used:" FONT-SIZE 'black)
                                              (text (format " ~a" (substring (first (dgrph-p-rules (first (viz-state-p-dgraph a-vs)))) 0 1)) FONT-SIZE 'orange)
@@ -995,12 +998,12 @@
                                              ))
                                  (text (format "Deriving: ~a" (viz-state-input-word a-vs)) FONT-SIZE 'black)
                                  (text (format "Current yield: ~a" (first (viz-state-p-yield a-vs))) FONT-SIZE 'black))
-                          (empty-scene (image-width E-SCENE) 100))
+                          ;(empty-scene (image-width E-SCENE) 100))
                          )
          
          )
            (begin (println (image-height INSTRUCTIONS))
-                  (above PARSE-TREE-IMG INSTRUCTIONS E-SCENE-TOOLS)
+                  (above PARSE-TREE-IMG INSTRUCTIONS (square 30 'solid 'white) E-SCENE-TOOLS)
                   )
           )
     )
