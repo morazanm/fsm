@@ -317,10 +317,16 @@
   
   ; (listof state) fsa --> fsa
   (define (rename-states-fsa los m)
+    (define (generate-rename-table disallowed sts)
+      (if (empty? sts)
+          '()
+          (let ((new-st (gen-state disallowed)))
+            (cons (list (first sts) new-st)
+                  (generate-rename-table (cons new-st disallowed) (rest sts))))))
+    
     (let* ((mstates (fsa-getstates m))
            (sts mstates #;(if (member DEAD mstates) mstates (cons DEAD mstates)))
-           (rename-table (map (lambda (s) (list s (generate-symbol s los)))
-                              sts))
+           (rename-table (generate-rename-table sts sts))
            (new-states (map (lambda (s) (cadr (assoc s rename-table))) sts))
            (new-start (cadr (assoc (fsa-getstart m) rename-table)))
            (new-finals (map (lambda (s) (cadr (assoc s rename-table))) (fsa-getfinals m)))
@@ -333,10 +339,10 @@
   
   ; fsa fsa --> ndfa
   (define (union-fsa m1 m)
-    (let* ((nm1 (rename-states-fsa (fsa-getstates m) m1))
+    (let* ((nm1 m1 #;(rename-states-fsa (fsa-getstates m) m1))
            (nm2 (rename-states-fsa (fsa-getstates nm1) m)))
-      (let* ((new-start (generate-symbol START (append (fsa-getstates nm1) 
-                                                       (fsa-getstates nm2))))
+      (let* ((new-start (gen-state (append (fsa-getstates nm1) 
+                                           (fsa-getstates nm2))))
              (new-states (cons new-start
                                (append (fsa-getstates nm1) 
                                        (fsa-getstates nm2)))) ; nm1 & nm2 & s have no common state names
@@ -354,7 +360,9 @@
   
   ; fsa fsa --> fsa
   (define (concat-fsa m1 m2)
-    (let* ((nm1 (rename-states-fsa (fsa-getstates m2) m1))
+    (let* ((nm1 (rename-states-fsa (append (fsa-getstates m1)
+                                           (fsa-getstates m2))
+                                   m1))
            (nm2 m2))
       (make-unchecked-ndfa (union-states (fsa-getstates nm1) (fsa-getstates nm2)) ; nm1 & nm2 have no common state names
                            (remove-duplicates (append (fsa-getalphabet nm1) (fsa-getalphabet nm2)))
