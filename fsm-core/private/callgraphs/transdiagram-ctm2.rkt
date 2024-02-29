@@ -5,6 +5,7 @@
          ;"../../../main.rkt"
          "../tm.rkt"
          "../constants.rkt"
+         ;"../../interface.rkt"
          )
 (provide computation-edges transition-diagram-ctm dot-nodes dot-edges clean-list parse-program)
 
@@ -511,7 +512,7 @@
                (equal? 'BRANCH (car (car trace)))
                (equal? 'VAR (car (car trace))))
            (follow-trace (cdr trace) edges stored-val)]))
-  (follow-trace (cdr (ctm-run ctm tape head #:trace #t))
+  (follow-trace (cdr (ctm-apply ctm tape head #:trace #t))
                 (filter (lambda (x) (not (equal? "white" (cadr (caddr (caddr x)))))) (clean-list (dot-edges (parse-program ctmlist))))
                 (car (car (clean-list (dot-edges (parse-program ctmlist)))))))
 

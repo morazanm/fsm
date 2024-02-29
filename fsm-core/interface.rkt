@@ -240,7 +240,13 @@
 ;(define (ctm-run M w . l)
 ;  (let ((res (ctm-apply M w (if (null? l) 0 (car l)))))
 ;    (list (tmconfig-state res) (tmconfig-index res) (tmconfig-tape res))))
-  
+
+(define (ctm-run M w #:trace [trace #f] . l)
+  (let ((res (ctm-apply M w (if (null? l) 0 (car l)) trace)))
+    (if trace
+        res
+        (list (tmconfig-state res) (tmconfig-index res) (tmconfig-tape res)))))
+
 ; fsm fsm word --> boolean
 (define (sm-sameresult? M1 M2 w)
   (let ((s1 (sm-sigma M1))
