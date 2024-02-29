@@ -326,7 +326,7 @@
     
     (let* ((mstates (fsa-getstates m))
            (sts mstates #;(if (member DEAD mstates) mstates (cons DEAD mstates)))
-           (rename-table (generate-rename-table sts sts))
+           (rename-table (generate-rename-table los sts))
            (new-states (map (lambda (s) (cadr (assoc s rename-table))) sts))
            (new-start (cadr (assoc (fsa-getstart m) rename-table)))
            (new-finals (map (lambda (s) (cadr (assoc s rename-table))) (fsa-getfinals m)))
@@ -774,5 +774,20 @@
   (define aUb (regexp->fsa (make-unchecked-union
                             (make-unchecked-singleton "a")
                             (make-unchecked-singleton "b"))))
+
+  (define ab* (make-unchecked-ndfa '(S A)
+                       '(a b)
+                       'S
+                       '(A)
+                       '((S a A)
+                         (A b A))))
+(define aab* (make-unchecked-ndfa '(W X Y)
+                        '(a b)
+                        'W
+                        '(Y)
+                        '((W a X)
+                          (X a Y)
+                          (Y b Y))))
+  
                          
   )  ; closes module
