@@ -91,20 +91,7 @@
   (define (generate-symbol s los)
     (let ((new-symb (if (member s los)
                         (string->symbol (string-append (symbol->string (gensym (string->symbol (string-append (symbol->string s) "-"))))))
-                        s))
-          #;(new-symb (if (member s los)
-                          #;(string->symbol (string-append (symbol->string (gensym (string->symbol (string-append (symbol->string s) "-"))))))
-                          (let [(lochar (string->list (symbol->string s)))]
-                            (string->symbol
-                             (string-append
-                              (symbol->string
-                               (gensym (if (member #\- lochar)
-                                           (string->symbol
-                                            (string-append (list->string (takef lochar
-                                                                                (λ (c) (not (eq? c #\-)))))
-                                                           "-"))
-                                           s))))))
-                          s)))
+                        s)))
       (if (not (member new-symb los))
           new-symb
           (generate-symbol s los))))
