@@ -90,6 +90,7 @@
 
  ; some helpful functions
  los->symbol symbol->list generate-symbol symbol->fsmlos symbol-upcase
+ gen-state gen-nt
 
  ; constants
  EMP DEAD RIGHT LEFT LM BLANK BRANCH GOTO ARROW VAR
@@ -236,17 +237,18 @@
 ;          ;[(eq? t1 'dfst) (M 'show-transitions)]
 ;          [else (error "Incorrect input to show-transitions")])))
 
-;; ctm word [natnum] --> (list state natnum tape)
-;(define (ctm-run M w . l)
-;  (let ((res (ctm-apply M w (if (null? l) 0 (car l)))))
-;    (list (tmconfig-state res) (tmconfig-index res) (tmconfig-tape res))))
-
+; ctm word [trace Boolean] [natnum] --> (list state natnum tape)
 (define (ctm-run M w #:trace [trace #f] . l)
   (let ((res (ctm-apply M w (if (null? l) 0 (car l)) trace)))
     (if trace
         res
         (list (tmconfig-state res) (tmconfig-index res) (tmconfig-tape res)))))
 
+;; ctm word [natnum] --> (list state natnum tape)
+;(define (ctm-run M w . l)
+;  (let ((res (ctm-apply M w (if (null? l) 0 (car l)))))
+;    (list (tmconfig-state res) (tmconfig-index res) (tmconfig-tape res))))
+  
 ; fsm fsm word --> boolean
 (define (sm-sameresult? M1 M2 w)
   (let ((s1 (sm-sigma M1))
@@ -613,7 +615,3 @@
         tentative)
     )
   )
-
-
-
-
