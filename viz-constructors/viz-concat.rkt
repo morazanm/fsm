@@ -185,34 +185,46 @@
                           (sm-finals M)))
          (new-states (append (sm-states M) (sm-states N)))
          (new-finals (sm-finals N))]
-    (overlay (above (graph->bitmap (make-edge-graph (make-node-graph
-                                                     (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                     new-states new-start new-finals) M N))
-                    (text "Concatenation of the ndfas \n" 20 'black)
-                    (text (format "Starting state: ~a \n" new-start) 20 'black)
-                    (text (format "Final state(s): ~a \n" new-finals) 20 'black)
-                    (text (format "Generated edge: ~a \n" edge-added) 20 'black))
-             E-SCENE)))
+    (above (graph->bitmap (make-edge-graph (make-node-graph
+                                            (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                            new-states new-start new-finals) M N))
+           (text "Concatenation of the ndfas \n" 20 'black)
+           (text (format "Starting state: ~a \n" new-start) 20 'black)
+           (text (format "Final state(s): ~a \n" new-finals) 20 'black)
+           (text (format "Generated edge: ~a \n" edge-added) 20 'black))))
      
 ;; make-init-grph-img
 ;; ndfa ndfa -> img
 ;; Purpose: To draw the graph of the initial ndfa's
 (define (make-init-grph-img M N)
-  (overlay (above (text "First ndfa:" 20 'black)
-                  (graph->bitmap (make-second-edge-graph (make-node-graph
-                                                          (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                          (sm-states M)
-                                                          (sm-start M)
-                                                          (sm-finals M))
-                                                         M (sm-start M)))
-                  (text "Second ndfa:" 20 'black)
-                  (graph->bitmap (make-first-edge-graph (make-node-graph
+  (let* [(graph1 (graph->bitmap (make-second-edge-graph (make-node-graph
                                                          (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                         (sm-states N)
-                                                         (sm-start N)
-                                                         (sm-finals N))
-                                                        N (sm-start N))))
-           E-SCENE))
+                                                         (sm-states M)
+                                                         (sm-start M)
+                                                         (sm-finals M))
+                                                        M (sm-start M))))
+         (graph2 (graph->bitmap (make-first-edge-graph (make-node-graph
+                                                        (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                                        (sm-states N)
+                                                        (sm-start N)
+                                                        (sm-finals N))
+                                                       N (sm-start N))))
+         (width1 (image-width graph1))
+         (height1 (image-height graph1))
+         (width2 (image-width graph2))
+         (height2 (image-height graph2))]
+    (beside (beside (text "First ndfa:" 20 'black)
+                    (square 20 'solid 'white)
+                    (if (or (> width1 (image-width E-SCENE))
+                            (> height1 (image-height E-SCENE)))
+                        (resize-image graph1 (image-width E-SCENE) (image-height E-SCENE))
+                        graph1))
+            (beside (text "Second ndfa:" 20 'black)
+                    (square 20 'solid 'white)
+                    (if (or (> width2 (image-width E-SCENE))
+                            (> height2 (image-height E-SCENE)))
+                        (resize-image graph2 (image-width E-SCENE) (image-height E-SCENE))
+                        graph2)))))
      
 
 ;; draw-world
@@ -223,8 +235,8 @@
         (height (image-height (first (viz-state-pimgs a-vs))))]
     (if (or (> width (image-width E-SCENE))
             (> height (image-height E-SCENE)))
-        (above (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE)) E-SCENE-TOOLS)
-        (above (first (viz-state-pimgs a-vs)) E-SCENE-TOOLS))))
+        (above (overlay (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE)) E-SCENE) E-SCENE-TOOLS)
+        (above (overlay (first (viz-state-pimgs a-vs)) E-SCENE) E-SCENE-TOOLS))))
 
 ;; concat-viz
 ;; fsa fsa -> void

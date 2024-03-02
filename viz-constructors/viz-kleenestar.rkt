@@ -129,7 +129,7 @@
          graph
          (cons (list new-start EMP (sm-start M))
                (append (sm-rules M)
-                       (map (λ (f) (list f EMP (sm-start M)))
+                       (map (λ (f) (list f EMP new-start))
                             (sm-finals M))))))
 
 ;; make-init-edge-graph
@@ -178,16 +178,24 @@
 ;; ndfa ndfa -> img
 ;; Purpose: To draw the graph of the initial ndfa's
 (define (make-init-grph-img M)
-  (overlay
-   (above
-    (graph->bitmap (make-init-edge-graph (make-node-graph
-                                          (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                          (sm-states M)
-                                          (sm-start M)
-                                          (sm-finals M))
-                                         M (sm-start M)))
-    (text "Starting ndfa \n" 20 'black))
-   E-SCENE))
+  (let* [(graph (graph->bitmap (make-init-edge-graph (make-node-graph
+                                                      (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                                      (sm-states M)
+                                                      (sm-start M)
+                                                      (sm-finals M))
+                                                     M (sm-start M))))
+         (width (image-width graph))
+         (height (image-height graph))]
+    (if (or (> width (image-width E-SCENE))
+            (> height (image-height E-SCENE)))
+        (above
+         (resize-image graph (image-width E-SCENE) (image-height E-SCENE))
+         (text "Starting ndfa \n" 20 'black))
+        (above
+         graph
+         (text "Starting ndfa \n" 20 'black))
+
+        )))
      
 
 ;; draw-world
@@ -198,8 +206,8 @@
         (height (image-height (first (viz-state-pimgs a-vs))))]
     (if (or (> width (image-width E-SCENE))
             (> height (image-height E-SCENE)))
-        (above (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE)) E-SCENE-TOOLS)
-        (above (first (viz-state-pimgs a-vs)) E-SCENE-TOOLS))))
+        (above (overlay (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE)) E-SCENE) E-SCENE-TOOLS)
+        (above (overlay (first (viz-state-pimgs a-vs)) E-SCENE) E-SCENE-TOOLS))))
 
 ;;kleenestar-viz
 ;; fsa -> void
