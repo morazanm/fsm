@@ -219,6 +219,7 @@
                             (> height1 (image-height E-SCENE)))
                         (resize-image graph1 (image-width E-SCENE) (image-height E-SCENE))
                         graph1))
+            (square 40 'solid 'white)
             (beside (text "Second ndfa:" 20 'black)
                     (square 20 'solid 'white)
                     (if (or (> width2 (image-width E-SCENE))

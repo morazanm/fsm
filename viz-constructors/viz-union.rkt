@@ -84,6 +84,29 @@
                                        )
                                (empty-scene 1250 100)))
 
+;; (listof state) --> state
+;; Purpose: To generate a state name not in the given list of states
+(define (gen-state disallowed)
+  (define STS '(A B C D E F G H I J K L M N O P Q R S T U V W X Y Z))
+
+  ;; state natnum --> symbol
+  ;; Purpose: To append a dash and the given natnum to the given state
+  (define (concat-n s n)
+    (string->symbol (string-append (symbol->string s) "-" (number->string n))))
+
+  ;; natnum (listof states) --> state
+  ;; Purpose: Generate an allowed state
+  (define (gen-helper n s-choices)
+    (if (not (empty? s-choices))
+        (first s-choices)
+        (gen-helper (add1 n)
+                    (filter (λ (s) (not (member s disallowed)))
+                            (map (λ (s) (concat-n s n)) STS)))))
+
+  (gen-helper 0 (filter (λ (a) (not (member a disallowed))) STS)))
+
+(define gen-nt gen-state)
+
 ;; make-node-graph
 ;; graph los start final -> graph
 ;; Purpose: To make a node graph
@@ -178,7 +201,7 @@
 ;; Purpose: To create a graph image for the union
 ;; Assume: The intersection of the states of the given machines is empty
 (define (create-graph-img M N)
-  (let* [(new-start (generate-symbol 'S (append (sm-states M) (sm-states N))))
+  (let* [(new-start (gen-state (append (sm-states M) (sm-states N))))
          (new-states (cons new-start
                            (append (sm-states M) (sm-states N))))
          (added-edges (list (list new-start EMP (sm-start M))
