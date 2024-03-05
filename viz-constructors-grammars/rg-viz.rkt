@@ -144,33 +144,44 @@
   )
 
 
-(define E-SCENE-TOOLS ;(overlay
-  (beside (above (above (triangle 30 'solid 'black)
-                        (rectangle 10 30 'solid 'black))
-                 (square 20 'solid 'white)
-                 (text "Restart the visualization" 18 'black))
-          (square 40 'solid 'white)
-          (above (beside (rectangle 30 10 'solid 'black)
-                         (rotate 270 (triangle 30 'solid 'black)))
-                 (square 20 'solid 'white)
-                 (text "Move one step forward" 18 'black))
-          (square 40 'solid 'white)
-          (above (beside (rotate 90 (triangle 30 'solid 'black))
-                         (rectangle 30 10 'solid 'black))
-                 (square 20 'solid 'white)
-                 (text "Move one step backward" 18 'black))
-          (square 40 'solid 'white)
-          (above (above (rectangle 10 30 'solid 'black)
-                        (rotate 180 (triangle 30 'solid 'black)))
-                 (square 20 'solid 'white)
-                 (text "Complete the visualization" 18 'black))
-          (square 40 'solid 'white)
-          (above cursor
-                 (text "Move the viewport" 18 'black))
-          (square 40 'solid 'white)
-                                       
-          )
-  ;(empty-scene E-SCENE-WIDTH 100))
+(define E-SCENE-TOOLS
+  (let (
+        (ARROW (above (triangle 30 'solid 'black)
+                      (rectangle 10 30 'solid 'black))
+               )
+        )
+    (beside (scale 0.75 (above ARROW
+                               (square 20 'solid 'white)
+                               (text "Restart the visualization" 18 'black))
+                   )
+            (square 40 'solid 'white)
+            (scale 0.75 (above (rotate 270 ARROW)
+                               (square 20 'solid 'white)
+                               (text "Move one step forward" 18 'black))
+                   )
+            (square 40 'solid 'white)
+            (scale 0.75 (above (rotate 90 ARROW)
+                               (square 20 'solid 'white)
+                               (text "Move one step backward" 18 'black))
+                   )
+            (square 40 'solid 'white)
+            (scale 0.75 (above (rotate 180 ARROW)
+                               (square 20 'solid 'white)
+                               (text "Complete the visualization" 18 'black))
+                   )
+            (square 40 'solid 'white)
+            (scale 0.75 (above cursor
+                               (text "Move the viewport" 18 'black))
+                   )
+            (square 40 'solid 'white)
+            (above (text "W - Zoom in the viewport" 18 'black)
+                   (square 10 'solid 'white)
+                   (text "S - Zoom out the viewport" 18 'black)
+                   (square 10 'solid 'white)
+                   (text "R - Reset the viewport" 18 'black)
+                   )
+            )
+    )
   )
 
 (define FONT-SIZE 20)
@@ -516,11 +527,9 @@
                               new-pimgs
                               (first img-resize)      
                               E-SCENE-CENTER
-                              ;(viz-state-scale-factor a-vs)
                               DEFAULT-ZOOM
                               (min (/ 1 (second img-resize)) (/ 1 (third img-resize)))
                               DEFAULT-ZOOM
-                              ;(max (second img-resize) (third img-resize))
                               (viz-state-curr-mouse-posn a-vs)
                               (viz-state-dest-mouse-posn a-vs)
                               (viz-state-mouse-pressed a-vs)
@@ -571,10 +580,8 @@
                               new-pimgs
                               (first img-resize)
                               E-SCENE-CENTER
-                              ;(viz-state-scale-factor a-vs)
                               DEFAULT-ZOOM
                               (min (/ 1 (second img-resize)) (/ 1 (third img-resize)))
-                              ;(max (second img-resize) (third img-resize))
                               DEFAULT-ZOOM
                               (viz-state-curr-mouse-posn a-vs)
                               (viz-state-dest-mouse-posn a-vs)
@@ -591,7 +598,6 @@
                               new-pimgs
                               (first new-pimgs)
                               E-SCENE-CENTER
-                              ;(viz-state-scale-factor a-vs)
                               DEFAULT-ZOOM
                               DEFAULT-ZOOM
                               DEFAULT-ZOOM
@@ -631,7 +637,6 @@
                               E-SCENE-CENTER
                               DEFAULT-ZOOM
                               (min (/ 1 (second img-resize)) (/ 1 (third img-resize)))
-                              ;(max (second img-resize) (third img-resize))
                               DEFAULT-ZOOM
                               (viz-state-curr-mouse-posn a-vs)
                               (viz-state-dest-mouse-posn a-vs)
@@ -687,7 +692,6 @@
                               E-SCENE-CENTER
                               DEFAULT-ZOOM
                               (min (/ 1 (second img-resize)) (/ 1 (third img-resize)))
-                              ;(max (second img-resize) (third img-resize))
                               DEFAULT-ZOOM
                               (viz-state-curr-mouse-posn a-vs)
                               (viz-state-dest-mouse-posn a-vs)
@@ -1056,8 +1060,11 @@
                               'fontcolor 'black
                               'font "Sans"))))
 
-
-(define (align-text strs) (local [
+;; listof-str -> listof-str
+;; Takes a list of strs and returns a list of padding strings that when concatenated together
+;; with their respective strings makes all of them the same size as the largest str in strs
+;; Only works properly when using a monospace font, need to investigate feasibility of bundling font with fsm
+#;(define (align-text strs) (local [
                                   (define max-str-len (apply max (map string-length strs)))
                                   (define (create-pad num) (if (= num 0)
                                                                ""
@@ -1095,14 +1102,11 @@
                                           (text (format " ~a" (substring (first (dgrph-p-rules (first (viz-state-p-dgraph a-vs)))) 1)) FONT-SIZE HEDGE-COLOR)
                                           ))
                               (beside (rectangle 1 (* 2 FONT-SIZE) "solid" 'white)
-                                      (let (
-                                            (padded-strs (align-text (list "Deriving: " "Current Yield: ")))
-                                            )
                                         (above/align "left"
                                                      (beside (text "       " FONT-SIZE 'black) (text "Deriving: " FONT-SIZE 'black) (text (format "~a" (viz-state-input-word a-vs)) FONT-SIZE 'black))
-                                                     (beside (text (second padded-strs) FONT-SIZE 'black) (text "Current Yield: " FONT-SIZE 'black) (text (format "~a" (first (viz-state-p-yield a-vs))) FONT-SIZE 'black))
+                                                     (beside (text "Current Yield: " FONT-SIZE 'black) (text (format "~a" (first (viz-state-p-yield a-vs))) FONT-SIZE 'black))
                                                      )
-                                        )
+                                        
                                       )
                               )
                        )
