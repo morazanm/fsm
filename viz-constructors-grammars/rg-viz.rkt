@@ -1102,10 +1102,20 @@
                                           (text (format " ~a" (substring (first (dgrph-p-rules (first (viz-state-p-dgraph a-vs)))) 1)) FONT-SIZE HEDGE-COLOR)
                                           ))
                               (beside (rectangle 1 (* 2 FONT-SIZE) "solid" 'white)
-                                        (above/align "left"
-                                                     (beside (text "       " FONT-SIZE 'black) (text "Deriving: " FONT-SIZE 'black) (text (format "~a" (viz-state-input-word a-vs)) FONT-SIZE 'black))
-                                                     (beside (text "Current Yield: " FONT-SIZE 'black) (text (format "~a" (first (viz-state-p-yield a-vs))) FONT-SIZE 'black))
-                                                     )
+                                      (let* (
+                                             (YIELD (text "Current Yield: " FONT-SIZE 'black))
+                                             (YIELD-WORD (text (format "~a" (first (viz-state-p-yield a-vs))) FONT-SIZE 'black))
+                                             (YIELD-IMG (beside YIELD YIELD-WORD))
+
+                                             (DREV (text "Deriving: " FONT-SIZE 'black))
+                                             (INPUT-WORD (text (format "~a" (viz-state-input-word a-vs)) FONT-SIZE 'black))
+                                             (DREV-IMG (beside DREV INPUT-WORD))
+                                              
+                                             (YIELD-DREV-LABELS (above/align "right" DREV YIELD))
+                                             (WORDS (above/align "left" INPUT-WORD YIELD-WORD))
+                                             )
+                                        (beside YIELD-DREV-LABELS WORDS)
+                                        )
                                         
                                       )
                               )
