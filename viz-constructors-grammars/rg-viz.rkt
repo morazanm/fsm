@@ -45,6 +45,8 @@
 (define DEFAULT-ZOOM 1)
 (define DEFAULT-ZOOM-FLOOR 1)
 (define DEFAULT-ZOOM-CAP 2)
+(define ZOOM-INCREASE 1.1)
+(define ZOOM-DECREASE (/ 1 ZOOM-INCREASE))
 
 (define cursor (let (
                      (cursor-rect (let (
@@ -173,6 +175,7 @@
                          )
                   (square 40 'solid 'white)
                   (scale 0.75 (above cursor
+                                     (square 20 'solid 'white)
                                      (text "Mouse hold to drag" 18 'black))
                          )
                   (square 40 'solid 'white)
@@ -510,7 +513,8 @@
   (cond [(key=? "right" a-key)
          (if (empty? (viz-state-upimgs a-vs))
              a-vs
-             (let* [(new-up-yield (if (empty? (viz-state-up-yield a-vs))
+             (let* [
+                    (new-up-yield (if (empty? (viz-state-up-yield a-vs))
                                       '()
                                       (rest (viz-state-up-yield a-vs))))
                     (new-p-yield (if (empty? (viz-state-up-yield a-vs))
@@ -523,7 +527,6 @@
                                         (viz-state-p-dgraph a-vs)))
                     ;; list is in form of (img, scale-x, scale-y)
                     (img-resize (resize-image (first new-pimgs) (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))
-                    
                     ]
                (if (or (< E-SCENE-WIDTH (image-width (first new-pimgs)))
                        (< E-SCENE-HEIGHT (image-height (first new-pimgs)))
@@ -574,8 +577,6 @@
                     (new-p-dgraph (rest (viz-state-p-dgraph a-vs)))
                     ;; list is in form of (img, scale-x, scale-y)
                     (img-resize (resize-image (first new-pimgs) (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))
-                      
-                      
                     ]
                (if (or (< E-SCENE-WIDTH (image-width (first new-pimgs)))
                        (< E-SCENE-HEIGHT (image-height (first new-pimgs)))
@@ -732,7 +733,7 @@
          ]
         [(key=? "w" a-key)
          (let  [
-                (new-scale (* 1.1 (viz-state-scale-factor a-vs)))
+                (new-scale (* ZOOM-INCREASE (viz-state-scale-factor a-vs)))
                 (img-resize (resize-image (first (viz-state-pimgs a-vs)) (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))
                 ]
            (if (> (viz-state-scale-factor-cap a-vs) new-scale)
@@ -780,7 +781,7 @@
          ]
         [(key=? "s" a-key)
          (let [
-               (new-scale (* 0.9 (viz-state-scale-factor a-vs)))
+               (new-scale (* ZOOM-DECREASE (viz-state-scale-factor a-vs)))
                (img-resize (resize-image (first (viz-state-pimgs a-vs)) (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))
                ]
            (if (< (viz-state-scale-factor-floor a-vs) new-scale)
@@ -1001,52 +1002,103 @@
          (tools-size (+ (image-height E-SCENE-TOOLS) 175))
 
          (scaled-image (scale (viz-state-scale-factor a-vs) (viz-state-curr-image a-vs)))
-          
-         (MIN-X (/ (image-width scaled-image) 2))
+
+         (MIN-X 0)
          (MIN-Y (- (/ E-SCENE-HEIGHT 2) (/ (image-height scaled-image) 2)))
-         (MAX-X (- E-SCENE-WIDTH (/ (image-width scaled-image) 2)))
+         (MAX-X E-SCENE-WIDTH)
          (MAX-Y (+ (/ (image-height scaled-image) 2) tools-size))
          ]
     (if (viz-state-mouse-pressed a-vs)
-        (if (and (<= MIN-X new-img-x)
-                 (<= new-img-x MAX-X)
-                 (<= MIN-Y new-img-y)
-                 (<= new-img-y MAX-Y)
-                 )
-              
-            (viz-state (viz-state-upimgs a-vs)
-                       (viz-state-pimgs a-vs)
-                       (viz-state-curr-image a-vs)
-                       (posn new-img-x new-img-y)
-                       (viz-state-scale-factor a-vs)
-                       (viz-state-scale-factor-cap a-vs)
-                       (viz-state-scale-factor-floor a-vs)
-                       (viz-state-dest-mouse-posn a-vs)
-                       (viz-state-dest-mouse-posn a-vs)
-                       (viz-state-mouse-pressed a-vs)
-                       (viz-state-up-dgraph a-vs)
-                       (viz-state-p-dgraph a-vs)
-                       (viz-state-up-yield a-vs)
-                       (viz-state-p-yield a-vs)
-                       (viz-state-input-word a-vs))
-              
-            (viz-state (viz-state-upimgs a-vs)
-                       (viz-state-pimgs a-vs)
-                       (viz-state-curr-image a-vs)
-                       (viz-state-image-posn a-vs)
-                       (viz-state-scale-factor a-vs)
-                       (viz-state-scale-factor-cap a-vs)
-                       (viz-state-scale-factor-floor a-vs)
-                       (viz-state-dest-mouse-posn a-vs)
-                       (viz-state-dest-mouse-posn a-vs)
-                       (viz-state-mouse-pressed a-vs)
-                       (viz-state-up-dgraph a-vs)
-                       (viz-state-p-dgraph a-vs)
-                       (viz-state-up-yield a-vs)
-                       (viz-state-p-yield a-vs)
-                       (viz-state-input-word a-vs))
+        (cond [(and (<= MIN-X new-img-x)
+                    (<= new-img-x MAX-X)
+                    (<= MIN-Y new-img-y)
+                    (<= new-img-y MAX-Y)
+                    )
+               (viz-state (viz-state-upimgs a-vs)
+                          (viz-state-pimgs a-vs)
+                          (viz-state-curr-image a-vs)
+                          (posn new-img-x new-img-y)
+                          (viz-state-scale-factor a-vs)
+                          (viz-state-scale-factor-cap a-vs)
+                          (viz-state-scale-factor-floor a-vs)
+                          (viz-state-dest-mouse-posn a-vs)
+                          (viz-state-dest-mouse-posn a-vs)
+                          (viz-state-mouse-pressed a-vs)
+                          (viz-state-up-dgraph a-vs)
+                          (viz-state-p-dgraph a-vs)
+                          (viz-state-up-yield a-vs)
+                          (viz-state-p-yield a-vs)
+                          (viz-state-input-word a-vs))
+               ]
+              [(and (or (> MIN-X new-img-x)
+                        (> new-img-x MAX-X)
+                        )
+                    (<= MIN-Y new-img-y)
+                    (<= new-img-y MAX-Y)
+                    )
+               (viz-state (viz-state-upimgs a-vs)
+                          (viz-state-pimgs a-vs)
+                          (viz-state-curr-image a-vs)
+                          (posn (posn-x (viz-state-image-posn a-vs)) new-img-y)
+                          (viz-state-scale-factor a-vs)
+                          (viz-state-scale-factor-cap a-vs)
+                          (viz-state-scale-factor-floor a-vs)
+                          (viz-state-dest-mouse-posn a-vs)
+                          (viz-state-dest-mouse-posn a-vs)
+                          (viz-state-mouse-pressed a-vs)
+                          (viz-state-up-dgraph a-vs)
+                          (viz-state-p-dgraph a-vs)
+                          (viz-state-up-yield a-vs)
+                          (viz-state-p-yield a-vs)
+                          (viz-state-input-word a-vs))
+               ]
+              [(and (<= MIN-X new-img-x)
+                    (<= new-img-x MAX-X)
+                    (or (> MIN-Y new-img-y)
+                        (> new-img-y MAX-Y)
+                        )
+                    )
+               (viz-state (viz-state-upimgs a-vs)
+                          (viz-state-pimgs a-vs)
+                          (viz-state-curr-image a-vs)
+                          (posn new-img-x (posn-y (viz-state-image-posn a-vs)))
+                          (viz-state-scale-factor a-vs)
+                          (viz-state-scale-factor-cap a-vs)
+                          (viz-state-scale-factor-floor a-vs)
+                          (viz-state-dest-mouse-posn a-vs)
+                          (viz-state-dest-mouse-posn a-vs)
+                          (viz-state-mouse-pressed a-vs)
+                          (viz-state-up-dgraph a-vs)
+                          (viz-state-p-dgraph a-vs)
+                          (viz-state-up-yield a-vs)
+                          (viz-state-p-yield a-vs)
+                          (viz-state-input-word a-vs))
+               ]
+              [(and (or (> MIN-X new-img-x)
+                        (> new-img-x MAX-X)
+                        )
+                    (or (> MIN-Y new-img-y)
+                        (> new-img-y MAX-Y)
+                        )
+                    )
+               (viz-state (viz-state-upimgs a-vs)
+                          (viz-state-pimgs a-vs)
+                          (viz-state-curr-image a-vs)
+                          (viz-state-image-posn a-vs)
+                          (viz-state-scale-factor a-vs)
+                          (viz-state-scale-factor-cap a-vs)
+                          (viz-state-scale-factor-floor a-vs)
+                          (viz-state-dest-mouse-posn a-vs)
+                          (viz-state-dest-mouse-posn a-vs)
+                          (viz-state-mouse-pressed a-vs)
+                          (viz-state-up-dgraph a-vs)
+                          (viz-state-p-dgraph a-vs)
+                          (viz-state-up-yield a-vs)
+                          (viz-state-p-yield a-vs)
+                          (viz-state-input-word a-vs))
+               ]
+              ;[else (error (format "X: ~s ~s ~s Y: ~s ~s ~s" MIN-X new-img-x MAX-X MIN-Y new-img-y MAX-Y))]
             )
-          
         (viz-state (viz-state-upimgs a-vs)
                    (viz-state-pimgs a-vs)
                    (viz-state-curr-image a-vs)
@@ -1220,7 +1272,7 @@
 
 
 
-; (rg-viz even-bs-odd-as '(a a a a a b b b b a a a a a a))
+; (rg-viz even-bs-odd-as '(a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a))
 
 
 
