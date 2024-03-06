@@ -36,14 +36,15 @@
 
 
 (define E-SCENE-WIDTH 1250)
-(define E-SCENE-HEIGHT 600)
+(define E-SCENE-HEIGHT 500)
 (define E-SCENE (empty-scene E-SCENE-WIDTH E-SCENE-HEIGHT))
 (define E-SCENE-CENTER (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2)))
 (define PERCENT-BORDER-GAP 0.9)
 (define HEDGE-COLOR 'violet)
 (define YIELD-COLOR 'orange)
 (define DEFAULT-ZOOM 1)
-
+(define DEFAULT-ZOOM-FLOOR 1)
+(define DEFAULT-ZOOM-CAP 2)
 
 (define cursor (let (
                      (cursor-rect (let (
@@ -150,37 +151,38 @@
                       (rectangle 10 30 'solid 'black))
                )
         )
-    (beside (scale 0.75 (above ARROW
-                               (square 20 'solid 'white)
-                               (text "Restart the visualization" 18 'black))
-                   )
-            (square 40 'solid 'white)
-            (scale 0.75 (above (rotate 270 ARROW)
-                               (square 20 'solid 'white)
-                               (text "Move one step forward" 18 'black))
-                   )
-            (square 40 'solid 'white)
-            (scale 0.75 (above (rotate 90 ARROW)
-                               (square 20 'solid 'white)
-                               (text "Move one step backward" 18 'black))
-                   )
-            (square 40 'solid 'white)
-            (scale 0.75 (above (rotate 180 ARROW)
-                               (square 20 'solid 'white)
-                               (text "Complete the visualization" 18 'black))
-                   )
-            (square 40 'solid 'white)
-            (scale 0.75 (above cursor
-                               (text "Move the viewport" 18 'black))
-                   )
-            (square 40 'solid 'white)
-            (above (text "W - Zoom in the viewport" 18 'black)
-                   (square 10 'solid 'white)
-                   (text "S - Zoom out the viewport" 18 'black)
-                   (square 10 'solid 'white)
-                   (text "R - Reset the viewport" 18 'black)
-                   )
-            )
+    (beside/align "bottom"
+                  (scale 0.75 (above ARROW
+                                     (square 20 'solid 'white)
+                                     (text "Restart the visualization" 18 'black))
+                         )
+                  (square 40 'solid 'white)
+                  (scale 0.75 (above (rotate 270 ARROW)
+                                     (square 20 'solid 'white)
+                                     (text "Move one step forward" 18 'black))
+                         )
+                  (square 40 'solid 'white)
+                  (scale 0.75 (above (rotate 90 ARROW)
+                                     (square 20 'solid 'white)
+                                     (text "Move one step backward" 18 'black))
+                         )
+                  (square 40 'solid 'white)
+                  (scale 0.75 (above (rotate 180 ARROW)
+                                     (square 20 'solid 'white)
+                                     (text "Complete the visualization" 18 'black))
+                         )
+                  (square 40 'solid 'white)
+                  (scale 0.75 (above cursor
+                                     (text "Mouse hold to drag" 18 'black))
+                         )
+                  (square 40 'solid 'white)
+                  (above (text "W - Zoom in" 18 'black)
+                         (square 10 'solid 'white)
+                         (text "S - Zoom out" 18 'black)
+                         (square 10 'solid 'white)
+                         (text "R - Reset the viewport" 18 'black)
+                         )
+                  )
     )
   )
 
@@ -194,6 +196,8 @@
 ;; curr-image - current image to be drawn to the screen
 ;; image-posn - position of the graph image
 ;; scale-factor - mulitplicative factor used to scale the image while zooming
+;; scale-factor-cap - maximum value for scale-factor
+;; scale-factor-floor - minimum value for scale-factor
 ;; curr-mouse-posn - position of the mouse
 ;; dest-mouse-posn - position where the mouse is dragged
 ;; mouse-pressed - boolean indicating whether the mouse is pressed
@@ -201,8 +205,9 @@
 ;; p-dgraph - processed dgraphs
 ;; up-yield - unprocessed yield
 ;; p-yield - processed yield
-(struct viz-state (upimgs pimgs curr-image image-posn scale-factor scale-factor-cap scale-factor-floor curr-mouse-posn
-                          dest-mouse-posn mouse-pressed
+(struct viz-state (upimgs pimgs curr-image image-posn
+                          scale-factor scale-factor-cap scale-factor-floor
+                          curr-mouse-posn dest-mouse-posn mouse-pressed
                           up-dgraph p-dgraph up-yield p-yield input-word)
   )
 
@@ -211,7 +216,7 @@
 ;; up-levels - unprocessed levels
 ;; ad-levels - levels added to the graph
 ;; nodes - nodes in the graph
-;; hedges - highlighted edges of the graphS
+;; hedges - highlighted edges of the graphs
 ;; up-rules - unprocessed grammar rules
 ;; p-rules - processed grammar rules
 (struct dgrph (up-levels ad-levels nodes hedges up-rules p-rules))
@@ -528,8 +533,8 @@
                               (first img-resize)      
                               E-SCENE-CENTER
                               DEFAULT-ZOOM
-                              (min (/ 1 (second img-resize)) (/ 1 (third img-resize)))
-                              DEFAULT-ZOOM
+                              (* (min (/ 1 (second img-resize)) (/ 1 (third img-resize))) DEFAULT-ZOOM-CAP)
+                              DEFAULT-ZOOM-FLOOR
                               (viz-state-curr-mouse-posn a-vs)
                               (viz-state-dest-mouse-posn a-vs)
                               (viz-state-mouse-pressed a-vs)
@@ -544,8 +549,8 @@
                               (first new-pimgs)
                               E-SCENE-CENTER
                               DEFAULT-ZOOM
-                              DEFAULT-ZOOM
-                              DEFAULT-ZOOM
+                              DEFAULT-ZOOM-CAP
+                              DEFAULT-ZOOM-FLOOR
                               (viz-state-curr-mouse-posn a-vs)
                               (viz-state-dest-mouse-posn a-vs)
                               (viz-state-mouse-pressed a-vs)
@@ -581,8 +586,8 @@
                               (first img-resize)
                               E-SCENE-CENTER
                               DEFAULT-ZOOM
-                              (min (/ 1 (second img-resize)) (/ 1 (third img-resize)))
-                              DEFAULT-ZOOM
+                              (* (min (/ 1 (second img-resize)) (/ 1 (third img-resize))) DEFAULT-ZOOM-CAP)
+                              DEFAULT-ZOOM-FLOOR
                               (viz-state-curr-mouse-posn a-vs)
                               (viz-state-dest-mouse-posn a-vs)
                               (viz-state-mouse-pressed a-vs)
@@ -599,8 +604,8 @@
                               (first new-pimgs)
                               E-SCENE-CENTER
                               DEFAULT-ZOOM
-                              DEFAULT-ZOOM
-                              DEFAULT-ZOOM
+                              DEFAULT-ZOOM-CAP
+                              DEFAULT-ZOOM-FLOOR
                               (viz-state-curr-mouse-posn a-vs)
                               (viz-state-dest-mouse-posn a-vs)
                               (viz-state-mouse-pressed a-vs)
@@ -636,8 +641,8 @@
                               (first img-resize)
                               E-SCENE-CENTER
                               DEFAULT-ZOOM
-                              (min (/ 1 (second img-resize)) (/ 1 (third img-resize)))
-                              DEFAULT-ZOOM
+                              (* (min (/ 1 (second img-resize)) (/ 1 (third img-resize))) DEFAULT-ZOOM-CAP)
+                              DEFAULT-ZOOM-FLOOR
                               (viz-state-curr-mouse-posn a-vs)
                               (viz-state-dest-mouse-posn a-vs)
                               (viz-state-mouse-pressed a-vs)
@@ -652,8 +657,8 @@
                               (first new-pimgs)
                               E-SCENE-CENTER
                               DEFAULT-ZOOM
-                              DEFAULT-ZOOM
-                              DEFAULT-ZOOM
+                              DEFAULT-ZOOM-CAP
+                              DEFAULT-ZOOM-FLOOR
                               (viz-state-curr-mouse-posn a-vs)
                               (viz-state-dest-mouse-posn a-vs)
                               (viz-state-mouse-pressed a-vs)
@@ -691,8 +696,8 @@
                               (first img-resize)
                               E-SCENE-CENTER
                               DEFAULT-ZOOM
-                              (min (/ 1 (second img-resize)) (/ 1 (third img-resize)))
-                              DEFAULT-ZOOM
+                              (* (min (/ 1 (second img-resize)) (/ 1 (third img-resize))) DEFAULT-ZOOM-CAP)
+                              DEFAULT-ZOOM-FLOOR
                               (viz-state-curr-mouse-posn a-vs)
                               (viz-state-dest-mouse-posn a-vs)
                               (viz-state-mouse-pressed a-vs)
@@ -709,8 +714,8 @@
                               (first new-pimgs)
                               E-SCENE-CENTER
                               DEFAULT-ZOOM
-                              DEFAULT-ZOOM
-                              DEFAULT-ZOOM
+                              DEFAULT-ZOOM-CAP
+                              DEFAULT-ZOOM-FLOOR
                               (viz-state-curr-mouse-posn a-vs)
                               (viz-state-dest-mouse-posn a-vs)
                               (viz-state-mouse-pressed a-vs)
@@ -731,22 +736,42 @@
                 (img-resize (resize-image (first (viz-state-pimgs a-vs)) (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))
                 ]
            (if (> (viz-state-scale-factor-cap a-vs) new-scale)
-               (viz-state (viz-state-upimgs a-vs)
-                          (viz-state-pimgs a-vs)
-                          (first img-resize)
-                          (viz-state-image-posn a-vs)
-                          new-scale
-                          (viz-state-scale-factor-cap a-vs)
-                          (viz-state-scale-factor-floor a-vs)
-                          (viz-state-curr-mouse-posn a-vs)
-                          (viz-state-dest-mouse-posn a-vs)
-                          (viz-state-mouse-pressed a-vs)
-                          (viz-state-up-dgraph a-vs)
-                          (viz-state-p-dgraph a-vs)
-                          (viz-state-up-yield a-vs)
-                          (viz-state-p-yield a-vs)
-                          (viz-state-input-word a-vs)
-                          )
+               (if (or (< E-SCENE-WIDTH (image-width (first (viz-state-pimgs a-vs))))
+                       (< E-SCENE-HEIGHT (image-height (first (viz-state-pimgs a-vs))))
+                       )
+                   (viz-state (viz-state-upimgs a-vs)
+                              (viz-state-pimgs a-vs)
+                              (first img-resize)
+                              (viz-state-image-posn a-vs)
+                              new-scale
+                              (viz-state-scale-factor-cap a-vs)
+                              (viz-state-scale-factor-floor a-vs)
+                              (viz-state-curr-mouse-posn a-vs)
+                              (viz-state-dest-mouse-posn a-vs)
+                              (viz-state-mouse-pressed a-vs)
+                              (viz-state-up-dgraph a-vs)
+                              (viz-state-p-dgraph a-vs)
+                              (viz-state-up-yield a-vs)
+                              (viz-state-p-yield a-vs)
+                              (viz-state-input-word a-vs)
+                              )
+                   (viz-state (viz-state-upimgs a-vs)
+                              (viz-state-pimgs a-vs)
+                              (first (viz-state-pimgs a-vs))
+                              (viz-state-image-posn a-vs)
+                              new-scale
+                              (viz-state-scale-factor-cap a-vs)
+                              (viz-state-scale-factor-floor a-vs)
+                              (viz-state-curr-mouse-posn a-vs)
+                              (viz-state-dest-mouse-posn a-vs)
+                              (viz-state-mouse-pressed a-vs)
+                              (viz-state-up-dgraph a-vs)
+                              (viz-state-p-dgraph a-vs)
+                              (viz-state-up-yield a-vs)
+                              (viz-state-p-yield a-vs)
+                              (viz-state-input-word a-vs)
+                              )
+                   )
                a-vs
                )
            )
@@ -759,22 +784,42 @@
                (img-resize (resize-image (first (viz-state-pimgs a-vs)) (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))
                ]
            (if (< (viz-state-scale-factor-floor a-vs) new-scale)
-               (viz-state (viz-state-upimgs a-vs)
-                          (viz-state-pimgs a-vs)
-                          (first img-resize)
-                          (viz-state-image-posn a-vs)
-                          new-scale
-                          (viz-state-scale-factor-cap a-vs)
-                          (viz-state-scale-factor-floor a-vs)
-                          (viz-state-curr-mouse-posn a-vs)
-                          (viz-state-dest-mouse-posn a-vs)
-                          (viz-state-mouse-pressed a-vs)
-                          (viz-state-up-dgraph a-vs)
-                          (viz-state-p-dgraph a-vs)
-                          (viz-state-up-yield a-vs)
-                          (viz-state-p-yield a-vs)
-                          (viz-state-input-word a-vs)
-                          )
+               (if (or (< E-SCENE-WIDTH (image-width (first (viz-state-pimgs a-vs))))
+                       (< E-SCENE-HEIGHT (image-height (first (viz-state-pimgs a-vs))))
+                       )
+                   (viz-state (viz-state-upimgs a-vs)
+                              (viz-state-pimgs a-vs)
+                              (first img-resize)
+                              (viz-state-image-posn a-vs)
+                              new-scale
+                              (viz-state-scale-factor-cap a-vs)
+                              (viz-state-scale-factor-floor a-vs)
+                              (viz-state-curr-mouse-posn a-vs)
+                              (viz-state-dest-mouse-posn a-vs)
+                              (viz-state-mouse-pressed a-vs)
+                              (viz-state-up-dgraph a-vs)
+                              (viz-state-p-dgraph a-vs)
+                              (viz-state-up-yield a-vs)
+                              (viz-state-p-yield a-vs)
+                              (viz-state-input-word a-vs)
+                              )
+                   (viz-state (viz-state-upimgs a-vs)
+                              (viz-state-pimgs a-vs)
+                              (first (viz-state-pimgs a-vs))
+                              (viz-state-image-posn a-vs)
+                              new-scale
+                              (viz-state-scale-factor-cap a-vs)
+                              (viz-state-scale-factor-floor a-vs)
+                              (viz-state-curr-mouse-posn a-vs)
+                              (viz-state-dest-mouse-posn a-vs)
+                              (viz-state-mouse-pressed a-vs)
+                              (viz-state-up-dgraph a-vs)
+                              (viz-state-p-dgraph a-vs)
+                              (viz-state-up-yield a-vs)
+                              (viz-state-p-yield a-vs)
+                              (viz-state-input-word a-vs)
+                              )
+                   )
                a-vs
                )
            )
@@ -791,8 +836,8 @@
                           (first img-resize)
                           E-SCENE-CENTER
                           DEFAULT-ZOOM
-                          (min (/ 1 (second img-resize)) (/ 1 (third img-resize)))
-                          (max (second img-resize) (third img-resize))
+                          (* (min (/ 1 (second img-resize)) (/ 1 (third img-resize))) DEFAULT-ZOOM-CAP)
+                          DEFAULT-ZOOM
                           (viz-state-curr-mouse-posn a-vs)
                           (viz-state-dest-mouse-posn a-vs)
                           (viz-state-mouse-pressed a-vs)
@@ -807,7 +852,7 @@
                           (first (viz-state-pimgs a-vs))
                           E-SCENE-CENTER
                           DEFAULT-ZOOM
-                          DEFAULT-ZOOM
+                          DEFAULT-ZOOM-CAP
                           DEFAULT-ZOOM
                           (viz-state-curr-mouse-posn a-vs)
                           (viz-state-dest-mouse-posn a-vs)
@@ -1065,62 +1110,69 @@
 ;; with their respective strings makes all of them the same size as the largest str in strs
 ;; Only works properly when using a monospace font, need to investigate feasibility of bundling font with fsm
 #;(define (align-text strs) (local [
-                                  (define max-str-len (apply max (map string-length strs)))
-                                  (define (create-pad num) (if (= num 0)
-                                                               ""
-                                                               (string-append " " (create-pad (sub1 num)))
-                                                               )
-                                    )
-                                  (define (pad-str str) (let (
-                                                              (length-diff (- max-str-len (string-length str)))
-                                                              )
-                                                          (if (= length-diff 0)
-                                                              str
-                                                              (string-append (create-pad length-diff) str)
-                                                              )
-                                                          )
-                                    )
-                                  ]
-                            (map create-pad (map (lambda (x) (- max-str-len (string-length x))) strs))
-                            )
-  )
+                                    (define max-str-len (apply max (map string-length strs)))
+                                    (define (create-pad num) (if (= num 0)
+                                                                 ""
+                                                                 (string-append " " (create-pad (sub1 num)))
+                                                                 )
+                                      )
+                                    (define (pad-str str) (let (
+                                                                (length-diff (- max-str-len (string-length str)))
+                                                                )
+                                                            (if (= length-diff 0)
+                                                                str
+                                                                (string-append (create-pad length-diff) str)
+                                                                )
+                                                            )
+                                      )
+                                    ]
+                              (map create-pad (map (lambda (x) (- max-str-len (string-length x))) strs))
+                              )
+    )
 
 ;; draw-world
 ;; viz-state -> img
 ;; Purpose: To render the given viz-state
 (define (draw-world a-vs)
-  (let (
+  (let [
         (PARSE-TREE-IMG (place-image (scale (viz-state-scale-factor a-vs) (viz-state-curr-image a-vs))   
                                      (posn-x (viz-state-image-posn a-vs))
                                      (posn-y (viz-state-image-posn a-vs))
                                      E-SCENE)
                         )
-        (INSTRUCTIONS  (above (if (equal? "" (first (dgrph-p-rules (first (viz-state-p-dgraph a-vs)))))
-                                  (text "" FONT-SIZE 'white)
-                                  (beside (text "The rule used:" FONT-SIZE 'black)
-                                          (text (format " ~a" (substring (first (dgrph-p-rules (first (viz-state-p-dgraph a-vs)))) 0 1)) FONT-SIZE YIELD-COLOR)
-                                          (text (format " ~a" (substring (first (dgrph-p-rules (first (viz-state-p-dgraph a-vs)))) 1)) FONT-SIZE HEDGE-COLOR)
-                                          ))
-                              (beside (rectangle 1 (* 2 FONT-SIZE) "solid" 'white)
-                                      (let* (
-                                             (YIELD (text "Current Yield: " FONT-SIZE 'black))
-                                             (YIELD-WORD (text (format "~a" (first (viz-state-p-yield a-vs))) FONT-SIZE 'black))
-                                             (YIELD-IMG (beside YIELD YIELD-WORD))
+        (INSTRUCTIONS (beside (rectangle 1 (* 2 FONT-SIZE) "solid" 'white)
+                              (let* [
+                                     (YIELD (text "Current Yield: " FONT-SIZE 'black))
+                                     (YIELD-WORD (text (format "~a" (first (viz-state-p-yield a-vs))) FONT-SIZE 'black))
+                                     (YIELD-IMG (beside YIELD YIELD-WORD))
 
-                                             (DREV (text "Deriving: " FONT-SIZE 'black))
-                                             (INPUT-WORD (text (format "~a" (viz-state-input-word a-vs)) FONT-SIZE 'black))
-                                             (DREV-IMG (beside DREV INPUT-WORD))
+                                     (DREV (text "Deriving: " FONT-SIZE 'black))
+                                     (INPUT-WORD (text (format "~a" (viz-state-input-word a-vs)) FONT-SIZE 'black))
+                                     (DREV-IMG (beside DREV INPUT-WORD))
+
+                                     (RULE-USED (if (equal? "" (first (dgrph-p-rules (first (viz-state-p-dgraph a-vs)))))
+                                                    ;; Use white so its invisible, makes it so the words dont shift (using an empty string would make the words shift)
+                                                    (text "The rule used: " FONT-SIZE 'white)
+                                                    (text "The rule used: " FONT-SIZE 'black)
+                                                    )
+                                                )
+                                     (RULE-USED-WORD (if (equal? "" (first (dgrph-p-rules (first (viz-state-p-dgraph a-vs)))))
+                                                         (text "" FONT-SIZE 'white)
+                                                         (beside (text (format "~a" (substring (first (dgrph-p-rules (first (viz-state-p-dgraph a-vs)))) 0 1)) FONT-SIZE YIELD-COLOR)
+                                                                 (text (format " ~a" (substring (first (dgrph-p-rules (first (viz-state-p-dgraph a-vs)))) 1)) FONT-SIZE HEDGE-COLOR)
+                                                                 )
+                                                         )
+                                                     )
                                               
-                                             (YIELD-DREV-LABELS (above/align "right" DREV YIELD))
-                                             (WORDS (above/align "left" INPUT-WORD YIELD-WORD))
-                                             )
-                                        (beside YIELD-DREV-LABELS WORDS)
-                                        )
+                                     (RULE-YIELD-DREV-LABELS (above/align "right" RULE-USED DREV YIELD))
+                                     (WORDS (above/align "left" RULE-USED-WORD INPUT-WORD YIELD-WORD))
+                                     ]
+                                (beside RULE-YIELD-DREV-LABELS WORDS)
+                                )
                                         
-                                      )
                               )
-                       )
-        )
+                      )
+        ]
     (above PARSE-TREE-IMG INSTRUCTIONS (square 30 'solid 'white) E-SCENE-TOOLS)
     )
   )
@@ -1146,7 +1198,7 @@
               ]
         (run-viz (viz-state (rest imgs) (list (first imgs))
                             (first imgs)
-                            (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2)) 1 1 1 (posn 0 0) (posn 0 0)
+                            (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2)) DEFAULT-ZOOM DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR (posn 0 0) (posn 0 0)
                             #f (rest lod) (list (first lod))
                             (rest w-der) (first w-der) word)
                  draw-world 'rg-ctm))))
