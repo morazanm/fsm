@@ -104,5 +104,12 @@
       (error 'sm-graph "Invalid color option. Must be either 0, 1, or 2. Given ~a" color-blind-mode))
     (fsa->bitmap fsa color-blind-mode))
 
+  (define aab* (make-unchecked-ndfa '(W X Y)
+                        '(a b)
+                        'W
+                        '(Y)
+                        '((W a X)
+                          (X a Y)
+                          (Y b Y))))
  
   ) ; close module
