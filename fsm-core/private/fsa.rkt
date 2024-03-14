@@ -220,8 +220,11 @@
     ;; (listof ss) --> ss-name-tbl
     ;; Purpose: Create a table for ss names
     (define (compute-ss-name-tbl super-states)
-      (map (λ (ss) (list ss (generate-symbol 'X '(X))))                                      
-           super-states))
+      (foldr (λ (ss acc) (cons (list ss (gen-state (map second acc))) acc))
+             '()
+             super-states))
+      #;(map (λ (ss) (list ss (generate-symbol 'X '(X))))                                      
+           super-states)
 
     ;; (listof state) rules --> emps-tbl
     ;; Purpose: Compute empties table for all given states
