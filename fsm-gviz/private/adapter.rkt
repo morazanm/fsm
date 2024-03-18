@@ -1,5 +1,6 @@
 #lang racket
 (require "lib.rkt")
+(require 2htdp/image)
 
 ;; structure of a ndfa/dfa rule
 (define (dfa/ndfa-rule? r)

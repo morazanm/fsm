@@ -4,7 +4,8 @@
          "private/dot.rkt"
          "../fsm-core/interface.rkt"
          "../fsm-gui/structs/machine.rkt"
-         "../fsm-gui/structs/state.rkt")
+         "../fsm-gui/structs/state.rkt"
+         2htdp/image)
 
 ; *Color Blind States*
 ; 0 -> default colors
