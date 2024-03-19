@@ -191,7 +191,7 @@
            (text "Concatenation of the ndfas \n" 20 'black)
            (text (format "Starting state: ~a \n" new-start) 20 'black)
            (text (format "Final state(s): ~a \n" new-finals) 20 'black)
-           (text (format "Generated edge: ~a \n" edge-added) 20 'black))))
+           (text (format "Generated edges: ~a \n" edge-added) 20 'black))))
      
 ;; make-init-grph-img
 ;; ndfa ndfa -> img
