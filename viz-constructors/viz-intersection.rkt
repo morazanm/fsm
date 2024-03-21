@@ -292,7 +292,7 @@
                                        Ncomplement))
                        (text "CN-dfa: Complement of N-dfa" 20 'black)))
          (nM (sm-rename-states (list DEAD) (sm-complement (ndfa->dfa M))))
-         (nN (sm-rename-states (list DEAD) (sm-complement (ndfa->dfa N))))
+         (nN (sm-rename-states (sm-states nM) (sm-complement (ndfa->dfa N))))
          (notM (create-edge-graph-m
                 (create-node-graph
                  (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
@@ -308,7 +308,7 @@
          (comp-un (complement-fsa ndfa-un))
          (unionMN (above (graph->bitmap
                           (create-edge-graph-union (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                                      notM-U-notN)
+                                                                       notM-U-notN)
                                                    notM-U-notN nM nN))
                          (text "U-CM-dfa-CN-dfa: Union of CM-dfa and CN-dfa" 20 'black)))
          (dfaMN (above (graph->bitmap (create-edge-graph (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
