@@ -9,6 +9,7 @@
 ;; Required at the moment since unfortunately racket contract system doesn't play nice with the contracts made with TR
  (unsafe-require/typed racket/hash
                 [hash-union (All (a b) (->* ((Immutable-HashTable a b) (HashTable a b)) (#:combine (-> b b b) #:combine/key (-> a b b b)) (Immutable-HashTable a b)))]
+                [hash-union! (All (a b) (->* ((Mutable-HashTable a b) (HashTable a b)) (#:combine (-> b b b) #:combine/key (-> a b b b)) Void))]
                 )
  (require/typed "dot.rkt"
                 [find-tmp-dir (-> Path)]
@@ -37,7 +38,6 @@
  graph->png
  graph->str
  stringify-value
- dot->png
  
  #;(contract-out
   (struct formatters ((graph (hash/c symbol? (-> any/c string?)))
@@ -99,17 +99,17 @@
 
 
 ;; Constants
-(: DEFAULT-GRAPH (Immutable-HashTable Symbol Any))
-(define DEFAULT-GRAPH (hash 'rankdir "LR"))
+(: DEFAULT-GRAPH (Mutable-HashTable Symbol Any))
+(define DEFAULT-GRAPH (make-hash (list (cons 'rankdir "LR"))))
 
 
 ;
 
-(: DEFAULT-EDGE (Immutable-HashTable Symbol Any))
-(define DEFAULT-EDGE (hash 'fontsize 15))
+(: DEFAULT-EDGE (Mutable-HashTable Symbol Any))
+(define DEFAULT-EDGE (make-hash (list (cons 'fontsize 15))))
 
-(: DEFAULT-NODE (Immutable-HashTable Symbol Any))
-(define DEFAULT-NODE (hash 'color "black" 'shape "circle"))
+(: DEFAULT-NODE (Mutable-HashTable Symbol Any))
+(define DEFAULT-NODE (make-hash (list (cons 'color "black") (cons 'shape "circle"))))
 
 (: DEFAULT-EDGE-LABEL-FMTR (-> Any String))
 (define (DEFAULT-EDGE-LABEL-FMTR lst)
@@ -128,16 +128,15 @@
 ; A structure the represents a node in the dot language
 (struct node (
               [name : Symbol]
-              [atb : (Immutable-HashTable Symbol Any)]
+              [atb : (Mutable-HashTable Symbol Any)]
               )
   #:transparent
-  #:mutable)
+  )
 
 ; A structure the represents a edgs in the dot language
 (struct edge ([start-node : Symbol]
               [end-node : Symbol]
-              [atb : (Immutable-HashTable Symbol Any)])
-  #:mutable
+              [atb : (Mutable-HashTable Symbol Any)])
   #:transparent)
 
 ; A structure the represents a subgraph in the dot language
@@ -145,22 +144,21 @@
                   [node-list : (Listof node)]
                   [edge-list : (Listof edge)]
                   [subgraph-list : (Listof subgraph)]
-                  [atb : (Immutable-HashTable Symbol Any)])
-  #:mutable
+                  [atb : (Mutable-HashTable Symbol Any)])
   #:transparent)
 
 ;; formatters contain custom formatting functions for attributes
-(struct formatters ([graph-hash : (Immutable-HashTable Symbol (-> Any String))]
-                    [node-hash : (Immutable-HashTable Symbol (-> Any String))]
-                    [edge-hash : (Immutable-HashTable Symbol (-> Any String))]) #:transparent)
+(struct formatters ([graph-hash : (Mutable-HashTable Symbol (-> Any String))]
+                    [node-hash : (Mutable-HashTable Symbol (-> Any String))]
+                    [edge-hash : (Mutable-HashTable Symbol (-> Any String))]) #:transparent)
 
-(: formatters-hash (-> Symbol (-> Any String) (Immutable-HashTable Symbol (-> Any String))))
-(define (formatters-hash key frmt-fun) (hash key frmt-fun))
+(: formatters-hash (-> Symbol (-> Any String) (Mutable-HashTable Symbol (-> Any String))))
+(define (formatters-hash key frmt-fun) (make-hash (list (cons key frmt-fun))))
 
 (: DEFAULT-FORMATTERS formatters)
 (define DEFAULT-FORMATTERS (formatters
-                            (hash)
-                            (hash)
+                            (make-hash)
+                            (make-hash)
                             ;(hash 'label DEFAULT-EDGE-LABEL-FMTR)
                             (formatters-hash 'label DEFAULT-EDGE-LABEL-FMTR)
                             )
@@ -172,8 +170,7 @@
                [edge-list : (Listof edge)]
                [subgraph-list : (Listof subgraph)]
                [fmtrs : formatters]
-               [atb : (Immutable-HashTable Symbol Any)])
-  #:mutable
+               [atb : (Mutable-HashTable Symbol Any)])
   #:transparent)
 
 ;; custom contract for a graph type. A graph type is either a 
@@ -185,7 +182,7 @@
 
 ;; hash->str: hash hash Optional(string) -> string
 ;; Purpose: converts the hash to a graphviz string
-(: hash->str (->* ((Immutable-HashTable Symbol Any) (Immutable-HashTable Symbol (-> Any String))) (String) String))
+(: hash->str (->* ((Mutable-HashTable Symbol Any) (Mutable-HashTable Symbol (-> Any String))) (String) String))
 (define (hash->str hash fmtr (spacer ", "))
 
   ;; Purpose: Formats a possibly boolean value to a symbol
@@ -221,7 +218,7 @@
 ;; node->str: node node -> string
 ;; returns the graphviz representation of a node as a string
 
-(: node->str (-> node (Immutable-HashTable Symbol (-> Any String)) String))
+(: node->str (-> node (Mutable-HashTable Symbol (-> Any String)) String))
 (define (node->str node fmtr-node)
   (format "    ~s [~a];\n"
           (node-name node)
@@ -229,7 +226,7 @@
 
 ;; edge->str: edge hash -> string
 ;; returns the graphviz representation of a edge as a string
-(: edge->str (-> edge (Immutable-HashTable Symbol (-> Any String)) String))
+(: edge->str (-> edge (Mutable-HashTable Symbol (-> Any String)) String))
 (define (edge->str edge fmtr)
   (format "    ~s -> ~s [~a];\n"
           (edge-start-node edge)
@@ -296,11 +293,26 @@
 ;; combine :: hash hash -> hash
 ;; combines the two hashes together. If the hashs have the same key the first hash 
 ;; is used.
-(: combine-formatters (-> (Immutable-HashTable Symbol (-> Any String)) (Immutable-HashTable Symbol (-> Any String)) (Immutable-HashTable Symbol (-> Any String))))
-(define (combine-formatters v1 v2) ((inst hash-union Symbol (-> Any String)) v1 v2 #:combine/key (lambda ([k : Symbol] [_v1 : (-> Any String)] [_v2 : (-> Any String)]) _v1)))
+(: combine-formatters (-> (Mutable-HashTable Symbol (-> Any String)) (Mutable-HashTable Symbol (-> Any String)) (Mutable-HashTable Symbol (-> Any String))))
+(define (combine-formatters v1 v2) (let [
+                                         (new-h (hash-copy v1))
+                                         ]
+                                    ((inst hash-union! Symbol (-> Any String)) new-h
+                                                                              v2
+                                                                              #:combine/key (lambda ([k : Symbol] [_v1 : (-> Any String)] [_v2 : (-> Any String)]) _v1)
+                                                                              )
+                                     new-h
+                                     )
+  )
 
-(: combine (-> (Immutable-HashTable Symbol Any) (Immutable-HashTable Symbol Any) (Immutable-HashTable Symbol Any)))
-(define (combine v1 v2) ((inst hash-union Symbol Any) v1 v2 #:combine/key (lambda ([k : Symbol] [_v1 : Any] [_v2 : Any]) _v1)))
+(: combine (-> (Mutable-HashTable Symbol Any) (Mutable-HashTable Symbol Any) (Mutable-HashTable Symbol Any)))
+(define (combine v1 v2) (let [
+                              (new-h (hash-copy v1))
+                              ]
+                          ((inst hash-union! Symbol Any) new-h v2 #:combine/key (lambda ([k : Symbol] [_v1 : Any] [_v2 : Any]) _v1))
+                          new-h
+                          )
+  )
 
 
 
@@ -311,7 +323,7 @@
 ;; create-graph: symbol -> graph
 ;; name: The name of the graph
 ;; Purpose: Creates a Graph with the given name
-(: create-graph (->* (Symbol) (#:fmtrs formatters #:atb (Immutable-HashTable Symbol Any)) graph))
+(: create-graph (->* (Symbol) (#:fmtrs formatters #:atb (Mutable-HashTable Symbol Any)) graph))
 (define (create-graph name #:fmtrs(fmtrs DEFAULT-FORMATTERS) #:atb [atb DEFAULT-GRAPH])
   (graph name
          '()
@@ -328,13 +340,13 @@
          )
   )
 
-(: gviz-hash (-> (Immutable-HashTable Symbol Any)))
-(define (gviz-hash) (hash))
+(: gviz-hash (-> (Mutable-HashTable Symbol Any)))
+(define (gviz-hash) (make-hash))
 
-(: formatter-hash (-> (Immutable-HashTable Symbol (-> Any String))))
-(define (formatter-hash) (hash))
+(: formatter-hash (-> (Mutable-HashTable Symbol (-> Any String))))
+(define (formatter-hash) (make-hash))
 
-(: create-formatters (->* () (#:graph (Immutable-HashTable Symbol (-> Any String)) #:node (Immutable-HashTable Symbol (-> Any String)) #:edge (Immutable-HashTable Symbol (-> Any String))) formatters))
+(: create-formatters (->* () (#:graph (Mutable-HashTable Symbol (-> Any String)) #:node (Mutable-HashTable Symbol (-> Any String)) #:edge (Mutable-HashTable Symbol (-> Any String))) formatters))
 (define (create-formatters #:graph[graph (formatter-hash)]
                            #:node[node (formatter-hash)]
                            #:edge[edge (formatter-hash)]
@@ -358,7 +370,7 @@
 
 ;; create-subgraph :: subgraph
 ;; subgraphs can have a optional name, but it is not required
-(: create-subgraph (->* () (#:name (U Symbol Null) #:atb (Immutable-HashTable Symbol Any)) subgraph))
+(: create-subgraph (->* () (#:name (U Symbol Null) #:atb (Mutable-HashTable Symbol Any)) subgraph))
 (define (create-subgraph #:name [name null] #:atb [atb (gviz-hash)])
   (subgraph (if (null? name)
                 name
@@ -398,9 +410,13 @@
       )
   )
 
+
+;Mutable-HashTable Symbol String Mutable-HashTable)
+
+
 ;; add-node: graph | subgraph string Optional(hash-map) -> graph | subgraph
 ;; Purpose: adds a node to the given graph
-(: add-node (->* ((U graph subgraph) Symbol) (#:atb (Immutable-HashTable Symbol Any)) (U graph subgraph)))
+(: add-node (->* ((U graph subgraph) Symbol) (#:atb (Mutable-HashTable Symbol Any)) (U graph subgraph)))
 (define (add-node parent name #:atb [atb DEFAULT-NODE])
   (if (existing-name? parent name)
       (error "[Duplicate Name]: Node name already exists on the graph")
@@ -408,24 +424,27 @@
               (: name-lambda (-> Symbol))
               (define (name-lambda) name)
               (: new-node node)
-              (define new-node (node (clean-invalid-dot-lang name) (hash-set atb 'label (stringify-value (hash-ref atb 'label name-lambda)))))
+              (define new-node (node (clean-invalid-dot-lang name) (hash-copy atb))
+                )
               ]
-        (if (graph? parent)
-            (graph
-             (graph-name parent)
-             (cons new-node (graph-node-list parent))
-             (graph-edge-list parent)
-             (graph-subgraph-list parent)
-             (graph-fmtrs parent)
-             (graph-atb parent)
-             )
-            (subgraph (subgraph-name parent)
-                      (cons new-node (subgraph-node-list parent))
-                      (subgraph-edge-list parent)
-                      (subgraph-subgraph-list parent)
-                      (subgraph-atb parent)
-                      )
-            )
+        (begin (hash-set! (node-atb new-node) 'label (stringify-value (hash-ref atb 'label name-lambda)))
+               (if (graph? parent)
+                   (graph
+                    (graph-name parent)
+                    (cons new-node (graph-node-list parent))
+                    (graph-edge-list parent)
+                    (graph-subgraph-list parent)
+                    (graph-fmtrs parent)
+                    (graph-atb parent)
+                    )
+                   (subgraph (subgraph-name parent)
+                             (cons new-node (subgraph-node-list parent))
+                             (subgraph-edge-list parent)
+                             (subgraph-subgraph-list parent)
+                             (subgraph-atb parent)
+                             )
+                   )
+               )
         )
       )
   )
@@ -433,14 +452,21 @@
 
 ;; add-nodes: graph | subgraph listof(symbol) Optional(hash-map) -> graph | subgraph
 ;; Purpose: adds the list of nodes to the given graph
-(: add-nodes (->* ((U graph subgraph) (Listof Symbol)) (#:atb (Immutable-HashTable Symbol Any)) (U graph subgraph)))
+(: add-nodes (->* ((U graph subgraph) (Listof Symbol)) (#:atb (Mutable-HashTable Symbol Any)) (U graph subgraph)))
 (define (add-nodes parent names #:atb [atb DEFAULT-NODE])
   (: nodes-to-add (Listof node))
   (define nodes-to-add 
     (map (lambda ([n : Symbol])
            (when (existing-name? parent n)
              (error "[Duplicate Name]: Edge name already exists on the graph"))
-           (node (clean-invalid-dot-lang n) (hash-set atb 'label (stringify-value n))))
+           (node (clean-invalid-dot-lang n) (let [
+                                                  (muthash (hash-copy atb))
+                                                  ]
+                                              (hash-set! muthash 'label (stringify-value n))
+                                              muthash
+                                              )
+                 )
+           )
          names))
   (if (graph? parent)
       (graph
@@ -457,12 +483,15 @@
        (subgraph-subgraph-list parent)
        (subgraph-atb parent))))
 
+
+
+
 ;; add-edge: graph | subgraph  symbol symbol symbol Optional(hash-map) -> graph | subgraph
 ;; Purpose: adds an edge to the graph
 ;; NOTE: This function assumes that the node exists in the graph structure
 ;; NOTE: a edges label is a list since we squash all edges between the same nodes
 ;; into a single edge
-(: add-edge (->* ((U graph subgraph) Any Symbol Symbol) (#:atb (Immutable-HashTable Symbol Any)) (U graph subgraph)))
+(: add-edge (->* ((U graph subgraph) Any Symbol Symbol) (#:atb (Mutable-HashTable Symbol Any)) (U graph subgraph)))
 (define (add-edge parent val start-node end-node #:atb [atb DEFAULT-EDGE])
   (: start Symbol)
   (define start (clean-invalid-dot-lang start-node))
@@ -493,9 +522,24 @@
        ;; and point it to a random node on the subgraph 
        (define is-subgraph-start? (is-subgraph? start parent))
        (define is-subgraph-end? (is-subgraph? end parent))
-       (: h1 (Immutable-HashTable Symbol Any))
-       (define h1 (hash-union (if is-subgraph-start? (hash 'ltail start) (gviz-hash))
-                              (if is-subgraph-end? (hash 'lhead end) (gviz-hash))))
+       (: h1 (Mutable-HashTable Symbol Any))
+       (define h1 (cond [(and is-subgraph-start? is-subgraph-end?)
+                         (make-hash (list (cons 'ltail start) (cons 'lhead end)))]
+                        [(and is-subgraph-start? (not is-subgraph-end?))
+                         (make-hash (list (cons 'ltail start)))]
+                        [(and (not is-subgraph-start?) is-subgraph-end?)
+                         (make-hash (list (cons 'lhead end)))]
+                        [(and (not is-subgraph-start?) (not is-subgraph-end?))
+                         (gviz-hash)
+                         ]
+                        )
+         )
+       #|         
+       (: h1 (Mutable-HashTable Symbol Any))
+       (define h1 (hash-union! (if is-subgraph-start? (make-hash (list (cons 'ltail start))) (gviz-hash))
+                              (if is-subgraph-end? (make-hash (list (cons 'lhead end))) (gviz-hash)))
+         )
+       |#
        (cons (edge (if (and (cons? is-subgraph-start?)
                             (not (empty? is-subgraph-start?))
                             )
@@ -520,7 +564,14 @@
                              )
                          )
                        end)
-                   (hash-union h1 (hash-set atb 'label (list val))))
+                   (let [
+                         (new-atb (hash-copy atb))
+                         ]
+                     (hash-set! new-atb 'lable (list val))
+                     ((inst hash-union! Symbol Any) new-atb h1)
+                     new-atb
+                     )
+                   )
              lst)]
       [else 
        (list-update lst
@@ -529,9 +580,21 @@
                       (edge
                        (edge-start-node e)
                        (edge-end-node e)
-                       (hash-set (edge-atb e)
-                                 'label
-                                 (cons val (hash-ref (edge-atb e) 'label))))))]))
+                       (let [
+                             (new-h (hash-copy (edge-atb e)))
+                             ]
+                         (hash-set! new-h
+                                  'label
+                                  (cons val (hash-ref (edge-atb e) 'label))
+                                  )
+                         new-h
+                         )
+                       )
+                      )
+                    )
+       ]
+      )
+    )
     
   (if (graph? parent)
       (graph 
@@ -555,7 +618,7 @@
 ;; NOTE: This function assumes that the node exists in the graph structure
 ;; NOTE: a edges label is a list since we squash all edges between the same nodes
 ;; into a single edge
-(: add-edges (->* ((U graph subgraph) (Listof (List Symbol Symbol Any))) (#:atb (Immutable-HashTable Symbol Any)) (U graph subgraph)))
+(: add-edges (->* ((U graph subgraph) (Listof (List Symbol Symbol Any))) (#:atb (Mutable-HashTable Symbol Any)) (U graph subgraph)))
 (define (add-edges parent edgs #:atb [atb DEFAULT-EDGE])
   (foldl (lambda ([e : (List Symbol Symbol Any)] [a : (U graph subgraph)])
            (match-define (list start-node edge-val end-node) e)
@@ -616,19 +679,19 @@
 (define (dot->output-fmt fmt dot-path)
   (define png-path (path-replace-extension dot-path (format ".~s" fmt)))
   (define dot-executable-path (find-dot))
-  (if (path? dot-executable-path)
-      (system (format "~a -T~s ~s -o ~s"
-                      ;; On Mac/Linux we can bypass having to look at the systems PATH by instead
-                      ;; using the absolute path to the executable. For unknown reasons this does not
-                      ;; work on Windows so we will still use the PATH to call the dot executable
-                      (if (equal? (system-type) 'windows)
-                          "dot"
-                          (path->string dot-executable-path))
-                      fmt
-                      (path->string dot-path)
-                      (path->string png-path)))
-      (error "Error caused when creating png file. This was probably due to the dot environment variable not existing on the path")
-      )
+  (unless (path? dot-executable-path)
+    (error "Error caused when creating png file. This was probably due to the dot environment variable not existing on the path"))
+  (system (format "~a -T~s ~s -o ~s"
+                  ;; On Mac/Linux we can bypass having to look at the systems PATH by instead
+                  ;; using the absolute path to the executable. For unknown reasons this does not
+                  ;; work on Windows so we will still use the PATH to call the dot executable
+                  (if (equal? (system-type) 'windows)
+                      "dot"
+                      (path->string dot-executable-path))
+                  fmt
+                  (path->string dot-path)
+                  (path->string png-path)))
+
   png-path)
 
 
