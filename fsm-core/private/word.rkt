@@ -47,8 +47,19 @@
   
   ; natnum alphabet (listof word) --> (listof word)
   (define (generate-words n sigma words)
-    (cond [(= n 0) words]
+    (define sigma-len (length sigma))
+    (define (calculate-max-len i)
+      (cond [(>= i 0) (+ (expt sigma-len i) (calculate-max-len (- i 1)))]
+          [else 0]))
+    (define max-len (calculate-max-len (- MAX-WORD-LENGTH 1)))
+    (generate-words-limited n sigma words max-len))
+
+  (define (generate-words-limited n sigma words max-len)
+    (cond [(>= (length words) max-len) words]
+          [(= n 0) words]
           [else (let ((w (generate-word sigma)))
-                  (cond [(member w words) (generate-words n sigma words)]
-                        [else (generate-words (- n 1) sigma (cons w words))]))]))
+                  (cond [(member w words) (generate-words-limited n sigma words max-len)]
+                        [else (generate-words-limited (- n 1) sigma (cons w words) max-len)]))]))
   )
+
+  
