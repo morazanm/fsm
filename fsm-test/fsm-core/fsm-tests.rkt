@@ -810,9 +810,9 @@
   (define CSG-an-bn-an-bn-cn (grammar-concat CSG-an-bn CSG-an-bn-cn))
 
   (check-equal? (last (grammar-derive CSG-an-bn-an-bn-cn '())) 
-                  EMP)
+                EMP)
   (check-equal? (last (grammar-derive CSG-an-bn-an-bn-cn '(a a b b a b c)))
-                  'aabbabc)
+                'aabbabc)
 
   ;NOTE WE DONT CHECK FOR NOT IN THE GRAMMAR BCZ IT MAY NEVER END
   (define RENAME-CSG-an-bn-cn (grammar-rename-nts (grammar-nts CSG-an-bn-cn) 
@@ -902,6 +902,39 @@
   (check-equal? regexp-nota*Unotb* "(b*a(a ∪ b)* ∪ a*b(a ∪ b)*)")
 
 
+  ;;Testing no-hang at maximum unique combinations for a given alphabet
+  ;;Passing these tests is just to ensure that the program runs
+  ;; since the issue tested by these was an infinte loop
+  (define MAX-TEST (make-dfa
+                          '(Z F S T O M)
+                          '(a)
+                          'Z
+                          '(Z F S T O)
+                          '((Z a F)
+                            (F a S)
+                            (S a T)
+                            (T a O)
+                            (O a M)
+                            (M a M))
+                          'no-dead))
 
+  (check-false (null? (sm-test MAX-TEST)))
+  (check-false (null? (sm-test MAX-TEST 10)))
+  (check-false (null? (sm-test MAX-TEST 11)))
+
+  (define MAX-TEST-TWO (make-dfa
+                    '(Z H)
+                    '(a b)
+                    'Z
+                    '(H)
+                    '((Z a H)
+                      (Z b H)
+                      (H a Z)
+                      (H b Z))
+                    'no-dead))
+
+  (check-false (null? (sm-test MAX-TEST-TWO)))
+  (check-false (null? (sm-test MAX-TEST-TWO 1023)))
+  (check-false (null? (sm-test MAX-TEST-TWO 1024)))
 
   ) ;; end module+ test 
