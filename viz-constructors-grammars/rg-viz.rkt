@@ -8,7 +8,7 @@
          "../fsm-core/interface.rkt"
          math/matrix
          math/array
-         pmap
+         ;pmap
          )
 
 (define FNAME "fsm")
@@ -247,39 +247,193 @@
                                            )
                           )
   )
+
 (define (calculate-word-offset-cap derive-word-img scrolling-dims) (if (> 0 (- (- E-SCENE-WIDTH (rule-yield-dims-min-x scrolling-dims)) (image-width derive-word-img)))
                                                                        0
                                                                        (- (image-width derive-word-img) (- E-SCENE-WIDTH (rule-yield-dims-min-x scrolling-dims)))
                                                                        )
   )
 
+#;(define (create-input-word img char-list) (if (and (> (* 0.9 E-SCENE-WIDTH) (image-width img))
+                                                   (not (empty? char-list))
+                                                   )
+                                              (create-input-word (beside img (text (string-append (symbol->string (first char-list)) " ") FONT-SIZE 'black)) (rest char-list))
+                                              img
+                                              )
+  )
+
+
+#|
+(define (create-yield-word yield htable) (let*
+                                             [
+                                              (char-list (if (list? yield)
+                                                             (map symbol->string yield)
+                                                             (list (symbol->string yield))
+                                                             )
+                                                         )
+                                              (width-of-img (calculate-img-width char-list htable))
+                                              ]
+                                           (if (> (+ width-of-img (image-width DREV)) (* E-SCENE-WIDTH 0.9))
+                                               (
+                                               (create-yield-word-helper (text "" FONT-SIZE 'black) char-list)
+                                               )
+                                           )
+  )
+|#
+
+#;(define (create-char-widths input-word) (let [
+                                              (input-word-dups-removed (remove-duplicates input-word))
+                                              ]
+                                          (foldl (lambda (word-char htable) (hash-set htable word-char (image-width (text (symbol->string word-char) FONT-SIZE 'black)))) (hash) input-word-dups-removed)
+                                          )
+  )
+
+#;(define (calculate-img-width input-word htable) (foldl (lambda (word-char accum) (+ accum (hash-ref htable word-char))) 0 input-word))
+
+;; This needs to be based on size of e-scene
+(define TAPE-SIZE 42)
+(define (make-tape-img tape start-index)
+  (define (make-tape-img loi start-index)
+    (if (empty? (rest loi))
+        (first loi)
+        #;(above (first loi)
+               (square 5 'solid 'white)
+               (text (number->string start-index) 10 'black))
+        (beside (first loi)
+                #;(above (first loi)
+                       (square 5 'solid 'white)
+                       (text (number->string start-index) 10 'black))
+                (make-tape-img (rest loi) (add1 start-index)))
+        )
+    )
+  (let [(letter-imgs (build-list TAPE-SIZE
+                                 (λ (i) (if (< (+ start-index i) (length tape))
+                                            (overlay (text (symbol->string (list-ref tape (+ start-index i)))
+                                                           24
+                                                           'black)
+                                                     (overlay (square 25 'solid 'white)
+                                                              (square (add1 25) 'solid 'white)))
+                                            (overlay (square 25 'solid 'white)
+                                                     (square (add1 25) 'solid 'white))))))
+        ]
+    (make-tape-img letter-imgs start-index)
+    )
+  )
+
 (define (create-instructions a-vs) (beside (rectangle 1 (* 2 FONT-SIZE) "solid" 'white)
-                                           (let* [
-                                                  (YIELD (text "Current Yield: " FONT-SIZE 'black))
-                                                  (YIELD-WORD (text (format "~a" (first (viz-state-p-yield a-vs))) FONT-SIZE 'black))
-                                                  (CROPPED-YIELD-WORD (if (< (* E-SCENE-WIDTH 0.9) (+ (image-width YIELD-WORD) (image-width YIELD)))
+                                           (local [
+                                                   (define DREV (text "Deriving: " FONT-SIZE 'black))
+                                                   (define YIELD (text "Current Yield: " FONT-SIZE 'black))
+                                                   #;(define (create-char-widths input-word) (let [
+                                                                                                 (input-word-dups-removed (remove-duplicates input-word))
+                                                                                                 ]
+                                                                                             (foldl (lambda (word-char htable) (hash-set htable word-char (image-width (text (symbol->string word-char) FONT-SIZE 'black)))) (hash) input-word-dups-removed)
+                                                                                             )
+                                                     )
+                                                    ;; needs to include both terminals AND non terminals it seems
+                                                    #;(define char-widths-htable (hash-set (create-char-widths (viz-state-input-word a-vs)) 'S (image-width (text "S" FONT-SIZE 'black))))
+                                                    #;(define (calculate-img-width input-word) (foldl (lambda (word-char accum) (+ accum (hash-ref char-widths-htable word-char))) 0 input-word))
+                                                    #;(define (create-yield-word-helper img char-list) (if (empty? char-list)
+                                                                                                         img
+                                                                                                         (create-yield-word-helper (beside img (text (string-append (first char-list) " ") FONT-SIZE 'black)) (rest char-list))
+                                                                                                         )
+                                                      )
+                                                    #;(define (create-yield-word yield) (let*
+                                                                                          [
+                                                                                           (char-list (if (list? yield)
+                                                                                                          (map symbol->string yield)
+                                                                                                          (list yield)
+                                                                                                          )
+                                                                                                      )
+                                                                                           (width-of-img (calculate-img-width char-list))
+                                                                                           ]
+                                                                                        (if (> (+ width-of-img (image-width DREV)) (* E-SCENE-WIDTH 0.9))
+                                                                                            ;; some crop image shit here
+                                                                                            (crop (viz-state-word-img-offset a-vs) 0 (* E-SCENE-WIDTH 0.9) (image-height YIELD-WORD) YIELD-WORD)
+                                                                                            (create-yield-word-helper (text "" FONT-SIZE 'black) char-list)
+                                                                                            )
+                                                                                        )
+                                                      )
+                                                    #;(define (create-input-word input-word) (let* [
+                                                                                                 (width-of-img (calculate-img-width input-word))
+                                                                                                 ]
+                                                                                             (if (< (* E-SCENE-WIDTH 0.9) (+ width-of-img (image-width DREV)))
+                                                                                                 (crop (viz-state-word-img-offset a-vs) 0 (* E-SCENE-WIDTH 0.9) (image-height INPUT-WORD) INPUT-WORD)
+                                                                                                 INPUT-WORD
+                                                                                                 )
+                                                                                            )
+                                                      )
+                                                    (define INPUT-WORD (make-tape-img (viz-state-input-word a-vs) (if (length (viz-state-input-word a-vs))
+                                                                                                                      (viz-state-word-img-offset a-vs)
+                                                                                                                      0
+                                                                                                                      )
+                                                                                      )
+                                                      #;(create-input-word (text "(" FONT-SIZE 'black) (viz-state-input-word a-vs))
+                                                      )
+                                                                                    
+                                                  
+                                                  ;; Need to calculate how large the image is going to be before its made, probablematic for sure
+                                                  #;(YIELD-WORD 
+                                                              (text (format "~a" (first (viz-state-p-yield a-vs))) FONT-SIZE 'black)
+                                                              )
+                                                  (define YIELD-WORD (let [
+                                                                           (normalized-p-yield (if (list? (first (viz-state-p-yield a-vs)))
+                                                                                                   (first (viz-state-p-yield a-vs))
+                                                                                                   (list (first (viz-state-p-yield a-vs)))
+                                                                                                   )
+                                                                                               )
+                                                                           ]
+                                                                       (make-tape-img normalized-p-yield (if (> (length normalized-p-yield) TAPE-SIZE)
+                                                                                                             (viz-state-word-img-offset a-vs)
+                                                                                                             0
+                                                                                                             )
+                                                                                    )
+                                                                       )
+                                                    #;(create-yield-word (first (viz-state-p-yield a-vs))
+                                                                                       )
+                                                              )
+                                                  
+                                                  
+                                                  #;(CROPPED-YIELD-WORD (if (or (boolean? YIELD-WORD)
+                                                                              (< (* E-SCENE-WIDTH 0.9) (+ (image-width YIELD-WORD) (image-width YIELD)))
+                                                                              )
+                                                                          ;; Can't just crop, need to 
                                                                           (crop (viz-state-word-img-offset a-vs) 0 (* E-SCENE-WIDTH 0.9) (image-height YIELD-WORD) YIELD-WORD)
                                                                           YIELD-WORD
                                                                           )
                                                                       )
-                                                  (YIELD-IMG (beside YIELD CROPPED-YIELD-WORD))
+                                                  #;(YIELD-IMG (beside YIELD CROPPED-YIELD-WORD))
 
-                                                  (DREV (text "Deriving: " FONT-SIZE 'black))
-                                                  (INPUT-WORD (text (format "~a" (viz-state-input-word a-vs)) FONT-SIZE 'black))
-                                                  (CROPPED-INPUT-WORD (if (< (* E-SCENE-WIDTH 0.9) (+ (image-width INPUT-WORD) (image-width DREV)))
+                                                  
+                                                  
+                                                  #;(INPUT-WORD (with-handlers ([exn:fail? (lambda (exn) #f)])
+                                                                (text (format "~a" (viz-state-input-word a-vs)) FONT-SIZE 'black)
+                                                                )
+                                                              )
+                                                  
+                                                  ;; TODO test this to see if first p-yield is the full thing or just one character
+                                                  ;; its just one character
+                                                  #;(test (begin
+                                                          (displayln (viz-state-input-word a-vs))
+                                                          1
+                                                          )
+                                                        )
+                                                  #;(CROPPED-INPUT-WORD (if (or (boolean? INPUT-WORD)
+                                                                              (< (* E-SCENE-WIDTH 0.9) (+ (image-width INPUT-WORD) (image-width DREV)))
+                                                                              )
                                                                           (crop (viz-state-word-img-offset a-vs) 0 (* E-SCENE-WIDTH 0.9) (image-height INPUT-WORD) INPUT-WORD)
                                                                           INPUT-WORD
                                                                           )
                                                                       )
-                                                  (DREV-IMG (beside DREV CROPPED-INPUT-WORD))
+                                                  #;(DREV-IMG (beside DREV CROPPED-INPUT-WORD))
 
-                                                  (RULE-USED (if (equal? "" (first (dgrph-p-rules (first (viz-state-p-dgraph a-vs)))))
+                                                  (define RULE-USED (if (equal? "" (first (dgrph-p-rules (first (viz-state-p-dgraph a-vs)))))
                                                                  ;; Use white so its invisible, makes it so the words dont shift (using an empty string would make the words shift)
                                                                  (text "The rule used: " FONT-SIZE 'white)
                                                                  (text "The rule used: " FONT-SIZE 'black)
                                                                  )
                                                              )
-                                                  (RULE-USED-WORD (if (equal? "" (first (dgrph-p-rules (first (viz-state-p-dgraph a-vs)))))
+                                                  (define RULE-USED-WORD (if (equal? "" (first (dgrph-p-rules (first (viz-state-p-dgraph a-vs)))))
                                                                       (text "" FONT-SIZE 'white)
                                                                       (beside (text (format "~a" (substring (first (dgrph-p-rules (first (viz-state-p-dgraph a-vs)))) 0 1)) FONT-SIZE YIELD-COLOR)
                                                                               (text (format " ~a" (substring (first (dgrph-p-rules (first (viz-state-p-dgraph a-vs)))) 1)) FONT-SIZE HEDGE-COLOR)
@@ -287,8 +441,8 @@
                                                                       )
                                                                   )
                                               
-                                                  (RULE-YIELD-DREV-LABELS (above/align "right" RULE-USED DREV YIELD))
-                                                  (WORDS (above/align "left" RULE-USED-WORD INPUT-WORD YIELD-WORD))
+                                                  (define RULE-YIELD-DREV-LABELS (above/align "right" RULE-USED DREV YIELD))
+                                                  (define WORDS (above/align "left" RULE-USED-WORD INPUT-WORD YIELD-WORD))
                                                   ]
                                              (beside RULE-YIELD-DREV-LABELS WORDS)
                                              )
@@ -574,6 +728,43 @@
       )
   )
 
+(define (parallelize-shell func args) (let* [
+                                             (system-os (system-type 'os))
+                                             (cpu-cores (cond [(eq? system-os 'unix) (begin
+                                                                                       (define p (process "grep -c '^processor' /proc/cpuinfo"))
+                                                                                       (define event-result (string->number (sync (read-line-evt (first p)))))
+                                                                                       event-result
+                                                                                       )
+                                                                                     ]
+                                                              [(eq? system-os 'windows) ]
+                                                              [(eq? system-os 'macos) ]
+                                                              )
+                                                        )
+                                             (cpu-cores-avail (make-semaphore cpu-cores))
+                                             ]
+                                        ;(map (lambda (args) (call-with-semaphore cpu-cores-avail func args)) args)
+                              (for/list ([a args])
+                                (semaphore-wait cpu-cores-avail)
+                                (define shell-process (func a))
+                                (thread (lambda () (let [
+                                                         (result (sync (read-line-evt (first shell-process))))
+                                                         ]
+                                                     (if (= 0 (string->number result))
+                                                         ;; This is thrown away, just doing this for the error check
+                                                         result
+                                                         (error (format "Graphviz produced an error while compiling the graphs: ~a" result))
+                                                         )
+                                                     )
+                                          (close-input-port (first shell-process))
+                                          (close-output-port (second shell-process))
+                                          (close-input-port (fourth shell-process))
+                                          (semaphore-post cpu-cores-avail)
+                                          )
+                                        )
+                                )
+                              )
+  )
+
 (define (parallel-dot graphs) (let* [
                                      (graphs-length (length graphs))
                                      (list-dot-files (for/list ([i (range 1 (add1 graphs-length))])
@@ -582,7 +773,27 @@
                                                      )
                                      ]
                                 (begin
-                                  (define processes (map (lambda (dot-path) (process (format "~a -T~s ~s -o ~s; echo \"1\""
+                                  ;; need to foldl here
+                                  (displayln "Regular time: ")
+                                  (time (foldl (lambda (value accum) (begin (graph->dot value (string->path TEST-SAVE-DIR) (format "dot~s" accum))
+                                                                            (add1 accum)
+                                                                            )
+                                                 )
+                                               1
+                                               graphs
+                                               )
+                                        )
+                                   (displayln "New time: ")
+                                   (time (foldl (lambda (value accum) (begin (graph->dot-bytes value (string->path TEST-SAVE-DIR) (format "dot~s" accum))
+                                                                            (add1 accum)
+                                                                            )
+                                                 )
+                                               1
+                                               graphs
+                                               )
+                                        )
+                                  ;; Need to choose a different method of echo for windows machines
+                                  #;(define processes (map (lambda (dot-path) (process (format "~a -T~s ~s -o ~s; echo $?"
                                                                                              ;; On Mac/Linux we can bypass having to look at the systems PATH by instead
                                                                                              ;; using the absolute path to the executable. For unknown reasons this does not
                                                                                              ;; work on Windows so we will still use the PATH to call the dot executable
@@ -595,19 +806,44 @@
                                                            )
                                                          list-dot-files)
                                     )
-                                   
-                                  ;; TODO Maybe check for errors in processes?
-                                  (while-func (lambda () (andmap (lambda (process) (eq? 'done-ok ((last process) 'status))) processes)) (lambda () (sleep 0.5)))
+
+                                  ;;cfg, leftmost traversal is preorder, rightmost is a root right left, level traversal is just a breadth first search
+                                  #;(map (lambda (event) (let [
+                                                             (result (sync event))
+                                                            ]
+                                                         (if (= 0 (string->number result))
+                                                             result
+                                                             (error (format "Graphviz produced an error while compiling the graphs: ~a" result))
+                                                             )
+                                                         )
+                                         )
+                                       (map (lambda (process) (read-line-evt (first process))) processes)
+                                       )
+                                  ;(while-func (lambda () (andmap (lambda (process) (eq? 'done-ok ((last process) 'status))) processes)) (lambda () (sleep 0.5)))
                                   ;(sync 
                                    
-                                  (map (lambda (process) (begin (close-input-port (first process))
+                                  #;(map (lambda (process) (begin (close-input-port (first process))
                                                                 (close-output-port (second process))
                                                                 (close-input-port (fourth process))
                                                                 )
                                          )
-                                       processes)
+                                       processes
+                                       )
+
+                                  (define (make-process file-path) (process (format "~a -T~s ~s -o ~s; echo $?"
+                                                                                    ;; On Mac/Linux we can bypass having to look at the systems PATH by instead
+                                                                                    ;; using the absolute path to the executable. For unknown reasons this does not
+                                                                                    ;; work on Windows so we will still use the PATH to call the dot executable
+                                                                                    "/run/current-system/sw/bin/dot"
+                                                                                    'png
+                                                                                    (string-append file-path ".dot")
+                                                                                    (string-append file-path ".png")
+                                                                                    )
+                                                                            )
+                                    )
+                                  (parallelize-shell make-process list-dot-files)
+                                  (collect-images 1 graphs-length)
                                   )
-                                (collect-images 1 graphs-length)
                                 )
   )
 
@@ -1027,7 +1263,7 @@
                                    ]
                              (if scalable?
                                  (let* [
-                                        (img-resize (resize-image (viz-state-curr-image a-vs) (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))
+                                        ;(img-resize (resize-image (viz-state-curr-image a-vs) (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))
                                         (scaled-image (scale new-scale (viz-state-curr-image a-vs)))
                                         (viewport-lims (calculate-viewport-limits scaled-image new-scale))
                                         (scale-increase (/ new-scale (viz-state-scale-factor a-vs)))
@@ -1250,11 +1486,6 @@
              )
          ]
         [(key=? "left" a-key)
-         #;(define test2 (if (image? a-key)
-                             (error "wtf")
-                             (displayln "inside2")
-                             )
-             )
          (if (= (length (viz-state-pimgs a-vs)) 1)
              a-vs
              (let* [(new-up-yield (cons (first (viz-state-p-yield a-vs))
@@ -1262,15 +1493,9 @@
                     (new-p-yield (rest (viz-state-p-yield a-vs)))
                     (new-pimgs (rest (viz-state-pimgs a-vs)))
                     (new-pimgs-img (
-                                    ;force
                                     (first new-pimgs)
                                     )
                                    )
-                    #;(test (if (not (image? new-pimgs-img))
-                                (error "wtf")
-                                (displayln "its an image")
-                                )
-                            )
                     (curr-pimgs-img (
                                      ;force
                                      (first (viz-state-pimgs a-vs))
@@ -1729,146 +1954,9 @@
                            ]
         [(key=? "f" a-key) (zoom a-vs (/ DEFAULT-ZOOM-CAP (viz-state-scale-factor a-vs)))]
         [(key=? "e" a-key) (zoom a-vs (/ (/ DEFAULT-ZOOM-CAP 2) (viz-state-scale-factor a-vs)))]
-        
-        #;[(key=? "r" a-key)
-           (let [
-                 (img-resize (resize-image (first (viz-state-pimgs a-vs)) (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))
-                 ]
-             (if (or (< E-SCENE-WIDTH (image-width (first (viz-state-pimgs a-vs))))
-                     (< E-SCENE-HEIGHT (image-height (first (viz-state-pimgs a-vs))))
-                     )
-                 (viz-state (viz-state-upimgs a-vs)
-                            (viz-state-pimgs a-vs)
-                            (first (viz-state-pimgs a-vs))
-                            E-SCENE-CENTER
-                            (min (second img-resize) (third img-resize))
-                            DEFAULT-ZOOM-CAP
-                            (min (second img-resize) (third img-resize))
-                            (viz-state-curr-mouse-posn a-vs)
-                            (viz-state-dest-mouse-posn a-vs)
-                            (viz-state-mouse-pressed a-vs)
-                            (viz-state-up-dgraph a-vs)
-                            (viz-state-p-dgraph a-vs)
-                            (viz-state-up-yield a-vs)
-                            (viz-state-p-yield a-vs)
-                            (viz-state-input-word a-vs)
-                            (viz-state-word-img-offset a-vs)
-                            (viz-state-word-img-offset-cap a-vs)
-                            )
-                 (viz-state (viz-state-upimgs a-vs)
-                            (viz-state-pimgs a-vs)
-                            (first (viz-state-pimgs a-vs))
-                            E-SCENE-CENTER
-                            DEFAULT-ZOOM
-                            DEFAULT-ZOOM-CAP
-                            DEFAULT-ZOOM
-                            (viz-state-curr-mouse-posn a-vs)
-                            (viz-state-dest-mouse-posn a-vs)
-                            (viz-state-mouse-pressed a-vs)
-                            (viz-state-up-dgraph a-vs)
-                            (viz-state-p-dgraph a-vs)
-                            (viz-state-up-yield a-vs)
-                            (viz-state-p-yield a-vs)
-                            (viz-state-input-word a-vs)
-                            (viz-state-word-img-offset a-vs)
-                            (viz-state-word-img-offset-cap a-vs)
-                            )
-                 )
-             )
-           ]
-        #;[(key=? "f" a-key)
-           (let [
-                 (img-resize (resize-image (first (viz-state-pimgs a-vs)) (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))
-                 ]
-             (if (or (< E-SCENE-WIDTH (image-width (first (viz-state-pimgs a-vs))))
-                     (< E-SCENE-HEIGHT (image-height (first (viz-state-pimgs a-vs))))
-                     )
-                 (viz-state (viz-state-upimgs a-vs)
-                            (viz-state-pimgs a-vs)
-                            (first (viz-state-pimgs a-vs))
-                            E-SCENE-CENTER
-                            DEFAULT-ZOOM-CAP
-                            DEFAULT-ZOOM-CAP
-                            (min (second img-resize) (third img-resize))
-                            (viz-state-curr-mouse-posn a-vs)
-                            (viz-state-dest-mouse-posn a-vs)
-                            (viz-state-mouse-pressed a-vs)
-                            (viz-state-up-dgraph a-vs)
-                            (viz-state-p-dgraph a-vs)
-                            (viz-state-up-yield a-vs)
-                            (viz-state-p-yield a-vs)
-                            (viz-state-input-word a-vs)
-                            (viz-state-word-img-offset a-vs)
-                            (viz-state-word-img-offset-cap a-vs)
-                            )
-                 (viz-state (viz-state-upimgs a-vs)
-                            (viz-state-pimgs a-vs)
-                            (first (viz-state-pimgs a-vs))
-                            E-SCENE-CENTER
-                            DEFAULT-ZOOM-CAP
-                            DEFAULT-ZOOM-CAP
-                            DEFAULT-ZOOM
-                            (viz-state-curr-mouse-posn a-vs)
-                            (viz-state-dest-mouse-posn a-vs)
-                            (viz-state-mouse-pressed a-vs)
-                            (viz-state-up-dgraph a-vs)
-                            (viz-state-p-dgraph a-vs)
-                            (viz-state-up-yield a-vs)
-                            (viz-state-p-yield a-vs)
-                            (viz-state-input-word a-vs)
-                            (viz-state-word-img-offset a-vs)
-                            (viz-state-word-img-offset-cap a-vs)
-                            )
-                 )
-             )
-           ]
-        #;[(key=? "e" a-key)
-           (let [
-                 (img-resize (resize-image (first (viz-state-pimgs a-vs)) (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))
-                 ]
-             (if (or (< E-SCENE-WIDTH (image-width (first (viz-state-pimgs a-vs))))
-                     (< E-SCENE-HEIGHT (image-height (first (viz-state-pimgs a-vs))))
-                     )
-                 (viz-state (viz-state-upimgs a-vs)
-                            (viz-state-pimgs a-vs)
-                            (first (viz-state-pimgs a-vs))
-                            E-SCENE-CENTER
-                            (/ (+ DEFAULT-ZOOM DEFAULT-ZOOM-CAP) 2)
-                            DEFAULT-ZOOM-CAP
-                            (min (second img-resize) (third img-resize))
-                            (viz-state-curr-mouse-posn a-vs)
-                            (viz-state-dest-mouse-posn a-vs)
-                            (viz-state-mouse-pressed a-vs)
-                            (viz-state-up-dgraph a-vs)
-                            (viz-state-p-dgraph a-vs)
-                            (viz-state-up-yield a-vs)
-                            (viz-state-p-yield a-vs)
-                            (viz-state-input-word a-vs)
-                            (viz-state-word-img-offset a-vs)
-                            (viz-state-word-img-offset-cap a-vs)
-                            )
-                 (viz-state (viz-state-upimgs a-vs)
-                            (viz-state-pimgs a-vs)
-                            (first (viz-state-pimgs a-vs))
-                            E-SCENE-CENTER
-                            (/ (+ DEFAULT-ZOOM DEFAULT-ZOOM-CAP) 2)
-                            DEFAULT-ZOOM-CAP
-                            DEFAULT-ZOOM
-                            (viz-state-curr-mouse-posn a-vs)
-                            (viz-state-dest-mouse-posn a-vs)
-                            (viz-state-mouse-pressed a-vs)
-                            (viz-state-up-dgraph a-vs)
-                            (viz-state-p-dgraph a-vs)
-                            (viz-state-up-yield a-vs)
-                            (viz-state-p-yield a-vs)
-                            (viz-state-input-word a-vs)
-                            (viz-state-word-img-offset a-vs)
-                            (viz-state-word-img-offset-cap a-vs)
-                            )
-                 )
-             )
-           ]
-        [else a-vs]))
+        [else a-vs]
+        )
+  )
 
 ;; viz-state int int MouseEvent
 ;; Updates viz-state as to whether the mouse is currently being pressed while on the visualization
@@ -2025,14 +2113,6 @@
          (MIN-Y (viewport-limits-min-y viewport-lims))
          (MAX-Y (viewport-limits-max-y viewport-lims))
          (scroll-dimensions RULE-YIELD-DIMS)
-         #;(test (begin
-                   (println (format "MIN-X: ~s MAX-X: ~s MIN-Y: ~s MAX-Y: ~s NEW-IMG-X: ~s NEW-IMG-Y: ~s CURR-IMG-X: ~s CURR-IMG-Y: ~s IMAGE-SIZE: ~s X ~s"
-                                    MIN-X MAX-X MIN-Y MAX-Y new-img-x new-img-y (posn-x (viz-state-image-posn a-vs)) (posn-y (viz-state-image-posn a-vs)) (image-width scaled-image) (image-height scaled-image)
-                                    )
-                            )
-                   1
-                   )
-                 )
          ]
     (if (viz-state-mouse-pressed a-vs)
         (cond [(and (<= 0 (posn-x (viz-state-curr-mouse-posn a-vs)))
@@ -2147,8 +2227,11 @@
                     (<= (rule-yield-dims-min-y scroll-dimensions) (posn-y (viz-state-curr-mouse-posn a-vs)))
                     (<= (posn-y (viz-state-curr-mouse-posn a-vs)) (rule-yield-dims-max-y scroll-dimensions))
                     )
-               (if (and (< (viz-state-word-img-offset-cap a-vs) (+ (* -1 x-diff) (viz-state-word-img-offset a-vs)))
-                        (< (+ (* -1 x-diff) (viz-state-word-img-offset a-vs)) 0)
+               (if (and (>= (viz-state-word-img-offset-cap a-vs) (viz-state-word-img-offset a-vs))
+                        (if (= x-diff 0)
+                            #f
+                            (>= (quotient (abs x-diff) 25) 1)
+                            )
                         )
                    (viz-state (viz-state-upimgs a-vs)
                               (viz-state-pimgs a-vs)
@@ -2165,7 +2248,7 @@
                               (viz-state-up-yield a-vs)
                               (viz-state-p-yield a-vs)
                               (viz-state-input-word a-vs)
-                              (+ (viz-state-word-img-offset a-vs) (* -1 x-diff))
+                              (+ (viz-state-word-img-offset a-vs) 1)
                               (viz-state-word-img-offset-cap a-vs)
                               )
                    (viz-state (viz-state-upimgs a-vs)
@@ -2331,7 +2414,7 @@
                             (first w-der)
                             word
                             0
-                            0
+                            (- (length word) TAPE-SIZE)
                             )
                  draw-world 'rg-ctm))))
 
@@ -2356,7 +2439,7 @@
 ;(rg-viz even-bs-odd-as '(a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a))
  
 
-(time
- (rg-viz even-bs-odd-as '(a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a a))
- )
+;(time
+;(rg-viz even-bs-odd-as '(a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a a a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a))
+;)
 ;(rg-viz even-bs-odd-as '(a a a a a b b b b b b b b b b b b b b b b))

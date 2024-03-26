@@ -34,6 +34,7 @@
  graph->bitmap
  graph->svg
  graph->dot
+ graph->dot-bytes
  graph->png
  graph->str
  stringify-value
@@ -216,6 +217,52 @@
   )
 
 
+;; hash->str: hash hash Optional(string) -> string
+;; Purpose: converts the hash to a graphviz string
+(: hash->bytes (->* ((Immutable-HashTable Symbol Any) (Immutable-HashTable Symbol (-> Any String))) (String) Bytes))
+(define (hash->bytes hash fmtr (spacer ", "))
+
+  ;; Purpose: Formats a possibly boolean value to a symbol
+  (: fmt-val (-> (U Boolean Any) Any))
+  (define (fmt-val val)
+    (if (boolean? val)
+        (if val
+            'true
+            'false)
+        val
+        )
+    )
+  
+  (: key-val->bytes (-> Symbol Any Bytes))
+  (define (key-val->bytes key value)
+    ;(: fmtr-fun (U Procedure Boolean) : Procedure)
+    (define fmtr-fun (hash-ref fmtr key #f))
+    (if (procedure? fmtr-fun)
+        (let ([o (open-output-bytes)])
+          (fprintf o "~s=~s" key (fmt-val value))
+          (get-output-bytes o))
+        ;(format "~s=~s" key (fmtr-fun value))
+        (let ([o (open-output-bytes)])
+          (fprintf o "~s=~s" key (if (equal? key 'label)
+                                     (let ([o (open-output-string)])
+                                       (fprintf o "~a" (fmt-val value))
+                                       (get-output-string o))
+                                     (fmt-val value))
+                   )
+          (get-output-bytes o))
+        #;(format "~s=~s" key (if (equal? key 'label)
+                                (let ([o (open-output-string)])
+                                  (fprintf o "~a" (fmt-val value))
+                                  (get-output-string o))
+                                ;(format "~a" (fmt-val value))
+                                (fmt-val value)
+                                )
+                )
+        )
+    )
+  (bytes-join (hash-map hash key-val->bytes) (string->bytes/locale spacer))
+  )
+
 
 
 ;; node->str: node node -> string
@@ -227,6 +274,16 @@
           (node-name node)
           (hash->str (node-atb node) fmtr-node)))
 
+
+(: node->bytes (-> node (Immutable-HashTable Symbol (-> Any String)) Bytes))
+(define (node->bytes node fmtr-node)
+  (let ([o (open-output-bytes)])
+          (fprintf o "    ~s [~a];\n" (node-name node) (hash->str (node-atb node) fmtr-node))
+          (get-output-bytes o))
+  #;(format "    ~s [~a];\n"
+          (node-name node)
+          (hash->str (node-atb node) fmtr-node)))
+
 ;; edge->str: edge hash -> string
 ;; returns the graphviz representation of a edge as a string
 (: edge->str (-> edge (Immutable-HashTable Symbol (-> Any String)) String))
@@ -235,6 +292,18 @@
           (edge-start-node edge)
           (edge-end-node edge)
           (hash->str (edge-atb edge) fmtr)))
+
+(: edge->bytes (-> edge (Immutable-HashTable Symbol (-> Any String)) Bytes))
+(define (edge->bytes edge fmtr)
+  (let ([o (open-output-bytes)])
+    (fprintf o "    ~s -> ~s [~a];\n" (edge-start-node edge) (edge-end-node edge) (hash->str (edge-atb edge) fmtr))
+    (get-output-bytes o))
+  #;(format "    ~s -> ~s [~a];\n"
+          (edge-start-node edge)
+          (edge-end-node edge)
+          (hash->str (edge-atb edge) fmtr)
+          )
+  )
 
 
 ;; subgraph->str: subgraph formatters -> string
@@ -264,6 +333,44 @@
                         (subgraph-subgraph-list sg))
                  "    }\n"))
 
+
+(: subgraph->bytes (-> subgraph formatters Bytes))
+(define (subgraph->bytes sg fmtrs)
+  (: name String)
+  (define name (let [
+                     (sg-name (subgraph-name sg))
+                     ]
+                 (if (null? sg-name)
+                     ""
+                     (symbol->string sg-name)
+                     )
+                 )
+    )
+  (let [
+        (fourspaces (string->bytes/locale "    "))
+        ]
+    (bytes-append (let ([o (open-output-bytes)])
+                  (fprintf o "    subgraph ~s {\n" name)
+                  (get-output-bytes o))
+                #;(format "    subgraph ~s {\n" name) 
+                 (let ([o (open-output-bytes)])
+                  (fprintf o  "        ~a;\n" (hash->bytes (subgraph-atb sg) (formatters-graph-hash fmtrs) ";\n        "))
+                  (get-output-bytes o))
+                 #;(format "        ~a;\n" (hash->str (subgraph-atb sg) (formatters-graph-hash fmtrs) ";\n        "))
+                 (foldl (lambda ([n : node] [a : Bytes]) (bytes-append a fourspaces (node->bytes n (formatters-node-hash fmtrs))))
+                        #""
+                        (subgraph-node-list sg))
+                 (foldl (lambda ([e : edge] [a : Bytes]) (bytes-append a fourspaces (edge->bytes e (formatters-edge-hash fmtrs))))
+                        #""
+                        (subgraph-edge-list sg))
+                 (foldl (lambda ([e : subgraph] [a : Bytes]) (bytes-append a fourspaces (subgraph->bytes e fmtrs)))
+                        #""
+                        (subgraph-subgraph-list sg))
+                 (string->bytes/locale "    }\n")
+                 )
+    )
+  )
+
 ;; graph->str: graph -> string
 ;; returns the graphviz representation of a graph as a string
 (: graph->str (-> graph String))
@@ -285,6 +392,35 @@
           ""
           (graph-subgraph-list g))
    "}"))
+
+(: graph->bytes (-> graph Bytes))
+(define (graph->bytes g)
+  (: name Bytes)
+  (define name (let ([o (open-output-bytes)])
+                  (fprintf o "digraph ~s {\n" (graph-name g))
+                  (get-output-bytes o))
+  #;(format "digraph ~s {\n" (graph-name g))
+  )
+  (: fmtrs formatters)
+  (define fmtrs (graph-fmtrs g))
+  (bytes-append
+   name
+   (let ([o (open-output-bytes)])
+     (fprintf o "    ~a;\n" (hash->bytes (graph-atb g) (formatters-graph-hash fmtrs) ";\n    "))
+     (get-output-bytes o))
+   #;(format "    ~a;\n" (hash->bytes (graph-atb g) (formatters-graph-hash fmtrs) ";\n    "))
+   (foldl (lambda ([n : node] [a : Bytes]) (bytes-append a (node->bytes n (formatters-node-hash fmtrs))))
+          #""
+          (graph-node-list g))
+   (foldl (lambda ([e : edge] [a : Bytes]) (bytes-append a (edge->bytes e (formatters-edge-hash fmtrs))))
+          #""
+          (graph-edge-list g))
+   (foldl (lambda ([e : subgraph] [a : Bytes]) (bytes-append a (subgraph->bytes e fmtrs)))
+          #""
+          (graph-subgraph-list g))
+   (string->bytes/locale "}")
+   )
+  )
 
 
 (: combine-key (All (a b) (-> a b b b)))
@@ -607,6 +743,41 @@
       (displayln (graph->str graph) out))
     )
   dot-path)
+
+#|
+(: graph->bytes1 (-> graph Bytes))
+(define (graph->bytes1 g)
+  (: name String)
+  (define name (format "digraph ~s {\n" (graph-name g)))
+  (: fmtrs formatters)
+  (define fmtrs (graph-fmtrs g))
+  (string->bytes/locale
+   (string-append
+   name
+   (format "    ~a;\n" (hash->str (graph-atb g) (formatters-graph-hash fmtrs) ";\n    "))
+   (foldl (lambda ([n : node] [a : String]) (string-append a (node->str n (formatters-node-hash fmtrs))))
+          ""
+          (graph-node-list g))
+   (foldl (lambda ([e : edge] [a : String]) (string-append a (edge->str e (formatters-edge-hash fmtrs))))
+          ""
+          (graph-edge-list g))
+   (foldl (lambda ([e : subgraph] [a : String]) (string-append a (subgraph->str e fmtrs)))
+          ""
+          (graph-subgraph-list g))
+   "}")
+   )
+  )
+|#
+
+(: graph->dot-bytes (-> graph Path String Path))
+(define (graph->dot-bytes graph save-dir filename)
+  (define dot-path (build-path save-dir (format "~a.dot" filename)))
+  (define dotfile (open-output-file #:exists 'replace dot-path))
+  (write-bytes (graph->bytes graph) dotfile)
+  (close-output-port dotfile)
+  dot-path
+  )
+  
 
 ;; dot->output-fmt: symbolof(file-format) path -> path
 ;; Purpose: converts a dot file to the specified output. The new file is saved in directory
