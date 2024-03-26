@@ -710,8 +710,8 @@
 
 
 
-(define TEST-SAVE-DIR "/home/sora/Documents/demo-folder/")
-(define SCRIPT-LOCATION "/home/sora/Documents/demo-folder/create-image-p.sh")
+(define TEST-SAVE-DIR "/Users/tijanaminic/Documents/Andres stuff/")
+;(define SCRIPT-LOCATION "/home/sora/Documents/demo-folder/create-image-p.sh")
 
 (define (while-func cond thnk) (if (cond)
                                    (thnk)
@@ -737,7 +737,16 @@
                                                                                        )
                                                                                      ]
                                                               [(eq? system-os 'windows) ]
-                                                              [(eq? system-os 'macos) ]
+                                                              [(eq? system-os 'macos) (begin
+                                                                                       (define p (process "sysctl -n hw.ncpu"))
+                                                                                       (define event-result (string->number (sync (read-line-evt (first p)))))
+                                                                                       event-result
+                                                                                       )]
+                                                              [(eq? system-os 'macosx) (begin
+                                                                                       (define p (process "sysctl -n hw.ncpu"))
+                                                                                       (define event-result (string->number (sync (read-line-evt (first p)))))
+                                                                                       event-result
+                                                                                       )]
                                                               )
                                                         )
                                              (cpu-cores-avail (make-semaphore cpu-cores))
@@ -834,7 +843,7 @@
                                                                                     ;; On Mac/Linux we can bypass having to look at the systems PATH by instead
                                                                                     ;; using the absolute path to the executable. For unknown reasons this does not
                                                                                     ;; work on Windows so we will still use the PATH to call the dot executable
-                                                                                    "/run/current-system/sw/bin/dot"
+                                                                                    "/opt/homebrew/bin/dot"
                                                                                     'png
                                                                                     (string-append file-path ".dot")
                                                                                     (string-append file-path ".png")
