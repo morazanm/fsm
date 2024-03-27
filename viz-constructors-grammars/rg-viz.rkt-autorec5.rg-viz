@@ -8,7 +8,6 @@
          "../fsm-core/interface.rkt"
          math/matrix
          math/array
-         "../fsm-gviz/private/parallel.rkt"
          )
 
 (define FNAME "fsm")
@@ -248,10 +247,14 @@
                           )
   )
 
-(define TAPE-SIZE 42)
+(define (calculate-word-offset-cap derive-word-img scrolling-dims) (if (> 0 (- (- E-SCENE-WIDTH (rule-yield-dims-min-x scrolling-dims)) (image-width derive-word-img)))
+                                                                       0
+                                                                       (- (image-width derive-word-img) (- E-SCENE-WIDTH (rule-yield-dims-min-x scrolling-dims)))
+                                                                       )
+  )
 
-;; Listof Symbol natnum -> Image
-;; Returns an image of a tape of symbols, capable of sliding when its start-index is varied
+
+(define TAPE-SIZE 42)
 (define (make-tape-img tape start-index)
   (define (make-tape-img loi start-index)
     (if (empty? (rest loi))
@@ -274,8 +277,6 @@
     )
   )
 
-;; viz-state -> Image
-;; Returns a image containing all the information regarding what is being derived and what the current yield is
 (define (create-instructions a-vs) (beside (rectangle 1 (* 2 FONT-SIZE) "solid" 'white)
                                            (local [
                                                    (define DREV (text "Deriving: " FONT-SIZE 'black))
@@ -507,6 +508,8 @@
 ;; make-edge-graph
 ;; graph (listof level) -> graph
 ;; Purpose: To make an edge graph
+
+;; There is a add-edges function in gviz, is there a reason we're adding them individually?
 (define (make-edge-graph graph loe hedges)
   (let [(first-foldr (foldl (λ (rule result)
                               (if (empty? (first rule))
@@ -551,11 +554,14 @@
     )
   )
 
+
+
 ;; create-graph-img
 ;; ndfa -> img
 ;; Purpose: To create a graph image for complement
-(define (create-graph-structs a-dgrph)
+(define (create-graph-img a-dgrph)
   (let* [
+         ;; Could maybe change this to a sort? Would be more efficient if I had to guess
          (nodes (append (filter lower? (dgrph-nodes a-dgrph))
                         (filter upper? (dgrph-nodes a-dgrph))
                         )
@@ -576,6 +582,105 @@
     )
   )
 
+
+
+(define TEST-SAVE-DIR "/home/sora/Documents/demo-folder/")
+(define SCRIPT-LOCATION "/home/sora/Documents/demo-folder/create-image-p.sh")
+
+(define (while-func cond thnk) (if (cond)
+                                   (thnk)
+                                   '()
+                                   )
+  )
+
+(define (collect-images accum cap)
+  (if (> accum cap)
+      '()
+      (cons (thunk (bitmap/file (string->path (format "~adot~s.png" TEST-SAVE-DIR accum))))
+            (collect-images (add1 accum) cap)
+            )
+      )
+  )
+
+(define (parallelize-shell func args) (let* [
+                                             (system-os (system-type 'os))
+                                             (cpu-cores (cond [(eq? system-os 'unix) (begin
+                                                                                       (define p (process "grep -c '^processor' /proc/cpuinfo"))
+                                                                                       (define event-result (string->number (sync (read-line-evt (first p)))))
+                                                                                       event-result
+                                                                                       )
+                                                                                     ]
+                                                              [(eq? system-os 'windows) ]
+                                                              [(eq? system-os 'macos) ]
+                                                              )
+                                                        )
+                                             (cpu-cores-avail (make-semaphore cpu-cores))
+                                             ]
+                              (for/list ([a args])
+                                (semaphore-wait cpu-cores-avail)
+                                (define shell-process (func a))
+                                (thread (lambda () (let [
+                                                         (result (sync (read-line-evt (first shell-process))))
+                                                         ]
+                                                     (if (= 0 (string->number result))
+                                                         ;; This is thrown away, just doing this for the error check
+                                                         result
+                                                         (error (format "Graphviz produced an error while compiling the graphs: ~a" result))
+                                                         )
+                                                     )
+                                          (close-input-port (first shell-process))
+                                          (close-output-port (second shell-process))
+                                          (close-input-port (fourth shell-process))
+                                          (semaphore-post cpu-cores-avail)
+                                          )
+                                        )
+                                )
+                              )
+  )
+
+(define (parallel-dot graphs) (let* [
+                                     (graphs-length (length graphs))
+                                     (list-dot-files (for/list ([i (range 1 (add1 graphs-length))])
+                                                       (format "~adot~s" TEST-SAVE-DIR i)
+                                                       )
+                                                     )
+                                     ]
+                                (begin
+                                  (displayln "Regular time: ")
+                                  (time (foldl (lambda (value accum) (begin (graph->dot value (string->path TEST-SAVE-DIR) (format "dot~s" accum))
+                                                                            (add1 accum)
+                                                                            )
+                                                 )
+                                               1
+                                               graphs
+                                               )
+                                        )
+                                   (displayln "New time: ")
+                                   (time (foldl (lambda (value accum) (begin (graph->dot-bytes value (string->path TEST-SAVE-DIR) (format "dot~s" accum))
+                                                                            (add1 accum)
+                                                                            )
+                                                 )
+                                               1
+                                               graphs
+                                               )
+                                        )
+                                  (define (make-process file-path) (process (format "~a -T~s ~s -o ~s; echo $?"
+                                                                                    ;; On Mac/Linux we can bypass having to look at the systems PATH by instead
+                                                                                    ;; using the absolute path to the executable. For unknown reasons this does not
+                                                                                    ;; work on Windows so we will still use the PATH to call the dot executable
+                                                                                    "/run/current-system/sw/bin/dot"
+                                                                                    'png
+                                                                                    (string-append file-path ".dot")
+                                                                                    (string-append file-path ".png")
+                                                                                    )
+                                                                            )
+                                    )
+                                  (parallelize-shell make-process list-dot-files)
+                                  (collect-images 1 graphs-length)
+                                  )
+                                )
+  )
+
 ;; create-graph-imgs
 ;; (listof dgraph) -> (listof image)
 ;; Purpose: To create a list of graph images built level by level
@@ -583,7 +688,7 @@
   (if (empty? lod)
       '()
       ;(cons (create-graph-img (first lod)) (create-graph-imgs (rest lod)))
-      (parallel-graphs->bitmap-thunks (map create-graph-structs lod))
+      (parallel-dot (map create-graph-img lod))
       )
   )
 
@@ -992,6 +1097,7 @@
                                    ]
                              (if scalable?
                                  (let* [
+                                        ;(img-resize (resize-image (viz-state-curr-image a-vs) (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))
                                         (scaled-image (scale new-scale (viz-state-curr-image a-vs)))
                                         (viewport-lims (calculate-viewport-limits scaled-image new-scale))
                                         (scale-increase (/ new-scale (viz-state-scale-factor a-vs)))
@@ -1022,6 +1128,7 @@
                                    )
                                  a-vs
                                  )
+             
                              )
   )
 
@@ -1030,10 +1137,12 @@
 ;; Purpose: Move the visualization one step forward, one step
 ;;          backwards, or to the end.
 (define (process-key a-vs a-key)
+  
   (cond [(key=? "right" a-key)
          (if (empty? (viz-state-upimgs a-vs))
              a-vs
              (let* [
+                    
                     (new-up-yield (if (empty? (viz-state-up-yield a-vs))
                                       '()
                                       (rest (viz-state-up-yield a-vs))))
@@ -1066,6 +1175,8 @@
                                  (/ (image-height (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2)
                                  )
                               )
+                    
+                    (new-offset-cap (calculate-word-offset-cap (text (format "~a" (first (viz-state-input-word a-vs))) FONT-SIZE 'black) RULE-YIELD-DIMS))
                     ]
                (if (or (< E-SCENE-WIDTH (image-width new-pimgs-img))
                        (< E-SCENE-HEIGHT (image-height new-pimgs-img))
@@ -1805,6 +1916,8 @@
          (new-img-x (+ (posn-x (viz-state-image-posn a-vs)) x-diff))
          (new-img-y (+ (posn-y (viz-state-image-posn a-vs)) y-diff))
 
+         (tools-size (+ (image-height E-SCENE-TOOLS) 175))
+
          (scaled-image (scale (viz-state-scale-factor a-vs) (viz-state-curr-image a-vs)))
          (viewport-lims (calculate-viewport-limits scaled-image (viz-state-scale-factor a-vs)))
 
@@ -2111,6 +2224,10 @@
               (lod (reverse (create-dgrphs dgraph '())))
               (first-img (create-first-img (first (extract-nodes loe))))
               (imgs (cons first-img (rest (create-graph-imgs lod))))
+              #;(test (begin
+                        (map (lambda (x) (displayln x)) imgs)
+                        )
+                      )
               ]
         (run-viz (viz-state (rest imgs)
                             (list (first imgs))
@@ -2132,10 +2249,7 @@
                             0
                             (- (length word) TAPE-SIZE)
                             )
-                 draw-world 'rg-ctm)
-        )
-      )
-  )
+                 draw-world 'rg-ctm))))
 
 
 

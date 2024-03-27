@@ -10,6 +10,8 @@
 (provide
  stringify-value
  image?
+ find-dot
+ find-tmp-dir
  (contract-out
   (struct formatters ((graph (hash/c symbol? (-> any/c string?)))
                       (node (hash/c symbol? (-> any/c string?)))
