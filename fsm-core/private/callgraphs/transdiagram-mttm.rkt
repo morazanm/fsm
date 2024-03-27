@@ -66,7 +66,7 @@
     (string-join rules "\n"))
   ;; image
   ;; Purpose: Store a graph image 
-  (define cgraph (create-graph 'cgraph #:atb (hash 'rankdir "LR" 'fontsize 13)
+  (define cgraph (create-graph 'cgraph #:atb (hash 'rankdir "LR" 'fontsize 8)
                                #:fmtrs (formatters (hash) (hash) (hash 'label one-rule-per-line))))
   (begin
     (set! cgraph

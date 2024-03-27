@@ -126,8 +126,8 @@
       (define (future-rules rule)
         (filter (lambda (r) (and (eq? (mttm-rule-tost rule) (tm-rule-fromst r))
                                  (equal? (future-rule-reads (mttm-stuci-tapes stuci)
-                                                         (mttm-stuci-heads stuci)
-                                                         (mttm-rule-actions rule)) (mttm-rule-reads r))))
+                                                            (mttm-stuci-heads stuci)
+                                                            (mttm-rule-actions rule)) (mttm-rule-reads r))))
                 (sm-rules M)))
       ;; rule -> Boolean
       ;; Purpose: Given a rule, determines whether the machine halts
@@ -233,7 +233,7 @@
   ;; Purpose: Given a list of edges removes duplicates. The order of prioritization from
   ;;          highest to lowest is: mttm-cutoff-spedge, both mttm-spedge and mttm-cutoff-edge, mttm-edge
   (define (mttm-remove-duplicate-Edges Edges)
-(let* [(only-mttm-edges (filter mttm-edge? Edges))
+    (let* [(only-mttm-edges (filter mttm-edge? Edges))
            (only-mttm-spedges (filter mttm-spedge? Edges))
            (only-mttm-cutoff-edges (filter mttm-cutoff-edge? Edges))
            (only-mttm-cutoff-spedges (filter mttm-cutoff-spedge? Edges))
@@ -292,14 +292,14 @@
         '()
         (append (list (mcons '_ '()))
                 (rest-tapes (sub1 nr)))))
-   (mk-cg-edges-function
-     mttm-computation-tree->cg-edges
-    (mttm-stuci (sm-start M)
-                (append (list (create-tape word)) (rest-tapes (sm-numtapes M)))
-                (append (list head) (rest-heads (sm-numtapes M)))
-                0)
-     mttm-remove-redundant-edges-on-accept
-     mttm-remove-duplicate-Edges))
+  (mk-cg-edges-function
+   mttm-computation-tree->cg-edges
+   (mttm-stuci (sm-start M)
+               (append (list (create-tape word)) (rest-tapes (sm-numtapes M)))
+               (append (list head) (rest-heads (sm-numtapes M)))
+               0)
+   mttm-remove-redundant-edges-on-accept
+   mttm-remove-duplicate-Edges))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; dot-nodes-mttm
@@ -511,9 +511,193 @@
              cgraph
              (dot-trans-mttm M new-rules)))
       (let [(res (graph->bitmap cgraph))] 
-          res))))
+        res))))
+
+;.................................................
+
+(define ww
+  (make-mttm '(S A C D G Y)
+             '(a b c)
+             'S
+             '(Y)
+             (list
+              (list (list 'S (list BLANK BLANK))
+                    (list 'C (list RIGHT RIGHT)))
+              (list (list 'C (list 'a BLANK))
+                    (list 'D (list 'a 'a)))
+              (list (list 'D (list 'a 'a))
+                    (list 'C (list RIGHT RIGHT)))
+              (list (list 'C (list 'b BLANK))
+                    (list 'D (list 'b 'b)))
+              (list (list 'D (list 'b 'b))
+                    (list 'C (list RIGHT RIGHT)))
+              (list (list 'C (list BLANK BLANK))
+                    (list 'G (list BLANK LEFT)))
+              (list (list 'G (list BLANK 'a))
+                    (list 'G (list BLANK LEFT)))
+              (list (list 'G (list BLANK 'b))
+                    (list 'G (list BLANK LEFT)))           
+              (list (list 'G (list BLANK BLANK))
+                    (list 'A (list BLANK RIGHT)))
+              (list (list 'A (list BLANK 'a))
+                    (list 'A (list 'a BLANK)))
+              (list (list 'A (list 'a BLANK))
+                    (list 'A (list RIGHT RIGHT)))
+              (list (list 'A (list BLANK 'b))
+                    (list 'A (list 'b BLANK)))
+              (list (list 'A (list 'b BLANK))
+                    (list 'A (list RIGHT RIGHT)))              
+              (list (list 'A (list BLANK BLANK))
+                    (list 'Y (list BLANK BLANK))))
+             2))
+
+(define EQABC
+  (make-mttm '(S Y N C D E F G)
+             '(a b c)
+             'S
+             '(Y N)
+             (list
+              (list (list 'S (list BLANK BLANK BLANK BLANK))
+                    (list 'C (list RIGHT RIGHT RIGHT RIGHT)))
+              (list (list 'C (list 'a BLANK BLANK BLANK))
+                    (list 'D (list 'a 'a BLANK BLANK)))
+              (list (list 'D (list 'a 'a BLANK BLANK))
+                    (list 'C (list RIGHT RIGHT BLANK BLANK)))
+              (list (list 'C (list 'b BLANK BLANK BLANK))
+                    (list 'E (list 'b BLANK 'b BLANK)))
+              (list (list 'E (list 'b BLANK 'b BLANK))
+                    (list 'C (list RIGHT BLANK RIGHT BLANK)))
+              (list (list 'C (list 'c BLANK BLANK BLANK))
+                    (list 'F (list 'c BLANK BLANK 'c)))
+              (list (list 'F (list 'c BLANK BLANK 'c))
+                    (list 'C (list RIGHT BLANK BLANK RIGHT)))
+              (list (list 'C (list BLANK BLANK BLANK BLANK))
+                    (list 'G (list BLANK LEFT LEFT LEFT)))
+              (list (list 'G (list BLANK BLANK BLANK BLANK))
+                    (list 'Y (list BLANK BLANK BLANK BLANK)))
+              (list (list 'G (list BLANK 'a 'b 'c))
+                    (list 'G (list BLANK LEFT LEFT LEFT)))
+              (list (list 'G (list BLANK BLANK 'b 'c))
+                    (list 'N (list BLANK BLANK 'b 'c)))
+              (list (list 'G (list BLANK 'a BLANK 'c))
+                    (list 'N (list BLANK 'a BLANK 'c)))
+              (list (list 'G (list BLANK 'a 'b BLANK))
+                    (list 'N (list BLANK 'a 'b BLANK)))
+              (list (list 'G (list BLANK BLANK BLANK 'c))
+                    (list 'N (list BLANK BLANK BLANK 'c)))
+              (list (list 'G (list BLANK BLANK 'b BLANK))
+                    (list 'N (list BLANK BLANK 'b BLANK)))
+              (list (list 'G (list BLANK 'a BLANK BLANK))
+                    (list 'N (list BLANK 'a BLANK BLANK))))
+             4
+             'Y))
+
+(define EQABC2
+  (make-mttm
+   '(S Y C D E F G)
+   '(a b c)
+   'S
+   '(Y)
+   (list
+    (list (list 'S (list BLANK BLANK BLANK BLANK))
+          (list 'C (list RIGHT RIGHT RIGHT RIGHT)))
+    (list (list 'C (list 'a BLANK BLANK BLANK))
+          (list 'D (list 'a 'a BLANK BLANK)))
+    (list (list 'D (list 'a 'a BLANK BLANK))
+          (list 'C (list RIGHT RIGHT BLANK BLANK)))
+    (list (list 'C (list 'b BLANK BLANK BLANK))
+          (list 'E (list 'b BLANK 'b BLANK)))
+    (list (list 'E (list 'b BLANK 'b BLANK))
+          (list 'C (list RIGHT BLANK RIGHT BLANK)))
+    (list (list 'C (list 'c BLANK BLANK BLANK))
+          (list 'F (list 'c BLANK BLANK 'c)))
+    (list (list 'F (list 'c BLANK BLANK 'c))
+          (list 'C (list RIGHT BLANK BLANK RIGHT)))
+    (list (list 'C (list BLANK BLANK BLANK BLANK))
+          (list 'G (list BLANK LEFT LEFT LEFT)))
+    (list (list 'G (list BLANK BLANK BLANK BLANK))
+          (list 'Y (list BLANK BLANK BLANK BLANK)))
+    (list (list 'G (list BLANK 'a 'b 'c))
+          (list 'G (list BLANK LEFT LEFT LEFT))))
+   4
+   'Y))
+
+
+
+;; M -> (listof node)
+;; Purpose: Generate a list of nodes
+(define (dot-nodes M)
+  (let* ((start-state (sm-start M))
+         (final-states (if (not (eq? 'mttm-language-recognizer (sm-type M)))
+                           (sm-finals M)                      
+                           (filter (lambda (x) (not (eq? x (sm-accept M)))) (sm-finals M))))
+         (rest-states (filter (lambda (x) (if (eq? 'mttm-language-recognizer (sm-type M))
+                                              (and (not (member x (append (list start-state) final-states)))
+                                                   (not (eq? x (sm-accept M))))
+                                              (not (member x (append (list start-state) final-states)))))
+                              (sm-states M)))
+         (accept-state (if (eq? 'mttm-language-recognizer (sm-type M))
+                           (sm-accept M)
+                           '())))
+    (append
+     (list (list start-state `((color "forestgreen") (shape "circle") (label ,start-state))))
+     (map (lambda (x) (list x `((color "black") (shape "doublecircle") (label ,x)))) final-states)
+     (map (lambda (x) (list x `((color "black") (shape "circle") (label ,x)))) rest-states)
+     (if (not (null? accept-state)) (list (list accept-state `((color "black") (shape "doubleoctagon") (label ,accept-state)))) '()))))
 
 ;.................................................
 
 
-    
+;; M -> (listof edge)
+;; Purpose: Generate a list of edges
+(define (dot-edges M)
+  ;; (listof trans) -> (listof edge)
+  ;; Purpose: Convert one transition into edges
+  (define (edge l)
+    (let* ((fromst (car (car l)))
+           (tost (car (cadr l)))
+           (read (cadr (car l)))
+           (action (cadr (cadr l)))
+           (labell (string-append "[(" (list->string2 read) ")(" (list->string2 action) ")]")))
+      (list fromst tost `((fontsize 8) (label ,labell)))))
+  (map edge (sm-rules M)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; fsm word -> image
+;; Purpose: Given a mttm as list, create a .png file from a .dot file, and return a bitmap
+(define (transition-diagram-mttm M)
+  (define fname "fsm")
+  ;; (listof string) -> string 
+  ;; creates a string where each value in the list is on a new line
+  (define (one-rule-per-line rules)
+    (string-join rules "\n"))
+  ;; image
+  ;; Purpose: Store a graph image 
+  (define cgraph (create-graph 'cgraph #:atb (hash 'rankdir "LR" 'fontsize 8)
+                               #:fmtrs (formatters (hash) (hash) (hash 'label one-rule-per-line))))
+  (begin
+    (set! cgraph
+          (foldl
+           (lambda (a-node a-graph)
+             (let* [(state (first a-node))
+                    (color (second (first (second a-node))))
+                    (shape (second (second (second a-node))))
+                    (label (second (third (second a-node))))]
+               (add-node a-graph state #:atb (hash 'color color 'shape shape 'label label)))) 
+           cgraph   
+           (dot-nodes M)))
+    (set! cgraph
+          (foldl
+           (lambda (a-trans a-graph)
+             (let* [(state1 (first a-trans))
+                    (state2 (second a-trans))
+                    (label (second (second (third a-trans))))] 
+               (add-edge a-graph label state1 state2 #:atb (hash 'fontsize 8))))
+           cgraph
+           (dot-edges M)))
+    (let [(res (graph->bitmap cgraph))]
+      res)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
