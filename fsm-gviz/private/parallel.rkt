@@ -134,7 +134,7 @@
 ;; num num -> Listof Thunk
 ;; Creates a list of functions which when called will load its respective graph img from disk
 (define (pngs->bitmap-thunks accum cap)
-  (if (> accum cap)
+  (if (>= accum cap)
       '()
       (cons (thunk (bitmap/file (string->path (format "~adot~s.png" SAVE-DIR accum))))
             (pngs->bitmap-thunks (add1 accum) cap)
@@ -157,7 +157,8 @@
                                                                                   ]
                                                            [(eq? system-os 'windows) (begin
                                                                                        (define p (process "echo %NUMBER_OF_PROCESSORS%"))
-                                                                                       (define event-result (string->number (sync (read-line-evt (first p)))))
+                                                                                       ;; Have to change read-line-evt mode since windows returns a carriage return rather than a linebreak
+                                                                                       (define event-result (string->number (sync (read-line-evt (first p) 'any))))
                                                                                        (close-input-port (first p))
                                                                                        (close-output-port (second p))
                                                                                        (close-input-port (fourth p))
@@ -191,7 +192,12 @@
                                        (semaphore-wait cpu-cores-avail)
                                        (define shell-process (func a))
                                        (thread (lambda () (let [
-                                                                (result (sync (read-line-evt (first shell-process))))
+                                                                (result (sync (if (eq? system-os 'windows)
+                                                                                  (read-line-evt (first shell-process) 'any)
+                                                                                  (read-line-evt (first shell-process))
+                                                                                  )
+                                                                              )
+                                                                        )
                                                                 ]
                                                             (if (= 0 (string->number result))
                                                                 ;; This is thrown away, just doing this for the error check
