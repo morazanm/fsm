@@ -1678,11 +1678,34 @@
          ]
         [(key=? "w" a-key) (zoom a-vs ZOOM-INCREASE)]
         [(key=? "s" a-key) (zoom a-vs ZOOM-DECREASE)]
-        [(key=? "r" a-key) (let [
-                                 (img-resize (resize-image (viz-state-curr-image a-vs) (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))
-                                 ]
-                             (zoom a-vs (/ (min (second img-resize) (third img-resize)) (viz-state-scale-factor a-vs)))
-                             )
+        [(key=? "r" a-key) (if (and (< E-SCENE-WIDTH (image-width (viz-state-curr-image a-vs)))
+                                    (< E-SCENE-HEIGHT (image-height (viz-state-curr-image a-vs)))
+                                    )
+                               (let [
+                                     (img-resize (resize-image (viz-state-curr-image a-vs) (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))
+                                     ]
+                                 (zoom a-vs (/ (min (second img-resize) (third img-resize)) (viz-state-scale-factor a-vs)))
+                                 )
+                               (viz-state (viz-state-upimgs a-vs)
+                                 (viz-state-pimgs a-vs)
+                                 (viz-state-curr-image a-vs)
+                                 (viz-state-image-posn a-vs)
+                                 DEFAULT-ZOOM
+                                 (viz-state-scale-factor-cap a-vs)
+                                 (viz-state-scale-factor-floor a-vs)
+                                 (viz-state-dest-mouse-posn a-vs)
+                                 (viz-state-dest-mouse-posn a-vs)
+                                 (viz-state-mouse-pressed a-vs)
+                                 (viz-state-up-dgraph a-vs)
+                                 (viz-state-p-dgraph a-vs)
+                                 (viz-state-up-yield a-vs)
+                                 (viz-state-p-yield a-vs)
+                                 (viz-state-input-word a-vs)
+                                 (viz-state-word-img-offset a-vs)
+                                 (viz-state-word-img-offset-cap a-vs)
+                                 (viz-state-scroll-accum a-vs)
+                                 )
+                               )
                            ]
         [(key=? "f" a-key) (zoom a-vs (/ DEFAULT-ZOOM-CAP (viz-state-scale-factor a-vs)))]
         [(key=? "e" a-key) (zoom a-vs (/ (/ DEFAULT-ZOOM-CAP 2) (viz-state-scale-factor a-vs)))]

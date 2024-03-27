@@ -166,13 +166,13 @@
                                                                                        )
                                                                                      ]
                                                            [(eq? system-os 'macos) (begin
-                                                                                      (define p (process "sysctl -n hw.ncpu"))
-                                                                                      (define event-result (string->number (sync (read-line-evt (first p)))))
-                                                                                      (close-input-port (first p))
-                                                                                      (close-output-port (second p))
-                                                                                      (close-input-port (fourth p))
-                                                                                      event-result
-                                                                                      )
+                                                                                     (define p (process "sysctl -n hw.ncpu"))
+                                                                                     (define event-result (string->number (sync (read-line-evt (first p)))))
+                                                                                     (close-input-port (first p))
+                                                                                     (close-output-port (second p))
+                                                                                     (close-input-port (fourth p))
+                                                                                     event-result
+                                                                                     )
                                                                                    ]
                                                            [(eq? system-os 'macosx) (begin
                                                                                       (define p (process "sysctl -n hw.ncpu"))
@@ -249,23 +249,23 @@
 ;; Listof graph -> Num
 ;; Creates all of the dotfiles based on the graph structs given
 (define (graphs->dots graphs) (foldl (lambda (value accum) (begin (graph->dot-bytes value SAVE-DIR (format "dot~s" accum))
-                                                                                     (add1 accum)
-                                                                                     )
-                                                          )
-                                                        0
-                                                        graphs
-                                                        )
+                                                                  (add1 accum)
+                                                                  )
+                                       )
+                                     0
+                                     graphs
+                                     )
   )
 
 ;; Listof graph -> Listof Thunk
 ;; Creates all the graph images needed in parallel, and returns a list of thunks that will load them from disk
 (define (parallel-graphs->bitmap-thunks graphs) (begin
-                                            (define list-dot-files (for/list ([i (range 0 (length graphs))])
-                                                                     (format "~adot~s" SAVE-DIR i)
-                                                                     )
-                                              )
-                                            (graphs->dots graphs)
-                                            (parallel-dots->pngs list-dot-files)
-                                            (pngs->bitmap-thunks 0 (length graphs))
-                                            )
+                                                  (define list-dot-files (for/list ([i (range 0 (length graphs))])
+                                                                           (format "~adot~s" SAVE-DIR i)
+                                                                           )
+                                                    )
+                                                  (graphs->dots graphs)
+                                                  (parallel-dots->pngs list-dot-files)
+                                                  (pngs->bitmap-thunks 0 (length graphs))
+                                                  )
   )
