@@ -486,12 +486,18 @@
 
 ;; rename-levels
 ;; (listof level) -> (listof level)
-;; Purpose: To rename the terminals that reoccur in extracted edges
-(define (rename-levels exe)
+;; Purpose: To rename the terminals and nonterminals that reoccur in extracted edges
+
+
+
+
+
+
+#;(define (rename-levels exe)
   (define (rename-level level accum)
     (if (empty? level)
         empty
-        (let [(new-edge (...)]
+        (let* [(dd (display (format "~s" new-edge)))]
           (cons new-edge
                 (rename-level (rest level)(append new-edge accum))))))
   (define (rnm-lvls exe accum)
@@ -504,7 +510,8 @@
   (if (empty? exe)
       empty
       (rnm-lvls exe (first exe))))
-            
+
+
       
 ;; generate-level
 ;; (listof symbol) (listof symbol) -> level
@@ -649,10 +656,13 @@
          (nodes (dgrph-nodes a-dgrph))
          (levels (reverse (map reverse (dgrph-ad-levels a-dgrph))))
          (hedges (dgrph-hedges a-dgrph))
-         (dd (display (format "~s" hedges)))
-         (hedge-nodes (map (λ (x) (second x)) hedges)
+         (hedge-nodes (map (λ (x) (if (empty? x)
+                                      empty
+                                      (second x))) hedges)
                       )
-         (yield-node (map (λ (x) (first x)) hedges))
+         (yield-node (map (λ (x) (if (empty? x)
+                                     empty
+                                     (first x))) hedges))
          ]
     (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
                                       nodes hedge-nodes yield-node)
@@ -745,7 +755,7 @@
                                                )
                                         )
                                   (displayln "New time: ")
-                                  (time (foldl (lambda (value accum) (begin (graph->dot-bytes value (string->path TEST-SAVE-DIR) (format "dot~s" accum))
+                                  (time (foldl (lambda (value accum) (begin (graph->dot value (string->path TEST-SAVE-DIR) (format "dot~s" accum))
                                                                             (add1 accum)
                                                                             )
                                                  )

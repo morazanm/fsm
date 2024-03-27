@@ -66,7 +66,6 @@
 ;; Purpose: To generate levels for intersect lists
 (define (generate-level los1 los2)
   (let* [(leftmost (takef los2 lower?))
-         (difference (- (length los2) (length leftmost)))
          (rightmost (take-right los2 (- (length los1) 1)))
          (new (if (= (+ 1 (length rightmost) (length leftmost)) (length los2))
                   empty
