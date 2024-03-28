@@ -2353,8 +2353,7 @@
                                                  (grammar-derive cfg word))))
               (rules (cons "" (create-rules w-der)))
               (extracted-edges (create-levels w-der))
-              ;(renamed (rename-levels extracted-edges))
-              (renamed 1)
+              (renamed (rename-levels extracted-edges))
               (loe (map (λ (el) (if (symbol? (first el))
                                     (list el '())
                                     el)) renamed))
@@ -2411,3 +2410,5 @@
                               (A ,ARROW ,EMP)
                               (A ,ARROW bA))
                             'S))
+
+;(cfg-viz numb>numa '(a b b))
