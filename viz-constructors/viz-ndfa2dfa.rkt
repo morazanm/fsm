@@ -425,13 +425,16 @@
 
 ;; (listof symbols) -> graph
 ;; Purpose: To create a graph of nodes from the given list of rules
-(define (ndfa-node-graph cgraph M)
+(define (ndfa-node-graph cgraph M hedges)
   (foldl (λ (state result) (cond [(contains-final-state? state (sm-finals M))
                                   (add-node
                                    result
                                    state
                                    #:atb (hash 'color 'black
                                                'shape 'doublecircle
+                                               'style (if (ormap (λ (edge) (member state edge)) hedges)
+                                                          'bold
+                                                          'solid)
                                                'label state
                                                'fontcolor 'black))]
                                  [(eq? state (sm-start M))
@@ -441,6 +444,9 @@
                                    #:atb (hash 'color 'darkgreen
                                                'shape 'circle
                                                'label state
+                                               'style (if (ormap (λ (edge) (member state edge)) hedges)
+                                                          'bold
+                                                          'solid)
                                                'fontcolor 'black))]
                                  [else (add-node
                                         result
@@ -448,6 +454,9 @@
                                         #:atb (hash 'color 'black
                                                     'shape 'circle
                                                     'label state
+                                                    'style (if (ormap (λ (edge) (member state edge)) hedges)
+                                                               'bold
+                                                               'solid)
                                                     'fontcolor 'black))]))
          cgraph
          (sm-states M)))
@@ -479,7 +488,7 @@
 ;; Purpose: To make an ndfa-graph from the given ndfa
 (define (make-ndfa-graph a-etc)
   (let* [(ndfa-edge-graph-x (ndfa-edge-graph (ndfa-node-graph (create-graph 'ndfagraph #:atb (hash 'rankdir "LR"))
-                                                              (etc-M a-etc))
+                                                              (etc-M a-etc) (etc-hedges a-etc))
                                              (etc-hedges a-etc)
                                              (etc-fedges a-etc)
                                              (etc-bledges a-etc)))]
@@ -638,4 +647,4 @@
                                           (C b C))))
 
 ;(run aa-ab)
-;(run AT-LEAST-ONE-MISSING)
+(ndfa2dfa-viz AT-LEAST-ONE-MISSING)
