@@ -595,11 +595,14 @@
 ;; create-graph-imgs
 ;; (listof dgraph) -> (listof image)
 ;; Purpose: To create a list of graph images built level by level
-(define (create-graph-imgs lod)
+(define (create-graph-imgs lod #:cpu-cores [cpu-cores #f])
   (if (empty? lod)
       '()
       ;(cons (create-graph-img (first lod)) (create-graph-imgs (rest lod)))
-      (parallel-graphs->bitmap-thunks (map create-graph-structs lod))
+      (if (not cpu-cores)
+          (parallel-graphs->bitmap-thunks (map create-graph-structs lod))
+          (parallel-graphs->bitmap-thunks (map create-graph-structs lod) #:cpu-cores cpu-cores)
+          )
       )
   )
 
@@ -2218,7 +2221,7 @@
   )
     
 ;; rg-viz
-(define (rg-viz rg word)
+(define (rg-viz rg word #:cpu-cores [cpu-cores #f])
   (if (string? (grammar-derive rg word))
       (grammar-derive rg word)
       (let* [ (w-der (map symbol->fsmlos (filter (λ (x) (not (equal? x '->)))
@@ -2232,7 +2235,7 @@
               (dgraph (dgrph loe '() '() '() (rest rules) (list (first rules))))
               (lod (reverse (create-dgrphs dgraph '())))
               (first-img (create-first-img (first (extract-nodes loe))))
-              (imgs (cons first-img (rest (create-graph-imgs lod))))
+              (imgs (cons first-img (rest (create-graph-imgs lod #:cpu-cores cpu-cores))))
               ]
         (run-viz (viz-state (rest imgs)
                             (list (first imgs))

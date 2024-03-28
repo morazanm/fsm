@@ -270,7 +270,7 @@
                                                                                                                           )
                                                                                                    )
                                                                                                  (graphs->dots graphs)
-                                                                                                 (parallel-dots->pngs list-dot-files)
+                                                                                                 (parallel-dots->pngs list-dot-files cpu-cores)
                                                                                                  (pngs->bitmap-thunks 0 (length graphs))
                                                                                                  )
   )
