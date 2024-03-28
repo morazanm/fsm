@@ -18,26 +18,25 @@
                               (A ,ARROW bA))
                             'S))
 
+;; levels is a structure that has
+;; list of levels
+;; accumulator for all nodes that appear in levels
+;; leftmost accumulator (basically just the root node we need to remember)
+(struct levels (lol acc lma))
+
+;; lower-first?
+;; edge -> Boolean
+;; Purpose: To check if the second element is lowercase
+(define (lower-first? edge)
+  (lower? (second edge)))
+
 ;; rename-nodes
-;; (listof level) -> (listof level)
+;; levels -> levels
 ;; Purpose: To rename the terminals that reoccur in extracted edges
-(define (rename-nodes exe)
-  (define (rename-level level accum)
-    (if (empty? level)
-        empty
-        (let [(new-edge (map (λ (symbol) (generate-symbol symbol accum)) (first level)))]
-          (cons new-edge
-                (rename-level (rest level)(append new-edge accum))))))
-  (define (rnm-lvls exe accum)
-    (if (empty? exe)
-        '()
-        (let* [(new-level (rename-level (first exe) accum))
-               (new-accum (append (flatten new-level) accum))]
-          (cons new-level
-                (rnm-lvls (rest exe) new-accum)))))
-  (if (empty? exe)
-      empty
-      (rnm-lvls exe (first exe))))
+        
+  
+                         
+  
 
 
 ;; w-der
@@ -71,9 +70,9 @@
          (new (if (empty? (drop-right los2 (length rightmost)))
                   (list 'ε)
                   (drop (drop-right los2 (length rightmost)) (length leftmost))))]
-    (for*/list ([i (list nonterminal)]
-                [j new])
-      (list i j))))
+    (levels (for*/list ([i (list nonterminal)]
+                       [j new])
+             (list i j)) (list nonterminal) nonterminal)))
 
 
     
