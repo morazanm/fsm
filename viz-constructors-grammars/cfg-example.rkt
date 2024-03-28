@@ -67,12 +67,11 @@
 (define (generate-level los1 los2)
   (let* [(leftmost (takef los2 lower?))
          (rightmost (take-right los2 (- (length los1) 1)))
-         (new (if (= (+ 1 (length rightmost) (length leftmost)) (length los2))
-                  empty
-                  (if (empty? (drop-right los2 (length rightmost)))
-                      (list 'ε)
-                      (drop (drop-right los2 (length rightmost)) (length leftmost)))))]
-    (for*/list ([i (list (first los1))]
+         (nonterminal (first (dropf los1 lower?)))
+         (new (if (empty? (drop-right los2 (length rightmost)))
+                  (list 'ε)
+                  (drop (drop-right los2 (length rightmost)) (length leftmost))))]
+    (for*/list ([i (list nonterminal)]
                 [j new])
       (list i j))))
 
