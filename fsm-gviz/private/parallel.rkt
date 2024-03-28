@@ -264,7 +264,7 @@
 
 ;; Listof graph -> Listof Thunk
 ;; Creates all the graph images needed in parallel, and returns a list of thunks that will load them from disk
-(define (parallel-graphs->bitmap-thunks graphs #:cpu-cores [cpu-cores (find-number-of-cores)]) (begin
+(define (parallel-graphs->bitmap-thunks graphs #:cpu-cores [cpu-cores (quotient (find-number-of-cores) 2)]) (begin
                                                                                                  (define list-dot-files (for/list ([i (range 0 (length graphs))])
                                                                                                                           (format "~adot~s" SAVE-DIR i)
                                                                                                                           )
