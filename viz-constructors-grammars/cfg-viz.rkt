@@ -5,9 +5,7 @@
                     [make-color loc-make-color]
                     [make-pen loc-make-pen])
          2htdp/image
-         (except-in "../fsm-core/interface.rkt"
-                    make-cfg
-                    )
+         "../fsm-core/interface.rkt"
          ;"../fsm-core/private/constants.rkt"
          math/matrix
          math/array
@@ -2392,109 +2390,6 @@
                             )
                  draw-world 'cfg-ctm))))
 
-(define (cfg-derive1 g w)
-    (define (get-first-nt st)
-      (cond [(empty? st) #f]
-            [(not (member (car st) (cfg-get-alphabet g))) (car st)]
-            [else (get-first-nt (cdr st))])
-      )
-    
-    (define (get-rules nt g) (filter (lambda (r) (eq? nt (cfg-rule-lhs r))) 
-                                     (cfg-get-the-rules g)))
-    
-    ; ASSUMPTION: state has at least one NT
-    (define (subst-first-nt state rght)
-      (cond [(not (member (car state) (cfg-get-alphabet g)))
-             (if (eq? (car rght) EMP) (cdr state) (append rght (cdr state)))]
-            [else (cons (car state) (subst-first-nt (cdr state) rght))]))
-    
-    ; (listof (listof symbol)) --> (listof symbol)
-    (define (get-starting-terminals st)
-      (cond 
-        [(not (member (car st) (cfg-get-alphabet g))) '()]
-        [else (cons (car st) (get-starting-terminals (cdr st)))]))
-    
-    ; (listof (listof symbol)) natnum --> (listof symbol)
-    (define (get-first-n-terms w n)
-      ;(println w)
-      (cond [(= n 0) '()]
-            [else (cons (car w) (get-first-n-terms (cdr w) (- n 1)))]))
-    
-    
-    ; (list (listof symbol)) --> boolean
-    (define (check-terminals? st)
-      (let* ((start-terms-st (get-starting-terminals st))
-             (start-terms-w (if (> (length start-terms-st) (length w))
-                                #f
-                                (get-first-n-terms w (length start-terms-st)))))
-        (cond [(false? start-terms-w) #f]
-              [else (equal? start-terms-st start-terms-w)])))
-    
-    
-    (define (make-deriv visited derivs g chomsky)
-      (define (count-terminals st sigma)
-        (length (filter (lambda (a) (member a sigma)) st)))
- 
-      (cond [(empty? derivs) (format "~s is not in L(G)." w)]
-            [(or (and chomsky
-                      (> (length (first (first (first derivs)))) (+ 2 (length w)))
-                      )
-                 (> (count-terminals (first (first (first derivs))) (cfg-get-alphabet g)) (length w))
-                 )
-             (make-deriv visited (cdr derivs) g chomsky)]
-            [else 
-             (let* ((fderiv (car derivs))
-                    (state (car fderiv))
-                    (fnt (get-first-nt (first state)))
-                    )
-               (if (false? fnt)
-                   (if (equal? w (first state))
-                       (append-map (lambda (l) (if (equal? w (first l)) 
-                                                   (if (null? l)
-                                                       (list EMP)
-                                                       (list (list (los->symbol (first l)) (los->symbol (second l))))
-                                                       )
-                                                   (list (list (los->symbol (first l)) (los->symbol (second l))) ARROW)
-                                                   )
-                                     ) 
-                                   (reverse fderiv))
-                       (make-deriv visited (cdr derivs) g chomsky))
-                   (let*
-                       ((rls (get-rules fnt g))
-                        (rights (map cfg-rule-rhs rls))
-                        (new-states (filter (lambda (st) (and (not (member st visited))
-                                                              (check-terminals? (first state)))) 
-                                            (map (lambda (rght) (list (subst-first-nt (first state) rght) rght)) rights)
-                                            )
-                                    )
-                        )
-                     (make-deriv (append new-states visited)
-                                 (append (cdr derivs) 
-                                         (map (lambda (st) (cons st fderiv)) 
-                                              new-states))
-                                 g
-                                 chomsky))))]))   
-    (if (< (length w) 2)
-        (format "The word ~s is too short to test." w)
-        (let* ( ;; derive using g ONLY IF derivation found with g in CNF
-               (ng (convert-to-cnf g))
-               (ng-derivation (make-deriv (list (list (list (cfg-get-start ng)) '() )) 
-                                          (list (list (list (list (cfg-get-start ng)) '() )))
-                                          ng
-                                          true)
-                              )
-               )
-          (if (string? ng-derivation)
-              ng-derivation
-              (make-deriv (list (list (list (cfg-get-start g)) '() )) 
-                          (list (list (list (list (cfg-get-start g)) '() )))
-                          g
-                          false)
-              )
-          )
-        )
-  )
-
 ;; vst --> void
 (define (run-viz a-vs draw-etc a-name)
   (begin
@@ -2516,4 +2411,3 @@
                               (A ,ARROW ,EMP)
                               (A ,ARROW bA))
                             'S))
-(cfg-derive1 numb>numa '(a b b))
