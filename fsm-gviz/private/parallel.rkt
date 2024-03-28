@@ -142,82 +142,87 @@
       )
   )
 
+(define (find-number-of-cores) (let [
+                                     (system-os (system-type 'os))
+                                     ]
+                                 (cond [(eq? system-os 'unix) (begin
+                                                                (define p (process "grep -c '^processor' /proc/cpuinfo"))
+                                                                (define event-result (string->number (sync (read-line-evt (first p)))))
+                                                                (close-input-port (first p))
+                                                                (close-output-port (second p))
+                                                                (close-input-port (fourth p))
+                                                                event-result
+                                                                )
+                                                              ]
+                                       [(eq? system-os 'windows) (begin
+                                                                   (define p (process "echo %NUMBER_OF_PROCESSORS%"))
+                                                                   ;; Have to change read-line-evt mode since windows returns a carriage return rather than a linebreak
+                                                                   (define event-result (string->number (sync (read-line-evt (first p) 'any))))
+                                                                   (close-input-port (first p))
+                                                                   (close-output-port (second p))
+                                                                   (close-input-port (fourth p))
+                                                                   event-result
+                                                                   )
+                                                                 ]
+                                       [(eq? system-os 'macos) (begin
+                                                                 (define p (process "sysctl -n hw.ncpu"))
+                                                                 (define event-result (string->number (sync (read-line-evt (first p)))))
+                                                                 (close-input-port (first p))
+                                                                 (close-output-port (second p))
+                                                                 (close-input-port (fourth p))
+                                                                 event-result
+                                                                 )
+                                                               ]
+                                       [(eq? system-os 'macosx) (begin
+                                                                  (define p (process "sysctl -n hw.ncpu"))
+                                                                  (define event-result (string->number (sync (read-line-evt (first p)))))
+                                                                  (close-input-port (first p))
+                                                                  (close-output-port (second p))
+                                                                  (close-input-port (fourth p))
+                                                                  event-result
+                                                                  )
+                                                                ]
+                                       [else (error "Unknown system type, unable to intialize GraphViz in system shell")]
+                                       )
+                                 )
+  )
+
 ;; Procedure Listof Any -> Void
 ;; Runs a given function in parallel based on information gathered from the system
-(define (parallel-shell func args) (let* [
-                                          (system-os (system-type 'os))
-                                          (cpu-cores (cond [(eq? system-os 'unix) (begin
-                                                                                    (define p (process "grep -c '^processor' /proc/cpuinfo"))
-                                                                                    (define event-result (string->number (sync (read-line-evt (first p)))))
-                                                                                    (close-input-port (first p))
-                                                                                    (close-output-port (second p))
-                                                                                    (close-input-port (fourth p))
-                                                                                    event-result
-                                                                                    )
-                                                                                  ]
-                                                           [(eq? system-os 'windows) (begin
-                                                                                       (define p (process "echo %NUMBER_OF_PROCESSORS%"))
-                                                                                       ;; Have to change read-line-evt mode since windows returns a carriage return rather than a linebreak
-                                                                                       (define event-result (string->number (sync (read-line-evt (first p) 'any))))
-                                                                                       (close-input-port (first p))
-                                                                                       (close-output-port (second p))
-                                                                                       (close-input-port (fourth p))
-                                                                                       event-result
-                                                                                       )
-                                                                                     ]
-                                                           [(eq? system-os 'macos) (begin
-                                                                                     (define p (process "sysctl -n hw.ncpu"))
-                                                                                     (define event-result (string->number (sync (read-line-evt (first p)))))
-                                                                                     (close-input-port (first p))
-                                                                                     (close-output-port (second p))
-                                                                                     (close-input-port (fourth p))
-                                                                                     event-result
-                                                                                     )
-                                                                                   ]
-                                                           [(eq? system-os 'macosx) (begin
-                                                                                      (define p (process "sysctl -n hw.ncpu"))
-                                                                                      (define event-result (string->number (sync (read-line-evt (first p)))))
-                                                                                      (close-input-port (first p))
-                                                                                      (close-output-port (second p))
-                                                                                      (close-input-port (fourth p))
-                                                                                      event-result
-                                                                                      )
-                                                                                    ]
-                                                           [else (error "Unknown system type, unable to intialize GraphViz in system shell")]
-                                                           )
-                                                     )
-                                          (cpu-cores-avail (make-semaphore cpu-cores))
-                                          ]
-                                     (for/list ([a args])
-                                       (semaphore-wait cpu-cores-avail)
-                                       (define shell-process (func a))
-                                       (thread (lambda () (let [
-                                                                (result (sync (if (eq? system-os 'windows)
-                                                                                  (read-line-evt (first shell-process) 'any)
-                                                                                  (read-line-evt (first shell-process))
+(define (parallel-shell func args cpu-cores) (let [
+                                                   (cpu-cores-avail (make-semaphore cpu-cores))
+                                                   (system-os (system-type 'os))
+                                                   ]
+                                               (for/list ([a args])
+                                                 (semaphore-wait cpu-cores-avail)
+                                                 (define shell-process (func a))
+                                                 (thread (lambda () (let [
+                                                                          (result (sync (if (eq? system-os 'windows)
+                                                                                            (read-line-evt (first shell-process) 'any)
+                                                                                            (read-line-evt (first shell-process))
+                                                                                            )
+                                                                                        )
                                                                                   )
-                                                                              )
-                                                                        )
-                                                                ]
-                                                            (if (= 0 (string->number result))
-                                                                ;; This is thrown away, just doing this for the error check
-                                                                result
-                                                                (error (format "Graphviz produced an error while compiling the graphs: ~a" result))
-                                                                )
-                                                            )
-                                                 (close-input-port (first shell-process))
-                                                 (close-output-port (second shell-process))
-                                                 (close-input-port (fourth shell-process))
-                                                 (semaphore-post cpu-cores-avail)
+                                                                          ]
+                                                                      (if (= 0 (string->number result))
+                                                                          ;; This is thrown away, just doing this for the error check
+                                                                          result
+                                                                          (error (format "Graphviz produced an error while compiling the graphs: ~a" result))
+                                                                          )
+                                                                      )
+                                                           (close-input-port (first shell-process))
+                                                           (close-output-port (second shell-process))
+                                                           (close-input-port (fourth shell-process))
+                                                           (semaphore-post cpu-cores-avail)
+                                                           )
+                                                         )
                                                  )
                                                )
-                                       )
-                                     )
   )
 
 ;; Listof String -> Void
 ;; Creates all the graphviz images
-(define (parallel-dots->pngs dot-files)
+(define (parallel-dots->pngs dot-files cpu-cores)
   (define dot-executable-path (find-dot))
   ;; On Mac/Linux we can bypass having to look at the systems PATH by instead
   ;; using the absolute path to the executable. For unknown reasons this does not
@@ -240,7 +245,7 @@
                                             )
     )
   (if (path? dot-executable-path)
-      (parallel-shell make-process dot-files)
+      (parallel-shell make-process dot-files cpu-cores)
       (error "Error caused when creating png file. This was probably due to the dot environment variable not existing on the path")
       )
                                           
@@ -248,7 +253,7 @@
 
 ;; Listof graph -> Num
 ;; Creates all of the dotfiles based on the graph structs given
-(define (graphs->dots graphs) (foldl (lambda (value accum) (begin (graph->dot-bytes value SAVE-DIR (format "dot~s" accum))
+(define (graphs->dots graphs) (foldl (lambda (value accum) (begin (graph->dot value SAVE-DIR (format "dot~s" accum))
                                                                   (add1 accum)
                                                                   )
                                        )
@@ -259,13 +264,13 @@
 
 ;; Listof graph -> Listof Thunk
 ;; Creates all the graph images needed in parallel, and returns a list of thunks that will load them from disk
-(define (parallel-graphs->bitmap-thunks graphs) (begin
-                                                  (define list-dot-files (for/list ([i (range 0 (length graphs))])
-                                                                           (format "~adot~s" SAVE-DIR i)
-                                                                           )
-                                                    )
-                                                  (graphs->dots graphs)
-                                                  (parallel-dots->pngs list-dot-files)
-                                                  (pngs->bitmap-thunks 0 (length graphs))
-                                                  )
+(define (parallel-graphs->bitmap-thunks graphs #:cpu-cores [cpu-cores (find-number-of-cores)]) (begin
+                                                                                                 (define list-dot-files (for/list ([i (range 0 (length graphs))])
+                                                                                                                          (format "~adot~s" SAVE-DIR i)
+                                                                                                                          )
+                                                                                                   )
+                                                                                                 (graphs->dots graphs)
+                                                                                                 (parallel-dots->pngs list-dot-files)
+                                                                                                 (pngs->bitmap-thunks 0 (length graphs))
+                                                                                                 )
   )
