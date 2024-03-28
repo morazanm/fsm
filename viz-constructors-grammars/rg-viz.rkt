@@ -84,6 +84,8 @@
 (define R-KEY (bitmap/file "./keyboard_key_r.png"))
 (define F-KEY (bitmap/file "./keyboard_key_f.png"))
 (define E-KEY (bitmap/file "./keyboard_key_e.png"))
+(define A-KEY (bitmap/file "./keyboard_key_a.png"))
+(define D-KEY (bitmap/file "./keyboard_key_d.png"))
 (define ARROW-RIGHT-KEY (bitmap/file "./keyboard_key_right.png"))
 (define ARROW-LEFT-KEY (bitmap/file "./keyboard_key_left.png"))
 (define ARROW-UP-KEY (bitmap/file "./keyboard_key_up.png"))
@@ -217,12 +219,22 @@
                   (square 40 'solid 'white)
                   (beside (above/align "middle" W-KEY (square 20 'solid 'white) (text "Zoom in" 18 'black))
                           (square 20 'solid 'white)
+                          
                           (above/align "middle"  S-KEY (square 20 'solid 'white) (text "Zoom out" 18 'black))
                           (square 20 'solid 'white)
+
+                          (above/align "middle"  A-KEY (square 20 'solid 'white) (text "Word start" 18 'black))
+                          (square 20 'solid 'white)
+
+                          (above/align "middle"  D-KEY (square 20 'solid 'white) (text "Word end" 18 'black))
+                          (square 20 'solid 'white)
+                          
                           (above/align "middle" R-KEY (square 20 'solid 'white) (text "Min zoom" 18 'black))
                           (square 20 'solid 'white)
+                          
                           (above/align "middle" E-KEY (square 20 'solid 'white) (text "Mid zoom" 18 'black))
                           (square 20 'solid 'white)
+                          
                           (above/align "middle" F-KEY (square 20 'solid 'white) (text "Max zoom" 18 'black))
                           )
                   )
@@ -583,11 +595,14 @@
 ;; create-graph-imgs
 ;; (listof dgraph) -> (listof image)
 ;; Purpose: To create a list of graph images built level by level
-(define (create-graph-imgs lod)
+(define (create-graph-imgs lod #:cpu-cores [cpu-cores #f])
   (if (empty? lod)
       '()
       ;(cons (create-graph-img (first lod)) (create-graph-imgs (rest lod)))
-      (parallel-graphs->bitmap-thunks (map create-graph-structs lod))
+      (if (not cpu-cores)
+          (parallel-graphs->bitmap-thunks (map create-graph-structs lod))
+          (parallel-graphs->bitmap-thunks (map create-graph-structs lod) #:cpu-cores cpu-cores)
+          )
       )
   )
 
@@ -1678,6 +1693,46 @@
          ]
         [(key=? "w" a-key) (zoom a-vs ZOOM-INCREASE)]
         [(key=? "s" a-key) (zoom a-vs ZOOM-DECREASE)]
+        [(key=? "a" a-key) (viz-state (viz-state-upimgs a-vs)
+                                 (viz-state-pimgs a-vs)
+                                 (viz-state-curr-image a-vs)
+                                 (viz-state-image-posn a-vs)
+                                 (viz-state-scale-factor a-vs)
+                                 (viz-state-scale-factor-cap a-vs)
+                                 (viz-state-scale-factor-floor a-vs)
+                                 (viz-state-dest-mouse-posn a-vs)
+                                 (viz-state-dest-mouse-posn a-vs)
+                                 (viz-state-mouse-pressed a-vs)
+                                 (viz-state-up-dgraph a-vs)
+                                 (viz-state-p-dgraph a-vs)
+                                 (viz-state-up-yield a-vs)
+                                 (viz-state-p-yield a-vs)
+                                 (viz-state-input-word a-vs)
+                                 0
+                                 (viz-state-word-img-offset-cap a-vs)
+                                 0
+                                 )
+                           ]
+        [(key=? "d" a-key) (viz-state (viz-state-upimgs a-vs)
+                                 (viz-state-pimgs a-vs)
+                                 (viz-state-curr-image a-vs)
+                                 (viz-state-image-posn a-vs)
+                                 DEFAULT-ZOOM
+                                 (viz-state-scale-factor-cap a-vs)
+                                 (viz-state-scale-factor-floor a-vs)
+                                 (viz-state-dest-mouse-posn a-vs)
+                                 (viz-state-dest-mouse-posn a-vs)
+                                 (viz-state-mouse-pressed a-vs)
+                                 (viz-state-up-dgraph a-vs)
+                                 (viz-state-p-dgraph a-vs)
+                                 (viz-state-up-yield a-vs)
+                                 (viz-state-p-yield a-vs)
+                                 (viz-state-input-word a-vs)
+                                 (viz-state-word-img-offset-cap a-vs)
+                                 (viz-state-word-img-offset-cap a-vs)
+                                 0
+                                 )
+                           ]
         [(key=? "r" a-key) (if (and (< E-SCENE-WIDTH (image-width (viz-state-curr-image a-vs)))
                                     (< E-SCENE-HEIGHT (image-height (viz-state-curr-image a-vs)))
                                     )
@@ -2166,7 +2221,7 @@
   )
     
 ;; rg-viz
-(define (rg-viz rg word)
+(define (rg-viz rg word #:cpu-cores [cpu-cores #f])
   (if (string? (grammar-derive rg word))
       (grammar-derive rg word)
       (let* [ (w-der (map symbol->fsmlos (filter (λ (x) (not (equal? x '->)))
@@ -2180,7 +2235,7 @@
               (dgraph (dgrph loe '() '() '() (rest rules) (list (first rules))))
               (lod (reverse (create-dgrphs dgraph '())))
               (first-img (create-first-img (first (extract-nodes loe))))
-              (imgs (cons first-img (rest (create-graph-imgs lod))))
+              (imgs (cons first-img (rest (create-graph-imgs lod #:cpu-cores cpu-cores))))
               ]
         (run-viz (viz-state (rest imgs)
                             (list (first imgs))

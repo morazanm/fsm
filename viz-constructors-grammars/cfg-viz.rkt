@@ -5,10 +5,13 @@
                     [make-color loc-make-color]
                     [make-pen loc-make-pen])
          2htdp/image
-         "../fsm-core/interface.rkt"
+         (except-in "../fsm-core/interface.rkt"
+                    make-cfg
+                    )
+         ;"../fsm-core/private/constants.rkt"
          math/matrix
          math/array
-         ;pmap
+         "../fsm-core/private/cfg.rkt"
          )
 
 (define FNAME "fsm")
@@ -518,14 +521,14 @@
 ;; Purpose: To generate levels for intersect lists
 (define (generate-level los1 los2)
   (let* [(leftmost (takef los2 lower?))
-         (difference (- (length los2) (length leftmost)))
          (rightmost (take-right los2 (- (length los1) 1)))
-         (new (if (= (+ 1 (length rightmost) (length leftmost)) (length los2))
-                  empty
-                  (if (empty? (drop-right los2 (length rightmost)))
-                      (list 'ε)
-                      (drop (drop-right los2 (length rightmost)) (length leftmost)))))]
-    (for*/list ([i (list (first los1))]
+         (nonterminal (if (empty? (drop los2 (length leftmost)))
+                          empty
+                          (first (drop los2 (length leftmost)))))
+         (new (if (empty? (drop-right los2 (length rightmost)))
+                  (list 'ε)
+                  (drop (drop-right los2 (length rightmost)) (length leftmost))))]
+    (for*/list ([i (list nonterminal)]
                 [j new])
       (list i j))))
 
@@ -652,7 +655,6 @@
 ;; Purpose: To create a graph image for complement
 (define (create-graph-img a-dgrph)
   (let* [
-         ;; Could maybe change this to a sort? Would be more efficient if I had to guess
          (nodes (dgrph-nodes a-dgrph))
          (levels (reverse (map reverse (dgrph-ad-levels a-dgrph))))
          (hedges (dgrph-hedges a-dgrph))
@@ -824,7 +826,6 @@
 (define (create-graph-imgs lod)
   (if (empty? lod)
       '()
-      ;(cons (create-graph-img (first lod)) (create-graph-imgs (rest lod)))
       (parallel-dot (map create-graph-img lod))
       )
   )
@@ -1234,7 +1235,6 @@
                                    ]
                              (if scalable?
                                  (let* [
-                                        ;(img-resize (resize-image (viz-state-curr-image a-vs) (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))
                                         (scaled-image (scale new-scale (viz-state-curr-image a-vs)))
                                         (viewport-lims (calculate-viewport-limits scaled-image new-scale))
                                         (scale-increase (/ new-scale (viz-state-scale-factor a-vs)))
@@ -1274,11 +1274,6 @@
 ;; Purpose: Move the visualization one step forward, one step
 ;;          backwards, or to the end.
 (define (process-key a-vs a-key)
-  #;(define test (if (image? a-key)
-                     (error "Wtf")
-                     (display "inside")
-                     )
-      )
   (cond [(key=? "right" a-key)
          (if (empty? (viz-state-upimgs a-vs))
              a-vs
@@ -1293,28 +1288,18 @@
                                            (viz-state-p-yield a-vs))))
                     (new-pimgs (cons (first (viz-state-upimgs a-vs))
                                      (viz-state-pimgs a-vs)))
-                    #;(test (if (image? (first new-pimgs))
-                                (error "wtf")
-                                (displayln "its a func")
-                                )
-                            )
                           
                     (new-pimgs-img (
-                                    ;force
                                     (first new-pimgs)
                                     )
                                    )
                     
                     (curr-pimgs-img (
-                                     ;force
                                      (first (viz-state-pimgs a-vs))
                                      )
                                     )
                     (new-p-dgraph (cons (first (viz-state-up-dgraph a-vs))
                                         (viz-state-p-dgraph a-vs)))
-                    ;; list is in form of (img, scale-x, scale-y)
-
-                    ;; Make this into a function TODO
                     (img-resize (resize-image new-pimgs-img (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))
                     
                     (growth-x (- (/ (image-width (scale (viz-state-scale-factor a-vs) new-pimgs-img)) 2)
@@ -1468,12 +1453,10 @@
                                     )
                                    )
                     (curr-pimgs-img (
-                                     ;force
                                      (first (viz-state-pimgs a-vs))
                                      )
                                     )
                     (new-p-dgraph (rest (viz-state-p-dgraph a-vs)))
-                    ;; list is in form of (img, scale-x, scale-y)
                     (img-resize (resize-image new-pimgs-img (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))
                     (growth-x (- (/ (image-width (scale (viz-state-scale-factor a-vs) new-pimgs-img)) 2) (/ (image-width (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2)))
                     (growth-y (- (/ (image-height (scale (viz-state-scale-factor a-vs) new-pimgs-img)) 2) (/ (image-height (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2)))
@@ -1762,7 +1745,6 @@
                                     (first new-pimgs)
                                     )
                                    )
-                    ;; TODO probably curr-img?
                     (curr-pimgs-img (
                                      ;force
                                      (first (viz-state-pimgs a-vs))
@@ -2363,7 +2345,6 @@
     (above PARSE-TREE-IMG (create-instructions-and-tools a-vs))
     )
   )
-  
 
          
 ;; cfg-viz
@@ -2374,7 +2355,8 @@
                                                  (grammar-derive cfg word))))
               (rules (cons "" (create-rules w-der)))
               (extracted-edges (create-levels w-der))
-              (renamed (rename-levels extracted-edges))
+              ;(renamed (rename-levels extracted-edges))
+              (renamed 1)
               (loe (map (λ (el) (if (symbol? (first el))
                                     (list el '())
                                     el)) renamed))
@@ -2410,7 +2392,108 @@
                             )
                  draw-world 'cfg-ctm))))
 
-
+(define (cfg-derive1 g w)
+    (define (get-first-nt st)
+      (cond [(empty? st) #f]
+            [(not (member (car st) (cfg-get-alphabet g))) (car st)]
+            [else (get-first-nt (cdr st))])
+      )
+    
+    (define (get-rules nt g) (filter (lambda (r) (eq? nt (cfg-rule-lhs r))) 
+                                     (cfg-get-the-rules g)))
+    
+    ; ASSUMPTION: state has at least one NT
+    (define (subst-first-nt state rght)
+      (cond [(not (member (car state) (cfg-get-alphabet g)))
+             (if (eq? (car rght) EMP) (cdr state) (append rght (cdr state)))]
+            [else (cons (car state) (subst-first-nt (cdr state) rght))]))
+    
+    ; (listof (listof symbol)) --> (listof symbol)
+    (define (get-starting-terminals st)
+      (cond 
+        [(not (member (car st) (cfg-get-alphabet g))) '()]
+        [else (cons (car st) (get-starting-terminals (cdr st)))]))
+    
+    ; (listof (listof symbol)) natnum --> (listof symbol)
+    (define (get-first-n-terms w n)
+      ;(println w)
+      (cond [(= n 0) '()]
+            [else (cons (car w) (get-first-n-terms (cdr w) (- n 1)))]))
+    
+    
+    ; (list (listof symbol)) --> boolean
+    (define (check-terminals? st)
+      (let* ((start-terms-st (get-starting-terminals st))
+             (start-terms-w (if (> (length start-terms-st) (length w))
+                                #f
+                                (get-first-n-terms w (length start-terms-st)))))
+        (cond [(false? start-terms-w) #f]
+              [else (equal? start-terms-st start-terms-w)])))
+    
+    
+    (define (make-deriv visited derivs g chomsky)
+      (define (count-terminals st sigma)
+        (length (filter (lambda (a) (member a sigma)) st)))
+ 
+      (cond [(empty? derivs) (format "~s is not in L(G)." w)]
+            [(or (and chomsky
+                      (> (length (first (first (first derivs)))) (+ 2 (length w)))
+                      )
+                 (> (count-terminals (first (first (first derivs))) (cfg-get-alphabet g)) (length w))
+                 )
+             (make-deriv visited (cdr derivs) g chomsky)]
+            [else 
+             (let* ((fderiv (car derivs))
+                    (state (car fderiv))
+                    (fnt (get-first-nt (first state)))
+                    )
+               (if (false? fnt)
+                   (if (equal? w (first state))
+                       (append-map (lambda (l) (if (equal? w (first l)) 
+                                                   (if (null? l)
+                                                       (list EMP)
+                                                       (list (list (los->symbol (first l)) (los->symbol (second l))))
+                                                       )
+                                                   (list (list (los->symbol (first l)) (los->symbol (second l))) ARROW)
+                                                   )
+                                     ) 
+                                   (reverse fderiv))
+                       (make-deriv visited (cdr derivs) g chomsky))
+                   (let*
+                       ((rls (get-rules fnt g))
+                        (rights (map cfg-rule-rhs rls))
+                        (new-states (filter (lambda (st) (and (not (member st visited))
+                                                              (check-terminals? (first state)))) 
+                                            (map (lambda (rght) (list (subst-first-nt (first state) rght) rght)) rights)
+                                            )
+                                    )
+                        )
+                     (make-deriv (append new-states visited)
+                                 (append (cdr derivs) 
+                                         (map (lambda (st) (cons st fderiv)) 
+                                              new-states))
+                                 g
+                                 chomsky))))]))   
+    (if (< (length w) 2)
+        (format "The word ~s is too short to test." w)
+        (let* ( ;; derive using g ONLY IF derivation found with g in CNF
+               (ng (convert-to-cnf g))
+               (ng-derivation (make-deriv (list (list (list (cfg-get-start ng)) '() )) 
+                                          (list (list (list (list (cfg-get-start ng)) '() )))
+                                          ng
+                                          true)
+                              )
+               )
+          (if (string? ng-derivation)
+              ng-derivation
+              (make-deriv (list (list (list (cfg-get-start g)) '() )) 
+                          (list (list (list (list (cfg-get-start g)) '() )))
+                          g
+                          false)
+              )
+          )
+        )
+  )
 
 ;; vst --> void
 (define (run-viz a-vs draw-etc a-name)
@@ -2433,3 +2516,4 @@
                               (A ,ARROW ,EMP)
                               (A ,ARROW bA))
                             'S))
+(cfg-derive1 numb>numa '(a b b))
