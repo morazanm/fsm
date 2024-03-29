@@ -442,7 +442,7 @@
                                    state
                                    #:atb (hash 'color 'black
                                                'shape 'doublecircle
-                                               'style (if (ormap (λ (edge) (member state edge)) hedges)
+                                               'style (if (ormap (λ (edge) (equal? state (third edge))) hedges)
                                                           'bold
                                                           'solid)
                                                'label state
@@ -454,7 +454,7 @@
                                    #:atb (hash 'color 'darkgreen
                                                'shape 'circle
                                                'label state
-                                               'style (if (ormap (λ (edge) (member state edge)) hedges)
+                                               'style (if (ormap (λ (edge) (equal? state (third edge))) hedges)
                                                           'bold
                                                           'solid)
                                                'fontcolor 'black))]
@@ -464,7 +464,7 @@
                                         #:atb (hash 'color 'black
                                                     'shape 'circle
                                                     'label state
-                                                    'style (if (ormap (λ (edge) (member state edge)) hedges)
+                                                    'style (if (ormap (λ (edge) (equal? state (third edge))) hedges)
                                                                'bold
                                                                'solid)
                                                     'fontcolor 'black))]))
@@ -666,5 +666,5 @@
                                           (C a C)
                                           (C b C))))
 
-;(run aa-ab)
-(ndfa2dfa-viz AT-LEAST-ONE-MISSING)
+(ndfa2dfa-viz aa-ab)
+;(ndfa2dfa-viz AT-LEAST-ONE-MISSING)
