@@ -294,7 +294,7 @@
 ;; dfa-node-graph
 ;; (listof rules) graph (listof states) -> graph
 ;; Purpose: To create a graph of nodes from the given list of rules
-(define (dfa-node-graph cgraph los finals)
+(define (dfa-node-graph cgraph los finals edge)
   (foldl (λ (state result)  (if  (contains-final-state? state finals)
                                  (add-node
                                   result
@@ -303,6 +303,11 @@
                                                          'darkgreen
                                                          'black)
                                               'shape 'doublecircle
+                                              'style (cond [(empty? edge)
+                                                            'solid]
+                                                           [(equal? state (third edge))
+                                                            'bold]
+                                                           [else 'solid])        
                                               'label (if (equal? state '())
                                                          'ds  
                                                          (los2symb state))
@@ -315,6 +320,11 @@
                                   #:atb (hash 'color (if (equal? state (last los))
                                                          'darkgreen
                                                          'black)
+                                              'style (cond [(empty? edge)
+                                                            'solid]
+                                                           [(equal? state (third edge))
+                                                            'bold]
+                                                           [else 'solid])
                                               'shape 'circle
                                               'label (if (equal? state '())
                                                          'ds  
@@ -351,9 +361,9 @@
 ;; Purpose: To create a dfa graph from a given ndfa
 (define (create-dfa-graph lor los finals)
   (if (empty? lor)
-      (graph->bitmap (dfa-edge-graph (dfa-node-graph (create-graph 'dfagraph #:atb (hash 'rankdir "LR")) los finals)
+      (graph->bitmap (dfa-edge-graph (dfa-node-graph (create-graph 'dfagraph #:atb (hash 'rankdir "LR")) los finals '())
                                      lor '()))
-      (graph->bitmap (dfa-edge-graph (dfa-node-graph (create-graph 'dfagraph #:atb (hash 'rankdir "LR")) los finals)
+      (graph->bitmap (dfa-edge-graph (dfa-node-graph (create-graph 'dfagraph #:atb (hash 'rankdir "LR")) los finals (first lor)) 
                                      lor (first lor)))))
 
 ;; find-empty-transitions
@@ -425,13 +435,16 @@
 
 ;; (listof symbols) -> graph
 ;; Purpose: To create a graph of nodes from the given list of rules
-(define (ndfa-node-graph cgraph M)
+(define (ndfa-node-graph cgraph M hedges)
   (foldl (λ (state result) (cond [(contains-final-state? state (sm-finals M))
                                   (add-node
                                    result
                                    state
                                    #:atb (hash 'color 'black
                                                'shape 'doublecircle
+                                               'style (if (ormap (λ (edge) (member state edge)) hedges)
+                                                          'bold
+                                                          'solid)
                                                'label state
                                                'fontcolor 'black))]
                                  [(eq? state (sm-start M))
@@ -441,6 +454,9 @@
                                    #:atb (hash 'color 'darkgreen
                                                'shape 'circle
                                                'label state
+                                               'style (if (ormap (λ (edge) (member state edge)) hedges)
+                                                          'bold
+                                                          'solid)
                                                'fontcolor 'black))]
                                  [else (add-node
                                         result
@@ -448,6 +464,9 @@
                                         #:atb (hash 'color 'black
                                                     'shape 'circle
                                                     'label state
+                                                    'style (if (ormap (λ (edge) (member state edge)) hedges)
+                                                               'bold
+                                                               'solid)
                                                     'fontcolor 'black))]))
          cgraph
          (sm-states M)))
@@ -479,7 +498,7 @@
 ;; Purpose: To make an ndfa-graph from the given ndfa
 (define (make-ndfa-graph a-etc)
   (let* [(ndfa-edge-graph-x (ndfa-edge-graph (ndfa-node-graph (create-graph 'ndfagraph #:atb (hash 'rankdir "LR"))
-                                                              (etc-M a-etc))
+                                                              (etc-M a-etc) (etc-hedges a-etc))
                                              (etc-hedges a-etc)
                                              (etc-fedges a-etc)
                                              (etc-bledges a-etc)))]
@@ -542,21 +561,31 @@
               (let* [(new-edge (if (empty? (etc-ad-edges (first low)))
                                    '()
                                    (first (etc-ad-edges (first low)))))
-                     (edge-str (if (empty? new-edge)
-                                   "Starting Super State"
-                                   (string-append "SS Edge Added: "
-                                                  "("
-                                                  (symbol->string (if (empty? (first new-edge))
-                                                                      DEAD
-                                                                      (los->symbol (first new-edge))))
-                                                  " "
-                                                  (symbol->string (second new-edge))
-                                                  " "
-                                                  (symbol->string (if (empty? (third new-edge))
-                                                                      DEAD
-                                                                      (los->symbol (third new-edge))))
-                                                  ")")))
-                     (edge-msg-img (text edge-str 24 'violet))]              
+                     (edge-str (cond [(empty? new-edge)
+                                      "Starting Super State"]
+                                     [(or (empty? (third new-edge))
+                                          (empty? (first new-edge)))
+                                      (string-append "SS Edge Added: "
+                                                     "("
+                                                     (symbol->string (if (empty? (first new-edge))
+                                                                         DEAD
+                                                                         (los->symbol (first new-edge))))
+                                                     " "
+                                                     (symbol->string (second new-edge))
+                                                     " "
+                                                     (symbol->string (if (empty? (third new-edge))
+                                                                         DEAD
+                                                                         (los->symbol (third new-edge))))
+                                                     ") - no corresponding ndfa transition.")]                                     
+                                     [else (string-append "SS Edge Added: "
+                                                          "("
+                                                          (symbol->string (los->symbol (first new-edge)))
+                                                          " "
+                                                          (symbol->string (second new-edge))
+                                                          " "
+                                                          (symbol->string (los->symbol (third new-edge)))
+                                                          ")")]))
+                     (edge-msg-img (text edge-str 24 'violet))]          
                 (overlay (resize-img
                           (above
                            (create-dfa-graph
@@ -638,4 +667,4 @@
                                           (C b C))))
 
 ;(run aa-ab)
-;(run AT-LEAST-ONE-MISSING)
+(ndfa2dfa-viz AT-LEAST-ONE-MISSING)
