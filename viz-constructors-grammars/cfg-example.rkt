@@ -5,8 +5,8 @@
          
          )
 
-
-(define (cfg-derive1 g w)
+;; cfg word -> derivation-with-rules
+(define (cfg-derive-with-rule-application g w)
   (define (get-first-nt st)
     (cond [(empty? st) #f]
           [(not (member (car st) (cfg-get-alphabet g))) (car st)]
@@ -160,10 +160,10 @@
 ;; w-der
 ;; derivation -> derivation-list
 ;; Purpose: To turn the derivation into a list
-(define (w-der1 rg word)
+(define (w-der-with-rules rg word)
   (map (lambda (state) (list (symbol->fsmlos (first state)) (symbol->fsmlos (second state))))
        (filter (λ (x) (not (equal? x '->)))
-               (cfg-derive1 rg word))
+               (cfg-derive-with-rule-application rg word))
        )
   )
 
@@ -195,88 +195,6 @@
                         [j new])
               (list i j)) (list nonterminal) nonterminal)))
 
-;; hash-table
-(define (rename-nt hashtable nt) (let [
-                                       (result (hash-ref hashtable nt #f))
-                                       ] 
-                                   (if result
-                                       (begin (hash-set! hashtable nt (add1 result))
-                                              (string->symbol (format "~s~s" nt (add1 result)))
-                                              )
-                                       (begin (hash-set! hashtable nt 0)
-                                              (string->symbol (format "~s0" nt))
-                                              )
-                                       )
-                                   )
-  )
-
-(define (nonterminal? symb) (let [
-                                  (ascii-val (char->integer (first (string->list (symbol->string symb)))))
-                                  ]
-                              (and (<= 65 ascii-val)
-                                   (>= 90 ascii-val)
-                                   )
-                              )
-  )
-                                
-
-
-(define (find-leftmost-nt-helper a-lst) (if (empty? a-lst)
-                                            #f
-                                            (if (nonterminal? (first a-lst))
-                                                (first a-lst)
-                                                (find-leftmost-nt-helper (rest a-lst))
-                                                )
-                                            )
-  )
-
-(define (find-leftmost-nt state) (find-leftmost-nt-helper state))
-
-(define (generate-level1 list-states rules prev-states used-names)
-  (if (empty? rules)
-      '()
-      (local [
-              (define leftmost-nt (find-leftmost-nt list-states))
-              ]
-        (if (boolean? leftmost-nt)
-            (if (empty? prev-states)
-                '()
-                (let* [
-                       (prev-state (first prev-states))
-                       (prev-leftmost-nt (find-leftmost-nt prev-state))
-                       (updated-states (filter (lambda (x) (not (eq? prev-leftmost-nt x))) prev-state))
-                       ]
-                  (generate-level1 updated-states rules (rest prev-states) used-names)
-                  )
-                )
-            (local [
-                   (define renamed-states (map (lambda (st)
-                                                           (rename-nt used-names st)
-                                            )
-                                          (first rules)
-                                          )
-                )
-                   (define (new-level start) (map (lambda (st) (list start st))
-                                                  renamed-states
-                                                  )
-                     )
-                   ]
-              (cons (new-level leftmost-nt) (generate-level1 renamed-states (rest rules) (cons list-states prev-states) used-names))
-              )
-            )
-        )
-      )
-  )
-
-(define (move-rule-applications-in-list lst) (if (= (length lst) 1)
-                          (list (list (first (first lst)) '() ))
-                          (cons (list (first (first lst)) (second (second lst))) (move-rule-applications-in-list (rest lst)))
-                          )
-  )
-(define (list-of-states lst) (map (lambda (x) (first x))  lst))
-(define (list-of-rules lst) (map (lambda (x) (second x)) lst))
-
-    
 ;; create-levels
 ;; derivation-list -> (listof level)
 ;; To generate a list of levels from wder
@@ -285,10 +203,113 @@
       empty
       (cons (generate-level (first wd) (second wd)) (create-levels (rest wd)))))
 
-;(list-of-states (move-rule-applications-in-list (w-der1 numb>numa '(a b b))))
-;(list-of-rules (move-rule-applications-in-list (w-der1 numb>numa '(a b b))))
-(generate-level1 '(S)
-                 (list-of-rules (move-rule-applications-in-list (w-der1 numb>numa '(a b b))))
-                 '()
-                 (make-hash)
-                 )
+;; MutableHashTable Symbol -> Symbol
+;; Returns a unique version of the symbol given (via the addition of a previously unused number to the end of it)
+(define (rename-symb hashtable nt) (let [
+                                         (result (hash-ref hashtable nt #f))
+                                         ] 
+                                     (if result
+                                         (begin (hash-set! hashtable nt (add1 result))
+                                                (string->symbol (format "~s~s" nt (add1 result)))
+                                                )
+                                         (begin (hash-set! hashtable nt 0)
+                                                (string->symbol (format "~s0" nt))
+                                                )
+                                         )
+                                     )
+  )
+
+;; Symbol -> Boolean
+;; Determines if the first character within the symbol is a uppercase letter, and hence a nonterminal
+(define (nonterminal? symb) (let [
+                                  (ascii-val (char->integer (first (string->list (symbol->string symb)))))
+                                  ]
+                              (and (<= 65 ascii-val)
+                                   (>= 90 ascii-val)
+                                   )
+                              )
+  )
+
+
+;; listof_Symbol -> (U #f Symbol)
+;; If it exists, returns the leftmost-nt in the state given. Otherwise, returns false
+(define (find-leftmost-nt state) (if (empty? state)
+                                     #f
+                                     (if (nonterminal? (first state))
+                                         (first state)
+                                         (find-leftmost-nt (rest state))
+                                         )
+                                     )
+  )
+
+;; Listof_Symbol Listof_Listof_Symbol Listof_Listof_Symbol MutableHashTable -> Listof_Listof_Listof_Symbol
+(define (generate-levels-list current-state rules prev-states used-names)
+  ;; The list of generated rules used contains an empty list denoting no more rules, hence the need to call "first" first
+  (if (empty? (first rules))
+      ;; If theres no more rules to apply than computation is done
+      '()
+      (let [
+            (leftmost-nt (find-leftmost-nt current-state))
+            ]
+        (if (boolean? leftmost-nt)
+            ;; If its fails to find a nonterminal in the current state, attempt to go back up the stack to a previous state
+            (if (empty? prev-states)
+                ;; If there are no more previous states, than the computation is done
+                '()
+                (let* [
+                       (prev-state (first prev-states))
+                       (prev-leftmost-nt (find-leftmost-nt prev-state))
+                       ;; Need to remove the leftmost-nt from the previous state since we just went down its respective path
+                       ;; when we call the function again with it removed, the next nt will be processed
+                       (updated-states (filter (lambda (x) (not (eq? prev-leftmost-nt x))) prev-state))
+                       ]
+                  ;; Don't reduce the number of rules here since one was not sucessfully applied, only remove the state we popped off the stack
+                  (generate-levels-list updated-states rules (rest prev-states) used-names)
+                  )
+                )
+            (local [
+                    ;; Just sticks a number after the symbol itself, uses a hash table to keep track of what numbers were already used for a specific symbol
+                    (define renamed-states (map (lambda (st)
+                                                  (rename-symb used-names st)
+                                                  )
+                                                (first rules)
+                                                )
+                      )
+                    ;; Creates a new level by taking the current rule that is meant to be applied at this point of the derivation
+                    ;; and creating an edge between each of the elements within and the current nonterminal being processed
+                    (define (new-level start) (map (lambda (st) (list start st))
+                                                   renamed-states
+                                                   )
+                      )
+                    ]
+              (cons (new-level leftmost-nt) (generate-levels-list renamed-states (rest rules) (cons current-state prev-states) used-names))
+              )
+            )
+        )
+      )
+  )
+
+;; This is just taking the list recieved from the new w-der and new cfg-derive and moving the rules like such:
+;; '( ((S) ()) ((AbA) (AbA)) )
+;; where the rule applied was next to where it was applied, to:
+;; '( ((S) (AbA)) ((AbA) (AaAbA)) )
+;; now the rule is next to where it will be applied
+(define (move-rule-applications-in-list lst) (if (= (length lst) 1)
+                                                 (list (list (first (first lst)) '() ))
+                                                 (cons (list (first (first lst)) (second (second lst))) (move-rule-applications-in-list (rest lst)))
+                                                 )
+  )
+
+;; Separates the list of states from their rule applications in the list generated by w-der
+;; derivation-with-rules -> rules
+(define (list-of-states lst) (map (lambda (x) (first x))  lst))
+
+;; Separates the list of rules from their respective states in the list generated by w-der
+;; derivation-with-rules -> derivation
+(define (list-of-rules lst) (map (lambda (x) (second x)) lst))
+
+(generate-levels-list '(S)
+                      (list-of-rules (move-rule-applications-in-list (w-der-with-rules numb>numa '(a b b))))
+                      '()
+                      (make-hash)
+                      )
