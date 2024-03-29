@@ -195,7 +195,7 @@
                         [j new])
               (list i j)) (list nonterminal) nonterminal)))
 
-
+;; hash-table
 (define (rename-nt hashtable nt) (let [
                                        (result (hash-ref hashtable nt #f))
                                        ] 
@@ -236,16 +236,6 @@
   (if (empty? rules)
       '()
       (local [
-              (define renamed-states (map (lambda (st)
-                                                           (rename-nt used-names st)
-                                            )
-                                          (first rules)
-                                          )
-                )
-              (define (new-level start) (map (lambda (st) (list start st))
-                                             renamed-states
-                                             )
-                )
               (define leftmost-nt (find-leftmost-nt list-states))
               ]
         (if (boolean? leftmost-nt)
@@ -259,7 +249,20 @@
                   (generate-level1 updated-states rules (rest prev-states) used-names)
                   )
                 )
-            (cons (new-level leftmost-nt) (generate-level1 renamed-states (rest rules) (cons list-states prev-states) used-names))
+            (local [
+                   (define renamed-states (map (lambda (st)
+                                                           (rename-nt used-names st)
+                                            )
+                                          (first rules)
+                                          )
+                )
+                   (define (new-level start) (map (lambda (st) (list start st))
+                                                  renamed-states
+                                                  )
+                     )
+                   ]
+              (cons (new-level leftmost-nt) (generate-level1 renamed-states (rest rules) (cons list-states prev-states) used-names))
+              )
             )
         )
       )
