@@ -454,7 +454,7 @@
                                    #:atb (hash 'color 'darkgreen
                                                'shape 'circle
                                                'label state
-                                               'style (if (ormap (λ (edge) (equal? state (third edge))) hedges)
+                                               'style (if (ormap (λ (edge) (equal? (second edge) 'ε)) hedges)
                                                           'bold
                                                           'solid)
                                                'fontcolor 'black))]
