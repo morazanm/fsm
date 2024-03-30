@@ -1,4 +1,5 @@
 #lang racket
+
 (require "../fsm-gviz/private/lib.rkt"
          2htdp/universe rackunit
          (rename-in racket/gui/base
@@ -486,15 +487,6 @@
 (define (extract-nodes loe)
   (remove-duplicates (flatten loe)))
 
-#|
-;; extract-nodes-by-lvl
-;; level (listof node) -> (listof node)
-;; Purpose: To extract nodes from the lon that are in the level
-(define (extract-nodes-by-lvl lon level)
-  (let* [(nil (flatten level))]
-    (filter (λ (node) (member node nil)) lon)))
-|#
-
 ;; make-node-graph
 ;; graph lon -> graph
 ;; Purpose: To make a node graph
@@ -567,9 +559,9 @@
     )
   )
 
-;; create-graph-img
-;; ndfa -> img
-;; Purpose: To create a graph image for complement
+;; create-graph-structs
+;; dgprh -> img
+;; Purpose: Creates the final graph structure that will be used to create the images in graphviz
 (define (create-graph-structs a-dgrph)
   (let* [
          (nodes (append (filter lower? (dgrph-nodes a-dgrph))
@@ -598,7 +590,6 @@
 (define (create-graph-imgs lod #:cpu-cores [cpu-cores #f])
   (if (empty? lod)
       '()
-      ;(cons (create-graph-img (first lod)) (create-graph-imgs (rest lod)))
       (if (not cpu-cores)
           (parallel-graphs->bitmap-thunks (map create-graph-structs lod))
           (parallel-graphs->bitmap-thunks (map create-graph-structs lod) #:cpu-cores cpu-cores)
@@ -673,6 +664,9 @@
         )
   )
 
+;; Viewport limits is a struct containing the bounding X and Y
+;; values of where we want the image to be placed
+;; num num num num -> viewport-limits
 (struct viewport-limits (min-x max-x min-y max-y))
 
 ;; img num>0 -> viewport-limits
@@ -2262,8 +2256,6 @@
         )
       )
   )
-
-
 
 ;; vst --> void
 (define (run-viz a-vs draw-etc a-name)

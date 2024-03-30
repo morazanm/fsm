@@ -5,7 +5,7 @@
 (module cfg racket
   (require "constants.rkt" "misc.rkt" "word.rkt")
   (provide cfg make-unchecked-cfg cfg-rule cfg-get-alphabet cfg-get-v cfg-get-rules cfg-get-start cfg-get-the-rules cfg-rule-lhs cfg-rule-rhs
-           remove-dead-nts cfg-union cfg-concat cfg-star cfg? cfg-rename-nts cfg-derive test-cfg convert-to-cnf make-cfg) 
+           remove-dead-nts cfg-union cfg-concat cfg-star cfg? cfg-rename-nts cfg-derive test-cfg convert-to-cnf) 
   
   ; A cfg-rule is a structure, (make-srule L R), where L is a symbol (non-terminal) and R
   ; is a (listof symbol).
