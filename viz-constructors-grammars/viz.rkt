@@ -1992,6 +1992,8 @@
         )
   )
 
-(define (run-viz grammar word w-der rules graphs) (cond [(rg? grammar) (rg-viz word w-der rules graphs)]
+(define (run-viz grammar word w-der rules graphs) (rg-viz word w-der rules graphs)
+  #;(cond [(rg? grammar) (rg-viz word w-der rules graphs)]
+                                                        
                                                         )
   )

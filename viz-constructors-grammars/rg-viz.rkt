@@ -285,7 +285,8 @@
       (cons a-dgrph lod)
       (let* [(new-up-levels (rest (dgrph-up-levels a-dgrph)))
              (new-ad-levels (cons (first (dgrph-up-levels a-dgrph))
-                                  (dgrph-ad-levels a-dgrph)))
+                                  (dgrph-ad-levels a-dgrph))
+                            )
              (new-nodes (extract-nodes new-ad-levels))
              (new-hedges (first (dgrph-up-levels a-dgrph)))
              (new-up-rules (rest (dgrph-up-rules a-dgrph)))
@@ -301,7 +302,9 @@
                 new-p-rules
                 )
          (cons a-dgrph lod))
-        )))
+        )
+      )
+  )
     
 (define (rg-viz rg word #:cpu-cores [cpu-cores #f])
   (if (string? (grammar-derive rg word))
@@ -314,6 +317,7 @@
               (loe (map (λ (el) (if (symbol? (first el))
                                     (list el '())
                                     el)) renamed))
+              (test (displayln loe))
               (dgraph (dgrph loe '() '() '() (rest rules) (list (first rules))))
               (lod (reverse (create-dgrphs dgraph '())))
               (graphs (map create-graph-structs lod))
@@ -329,4 +333,4 @@
 ;(time
 ;(rg-viz even-bs-odd-as '(a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a a a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a))
 ;)
-(rg-viz even-bs-odd-as '(a a a a a b b b b b b b b b b b b b b b b))
+;(rg-viz even-bs-odd-as '(a a a a a b b b b b b b b b b b b b b b b))
