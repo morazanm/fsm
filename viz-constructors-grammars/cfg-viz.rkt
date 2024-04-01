@@ -89,15 +89,6 @@
       empty
       (cons (generate-level (first wd) (second wd)) (create-levels (rest wd)))))
 
-
-
-(define (remove-leftmost-nt state) (let [
-                                         (leftmost-nt (find-leftmost-nt state))
-                                         ]
-                                      (filter (lambda (sigma-elem) (not (eq? leftmost-nt sigma-elem))) state)
-                                     )
-  )
-
 ;; listof_Symbol -> (U #f Symbol)
 ;; If it exists, returns the leftmost-nt in the state given. Otherwise, returns false
 (define (find-leftmost-nt state) (if (empty? state)
@@ -118,7 +109,6 @@
 ;; create-rules
 ;; (listof symbol) -> (listof string)
 (define (create-rules-leftmost w-der)
-  (displayln w-der)
   (cond [(empty? w-der)
          '()]
         [(= 1 (length w-der))
@@ -128,18 +118,12 @@
                                       " → "
                                       (string-join (map symbol->string (second (first w-der))))))
                  (create-rules-leftmost (rest w-der)))]
-        #;[else (append  (list (string-append (symbol->string (last (first w-der)))
-                                            " → "
-                                            (string-append (first (map symbol->string (take-right (second w-der) 2)))
-                                                           (second (map symbol->string (take-right (second w-der) 2))))))
-                       (create-rules (rest w-der)))]
         )
   )
 
 ;; create-rules
 ;; (listof symbol) -> (listof string)
 (define (create-rules w-der)
-  (displayln w-der)
   (cond [(empty? w-der)
          '()]
         [(= 1 (length w-der))
@@ -198,9 +182,12 @@
          )
   )
 
-(define (make-edge-graph2 graph loe hedges) (foldl (lambda (rules result) (if (empty? (first rules))
+;; make-edge-graph
+;; graph (listof level) -> graph
+;; Purpose: To make an edge graph
+(define (make-edge-graph graph loe hedges) (foldl (lambda (rules result) (if (empty? (first rules))
                                                                               result
-                                                                              (foldr (lambda (rule result)
+                                                                              (foldl (lambda (rule result)
                                                                                      (add-edge result
                                                                                                ""
                                                                                                (first rule)
@@ -223,68 +210,15 @@
                                                    )
                                                  
   )
-                                                                                             
-
-;; make-edge-graph
-;; graph (listof level) -> graph
-;; Purpose: To make an edge graph
-(define (make-edge-graph graph loe hedges)
-  (let [(first-foldr (foldl (λ (rule result)
-                              (if (empty? (first rule))
-                                  result
-                                  (add-edge result
-                                            ""
-                                            (first (first rule))
-                                            (second (first rule))
-                                            #:atb (hash 'fontsize FONT-SIZE
-                                                        'style 'solid
-                                                        'color (if (member (first rule) hedges)
-                                                                   HEDGE-COLOR
-                                                                   'black)
-                                                        )
-                                            )
-                                  )
-                              )
-                            graph
-                            (reverse loe)
-                            )
-                     )
-        ]
-    (foldl (λ (rule result)
-             (if (= 1 (length rule))
-                 result
-                 (add-edge result
-                           ""
-                           (first (second rule))
-                           (second (second rule))
-                           #:atb (hash 'fontsize 20
-                                       'style 'solid
-                                       'color (if (member (first rule) hedges)
-                                                  HEDGE-COLOR
-                                                  'black)
-                                       )
-                           )
-                 )
-             )
-           first-foldr
-           (reverse loe)
-           )
-    )
-  )
 
 ;; create-graph-structs
 ;; dgprh -> img
 ;; Purpose: Creates the final graph structure that will be used to create the images in graphviz
 (define (create-graph-structs a-dgrph)
   (let* [
-         (nodes (dgrph-nodes a-dgrph)
-                #;(append (filter lower? (dgrph-nodes a-dgrph))
-                        (filter upper? (dgrph-nodes a-dgrph))
-                        )
-                )
+         (nodes (dgrph-nodes a-dgrph))
          (levels (reverse (map reverse (dgrph-ad-levels a-dgrph))))
          (hedges (dgrph-hedges a-dgrph))
-         (test (displayln hedges))
          (hedge-nodes (map (λ (x) (if (empty? x)
                                       '()
                                       (second x)
@@ -300,25 +234,11 @@
                           hedges)
                      )
          ]
-    (make-edge-graph2 (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
+    (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
                                       nodes hedge-nodes yield-node)
                      levels hedges)
     )
   )
-
-
-
-#;(
-   ((S A0) (S b0) (S A1))
-   ((A0 A2) (A0 a0) (A0 A3) (A0 b1) (A0 A4))
-   ((A2 ε0))
-   ((A3 ε1))
-   ((A4 ε2))
-   ((A1 ε3))
-   )
-
-
-
 
 ;; create-dgraphs
 ;; dgrph (listof dgrph) -> (listof dgrph)
@@ -346,26 +266,6 @@
          (cons a-dgrph lod))
         )
       )
-  )
-
-#;(define (create-dgrphs2 a-dgrph) (let [
-                                       ;(sorted-dgrph (reverse a-dgrph))
-                                       ]
-                                   (if (empty? (dgrph-up-levels a-dgrph))
-                                       (cons a-dgrph lod)
-                                       (let* [
-                                              
-                                              ]
-                                         )
-                                       )
-                                   )
-  )
-
-
-#;(define (create-dgrphs2 a-dgrph lod) (let [
-                                           (sorted-dgrph (reverse a-dgrph))
-                                           ]
-                                       )
   )
 
 ;; cfg word -> derivation-with-rules
@@ -596,9 +496,6 @@
       (grammar-derive cfg word)
       (let* [
              (der-with-rules (w-der-with-rules cfg word))
-             (test (displayln (move-rule-applications-in-list der-with-rules)))
-             #;(rules (create-rules (list-set (list-of-rules der-with-rules) 0 (list (first (first (first der-with-rules))))
-                                            )))
              (rules (cons "" (create-rules-leftmost (move-rule-applications-in-list der-with-rules))))
              (w-der (list-of-states der-with-rules))
              (renamed (generate-levels-list (first (first (first der-with-rules)))
