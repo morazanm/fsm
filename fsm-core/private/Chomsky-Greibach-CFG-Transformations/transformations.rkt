@@ -711,15 +711,15 @@
 
 ;; (listof rule) -> (listof rule)
 ;; Purpose: Return the list of rules grouped by lhs 
-(define (group-lhs rules)
-  (if (empty? rules)
-      '()
-      (let* ((current-rule (car rules))
-             (current-lhs (car current-rule))
-             (new-current-list (filter (lambda (x) (equal? current-lhs (car x))) rules))
-             (tovisit-list (filter (lambda (x) (not (equal? current-lhs (car x)))) rules)))
-        (append new-current-list
-                (group-lhs tovisit-list)))))
+#;(define (group-lhs rules)
+    (if (empty? rules)
+        '()
+        (let* ((current-rule (car rules))
+               (current-lhs (car current-rule))
+               (new-current-list (filter (lambda (x) (equal? current-lhs (car x))) rules))
+               (tovisit-list (filter (lambda (x) (not (equal? current-lhs (car x)))) rules)))
+          (append new-current-list
+                  (group-lhs tovisit-list)))))
 
 ;.................................................
 
@@ -727,195 +727,491 @@
 ;;  A nt (symbol)
 ;;  An int (integer)
 ;;  A representation (symbol)
-(struct A (nt n rep) #:transparent)
+;(struct A (nt n rep) #:transparent)
 
 ;.................................................
 
 ;; cfg -> cfg
 ;; Purpose: Convert a given cfg to A-n representation
-(define (convert-to-A-rep cfg)
-  ;; (listof rule) -> (listof rule)
-  ;; Purpose: Convert all nts to those that follow A-n notation
-  ;; Accumulator invariants:
-  ;;  acc = keeps track of n
-  (define (make-As rules acc)
-    (if (empty? rules)
-        '()
-        (let* ((current-rule (car rules))
-               (current-lhs (car current-rule))
-               (new-lhs (string->symbol (string-append "A-" (number->string acc))))
-               (tovisit-list (filter (lambda (x) (not (equal? current-lhs (car x)))) rules)))
-          (cons (A current-lhs acc new-lhs)
-                (make-As tovisit-list (add1 acc))))))
+#;(define (convert-to-A-rep cfg)
+    ;; (listof rule) -> (listof rule)
+    ;; Purpose: Convert all nts to those that follow A-n notation
+    ;; Accumulator invariants:
+    ;;  acc = keeps track of n
+    (define (make-As rules acc)
+      (if (empty? rules)
+          '()
+          (let* ((current-rule (car rules))
+                 (current-lhs (car current-rule))
+                 (new-lhs (string->symbol (string-append "A-" (number->string acc))))
+                 (tovisit-list (filter (lambda (x) (not (equal? current-lhs (car x)))) rules)))
+            (cons (A current-lhs acc new-lhs)
+                  (make-As tovisit-list (add1 acc))))))
 
-  ;; symbol -> rule
-  ;; Purpose: Find the right A struct for a nt
-  (define (find-corresponding-A sym)
-    (car (filter (lambda (x) (equal? sym (A-nt x))) (make-As (grammar-rules cfg) 0))))
+    ;; symbol -> rule
+    ;; Purpose: Find the right A struct for a nt
+    (define (find-corresponding-A sym)
+      (car (filter (lambda (x) (equal? sym (A-nt x))) (make-As (grammar-rules cfg) 0))))
   
-  ;; (listof rule) (listof A) -> (listof rule)
-  ;; Purpose: Convert the nts in the rules to A-n representation
-  (define (make-A-rules rules)
-    ;; (listof symbol) -> (listof symbol)
-    ;; Purpose: Replace all nt in given list by A-n representation
-    (define (new-A los)
-      (cond ((empty? los) '())
-            ((or (terminal? cfg (car los))
-                 (equal? EMP (car los)))
-             (cons (car los)
-                   (new-A (cdr los))))
-            (else (cons (A-rep (find-corresponding-A (car los)))
-                        (new-A (cdr los))))))
-    (if (empty? rules)
-        '()
-        (let* ((rule (car rules))
-               (new-rule `(,(list->symbol (new-A (symbol->fsmlos (car rule)))) -> ,(list->symbol (new-A (symbol->fsmlos (caddr rule)))))))
-          (cons new-rule
-                (make-A-rules (cdr rules))))))
+    ;; (listof rule) (listof A) -> (listof rule)
+    ;; Purpose: Convert the nts in the rules to A-n representation
+    (define (make-A-rules rules)
+      ;; (listof symbol) -> (listof symbol)
+      ;; Purpose: Replace all nt in given list by A-n representation
+      (define (new-A los)
+        (cond ((empty? los) '())
+              ((or (terminal? cfg (car los))
+                   (equal? EMP (car los)))
+               (cons (car los)
+                     (new-A (cdr los))))
+              (else (cons (A-rep (find-corresponding-A (car los)))
+                          (new-A (cdr los))))))
+      (if (empty? rules)
+          '()
+          (let* ((rule (car rules))
+                 (new-rule `(,(list->symbol (new-A (symbol->fsmlos (car rule)))) -> ,(list->symbol (new-A (symbol->fsmlos (caddr rule)))))))
+            (cons new-rule
+                  (make-A-rules (cdr rules))))))
   
-  (let* ((new-nts (map (lambda (x) (A-rep (find-corresponding-A x))) (grammar-nts cfg)))
-         (new-rules (make-A-rules (grammar-rules cfg)))
-         (new-start (A-rep (find-corresponding-A (grammar-start cfg)))))
-    (make-cfg new-nts
-              (grammar-sigma cfg)
-              new-rules 
-              new-start)))
+    (let* ((new-nts (map (lambda (x) (A-rep (find-corresponding-A x))) (grammar-nts cfg)))
+           (new-rules (make-A-rules (grammar-rules cfg)))
+           (new-start (A-rep (find-corresponding-A (grammar-start cfg)))))
+      (make-cfg new-nts
+                (grammar-sigma cfg)
+                new-rules 
+                new-start)))
 
-(convert-to-A-rep CFG6)
+#;(convert-to-A-rep CFG6)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; An config is a struct that contains:
+;; - a nonterminal (nt)
+;; - a number (n)
+;; - a representation (rep)
+;; - rules (rules)
+(define-struct config (nt n rep rules) #:transparent) 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; cfg -> (listof config)
+;; Purpose: Given a cfg, create a list of configs
+(define (make-configs cfg)
+  (let* ((cfg-rules (grammar-rules cfg)))
+    ;; (listof rule) integer -> (listof config)
+    ;; Purpose: Convert the nts in the rules to A-n representation
+    (define (make-A-rules rules n)
+      (if (empty? rules)
+          '()
+          (let* ((rule (car rules))
+                 (same-lhs-rules (filter (lambda (x) (equal? (car rule) (car x))) (cdr rules)))
+                 (different-lhs-rules (filter (lambda (x) (not (equal? (car rule) (car x)))) (cdr rules)))
+                 (rhs (append (list (caddr rule))
+                              (map (lambda (x) (caddr x)) same-lhs-rules)))
+                 (new-config (config (car rule) n (string->symbol (string-append "A-" (number->string n))) rhs)))
+            (cons new-config
+                  (make-A-rules different-lhs-rules (add1 n))))))
+    (make-A-rules cfg-rules 0)))
+
+;; Tests
+(check-equal? (make-configs CFG6)
+              (list (config 'A 0 'A-0 '(DA a))
+                    (config 'B 1 'A-1 '(AC BD b))
+                    (config 'C 2 'A-2 '(DB c))
+                    (config 'D 3 'A-3 '(AD d))))
 
 ;.................................................
 
-;; steps is a structure that contains sure all combinations of As.
-;; lhs is the Ai on the lhs.
-;; rhs is the first Aj on the rhs.
-;; bool is intialized as false. Becomes true if i>j. 
-(struct steps (lhs rhs bool) #:transparent)
+;; cfg (listof config) -> (listof config)
+;; Purpose: Convert the right hands sides to be in proper A-notation and split up in lists
+(define (convert-rhs-to-config cfg loA)
+  ;; config -> (listof (listof symbol))
+  ;; Purpose: Create new rhs lists, all elems are in A-notation and split up into sublists
+  (define (convert-1config A)
+    (let* ((rhs (config-rules A)))
+      ;; symbol -> (listof symbol)
+      ;; Purpose: Convert each rule on the right hand side
+      (define (convert-1rhs elem)
+        ;; (listof symbol) -> (listof symbol)
+        ;; Purpose: Convert a list of symbols to A-notation
+        (define (convert-to-A los)
+          (cond ((empty? los) '())
+                ((or (terminal? cfg (car los))
+                     (equal? EMP (car los))) (cons (car los) (convert-to-A (cdr los))))
+                (else
+                 (let ((corresponding-A (car (filter (lambda (x) (equal? (car los) (config-nt x))) loA))))
+                   (cons (config-rep corresponding-A) (convert-to-A (cdr los)))))))
+        (if (or (terminal? cfg elem)
+                (equal? EMP elem))
+            (list elem)
+            (convert-to-A (symbol->fsmlos elem))))
+      (map convert-1rhs rhs)))
+  (let ((new-rhs (map convert-1config loA)))
+    (map (lambda (A rules) (config (config-nt A)
+                                   (config-n A)
+                                   (config-rep A)
+                                   rules))
+         loA new-rhs)))
+
+;; Tests
+(check-equal? (convert-rhs-to-config
+               CFG6
+               (list (config 'A 0 'A-0 '(DA a))
+                     (config 'B 1 'A-1 '(AC BD b))
+                     (config 'C 2 'A-2 '(DB c))
+                     (config 'D 3 'A-3 '(AD d))))
+              (list (config 'A 0 'A-0 '((A-3 A-0) (a)))
+                    (config 'B 1 'A-1 '((A-0 A-2) (A-1 A-3) (b)))
+                    (config 'C 2 'A-2 '((A-3 A-1) (c)))
+                    (config 'D 3 'A-3 '((A-0 A-3) (d)))))
+
+"Configs:"
+(convert-rhs-to-config CFG6
+                       (list (config 'A 0 'A-0 '(DA a))
+                             (config 'B 1 'A-1 '(AC BD b))
+                             (config 'C 2 'A-2 '(DB c))
+                             (config 'D 3 'A-3 '(AD d))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; symbol -> (listof config)
+;; Purpose: Find the respective config for an A-n symbol
+(define (get-config rep configs)
+  (car (filter (lambda (x) (equal? rep (config-rep x))) configs)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Functions
+;; 1. Convert structs one by one
+;; 2. Write substitute function
+;; 3. Write introduce-new-rules function
+;; 4. Combine in new cfg
+
+;; cfg config (listof (listof symbol)) (listof (listof symbol)) (listof config) (listof config) -> (listof config)
+;; Purpose: Given one config, convert its rules to Greibach by
+;;          substituting and introducing new rules in B-notation
+(define (surgery-on-A cfg A rules new-rules new-A As)
+
+  ;; symbol (listof rule) -> (listof (listof rule))
+  ;; Purpose: Substitute a given symbol with its rules
+  (define (substitute A-to-sub rest-rules)
+    (let ((A-to-sub-rules (config-rules (get-config A-to-sub As)))) 
+      (map (lambda (x) (append x rest-rules)) A-to-sub-rules)))
+
+  ;; symbol (listof rule) -> (listof config)
+  ;; Purpose: Introduce new configs 
+  (define (introduce-new-configs A-to-sub rest-rules)
+    (let* ((new-nt (string->symbol (string-append "B-" (number->string (config-n (get-config A-to-sub As))))) #;A-to-sub)
+           (new-n #f #;(config-n (get-config A-to-sub As)))
+           (new-rep (string->symbol (string-append "B-" (number->string (config-n (get-config A-to-sub As))))))
+           (new-rules (cons (append rest-rules (list new-rep))
+                            (list rest-rules))))
+      (list (config new-nt new-n new-rep new-rules))))
+
+  (cond ((empty? rules)
+         (cons (config (config-nt A) (config-n A) (config-rep A) (remove-duplicates new-rules)) new-A))
+        ((or (terminal? cfg (car (car rules)))
+             (equal? EMP (car (car rules)))
+             (< (config-n A)
+                (config-n (get-config (car (car rules)) As))))
+         (surgery-on-A cfg
+                       A
+                       (cdr rules)
+                       (append (list (car rules)) new-rules)
+                       new-A
+                       As))
+        ((> (config-n A)
+            (config-n (get-config (car (car rules)) As)))
+         (let ((first-sym (car (car rules)))
+               (rest-syms (cdr (car rules))))
+           (surgery-on-A cfg
+                         A
+                         (append (cdr rules) (substitute first-sym rest-syms))
+                         new-rules
+                         new-A
+                         As)))
+        (else
+         (let ((new-rep (list (string->symbol (string-append "B-" (number->string (config-n A)))))))
+           (surgery-on-A cfg
+                         A
+                         (append (cdr rules) (map (lambda (x) (append x new-rep)) (append (cdr rules) new-rules)))
+                         new-rules
+                         (append (introduce-new-configs (car (car rules)) (cdr (car rules))) new-A)
+                         As)))))
 
 ;.................................................
 
+;; (listof config) -> (listof config)
+;; Purpose: Call surgery function
+(define (combine-post-surgery-configs cfg configs acc)
+  (if (empty? configs)
+      (let ((Bconfigs (filter (lambda (x) (not (config-n x))) acc))
+            (other (filter (lambda (x) (config-n x)) acc)))
+        (append other (reverse Bconfigs)))
+      (let ((new-config (surgery-on-A cfg (car configs) (group cfg (car configs) (append acc configs)) '() '() (append acc configs))))
+        (combine-post-surgery-configs cfg (cdr configs) (append new-config acc)))))
+
+;.................................................
+
+;; (listof (listof symbol)) -> (listof (listof symbol))
+;; Purpose: Group from terminal/empty to lowest j to highest j
+(define (group cfg conf As)
+  (let* ((rules (config-rules conf))
+         (terminal/emp (filter (lambda (x) (or (terminal? cfg (car x))
+                                               (equal? EMP (car x)))) rules))
+         (other (filter (lambda (x) (not (or (terminal? cfg (car x))
+                                             (equal? EMP (car x))))) rules))
+         (i=j (filter (lambda (x) (= (config-n conf) (config-n (get-config (car x) As)))) other))
+         (other2 (filter (lambda (x) (not (= (config-n conf) (config-n (get-config (car x) As))))) other)))
+    (append terminal/emp other2 i=j)))
+
+;.................................................
+
+(define As2
+  (list (config 'A 0 'A-0 '((A-3 A-0) (a)))
+        (config 'B 1 'A-1 '((A-0 A-2) (A-1 A-3) (b)))
+        (config 'C 2 'A-2 '((A-3 A-1) (c)))
+        (config 'D 3 'A-3 '((A-0 A-3) (d)))))
+
+"A:"
+(surgery-on-A CFG6
+              (config 'A 0 'A-0 '((A-3 A-0) (a)))
+              (group CFG6 (config 'A 0 'A-0 '((A-3 A-0) (a))) As2)
+              '()
+              '()
+              As2)
+"B:"
+(surgery-on-A CFG6
+              (config 'B 1 'A-1 '((A-0 A-2) (A-1 A-3) (b)))
+              (group CFG6 (config 'B 1 'A-1 '((A-0 A-2) (A-1 A-3) (b))) As2)
+              '()
+              '()
+              As2)
+"C:"
+(surgery-on-A CFG6
+              (config 'C 2 'A-2 '((A-3 A-1) (c)))
+              (group CFG6 (config 'C 2 'A-2 '((A-3 A-1) (c))) As2)
+              '()
+              '()
+              As2)
+"D:"
+(surgery-on-A CFG6
+              (config 'D 3 'A-3 '((A-0 A-3) (d)))
+              (group CFG6 (config 'D 3 'A-3 '((A-0 A-3) (d))) As2)
+              '()
+              '()
+              As2)
+
+;.................................................
+;; Tests
+
+#;(define As2
+    (list (config 'A 0 'A-0 '((A-3 A-0) (a)))
+          (config 'B 1 'A-1 '((A-0 A-2) (A-1 A-3) (b)))
+          (config 'C 2 'A-2 '((A-3 A-1) (c)))
+          (config 'D 3 'A-3 '((A-0 A-3) (d)))))
+
+(check-equal?
+ (surgery-on-A CFG6
+               (config 'A 0 'A-0 '((A-3 A-0) (a)))
+               (group CFG6 (config 'A 0 'A-0 '((A-3 A-0) (a))) As2)
+               '()
+               '()
+               As2)
+ (list (config 'A 0 'A-0 '((A-3 A-0) (a)))))
+
+(check-equal?
+ (surgery-on-A CFG6
+               (config 'B 1 'A-1 '((A-0 A-2) (A-1 A-3) (b)))
+               (group CFG6 (config 'B 1 'A-1 '((A-0 A-2) (A-1 A-3) (b))) As2)
+               '()
+               '()
+               As2)
+ (list (config 'B 1 'A-1 '((b B-1) (a A-2 B-1) (A-3 A-0 A-2 B-1) (a A-2) (A-3 A-0 A-2) (b)))
+       (config 'B-1 #f 'B-1 '((A-3 B-1) (A-3)))))
+
+(check-equal?
+ (surgery-on-A CFG6
+               (config 'C 2 'A-2 '((A-3 A-1) (c)))
+               (group CFG6 (config 'C 2 'A-2 '((A-3 A-1) (c))) As2)
+               '()
+               '()
+               As2)
+ (list (config 'C 2 'A-2 '((A-3 A-1) (c)))))
+
+(check-equal?
+ (surgery-on-A CFG6
+               (config 'D 3 'A-3 '((A-0 A-3) (d)))
+               (group CFG6 (config 'D 3 'A-3 '((A-0 A-3) (d))) As2)
+               '()
+               '()
+               As2)
+ (list (config 'D 3 'A-3 '((d B-3) (a A-3 B-3) (a A-3) (d)))
+       (config 'B-3 #f 'B-3 '((A-0 A-3 B-3) (A-0 A-3)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(check-equal?
+ (combine-post-surgery-configs CFG6 As2 '())
+ (list
+  (config 'D 3 'A-3 '((d B-3) (a A-3 B-3) (a A-3) (d)))
+  (config 'C 2 'A-2 '((A-3 A-1) (c)))
+  (config 'B 1 'A-1 '((b B-1) (a A-2 B-1) (A-3 A-0 A-2 B-1) (a A-2) (A-3 A-0 A-2) (b)))
+  (config 'A 0 'A-0 '((A-3 A-0) (a)))
+  (config 'B-1 #f 'B-1 '((A-3 B-1) (A-3)))
+  (config 'B-3 #f 'B-3 '((A-0 A-3 B-3) (A-0 A-3)))))
+
+"Mid-Result:"
+(combine-post-surgery-configs CFG6 As2 '())
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; cfg (listof config) (listof config) -> (listof config)
+;; Purpose: Final substitutions
+(define (final-subs cfg configs As)
+
+  ;; symbol (listof rule) -> (listof (listof rule))
+  ;; Purpose: Substitute a given symbol with its rules
+  (define (substitute A-to-sub rest-rules)
+    (let ((A-to-sub-rules (config-rules (get-config A-to-sub As)))) 
+      (map (lambda (x) (append x rest-rules)) A-to-sub-rules)))
+
+  ;; (listof (listof symbol)) -> (listof (listof symbol))
+  ;; Purpose: Substitute if needed 
+  (define (make-new-rules rules)
+    (cond ((empty? rules) '())
+          ((or (terminal? cfg (car (car rules)))
+               (equal? EMP (car (car rules))))
+           (cons (car rules) (make-new-rules (cdr rules))))
+          (else 
+           (append (substitute (car (car rules)) (cdr (car rules)))
+                   (make-new-rules (cdr rules))))))
+
+  (if (empty? configs)
+      '()
+      (let* ((c (car configs))
+             (rules (config-rules c))
+             (new-rules (make-new-rules rules))
+             (new-config (config (config-nt c) (config-n c) (config-rep c) new-rules)))
+        (cons new-config
+              (final-subs cfg (cdr configs) (append (cdr As) (list new-config))))))) 
 
 
-(define (greibach-rules cfg)
-  ;; (listof rule) -> (listof rule)
-  ;; Purpose: Convert all nts to those that follow A-n notation
-  ;; Accumulator invariants:
-  ;;  acc = keeps track of n
-  (define (make-As rules acc)
-    (if (empty? rules)
-        '()
-        (let* ((current-rule (car rules))
-               (current-lhs (car current-rule))
-               (new-lhs (string->symbol (string-append "A-" (number->string acc))))
-               (tovisit-list (filter (lambda (x) (not (equal? current-lhs (car x)))) rules)))
-          (cons (A current-lhs acc new-lhs)
-                (make-As tovisit-list (add1 acc))))))
+(define CFG6-greibach-As
+  (list
+   (config 'D 3 'A-3 '((d B-3) (a A-3 B-3) (a A-3) (d)))
+   (config 'C 2 'A-2 '((d B-3 A-1) (a A-3 B-3 A-1) (a A-3 A-1) (d A-1) (c)))
+   (config
+    'B
+    1
+    'A-1
+    '((b B-1)
+      (a A-2 B-1)
+      (d B-3 A-0 A-2 B-1)
+      (a A-3 B-3 A-0 A-2 B-1)
+      (a A-3 A-0 A-2 B-1)
+      (d A-0 A-2 B-1)
+      (a A-2)
+      (d B-3 A-0 A-2)
+      (a A-3 B-3 A-0 A-2)
+      (a A-3 A-0 A-2)
+      (d A-0 A-2)
+      (b)))
+   (config 'A 0 'A-0 '((d B-3 A-0) (a A-3 B-3 A-0) (a A-3 A-0) (d A-0) (a)))
+   (config
+    'B-1
+    #f
+    'B-1
+    '((d B-3 B-1) (a A-3 B-3 B-1) (a A-3 B-1) (d B-1) (d B-3) (a A-3 B-3) (a A-3) (d)))
+   (config
+    'B-3
+    #f
+    'B-3
+    '((d B-3 A-0 A-3 B-3)
+      (a A-3 B-3 A-0 A-3 B-3)
+      (a A-3 A-0 A-3 B-3)
+      (d A-0 A-3 B-3)
+      (a A-3 B-3)
+      (d B-3 A-0 A-3)
+      (a A-3 B-3 A-0 A-3)
+      (a A-3 A-0 A-3)
+      (d A-0 A-3)
+      (a A-3)))))
 
-  ;; symbol -> rule
-  ;; Purpose: Find the right A struct for a nt
-  (define (find-corresponding-A sym)
-    (car (filter (lambda (x) (equal? sym (A-nt x))) (make-As (grammar-rules cfg) 0))))
-  (define (find-corresponding-A2 sym)
-    (car (filter (lambda (x) (equal? sym (A-rep x))) (make-As (grammar-rules cfg) 0))))
+(check-equal? 
+ (final-subs CFG6
+             (combine-post-surgery-configs CFG6 As2 '())
+             (combine-post-surgery-configs CFG6 As2 '()))
+ CFG6-greibach-As)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; cfg (listof config) (listof config) -> (listof config)
+;; Purpose: Convert back to regular notation
+(define (convert-back-to-regular-notation cfg configs As)
   
-  ;; (listof rule) (listof A) -> (listof rule)
-  ;; Purpose: Convert the nts in the rules to A-n representation
-  (define (make-A-rules rules)
-    ;; (listof symbol) -> (listof symbol)
-    ;; Purpose: Replace all nt in given list by A-n representation
-    (define (new-A los)
-      (cond ((empty? los) '())
-            ((or (terminal? cfg (car los))
-                 (equal? EMP (car los)))
-             (cons (car los)
-                   (new-A (cdr los))))
-            (else (cons (A-rep (find-corresponding-A (car los)))
-                        (new-A (cdr los))))))
-    (if (empty? rules)
-        '()
-        (let* ((rule (car rules))
-               (new-rule `(,(list->symbol (new-A (symbol->fsmlos (car rule)))) -> ,(list->symbol (new-A (symbol->fsmlos (caddr rule)))))))
-          (cons new-rule
-                (make-A-rules (cdr rules))))))
+  ;; symbol -> symbol
+  ;; Purpose: Substitute a symbol in A-notation back to regular notation
+  (define (sub A-to-sub)
+    (config-nt (get-config A-to-sub As)))
+
+  ;; (listof symbol) -> (listof symbol)
+  ;; Purpose: Sub each rule independently 
+  (define (make-new-rule rule)
+    (cond ((empty? rule) '())
+          ((or (terminal? cfg (car rule))
+               (equal? EMP (car rule)))
+           (cons (car rule) (make-new-rule (cdr rule))))
+          (else (cons (sub (car rule)) (make-new-rule (cdr rule))))))
+
+  (if (empty? configs)
+      '()
+      (let* ((c (car configs))
+             (rules (config-rules c))
+             (new-rules (map make-new-rule rules))
+             (new-config (config (config-nt c) (config-n c) (config-rep c) new-rules)))
+        (cons new-config
+              (convert-back-to-regular-notation cfg (cdr configs) As)))))
+
+(convert-back-to-regular-notation CFG6 CFG6-greibach-As CFG6-greibach-As)
   
-  ;; nts -> (listof steps)
-  ;; Purpose: Make a list of steps for all nts
-  ;; Accumulator invariants:
-  ;;  acc = stores original nts
-  (define (make-steps nts acc)
-    (if (empty? nts)
-        '()
-        (let* ((i (A-n (car nts)))
-               (applicable-nts (filter (lambda (x) (<= (A-n x) i)) acc)))
-          (append (map (lambda (x) (steps (car nts) x #f)) applicable-nts)
-                  (make-steps (cdr nts) acc)))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; steps -> bool
-  ;; Purpose: Return true if all steps are done 
-  (define (steps-true? st)
-    (andmap (lambda (x) (steps-bool x)) st))
+;; cfg (listof config) -> cfg
+;; Purpose: Convert a list of configs to a cfg
+(define (configs->cfg cfg configs)
+  (let* ((new-nts (map config-nt configs))
+         (new-rules
+          (remove-duplicates
+           (append-map (lambda (conf)
+                         (map (lambda (rule) `(,(config-nt conf) -> ,(list->symbol rule))) (config-rules conf)))
+                       configs))))
+  (make-cfg new-nts
+            (grammar-sigma cfg)
+            new-rules
+            (grammar-start cfg))))
 
-  (define (new r as st)
+(configs->cfg CFG6 (convert-back-to-regular-notation CFG6 CFG6-greibach-As CFG6-greibach-As))
 
-    (define (valid? sym rule)
-      (let ((rhs (caddr rule)))
-        (begin (displayln sym)
-        (or (terminal? cfg rhs)
-            (eq? EMP rhs)
-            (> (A-n (find-corresponding-A2 (car (symbol->fsmlos rhs)))) (A-n (find-corresponding-A sym)))))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; cfg -> cfg
+;; Purpose: Convert a cfg to Greibach Normal Form
+(define (greibach cfg)
+  (let* ((chomsky-form (chomsky cfg))
+         (init-As (convert-rhs-to-config CFG6 (make-configs CFG6)))
+         (As (final-subs chomsky-form
+                         (combine-post-surgery-configs chomsky-form init-As '())
+                         (combine-post-surgery-configs chomsky-form init-As '()))))
+    (configs->cfg chomsky-form
+                  (convert-back-to-regular-notation chomsky-form
+                                                    As
+                                                    As))))
 
-    (define (find-rules-A rhs)
-      (let ((rules (grammar-rules (convert-to-A-rep cfg)))
-            #;(rules2 (filter (lambda (x) (equal? (car x) rhs)) rules)))
-        (filter (lambda (x) (equal? (car x) rhs)) rules)))
-    
-    #;(define (make-valid-rules a rule)
-      (let* ((rhs (car (symbol->fsmlos (caddr rule))))
-             (Aint (A-n (find-corresponding-A2 rhs)))
-             (int (A-n a))
-             #;(Anextint (A-n (find-rule-A rhs))))
-      (cond ((and (> Aint int)
-                  (< Anextint int))
-             (replace ...)
-            (else (make-Bs ...))))))
-    
-    (define (new2 step rules)
-      (cond ((empty? rules) '())
-            ((valid? (A-nt (steps-lhs step)) (car rules)) (cons (car rules) (new2 step (cdr rules))))
-            #;(else (cons (make-valid-rules (steps-lhs step) (car rule)) (new2 step (cdr rules))))))
+(greibach CFG6)
 
-    (if (empty? st)
-        '()
-        (cons (new2 (car st) (filter (lambda (x) (equal? (car x) (A-rep (steps-lhs (car st))))) r))
-              (new r as (cdr st)))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (let* ((new-cfg (convert-to-A-rep cfg))
-         (As (make-As (grammar-rules cfg) 0))
-         (stepss (make-steps As As)))
-    (new (grammar-rules new-cfg) As stepss)))
-
-(greibach-rules CFG6)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
 
 
 
