@@ -172,15 +172,6 @@
 (define (extract-nodes loe)
   (remove-duplicates (flatten loe)))
 
-#|
-;; extract-nodes-by-lvl
-;; level (listof node) -> (listof node)
-;; Purpose: To extract nodes from the lon that are in the level
-(define (extract-nodes-by-lvl lon level)
-  (let* [(nil (flatten level))]
-    (filter (λ (node) (member node nil)) lon)))
-|#
-
 ;; make-node-graph
 ;; graph lon -> graph
 ;; Purpose: To make a node graph
@@ -296,12 +287,17 @@
 ;; A derivaton-with-rule takes the form of: (Listof (Listof Symbol) OR Symbol) OR String
 ;; A derivation type is a symbol that is either 'left, 'right, or 'level
 (define (cfg-derive-with-rule-application g w derv-type)
+  ;; Listof_Symbol -> Symbol
+  ;; Returns leftmost nonterminal
   (define (get-first-nt st)
     (cond [(empty? st) #f]
           [(not (member (car st) (cfg-get-alphabet g))) (car st)]
           [else (get-first-nt (cdr st))]
           )
     )
+  
+  ;; Listof_Symbol -> Symbol
+  ;; Returns rightmost nonterminal
   (define (get-last-nt st) (get-first-nt (reverse st)))
 
   ;; Symbol CFG -> (Listof CFG-rule)
@@ -312,6 +308,7 @@
 
   ; ASSUMPTION: state has at least one NT
   ;; Listof_Symbols Listof_Symbols -> Listof_Symbols
+  ;; Replaces the leftmost nonterminal with a righthand side of a rule
   (define (subst-first-nt state rght)
     (cond [(not (member (car state) (cfg-get-alphabet g)))
            (if (eq? (car rght) EMP)
@@ -323,6 +320,7 @@
 
   ; ASSUMPTION: state has at least one NT
   ;; Listof_Symbols Listof_Symbols -> Listof_Symbols
+  ;; Replaces the rightmost nonterminal with a righthand side of a rule
   (define (subst-last-nt state rght) (reverse (subst-first-nt (reverse state) (reverse rght))))
 
   ; (listof (listof symbol)) --> (listof symbol)
@@ -333,7 +331,6 @@
 
   ; (listof (listof symbol)) natnum --> (listof symbol)
   (define (get-first-n-terms w n)
-    ;(println w)
     (cond [(= n 0) '()]
           [else (cons (car w) (get-first-n-terms (cdr w) (- n 1)))]))
 
@@ -465,10 +462,10 @@
 ;; w-der
 ;; derivation -> derivation-list
 ;; Purpose: To turn the derivation into a list
-(define (w-der-with-rules rg word derv-type)
+(define (w-der-with-rules derivation)
   (map (lambda (state) (list (symbol->fsmlos (first state)) (symbol->fsmlos (second state))))
        (filter (λ (x) (not (equal? x '->)))
-               (cfg-derive-with-rule-application rg word derv-type))
+               derivation)
        )
   )
 
@@ -499,9 +496,7 @@
                               )
   )
 
-
-
-;; Listof_Symbol Listof_Listof_Symbol Listof_Listof_Symbol MutableHashTable -> Listof_Listof_Listof_Symbol
+;; Listof_Symbol Listof_Listof_Symbol Listof_Listof_Symbol MutableHashTable (-> listof_Symbol (U #f Symbol)) -> Listof_Listof_Listof_Symbol
 (define (generate-levels-list-helper current-state rules prev-states used-names find-nt-func)
   ;; The list of generated rules used contains an empty list denoting no more rules, hence the need to call "first" first
   (if (empty? (first rules))
@@ -548,6 +543,7 @@
       )
   )
 
+;; Listof_Symbol Listof_Listof_Symbol Listof_Listof_Symbol MutableHashTable (U 'left 'right 'level) -> Listof_Listof_Listof_Symbol
 (define (generate-levels-list current-state rules prev-states used-names derv-type)
   (cond [(eq? derv-type 'left) (generate-levels-list-helper current-state rules prev-states used-names find-leftmost-nt)]
         [(eq? derv-type 'right) (generate-levels-list-helper current-state rules prev-states used-names find-rightmost-nt)]
@@ -575,10 +571,13 @@
          
 ;; cfg-viz
 (define (cfg-viz cfg word derv-type)
-  (if (string? (grammar-derive cfg word))
-      (grammar-derive cfg word)
+  (let [
+        (derivation (cfg-derive-with-rule-application cfg word derv-type))
+        ]
+  (if (string? derivation)
+      derivation
       (let* [
-             (der-with-rules (w-der-with-rules cfg word derv-type))
+             (der-with-rules (w-der-with-rules derivation))
              (rules (cons "" (cond [(eq? derv-type 'left)
                                     (create-rules-leftmost (move-rule-applications-in-list der-with-rules))
                                     ]
@@ -603,6 +602,7 @@
         (run-viz cfg word w-der rules graphs)
         )
       )
+    )
   )
 
 (define numb>numa (make-cfg '(S A)
@@ -615,4 +615,4 @@
                               (A ,ARROW bA))
                             'S))
 
-(cfg-viz numb>numa '(a b b) 'right)
+(cfg-viz numb>numa '(a b b a b a) 'right)
