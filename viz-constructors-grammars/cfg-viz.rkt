@@ -90,9 +90,56 @@
       (cons (generate-level (first wd) (second wd)) (create-levels (rest wd)))))
 
 
+
+(define (remove-leftmost-nt state) (let [
+                                         (leftmost-nt (find-leftmost-nt state))
+                                         ]
+                                      (filter (lambda (sigma-elem) (not (eq? leftmost-nt sigma-elem))) state)
+                                     )
+  )
+
+;; listof_Symbol -> (U #f Symbol)
+;; If it exists, returns the leftmost-nt in the state given. Otherwise, returns false
+(define (find-leftmost-nt state) (if (empty? state)
+                                     #f
+                                     (if (list? state)
+                                         (if (nonterminal? (first state))
+                                             (first state)
+                                             (find-leftmost-nt (rest state))
+                                             )
+                                         (if (nonterminal? state)
+                                             state
+                                             #f
+                                             )
+                                         )
+                                     )
+  )
+
+;; create-rules
+;; (listof symbol) -> (listof string)
+(define (create-rules-leftmost w-der)
+  (displayln w-der)
+  (cond [(empty? w-der)
+         '()]
+        [(= 1 (length w-der))
+         '()]
+        [else
+         (append (list (string-append (symbol->string (find-leftmost-nt (first (first w-der))))
+                                      " → "
+                                      (string-join (map symbol->string (second (first w-der))))))
+                 (create-rules-leftmost (rest w-der)))]
+        #;[else (append  (list (string-append (symbol->string (last (first w-der)))
+                                            " → "
+                                            (string-append (first (map symbol->string (take-right (second w-der) 2)))
+                                                           (second (map symbol->string (take-right (second w-der) 2))))))
+                       (create-rules (rest w-der)))]
+        )
+  )
+
 ;; create-rules
 ;; (listof symbol) -> (listof string)
 (define (create-rules w-der)
+  (displayln w-der)
   (cond [(empty? w-der)
          '()]
         [(= 1 (length w-der))
@@ -149,7 +196,34 @@
          graph
          (reverse lon)
          )
-  )  
+  )
+
+(define (make-edge-graph2 graph loe hedges) (foldl (lambda (rules result) (if (empty? (first rules))
+                                                                              result
+                                                                              (foldr (lambda (rule result)
+                                                                                     (add-edge result
+                                                                                               ""
+                                                                                               (first rule)
+                                                                                               (second rule)
+                                                                                               #:atb (hash 'fontsize FONT-SIZE
+                                                                                                           'style 'solid
+                                                                                                           'color (if (member rule hedges)
+                                                                                                                      HEDGE-COLOR
+                                                                                                                      'black)
+                                                                                                           )
+                                                                                               )
+                                                                                     )
+                                                                                     result
+                                                                                   rules
+                                                                                   )
+                                                                              )
+                                                     )
+                                                   graph
+                                                   (reverse loe)
+                                                   )
+                                                 
+  )
+                                                                                             
 
 ;; make-edge-graph
 ;; graph (listof level) -> graph
@@ -203,26 +277,48 @@
 ;; Purpose: Creates the final graph structure that will be used to create the images in graphviz
 (define (create-graph-structs a-dgrph)
   (let* [
-         (nodes (append (filter lower? (dgrph-nodes a-dgrph))
+         (nodes (dgrph-nodes a-dgrph)
+                #;(append (filter lower? (dgrph-nodes a-dgrph))
                         (filter upper? (dgrph-nodes a-dgrph))
                         )
                 )
          (levels (reverse (map reverse (dgrph-ad-levels a-dgrph))))
          (hedges (dgrph-hedges a-dgrph))
+         (test (displayln hedges))
          (hedge-nodes (map (λ (x) (if (empty? x)
                                       '()
-                                      (second x))) hedges)
+                                      (second x)
+                                      )
+                             )
+                           hedges)
                       )
          (yield-node (map (λ (x) (if (empty? x)
                                      '()
-                                     (first x))) hedges)
+                                     (first x)
+                                     )
+                            )
+                          hedges)
                      )
          ]
-    (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
+    (make-edge-graph2 (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
                                       nodes hedge-nodes yield-node)
                      levels hedges)
     )
   )
+
+
+
+#;(
+   ((S A0) (S b0) (S A1))
+   ((A0 A2) (A0 a0) (A0 A3) (A0 b1) (A0 A4))
+   ((A2 ε0))
+   ((A3 ε1))
+   ((A4 ε2))
+   ((A1 ε3))
+   )
+
+
+
 
 ;; create-dgraphs
 ;; dgrph (listof dgrph) -> (listof dgrph)
@@ -250,6 +346,26 @@
          (cons a-dgrph lod))
         )
       )
+  )
+
+#;(define (create-dgrphs2 a-dgrph) (let [
+                                       ;(sorted-dgrph (reverse a-dgrph))
+                                       ]
+                                   (if (empty? (dgrph-up-levels a-dgrph))
+                                       (cons a-dgrph lod)
+                                       (let* [
+                                              
+                                              ]
+                                         )
+                                       )
+                                   )
+  )
+
+
+#;(define (create-dgrphs2 a-dgrph lod) (let [
+                                           (sorted-dgrph (reverse a-dgrph))
+                                           ]
+                                       )
   )
 
 ;; cfg word -> derivation-with-rules
@@ -407,22 +523,6 @@
   )
 
 
-;; listof_Symbol -> (U #f Symbol)
-;; If it exists, returns the leftmost-nt in the state given. Otherwise, returns false
-(define (find-leftmost-nt state) (if (empty? state)
-                                     #f
-                                     (if (list? state)
-                                         (if (nonterminal? (first state))
-                                             (first state)
-                                             (find-leftmost-nt (rest state))
-                                             )
-                                         (if (nonterminal? state)
-                                             state
-                                             #f
-                                             )
-                                         )
-                                     )
-  )
 
 ;; Listof_Symbol Listof_Listof_Symbol Listof_Listof_Symbol MutableHashTable -> Listof_Listof_Listof_Symbol
 (define (generate-levels-list current-state rules prev-states used-names)
@@ -496,7 +596,10 @@
       (grammar-derive cfg word)
       (let* [
              (der-with-rules (w-der-with-rules cfg word))
-             (rules (create-rules (list-of-rules der-with-rules)))
+             (test (displayln (move-rule-applications-in-list der-with-rules)))
+             #;(rules (create-rules (list-set (list-of-rules der-with-rules) 0 (list (first (first (first der-with-rules))))
+                                            )))
+             (rules (cons "" (create-rules-leftmost (move-rule-applications-in-list der-with-rules))))
              (w-der (list-of-states der-with-rules))
              (renamed (generate-levels-list (first (first (first der-with-rules)))
                                             (list-of-rules (move-rule-applications-in-list der-with-rules))
