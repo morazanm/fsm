@@ -60,9 +60,6 @@
 ;; Purpose: Determines if a symbol is down case
 (define (lower? symbol)
   (not (char-upper-case? (string-ref (symbol->string symbol) 0))))
-            
-      
-
 
 ;; create-edges
 ;; (listof level) <=> (listof (listof edge))
@@ -83,6 +80,7 @@
 
 ;; create-rules
 ;; (listof symbol) -> (listof string)
+;; Purpose: To create rules for the informative message
 (define (create-rules w-der)
   (cond [(empty? w-der)
          '()]
@@ -110,35 +108,22 @@
            (list (list (first acc) (second (first lvl))) acc)]
           
           [(member (second (second lvl)) acc)
-           (let [
-                 (new-symbol (generate-symbol (second (second lvl)) acc))
-                 ]
+           (let [(new-symbol (generate-symbol (second (second lvl)) acc))]
              (list (list (list (first acc)(second (first lvl)))
                          (list (first acc) new-symbol))
-                   (cons new-symbol acc))
-             )
-           ]
-          
+                   (cons new-symbol acc)))]         
           [else (list (list (list (first acc)(second (first lvl)))
                             (list (first acc) (second (second lvl))))
-                      (cons (second (second lvl)) acc))]
-          )
-    )
+                      (cons (second (second lvl)) acc))]))
   (define (rnm-lvls exe accum)
     (if (empty? exe)
         '()
-        (let* [
-               (new-level-accum (rnm-lvl (first exe) accum))
+        (let* [(new-level-accum (rnm-lvl (first exe) accum))
                (new-level (first new-level-accum))
-               (new-accum (second new-level-accum))
-               ]
+               (new-accum (second new-level-accum))]
           (cons new-level
-                (rnm-lvls (rest exe) new-accum))
-          )
-        )
-    )
-  (rnm-lvls exe (list (first (first (first exe)))))
-  )
+                (rnm-lvls (rest exe) new-accum)))))
+  (rnm-lvls exe (list (first (first (first exe))))))
 
 ;; rename-nodes
 ;; (listof level) -> (listof level)
@@ -196,23 +181,15 @@
                                         'shape 'circle
                                         'label (string->symbol (string (string-ref (symbol->string state) 0)))
                                         'fontcolor 'black
-                                        'font "Sans"
-                                        )
-                            )
-           )
+                                        'font "Sans")))
          graph
-         (reverse lon)
-         )
-  )  
+         (reverse lon)))  
 
 ;; make-edge-graph
 ;; graph (listof level) -> graph
 ;; Purpose: To make an edge graph
 (define (make-edge-graph graph loe hedges)
-  (let [
-        (test (displayln (reverse loe)))
-        (first-foldr (foldl (λ (rule result)
-                              ;(displayln rule)
+  (let [(first-foldr (foldl (λ (rule result)
                               (if (empty? (first rule))
                                   result
                                   (add-edge result
@@ -223,16 +200,9 @@
                                                         'style 'solid
                                                         'color (if (member (first rule) hedges)
                                                                    HEDGE-COLOR
-                                                                   'black)
-                                                        )
-                                            )
-                                  )
-                              )
+                                                                   'black)))))
                             graph
-                            (reverse loe)
-                            )
-                     )
-        ]
+                            (reverse loe)))]
     (foldl (λ (rule result)
              (if (empty? (second rule))
                  result
@@ -244,41 +214,27 @@
                                        'style 'solid
                                        'color (if (member (first rule) hedges)
                                                   HEDGE-COLOR
-                                                  'black)
-                                       )
-                           )
-                 )
-             )
+                                                  'black)))))
            first-foldr
-           (reverse loe)
-           )
-    )
-  )
+           (reverse loe))))
 
 ;; create-graph-structs
 ;; dgprh -> img
 ;; Purpose: Creates the final graph structure that will be used to create the images in graphviz
 (define (create-graph-structs a-dgrph)
-  (let* [
-         (nodes (append (filter lower? (dgrph-nodes a-dgrph))
-                        (filter upper? (dgrph-nodes a-dgrph))
-                        )
-                )
+  (let* [(nodes (append (filter lower? (dgrph-nodes a-dgrph))
+                        (filter upper? (dgrph-nodes a-dgrph))))
          (levels (reverse (map reverse (dgrph-ad-levels a-dgrph))))
          (hedges (dgrph-hedges a-dgrph))
          (hedge-nodes (map (λ (x) (if (empty? x)
                                       '()
-                                      (second x))) hedges)
-                      )
+                                      (second x))) hedges))
          (yield-node (map (λ (x) (if (empty? x)
                                      '()
-                                     (first x))) hedges))
-         ]
+                                     (first x))) hedges))]
     (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
                                       nodes hedge-nodes yield-node)
-                     levels hedges)
-    )
-  )
+                     levels hedges)))
 
 ;; create-dgraphs
 ;; dgrph (listof dgrph) -> (listof dgrph)
@@ -288,46 +244,38 @@
       (cons a-dgrph lod)
       (let* [(new-up-levels (rest (dgrph-up-levels a-dgrph)))
              (new-ad-levels (cons (first (dgrph-up-levels a-dgrph))
-                                  (dgrph-ad-levels a-dgrph))
-                            )
+                                  (dgrph-ad-levels a-dgrph)))
              (new-nodes (extract-nodes new-ad-levels))
              (new-hedges (first (dgrph-up-levels a-dgrph)))
              (new-up-rules (rest (dgrph-up-rules a-dgrph)))
              (new-p-rules (cons (first (dgrph-up-rules a-dgrph))
-                                (dgrph-p-rules a-dgrph)))
-             ]
+                                (dgrph-p-rules a-dgrph)))]
         (create-dgrphs
          (dgrph new-up-levels                      
                 new-ad-levels
                 new-nodes
                 new-hedges
                 new-up-rules
-                new-p-rules
-                )
-         (cons a-dgrph lod))
-        )
-      )
-  )
-    
+                new-p-rules)
+         (cons a-dgrph lod)))))
+
+
+;; run function
 (define (rg-viz rg word #:cpu-cores [cpu-cores #f])
   (if (string? (grammar-derive rg word))
       (grammar-derive rg word)
-      (let* [ (w-der (map symbol->fsmlos (filter (λ (x) (not (equal? x '->)))
-                                                 (grammar-derive rg word))))
-              (rules (cons "" (create-rules w-der)))
-              (extracted-edges (create-edges w-der))
-              (renamed (rename-nodes (rename-edges extracted-edges)))
-              (loe (map (λ (el) (if (symbol? (first el))
-                                    (list el '())
-                                    el)) renamed))
-              (dgraph (dgrph loe '() '() '() (rest rules) (list (first rules))))
-              (lod (reverse (create-dgrphs dgraph '())))
-              (graphs (map create-graph-structs lod))
-              ]
-        (run-viz rg word w-der rules graphs)
-        )
-      )
-  )
+      (let* [(w-der (map symbol->fsmlos (filter (λ (x) (not (equal? x '->)))
+                                                (grammar-derive rg word))))
+             (rules (cons "" (create-rules w-der)))
+             (extracted-edges (create-edges w-der))
+             (renamed (rename-nodes (rename-edges extracted-edges)))
+             (loe (map (λ (el) (if (symbol? (first el))
+                                   (list el '())
+                                   el)) renamed))
+             (dgraph (dgrph loe '() '() '() (rest rules) (list (first rules))))
+             (lod (reverse (create-dgrphs dgraph '())))
+             (graphs (map create-graph-structs lod))]
+        (run-viz rg word w-der rules graphs))))
 
 ;(rg-viz even-bs-odd-as '(a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a))
  
