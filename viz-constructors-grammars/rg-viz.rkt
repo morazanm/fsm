@@ -209,7 +209,10 @@
 ;; graph (listof level) -> graph
 ;; Purpose: To make an edge graph
 (define (make-edge-graph graph loe hedges)
-  (let [(first-foldr (foldl (λ (rule result)
+  (let [
+        (test (displayln (reverse loe)))
+        (first-foldr (foldl (λ (rule result)
+                              ;(displayln rule)
                               (if (empty? (first rule))
                                   result
                                   (add-edge result
@@ -317,7 +320,6 @@
               (loe (map (λ (el) (if (symbol? (first el))
                                     (list el '())
                                     el)) renamed))
-              (test (displayln loe))
               (dgraph (dgrph loe '() '() '() (rest rules) (list (first rules))))
               (lod (reverse (create-dgrphs dgraph '())))
               (graphs (map create-graph-structs lod))
@@ -334,3 +336,5 @@
 ;(rg-viz even-bs-odd-as '(a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a a a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a))
 ;)
 ;(rg-viz even-bs-odd-as '(a a a a a b b b b b b b b b b b b b b b b))
+
+(rg-viz even-bs-odd-as '(a a a b b))

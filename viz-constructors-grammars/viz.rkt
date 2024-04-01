@@ -805,7 +805,6 @@
                                            (viz-state-p-yield a-vs))))
                     (new-pimgs (cons (first (viz-state-upimgs a-vs))
                                      (viz-state-pimgs a-vs)))
-                    
                     (new-pimgs-img (
                                     (first new-pimgs)
                                     )
@@ -815,7 +814,7 @@
                                      (first (viz-state-pimgs a-vs))
                                      )
                                     )
-                    (new-p-dgraph (cons (first (viz-state-up-rules a-vs))
+                    (new-p-rules (cons (first (viz-state-up-rules a-vs))
                                         (viz-state-p-rules a-vs)))
                     (img-resize (resize-image new-pimgs-img (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))
                     
@@ -849,7 +848,7 @@
                                                             (viz-state-dest-mouse-posn a-vs)
                                                             (viz-state-mouse-pressed a-vs)
                                                             (rest (viz-state-up-rules a-vs))
-                                                            new-p-dgraph
+                                                            new-p-rules
                                                             new-up-yield
                                                             new-p-yield
                                                             (viz-state-input-word a-vs)
@@ -879,7 +878,7 @@
                                                             (viz-state-dest-mouse-posn a-vs)
                                                             (viz-state-mouse-pressed a-vs)
                                                             (rest (viz-state-up-rules a-vs))
-                                                            new-p-dgraph
+                                                            new-p-rules
                                                             new-up-yield
                                                             new-p-yield
                                                             (viz-state-input-word a-vs)
@@ -909,7 +908,7 @@
                                                             (viz-state-dest-mouse-posn a-vs)
                                                             (viz-state-mouse-pressed a-vs)
                                                             (rest (viz-state-up-rules a-vs))
-                                                            new-p-dgraph
+                                                            new-p-rules
                                                             new-up-yield
                                                             new-p-yield
                                                             (viz-state-input-word a-vs)
@@ -940,7 +939,7 @@
                                                    (viz-state-dest-mouse-posn a-vs)
                                                    (viz-state-mouse-pressed a-vs)
                                                    (rest (viz-state-up-rules a-vs))
-                                                   new-p-dgraph
+                                                   new-p-rules
                                                    new-up-yield
                                                    new-p-yield
                                                    (viz-state-input-word a-vs)
