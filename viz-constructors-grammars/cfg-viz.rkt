@@ -106,6 +106,15 @@
                                      )
   )
 
+;; listof_Symbol -> (U #f Symbol)
+;; If it exists, returns the leftmost-nt in the state given. Otherwise, returns false
+(define (find-rightmost-nt state) (if (list? state)
+                                      (find-leftmost-nt (reverse state))
+                                      (find-leftmost-nt (list state))
+                                      )
+  )
+
+
 ;; create-rules
 ;; (listof symbol) -> (listof string)
 (define (create-rules-leftmost w-der)
@@ -118,6 +127,21 @@
                                       " → "
                                       (string-join (map symbol->string (second (first w-der))))))
                  (create-rules-leftmost (rest w-der)))]
+        )
+  )
+
+;; create-rules
+;; (listof symbol) -> (listof string)
+(define (create-rules-rightmost w-der)
+  (cond [(empty? w-der)
+         '()]
+        [(= 1 (length w-der))
+         '()]
+        [else
+         (append (list (string-append (symbol->string (find-rightmost-nt (first (first w-der))))
+                                      " → "
+                                      (string-join (map symbol->string (second (first w-der))))))
+                 (create-rules-rightmost (rest w-der)))]
         )
   )
 
@@ -186,28 +210,28 @@
 ;; graph (listof level) -> graph
 ;; Purpose: To make an edge graph
 (define (make-edge-graph graph loe hedges) (foldl (lambda (rules result) (if (empty? (first rules))
-                                                                              result
-                                                                              (foldl (lambda (rule result)
-                                                                                     (add-edge result
-                                                                                               ""
-                                                                                               (first rule)
-                                                                                               (second rule)
-                                                                                               #:atb (hash 'fontsize FONT-SIZE
-                                                                                                           'style 'solid
-                                                                                                           'color (if (member rule hedges)
-                                                                                                                      HEDGE-COLOR
-                                                                                                                      'black)
-                                                                                                           )
-                                                                                               )
-                                                                                     )
-                                                                                     result
-                                                                                   rules
-                                                                                   )
-                                                                              )
-                                                     )
-                                                   graph
-                                                   (reverse loe)
-                                                   )
+                                                                             result
+                                                                             (foldl (lambda (rule result)
+                                                                                      (add-edge result
+                                                                                                ""
+                                                                                                (first rule)
+                                                                                                (second rule)
+                                                                                                #:atb (hash 'fontsize FONT-SIZE
+                                                                                                            'style 'solid
+                                                                                                            'color (if (member rule hedges)
+                                                                                                                       HEDGE-COLOR
+                                                                                                                       'black)
+                                                                                                            )
+                                                                                                )
+                                                                                      )
+                                                                                    result
+                                                                                    rules
+                                                                                    )
+                                                                             )
+                                                    )
+                                                  graph
+                                                  (reverse loe)
+                                                  )
                                                  
   )
 
@@ -268,14 +292,17 @@
       )
   )
 
-;; cfg word -> derivation-with-rules
+;; cfg word derivation-type -> derivation-with-rules
 ;; A derivaton-with-rule takes the form of: (Listof (Listof Symbol) OR Symbol) OR String
-(define (cfg-derive-with-rule-application g w)
+;; A derivation type is a symbol that is either 'left, 'right, or 'level
+(define (cfg-derive-with-rule-application g w derv-type)
   (define (get-first-nt st)
     (cond [(empty? st) #f]
           [(not (member (car st) (cfg-get-alphabet g))) (car st)]
-          [else (get-first-nt (cdr st))])
+          [else (get-first-nt (cdr st))]
+          )
     )
+  (define (get-last-nt st) (get-first-nt (reverse st)))
 
   ;; Symbol CFG -> (Listof CFG-rule)
   ; A CFG-rule is a structure, (CFG-rule L R), where L is a symbol (non-terminal) and R
@@ -293,6 +320,10 @@
                )
            ]
           [else (cons (car state) (subst-first-nt (cdr state) rght))]))
+
+  ; ASSUMPTION: state has at least one NT
+  ;; Listof_Symbols Listof_Symbols -> Listof_Symbols
+  (define (subst-last-nt state rght) (reverse (subst-first-nt (reverse state) (reverse rght))))
 
   ; (listof (listof symbol)) --> (listof symbol)
   (define (get-starting-terminals st)
@@ -322,46 +353,92 @@
     (define (count-terminals st sigma)
       (length (filter (lambda (a) (member a sigma)) st)))
 
-    (cond [(empty? derivs) (format "~s is not in L(G)." w)]
-          [(or (and chomsky
-                    (> (length (first (first (first derivs)))) (+ 2 (length w)))
-                    )
-               (> (count-terminals (first (first (first derivs))) (cfg-get-alphabet g)) (length w))
-               )
-           (make-deriv visited (cdr derivs) g chomsky)]
-          [else 
-           (let* ((fderiv (car derivs))
-                  (state (car fderiv))
-                  (fnt (get-first-nt (first state)))
-                  )
-             (if (false? fnt)
-                 (if (equal? w (first state))
-                     (append-map (lambda (l) (if (equal? w (first l))
-                                                 (if (null? l)
-                                                     (list EMP)
-                                                     (list (list (los->symbol (first l)) (los->symbol (second l))))
-                                                     )
-                                                 (list (list (los->symbol (first l)) (los->symbol (second l))) ARROW)
-                                                 )
-                                   )
-                                 (reverse fderiv)
-                                 )
-                     (make-deriv visited (cdr derivs) g chomsky))
-                 (let*
-                     ((rls (get-rules fnt g))
-                      (rights (map cfg-rule-rhs rls))
-                      (new-states (filter (lambda (st) (and (not (member st visited))
-                                                            (check-terminals? (first state)))) 
-                                          (map (lambda (rght) (list (subst-first-nt (first state) rght) rght)) rights)
-                                          )
-                                  )
+    (cond [(eq? derv-type 'left)
+           (cond [(empty? derivs) (format "~s is not in L(G)." w)]
+                 [(or (and chomsky
+                           (> (length (first (first (first derivs)))) (+ 2 (length w)))
+                           )
+                      (> (count-terminals (first (first (first derivs))) (cfg-get-alphabet g)) (length w))
                       )
-                   (make-deriv (append new-states visited)
-                               (append (cdr derivs) 
-                                       (map (lambda (st) (cons st fderiv)) 
-                                            new-states))
-                               g
-                               chomsky))))]
+                  (make-deriv visited (cdr derivs) g chomsky)]
+                 [else 
+                  (let* ((fderiv (car derivs))
+                         (state (car fderiv))
+                         (fnt (get-first-nt (first state)))
+                         )
+                    (if (false? fnt)
+                        (if (equal? w (first state))
+                            (append-map (lambda (l) (if (equal? w (first l))
+                                                        (if (null? l)
+                                                            (list EMP)
+                                                            (list (list (los->symbol (first l)) (los->symbol (second l))))
+                                                            )
+                                                        (list (list (los->symbol (first l)) (los->symbol (second l))) ARROW)
+                                                        )
+                                          )
+                                        (reverse fderiv)
+                                        )
+                            (make-deriv visited (cdr derivs) g chomsky))
+                        (let*
+                            ((rls (get-rules fnt g))
+                             (rights (map cfg-rule-rhs rls))
+                             (new-states (filter (lambda (st) (and (not (member st visited))
+                                                                   (check-terminals? (first state)))) 
+                                                 (map (lambda (rght) (list (subst-first-nt (first state) rght) rght)) rights)
+                                                 )
+                                         )
+                             )
+                          (make-deriv (append new-states visited)
+                                      (append (cdr derivs) 
+                                              (map (lambda (st) (cons st fderiv)) 
+                                                   new-states))
+                                      g
+                                      chomsky))))]
+                 )
+           ]
+          [(eq? derv-type 'right)
+           (cond [(empty? derivs) (format "~s is not in L(G)." w)]
+                 [(or (and chomsky
+                           (> (length (first (first (first derivs)))) (+ 2 (length w)))
+                           )
+                      (> (count-terminals (first (first (first derivs))) (cfg-get-alphabet g)) (length w))
+                      )
+                  (make-deriv visited (cdr derivs) g chomsky)]
+                 [else 
+                  (let* ((fderiv (car derivs))
+                         (state (car fderiv))
+                         (fnt (get-last-nt (first state)))
+                         )
+                    (if (false? fnt)
+                        (if (equal? w (first state))
+                            (append-map (lambda (l) (if (equal? w (first l))
+                                                        (if (null? l)
+                                                            (list EMP)
+                                                            (list (list (los->symbol (first l)) (los->symbol (second l))))
+                                                            )
+                                                        (list (list (los->symbol (first l)) (los->symbol (second l))) ARROW)
+                                                        )
+                                          )
+                                        (reverse fderiv)
+                                        )
+                            (make-deriv visited (cdr derivs) g chomsky))
+                        (let*
+                            ((rls (get-rules fnt g))
+                             (rights (map cfg-rule-rhs rls))
+                             (new-states (filter (lambda (st) (and (not (member st visited))
+                                                                   (check-terminals? (first state)))) 
+                                                 (map (lambda (rght) (list (subst-last-nt (first state) rght) rght)) rights)
+                                                 )
+                                         )
+                             )
+                          (make-deriv (append new-states visited)
+                                      (append (cdr derivs) 
+                                              (map (lambda (st) (cons st fderiv)) 
+                                                   new-states))
+                                      g
+                                      chomsky))))]
+                 )
+           ]
           )
     )   
   (if (< (length w) 2)
@@ -388,10 +465,10 @@
 ;; w-der
 ;; derivation -> derivation-list
 ;; Purpose: To turn the derivation into a list
-(define (w-der-with-rules rg word)
+(define (w-der-with-rules rg word derv-type)
   (map (lambda (state) (list (symbol->fsmlos (first state)) (symbol->fsmlos (second state))))
        (filter (λ (x) (not (equal? x '->)))
-               (cfg-derive-with-rule-application rg word))
+               (cfg-derive-with-rule-application rg word derv-type))
        )
   )
 
@@ -425,28 +502,28 @@
 
 
 ;; Listof_Symbol Listof_Listof_Symbol Listof_Listof_Symbol MutableHashTable -> Listof_Listof_Listof_Symbol
-(define (generate-levels-list current-state rules prev-states used-names)
+(define (generate-levels-list-helper current-state rules prev-states used-names find-nt-func)
   ;; The list of generated rules used contains an empty list denoting no more rules, hence the need to call "first" first
   (if (empty? (first rules))
       ;; If theres no more rules to apply than computation is done
       '()
       (let [
-            (leftmost-nt (find-leftmost-nt current-state))
+            (current-nt (find-nt-func current-state))
             ]
-        (if (boolean? leftmost-nt)
+        (if (boolean? current-nt)
             ;; If its fails to find a nonterminal in the current state, attempt to go back up the stack to a previous state
             (if (empty? prev-states)
                 ;; If there are no more previous states, than the computation is done
                 '()
                 (let* [
                        (prev-state (first prev-states))
-                       (prev-leftmost-nt (find-leftmost-nt prev-state))
+                       (prev-current-nt (find-nt-func prev-state))
                        ;; Need to remove the leftmost-nt from the previous state since we just went down its respective path
                        ;; when we call the function again with it removed, the next nt will be processed
-                       (updated-states (filter (lambda (x) (not (eq? prev-leftmost-nt x))) prev-state))
+                       (updated-states (filter (lambda (x) (not (eq? prev-current-nt x))) prev-state))
                        ]
                   ;; Don't reduce the number of rules here since one was not sucessfully applied, only remove the state we popped off the stack
-                  (generate-levels-list updated-states rules (rest prev-states) used-names)
+                  (generate-levels-list-helper updated-states rules (rest prev-states) used-names find-nt-func)
                   )
                 )
             (local [
@@ -464,11 +541,17 @@
                                                    )
                       )
                     ]
-              (cons (new-level leftmost-nt) (generate-levels-list renamed-states (rest rules) (cons current-state prev-states) used-names))
+              (cons (new-level current-nt) (generate-levels-list-helper renamed-states (rest rules) (cons current-state prev-states) used-names find-nt-func))
               )
             )
         )
       )
+  )
+
+(define (generate-levels-list current-state rules prev-states used-names derv-type)
+  (cond [(eq? derv-type 'left) (generate-levels-list-helper current-state rules prev-states used-names find-leftmost-nt)]
+        [(eq? derv-type 'right) (generate-levels-list-helper current-state rules prev-states used-names find-rightmost-nt)]
+        )
   )
 
 ;; This is just taking the list recieved from the new w-der and new cfg-derive and moving the rules like such:
@@ -491,17 +574,26 @@
 (define (list-of-rules lst) (map (lambda (x) (second x)) lst))
          
 ;; cfg-viz
-(define (cfg-viz cfg word)
+(define (cfg-viz cfg word derv-type)
   (if (string? (grammar-derive cfg word))
       (grammar-derive cfg word)
       (let* [
-             (der-with-rules (w-der-with-rules cfg word))
-             (rules (cons "" (create-rules-leftmost (move-rule-applications-in-list der-with-rules))))
+             (der-with-rules (w-der-with-rules cfg word derv-type))
+             (rules (cons "" (cond [(eq? derv-type 'left)
+                                    (create-rules-leftmost (move-rule-applications-in-list der-with-rules))
+                                    ]
+                                   [(eq? derv-type 'right)
+                                    (create-rules-rightmost (move-rule-applications-in-list der-with-rules))
+                                    ]
+                                   )
+                          )
+                    )
              (w-der (list-of-states der-with-rules))
              (renamed (generate-levels-list (first (first (first der-with-rules)))
                                             (list-of-rules (move-rule-applications-in-list der-with-rules))
                                             '()
                                             (make-hash)
+                                            derv-type
                                             )
                       )
              (dgraph (dgrph renamed '() '() '() (rest rules) (list (first rules))))
@@ -523,4 +615,4 @@
                               (A ,ARROW bA))
                             'S))
 
-(cfg-viz numb>numa '(a b b))
+(cfg-viz numb>numa '(a b b) 'right)
