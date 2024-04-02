@@ -167,7 +167,7 @@
                                 (append-map (lambda (x) (all-combinations x)) (grammar-rules cfg)))))
          (new-nts (remove-duplicates (append (map (lambda (x) (car x)) new-rules)
                                              (filter nts? (append-map symbol->fsmlos (map (lambda (x) (caddr x))
-                                                                                        (grammar-rules cfg)))))))
+                                                                                          (grammar-rules cfg)))))))
          (new-start (if (contains? (grammar-start cfg) empties)
                         'S-0
                         (grammar-start cfg))))   
@@ -241,7 +241,7 @@
   (let* ((new-rules (remove-duplicates (rm-ketten-helper (grammar-rules cfg))))
          (new-nts (remove-duplicates (append (map (lambda (x) (car x)) new-rules)
                                              (filter nts? (append-map symbol->fsmlos (map (lambda (x) (caddr x))
-                                                                                        (grammar-rules cfg))))))))
+                                                                                          (grammar-rules cfg))))))))
     (if (no-more-ketten? (grammar-rules cfg))
         cfg
         (make-cfg new-nts
@@ -283,7 +283,9 @@
           (and (= 2 (length (symbol->fsmlos (caddr rule))))
                (nts? (car (symbol->fsmlos (caddr rule))))
                (nts? (cadr (symbol->fsmlos (caddr rule)))))))
-    (empty? (filter (lambda (x) (not (valid? x))) (grammar-rules cfg))))
+    (begin
+      (displayln (grammar-rules cfg))
+    (empty? (filter (lambda (x) (not (valid? x))) (grammar-rules cfg)))) )
   
   ;; cfg -> rules
   ;; Purpose: Helper function for chomsky, makes new rules
@@ -408,8 +410,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define anbn (make-cfg '(S)
+                       '(a b)
+                       `((S ,ARROW ,EMP)
+                         (S ,ARROW aSb))
+                       'S))
 
-
+(define anbn-chomsky (chomsky anbn))
 
 
 
