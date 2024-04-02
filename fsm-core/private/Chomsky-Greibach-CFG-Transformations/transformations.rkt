@@ -1,7 +1,5 @@
 #lang fsm
-
 (provide chomsky greibach)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Context-free grammars
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -273,6 +271,19 @@
   ;; Purpose: Check whether symbol is an non-terminal
   (define (nts? sym)
     (contains? sym (grammar-nts cfg)))
+
+  ;; cfg -> Boolean
+  ;; Purpose: Check if cfg is in Chomsky form
+  (define (chomsky? cfg)
+    ;; rule -> Boolean?
+    ;; Purpose: Check whether rule is already in chomsky 
+    (define (valid? rule)
+      (or (terminal? (caddr rule))
+          (equal? EMP (caddr rule))
+          (and (= 2 (length (symbol->fsmlos (caddr rule))))
+               (nts? (car (symbol->fsmlos (caddr rule))))
+               (nts? (cadr (symbol->fsmlos (caddr rule)))))))
+    (empty? (filter (lambda (x) (not (valid? x))) (grammar-rules cfg))))
   
   ;; cfg -> rules
   ;; Purpose: Helper function for chomsky, makes new rules
@@ -381,17 +392,19 @@
           (invalid (filter (lambda (x) (and (invalid? x)
                                             (not (eq? EMP (caddr x))))) (grammar-rules cfg))))
       (remove-duplicates (append valid (make-Y-rules invalid) (make-X-rules invalid)))))
- 
-  (let* ((new-cfg ((compose rm-ketten rm-empties) cfg))
-         (new-rules (chomsky-helper new-cfg))
-         (new-nts (remove-duplicates
-                   (append (map (lambda (x) (car x)) new-rules)
-                           (filter (lambda (z) (nts? z))
-                                   (append-map (lambda (y) (symbol->fsmlos (caddr y))) new-rules))))))
-    (make-cfg new-nts
-              (grammar-sigma new-cfg)
-              new-rules 
-              (grammar-start new-cfg))))
+
+  (if (chomsky? cfg)
+      cfg
+      (let* ((new-cfg ((compose rm-ketten rm-empties) cfg))
+             (new-rules (chomsky-helper new-cfg))
+             (new-nts (remove-duplicates
+                       (append (map (lambda (x) (car x)) new-rules)
+                               (filter (lambda (z) (nts? z))
+                                       (append-map (lambda (y) (symbol->fsmlos (caddr y))) new-rules))))))
+        (make-cfg new-nts
+                  (grammar-sigma new-cfg)
+                  new-rules 
+                  (grammar-start new-cfg)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; for Greibach
@@ -726,14 +739,6 @@
 
 ;.................................................
 
-;; An A is a structure that contains:
-;;  A nt (symbol)
-;;  An int (integer)
-;;  A representation (symbol)
-;(struct A (nt n rep) #:transparent)
-
-;.................................................
-
 ;; cfg -> cfg
 ;; Purpose: Convert a given cfg to A-n representation
 #;(define (convert-to-A-rep cfg)
@@ -868,12 +873,12 @@
                     (config 'C 2 'A-2 '((A-3 A-1) (c)))
                     (config 'D 3 'A-3 '((A-0 A-3) (d)))))
 
-"Configs:"
-(convert-rhs-to-config CFG6
-                       (list (config 'A 0 'A-0 '(DA a))
-                             (config 'B 1 'A-1 '(AC BD b))
-                             (config 'C 2 'A-2 '(DB c))
-                             (config 'D 3 'A-3 '(AD d))))
+;"Configs:"
+#;(convert-rhs-to-config CFG6
+                         (list (config 'A 0 'A-0 '(DA a))
+                               (config 'B 1 'A-1 '(AC BD b))
+                               (config 'C 2 'A-2 '(DB c))
+                               (config 'D 3 'A-3 '(AD d))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -976,7 +981,7 @@
         (config 'C 2 'A-2 '((A-3 A-1) (c)))
         (config 'D 3 'A-3 '((A-0 A-3) (d)))))
 
-"A:"
+#|"A:"
 (surgery-on-A CFG6
               (config 'A 0 'A-0 '((A-3 A-0) (a)))
               (group CFG6 (config 'A 0 'A-0 '((A-3 A-0) (a))) As2)
@@ -1003,7 +1008,7 @@
               (group CFG6 (config 'D 3 'A-3 '((A-0 A-3) (d))) As2)
               '()
               '()
-              As2)
+              As2) |#
 
 ;.................................................
 ;; Tests
@@ -1064,8 +1069,8 @@
   (config 'B-1 #f 'B-1 '((A-3 B-1) (A-3)))
   (config 'B-3 #f 'B-3 '((A-0 A-3 B-3) (A-0 A-3)))))
 
-"Mid-Result:"
-(combine-post-surgery-configs CFG6 As2 '())
+;"Mid-Result:"
+;(combine-post-surgery-configs CFG6 As2 '())
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1176,7 +1181,7 @@
         (cons new-config
               (convert-back-to-regular-notation cfg (cdr configs) As)))))
 
-(convert-back-to-regular-notation CFG6 CFG6-greibach-As CFG6-greibach-As)
+;(convert-back-to-regular-notation CFG6 CFG6-greibach-As CFG6-greibach-As)
   
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1189,12 +1194,12 @@
            (append-map (lambda (conf)
                          (map (lambda (rule) `(,(config-nt conf) -> ,(list->symbol rule))) (config-rules conf)))
                        configs))))
-  (make-cfg new-nts
-            (grammar-sigma cfg)
-            new-rules
-            (grammar-start cfg))))
+    (make-cfg new-nts
+              (grammar-sigma cfg)
+              new-rules
+              (grammar-start cfg))))
 
-(configs->cfg CFG6 (convert-back-to-regular-notation CFG6 CFG6-greibach-As CFG6-greibach-As))
+;(configs->cfg CFG6 (convert-back-to-regular-notation CFG6 CFG6-greibach-As CFG6-greibach-As))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1202,7 +1207,7 @@
 ;; Purpose: Convert a cfg to Greibach Normal Form
 (define (greibach cfg)
   (let* ((chomsky-form (chomsky cfg))
-         (init-As (convert-rhs-to-config CFG6 (make-configs CFG6)))
+         (init-As (convert-rhs-to-config chomsky-form (make-configs chomsky-form)))
          (As (final-subs chomsky-form
                          (combine-post-surgery-configs chomsky-form init-As '())
                          (combine-post-surgery-configs chomsky-form init-As '()))))
@@ -1211,15 +1216,8 @@
                                                     As
                                                     As))))
 
-(greibach CFG6)
+;(greibach CFG6)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-
-
-
-
-
-
-  
