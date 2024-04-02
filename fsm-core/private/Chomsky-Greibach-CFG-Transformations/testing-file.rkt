@@ -1,7 +1,7 @@
 #lang fsm
 
-(require #;"transformations2.rkt"
-         "chomsky.rkt" "greibach.rkt")
+(require "chomsky.rkt" "greibach.rkt"
+         "../../interface.rkt")
 
 (define anbn (make-cfg '(S)
                        '(a b)

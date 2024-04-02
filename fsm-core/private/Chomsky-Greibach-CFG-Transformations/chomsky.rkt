@@ -283,9 +283,7 @@
           (and (= 2 (length (symbol->fsmlos (caddr rule))))
                (nts? (car (symbol->fsmlos (caddr rule))))
                (nts? (cadr (symbol->fsmlos (caddr rule)))))))
-    (begin
-      (displayln (grammar-rules cfg))
-    (empty? (filter (lambda (x) (not (valid? x))) (grammar-rules cfg)))) )
+    (empty? (filter (lambda (x) (not (valid? x))) (grammar-rules cfg)))) 
   
   ;; cfg -> rules
   ;; Purpose: Helper function for chomsky, makes new rules
@@ -409,14 +407,6 @@
                   (grammar-start new-cfg)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define anbn (make-cfg '(S)
-                       '(a b)
-                       `((S ,ARROW ,EMP)
-                         (S ,ARROW aSb))
-                       'S))
-
-(define anbn-chomsky (chomsky anbn))
 
 
 
