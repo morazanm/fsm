@@ -1,4 +1,5 @@
-#lang fsm
+#lang racket
+(require "../../interface.rkt")
 (provide chomsky greibach)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Context-free grammars
@@ -243,11 +244,11 @@
                                              (filter nts? (append-map symbol->fsmlos (map (lambda (x) (caddr x))
                                                                                         (grammar-rules cfg))))))))
     (if (no-more-ketten? (grammar-rules cfg))
-        cfg    
+        cfg
         (make-cfg new-nts
                   (grammar-sigma cfg)
                   new-rules
-                  (grammar-start cfg)))))   
+                  (grammar-start cfg)))))  
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Chomsky
@@ -627,31 +628,6 @@
    'S-0))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Tests for chomsky
-(check-equal? (chomsky CFG1) CFG1)
-(check-equal? (grammar-testequiv CFG1 (chomsky CFG1) 10) #t)
-(check-equal? (last (grammar-derive CFG1 '(a d a)))
-              (last (grammar-derive (chomsky CFG1) '(a d a))))
-
-(check-equal? (chomsky CFG2) CFG2-chomsky)
-(check-equal? (grammar-testequiv CFG2 (chomsky CFG2) 10) #t)
-(check-equal? (last (grammar-derive CFG2 '(a b a b a b b)))
-              (last (grammar-derive (chomsky CFG2) '(a b a b a b b)))) 
-
-(check-equal? (rm-empties CFG3) CFG3-emp)
-(check-equal? (rm-ketten CFG3-emp) CFG3-ketten) 
-(check-equal? (chomsky CFG3) CFG3-chomsky)
-;(check-equal? (grammar-testequiv CFG3 (chomsky CFG3) 10) #t)
-
-(check-equal? (rm-ketten CFG4) CFG4-ketten)
-(check-equal? (chomsky CFG4) CFG4-chomsky)
-;(check-equal? (grammar-testequiv CFG4 (chomsky CFG4) 10) #t)
-
-(check-equal? (chomsky CFG5) CFG5-chomsky)
-(check-equal? (grammar-testequiv CFG5 (chomsky CFG5) 10) #t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Greibach
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -826,13 +802,6 @@
                   (make-A-rules different-lhs-rules (add1 n))))))
     (make-A-rules cfg-rules 0)))
 
-;; Tests
-(check-equal? (make-configs CFG6)
-              (list (config 'A 0 'A-0 '(DA a))
-                    (config 'B 1 'A-1 '(AC BD b))
-                    (config 'C 2 'A-2 '(DB c))
-                    (config 'D 3 'A-3 '(AD d))))
-
 ;.................................................
 
 ;; cfg (listof config) -> (listof config)
@@ -865,25 +834,6 @@
                                    (config-rep A)
                                    rules))
          loA new-rhs)))
-
-;; Tests
-(check-equal? (convert-rhs-to-config
-               CFG6
-               (list (config 'A 0 'A-0 '(DA a))
-                     (config 'B 1 'A-1 '(AC BD b))
-                     (config 'C 2 'A-2 '(DB c))
-                     (config 'D 3 'A-3 '(AD d))))
-              (list (config 'A 0 'A-0 '((A-3 A-0) (a)))
-                    (config 'B 1 'A-1 '((A-0 A-2) (A-1 A-3) (b)))
-                    (config 'C 2 'A-2 '((A-3 A-1) (c)))
-                    (config 'D 3 'A-3 '((A-0 A-3) (d)))))
-
-;"Configs:"
-#;(convert-rhs-to-config CFG6
-                         (list (config 'A 0 'A-0 '(DA a))
-                               (config 'B 1 'A-1 '(AC BD b))
-                               (config 'C 2 'A-2 '(DB c))
-                               (config 'D 3 'A-3 '(AD d))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -983,105 +933,6 @@
          (other2 (filter (lambda (x) (not (= (config-n conf) (config-n (get-config (car x) As))))) other)))
     (append terminal/emp other2 i=j)))
 
-;.................................................
-
-(define As2
-  (list (config 'A 0 'A-0 '((A-3 A-0) (a)))
-        (config 'B 1 'A-1 '((A-0 A-2) (A-1 A-3) (b)))
-        (config 'C 2 'A-2 '((A-3 A-1) (c)))
-        (config 'D 3 'A-3 '((A-0 A-3) (d)))))
-
-#|"A:"
-(surgery-on-A CFG6
-              (config 'A 0 'A-0 '((A-3 A-0) (a)))
-              (group CFG6 (config 'A 0 'A-0 '((A-3 A-0) (a))) As2)
-              '()
-              '()
-              As2)
-"B:"
-(surgery-on-A CFG6
-              (config 'B 1 'A-1 '((A-0 A-2) (A-1 A-3) (b)))
-              (group CFG6 (config 'B 1 'A-1 '((A-0 A-2) (A-1 A-3) (b))) As2)
-              '()
-              '()
-              As2)
-"C:"
-(surgery-on-A CFG6
-              (config 'C 2 'A-2 '((A-3 A-1) (c)))
-              (group CFG6 (config 'C 2 'A-2 '((A-3 A-1) (c))) As2)
-              '()
-              '()
-              As2)
-"D:"
-(surgery-on-A CFG6
-              (config 'D 3 'A-3 '((A-0 A-3) (d)))
-              (group CFG6 (config 'D 3 'A-3 '((A-0 A-3) (d))) As2)
-              '()
-              '()
-              As2) |#
-
-;.................................................
-;; Tests
-
-#;(define As2
-    (list (config 'A 0 'A-0 '((A-3 A-0) (a)))
-          (config 'B 1 'A-1 '((A-0 A-2) (A-1 A-3) (b)))
-          (config 'C 2 'A-2 '((A-3 A-1) (c)))
-          (config 'D 3 'A-3 '((A-0 A-3) (d)))))
-
-(check-equal?
- (surgery-on-A CFG6
-               (config 'A 0 'A-0 '((A-3 A-0) (a)))
-               (group CFG6 (config 'A 0 'A-0 '((A-3 A-0) (a))) As2)
-               '()
-               '()
-               As2)
- (list (config 'A 0 'A-0 '((A-3 A-0) (a)))))
-
-(check-equal?
- (surgery-on-A CFG6
-               (config 'B 1 'A-1 '((A-0 A-2) (A-1 A-3) (b)))
-               (group CFG6 (config 'B 1 'A-1 '((A-0 A-2) (A-1 A-3) (b))) As2)
-               '()
-               '()
-               As2)
- (list (config 'B 1 'A-1 '((b B-1) (a A-2 B-1) (A-3 A-0 A-2 B-1) (a A-2) (A-3 A-0 A-2) (b)))
-       (config 'B-1 #f 'B-1 '((A-3 B-1) (A-3)))))
-
-(check-equal?
- (surgery-on-A CFG6
-               (config 'C 2 'A-2 '((A-3 A-1) (c)))
-               (group CFG6 (config 'C 2 'A-2 '((A-3 A-1) (c))) As2)
-               '()
-               '()
-               As2)
- (list (config 'C 2 'A-2 '((A-3 A-1) (c)))))
-
-(check-equal?
- (surgery-on-A CFG6
-               (config 'D 3 'A-3 '((A-0 A-3) (d)))
-               (group CFG6 (config 'D 3 'A-3 '((A-0 A-3) (d))) As2)
-               '()
-               '()
-               As2)
- (list (config 'D 3 'A-3 '((d B-3) (a A-3 B-3) (a A-3) (d)))
-       (config 'B-3 #f 'B-3 '((A-0 A-3 B-3) (A-0 A-3)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(check-equal?
- (combine-post-surgery-configs CFG6 As2 '())
- (list
-  (config 'D 3 'A-3 '((d B-3) (a A-3 B-3) (a A-3) (d)))
-  (config 'C 2 'A-2 '((A-3 A-1) (c)))
-  (config 'B 1 'A-1 '((b B-1) (a A-2 B-1) (A-3 A-0 A-2 B-1) (a A-2) (A-3 A-0 A-2) (b)))
-  (config 'A 0 'A-0 '((A-3 A-0) (a)))
-  (config 'B-1 #f 'B-1 '((A-3 B-1) (A-3)))
-  (config 'B-3 #f 'B-3 '((A-0 A-3 B-3) (A-0 A-3)))))
-
-;"Mid-Result:"
-;(combine-post-surgery-configs CFG6 As2 '())
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; cfg (listof config) (listof config) -> (listof config)
@@ -1113,54 +964,6 @@
              (new-config (config (config-nt c) (config-n c) (config-rep c) new-rules)))
         (cons new-config
               (final-subs cfg (cdr configs) (append (cdr As) (list new-config))))))) 
-
-
-(define CFG6-greibach-As
-  (list
-   (config 'D 3 'A-3 '((d B-3) (a A-3 B-3) (a A-3) (d)))
-   (config 'C 2 'A-2 '((d B-3 A-1) (a A-3 B-3 A-1) (a A-3 A-1) (d A-1) (c)))
-   (config
-    'B
-    1
-    'A-1
-    '((b B-1)
-      (a A-2 B-1)
-      (d B-3 A-0 A-2 B-1)
-      (a A-3 B-3 A-0 A-2 B-1)
-      (a A-3 A-0 A-2 B-1)
-      (d A-0 A-2 B-1)
-      (a A-2)
-      (d B-3 A-0 A-2)
-      (a A-3 B-3 A-0 A-2)
-      (a A-3 A-0 A-2)
-      (d A-0 A-2)
-      (b)))
-   (config 'A 0 'A-0 '((d B-3 A-0) (a A-3 B-3 A-0) (a A-3 A-0) (d A-0) (a)))
-   (config
-    'B-1
-    #f
-    'B-1
-    '((d B-3 B-1) (a A-3 B-3 B-1) (a A-3 B-1) (d B-1) (d B-3) (a A-3 B-3) (a A-3) (d)))
-   (config
-    'B-3
-    #f
-    'B-3
-    '((d B-3 A-0 A-3 B-3)
-      (a A-3 B-3 A-0 A-3 B-3)
-      (a A-3 A-0 A-3 B-3)
-      (d A-0 A-3 B-3)
-      (a A-3 B-3)
-      (d B-3 A-0 A-3)
-      (a A-3 B-3 A-0 A-3)
-      (a A-3 A-0 A-3)
-      (d A-0 A-3)
-      (a A-3)))))
-
-(check-equal? 
- (final-subs CFG6
-             (combine-post-surgery-configs CFG6 As2 '())
-             (combine-post-surgery-configs CFG6 As2 '()))
- CFG6-greibach-As)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

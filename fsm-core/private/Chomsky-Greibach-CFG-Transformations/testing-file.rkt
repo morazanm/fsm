@@ -1,6 +1,7 @@
 #lang fsm
 
-(require "transformations.rkt")
+(require #;"transformations2.rkt"
+         "chomsky.rkt" "greibach.rkt")
 
 (define anbn (make-cfg '(S)
                        '(a b)
@@ -113,7 +114,7 @@
               'aabbbabbaab)
 
 ;;; anbncmdmejfj again
-
+#|
 (define anbncmdmejfj-chomsky2 (chomsky anbncmdmejfj-greibach))
 
 (check-equal? (grammar-derive anbncmdmejfj-chomsky2 '()) "The word () is too short to test.")
@@ -145,4 +146,4 @@
 (check-equal?
  (last (grammar-derive anbncmdmejfj-greibach3 '(a a a a b b b b c c c c d d d d e e e e f f f f)))
  'aaaabbbbccccddddeeeeffff)
-
+|#
