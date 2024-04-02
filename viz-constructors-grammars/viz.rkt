@@ -1449,7 +1449,7 @@
                                  (viz-state-pimgs a-vs)
                                  (viz-state-curr-image a-vs)
                                  (viz-state-image-posn a-vs)
-                                 DEFAULT-ZOOM
+                                 (viz-state-scale-factor a-vs)
                                  (viz-state-scale-factor-cap a-vs)
                                  (viz-state-scale-factor-floor a-vs)
                                  (viz-state-dest-mouse-posn a-vs)
@@ -1465,7 +1465,7 @@
                                  0
                                  )
                            ]
-        [(key=? "r" a-key) (if (and (< E-SCENE-WIDTH (image-width (viz-state-curr-image a-vs)))
+        [(key=? "r" a-key) (if (or (< E-SCENE-WIDTH (image-width (viz-state-curr-image a-vs)))
                                     (< E-SCENE-HEIGHT (image-height (viz-state-curr-image a-vs)))
                                     )
                                (let [
