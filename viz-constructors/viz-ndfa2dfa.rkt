@@ -304,7 +304,7 @@
                                                          'black)
                                               'shape 'doublecircle
                                               'style (cond [(empty? edge)
-                                                            'solid]
+                                                            'bold]
                                                            [(equal? state (third edge))
                                                             'bold]
                                                            [else 'solid])        
