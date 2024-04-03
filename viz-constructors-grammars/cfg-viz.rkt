@@ -386,9 +386,10 @@
 ;; symbol -> Boolean
 ;; Purpose: Determines if the first character within the symbol is a uppercase letter,
 ;; and hence a nonterminal
-(define (nonterminal? symb) (let [(ascii-val (char->integer (first (string->list (symbol->string symb)))))]
-                              (and (<= 65 ascii-val)
-                                   (>= 90 ascii-val))))
+(define (nonterminal? symb)
+  (let [(ascii-val (char->integer (first (string->list (symbol->string symb)))))]
+    (and (<= 65 ascii-val)
+         (>= 90 ascii-val))))
 
 
 ;; generate-levels-list-helper
