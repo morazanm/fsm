@@ -1,14 +1,11 @@
 #lang racket
 (require "../fsm-gviz/private/lib.rkt"
-         rackunit
          "../fsm-core/private/cfg.rkt"
          "../fsm-core/interface.rkt"
          "../fsm-core/private/constants.rkt"
          "../fsm-core/private/misc.rkt"
          "viz.rkt"
          )
-
-(define FNAME "fsm")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -44,6 +41,12 @@
 ;; p-rules - processed grammar rules
 (struct dgrph (up-levels ad-levels nodes hedges up-rules p-rules))
 
+
+;; nonterminal?
+;; symbol -> Boolean
+;; Purpose: Determines if the first character within the symbol is a uppercase letter,
+;; and hence a nonterminal
+(define (nonterminal? symb) (char-upper-case? (first (string->list (symbol->string symb)))))
 
 ;; find-leftmost-nt
 ;; (listof symbol) -> (U #f Symbol)
@@ -95,25 +98,6 @@
                                       " → "
                                       (string-join (map symbol->string (second (first w-der))))))
                  (create-rules-rightmost (rest w-der)))]))
-
-;; create-rules
-;; (listof symbol) -> (listof string)
-(define (create-rules w-der)
-  (cond [(empty? w-der)
-         '()]
-        [(= 1 (length w-der))
-         '()]
-        [(= 2 (length w-der))
-         (append (list (string-append (symbol->string (last (first w-der)))
-                                      " → "
-                                      (symbol->string (last (second w-der)))))
-                 (create-rules (rest w-der)))]
-        [else (append  (list (string-append (symbol->string (last (first w-der)))
-                                            " → "
-                                            (string-append (first (map symbol->string (take-right (second w-der) 2)))
-                                                           (second (map symbol->string (take-right (second w-der) 2))))))
-                       (create-rules (rest w-der)))]))
-
 
 ;; extract-nodes
 ;; (listof level) -> (listof node)
@@ -258,7 +242,6 @@
     (cond [(= n 0) '()]
           [else (cons (car w) (get-first-n-terms (cdr w) (- n 1)))]))
 
-
   ; (list (listof symbol)) --> boolean
   (define (check-terminals? st)
     (let* ((start-terms-st (get-starting-terminals st))
@@ -375,21 +358,15 @@
 ;; MutableHashTable Symbol -> Symbol
 ;; Purpose:  Returns a unique version of the symbol given (via the addition of
 ;; a previously unused number to the end of it)
-(define (rename-symb hashtable nt) (let [(result (hash-ref hashtable nt #f))] 
-                                     (if result
-                                         (begin (hash-set! hashtable nt (add1 result))
-                                                (string->symbol (format "~s~s" nt (add1 result))))
-                                         (begin (hash-set! hashtable nt 0)
-                                                (string->symbol (format "~s0" nt))))))
+(define (rename-symb hashtable nt)
+  (let [(result (hash-ref hashtable nt #f))] 
+    (if result
+        (begin (hash-set! hashtable nt (add1 result))
+               (string->symbol (format "~s~s" nt (add1 result))))
+        (begin (hash-set! hashtable nt 0)
+               (string->symbol (format "~s0" nt))))))
 
-;; nonterminal?
-;; symbol -> Boolean
-;; Purpose: Determines if the first character within the symbol is a uppercase letter,
-;; and hence a nonterminal
-(define (nonterminal? symb)
-  (let [(ascii-val (char->integer (first (string->list (symbol->string symb)))))]
-    (and (<= 65 ascii-val)
-         (>= 90 ascii-val))))
+
 
 
 ;; generate-levels-list-helper
@@ -440,6 +417,22 @@
               )))))
 
 
+;; yield is a strucutre that has
+;; pr - processed part of the word
+;; nt - nonterminal
+;; up - unprocessed part of the word
+;; derv-type - Symbol that is either 'level-left or 'level-right
+(struct yield (pr nt up derv-type))
+
+;; list any -> list
+;; Purpose: Returns the list up until and excluding the value given
+(define (take-until lst val)
+  (if (eq? (first lst) val)
+      '()
+      (cons (first lst) (take-until (rest lst) val))
+      )
+  )
+
 ;; generate-levels-list
 ;; (listof symbol) (listof (listof symbol)) (listof (listof symbol)) MutableHashTable (U 'left 'right 'level) ->
 ;; (listof (listof (listof symbol)))
@@ -448,7 +441,94 @@
   (cond [(eq? derv-type 'left)
          (generate-levels-list-helper current-state rules prev-states used-names find-leftmost-nt)]
         [(eq? derv-type 'right)
-         (generate-levels-list-helper current-state rules prev-states used-names find-rightmost-nt)]))
+         (generate-levels-list-helper current-state rules prev-states used-names find-rightmost-nt)]
+        )
+  )
+
+;; (listof symbol) -> symbol
+;; Purpose: Returns the leftmost nonterminal held within the list of symbols
+(define (get-leftmost-nt st)
+  (cond [(empty? st) #f]
+        [(nonterminal? (first st)) (first st)]
+        [else (get-leftmost-nt (cdr st))]
+        )
+  )
+
+;; (listof symbol) -> symbol
+;; Purpose: Returns the rightmost nonterminal held within the list of symbols
+(define (get-rightmost-nt st) (get-leftmost-nt (reverse st)))
+
+;; yield -> (listof symbol)
+;; Purpose: Returns the current state of the word being derived
+(define (get-current-state a-yield)
+  (if (eq? 'level-left (yield-derv-type a-yield))
+      (append (yield-pr a-yield) (yield-up a-yield))
+      (append (yield-up a-yield) (yield-pr a-yield))
+      )                             
+  )
+
+;; (listof symbol) (listof symbol) (listof (listof symbol)) mutable-hashtable ((listof symbol) -> symbol) symbol
+;; Purpose: Generates the levels used by graphviz to produce the images for the visualization
+(define (generate-levels-bfs-list-helper unprocessed-yield processed-yield rules used-names find-nt-func derv-type)
+  (if (empty? rules)
+      '()
+      (let [(current-nt (find-nt-func unprocessed-yield))]
+        (if (false? current-nt)
+            (generate-levels-bfs-list-helper processed-yield '() rules used-names find-nt-func derv-type)
+            (local [(define renamed-states (map (lambda (st) (rename-symb used-names st)) (first rules)))
+                    (define (new-level start) (map (lambda (st) (list start st))
+                                                   renamed-states))
+                    ]
+              (cons (new-level current-nt)
+                    (generate-levels-bfs-list-helper
+                     (if (eq? derv-type 'level-left)
+                         (rest (member current-nt unprocessed-yield))
+                         (take-until unprocessed-yield current-nt)
+                         )
+                     (if (eq? derv-type 'level-left)
+                         (append (if (list? processed-yield)
+                                     processed-yield
+                                     (list processed-yield)
+                                     )
+                                 (if (list? renamed-states)
+                                     renamed-states
+                                     (list renamed-states)
+                                     )
+                                 )
+                         (append (if (list? renamed-states)
+                                     renamed-states
+                                     (list renamed-states)
+                                     )
+                                 (if (list? processed-yield)
+                                     processed-yield
+                                     (list processed-yield)
+                                     )
+                                 )
+                         )
+                     (rest rules)
+                     used-names
+                     find-nt-func
+                     derv-type
+                     )
+                    )
+                     
+              )
+            )
+        )
+      )
+  )
+
+;; (listof symbol) (listof symbol) (listof (listof symbol)) mutable-hashtable symbol
+;; Purpose: Generates the levels used by graphviz to produce the images for the visualization
+(define (generate-levels-bfs-list unprocessed-yield processed-yield rules used-names derv-type)
+  (cond [(eq? derv-type 'level-left)
+         (generate-levels-bfs-list-helper unprocessed-yield processed-yield rules used-names get-leftmost-nt derv-type)
+         ]
+        [(eq? derv-type 'level-right)
+         (generate-levels-bfs-list-helper unprocessed-yield processed-yield rules used-names get-rightmost-nt derv-type)
+         ]
+        )
+  )
 
 ;; w-der -> (listof rules)
 ;; Purpose: This is just taking the list received from the new w-der and new cfg-derive and moving the rules like such:
@@ -471,28 +551,300 @@
 ;; Separates the list of rules from their respective states in the list generated by w-der
 ;; derivation-with-rules -> derivation
 (define (list-of-rules lst) (map (lambda (x) (second x)) lst))
+
+;; (listof symbol) (listof yield) -> w-der
+;; Purpose: Converts a yield derivation into the form of a word derivation that the viz expects
+(define (convert-yield-deriv-to-word-deriv input-word yield-deriv)
+  (remove-duplicates (map (lambda (x) (get-current-state (first x))) yield-deriv))
+  )
+
+;; (listof yield) -> (listof symbol)
+;; Purpose: Creates a list of rules for a leftmost bfs derivation that are used in the visualization
+(define (create-rules-levels-leftmost yield-deriv)
+  (cond [(empty? yield-deriv)
+         '()]
+        [(= 1 (length yield-deriv))
+         '()]
+        [(not (empty? (yield-up (first (first yield-deriv)))))
+         (append (list (string-append (symbol->string (get-leftmost-nt (yield-up (first (first yield-deriv)))))
+                                      " → "
+                                      (string-join (map symbol->string (second (first yield-deriv))))))
+                 (create-rules-levels-leftmost (rest yield-deriv)))
+         ]
+        [(empty? (yield-up (first (first yield-deriv))))
+         (create-rules-levels-leftmost (rest yield-deriv))
+         ]
+        )
+  )
+
+;; (listof yield) -> (listof symbol)
+;; Purpose: Creates a list of rules for a rightmost bfs derivation that are used in the visualization
+(define (create-rules-levels-rightmost yield-deriv)
+  (cond [(empty? yield-deriv)
+         '()]
+        [(= 1 (length yield-deriv))
+         '()]
+        [(not (empty? (yield-up (first (first yield-deriv)))))
+         (append (list (string-append (symbol->string (get-rightmost-nt (yield-up (first (first yield-deriv)))))
+                                      " → "
+                                      (string-join (map symbol->string (second (first yield-deriv))))))
+                 (create-rules-levels-rightmost (rest yield-deriv)))
+         ]
+        [(empty? (yield-up (first (first yield-deriv))))
+         (create-rules-levels-rightmost (rest yield-deriv))
+         ]
+        )
+  )
+
+;; cfg (listof symbol) symbol -> (listof yield)
+;; Purpose: Computes the derivation of the given word using the cfg in a direction given by derv-type
+;; either a leftmost or rightmost
+(define (cfg-derive-levels g w derv-type)
+
+  ;; (listof symbol) -> Symbol
+  ;; Purpose: Returns leftmost nonterminal
+  (define (get-first-nt st)
+    (cond [(empty? st) #f]
+          [(nonterminal? (first st)) (first st)]
+          [else (get-first-nt (cdr st))]
+          )
+    )
+  
+  ;; (listof symbol) -> symbol
+  ;; Purpose: Returns rightmost nonterminal
+  (define (get-last-nt st) (get-first-nt (reverse st)))
+  
+  ; (listof (listof symbol)) --> (listof symbol)
+  (define (get-starting-terminals st)
+    (cond 
+      [(not (member (car st) (cfg-get-alphabet g))) '()]
+      [else (cons (car st) (get-starting-terminals (cdr st)))]))
+
+  ; (listof (listof symbol)) natnum --> (listof symbol)
+  (define (get-first-n-terms w n)
+    (cond [(= n 0) '()]
+          [else (cons (car w) (get-first-n-terms (cdr w) (- n 1)))]))
+  
+  ; (list (listof symbol)) --> boolean
+  (define (check-terminals? st)
+    (let* ((start-terms-st (get-starting-terminals st))
+           (start-terms-w (if (> (length start-terms-st) (length w))
+                              #f
+                              (get-first-n-terms w (length start-terms-st)))))
+      (cond [(false? start-terms-w) #f]
+            [else (equal? start-terms-st start-terms-w)])))
+
+  ;; symbol CFG -> (Listof CFG-rule)
+  ; A CFG-rule is a structure, (CFG-rule L R), where L is a symbol (non-terminal) and R
+  ; is a (listof symbol).
+  (define (get-rules nt g)
+    (filter (lambda (r) (eq? nt (cfg-rule-lhs r))) 
+            (cfg-get-the-rules g)))
+
+  ; ASSUMPTION: yield has at least one NT in unprocessed field
+  ;; (listof symbol) (listof symbol) (listof symbol) -> yield
+  ;; Purpose: Replaces the leftmost nonterminal within the unprocessed field of a yield
+  ;; with a righthand side of a rule
+  (define (subst-first-nt new-up new-p rght)
+    (if (not (member (first new-up) (cfg-get-alphabet g)))
+        (if (eq? (first rght) EMP)
+            (yield new-p '() (rest new-up) 'level-left)
+            (yield (append (if (list? new-p)
+                               new-p
+                               (list new-p)
+                               )
+                           rght) '() (rest new-up) 'level-left)
+            )
+        (subst-first-nt (rest new-up) (append (if (list? new-p)
+                                                  new-p
+                                                  (list new-p)
+                                                  )
+                                              (if (list? (first new-up))
+                                                  (first new-up)
+                                                  (list (first new-up))
+                                                  )
+                                              ) rght)
+        )
+    )
+
+  ; ASSUMPTION: yield has at least one NT in unprocessed field
+  ;; (listof symbol) (listof symbol) (listof symbol) -> yield
+  ;; Purpose: Replaces the rightmost nonterminal within the unprocessed field of a yield
+  ;; with a righthand side of a rule
+  (define (subst-last-nt new-up new-p rght)
+    (define (subst-last-nt-helper new-up new-p rght)
+      (if (not (member (first new-up) (cfg-get-alphabet g)))
+          (if (eq? (first rght) EMP)
+              (yield (reverse (if (list? new-p)
+                                  new-p
+                                  (list new-p)
+                                  )
+                              )
+                     '()
+                     (reverse (rest new-up))
+                     'level-right)
+              (yield (reverse (append (if (list? new-p)
+                                          new-p
+                                          (list new-p)
+                                          ) rght)) '() (reverse (rest new-up)) 'level-right)
+              )
+          (subst-last-nt-helper (rest new-up) (append (if (list? new-p)
+                                                          new-p
+                                                          (list new-p)
+                                                          )
+                                                      (if (list? (first new-up))
+                                                          (first new-up)
+                                                          (list (first new-up))
+                                                          )
+                                                      ) rght)
+          )
+      )
+    (subst-last-nt-helper (reverse new-up)
+                          (reverse new-p)
+                          (reverse rght)
+                          )
+    )
+
+  ;; (listof symbol) -> boolean
+  ;; Purpose: Checks to see if there are any nonterminals within the given state
+  (define (any-nt? state) (ormap (lambda (x) (not (member x (cfg-get-alphabet g)))) state))
+
+  (define (make-deriv visited derivs g chomsky)
+    ;; (Listof Symbol) (Listof Symbol) -> Natural
+    (define (count-terminals st sigma)
+      (length (filter (lambda (a) (member a sigma)) st)))
+    
+    (cond [(empty? derivs) (format "~s is not in L(G)." w)]
+          [(or (and chomsky
+                    (> (length (get-current-state (first (first (first derivs))))) (+ 2 (length w))))
+               (> (count-terminals (get-current-state (first (first (first derivs)))) (cfg-get-alphabet g)) (length w)))
+           (make-deriv visited (rest derivs) g chomsky)]
+          [else
+           (let* [(current-deriv (first derivs))
+                  (current-yield-and-rule (first current-deriv))
+                  (current-yield (first current-yield-and-rule))
+                  (state (get-current-state current-yield))
+                  (current-nt (if (eq? derv-type 'level-left)
+                                  (get-first-nt (yield-up current-yield))
+                                  (get-last-nt (yield-up current-yield))
+                                  )
+                              )
+                  ]
+             (if (false? current-nt)
+                 (if (equal? w state)
+                     (reverse (cons (list (yield state '() '() (yield-derv-type current-yield)) (second current-yield-and-rule)) (rest current-deriv)))
+                     (if (any-nt? state)
+                         (make-deriv visited (append (rest derivs)
+                                                     (list (cons (list (yield '() '() state (yield-derv-type current-yield))
+                                                                       (second current-yield-and-rule)
+                                                                       )
+                                                                 current-deriv)
+                                                           )
+                                                     )
+                                     g
+                                     chomsky)
+                         (make-deriv visited (rest derivs) g chomsky)
+                         )
+                     )
+                 (let* [(rls (get-rules current-nt g))
+                        (rights (map cfg-rule-rhs rls))
+                        (new-yields (filter (lambda (st) (and (not (member st visited))
+                                                              (check-terminals? state)))
+                                            (map (lambda (rght) (list (if (eq? derv-type 'level-left)
+                                                                          (subst-first-nt (yield-up current-yield) (yield-pr current-yield) rght)
+                                                                          (subst-last-nt (yield-up current-yield) (yield-pr current-yield) rght)
+                                                                          )
+                                                                      rght)) rights)))
+                        ]
+                   (make-deriv (append new-yields visited)
+                               (append (rest derivs) 
+                                       (map (lambda (yd) (cons yd current-deriv)) 
+                                            new-yields))
+                               g
+                               chomsky)
+                   )
+                 )
+             )
+           ]
+          )
+    )
+  (if (< (length w) 2)
+      (format "The word ~s is too short to test." w)
+      (let* ( ;; derive using g ONLY IF derivation found with g in CNF
+             (ng (convert-to-cnf g))
+             (ng-derivation (make-deriv (list (list (yield '() '() (list (cfg-get-start ng)) derv-type) '() )) 
+                                        (list (list (list (yield '() '() (list (cfg-get-start ng)) derv-type) '() )))
+                                        ng
+                                        true)))
+        (if (string? ng-derivation)
+            ng-derivation
+            (make-deriv (list (list (yield '() '() (list (cfg-get-start g)) derv-type) '() ))
+                        (list (list (list (yield '() '() (list (cfg-get-start g)) derv-type) '() )))
+                        g
+                        false))))
+  )
          
 ;; cfg-viz
 (define (cfg-viz cfg word derv-type)
-  (let [(derivation (cfg-derive-with-rule-application cfg word derv-type))]
-    (if (string? derivation)
-        derivation
-        (let* [(der-with-rules (w-der-with-rules derivation))
-               (rules (cons "" (cond [(eq? derv-type 'left)
-                                      (create-rules-leftmost (move-rule-applications-in-list der-with-rules))
-                                      ]
-                                     [(eq? derv-type 'right)
-                                      (create-rules-rightmost (move-rule-applications-in-list der-with-rules))])))
-               (w-der (list-of-states der-with-rules))
-               (renamed (generate-levels-list (first (first (first der-with-rules)))
-                                              (list-of-rules (move-rule-applications-in-list der-with-rules))
-                                              '()
-                                              (make-hash)
-                                              derv-type))
-               (dgraph (dgrph renamed '() '() '() (rest rules) (list (first rules))))
-               (lod (reverse (create-dgrphs dgraph '())))
-               (graphs (map create-graph-structs lod))]
-          (run-viz cfg word w-der rules graphs)))))
+  (if (or (eq? derv-type 'left)
+          (eq? derv-type 'right)
+          )
+      (let [(derivation (cfg-derive-with-rule-application cfg word derv-type))]
+        (if (string? derivation)
+            derivation
+            (let* [(der-with-rules (w-der-with-rules derivation))
+                   (rules (cons "" (cond [(eq? derv-type 'left)
+                                          (create-rules-leftmost (move-rule-applications-in-list der-with-rules))
+                                          ]
+                                         [(eq? derv-type 'right)
+                                          (create-rules-rightmost (move-rule-applications-in-list der-with-rules))])))
+                   (w-der (list-of-states der-with-rules))
+                   (renamed (generate-levels-list (first (first (first der-with-rules)))
+                                                  (list-of-rules (move-rule-applications-in-list der-with-rules))
+                                                  '()
+                                                  (make-hash)
+                                                  derv-type)
+                            )
+                   (dgraph (dgrph renamed '() '() '() (rest rules) (list (first rules))))
+                   (lod (reverse (create-dgrphs dgraph '())))
+                   (graphs (map create-graph-structs lod))]
+              (run-viz cfg word w-der rules graphs))))
+      (let [(derivation (cfg-derive-levels cfg word derv-type))]
+        (if (string? derivation)
+            derivation
+            (let* [(rules (cons "" (cond [(eq? derv-type 'level-left)
+                                          (create-rules-levels-leftmost (move-rule-applications-in-list derivation))
+                                          ]
+                                         [(eq? derv-type 'level-right)
+                                          (create-rules-levels-rightmost (move-rule-applications-in-list derivation))
+                                          ]
+                                         )
+                                )
+                          )
+                   (w-der (convert-yield-deriv-to-word-deriv word derivation))
+                   (renamed (generate-levels-bfs-list '(S)
+                                                      '()
+                                                      (rest (map (lambda (x) (second x))
+                                                                 (append (filter (lambda (x) (not (empty? (yield-up (first x)))))
+                                                                                 derivation)
+                                                                         (list (last derivation))
+                                                                         )
+                                                                 )
+                                                            )
+                                                      (make-hash)
+                                                      derv-type
+                                                      )
+                            )
+                   (dgraph (dgrph renamed '() '() '() (rest rules) (list (first rules))))
+                   (lod (reverse (create-dgrphs dgraph '())))
+                   (graphs (map create-graph-structs lod))
+                   ]
+              (run-viz cfg word w-der rules graphs)
+              )
+            )
+        )
+      )
+  )
 
 (define numb>numa (make-cfg '(S A)
                             '(a b)
@@ -504,3 +856,4 @@
                               (A ,ARROW bA))
                             'S))
 
+(cfg-viz numb>numa '(a b b) 'level-right)
