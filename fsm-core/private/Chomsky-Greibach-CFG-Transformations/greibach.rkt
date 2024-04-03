@@ -131,8 +131,8 @@
   ;; symbol (listof rule) -> (listof config)
   ;; Purpose: Introduce new configs 
   (define (introduce-new-configs A-to-sub rest-rules)
-    (let* ((new-nt (string->symbol (string-append "B-" (number->string (config-n (get-config A-to-sub As))))) #;A-to-sub)
-           (new-n #f #;(config-n (get-config A-to-sub As)))
+    (let* ((new-nt (string->symbol (string-append "B-" (number->string (config-n (get-config A-to-sub As))))))
+           (new-n #f)
            (new-rep (string->symbol (string-append "B-" (number->string (config-n (get-config A-to-sub As))))))
            (new-rules (cons (append rest-rules (list new-rep))
                             (list rest-rules))))
@@ -141,10 +141,7 @@
   (if (empty? rules)
       (cons (config (config-nt A) (config-n A) (config-rep A) (remove-duplicates new-rules)) new-A)
       (let* ((first-rhs (car (car rules)))
-             (i (config-n A))
-             #;(j (if (nts? cfg first-rhs)
-                    (config-n (get-config first-rhs As))
-                    #f)))
+             (i (config-n A)))
         (cond ((or (terminal? cfg first-rhs)
                    (equal? EMP first-rhs)
                    (< i

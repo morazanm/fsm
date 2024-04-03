@@ -1,6 +1,6 @@
 #lang racket
 (require "../../interface.rkt")
-(provide chomsky)
+(provide chomsky rm-empties)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Chomsky Normal Form
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -157,23 +157,24 @@
                 (filter (lambda (x) (not (empty? x)))
                         (make-combs-rhs (list (symbol->fsmlos (caddr rule))) (emp-nts (grammar-rules cfg)) '())))))      
       (map (lambda (x) (list (car rule) '-> (list->symbol x))) rhs)))
-  
-  (let* ((empties (emp-nts (grammar-rules cfg)))
-         (new-rules (if (contains? (grammar-start cfg) empties)
-                        (cons '(S-0 -> ε) (cons `(S-0 -> ,(grammar-start cfg))
-                                                (filter (lambda (x) (not (eq? EMP (caddr x))))
-                                                        (append-map (lambda (x) (all-combinations x)) (grammar-rules cfg)))))
-                        (filter (lambda (x) (not (eq? EMP (caddr x))))
-                                (append-map (lambda (x) (all-combinations x)) (grammar-rules cfg)))))
-         (new-nts (remove-duplicates (append (map (lambda (x) (car x)) new-rules)
-                                             (filter nts? (append-map symbol->fsmlos (map (lambda (x) (caddr x))
-                                                                                          (grammar-rules cfg)))))))
-         (new-start (if (contains? (grammar-start cfg) empties)
-                        'S-0
-                        (grammar-start cfg))))   
-    (if (empty? (emp-nts (grammar-rules cfg)))
-        cfg    
-        (make-cfg new-nts
+
+  (if (empty? (emp-nts (grammar-rules cfg)))
+             cfg
+      (let* ((empties (emp-nts (grammar-rules cfg)))
+             (new-start (generate-symbol 'S (grammar-nts cfg)))
+             (new-rules (if (contains? (grammar-start cfg) empties)
+                            (cons `(,new-start -> ε) (cons `(,new-start -> ,(grammar-start cfg))
+                                                    (filter (lambda (x) (not (eq? EMP (caddr x))))
+                                                            (append-map (lambda (x) (all-combinations x)) (grammar-rules cfg)))))
+                            (filter (lambda (x) (not (eq? EMP (caddr x))))
+                                    (append-map (lambda (x) (all-combinations x)) (grammar-rules cfg)))))
+             (new-nts (remove-duplicates (append (map (lambda (x) (car x)) new-rules)
+                                                 (filter nts? (append-map symbol->fsmlos (map (lambda (x) (caddr x))
+                                                                                              (grammar-rules cfg)))))))
+             (new-start (if (contains? (grammar-start cfg) empties)
+                            new-start
+                            (grammar-start cfg))))   
+               (make-cfg new-nts
                   (grammar-sigma cfg)
                   new-rules
                   new-start))))
@@ -233,21 +234,21 @@
   (define (rm-ketten-helper rules)
     (if (no-more-ketten? rules)
         rules
-        (rm-ketten-helper (make-rules rules))))
+        (rm-ketten-helper (make-rules (remove-duplicates rules)))))
   ;; Termination argument:
   ;;  Function removes all Ketten recursively until there are
   ;;  no more. Then, halts.
-  
-  (let* ((new-rules (remove-duplicates (rm-ketten-helper (grammar-rules cfg))))
-         (new-nts (remove-duplicates (append (map (lambda (x) (car x)) new-rules)
-                                             (filter nts? (append-map symbol->fsmlos (map (lambda (x) (caddr x))
-                                                                                          (grammar-rules cfg))))))))
-    (if (no-more-ketten? (grammar-rules cfg))
-        cfg
-        (make-cfg new-nts
-                  (grammar-sigma cfg)
-                  new-rules
-                  (grammar-start cfg)))))  
+
+  (if (no-more-ketten? (grammar-rules cfg))
+             cfg
+      (let* ((new-rules (remove-duplicates (rm-ketten-helper (grammar-rules cfg))))
+             (new-nts (remove-duplicates (append (map (lambda (x) (car x)) new-rules)
+                                                 (filter nts? (append-map symbol->fsmlos (map (lambda (x) (caddr x))
+                                                                                              (grammar-rules cfg))))))))
+               (make-cfg new-nts
+                         (grammar-sigma cfg)
+                         new-rules
+                  (grammar-start cfg))))) 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Chomsky
