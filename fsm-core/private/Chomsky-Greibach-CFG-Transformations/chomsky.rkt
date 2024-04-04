@@ -162,12 +162,13 @@
              cfg
       (let* ((empties (emp-nts (grammar-rules cfg)))
              (new-start (generate-symbol 'S (grammar-nts cfg)))
-             (new-rules (if (contains? (grammar-start cfg) empties)
+             (new-rules (remove-duplicates
+                         (if (contains? (grammar-start cfg) empties)
                             (cons `(,new-start -> ε) (cons `(,new-start -> ,(grammar-start cfg))
                                                     (filter (lambda (x) (not (eq? EMP (caddr x))))
                                                             (append-map (lambda (x) (all-combinations x)) (grammar-rules cfg)))))
                             (filter (lambda (x) (not (eq? EMP (caddr x))))
-                                    (append-map (lambda (x) (all-combinations x)) (grammar-rules cfg)))))
+                                    (append-map (lambda (x) (all-combinations x)) (grammar-rules cfg))))))
              (new-nts (remove-duplicates (append (map (lambda (x) (car x)) new-rules)
                                                  (filter nts? (append-map symbol->fsmlos (map (lambda (x) (caddr x))
                                                                                               (grammar-rules cfg)))))))
@@ -408,7 +409,6 @@
                   (grammar-start new-cfg)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 
 
 
