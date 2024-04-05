@@ -152,11 +152,11 @@
                                                 new-states))
                                    g
                                    chomsky))))]))
-    (if (< (length w) 2)
-        (format "The word ~s is too short to test." w)
+    ;(if (< (length w) 2)
+        ;(format "The word ~s is too short to test." w)
         (make-deriv (list (list (cfg-get-start g))) 
                     (list (list (list (cfg-get-start g))))
-                    g)))
+                    g)) ;)
   
   ;; Old version using Chomsky normal form
   #;(define (cfg-derive g w)

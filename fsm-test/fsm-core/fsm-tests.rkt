@@ -668,7 +668,7 @@
                               'S))
 
   (check-equal? (grammar-derive numb>numa '())  
-                "The word () is too short to test.")
+                "() is not in L(G).")
 
   (check-equal? (last (grammar-derive numb>numa '(a b b a b)))
                 (los->symbol '(a b b a b)))
@@ -697,7 +697,7 @@
   (check-equal? (last (grammar-derive cfg-1B-before-anA '(a b a b))) (los->symbol '(a b a b)))
   (check-equal? (grammar-derive cfg-1B-before-anA '(b b b)) "(b b b) is not in L(G).")
   (check-equal? (last (grammar-derive cfg-1B-before-anA '(b b b a))) (los->symbol '(b b b a)))
-  (check-equal? (grammar-derive cfg-1B-before-anA '()) "The word () is too short to test.")
+  (check-equal? (grammar-derive cfg-1B-before-anA '()) "() is not in L(G).")
 
   ;{w| w contains at least three a's}
   (define cfg-test1 (make-cfg '(S X)
@@ -707,7 +707,7 @@
                                 (X -> aX)
                                 (X -> ,EMP))
                               'S))
-  (check-equal? (grammar-derive cfg-test1 '()) "The word () is too short to test.")
+  (check-equal? (grammar-derive cfg-test1 '()) "() is not in L(G).")
   (check-equal? (grammar-derive cfg-test1 '(b b b a b a b)) "(b b b a b a b) is not in L(G).")
   (check-equal? (last (grammar-derive cfg-test1 '(a a a))) (los->symbol '(a a a)))
   (check-equal? (last (grammar-derive cfg-test1 '(b b b a b a b a))) (los->symbol '(b b b a b a b a)))
@@ -737,12 +737,12 @@
                                 (P -> bS))
                               'S))
 
-  (check-equal? (grammar-derive cfg-test3 '()) "The word () is too short to test.")
+  (check-equal? (grammar-derive cfg-test3 '()) "() is not in L(G).")
   (check-equal? (grammar-derive cfg-test3 '(a b)) "(a b) is not in L(G).")
   (check-equal? (last (grammar-derive cfg-test3 '(a b a))) (los->symbol '(a b a)))
   (check-equal? (last (grammar-derive cfg-test3 '(a b a b a))) (los->symbol '(a b a b a)))
-  (check-equal? (grammar-derive cfg-test3 '(a)) "The word (a) is too short to test.")
-  (check-equal? (grammar-derive cfg-test3 '(b)) "The word (b) is too short to test.")
+  (check-equal? (grammar-derive cfg-test3 '(a)) '(S -> aP -> a))
+  (check-equal? (grammar-derive cfg-test3 '(b)) '(S -> bP -> b))
 
   ;{w| the length of w is odd and its middle symbol is an "a"}
   (define cfg-test4 (make-cfg '(S)
@@ -753,11 +753,11 @@
                                 (S -> bSa)
                                 (S -> bSb))
                               'S))
-  (check-equal? (grammar-derive cfg-test4 '(a)) "The word (a) is too short to test.")
+  (check-equal? (grammar-derive cfg-test4 '(a)) '(S -> a))
   (check-equal? (last (grammar-derive cfg-test4 '(b a b))) (los->symbol '(b a b)))
   (check-equal? (last (grammar-derive cfg-test4 '(b b a a a))) (los->symbol '(b b a a a)))
   (check-equal? (grammar-derive cfg-test4 '(b b b a a a)) "(b b b a a a) is not in L(G)." )
-  (check-equal? (grammar-derive cfg-test4 '()) "The word () is too short to test.")
+  (check-equal? (grammar-derive cfg-test4 '()) "() is not in L(G).")
   ;{w| w = w reverse, that is, w is a plindrome} 
   (define cfg-test5 (make-cfg '(S)
                               '(a b)
@@ -768,9 +768,12 @@
                                 (S -> aSa))
                               'S))
 
-  (check-equal? (grammar-derive cfg-test5 '()) "The word () is too short to test.")
-  (check-equal? (grammar-derive cfg-test5 '(a)) "The word (a) is too short to test.")
-  (check-equal? (grammar-derive cfg-test5 '(b)) "The word (b) is too short to test.")
+  (check-equal? (grammar-derive cfg-test5 '())
+                '(S -> ε))
+  (check-equal? (grammar-derive cfg-test5 '(a))
+                '(S -> a))
+  (check-equal? (grammar-derive cfg-test5 '(b))
+                '(S -> b))
   (check-equal? (last (grammar-derive cfg-test5 '(a b a))) (los->symbol '(a b a)))
   (check-equal? (last (grammar-derive cfg-test5 '(b a b))) (los->symbol '(b a b)))
   (check-equal? (last (grammar-derive cfg-test5 '(a a b b a a))) (los->symbol '(a a b b a a)))
