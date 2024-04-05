@@ -648,29 +648,43 @@
                                          (T -> ,EMP))
                                        'S))
 
-  ;(check-equal? (last (grammar-derive cfg-moreAs-than-Bs '(a b b a a)))
-  ;              (los->symbol '(a b b a a)))
-  ;(check-equal? (last (grammar-derive cfg-moreAs-than-Bs '(a b b b a a a a)))
-  ;              (los->symbol '(a b b b a a a a)))
+  (check-equal? (last (grammar-derive cfg-moreAs-than-Bs '(a b b a a)))
+                (los->symbol '(a b b a a)))
+  (check-equal? (last (grammar-derive cfg-moreAs-than-Bs '(a b b b a a a a)))
+                (los->symbol '(a b b b a a a a)))
   ;(check-equal? (grammar-derive cfg-moreAs-than-Bs '(a b b a)) 
   ;              "(a b b a) is not in L(G)") ;!!!!Runs forever? 
   ;(check-equal? (grammar-derive cfg-moreAs-than-Bs '(a b b b)) 
-  ;              "(a b b b) is not in L(G)") ;!!!!! Runs forever? 
+  ;              "(a b b b) is not in L(G)") ;!!!!! Runs forever?
 
-  (define cfg-moreBs-than-As (make-cfg '(S P)
-                                       '(a b)
-                                       `((S -> PbP)
-                                         (P -> aPb)
-                                         (P -> bPa)
-                                         (P -> PP)
-                                         (P -> b)
-                                         (P -> ,EMP))
-                                       'S))
-  ;(check-equal? (last (grammar-derive cfg-moreBs-than-As '(a b b a b))) (los->symbol '(a b b a b)))
-  ;(check-equal? (grammar-derive cfg-moreBs-than-As '(a b b a b a)) 
-  ;              "(a b b a b a) is not in L(G)") ;runs forever? ! !!!!
-  ;(check-equal? (grammar-derive cfg-moreBs-than-As '())  
-  ;              "The word () is too short to test.") ;runs forever? ! !!!!
+  (define numb>numa (make-cfg '(S A)
+                              '(a b)
+                              `((S ,ARROW b)
+                                (S ,ARROW AbA)
+                                (A ,ARROW AaAbA)
+                                (A ,ARROW AbAaA)
+                                (A ,ARROW ,EMP)
+                                (A ,ARROW bA))
+                              'S))
+
+  (check-equal? (grammar-derive numb>numa '())  
+                "The word () is too short to test.")
+
+  (check-equal? (last (grammar-derive numb>numa '(a b b a b)))
+                (los->symbol '(a b b a b)))
+
+  (check-equal? (last (grammar-derive numb>numa '(a b b a a b b a b b b b b a a a)))
+                (los->symbol '(a b b a a b b a b b b b b a a a)))
+
+  (check-equal? (last (grammar-derive numb>numa '(a b b a a b b b b b b)))
+                (los->symbol '(a b b a a b b b b b b)))
+
+  (check-equal? (last (grammar-derive numb>numa '(a b b a a b b a b b b)))
+                (los->symbol '(a b b a a b b a b b b)))
+
+  #;(check-equal? (grammar-derive cfg-moreBs-than-As '(a b b a b a)) 
+                  "(a b b a b a) is not in L(G)") ;runs forever
+   
 
   (define cfg-1B-before-anA (make-cfg '(S A)
                                       '(a b)
@@ -810,9 +824,9 @@
   (define CSG-an-bn-an-bn-cn (grammar-concat CSG-an-bn CSG-an-bn-cn))
 
   (check-equal? (last (grammar-derive CSG-an-bn-an-bn-cn '())) 
-                  EMP)
+                EMP)
   (check-equal? (last (grammar-derive CSG-an-bn-an-bn-cn '(a a b b a b c)))
-                  'aabbabc)
+                'aabbabc)
 
   ;NOTE WE DONT CHECK FOR NOT IN THE GRAMMAR BCZ IT MAY NEVER END
   (define RENAME-CSG-an-bn-cn (grammar-rename-nts (grammar-nts CSG-an-bn-cn) 

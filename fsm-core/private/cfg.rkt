@@ -46,9 +46,120 @@
   ; (listof symbol) (listof symbol) (listof (list symbol '-> symbol)) symbol --> cfg
   (define (make-cfg V sigma R S)
     (cfg V sigma (parse-cfg-rules R) S))
-  
+
   ; cfg word --> (listof symbol) or string
   (define (cfg-derive g w)
+    
+    (define (get-first-nt st)
+      (cond [(empty? st) #f]
+            [(not (member (car st) (cfg-get-alphabet g))) (car st)]
+            [else (get-first-nt (cdr st))]))
+    
+    (define (get-rules nt g) (filter (lambda (r) (eq? nt (cfg-rule-lhs r))) 
+                                     (cfg-get-the-rules g)))
+    
+    ; ASSUMPTION: state has at least one NT
+    (define (subst-first-nt state rght)
+      (cond [(not (member (car state) (cfg-get-alphabet g)))
+             (if (eq? (car rght) EMP) (cdr state) (append rght (cdr state)))]
+            [else (cons (car state) (subst-first-nt (cdr state) rght))]))
+    
+    ; (listof (listof symbol)) --> (listof symbol)
+    (define (get-starting-terminals st)
+      (cond 
+        [(not (member (car st) (cfg-get-alphabet g))) '()]
+        [else (cons (car st) (get-starting-terminals (cdr st)))]))
+    
+    ; (listof (listof symbol)) natnum --> (listof symbol)
+    (define (get-first-n-terms w n)
+      (cond [(= n 0) '()]
+            [else (cons (car w) (get-first-n-terms (cdr w) (- n 1)))]))
+    
+    
+    ; (list (listof symbol)) --> boolean
+    (define (check-terminals? st)
+      (let* ((start-terms-st (get-starting-terminals st))
+             (start-terms-w (if (> (length start-terms-st) (length w))
+                                #f
+                                (get-first-n-terms w (length start-terms-st)))))
+        (cond [(false? start-terms-w) #f]
+              [else (equal? start-terms-st start-terms-w)])))
+    
+ 
+    
+    (define (make-deriv visited derivs g)
+      
+      (define (count-terminals st sigma)
+        (length (filter (lambda (a) (member a sigma)) st)))
+      
+      (if (empty? derivs)
+          (format "~s is not in L(G)." w)
+          (let* [(first-deriv (car derivs))
+                 (yield-first-deriv (car first-deriv))
+                 #;(ddd (displayln (format "length first yield: ~s  chomsky: ~s\n" (length yield-first-deriv) chomsky))) ]
+            (if (> (count-terminals yield-first-deriv (cfg-get-alphabet g)) (length w))
+                (make-deriv visited (cdr derivs) g)
+                (let* [(fnt (get-first-nt yield-first-deriv))]
+                  (if (false? fnt)
+                      (if (equal? w yield-first-deriv)
+                          (append-map (lambda (l) (if (equal? w l) 
+                                                      (if (null? l) (list EMP) (list (los->symbol l))) 
+                                                      (list (los->symbol l) ARROW))) 
+                                      (reverse first-deriv))
+                          (make-deriv visited (cdr derivs) g))
+                      (let*
+                          ((rls (get-rules fnt g))
+                           (rights (map cfg-rule-rhs rls))
+                           (new-yields (filter (lambda (yield) (and (not (member yield visited))
+                                                                    (check-terminals? yield-first-deriv))) 
+                                               (map (lambda (rght)
+                                                      (subst-first-nt yield-first-deriv rght))
+                                                    rights))))
+                        (if (ormap (λ (yield) (equal? yield w)) new-yields)
+                            (make-deriv '() (list (cons w first-deriv)) g)
+                            (make-deriv (append new-yields visited)
+                                        (append (cdr derivs) 
+                                                (map (lambda (yield) (cons yield first-deriv)) 
+                                                     new-yields))
+                                        g))))))))
+      
+ 
+      #;(cond [(empty? derivs) (format "~s is not in L(G)." w)]
+              [(or (and chomsky (> (length (caar derivs)) (+ 2 (length w))))
+                   (> (count-terminals (caar derivs) (cfg-get-alphabet g)) (length w)))
+               (make-deriv visited (cdr derivs) g chomsky)]
+              [else 
+               (let* ((fderiv (car derivs))
+                      (state (car fderiv))
+                      (fnt (get-first-nt state))
+                      )
+                 (if (false? fnt)
+                     (if (equal? w state)
+                         (append-map (lambda (l) (if (equal? w l) 
+                                                     (if (null? l) (list EMP) (list (los->symbol l))) 
+                                                     (list (los->symbol l) ARROW))) 
+                                     (reverse fderiv))
+                         (make-deriv visited (cdr derivs) g chomsky))
+                     (let*
+                         ((rls (get-rules fnt g))
+                          (rights (map cfg-rule-rhs rls))
+                          (new-states (filter (lambda (st) (and (not (member st visited))
+                                                                (check-terminals? state))) 
+                                              (map (lambda (rght) (subst-first-nt state rght)) rights))))
+                       (make-deriv (append new-states visited)
+                                   (append (cdr derivs) 
+                                           (map (lambda (st) (cons st fderiv)) 
+                                                new-states))
+                                   g
+                                   chomsky))))]))
+    (if (< (length w) 2)
+        (format "The word ~s is too short to test." w)
+        (make-deriv (list (list (cfg-get-start g))) 
+                    (list (list (list (cfg-get-start g))))
+                    g)))
+  
+  ;; Old version using Chomsky normal form
+  #;(define (cfg-derive g w)
     
     (define (get-first-nt st)
       (cond [(empty? st) #f]
