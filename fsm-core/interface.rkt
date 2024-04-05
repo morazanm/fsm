@@ -27,6 +27,7 @@
   "private/callgraphs/callgraphs-ndfa.rkt"
   "private/callgraphs/callgraphs-pda.rkt"
   "private/callgraphs/callgraphs-tm.rkt"
+  "private/callgraphs/callgraphs-mttm.rkt"
   "private/callgraphs/transdiagram-mttm.rkt"
   "private/callgraphs/viz-ctm.rkt")
   
@@ -116,7 +117,8 @@
           [(or (eq? t1 'tm) (eq? t1 'tm-language-recognizer))
            (computation-diagram-tm M w (if (empty? headpos) 0 (first headpos)) c p)]
           [(or (eq? t1 'mttm) (eq? t1 'mttm-language-recognizer))
-           (error "Computation graphs for mttms coming soon!")]
+           (computation-diagram-mttm M w (if (empty? headpos) 0 (first headpos)) c p)
+           #;(error "Computation graphs for mttms coming soon!")]
           [else (error "Unknown machine type given to sm-cmpgraph.")])))
   
 ; (listof state) fsm --> fsm
