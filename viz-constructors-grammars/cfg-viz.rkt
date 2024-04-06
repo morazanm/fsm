@@ -251,19 +251,18 @@
       (cond [(false? start-terms-w) #f]
             [else (equal? start-terms-st start-terms-w)])))
 
-  ;; (Listof (List (Listof Symbol) (Listof Symbol))) (Listof (Listof (List (Listof Symbol) (Listof Symbol)))) CFG Boolean ->
+  ;; (Listof (List (Listof Symbol) (Listof Symbol))) (Listof (Listof (List (Listof Symbol) (Listof Symbol)))) CFG ->
   ;; (U (Listof (U (Listof Symbol) Symbol)) String))
-  (define (make-deriv visited derivs g chomsky)
+  (define (make-deriv visited derivs g)
     ;; (Listof Symbol) (Listof Symbol) -> Natural
     (define (count-terminals st sigma)
       (length (filter (lambda (a) (member a sigma)) st)))
 
     (cond [(eq? derv-type 'left)
            (cond [(empty? derivs) (format "~s is not in L(G)." w)]
-                 [(or (and chomsky
-                           (> (length (first (first (first derivs)))) (+ 2 (length w))))
-                      (> (count-terminals (first (first (first derivs))) (cfg-get-alphabet g)) (length w)))
-                  (make-deriv visited (cdr derivs) g chomsky)]
+                 [(> (count-terminals (first (first (first derivs))) (cfg-get-alphabet g))
+                     (length w))
+                  (make-deriv visited (cdr derivs) g)]
                  [else 
                   (let* ((fderiv (car derivs))
                          (state (car fderiv))
@@ -277,7 +276,7 @@
                                                         (list (list (los->symbol (first l))
                                                                     (los->symbol (second l))) ARROW)))
                                         (reverse fderiv))
-                            (make-deriv visited (cdr derivs) g chomsky))
+                            (make-deriv visited (cdr derivs) g))
                         (let*
                             ((rls (get-rules fnt g))
                              (rights (map cfg-rule-rhs rls))
@@ -289,16 +288,14 @@
                                       (append (cdr derivs) 
                                               (map (lambda (st) (cons st fderiv)) 
                                                    new-states))
-                                      g
-                                      chomsky))))]
+                                      g))))]
                  )
            ]
           [(eq? derv-type 'right)
            (cond [(empty? derivs) (format "~s is not in L(G)." w)]
-                 [(or (and chomsky
-                           (> (length (first (first (first derivs)))) (+ 2 (length w))))
-                      (> (count-terminals (first (first (first derivs))) (cfg-get-alphabet g)) (length w)))
-                  (make-deriv visited (cdr derivs) g chomsky)]
+                 [(> (count-terminals (first (first (first derivs))) (cfg-get-alphabet g))
+                     (length w))
+                  (make-deriv visited (cdr derivs) g)]
                  [else 
                   (let* ((fderiv (car derivs))
                          (state (car fderiv))
@@ -314,7 +311,7 @@
                                                         (list (list (los->symbol (first l))
                                                                     (los->symbol (second l))) ARROW)))
                                         (reverse fderiv))
-                            (make-deriv visited (cdr derivs) g chomsky))
+                            (make-deriv visited (cdr derivs) g))
                         (let*
                             ((rls (get-rules fnt g))
                              (rights (map cfg-rule-rhs rls))
@@ -327,22 +324,16 @@
                                       (append (cdr derivs) 
                                               (map (lambda (st) (cons st fderiv)) 
                                                    new-states))
-                                      g
-                                      chomsky))))])]))   
-  (if (< (length w) 2)
-      (format "The word ~s is too short to test." w)
-      (let* ( ;; derive using g ONLY IF derivation found with g in CNF
-             (ng (convert-to-cnf g))
-             (ng-derivation (make-deriv (list (list (list (cfg-get-start ng)) '() )) 
-                                        (list (list (list (list (cfg-get-start ng)) '() )))
-                                        ng
-                                        true)))
-        (if (string? ng-derivation)
-            ng-derivation
-            (make-deriv (list (list (list (cfg-get-start g)) '() )) 
-                        (list (list (list (list (cfg-get-start g)) '() )))
-                        g
-                        false)))))
+                                      g))))])]))   
+  (let ((ng-derivation (make-deriv (list (list (list (cfg-get-start g)) '() )) 
+                                   (list (list (list (list (cfg-get-start g)) '() )))
+                                   g)))
+    (if (string? ng-derivation)
+        ng-derivation
+        (make-deriv (list (list (list (cfg-get-start g)) '() )) 
+                    (list (list (list (list (cfg-get-start g)) '() )))
+                    g
+                    false))))
 
 ;; w-der
 ;; derivation -> derivation-list
@@ -709,16 +700,16 @@
   ;; Purpose: Checks to see if there are any nonterminals within the given state
   (define (any-nt? state) (ormap (lambda (x) (not (member x (cfg-get-alphabet g)))) state))
 
-  (define (make-deriv visited derivs g chomsky)
+  (define (make-deriv visited derivs g)
     ;; (Listof Symbol) (Listof Symbol) -> Natural
     (define (count-terminals st sigma)
       (length (filter (lambda (a) (member a sigma)) st)))
     
     (cond [(empty? derivs) (format "~s is not in L(G)." w)]
-          [(or (and chomsky
-                    (> (length (get-current-state (first (first (first derivs))))) (+ 2 (length w))))
-               (> (count-terminals (get-current-state (first (first (first derivs)))) (cfg-get-alphabet g)) (length w)))
-           (make-deriv visited (rest derivs) g chomsky)]
+          [(> (count-terminals (get-current-state (first (first (first derivs))))
+                               (cfg-get-alphabet g))
+              (length w))
+           (make-deriv visited (rest derivs) g)]
           [else
            (let* [(current-deriv (first derivs))
                   (current-yield-and-rule (first current-deriv))
@@ -741,9 +732,8 @@
                                                                  current-deriv)
                                                            )
                                                      )
-                                     g
-                                     chomsky)
-                         (make-deriv visited (rest derivs) g chomsky)
+                                     g)
+                         (make-deriv visited (rest derivs) g)
                          )
                      )
                  (let* [(rls (get-rules current-nt g))
@@ -760,28 +750,21 @@
                                (append (rest derivs) 
                                        (map (lambda (yd) (cons yd current-deriv)) 
                                             new-yields))
-                               g
-                               chomsky)
+                               g)
                    )
                  )
              )
            ]
           )
     )
-  (if (< (length w) 2)
-      (format "The word ~s is too short to test." w)
-      (let* ( ;; derive using g ONLY IF derivation found with g in CNF
-             (ng (convert-to-cnf g))
-             (ng-derivation (make-deriv (list (list (yield '() '() (list (cfg-get-start ng)) derv-type) '() )) 
-                                        (list (list (list (yield '() '() (list (cfg-get-start ng)) derv-type) '() )))
-                                        ng
-                                        true)))
-        (if (string? ng-derivation)
-            ng-derivation
-            (make-deriv (list (list (yield '() '() (list (cfg-get-start g)) derv-type) '() ))
-                        (list (list (list (yield '() '() (list (cfg-get-start g)) derv-type) '() )))
-                        g
-                        false))))
+  (let ((ng-derivation (make-deriv (list (list (yield '() '() (list (cfg-get-start g)) derv-type) '() )) 
+                                   (list (list (list (yield '() '() (list (cfg-get-start g)) derv-type) '() )))
+                                   g)))
+    (if (string? ng-derivation)
+        ng-derivation
+        (make-deriv (list (list (yield '() '() (list (cfg-get-start g)) derv-type) '() ))
+                    (list (list (list (yield '() '() (list (cfg-get-start g)) derv-type) '() )))
+                    g)))
   )
          
 ;; cfg-viz
