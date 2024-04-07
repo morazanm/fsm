@@ -82,6 +82,9 @@
   ;; Purpose: To create a list of dgraphs with  the expanded edge removed
   ;; and replaced with the appropriate edges
   (define (bfs grph edge acc)
+
+    (define grph-states (remove-duplicates (append-map (λ (e) (list (first e) (third e))) grph)))
+    
     (cond [(only-simple-edges? grph) (cons (gedge grph edge) acc)]
           [(and (not (null? issimp?))
                 (first issimp?))
@@ -92,10 +95,10 @@
                   (rexp (second next-edge))
                   (tost (third next-edge))]
              (cond [(union-regexp? rexp)
-                    (let [(newi1 (generate-symbol 'I '(I)))
-                          (newi2 (generate-symbol 'I '(I)))
-                          (newi3 (generate-symbol 'I '(I)))
-                          (newi4 (generate-symbol 'I '(I)))]
+                    (let* [(newi1 (gen-state grph-states))
+                          (newi2 (gen-state (cons newi1 grph-states)))
+                          (newi3 (gen-state (append (list newi1 newi2) grph-states)))
+                          (newi4 (gen-state (append (list newi1 newi2 newi3) grph-states)))]
                       (bfs
                        (append (list (list fromst (empty-regexp) newi1)
                                      (list fromst (empty-regexp) newi2)
@@ -107,8 +110,8 @@
                        next-edge
                        (cons (gedge grph edge) acc)))]
                    [(concat-regexp? rexp)
-                    (let [(istate1 (generate-symbol 'I '(I)))
-                          (istate2 (generate-symbol 'I '(I)))]
+                    (let* [(istate1 (gen-state grph-states))
+                          (istate2 (gen-state (cons istate1 grph-states)))]
                       (bfs (append (list (list fromst (concat-regexp-r1 rexp) istate1)
                                          (list istate1 (empty-regexp) istate2)
                                          (list istate2 (concat-regexp-r2 rexp) tost))
@@ -116,8 +119,8 @@
                            next-edge
                            (cons (gedge grph edge) acc)))]
                    [else
-                    (let [(istart1 (generate-symbol 'I '(I)))
-                          (istart2 (generate-symbol 'I '(I)))]
+                    (let* [(istart1 (gen-state grph-states))
+                          (istart2 (gen-state (cons istart1 grph-states)))]
                       (bfs
                        (append (list (list fromst (empty-regexp) istart1)
                                      (list istart1 (empty-regexp) tost)
