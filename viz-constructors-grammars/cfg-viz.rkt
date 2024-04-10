@@ -282,9 +282,19 @@
                             ((rls (get-rules fnt g))
                              (rights (map cfg-rule-rhs rls))
                              (new-states (filter (lambda (st) (and (not (member st visited))
-                                                                   (check-terminals? (first state)))) 
-                                                 (map (lambda (rght) (list (subst-first-nt (first state) rght)
-                                                                           rght)) rights))))
+                                                                   (check-terminals? (first state))
+                                                                   )
+                                                                
+                                                   )
+                                                        (map (lambda (rght) (list (subst-first-nt (first state) rght)
+                                                                           rght)) rights)
+                                                        
+                                                 )
+                                         )
+                             )
+
+                          
+                          
                           (make-deriv (append new-states visited)
                                       (append (cdr derivs) 
                                               (map (lambda (st) (cons st fderiv)) 
@@ -328,7 +338,7 @@
                                               (map (lambda (st) (cons st fderiv)) 
                                                    new-states))
                                       g
-                                      chomsky))))])]))   
+                                      chomsky))))])])) 
   (if (< (length w) 2)
       (format "The word ~s is too short to test." w)
       (let* ( ;; derive using g ONLY IF derivation found with g in CNF
@@ -809,7 +819,8 @@
                    (lod (reverse (create-dgrphs dgraph '())))
                    (graphs (map create-graph-structs lod))]
               (run-viz cfg word w-der rules graphs))))
-      (let [(derivation (cfg-derive-levels cfg word derv-type))]
+      (let [(derivation (cfg-derive-levels cfg word derv-type))
+            ]
         (if (string? derivation)
             derivation
             (let* [(rules (cons "" (cond [(eq? derv-type 'level-left)
@@ -856,4 +867,5 @@
                               (A ,ARROW bA))
                             'S))
 
-(cfg-viz numb>numa '(a b b) 'level-right)
+(cfg-viz numb>numa '(a b b a b) 'left)
+;(time (grammar-derive numb>numa '(a b b a a b b a b b b)))
