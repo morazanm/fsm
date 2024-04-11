@@ -1,5 +1,5 @@
 #lang racket
-(require "../../interface.rkt" "chomsky.rkt")
+(require "../../interface.rkt" "chomsky.rkt" "pda2cfg-v2-simple-pda.rkt" "greibach.rkt" "../cfg.rkt" "../constants.rkt" "../../interface.rkt" "../../../sm-graph.rkt")
 (provide greibach)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -291,6 +291,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; L = {a^n b^n | n >= 0}
+;; Σ = {a b}
+;; States
+;; S: ci = a* = stack, start state
+;; M: ci = (append (listof a) (listof b))
+;;         ∧ stack = a*
+;;         ∧ |ci as| = |stack| + |ci bs|
+;; F: ci = (append (listof a) (listof b))
+;;         ∧ |stack| = 0
+;;         ∧ |ci as| = |ci bs|, final state
+;; The stack is a (listof a)
+(define anbn (make-ndpda '(S M F)
+                         '(a b)
+                         '(a)
+                         'S
+                         '(F)
+                         '(((S ε ε) (M ε))
+                           ((S a ε) (S (a)))
+                           ((M b (a)) (M ε))
+                           ((M ε ε) (F ε)))))
 
-
-
+(sm-graph anbn)
+(define pdacfg (pda2cfg anbn))
+;(define g (greibach pdacfg))
+(greibach (pda2cfg anbn))
+(greibach (make-cfg '(S)
+                    '(a b)
+                    `((S -> ,EMP))
+                    'S))
