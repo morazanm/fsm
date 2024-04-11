@@ -263,12 +263,16 @@
                                     sigma
                                     empties
                                     rules
-                                    '()))
-             (super-states (remove-duplicates
-                            (append-map
-                             (λ (r) (list (first r) (third r)))
-                             ss-dfa-rules)))
-             (ss-name-tbl (compute-ss-name-tbl super-states))]
+                                    '())) ;; the first rule(s) are for the starting ss
+             (super-states (let [(start-ss (first (first ss-dfa-rules)))]
+                             (cons start-ss
+                                   (filter (λ (ss) (not (equal? ss start-ss)))
+                                           (remove-duplicates
+                                            (append-map
+                                             (λ (r) (list (first r) (third r)))
+                                             ss-dfa-rules))))))
+             (ss-name-tbl (compute-ss-name-tbl super-states))
+             #;(ddd (displayln (format "ss = ~s\nss rules = ~s\nss-table = ~s\n" super-states ss-dfa-rules ss-name-tbl)))]
         (make-unchecked-dfa (map (λ (ss) (second (assoc ss ss-name-tbl)))
                                  super-states)
                             sigma
@@ -781,18 +785,33 @@
                             (make-unchecked-singleton "b"))))
 
   (define ab* (make-unchecked-ndfa '(S A)
-                       '(a b)
-                       'S
-                       '(A)
-                       '((S a A)
-                         (A b A))))
-(define aab* (make-unchecked-ndfa '(W X Y)
-                        '(a b)
-                        'W
-                        '(Y)
-                        '((W a X)
-                          (X a Y)
-                          (Y b Y))))
-  
+                                   '(a b)
+                                   'S
+                                   '(A)
+                                   '((S a A)
+                                     (A b A))))
+  (define aab* (make-unchecked-ndfa '(W X Y)
+                                    '(a b)
+                                    'W
+                                    '(Y)
+                                    '((W a X)
+                                      (X a Y)
+                                      (Y b Y))))
+
+  (define BB-NDFA (make-unchecked-ndfa
+                   '(S A B)
+                   '(a b)
+                   'S
+                   '(B)
+                   `((S a S)
+                     (S b S)
+                     (S b A)
+                     (A b B))))
+
+  (define BB (ndfa->dfa BB-NDFA))
+
+  ;(fsa-getstart BB)
+  ;(fsa-getfinals BB)
+  ;(fsa-getrules BB)
                          
   )  ; closes module
