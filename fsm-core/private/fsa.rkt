@@ -264,13 +264,10 @@
                                     empties
                                     rules
                                     '())) ;; the first rule(s) are for the starting ss
-             (super-states (let [(start-ss (first (first ss-dfa-rules)))]
-                             (cons start-ss
-                                   (filter (λ (ss) (not (equal? ss start-ss)))
-                                           (remove-duplicates
-                                            (append-map
-                                             (λ (r) (list (first r) (third r)))
-                                             ss-dfa-rules))))))
+             (super-states (remove-duplicates
+                            (append-map
+                             (λ (r) (list (first r) (third r)))
+                             ss-dfa-rules)))
              (ss-name-tbl (compute-ss-name-tbl super-states))]
         (make-unchecked-dfa (map (λ (ss) (second (assoc ss ss-name-tbl)))
                                  super-states)
