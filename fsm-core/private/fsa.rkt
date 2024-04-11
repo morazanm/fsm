@@ -271,8 +271,7 @@
                                             (append-map
                                              (λ (r) (list (first r) (third r)))
                                              ss-dfa-rules))))))
-             (ss-name-tbl (compute-ss-name-tbl super-states))
-             #;(ddd (displayln (format "ss = ~s\nss rules = ~s\nss-table = ~s\n" super-states ss-dfa-rules ss-name-tbl)))]
+             (ss-name-tbl (compute-ss-name-tbl super-states))]
         (make-unchecked-dfa (map (λ (ss) (second (assoc ss ss-name-tbl)))
                                  super-states)
                             sigma

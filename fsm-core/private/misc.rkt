@@ -4,7 +4,7 @@
 
 (module misc racket
   (require "string.rkt" "constants.rkt")
-  (provide remove-duplicates los->symbol generate-symbol symbol-upcase equiv-los? 
+  (provide #;remove-duplicates los->symbol generate-symbol symbol-upcase equiv-los? 
            not-in-l2 symbol->list sublist subst-in-list gen-symbol get-differences
            symbol->fsmlos gen-state gen-nt)
   
