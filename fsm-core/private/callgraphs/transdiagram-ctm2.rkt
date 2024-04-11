@@ -565,4 +565,11 @@
 (define A '(1 2 3))
 
 
-
+(define ADDL '(list FBL2
+                    SHIFTL
+                    LFT
+                    (cons BRANCH (list (list BLANK (list GOTO 20))
+                                       (list i (list GOTO 5))))
+                    5
+                    RGHT
+                    20))
