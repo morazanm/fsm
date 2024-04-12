@@ -251,25 +251,25 @@
 
 ;; PRE:  tape = (@ w) and i = 1
 ;; POST: tape = (@ _ w) and i = |w|+2
-(define w->_w (combine-tms
-                  (list FBR
-                        0
-                        L
-                        (cons BRANCH (list (list 'a (list GOTO 1))
-                                           (list 'b (list GOTO 1))
-                                           (list 'd (list GOTO 1))
-                                           (list '@ (list GOTO 3))
-                                           (list '_ (list GOTO 3))))
-                        1
-                        (list (list VAR 'x)
-                              R
-                              'x
-                              L
-                              WB
-                              (list GOTO 0))
-                        3
-                        FBR)
-                  '(a b d)))
+(define shiftr (combine-tms
+               (list FBR
+                     0
+                     L
+                     (cons BRANCH (list (list 'a (list GOTO 1))
+                                        (list 'b (list GOTO 1))
+                                        (list 'd (list GOTO 1))
+                                        (list '@ (list GOTO 3))
+                                        (list '_ (list GOTO 3))))
+                     1
+                     (list (list VAR 'x)
+                           R
+                           'x
+                           L
+                           WB
+                           (list GOTO 0))
+                     3
+                     FBR)
+               '(a b d)))
 
 ;.................................................
 #|             
@@ -289,7 +289,7 @@
 
 ;; PRE:  tape = (@ _ w) and i = 1
 ;; POST: tape = (@ w _ _) and i = |w|+2
-(define _w->w (combine-tms
+(define shiftl (combine-tms
                (list 0
                      R
                      (cons BRANCH (list (list 'a (list GOTO 1))
@@ -305,6 +305,24 @@
                            (list GOTO 0))
                      3)
                '(a b d)))
+
+(define shiftr-list '(FBR
+                      0
+                      L
+                      (cons BRANCH (list (list a (list GOTO 1))
+                                         (list b (list GOTO 1))
+                                         (list d (list GOTO 1))
+                                         (list @ (list GOTO 3))
+                                         (list _ (list GOTO 3))))
+                      1
+                      (list (list VAR 'x)
+                            R
+                            x
+                            L
+                            WB
+                            (list GOTO 0))
+                      3
+                      FBR))
 
 
 
@@ -416,12 +434,13 @@
 ;; POST: tape = '(@ _ (_^|ad*|) _ _ (ad* * bd*) _) and i = |ad*| + |ad* * bd*| + 4
 (define MULT (combine-tms
               (list R
-                    (cons BRANCH (list (list 'd WB (list GOTO 0))
-                                       (list BLANK R (list GOTO 3))))
+                    (cons BRANCH (list (list 'd (list GOTO 0))
+                                       (list '_ (list GOTO 3))))
                     0
+                    WB
                     R
                     (cons BRANCH (list (list 'd (list GOTO 1))
-                                       (list BLANK (list GOTO 2))))
+                                       (list '_ (list GOTO 2))))
                     1
                     WB
                     FBR
@@ -435,16 +454,56 @@
                     FBR
                     (list GOTO 4)
                     3
-                    (cons BRANCH (list (list BLANK (list GOTO 4))
-                                       (list 'd
-                                             WB
-                                             R
-                                             (list GOTO 3))))
+                    R
+                    (list GOTO 5)
+                    5
+                    (cons BRANCH (list (list '_ (list GOTO 4))
+                                       (list 'd (list GOTO 6))))
+                    6
+                    WB
+                    R
+                    (list GOTO 5)
                     4
                     FBL
-                    w->_w
+                    shiftl
                     FBR)           
               '(d)))
+
+(define MULTL '(R
+                (cons BRANCH (list (list 'd (list GOTO 0))
+                                   (list '_ (list GOTO 3))))
+                0
+                WB
+                R
+                (cons BRANCH (list (list 'd (list GOTO 1))
+                                   (list '_ (list GOTO 2))))
+                1
+                WB
+                FBR
+                FBR
+                COPY
+                FBL
+                FBL
+                FBL
+                (list GOTO 0)
+                2
+                FBR
+                (list GOTO 4)
+                3
+                R
+                (list GOTO 5)
+                5
+                (cons BRANCH (list (list '_ (list GOTO 4))
+                                   (list 'd (list GOTO 6))))
+                6
+                WB
+                R
+                (list GOTO 5)
+                4
+                FBL
+                shiftr
+                FBR))
+
 
 ;(sm-showtransitions FBL2 `(,LM ,BLANK i i i ,BLANK i i i i ,BLANK) 10)
 
