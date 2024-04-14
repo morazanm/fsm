@@ -209,9 +209,11 @@
 
 ;; list -> list
 ;; Purpose: Filter given list to not include 'list or 'cons or ()
-(define (filter-list l)
+(define (filter-list l)  
   (cond ((null? l)
          '())
+        ((and (pair? (car l))
+              (equal? (car (car l)) 'quote)) (cons (car (cdr (car l))) (filter-list (cdr l))))
         ((pair? (car l))
          (cons (filter-list (car l)) (filter-list (cdr l))))
         ((or (equal? (car l) 'list)
@@ -348,7 +350,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; examples
 
-(define COPYL2
+#|(define COPYL2
   '(list FBL
          0
          R
@@ -484,7 +486,7 @@
                              (list (list VAR 'j)
                                    'i
                                    'L
-                                   'j))))
+                                   'j)))) |#
 
 #|
 (transition-diagram-ctm COPYL2)
@@ -546,7 +548,7 @@
 ;(transition-diagram-ctm SWAPL)
 
 
-(define C
+#|(define C
   '(list 7 8 (cons BRANCH (list (list _ (list GOTO 2)) (list 'a (list GOTO 1)) (list 'b (list GOTO 1))))
          1
          (list (list VAR k) WB FBR FBR k FBL FBL k (list GOTO 0))
@@ -573,3 +575,21 @@
                     5
                     RGHT
                     20))
+
+(define Cwrong
+  '(list 7 8 (cons BRANCH (list (list _ (list GOTO 2)) (list 'a (list GOTO 1)) (list 'b (list GOTO 1))))
+         1
+         (list (list VAR k) WB FBR FBR 'k FBL FBL 'k (list GOTO 0))
+         2
+         FBR
+         L
+         (cons BRANCH (list (list _ (list GOTO 3)) (list 'a (list GOTO 4)) (list 'b (list GOTO 4))))
+         3
+         RR
+         (list GOTO 5)
+         4
+         R
+         (list GOTO 5)
+         5))
+
+;(transition-diagram-ctm Cwrong) |#
