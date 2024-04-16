@@ -35,6 +35,8 @@
 (define NODE-SIZE 50)
 (define FONT-SIZE 20)
 (define TAPE-SIZE 42)
+(define TICK-RATE 1/60)
+(define CLICK-BUFFER-SECONDS (/ (/ 1 TICK-RATE) 2))
 
 ;; Listof Symbol natnum -> Image
 ;; Returns an image of a tape of symbols, capable of sliding when its start-index is varied
@@ -121,7 +123,9 @@
                           scale-factor scale-factor-cap scale-factor-floor
                           curr-mouse-posn dest-mouse-posn mouse-pressed
                           up-rules p-rules up-yield p-yield
-                          input-word word-img-offset word-img-offset-cap scroll-accum)
+                          input-word word-img-offset word-img-offset-cap scroll-accum
+                          click-buffer
+                          )
   )
 
 (define S-KEY (bitmap/file "./keyboard_key_s.png"))
@@ -1011,6 +1015,7 @@
                       (viz-state-word-img-offset a-vs)
                       (viz-state-word-img-offset-cap a-vs)
                       (viz-state-scroll-accum a-vs)
+                      (viz-state-click-buffer a-vs)
                       )                           
            ]
           [(and (<= MIN-X (posn-x (viz-state-image-posn a-vs)))
@@ -1036,6 +1041,7 @@
                       (viz-state-word-img-offset a-vs)
                       (viz-state-word-img-offset-cap a-vs)
                       (viz-state-scroll-accum a-vs)
+                      (viz-state-click-buffer a-vs)
                       )                   
            ]
           [(and (<= MIN-X (posn-x (viz-state-image-posn a-vs)))
@@ -1061,6 +1067,7 @@
                       (viz-state-word-img-offset a-vs)
                       (viz-state-word-img-offset-cap a-vs)
                       (viz-state-scroll-accum a-vs)
+                      (viz-state-click-buffer a-vs)
                       )
            ]
           [(and (<= MIN-X (posn-x (viz-state-image-posn a-vs)))
@@ -1086,6 +1093,7 @@
                       (viz-state-word-img-offset a-vs)
                       (viz-state-word-img-offset-cap a-vs)
                       (viz-state-scroll-accum a-vs)
+                      (viz-state-click-buffer a-vs)
                       )
            ]
           [(and (> MIN-X (posn-x (viz-state-image-posn a-vs)))
@@ -1111,6 +1119,7 @@
                       (viz-state-word-img-offset a-vs)
                       (viz-state-word-img-offset-cap a-vs)
                       (viz-state-scroll-accum a-vs)
+                      (viz-state-click-buffer a-vs)
                       )
            ]
           [(and (> MIN-X (posn-x (viz-state-image-posn a-vs)))
@@ -1136,6 +1145,7 @@
                       (viz-state-word-img-offset a-vs)
                       (viz-state-word-img-offset-cap a-vs)
                       (viz-state-scroll-accum a-vs)
+                      (viz-state-click-buffer a-vs)
                       )
            ]
           [(and (<= MIN-X (posn-x (viz-state-image-posn a-vs)))
@@ -1161,6 +1171,7 @@
                       (viz-state-word-img-offset a-vs)
                       (viz-state-word-img-offset-cap a-vs)
                       (viz-state-scroll-accum a-vs)
+                      (viz-state-click-buffer a-vs)
                       )
            ]
           [(and (<= MIN-X (posn-x (viz-state-image-posn a-vs)))
@@ -1186,6 +1197,7 @@
                       (viz-state-word-img-offset a-vs)
                       (viz-state-word-img-offset-cap a-vs)
                       (viz-state-scroll-accum a-vs)
+                      (viz-state-click-buffer a-vs)
                       )
            ]
           [(and (<= MIN-X (posn-x (viz-state-image-posn a-vs)))
@@ -1211,6 +1223,7 @@
                       (viz-state-word-img-offset a-vs)
                       (viz-state-word-img-offset-cap a-vs)
                       (viz-state-scroll-accum a-vs)
+                      (viz-state-click-buffer a-vs)
                       )
            ]
           )
@@ -1315,6 +1328,7 @@
                                                    (viz-state-word-img-offset a-vs)
                                                    (viz-state-word-img-offset-cap a-vs)
                                                    (viz-state-scroll-accum a-vs)
+                                                   (viz-state-click-buffer a-vs)
                                                    )
                                         viewport-lims
                                         (viz-state-curr-image a-vs)
@@ -1391,6 +1405,7 @@
                                                      (viz-state-word-img-offset a-vs)
                                                      (viz-state-word-img-offset-cap a-vs)
                                                      (viz-state-scroll-accum a-vs)
+                                                     (viz-state-click-buffer a-vs)
                                                      )
                                           )
                            ]
@@ -1421,6 +1436,7 @@
                                                      (viz-state-word-img-offset a-vs)
                                                      (viz-state-word-img-offset-cap a-vs)
                                                      (viz-state-scroll-accum a-vs)
+                                                     (viz-state-click-buffer a-vs)
                                                      )
                                           )
                            ]
@@ -1451,6 +1467,7 @@
                                                      (viz-state-word-img-offset a-vs)
                                                      (viz-state-word-img-offset-cap a-vs)
                                                      (viz-state-scroll-accum a-vs)
+                                                     (viz-state-click-buffer a-vs)
                                                      )
                                           )
                            ]
@@ -1482,6 +1499,7 @@
                                             (viz-state-word-img-offset a-vs)
                                             (viz-state-word-img-offset-cap a-vs)
                                             (viz-state-scroll-accum a-vs)
+                                            (viz-state-click-buffer a-vs)
                                             )
                                  )
                   ]
@@ -1557,6 +1575,7 @@
                                                       (viz-state-word-img-offset a-vs)
                                                       (viz-state-word-img-offset-cap a-vs)
                                                       (viz-state-scroll-accum a-vs)
+                                                      (viz-state-click-buffer a-vs)
                                                       )
                                            )
                            ]
@@ -1589,6 +1608,7 @@
                                                       (viz-state-word-img-offset a-vs)
                                                       (viz-state-word-img-offset-cap a-vs)
                                                       (viz-state-scroll-accum a-vs)
+                                                      (viz-state-click-buffer a-vs)
                                                       )
                                            )
                            ]
@@ -1620,6 +1640,7 @@
                                                            (viz-state-word-img-offset a-vs)
                                                            (viz-state-word-img-offset-cap a-vs)
                                                            (viz-state-scroll-accum a-vs)
+                                                           (viz-state-click-buffer a-vs)
                                                            )
                                                 )
                                 ]
@@ -1653,6 +1674,7 @@
                                              (viz-state-word-img-offset a-vs)
                                              (viz-state-word-img-offset-cap a-vs)
                                              (viz-state-scroll-accum a-vs)
+                                             (viz-state-click-buffer a-vs)
                                              )
                                   )
                   ]
@@ -1717,6 +1739,7 @@
                                                               (viz-state-word-img-offset a-vs)
                                                               (viz-state-word-img-offset-cap a-vs)
                                                               (viz-state-scroll-accum a-vs)
+                                                              (viz-state-click-buffer a-vs)
                                                               )
                                                    (calculate-viewport-limits (scale (viz-state-scale-factor a-vs) new-pimgs-img) (viz-state-scale-factor a-vs))
                                                    new-pimgs-img
@@ -1744,6 +1767,7 @@
                                                               (viz-state-word-img-offset a-vs)
                                                               (viz-state-word-img-offset-cap a-vs)
                                                               (viz-state-scroll-accum a-vs)
+                                                              (viz-state-click-buffer a-vs)
                                                               )
                                                    (calculate-viewport-limits (scale (viz-state-scale-factor a-vs) new-pimgs-img) (viz-state-scale-factor a-vs))
                                                    new-pimgs-img
@@ -1771,6 +1795,7 @@
                                                               (viz-state-word-img-offset a-vs)
                                                               (viz-state-word-img-offset-cap a-vs)
                                                               (viz-state-scroll-accum a-vs)
+                                                              (viz-state-click-buffer a-vs)
                                                               )
                                                    (calculate-viewport-limits (scale (viz-state-scale-factor a-vs) new-pimgs-img) (viz-state-scale-factor a-vs))
                                                    new-pimgs-img
@@ -1799,6 +1824,7 @@
                                                      (viz-state-word-img-offset a-vs)
                                                      (viz-state-word-img-offset-cap a-vs)
                                                      (viz-state-scroll-accum a-vs)
+                                                     (viz-state-click-buffer a-vs)
                                                      )
                                           (calculate-viewport-limits (scale (viz-state-scale-factor a-vs) new-pimgs-img) (viz-state-scale-factor a-vs))
                                           new-pimgs-img
@@ -1865,6 +1891,7 @@
                                                       (viz-state-word-img-offset a-vs)
                                                       (viz-state-word-img-offset-cap a-vs)
                                                       (viz-state-scroll-accum a-vs)
+                                                      (viz-state-click-buffer a-vs)
                                                       )
                                            )
                            ]
@@ -1895,6 +1922,7 @@
                                                       (viz-state-word-img-offset a-vs)
                                                       (viz-state-word-img-offset-cap a-vs)
                                                       (viz-state-scroll-accum a-vs)
+                                                      (viz-state-click-buffer a-vs)
                                                       )
                                            )
                            ]
@@ -1924,6 +1952,7 @@
                                                            (viz-state-word-img-offset a-vs)
                                                            (viz-state-word-img-offset-cap a-vs)
                                                            (viz-state-scroll-accum a-vs)
+                                                           (viz-state-click-buffer a-vs)
                                                            )
                                                 )
                                 ]
@@ -1955,6 +1984,7 @@
                                              (viz-state-word-img-offset a-vs)
                                              (viz-state-word-img-offset-cap a-vs)
                                              (viz-state-scroll-accum a-vs)
+                                             (viz-state-click-buffer a-vs)
                                              )
                                   )
                   ]
@@ -1990,6 +2020,7 @@
              0
              (viz-state-word-img-offset-cap a-vs)
              0
+             (viz-state-click-buffer a-vs)
              )
   )
 
@@ -2014,6 +2045,7 @@
              (viz-state-word-img-offset-cap a-vs)
              (viz-state-word-img-offset-cap a-vs)
              0
+             (viz-state-click-buffer a-vs)
              )
   )
 
@@ -2046,6 +2078,7 @@
                  (viz-state-word-img-offset a-vs)
                  (viz-state-word-img-offset-cap a-vs)
                  (viz-state-scroll-accum a-vs)
+                 (viz-state-click-buffer a-vs)
                  )
       )
   )
@@ -2126,6 +2159,7 @@
                     (viz-state-word-img-offset a-vs)
                     (viz-state-word-img-offset-cap a-vs)
                     (viz-state-scroll-accum a-vs)
+                    (viz-state-click-buffer a-vs)
                     )
          ]
         [(string=? mouse-event "button-up")
@@ -2147,6 +2181,7 @@
                     (viz-state-word-img-offset a-vs)
                     (viz-state-word-img-offset-cap a-vs)
                     (viz-state-scroll-accum a-vs)
+                    (viz-state-click-buffer a-vs)
                     )
          ]
         ;; Want to keep the mouse updating while it is being dragged
@@ -2169,6 +2204,7 @@
                     (viz-state-word-img-offset a-vs)
                     (viz-state-word-img-offset-cap a-vs)
                     (viz-state-scroll-accum a-vs)
+                    (viz-state-click-buffer a-vs)
                     )
          ]
                                                    
@@ -2192,6 +2228,7 @@
                     (viz-state-word-img-offset a-vs)
                     (viz-state-word-img-offset-cap a-vs)
                     (viz-state-scroll-accum a-vs)
+                    (viz-state-click-buffer a-vs)
                     )
          ]
 
@@ -2215,6 +2252,7 @@
                     (viz-state-word-img-offset a-vs)
                     (viz-state-word-img-offset-cap a-vs)
                     (viz-state-scroll-accum a-vs)
+                    (viz-state-click-buffer a-vs)
                     )
          ]
 
@@ -2238,12 +2276,80 @@
                     (viz-state-word-img-offset a-vs)
                     (viz-state-word-img-offset-cap a-vs)
                     (viz-state-scroll-accum a-vs)
+                    (viz-state-click-buffer a-vs)
                     )
          ]
         [else a-vs]
         )
   )
 
+(define (buffer-held-click a-vs func)
+  (if (= (viz-state-click-buffer a-vs) 0)
+      (func (viz-state (viz-state-upimgs a-vs)
+                       (viz-state-pimgs a-vs)
+                       (viz-state-curr-image a-vs)
+                       (viz-state-image-posn a-vs)
+                       (viz-state-scale-factor a-vs)
+                       (viz-state-scale-factor-cap a-vs)
+                       (viz-state-scale-factor-floor a-vs)
+                       (viz-state-dest-mouse-posn a-vs)
+                       (viz-state-dest-mouse-posn a-vs)
+                       (viz-state-mouse-pressed a-vs)
+                       (viz-state-up-rules a-vs)
+                       (viz-state-p-rules a-vs)
+                       (viz-state-up-yield a-vs)
+                       (viz-state-p-yield a-vs)
+                       (viz-state-input-word a-vs)
+                       (viz-state-word-img-offset a-vs)
+                       (viz-state-word-img-offset-cap a-vs)
+                       (viz-state-scroll-accum a-vs)
+                       1
+                       )
+            )
+      (if (= (viz-state-click-buffer a-vs) CLICK-BUFFER-SECONDS)
+          (viz-state (viz-state-upimgs a-vs)
+                     (viz-state-pimgs a-vs)
+                     (viz-state-curr-image a-vs)
+                     (viz-state-image-posn a-vs)
+                     (viz-state-scale-factor a-vs)
+                     (viz-state-scale-factor-cap a-vs)
+                     (viz-state-scale-factor-floor a-vs)
+                     (viz-state-dest-mouse-posn a-vs)
+                     (viz-state-dest-mouse-posn a-vs)
+                     (viz-state-mouse-pressed a-vs)
+                     (viz-state-up-rules a-vs)
+                     (viz-state-p-rules a-vs)
+                     (viz-state-up-yield a-vs)
+                     (viz-state-p-yield a-vs)
+                     (viz-state-input-word a-vs)
+                     (viz-state-word-img-offset a-vs)
+                     (viz-state-word-img-offset-cap a-vs)
+                     (viz-state-scroll-accum a-vs)
+                     0
+                     )
+          (viz-state (viz-state-upimgs a-vs)
+                     (viz-state-pimgs a-vs)
+                     (viz-state-curr-image a-vs)
+                     (viz-state-image-posn a-vs)
+                     (viz-state-scale-factor a-vs)
+                     (viz-state-scale-factor-cap a-vs)
+                     (viz-state-scale-factor-floor a-vs)
+                     (viz-state-dest-mouse-posn a-vs)
+                     (viz-state-dest-mouse-posn a-vs)
+                     (viz-state-mouse-pressed a-vs)
+                     (viz-state-up-rules a-vs)
+                     (viz-state-p-rules a-vs)
+                     (viz-state-up-yield a-vs)
+                     (viz-state-p-yield a-vs)
+                     (viz-state-input-word a-vs)
+                     (viz-state-word-img-offset a-vs)
+                     (viz-state-word-img-offset-cap a-vs)
+                     (viz-state-scroll-accum a-vs)
+                     (add1 (viz-state-click-buffer a-vs))
+                     )
+          )
+      )
+  )
 
 ;; viz-state
 ;; Updates the position of the image displayed based on the movement of the mouse
@@ -2294,6 +2400,7 @@
                                  (viz-state-word-img-offset a-vs)
                                  (viz-state-word-img-offset-cap a-vs)
                                  (viz-state-scroll-accum a-vs)
+                                 (viz-state-click-buffer a-vs)
                                  )
                       ]
                      [(and (or (> MIN-X new-img-x)
@@ -2320,6 +2427,7 @@
                                  (viz-state-word-img-offset a-vs)
                                  (viz-state-word-img-offset-cap a-vs)
                                  (viz-state-scroll-accum a-vs)
+                                 (viz-state-click-buffer a-vs)
                                  )
                       ]
                      [(and (<= MIN-X new-img-x)
@@ -2346,6 +2454,7 @@
                                  (viz-state-word-img-offset a-vs)
                                  (viz-state-word-img-offset-cap a-vs)
                                  (viz-state-scroll-accum a-vs)
+                                 (viz-state-click-buffer a-vs)
                                  )
                       ]
                      [(and (or (> MIN-X new-img-x)
@@ -2373,6 +2482,7 @@
                                  (viz-state-word-img-offset a-vs)
                                  (viz-state-word-img-offset-cap a-vs)
                                  (viz-state-scroll-accum a-vs)
+                                 (viz-state-click-buffer a-vs)
                                  )
                       ]
                      )
@@ -2406,6 +2516,7 @@
                                    (+ (viz-state-word-img-offset a-vs) 1)
                                    (viz-state-word-img-offset-cap a-vs)
                                    0
+                                   (viz-state-click-buffer a-vs)
                                    )]
                        [(and (> (viz-state-word-img-offset a-vs) 0)
                              (>= (quotient new-scroll-accum 25) 1)
@@ -2428,6 +2539,7 @@
                                    (- (viz-state-word-img-offset a-vs) 1)
                                    (viz-state-word-img-offset-cap a-vs)
                                    0
+                                   (viz-state-click-buffer a-vs)
                                    )
                         ]
                        [else (viz-state (viz-state-upimgs a-vs)
@@ -2448,22 +2560,23 @@
                                         (viz-state-word-img-offset a-vs)
                                         (viz-state-word-img-offset-cap a-vs)
                                         new-scroll-accum
+                                        (viz-state-click-buffer a-vs)
                                         )
                              ]
                        )
                  )
                ]
               [(within-bounding-limits? ARROW-UP-KEY-DIMS (viz-state-curr-mouse-posn a-vs))
-               (up-key-pressed a-vs)
+               (buffer-held-click a-vs up-key-pressed)
                ]
               [(within-bounding-limits? ARROW-RIGHT-KEY-DIMS (viz-state-curr-mouse-posn a-vs))
-               (right-key-pressed a-vs)
+               (buffer-held-click a-vs right-key-pressed)
                ]
               [(within-bounding-limits? ARROW-LEFT-KEY-DIMS (viz-state-curr-mouse-posn a-vs))
-               (left-key-pressed a-vs)
+               (buffer-held-click a-vs left-key-pressed)
                ]
               [(within-bounding-limits? ARROW-DOWN-KEY-DIMS (viz-state-curr-mouse-posn a-vs))
-               (down-key-pressed a-vs)
+               (buffer-held-click a-vs down-key-pressed)
                ]
               [(within-bounding-limits? W-KEY-DIMS (viz-state-curr-mouse-posn a-vs))
                (w-key-pressed a-vs)
@@ -2472,16 +2585,16 @@
                (s-key-pressed a-vs)
                ]
               [(within-bounding-limits? A-KEY-DIMS (viz-state-curr-mouse-posn a-vs))
-               (a-key-pressed a-vs)
+               (buffer-held-click a-vs a-key-pressed)
                ]
               [(within-bounding-limits? R-KEY-DIMS (viz-state-curr-mouse-posn a-vs))
-               (r-key-pressed a-vs)
+               (buffer-held-click a-vs r-key-pressed)
                ]
               [(within-bounding-limits? E-KEY-DIMS (viz-state-curr-mouse-posn a-vs))
-               (e-key-pressed a-vs)
+               (buffer-held-click a-vs e-key-pressed)
                ]
               [(within-bounding-limits? F-KEY-DIMS (viz-state-curr-mouse-posn a-vs))
-               (f-key-pressed a-vs)
+               (buffer-held-click a-vs f-key-pressed)
                ]
               [else
                a-vs
@@ -2505,6 +2618,7 @@
                    (viz-state-word-img-offset a-vs)
                    (viz-state-word-img-offset-cap a-vs)
                    (viz-state-scroll-accum a-vs)
+                   (viz-state-click-buffer a-vs)
                    )
         )
     )
@@ -2568,7 +2682,7 @@
       [on-draw draw-etc]
       [on-key process-key]
       [on-mouse process-mouse]
-      [on-tick process-tick 1/60]
+      [on-tick process-tick TICK-RATE]
       [name a-name]))
   (void))
 
@@ -2601,6 +2715,7 @@
                           offset-cap
                           )
                       )
+                    0
                     0
                     )
          draw-world 'rg-ctm)
