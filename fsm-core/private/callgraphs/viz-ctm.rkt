@@ -176,13 +176,9 @@
                                  (rest (graph-pimgs (viz-state-graph a-vs))))
                           (tapelist new-utape
                                     new-ptape)
-                          (above (if (= 1 (length (tapelist-ptape (viz-state-tapelist a-vs))))
-                                     (make-tape-img (first (first new-utape))
-                                                    (second (first new-utape))
-                                                    (third (first new-utape)))
-                                     (make-tape-img (first (first new-ptape))
-                                                    (second (first new-ptape))
-                                                    (third (first new-ptape))))
+                          (above (make-tape-img (first (first new-ptape))
+                                                (second (first new-ptape))
+                                                (third (first new-ptape)))
                                  (square 30 'solid 'white)
                                  (if (and (not (empty? new-pvar))
                                           (not (equal? (first new-pvar) '(label "")))
@@ -199,10 +195,9 @@
         [(key=? "down" a-key)
          (if (empty? (graph-upimgs (viz-state-graph a-vs)))
              a-vs
-             (let* [(new-utape (list (first (append (reverse (tapelist-utape (viz-state-tapelist a-vs)))
-                                                    (tapelist-ptape (viz-state-tapelist a-vs))))))
-                    (new-ptape (rest (append (reverse (tapelist-utape (viz-state-tapelist a-vs)))
-                                             (tapelist-ptape (viz-state-tapelist a-vs)))))]
+             (let* [(new-utape '())
+                    (new-ptape (append (reverse (tapelist-utape (viz-state-tapelist a-vs)))
+                                       (tapelist-ptape (viz-state-tapelist a-vs))))]
                (viz-state (graph '()
                                  (append (reverse (graph-upimgs (viz-state-graph a-vs)))
                                          (graph-pimgs (viz-state-graph a-vs))))
