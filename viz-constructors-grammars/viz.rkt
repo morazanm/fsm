@@ -2125,7 +2125,7 @@
          (d-key-pressed a-vs)
          ]
         [(key=? "r" a-key)
-         (r-key-pressed)
+         (r-key-pressed a-vs)
          ]
         [(key=? "f" a-key)
          (f-key-pressed a-vs)
