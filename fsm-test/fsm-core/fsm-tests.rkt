@@ -566,31 +566,42 @@
                 '(0 (i _ i _ i i _)))                                        
 
   (define tm-RI (make-tm '(S H) 
-                         '(i j k) 
+                         '(i a s) 
                          (list
                           (list (list 'S 'i) (list 'H RIGHT))
-                          (list (list 'S 'j) (list 'H RIGHT))
-                          (list (list 'S 'k) (list 'H RIGHT))
+                          (list (list 'S 'a) (list 'H RIGHT))
+                          (list (list 'S 's) (list 'H RIGHT))
                           (list (list 'S BLANK) (list 'H RIGHT)))
                          'S
                          '(H)))
 
   (define tm-LI (make-tm '(S H) 
-                         '(i j k) 
+                         '(i a s) 
                          (list 
                           (list (list 'S 'i) (list 'H LEFT))
-                          (list (list 'S 'j) (list 'H LEFT))
-                          (list (list 'S 'k) (list 'H LEFT))
+                          (list (list 'S 'a) (list 'H LEFT))
+                          (list (list 'S 's) (list 'H LEFT))
                           (list (list 'S BLANK) (list 'H LEFT)))
                          'S
                          '(H)))
 
-  (define tm-LB (combine-tms (list 0 tm-LI (list BRANCH 
-                                                 (list 'I (list GOTO 0))
-                                                 (list BLANK tm-RI tm-LI)
-                                                 (list 'add1 (list GOTO 0))
-                                                 (list 'sub1 (list GOTO 0)))) 
-                             '(I add1 sub1)))
+  (define tm-LB (combine-tms (list 0
+                                   tm-LI
+                                   (list BRANCH 
+                                         (list 'i (list GOTO 0))
+                                         (list BLANK (list GOTO 20))
+                                         (list 'a (list GOTO 0))
+                                         (list 's (list GOTO 0)))
+                                   20
+                                   tm-RI
+                                   tm-LI) 
+                             '(i a s)))
+  
+  (check-equal? (rest (ctm-run tm-LB `(I ,BLANK i i a i ,BLANK) 6))
+                '(1 (I _ i i a i _)))
+
+  (check-equal? (rest (ctm-run tm-LB `(I ,BLANK i i a i ,BLANK ,BLANK) 7))
+                '(6 (I _ i i a i _ _)))
 
   #|
 (check-equal? (ctm-apply tm-LB `(I ,BLANK I I add1 I ,BLANK) 5) (tmconfig 'h 1 '(I _ I I add1 I _)))

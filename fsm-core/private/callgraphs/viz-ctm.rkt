@@ -180,7 +180,8 @@
                                                 (second (first new-ptape))
                                                 (third (first new-ptape)))
                                  (square 30 'solid 'white)
-                                 (if (and (not (equal? (first new-pvar) '(label "")))
+                                 (if (and (not (empty? new-pvar))
+                                          (not (equal? (first new-pvar) '(label "")))
                                           (not (equal? (first new-pvar)  '(label "dummy")))
                                           (not (equal? (first new-pvar) '(label "BLANK")))
                                           (not (equal? (first new-pvar) 'list)))
@@ -194,10 +195,9 @@
         [(key=? "down" a-key)
          (if (empty? (graph-upimgs (viz-state-graph a-vs)))
              a-vs
-             (let* [(new-utape (list (first (append (reverse (tapelist-utape (viz-state-tapelist a-vs)))
-                                                    (tapelist-ptape (viz-state-tapelist a-vs))))))
-                    (new-ptape (rest (append (reverse (tapelist-utape (viz-state-tapelist a-vs)))
-                                             (tapelist-ptape (viz-state-tapelist a-vs)))))]
+             (let* [(new-utape '())
+                    (new-ptape (append (reverse (tapelist-utape (viz-state-tapelist a-vs)))
+                                       (tapelist-ptape (viz-state-tapelist a-vs))))]
                (viz-state (graph '()
                                  (append (reverse (graph-upimgs (viz-state-graph a-vs)))
                                          (graph-pimgs (viz-state-graph a-vs))))
@@ -453,18 +453,15 @@
 ;; ctm a-list (listof symbol) number -> void
 (define (ctm-viz ctm ctm-list tape head)
   (let* [(ce (fix-blank-label (computation-edges ctm ctm-list tape head))
-             #;(computation-edges ctm ctm-list tape head))
+             )
          (last-node (second (last ce)))
          (comp-edges (append (list (list "dummy-edge" "edge-dummy" (list '(label "dummy")'(style "dummy"))))
                              ce
                              (list (list last-node "edge-dummy" (list '(label "dummy") '(style "dummy"))))
                              )
-                     #;(cons '("dummy-edge" "edge-dummy" (list "dummy" "dummy"))
-                             (append ce
-                                     (list (list last-node "edge-dummy" (list "dummy" "dummy"))))
-                             ))
+                     )
          (loedges (fix-blank-label (clean-list (dot-edges (parse-program ctm-list))))
-                  #;(clean-list (dot-edges (parse-program ctm-list))))
+                  )
          (lonodes (clean-list (dot-nodes (parse-program ctm-list))))
          (lotraces (filter (λ (x) (tmconfig? x)) (ctm-apply ctm tape head #t)))
          (loimgs (create-graph-imgs loedges lonodes comp-edges))
