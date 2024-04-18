@@ -102,10 +102,13 @@
                                     (string->symbol (second rule))
                                     #:atb (hash 'fontsize 14
                                                 'style (second (second (third rule)))
-                                                'color (if (and (equal? (first rule) (first edge))
-                                                                (equal? (second rule) (second edge)))
-                                                           'dodgerblue2
-                                                           'black)
+                                                'color (cond [(and (equal? (first rule) (first edge))
+                                                                   (equal? (second rule) (second edge)))
+                                                              'dodgerblue2]
+                                                             [(equal? (fourth (third rule)) "var=k")
+                                                              'white]
+                                                             [else 'black])
+                                                'headlabel (fourth (third rule))
                                                 )))
          dgraph
          loe))
@@ -136,7 +139,7 @@
                               (tapelist new-utape
                                         new-ptape)
                               message
-                              (if (= 1 (length (var-uvar (viz-state-var a-vs))))
+                              (if (empty? (var-uvar (viz-state-var a-vs)))
                                   (viz-state-var a-vs)                                  
                                   (var (rest (var-uvar (viz-state-var a-vs)))
                                        (cons (first (var-uvar (viz-state-var a-vs)))
@@ -157,7 +160,7 @@
                                          (text (format "k = ~a" (second (first new-pvar))) 20 'black)
                                          (text "" 20 'black))
                                      ) 
-                              (if (= 1 (length (var-uvar (viz-state-var a-vs))))
+                              (if (empty? (var-uvar (viz-state-var a-vs)))
                                   (viz-state-var a-vs) 
                                   (var new-uvar
                                        new-pvar))))
@@ -422,7 +425,7 @@
 ;; Purpose: To fix the blank label in computation edges
 (define (fix-blank-label loe)
   (map (λ (rule) (if (equal? (second (first (third rule))) "_")
-                     (list (first rule) (second rule) (list '(label "BLANK") (second (third rule))))
+                     (list (first rule) (second rule) (list '(label "BLANK") (second (third rule)) (third (third rule)) (fourth (third rule))))
                      rule)) loe))
 
 
@@ -467,6 +470,7 @@
          (loimgs (create-graph-imgs loedges lonodes comp-edges))
          (tapes (create-tape lotraces))
          (lovars (extract-labels comp-edges))
+         (dd (display (format "~s\n\n" (fix-blank-label (clean-list (dot-edges (parse-program ctm-list)))))))
          (tapeimg (above (make-tape-img (first (first tapes)) (second (first tapes)) (third (first tapes)))
                          (square 30 'solid 'white)
                          (if (and (not (equal? (first lovars) '(label "")))
@@ -475,10 +479,7 @@
                                   (not (equal? (first lovars) 'list)))
                              (text (format "k = ~a" (second (first lovars))) 20 'black)
                              (text "" 20 'black))
-                         ))
-         
-         
-                  
+                         ))        
          ]
     (run-viz (viz-state (graph (rest loimgs) (list (first loimgs)))
                         (tapelist (rest tapes) (list (first tapes)))
