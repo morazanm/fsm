@@ -105,10 +105,10 @@
                                                 'color (cond [(and (equal? (first rule) (first edge))
                                                                    (equal? (second rule) (second edge)))
                                                               'dodgerblue2]
-                                                             [(equal? (fourth (third rule)) "var=k")
-                                                              'white]
+                                                             [(equal? (second (third (third rule))) "white")
+                                                              'white]    
                                                              [else 'black])
-                                                'headlabel (fourth (third rule))
+                                                'headlabel (second (fourth (third rule)))
                                                 )))
          dgraph
          loe))
@@ -470,7 +470,6 @@
          (loimgs (create-graph-imgs loedges lonodes comp-edges))
          (tapes (create-tape lotraces))
          (lovars (extract-labels comp-edges))
-         (dd (display (format "~s\n\n" (fix-blank-label (clean-list (dot-edges (parse-program ctm-list)))))))
          (tapeimg (above (make-tape-img (first (first tapes)) (second (first tapes)) (third (first tapes)))
                          (square 30 'solid 'white)
                          (if (and (not (equal? (first lovars) '(label "")))
