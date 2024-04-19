@@ -251,24 +251,24 @@
 ;; PRE:  tape = (@ w) and i = 1
 ;; POST: tape = (@ _ w) and i = |w|+2
 (define shiftr (combine-tms
-               (list FBR
-                     0
-                     L
-                     (cons BRANCH (list (list 'a (list GOTO 1))
-                                        (list 'b (list GOTO 1))
-                                        (list 'd (list GOTO 1))
-                                        (list '@ (list GOTO 3))
-                                        (list '_ (list GOTO 3))))
-                     1
-                     (list (list VAR 'x)
-                           R
-                           'x
-                           L
-                           WB
-                           (list GOTO 0))
-                     3
-                     FBR)
-               '(a b d)))
+                (list FBR
+                      0
+                      L
+                      (cons BRANCH (list (list 'a (list GOTO 1))
+                                         (list 'b (list GOTO 1))
+                                         (list 'd (list GOTO 1))
+                                         (list '@ (list GOTO 3))
+                                         (list '_ (list GOTO 3))))
+                      1
+                      (list (list VAR 'x)
+                            R
+                            'x
+                            L
+                            WB
+                            (list GOTO 0))
+                      3
+                      FBR)
+                '(a b d)))
 
 ;.................................................
 #|             
@@ -289,21 +289,21 @@
 ;; PRE:  tape = (@ _ w) and i = 1
 ;; POST: tape = (@ w _ _) and i = |w|+2
 (define shiftl (combine-tms
-               (list 0
-                     R
-                     (cons BRANCH (list (list 'a (list GOTO 1))
-                                        (list 'b (list GOTO 1))
-                                        (list 'd (list GOTO 1))
-                                        (list '_ (list GOTO 3))))
-                     1
-                     (list (list VAR 'x)
-                           L
-                           'x
-                           R
-                           WB
-                           (list GOTO 0))
-                     3)
-               '(a b d)))
+                (list 0
+                      R
+                      (cons BRANCH (list (list 'a (list GOTO 1))
+                                         (list 'b (list GOTO 1))
+                                         (list 'd (list GOTO 1))
+                                         (list '_ (list GOTO 3))))
+                      1
+                      (list (list VAR 'x)
+                            L
+                            'x
+                            R
+                            WB
+                            (list GOTO 0))
+                      3)
+                '(a b d)))
 
 (define shiftr-list '(FBR
                       0
