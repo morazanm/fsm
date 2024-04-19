@@ -200,9 +200,10 @@
                                                 (third (first new-ptape)))
                                  (square 30 'solid 'white)
                                  (text "The machine halts" 20 'purple))
-                          (var '()
-                               (append (reverse (var-uvar (viz-state-var a-vs)))
-                                       (var-pvar (viz-state-var a-vs)))))))]
+                          (var (list (first (append (reverse (var-uvar (viz-state-var a-vs)))
+                                                    (var-pvar (viz-state-var a-vs)))))
+                               (rest (append (reverse (var-uvar (viz-state-var a-vs)))
+                                             (var-pvar (viz-state-var a-vs))))))))]
         [(key=? "up" a-key)
          (if (= (length (graph-pimgs (viz-state-graph a-vs))) 1)
              a-vs
@@ -245,9 +246,7 @@
                (viz-state (viz-state-graph a-vs)
                           new-tapelist
                           message
-                          (var '()
-                               (append (reverse (var-uvar (viz-state-var a-vs)))
-                                       (var-pvar (viz-state-var a-vs))))
+                          (viz-state-var a-vs)
                           ))
              a-vs)]
         
@@ -469,7 +468,7 @@
          (tmc-var (filter (λ (x) (or (tmconfig? x)
                                      (equal? 'VAR (first x)))) (ctm-apply ctm tape head #t)))
          (refs (map (λ (x) (sub1 x)) (references tmc-var 0)))
-         (tmconf-clean (drop-right (remove-configs refs tmc-var) 1))
+         (tmconf-clean (remove-configs refs tmc-var))
          (varimgs (append (map (λ (var) (if (tmconfig? var)
                                             (text "" 20 'black)
                                             (text (format "k = ~a" (third var)) 20 'black))) tmconf-clean)))
