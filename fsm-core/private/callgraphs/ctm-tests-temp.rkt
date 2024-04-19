@@ -421,6 +421,80 @@
                          '(i)))
 
 
+
+
+
+;;; COPY FOR MULT ;;;;
+
+
+(define COPYM (combine-tms
+              (list FBL
+                    0
+                    R
+                    (cons BRANCH (list (list BLANK (list GOTO 2))
+                                       (list 'a (list GOTO 1))
+                                       (list 'b (list GOTO 1))
+                                       (list 'd (list GOTO 1))))
+                    1
+                    (list (list VAR 'k)
+                          WB
+                          FBR
+                          FBR
+                          'k
+                          FBL
+                          FBL
+                          'k
+                          (list GOTO 0))
+                    2
+                    FBR
+                    L
+                    (cons BRANCH (list (list BLANK (list GOTO 3))
+                                       (list 'a (list GOTO 4))
+                                       (list 'b (list GOTO 4))
+                                       (list 'd (list GOTO 4))))
+                    3
+                    RR
+                    (list GOTO 5)
+                    4
+                    R
+                    (list GOTO 5)
+                    5)
+              '(a b d)))
+
+;; Sample ctm as list
+(define COPYLM
+  '(FBL
+    0
+    R
+    (cons BRANCH (list (list _ (list GOTO 2))
+                       (list a (list GOTO 1))
+                       (list b (list GOTO 1))
+                       (list d (list GOTO 1))))
+    1
+    (list (list VAR 'k)
+          WB
+          FBR
+          FBR
+          k
+          FBL
+          FBL
+          k
+          (list GOTO 0))
+    2
+    FBR
+    L
+    (cons BRANCH (list (list _ (list GOTO 3))
+                       (list a (list GOTO 4))
+                       (list b (list GOTO 4))
+                       (list d (list GOTO 4))))
+    3
+    RR
+    (list GOTO 5)
+    4
+    R
+    (list GOTO 5)
+    5))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; ctm to compute mult(a b) = a * b
 
@@ -444,7 +518,7 @@
                     WB
                     FBR
                     FBR
-                    COPY
+                    COPYM
                     FBL
                     FBL
                     FBL
@@ -480,7 +554,7 @@
                 WB
                 FBR
                 FBR
-                COPY
+                COPYM
                 FBL
                 FBL
                 FBL
