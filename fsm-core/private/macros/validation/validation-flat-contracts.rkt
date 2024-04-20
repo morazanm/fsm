@@ -63,7 +63,7 @@
                       (raise-blame-error
                        blame
                        (invalid-words words sigma)
-                       (format "Step six of the design recipe has not been successfully completed.\nThe following words in the list of words the machine should ~a contain symbols not included in the sigma" field)
+                       (format "Step six of the design recipe has not been successfully completed.\nThe following words the machine should ~a contain symbols not included in sigma" field)
                        )
                       )
                     )
@@ -80,7 +80,7 @@
                       (raise-blame-error
                        blame
                        (invalid-words-tm words sigma)
-                       (format-error blame "Step six of the design recipe has not been successfully completed.\nThe following words in the list of words the machine should ~a contain symbols not included in sigma" field)
+                       (format-error blame "Step six of the design recipe has not been successfully completed.\nThe following words the machine should ~a contain symbols not included in sigma" field)
                      
                        )
                       )
