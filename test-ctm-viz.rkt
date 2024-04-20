@@ -1,6 +1,6 @@
-#lang racket
+#lang fsm
 
-(require "main.rkt")
+;(require "main.rkt")
 
 #|
 
