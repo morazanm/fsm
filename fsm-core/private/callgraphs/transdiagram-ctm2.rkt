@@ -82,13 +82,19 @@
         ((number? datum)
          (label-exp datum))
         ((pair? datum)
-         (cond ((eqv? (car datum) 'BRANCH)
-                (branch-exp
-                 (cadr datum)))
-               ((eqv? (car datum) 'GOTO)
+         (cond ((or (equal? (car datum) 'BRANCH)
+                    (equal? (car datum) ',BRANCH))
+                (if (pair? (car (cadr datum)))
+                    (branch-exp
+                     (cadr datum))
+                    (branch-exp
+                     (car (list (cdr datum))))))
+               ((or (equal? (car datum) 'GOTO)
+                    (equal? (car datum) ',GOTO))
                 (goto-exp
                  (label-exp (cadr datum))))
-               ((eqv? (car (car datum)) 'VAR)
+               ((or (equal? (car (car datum)) 'VAR)
+                    (equal? (car (car datum)) ',VAR))
                 (var-exp
                  (if (pair? (cadr (car datum)))
                      (car (cdr (cadr (car datum))))
@@ -168,11 +174,13 @@
 
 ;; list -> list
 ;; Purpose: Filter given list to not include 'list or 'cons or ()
-(define (filter-list l)  
+(define (filter-list l)
   (cond ((null? l)
          '())
         ((and (pair? (car l))
-              (equal? (car (car l)) 'quote)) (cons (car (cdr (car l))) (filter-list (cdr l))))
+              (or (equal? (car (car l)) 'quote)
+                  (equal? (car (car l)) 'quasiquote)
+                  (equal? (car (car l)) 'unquote))) (cons (car (filter-list (cdr (car l)))) (filter-list (cdr l))))
         ((pair? (car l))
          (cons (filter-list (car l)) (filter-list (cdr l))))
         ((or (equal? (car l) 'list)
@@ -329,7 +337,8 @@
                                                          ""
                                                          (cadr (car new-edge))))))]
           [(and (struct? (car trace))
-                (equal? 'BRANCH (car (cadr trace))))
+                (or (equal? 'BRANCH (car (cadr trace)))
+                    (equal? ',BRANCH (car (cadr trace)))))
            (let ((new-edge (filter (lambda (x) (and (equal? (car x) stored-val)
                                                     (if (equal? (cadr (cadr trace)) '_)
                                                         (or (equal? (cadr (car (caddr x))) "_")
@@ -347,10 +356,14 @@
                                                          (cadr (car new-edge))))))]
           [(or (equal? 'GOTO (car (car trace)))
                (equal? 'BRANCH (car (car trace)))
-               (equal? 'VAR (car (car trace))))
+               (equal? 'VAR (car (car trace)))
+               (equal? ',GOTO (car (car trace)))
+               (equal? ',BRANCH (car (car trace)))
+               (equal? ',VAR (car (car trace))))
            (follow-trace (cdr trace) edges stored-val)]))
   (follow-trace (cdr (ctm-apply ctm tape head #t))
                 (filter (lambda (x) (not (equal? "white" (cadr (caddr (caddr x)))))) (clean-list (dot-edges (parse-program ctmlist))))
                 (car (car (clean-list (dot-edges (parse-program ctmlist)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
