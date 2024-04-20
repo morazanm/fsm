@@ -666,5 +666,5 @@
                                           (C a C)
                                           (C b C))))
 
-(ndfa2dfa-viz aa-ab)
+;(ndfa2dfa-viz aa-ab)
 ;(ndfa2dfa-viz AT-LEAST-ONE-MISSING)
