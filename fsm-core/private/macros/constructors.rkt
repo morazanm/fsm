@@ -114,7 +114,7 @@
                               start
                               finals
                               rules) (and/c (listof-words/c "accepts")
-                                            (words-in-sigma/c sigma )
+                                            (words-in-sigma/c sigma 'accept)
                                             (ndfa-input/c states
                                                           sigma
                                                           start
@@ -126,7 +126,7 @@
                               start
                               finals
                               rules) (and/c (listof-words/c "rejects")
-                                            (words-in-sigma/c sigma)
+                                            (words-in-sigma/c sigma 'reject)
                                             (ndfa-input/c states
                                                           sigma
                                                           start
