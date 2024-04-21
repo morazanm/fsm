@@ -471,7 +471,7 @@
          (tmconf-clean (remove-configs refs tmc-var))
          (varimgs (append (map (λ (var) (if (tmconfig? var)
                                             (text "" 20 'black)
-                                            (text (format "k = ~a" (third var)) 20 'black))) tmconf-clean)))
+                                            (text (format "~a = ~a" (second var)(third var)) 20 'black))) tmconf-clean)))
                                     
          (loimgs (create-graph-imgs loedges lonodes comp-edges))
          (tapes (create-tape tmconfigs))
