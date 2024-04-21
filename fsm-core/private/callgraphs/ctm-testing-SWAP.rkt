@@ -60,5 +60,5 @@
 (check-equal? (rest (ctm-run swap `(,LM ,BLANK a b a a) 5))
               `(5 (@ _ a b a _ a)))
 
-(ctm-viz swap swapl `(,LM ,BLANK a b a) 3)
+;(ctm-viz swap swapl `(,LM ,BLANK a b a) 3)
 
