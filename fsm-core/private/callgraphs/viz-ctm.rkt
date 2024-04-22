@@ -455,7 +455,7 @@
 (define (ctm-viz ctm ctm-list tape head)
   (let* [(ce (fix-blank-label (computation-edges ctm ctm-list tape head))
              )
-         (last-node (second (last ce)))
+         (last-node (tmconfig-state (last (ctm-apply ctm tape head #t))))
          (comp-edges (append (list (list "dummy-edge" "edge-dummy" (list '(label "dummy")'(style "dummy") '(color "dummy") '(headlabel "dummy"))))
                              ce
                              (list (list last-node "edge-dummy" (list '(label "dummy") '(style "dummy")'(color "dummy") '(headlabel "dummy"))))
