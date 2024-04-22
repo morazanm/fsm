@@ -1,9 +1,7 @@
 #lang racket
-
 (require "../fsm-core/private/callgraphs/viz-ctm.rkt"
          "../main.rkt"
          rackunit)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; tms
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -404,7 +402,7 @@
                     4
                     FBL
                     shiftr
-                    FBR)           
+                    FBR)         
               '(d)))
 
 (define MULTL '(list R
@@ -442,6 +440,7 @@
                     shiftr
                     FBR))
 
+;; using ctm syntax for branches (i.e., not just a goto)
 
 (define MULT2 (combine-tms
                (list R
