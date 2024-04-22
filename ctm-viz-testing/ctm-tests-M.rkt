@@ -51,13 +51,13 @@
                        (list 'a 'b)))
 
 (define ML '(list L
-                  0
-                  (cons BRANCH
-                        (list (list 'a L (list GOTO 0))
-                              (list 'b L (list GOTO 0))
-                              (list BLANK (list GOTO 1))
-                              (list LM L (list GOTO 0))))
-                  1))
+                 0
+                 (cons BRANCH
+                       (list (list 'a L (list GOTO 0))
+                             (list 'b L (list GOTO 0))
+                             (list BLANK (list GOTO 1))
+                             (list LM R L (list GOTO 0))))
+                 1))
 
 (check-equal? (ctm-run M `(,LM ,BLANK a a b) 4)
               `(H 1 (,LM ,BLANK a a b)))

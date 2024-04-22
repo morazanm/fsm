@@ -1,0 +1,23 @@
+#lang racket
+
+(require "../fsm-core/private/callgraphs/viz-ctm.rkt"
+         "../main.rkt"
+         rackunit)
+
+;; PRE: tape = (LM w), where w in (a b BLANK)*
+;; POST: tape = (LM w)
+(define HALT (make-tm '(S)
+                      `(a b)
+                      `()
+                      'S
+                      '(S)))
+
+(check-equal? (last (sm-showtransitions HALT `(,LM ,BLANK) 1))
+              `(S 1 (,LM _)))
+(check-equal? (last (sm-showtransitions  HALT `(,LM a a b a b) 4))
+              `(S 4 (,LM a a b a b)))
+
+(define H (combine-tms (list HALT) '(a b)))
+
+(define HL '(list HALT))
+
