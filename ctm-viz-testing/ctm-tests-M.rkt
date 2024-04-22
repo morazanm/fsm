@@ -96,7 +96,7 @@
                    L
                    (list GOTO 0)
                    1))
-
+ 
 (check-equal? (ctm-run M2 `(,LM ,BLANK a a b) 4)
               `(H 1 (,LM ,BLANK a a b)))
 (check-equal? (ctm-run M2 `(,LM a ,BLANK a b ,BLANK b a b b) 8)
