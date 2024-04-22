@@ -119,8 +119,7 @@
 ;;          backwards, or to the end.
 (define (process-key a-vs a-key)
   (cond [(key=? "right" a-key)
-         (if (or (empty? (graph-upimgs (viz-state-graph a-vs)))
-                 (empty? (tapelist-utape (viz-state-tapelist a-vs))))
+         (if (empty? (graph-upimgs (viz-state-graph a-vs)))
              a-vs
              (let* [(new-utape (rest (tapelist-utape (viz-state-tapelist a-vs))))
                     (new-ptape (cons (first (tapelist-utape (viz-state-tapelist a-vs)))
@@ -162,8 +161,7 @@
                                        new-pvar))))
                ))]
         [(key=? "left" a-key)
-         (if (or (= (length (graph-pimgs (viz-state-graph a-vs))) 1)
-                 (= (length (tapelist-ptape (viz-state-tapelist a-vs))) 0))
+         (if (= (length (graph-pimgs (viz-state-graph a-vs))) 1)
              a-vs
              (let* [(new-utape (cons (first (tapelist-ptape (viz-state-tapelist a-vs)))
                                      (tapelist-utape (viz-state-tapelist a-vs))))
