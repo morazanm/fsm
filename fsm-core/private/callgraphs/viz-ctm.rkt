@@ -10,7 +10,7 @@
                     [make-color loc-make-color]
                     [make-pen loc-make-pen])
          2htdp/image
-         "transdiagram-ctm2.rkt")
+         "transdiagram-ctm6.rkt")
 
 (provide ctm-viz)
 
