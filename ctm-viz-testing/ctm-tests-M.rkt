@@ -63,3 +63,41 @@
               `(H 1 (,LM ,BLANK a a b)))
 (check-equal? (ctm-run M `(,LM a ,BLANK a b ,BLANK b a b b) 8)
               `(H 5 (,LM a ,BLANK a b ,BLANK b a b b)))
+
+(define M2 (combine-tms (list L
+                              0
+                              (cons BRANCH
+                                    (list (list 'a (list GOTO 10))
+                                          (list 'b (list GOTO 10))
+                                          (list BLANK (list GOTO 1))
+                                          (list LM (list GOTO 20))))
+                              10
+                              L
+                              (list GOTO 0)
+                              20
+                              R
+                              L
+                              (list GOTO 0)
+                              1)
+                        (list 'a 'b)))
+
+(define M2L '(list L
+                   0
+                   (cons BRANCH
+                         (list (list 'a (list GOTO 10))
+                               (list 'b (list GOTO 10))
+                               (list BLANK (list GOTO 1))
+                               (list LM (list GOTO 20))))
+                   10
+                   L
+                   (list GOTO 0)
+                   20
+                   R
+                   L
+                   (list GOTO 0)
+                   1))
+
+(check-equal? (ctm-run M2 `(,LM ,BLANK a a b) 4)
+              `(H 1 (,LM ,BLANK a a b)))
+(check-equal? (ctm-run M2 `(,LM a ,BLANK a b ,BLANK b a b b) 8)
+              `(H 5 (,LM a ,BLANK a b ,BLANK b a b b)))
