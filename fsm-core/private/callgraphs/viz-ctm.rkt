@@ -102,10 +102,13 @@
                                     (string->symbol (second rule))
                                     #:atb (hash 'fontsize 14
                                                 'style (second (second (third rule)))
-                                                'color (if (and (equal? (first rule) (first edge))
-                                                                (equal? (second rule) (second edge)))
-                                                           'dodgerblue2
-                                                           'black)
+                                                'color (cond [(and (equal? (first rule) (first edge))
+                                                                   (equal? (second rule) (second edge)))
+                                                              'dodgerblue2]
+                                                             [(equal? (second (third (third rule))) "white")
+                                                              'white]    
+                                                             [else 'black])
+                                                'headlabel (second (fourth (third rule)))
                                                 )))
          dgraph
          loe))
@@ -136,7 +139,7 @@
                               (tapelist new-utape
                                         new-ptape)
                               message
-                              (if (= 1 (length (var-uvar (viz-state-var a-vs))))
+                              (if (empty? (var-uvar (viz-state-var a-vs)))
                                   (viz-state-var a-vs)                                  
                                   (var (rest (var-uvar (viz-state-var a-vs)))
                                        (cons (first (var-uvar (viz-state-var a-vs)))
@@ -150,14 +153,9 @@
                                                     (second (first new-ptape))
                                                     (third (first new-ptape)))
                                      (square 30 'solid 'white)
-                                     (if (and (not (equal? (first new-pvar) '(label "")))
-                                              (not (equal? (first new-pvar)  '(label "dummy")))
-                                              (not (equal? (first new-pvar) '(label "BLANK")))
-                                              (not (equal? (first new-pvar) 'list)))
-                                         (text (format "k = ~a" (second (first new-pvar))) 20 'black)
-                                         (text "" 20 'black))
+                                     (first new-pvar)
                                      ) 
-                              (if (= 1 (length (var-uvar (viz-state-var a-vs))))
+                              (if (empty? (var-uvar (viz-state-var a-vs)))
                                   (viz-state-var a-vs) 
                                   (var new-uvar
                                        new-pvar))))
@@ -180,12 +178,7 @@
                                                 (second (first new-ptape))
                                                 (third (first new-ptape)))
                                  (square 30 'solid 'white)
-                                 (if (and (not (equal? (first new-pvar) '(label "")))
-                                          (not (equal? (first new-pvar)  '(label "dummy")))
-                                          (not (equal? (first new-pvar) '(label "BLANK")))
-                                          (not (equal? (first new-pvar) 'list)))
-                                     (text (format "k = ~a" (second (first new-pvar))) 20 'black)
-                                     (text "" 20 'black))
+                                 (first new-pvar)
                                  )
                           (if (= 1 (length (var-pvar (viz-state-var a-vs))))
                               (viz-state-var a-vs) 
@@ -194,10 +187,9 @@
         [(key=? "down" a-key)
          (if (empty? (graph-upimgs (viz-state-graph a-vs)))
              a-vs
-             (let* [(new-utape (list (first (append (reverse (tapelist-utape (viz-state-tapelist a-vs)))
-                                                    (tapelist-ptape (viz-state-tapelist a-vs))))))
-                    (new-ptape (rest (append (reverse (tapelist-utape (viz-state-tapelist a-vs)))
-                                             (tapelist-ptape (viz-state-tapelist a-vs)))))]
+             (let* [(new-utape '())
+                    (new-ptape (append (reverse (tapelist-utape (viz-state-tapelist a-vs)))
+                                       (tapelist-ptape (viz-state-tapelist a-vs))))]
                (viz-state (graph '()
                                  (append (reverse (graph-upimgs (viz-state-graph a-vs)))
                                          (graph-pimgs (viz-state-graph a-vs))))
@@ -208,9 +200,10 @@
                                                 (third (first new-ptape)))
                                  (square 30 'solid 'white)
                                  (text "The machine halts" 20 'purple))
-                          (var '()
-                               (append (reverse (var-uvar (viz-state-var a-vs)))
-                                       (var-pvar (viz-state-var a-vs)))))))]
+                          (var (list (first (append (reverse (var-uvar (viz-state-var a-vs)))
+                                                    (var-pvar (viz-state-var a-vs)))))
+                               (rest (append (reverse (var-uvar (viz-state-var a-vs)))
+                                             (var-pvar (viz-state-var a-vs))))))))]
         [(key=? "up" a-key)
          (if (= (length (graph-pimgs (viz-state-graph a-vs))) 1)
              a-vs
@@ -228,12 +221,7 @@
                                                 (second (first new-ptape))
                                                 (third (first new-ptape)))
                                  (square 30 'solid 'white)
-                                 (if (and (not (equal? (first (var-pvar (viz-state-var a-vs))) '(label "")))
-                                          (not (equal? (first (var-pvar (viz-state-var a-vs))) '(label "dummy")))
-                                          (not (equal? (first (var-pvar (viz-state-var a-vs))) '(label "BLANK")))
-                                          (not (equal? (first (var-pvar (viz-state-var a-vs))) 'list)))
-                                     (text (format "k = ~a" (second (first (var-pvar (viz-state-var a-vs))))) 20 'black)
-                                     (text "" 20 'black))
+                                 (first (var-pvar (viz-state-var a-vs)))
                                  )
                           (var (rest (append (reverse (var-pvar (viz-state-var a-vs)))
                                              (var-uvar (viz-state-var a-vs))))
@@ -249,27 +237,17 @@
                     (new-ptape (cons new-tape (rest (tapelist-ptape (viz-state-tapelist a-vs)))))
                     (new-tapelist (tapelist (tapelist-utape (viz-state-tapelist a-vs))
                                             new-ptape))
+                    (message (above (make-tape-img (first (first new-ptape))
+                                                   (second (first new-ptape))
+                                                   (third (first new-ptape)))
+                                    (square 30 'solid 'white)
+                                    (text "The machine halts" 20 'purple)))
                     ]
                (viz-state (viz-state-graph a-vs)
                           new-tapelist
-                          (if (empty? (graph-upimgs (viz-state-graph a-vs)))
-                              (above (make-tape-img (first (first (tapelist-ptape new-tapelist)))
-                                                    (second (first (tapelist-ptape new-tapelist)))
-                                                    (third (first (tapelist-ptape new-tapelist))))
-                                     (square 30 'solid 'white)
-                                     (text "The machine halts" 20 'purple))
-                              (above (make-tape-img (first (first (tapelist-ptape new-tapelist)))
-                                                    (second (first (tapelist-ptape new-tapelist)))
-                                                    (third (first (tapelist-ptape new-tapelist))))
-                                     (square 30 'solid 'white)
-                                     (if (and (not (equal? (first (var-pvar (viz-state-var a-vs))) '(label "")))
-                                              (not (equal? (first (var-pvar (viz-state-var a-vs))) '(label "dummy")))
-                                              (not (equal? (first (var-pvar (viz-state-var a-vs))) '(label "BLANK")))
-                                              (not (equal? (first (var-pvar (viz-state-var a-vs))) 'list)))
-                                         (text (format "k = ~a" (first (var-pvar (viz-state-var a-vs)))) 20 'black)
-                                         (text "" 20 'black))
-                                     ))
-                          (viz-state-var a-vs)))
+                          message
+                          (viz-state-var a-vs)
+                          ))
              a-vs)]
         
         [(key=? "s" a-key)
@@ -294,12 +272,7 @@
                                                     (sub1 (second (first (tapelist-ptape (viz-state-tapelist a-vs)))))
                                                     (third (first (tapelist-ptape (viz-state-tapelist a-vs)))))
                                      (square 30 'solid 'white)
-                                     (if (and (not (equal? (first (var-pvar (viz-state-var a-vs))) '(label "")))
-                                              (not (equal? (first (var-pvar (viz-state-var a-vs))) '(label "dummy")))
-                                              (not (equal? (first (var-pvar (viz-state-var a-vs))) 'list))
-                                              (not (equal? (first (var-pvar (viz-state-var a-vs))) '(label "BLANK"))))
-                                         (text (format "k = ~a" (second (first (var-pvar (viz-state-var a-vs))))) 20 'black)
-                                         (text "" 20 'black))
+                                     (second (first (var-pvar (viz-state-var a-vs))))
                                      ))
                           (viz-state-var a-vs))))]
         
@@ -422,8 +395,33 @@
 ;; Purpose: To fix the blank label in computation edges
 (define (fix-blank-label loe)
   (map (λ (rule) (if (equal? (second (first (third rule))) "_")
-                     (list (first rule) (second rule) (list '(label "BLANK") (second (third rule))))
+                     (list (first rule) (second rule)
+                           (list '(label "BLANK")
+                                 (second (third rule))
+                                 (third (third rule))
+                                 (fourth (third rule))))
                      rule)) loe))
+
+
+;; references
+;; (listof trace) accum -> (listof number)
+;; Purpose: To extract the listrefs of VARS in the trace
+(define (references lot accum)
+  (if (> accum (sub1 (length lot)))
+      empty
+      (if (not (tmconfig? (list-ref lot accum)))
+          (cons accum (references lot (add1 accum)))
+          (references lot (add1 accum)))))
+
+
+
+;; remove-configs
+;; (listof num) (listof configs) -> (listof configs)
+;; Purpose: To remove tmconfigs in the place of vars
+(define (remove-configs refs configs)
+  (if (empty? refs)
+      configs
+      (remove (list-ref configs (first refs)) (remove-configs (rest refs) configs))))
 
 
 ;; draw-img
@@ -453,41 +451,40 @@
 ;; ctm a-list (listof symbol) number -> void
 (define (ctm-viz ctm ctm-list tape head)
   (let* [(ce (fix-blank-label (computation-edges ctm ctm-list tape head))
-             #;(computation-edges ctm ctm-list tape head))
+             )
          (last-node (second (last ce)))
-         (comp-edges (append (list (list "dummy-edge" "edge-dummy" (list '(label "dummy")'(style "dummy"))))
+         (comp-edges (append (list (list "dummy-edge" "edge-dummy" (list '(label "dummy")'(style "dummy") '(color "dummy") '(headlabel "dummy"))))
                              ce
-                             (list (list last-node "edge-dummy" (list '(label "dummy") '(style "dummy"))))
+                             (list (list last-node "edge-dummy" (list '(label "dummy") '(style "dummy")'(color "dummy") '(headlabel "dummy"))))
                              )
-                     #;(cons '("dummy-edge" "edge-dummy" (list "dummy" "dummy"))
-                             (append ce
-                                     (list (list last-node "edge-dummy" (list "dummy" "dummy"))))
-                             ))
+                     )
          (loedges (fix-blank-label (clean-list (dot-edges (parse-program ctm-list))))
-                  #;(clean-list (dot-edges (parse-program ctm-list))))
+                  )
          (lonodes (clean-list (dot-nodes (parse-program ctm-list))))
-         (lotraces (filter (λ (x) (tmconfig? x)) (ctm-apply ctm tape head #t)))
+         (tmconfigs (filter (λ (x) (tmconfig? x)) (ctm-apply ctm tape head #t)))
+         (all-vars (map (λ (x) (third x))
+                        (filter (λ (x) (and (not (tmconfig? x))
+                                            (equal? 'VAR (first x)))) (ctm-apply ctm tape head #t))))
+         (tmc-var (filter (λ (x) (or (tmconfig? x)
+                                     (equal? 'VAR (first x)))) (ctm-apply ctm tape head #t)))
+         (refs (map (λ (x) (sub1 x)) (references tmc-var 0)))
+         (tmconf-clean (remove-configs refs tmc-var))
+         (varimgs (append (map (λ (var) (if (tmconfig? var)
+                                            (text "" 20 'black)
+                                            (text (format "~a = ~a" (second var)(third var)) 20 'black))) tmconf-clean)))
+                                    
          (loimgs (create-graph-imgs loedges lonodes comp-edges))
-         (tapes (create-tape lotraces))
+         (tapes (create-tape tmconfigs))
          (lovars (extract-labels comp-edges))
          (tapeimg (above (make-tape-img (first (first tapes)) (second (first tapes)) (third (first tapes)))
                          (square 30 'solid 'white)
-                         (if (and (not (equal? (first lovars) '(label "")))
-                                  (not (equal? (first lovars) '(label "dummy")))
-                                  (not (equal? (first lovars) '(label "BLANK")))
-                                  (not (equal? (first lovars) 'list)))
-                             (text (format "k = ~a" (second (first lovars))) 20 'black)
-                             (text "" 20 'black))
+                         (first varimgs)
                          ))
-         #;(dd (display (format "~s" lovars)))
-         
-         
-                  
          ]
     (run-viz (viz-state (graph (rest loimgs) (list (first loimgs)))
                         (tapelist (rest tapes) (list (first tapes)))
                         tapeimg
-                        (var (rest lovars) (list (first lovars))))
+                        (var (rest varimgs) (list (first varimgs))))
              draw-world 'viz-ctm)))
 
 
