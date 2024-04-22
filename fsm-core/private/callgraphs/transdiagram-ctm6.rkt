@@ -449,13 +449,13 @@
                      (follow-trace (cdr trace) edges (if (empty? new-edge)
                                                          ""
                                                          (cadr (car new-edge))))))]
-          [(or (equal? 'GOTO (car (car trace)))
-               (equal? 'BRANCH (car (car trace)))
-               (equal? 'VAR (car (car trace))))
+          [else 
            (follow-trace (cdr trace) edges stored-val)]))
-  (follow-trace (cdr (ctm-apply ctm tape head #t))
+  (follow-trace (filter (lambda (x) (or (struct? x)
+                                        (and (not (equal? (car x) 'GOTO))
+                                             (not (equal? (car x) 'VAR))))) (cdr (ctm-apply ctm tape head #t)))
                 (filter (lambda (x) (not (equal? "white" (cadr (caddr (caddr x)))))) (clean-list (dot-edges (parse-program ctmlist))))
                 (car (car (clean-list (dot-edges (parse-program ctmlist)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+  
