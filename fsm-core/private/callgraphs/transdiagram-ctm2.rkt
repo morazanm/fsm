@@ -169,6 +169,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; more helpers
 
+;; branch -> branch
+;; Purpose: Eliminate redundant lists
+(define (branch-helper l)
+  (cond ((null? l) '())
+        ((and (pair? (car l))
+              (equal? 'BRANCH (car (car l))))
+         (if (pair? (car (cadr (car l))))
+             (cons (cons 'BRANCH (car (cdr (car l)))) (branch-helper (cdr l)))
+             (cons (car l) (branch-helper (cdr l)))))
+        (else
+         (cons (car l) (branch-helper (cdr l))))))
+
 ;; list -> list
 ;; Purpose: Filter given list to not include 'list or 'cons or ()
 (define (filter-list l)
@@ -184,6 +196,93 @@
              (equal? (car l) 'cons))
          (filter-list (cdr l)))
         (else (cons (car l) (filter-list (cdr l))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (listof number) -> number
+;; Purpose: Generate a random number between 0 and 100 that is not already in numlist
+(define (random2 numlist)
+  (let ((n (random 1000)))
+    (if (member n numlist)
+        (random2 numlist)
+        n)))
+
+;; branch -> boolean
+;; Purpose: Check if branch is in correct form
+(define (correct? b)
+  (and (pair? (cadr b))
+       (equal? 'GOTO (car (cadr b)))))
+  
+;; branch -> boolean
+;; Purpose: Check if branch has goto
+(define (has-goto? b)
+  (and (pair? (last b))
+       (equal? 'GOTO (car (last b)))))
+
+;; branches (listof numbers) number -> list
+;; Purpose: Add machines within branches to their own labels 
+(define (transform-b2 b new-nums initnum)
+  (cond ((null? b) (list initnum))
+        ((correct? (car b))
+         (transform-b2 (cdr b) (cdr new-nums) initnum))
+        ((has-goto? (car b))
+         (append (cons (car new-nums) (cdr (car b))) (transform-b2 (cdr b) (cdr new-nums) initnum)))
+        (else
+         (append (append (cons (car new-nums) (cdr (car b))) `((GOTO ,initnum))) (transform-b2 (cdr b) (cdr new-nums) initnum)))))
+
+;; branches (listof number) number -> list
+;; Purpose: Add branches ang gotos to list 
+(define (transform-b branches nums initnum)
+  ;; branches -> list
+  ;; Purpose: Put branches in correct form
+  (define (helper2 b2)
+    ;; branches -> list
+    ;; Purpose: Helper    
+    (define (helper b)
+      (cond ((null? b) '())
+            ((correct? (car b))
+             (cons (car b) (helper (cdr b))))
+            (else
+             (cons (cons (car (car b)) `((GOTO ,(random2 (cons initnum nums))))) (helper (cdr b))))))
+    (let* ((new-branches (helper b2))
+           (new-nums (map (lambda (x) (cadr (cadr x))) new-branches)))
+      (cons (cons 'BRANCH new-branches) (cons `(GOTO ,initnum) (transform-b2 branches new-nums initnum)))))
+  (helper2 branches))
+        
+;; list -> list
+;; Purpose: Get the branches in the correct form
+(define (new-branch-list l acc)
+  ;; branches -> branch
+  ;; Purpose: Fix branch
+  (define (helper b)
+    (cond ((andmap correct? b)
+           (cons (car l) (new-branch-list (cdr l) acc)))
+          (else
+           (let* ((new (transform-b b (filter number? acc) (random2 (filter number? acc))))
+                  (new-nums (filter number? new)))
+             (append new (new-branch-list (cdr l) new-nums))))))         
+  (cond ((null? l) 
+         '())
+        ((and (pair? (car l))
+              (equal? 'BRANCH (car (car l))))
+         (helper (cdr (car l))))
+        (else (cons (car l) (new-branch-list (cdr l) acc)))))
+
+;; branch -> boolean
+;; Purpose: Check if all branches are correct in list
+(define (correct-b? b)
+  (andmap correct? (cdr b)))
+
+;; list -> list
+;; Purpose: Put branches in correct form
+(define (new-branch-list2 l)
+  (let ((branches (filter (lambda (x) (and (pair? x)
+                                           (equal? 'BRANCH (car x)))) l)))
+  (if (andmap (lambda (x) (correct-b? x)) branches)
+      l
+      (new-branch-list2 (new-branch-list l l)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
 
 ;; list -> list
 ;; Purpose: Adjust the list to make the var sequence part of it
@@ -227,9 +326,9 @@
   (ctmd-exp
    (let ((parsed-list
           (map (lambda (l i)
-                 (parse-ctmd l i (adjust-var (filter-list list))))
-               (adjust-var (filter-list list))
-               (make-int-list (adjust-var (filter-list list)) 0))))
+                 (parse-ctmd l i (adjust-var (new-branch-list2 (branch-helper (filter-list list))))))
+               (adjust-var (new-branch-list2 (branch-helper (filter-list list))))
+               (make-int-list (adjust-var (new-branch-list2 (branch-helper (filter-list list)))) 0))))
      (p parsed-list parsed-list))))
    
 ;.................................................
@@ -359,3 +458,4 @@
                 (car (car (clean-list (dot-edges (parse-program ctmlist)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
