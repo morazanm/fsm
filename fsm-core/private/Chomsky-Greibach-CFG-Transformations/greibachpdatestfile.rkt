@@ -1299,15 +1299,10 @@ A cfg-rl is a (list lhs ARROW rhs)
                            ((M b (a)) (M ε))
                            ((M ε ε) (F ε)))))
 
-(sm-graph anbn)
+;(sm-graph anbn)
 ;(greibach (pda2cfg anbn))
+;(sm-graph (cfg2pda (greibach (pda2cfg anbn))))
 
-;(sm-graph (cfg->pda (pda2cfg anbn)))
-(greibach (pda2cfg anbn))
-(sm-graph (cfg2pda (greibach (pda2cfg anbn))))
-;(sm-graph (cfg->pda (greibach (pda2cfg anbn))))
-
-;(filter-rules (chomsky (pda2cfg anbn)))
 
 #| (cfg
  '(X-34 X-31 G-3572344 X-30 X-29 G-3572342 X-28 G-3572341 X-15 G-3572339 X-14 G-3572337 X-13 G-3572335 X-12 G-3572316 X-5 S-3572315 X-1 Y-1 Y-0 G-3572343 G-3572321 S)
@@ -1354,10 +1349,221 @@ A cfg-rl is a (list lhs ARROW rhs)
  'S) |#
 
 
+(define p (make-ndpda '(S)
+                      '(a)
+                      '()
+                      'S
+                      '(S)
+                      '(((S a ε) (S ε)))))
 
-
-
+(sm-graph p)
+(sm-graph (cfg2pda (greibach (pda2cfg p))))
+(greibach (pda2cfg p))
  
+(pda2cfg p)
+(sm-graph (cfg2pda (pda2cfg p)))
+(sm-showtransitions (cfg2pda (pda2cfg p)) '(a))
+
+(sm-graph (cfg2pda (greibach (pda2cfg p))))
+(sm-showtransitions (cfg2pda (greibach (pda2cfg p))) '(a))
+(sm-graph (pda2spda p))
+(sm-graph (cfg2pda (pda2cfg (pda2spda p))))
+(sm-showtransitions (cfg2pda (pda2cfg (pda2spda p))) '(a))
+
+
+(define p2 (make-ndpda '(X S F)
+                       '(a)
+                       '(a Z)
+                       'X
+                       '(F)
+                       `(((X ,EMP ,EMP) (S (Z)))
+                         ((S a (Z)) (S (Z)))
+                         ((S ,EMP (Z)) (F ,EMP)))))
+(sm-graph p2)
+
+(define p3 (make-ndpda '(X S F)
+                       '(a)
+                       '(a Z)
+                       'X
+                       '(F)
+                       `(((X ,EMP ,EMP) (S (Z)))
+                         ((S a (a)) (S ,EMP))
+                         ((S ,EMP (Z)) (S (a Z)))
+                         ((S ,EMP (Z)) (F ,EMP)))))
+(sm-graph p3)
+
+(sm-showtransitions p2 '(a))
+(sm-showtransitions p3 '(a))
+
+
+(sm-graph a2nb2n2)
+(sm-graph (pda2spda a2nb2n2))
+
+(define p4 (make-ndpda '(S P Q F A B C D E G H I J K L M N O R)
+                       '(a b c)
+                       '(a b c S Z)
+                       'S
+                       '(F)
+                       '(((S ε ε) (P (Z)))
+
+                       
+                         ((P ε (c)) (A (c c)))
+                         ((A ε (c)) (B (c S)))
+                         ((B ε (c)) (Q (c)))
+                         
+                         ((P ε (b)) (C (b b)))
+                         ((C ε (b)) (D (b S)))
+                         ((D ε (b)) (Q (c)))
+                         
+                         ((P ε (a)) (E (a a)))
+                         ((E ε (a)) (G (a S)))
+                         ((G ε (a)) (Q (c)))
+                         
+                         ((P ε (S)) (H (S S)))
+                         ((H ε (S)) (I (S S)))
+                         ((I ε (S)) (Q (c)))
+                         
+                         ((P ε (Z)) (J (Z Z)))
+                         ((J ε (Z)) (K (Z S)))
+                         ((K ε (Z)) (Q (c)))
+
+
+                         ((Q b (b)) (Q ε))
+                         ((Q a (a)) (Q ε))
+
+                         ((Q ε (Z)) (F ε))
+
+                         ((Q ε (c)) (L ε))
+                         ((L ε (S)) (Q ε))
+
+                         ((Q ε (c)) (M ε))
+                         ((M ε (S)) (N (S b)))
+                         ((N ε (S)) (O (S S)))
+                         ((O ε (S)) (R (S c)))
+                         ((R ε (S)) (Q (a)))
+                         
+                         )))
+                       
+(sm-graph p4)
+
+(sm-showtransitions (pda2spda a2nb2n2) '(a b))
+(sm-showtransitions p4 '(a b))
+
+#;(define p5 (make-ndpda '(S P Q F A B C D E G H I J K L M N O R)
+                       '(a b c)
+                       '(a b c S Z)
+                       'S
+                       '(F)
+                       '(((S ε ε) (P (Z)))
+
+                       
+                         ((P ε (c)) (A (c c)))
+                         ((A ε (c)) (B (c S)))
+                         ((B ε (c)) (Q (c)))
+                         
+                         ((P ε (b)) (C (b b)))
+                         ((C ε (b)) (D (b S)))
+                         ((D ε (b)) (Q (c)))
+                         
+                         ((P ε (a)) (E (a a)))
+                         ((E ε (a)) (G (a S)))
+                         ((G ε (a)) (Q (c)))
+                         
+                         ((P ε (S)) (H (S S)))
+                         ((H ε (S)) (I (S S)))
+                         ((I ε (S)) (Q (c)))
+                         
+                         ((P ε (Z)) (J (Z Z)))
+                         ((J ε (Z)) (K (Z S)))
+                         ((K ε (Z)) (Q (c)))
+
+
+                         ((Q b (b)) (Q ε))
+                         ((Q a (a)) (Q ε))
+
+                         ((Q ε (Z)) (F ε))
+
+                         ((Q ε (c)) (L ε))
+                         ((L ε (S)) (Q ε))
+
+                         ((Q ε (c)) (M ε))
+                         ((M ε (S)) (N (S b)))
+                         ((N ε (S)) (O (S S)))
+                         ((O ε (S)) (R (S c)))
+                         ((R ε (S)) (Q (a)))
+                         
+                         )))
+
+
+
+
+(define p5 (make-ndpda '(S P Q F A B C D E G H I J K L M N O R)
+                       '(a b c)
+                       '(a b c S Z)
+                       'S
+                       '(F)
+                       '(((S ε ε) (P (Z)))
+
+                       
+                         ((P ε (c)) (A (c c)))
+                         ((A ε (c)) (B (c S)))
+                         ((B ε (c)) (Q (c)))
+                         
+                         ((P ε (b)) (C (b b)))
+                         ((C ε (b)) (D (b S)))
+                         ((D ε (b)) (Q (c)))
+                         
+                         ((P ε (a)) (E (a a)))
+                         ((E ε (a)) (G (a S)))
+                         ((G ε (a)) (Q (c)))
+                         
+                         ((P ε (S)) (H (S S)))
+                         ((H ε (S)) (I (S S)))
+                         ((I ε (S)) (Q (c)))
+                         
+                         ((P ε (Z)) (J (Z Z)))
+                         ((J ε (Z)) (K (Z S)))
+                         ((K ε (Z)) (Q (c)))
+
+
+                         ((Q b (b)) (Q ε))
+                         ((Q a (a)) (Q ε))
+
+                         ((Q ε (Z)) (F ε))
+
+                         ((Q ε (c)) (L ε))
+                         ((L ε (S)) (Q ε))
+
+                         ((Q ε (c)) (M ε))
+                         ((M ε (S)) (N (S b)))
+                         ((N ε (S)) (O (S S)))
+                         ((O ε (S)) (R (S c)))
+                         ((R ε (S)) (Q (a)))
+                         
+                         )))
+
+(sm-showtransitions p5 '(a b))
+
+(sm-graph anbn)
+(sm-graph (cfg2pda (greibach (pda2cfg anbn))))
+(sm-graph (pda2spda anbn))
+
+(define anbn2 (make-ndpda '(S Q)
+                          '(a b)
+                          '(a b Z A)
+                          'S
+                          '(Q)
+                          '(((S ε ε) (Q (Z)))
+                            ((Q a (a)) (Q ε))
+                            ((Q b (b)) (Q ε))
+                            ((Q ε (A)) (Q (b)))
+                            ((Q ε (Z)) (Q (a Z A)))
+                            ((Q ε (Z)) (Q (a A))))))
+
+
+
+
+
 
 
 
