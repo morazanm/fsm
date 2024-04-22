@@ -56,10 +56,19 @@
                         (list (list 'a L (list GOTO 0))
                               (list 'b L (list GOTO 0))
                               (list BLANK (list GOTO 1))
-                              (list LM L (list GOTO 0))))
+                              (list LM R L (list GOTO 0))))
                   1))
 
 (check-equal? (ctm-run M `(,LM ,BLANK a a b) 4)
               `(H 1 (,LM ,BLANK a a b)))
 (check-equal? (ctm-run M `(,LM a ,BLANK a b ,BLANK b a b b) 8)
               `(H 5 (,LM a ,BLANK a b ,BLANK b a b b)))
+
+
+
+
+
+
+
+
+
