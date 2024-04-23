@@ -46,13 +46,14 @@
             (else (find-goto lab (cdr l2))))))
 
 ;; list list -> string list
-;; Purpose: Find the next turing machine(s)
+;; Purpose: Find the next turing machine(s) for parsing 
 (define (find-next-tm l l2)
   (if (null? l)
       '()
       (cond ((tm-exp? (car l))
              (string-append (symbol->string (tm-exp-sym (car l))) (number->string (tm-exp-int (car l)))))
             ((branch-exp? (car l))
+             (displayln (car l))
              (branch-exp-branches (car l)))
             ((goto-exp? (car l))
              (find-next-tm (find-goto (goto-exp-label (car l)) l2) l2))
@@ -61,12 +62,35 @@
 ;; symbol list list list -> list
 ;; Purpose: Find the branch edges
 (define (branch-edges fromst branch l l2)
+  ;; list list -> string list
+  ;; Purpose: Find the next turing machine(s) for branching edges
+  (define (find-next-tm2 l l2)
+    (if (null? l)
+        '()
+        (cond ((tm-exp? (car l))
+               (string-append (symbol->string (tm-exp-sym (car l))) (number->string (tm-exp-int (car l)))))
+              ((branch-exp? (car l))
+               (map (lambda (x) (find-next-tm2 (find-goto (goto-exp-label (cadr x)) l2) l2)) (branch-exp-branches (car l))))
+              ((goto-exp? (car l))
+               (find-next-tm2 (find-goto (goto-exp-label (car l)) l2) l2))
+              (else (find-next-tm2 (cdr l) l2)))))
   (let ((tost (find-next-tm (find-goto (cadr (cadr branch)) l2) l2))
         (a-label (symbol->string (if (not (symbol? (car branch)))
                                      (car (cdr (car branch)))
                                      (car branch)))))
-    (list fromst tost
-          `((label ,a-label) (style "dashed") (color "black") (headlabel "")))))
+    (if (pair? tost)
+        (map (lambda (x)
+               (if (pair? (find-next-tm2 (find-goto (cadr (cadr x)) l2) l2))
+                   (map (lambda (y)
+                          (list fromst y
+                                `((label ,a-label) (style "dashed") (color "black") (headlabel ""))))
+                        (begin (displayln (find-next-tm2 (find-goto (cadr (cadr x)) l2) l2))
+                               (find-next-tm2 (find-goto (cadr (cadr x)) l2) l2)))
+                   (list fromst (find-next-tm2 (find-goto (cadr (cadr x)) l2) l2)
+                         `((label ,a-label) (style "dashed") (color "black") (headlabel "")))))
+             tost)
+        (list fromst tost
+              `((label ,a-label) (style "dashed") (color "black") (headlabel ""))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; parser
@@ -180,6 +204,24 @@
              (cons (car l) (branch-helper (cdr l)))))
         (else
          (cons (car l) (branch-helper (cdr l))))))
+
+;; list -> list
+;; Purpose: Remove unnesseccary branches
+#;(define (branch-helper2 l)
+  (cond ((null? l) '())
+        ((and (pair? (car l))
+              (equal? 'BRANCH (car (car l)))
+              (pair? (cadr (cadr (car l))))
+              (equal? 'BRANCH (car (cadr (cadr (car l))))))
+         (cons (append (cons 'BRANCH (list (cons (car (cadr (car l)))
+                                                 (list (cons 'BRANCH
+                                                             (filter (lambda (x) (equal? (car x) (car (cadr (car l)))))
+                                                                     (cdr (cadr (cadr (car l))))))))))
+                       (if (empty? (cdr (cdr (car l))))
+                           '()
+                           (branch-helper2 (list (cons 'BRANCH (cdr (cdr (car l))))))))
+               (branch-helper2 (cdr l))))
+        (else (cons (car l) (branch-helper2 (cdr l))))))
 
 ;; list -> list
 ;; Purpose: Filter given list to not include 'list or 'cons or ()
@@ -356,7 +398,7 @@
   (cond ((ctmd-exp? exp)
          (let ((l (ctmd-exp-ctmd exp)))
            (if (branch-exp? (first-elem l))
-               (append (map (lambda (x) (begin (displayln x) (displayln (branch-list (first-elem l))) (branch-edges "dummy" x l l))) (branch-list (first-elem l)))   
+               (append (map (lambda (x) (branch-edges "dummy" x l l)) (branch-list (first-elem l)))   
                        (map (lambda (x) (edge x l l)) l))
                (map (lambda (x) (edge x l l)) l))))
         (else '())))
@@ -480,14 +522,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define M2L '(list (list BRANCH
-                         (list 'a
-                               (list BRANCH
-                                     (list 'a HALT)
-                                     (list 'b HALT)))
-                         (list 'b
-                               (list BRANCH
-                                     (list 'a R R HALT)
-                                     (list 'b 'b R R HALT))))))
-
-(new-branch-list2 (branch-helper (filter-list M2L)))
+      
