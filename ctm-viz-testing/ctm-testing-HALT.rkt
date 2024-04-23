@@ -21,3 +21,14 @@
 
 (define HL '(list HALT))
 
+(define R (make-tm '(S F)
+                   '(a b)
+                   `(((S a) (F ,RIGHT))
+                     ((S b) (F ,RIGHT))
+                     ((S ,BLANK) (F ,RIGHT)))
+                   'S
+                   '(F)))
+
+(define M (combine-tms (list (list BRANCH (list 'a R HALT)
+                                          (list 'b R R HALT)))
+                       '(a b)))
