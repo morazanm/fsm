@@ -206,7 +206,7 @@
     (if (member n numlist)
         (random2 numlist)
         n)))
-
+ 
 ;; branch -> boolean
 ;; Purpose: Check if branch is in correct form
 (define (correct? b)
