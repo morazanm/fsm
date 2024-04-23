@@ -201,11 +201,15 @@
 
 ;; (listof number) -> number
 ;; Purpose: Generate a random number between 0 and 100 that is not already in numlist
-(define (random2 numlist)
-  (let ((n (random RANDOM-CONST)))
+#;(define (random2 numlist)
+  (let ((n (random 1000)))
     (if (member n numlist)
         (random2 numlist)
         n)))
+(define (random2 numlist n)
+  (if (member n numlist)
+      (random2 numlist (add1 n))
+      n))
  
 ;; branch -> boolean
 ;; Purpose: Check if branch is in correct form
@@ -238,13 +242,14 @@
   (define (helper2 b2)
     ;; branches -> list
     ;; Purpose: Helper    
-    (define (helper b)
+    (define (helper b nums2)
       (cond ((null? b) '())
             ((correct? (car b))
-             (cons (car b) (helper (cdr b))))
+             (cons (car b) (helper (cdr b) nums2)))
             (else
-             (cons (cons (car (car b)) `((GOTO ,(random2 (cons initnum nums))))) (helper (cdr b))))))
-    (let* ((new-branches (helper b2))
+             (let ((new-n (random2 nums2 0)))
+               (cons (cons (car (car b)) `((GOTO ,new-n))) (helper (cdr b) (cons new-n nums2)))))))
+    (let* ((new-branches (helper b2 (cons initnum nums)))
            (new-nums (map (lambda (x) (cadr (cadr x))) new-branches)))
       (cons (cons 'BRANCH new-branches) (cons `(GOTO ,initnum) (transform-b2 branches new-nums initnum)))))
   (helper2 branches))
@@ -259,8 +264,8 @@
            (cons (car l) (new-branch-list (cdr l) acc)))
           (else
            (let* ((all-labels (filter number? acc))
-                  (new (transform-b b all-labels (random2 all-labels)))
-                  (new-nums (filter number? new)))
+                  (new (transform-b b all-labels (random2 all-labels 0)))
+                  (new-nums (filter number? (append acc new))))
              (append new (new-branch-list (cdr l) new-nums))))))         
   (cond ((null? l) 
          '())
