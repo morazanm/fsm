@@ -202,7 +202,7 @@
 ;; (listof number) -> number
 ;; Purpose: Generate a random number between 0 and 100 that is not already in numlist
 (define (random2 numlist)
-  (let ((n (random 1000)))
+  (let ((n (random RANDOM-CONST)))
     (if (member n numlist)
         (random2 numlist)
         n)))
@@ -231,7 +231,7 @@
          (append (append (cons (car new-nums) (cdr (car b))) `((GOTO ,initnum))) (transform-b2 (cdr b) (cdr new-nums) initnum)))))
 
 ;; branches (listof number) number -> list
-;; Purpose: Add branches ang gotos to list 
+;; Purpose: Add branches and gotos to list 
 (define (transform-b branches nums initnum)
   ;; branches -> list
   ;; Purpose: Put branches in correct form
@@ -258,7 +258,8 @@
     (cond ((andmap correct? b)
            (cons (car l) (new-branch-list (cdr l) acc)))
           (else
-           (let* ((new (transform-b b (filter number? acc) (random2 (filter number? acc))))
+           (let* ((all-labels (filter number? acc))
+                  (new (transform-b b all-labels (random2 all-labels)))
                   (new-nums (filter number? new)))
              (append new (new-branch-list (cdr l) new-nums))))))         
   (cond ((null? l) 
@@ -377,6 +378,7 @@
 ;; Purpose: Given a ctm as list, create a .png file from a .dot file, and return a bitmap
 (define (transition-diagram-ctm ctm)
   (define fname "fsm")
+  (define parsed-program (parse-program ctm))
   ;; image
   ;; Purpose: Store a graph image 
   (define cgraph (create-graph 'cgraph #:atb (hash 'rankdir "LR" 'fontsize 13)))
@@ -390,7 +392,7 @@
                     (label (second (third (second a-node))))]
                (add-node a-graph state #:atb (hash 'color color 'shape shape 'label label)))) 
            cgraph   
-           (clean-list (dot-nodes (parse-program ctm)))))
+           (clean-list (dot-nodes parsed-program))))
     (set! cgraph
           (foldl
            (lambda (a-trans a-graph)
@@ -406,7 +408,7 @@
                     (headlabel (second (fourth (third a-trans))))] 
                (add-edge a-graph label state1 state2 #:atb (hash 'style style 'color color 'headlabel headlabel))))
            cgraph
-           (clean-list (dot-edges (parse-program ctm)))))
+           (clean-list (dot-edges parsed-program))))
     (let [(res (graph->bitmap cgraph))]
       res)))
 
