@@ -423,12 +423,12 @@
 ;; ctm (listof ctm) tape int -> (listof edge)
 ;; Purpose: Given a ctm, a ctm list, a tape, and a head position, returns the edges traversed in the computation
 (define (computation-edges ctm ctmlist tape head) 
-  ;; (listof trace) (listof edge) string -> (listof edge)
+  ;; (listof trace) (listof edge) string boolean -> (listof edge)
   ;; Purpose: Returns the traced edges in order
   ;; Accumulator invariant:
   ;;  stored-val = stores the destination state, which is the source state of the following edge
   ;;  edges = list of all edges
-  (define (follow-trace trace edges stored-val)
+  (define (follow-trace trace edges stored-val bool)
     (cond [(or (empty? trace)
                (empty? (cdr trace))
                (equal? stored-val "")) '()]
@@ -438,7 +438,7 @@
              (append new-edge
                      (follow-trace (cdr trace) edges (if (empty? new-edge)
                                                          ""
-                                                         (cadr (car new-edge))))))]
+                                                         (cadr (car new-edge))) #f)))]
           [(and (struct? (car trace))
                 (equal? 'BRANCH (car (cadr trace))))
            (let ((new-edge (filter (lambda (x) (and (equal? (car x) stored-val)
@@ -449,21 +449,33 @@
              (append new-edge
                      (follow-trace (cdr trace) edges (if (empty? new-edge)
                                                          ""
-                                                         (cadr (car new-edge))))))]
+                                                         (cadr (car new-edge))) #f)))]
           [(struct? (car trace))
            (let ((new-edge (filter (lambda (x) (equal? (car x) stored-val)) edges)))
              (append new-edge
                      (follow-trace (cdr trace) edges (if (empty? new-edge)
                                                          ""
-                                                         (cadr (car new-edge))))))]
+                                                         (cadr (car new-edge))) #f)))]
+          [(and (equal? 'BRANCH (car (car trace)))
+                bool)
+           (let ((new-edge (filter (lambda (x) (and (equal? (car x) "dummy")
+                                                    (if (equal? (cadr (car trace)) '_)
+                                                        (or (equal? (cadr (car (caddr x))) "_")
+                                                            (equal? (cadr (car (caddr x))) "BLANK"))
+                                                        (equal? (string->symbol (cadr (car (caddr x)))) (cadr (car trace)))))) edges)))
+             (append new-edge
+                     (follow-trace (cdr trace) edges (if (empty? new-edge)
+                                                         ""
+                                                         (cadr (car new-edge))) #f)))]
           [else 
-           (follow-trace (cdr trace) edges stored-val)]))
+           (follow-trace (cdr trace) edges stored-val #f)]))
   (if (empty? (clean-list (dot-edges (parse-program ctmlist))))
       '()
       (follow-trace (filter (lambda (x) (or (struct? x)
                                             (and (not (equal? (car x) 'GOTO))
                                                  (not (equal? (car x) 'VAR))))) (cdr (ctm-apply ctm tape head #t)))
                     (filter (lambda (x) (not (equal? "white" (cadr (caddr (caddr x)))))) (clean-list (dot-edges (parse-program ctmlist))))
-                    (car (car (clean-list (dot-edges (parse-program ctmlist))))))))
+                    (car (car (clean-list (dot-edges (parse-program ctmlist)))))
+                    #t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
