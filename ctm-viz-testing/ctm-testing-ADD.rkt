@@ -201,7 +201,7 @@
                     FBR
                     L
                     WB
-                    L
+                    L 
                     (list BRANCH (list BLANK (list GOTO 100))
                                  (list 'd (list GOTO 200)))
                     100
