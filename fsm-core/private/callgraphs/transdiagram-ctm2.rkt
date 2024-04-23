@@ -278,9 +278,9 @@
 (define (new-branch-list2 l)
   (let ((branches (filter (lambda (x) (and (pair? x)
                                            (equal? 'BRANCH (car x)))) l)))
-  (if (andmap (lambda (x) (correct-b? x)) branches)
-      l
-      (new-branch-list2 (new-branch-list l l)))))
+    (if (andmap (lambda (x) (correct-b? x)) branches)
+        l
+        (new-branch-list2 (new-branch-list l l)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
 
@@ -451,11 +451,12 @@
                                                          (cadr (car new-edge))))))]
           [else 
            (follow-trace (cdr trace) edges stored-val)]))
-  (follow-trace (filter (lambda (x) (or (struct? x)
-                                        (and (not (equal? (car x) 'GOTO))
-                                             (not (equal? (car x) 'VAR))))) (cdr (ctm-apply ctm tape head #t)))
-                (filter (lambda (x) (not (equal? "white" (cadr (caddr (caddr x)))))) (clean-list (dot-edges (parse-program ctmlist))))
-                (car (car (clean-list (dot-edges (parse-program ctmlist)))))))
+  (if (empty? (clean-list (dot-edges (parse-program ctmlist))))
+      '()
+      (follow-trace (filter (lambda (x) (or (struct? x)
+                                            (and (not (equal? (car x) 'GOTO))
+                                                 (not (equal? (car x) 'VAR))))) (cdr (ctm-apply ctm tape head #t)))
+                    (filter (lambda (x) (not (equal? "white" (cadr (caddr (caddr x)))))) (clean-list (dot-edges (parse-program ctmlist))))
+                    (car (car (clean-list (dot-edges (parse-program ctmlist))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  
