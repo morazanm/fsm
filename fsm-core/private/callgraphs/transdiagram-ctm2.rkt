@@ -356,7 +356,7 @@
   (cond ((ctmd-exp? exp)
          (let ((l (ctmd-exp-ctmd exp)))
            (if (branch-exp? (first-elem l))
-               (append (map (lambda (x) (branch-edges "dummy" x l l)) (branch-list (first-elem l)))   
+               (append (map (lambda (x) (begin (displayln x) (displayln (branch-list (first-elem l))) (branch-edges "dummy" x l l))) (branch-list (first-elem l)))   
                        (map (lambda (x) (edge x l l)) l))
                (map (lambda (x) (edge x l l)) l))))
         (else '())))
@@ -479,3 +479,15 @@
                     #t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define M2L '(list (list BRANCH
+                         (list 'a
+                               (list BRANCH
+                                     (list 'a HALT)
+                                     (list 'b HALT)))
+                         (list 'b
+                               (list BRANCH
+                                     (list 'a R R HALT)
+                                     (list 'b 'b R R HALT))))))
+
+(new-branch-list2 (branch-helper (filter-list M2L)))
