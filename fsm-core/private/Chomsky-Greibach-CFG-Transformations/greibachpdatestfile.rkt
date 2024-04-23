@@ -1554,12 +1554,15 @@ A cfg-rl is a (list lhs ARROW rhs)
                           'S
                           '(Q)
                           '(((S ε ε) (Q (Z)))
+                            ((Q ε (Z)) (Q ε))
                             ((Q a (a)) (Q ε))
                             ((Q b (b)) (Q ε))
                             ((Q ε (A)) (Q (b)))
                             ((Q ε (Z)) (Q (a Z A)))
                             ((Q ε (Z)) (Q (a A))))))
 
+(sm-graph anbn)
+(sm-graph anbn2)
 (sm-showtransitions anbn2 '(a b))
 
 
