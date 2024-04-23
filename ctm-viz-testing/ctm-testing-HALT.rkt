@@ -1,6 +1,7 @@
 #lang racket
 
 (require "../fsm-core/private/callgraphs/viz-ctm.rkt"
+         "../fsm-core/private/callgraphs/transdiagram-ctm2.rkt"
          "../main.rkt"
          rackunit)
 
