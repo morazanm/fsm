@@ -1566,10 +1566,42 @@ A cfg-rl is a (list lhs ARROW rhs)
 (sm-showtransitions anbn2 '(a b))
 
 
+;; L = {w | w in (a b)* AND  w has more b than a}
+(define numb>numa (make-cfg '(S A)
+                            '(a b)
+                            `((S ,ARROW b)
+                              (S ,ARROW AbA)
+                              (A ,ARROW AaAbA)
+                              (A ,ARROW AbAaA)
+                              (A ,ARROW ,EMP)
+                              (A ,ARROW bA))
+                            'S))
 
+(define numb>numa-pda (cfg2pda numb>numa))
 
+(define inf-pda (make-ndpda '(S Q)
+                            '(a b)
+                            '(a b Z A)
+                            'S
+                            '(Q)
+                            '(((S ε ε) (Q (Z)))
+                              ((Q ε (Z)) (Q ε))
+                              ((Q a (a)) (Q ε))
+                              ((Q b (b)) (Q ε))
+                              ((Q ε (Z)) (Q (b Z)))
+                              ((Q ε (Z)) (Q (b a Z)))
+                              ((Q ε (Z)) (Q (a b Z)))
+                              
+                          #|    ((Q ε (Z)) (Q (b A)))
+                              ((Q ε (Z)) (Q (a Z A)))
+                              ((Q ε (Z)) (Q (a A Z)))
+                              ((Q ε (A)) (Q (b A)))
+                              ((Q ε (A)) (Q (b Z))) |#
+                              
+                              )))
 
-
+(sm-graph numb>numa-pda)
+(sm-apply inf-pda '(b b a))
 
 
 
