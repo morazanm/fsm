@@ -31,5 +31,26 @@
                    '(F)))
 
 (define M (combine-tms (list (list BRANCH (list 'a R HALT)
-                                          (list 'b R R HALT)))
+                                   (list 'b R R HALT)))
                        '(a b)))
+
+(define M2 (combine-tms (list (list BRANCH
+                                    (list 'a
+                                          (list BRANCH
+                                                (list 'a HALT)
+                                                (list 'b HALT)))
+                                    (list 'b
+                                          (list BRANCH
+                                                (list 'a R R HALT)
+                                                (list 'b 'b R R HALT)))))
+                        '(a b)))
+
+(define M2L '(list (list BRANCH
+                         (list 'a
+                               (list BRANCH
+                                     (list 'a HALT)
+                                     (list 'b HALT)))
+                         (list 'b
+                               (list BRANCH
+                                     (list 'a R R HALT)
+                                     (list 'b 'b R R HALT))))))
