@@ -457,13 +457,16 @@
              )
          (last-node (if (empty? ce)
                         (first (last (dot-nodes (parse-program ctm-list))))
-                        (first (last ce))))
-         (comp-edges (append (list (list "dummy-edge" "edge-dummy" (list '(label "dummy")'(style "dummy") '(color "dummy") '(headlabel "dummy"))))
-                             ce
-                             (list (list last-node "edge-dummy" (list '(label "dummy") '(style "dummy")'(color "dummy") '(headlabel "dummy"))))
-                             )
-                     )
-         (dd (display (format "~s\n" comp-edges)))
+                        (second (last ce))))
+         (comp-edges (if (equal? (first (first ce)) "dummy")
+                         (append ce
+                                 (list (list last-node "edge-dummy" (list '(label "dummy") '(style "dummy")'(color "dummy") '(headlabel "dummy"))))
+                                 )
+                         (append (list (list "dummy-edge" "edge-dummy" (list '(label "dummy")'(style "dummy") '(color "dummy") '(headlabel "dummy"))))
+                                 ce
+                                 (list (list last-node "edge-dummy" (list '(label "dummy") '(style "dummy")'(color "dummy") '(headlabel "dummy"))))
+                                 )
+                         ))
          (loedges (fix-blank-label (clean-list (dot-edges (parse-program ctm-list))))
                   )
          (lonodes (clean-list (dot-nodes (parse-program ctm-list))))
