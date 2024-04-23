@@ -54,3 +54,18 @@
                                (list BRANCH
                                      (list 'a R R HALT)
                                      (list 'b 'b R R HALT))))))
+
+(define M3 (combine-tms (list
+                         (list GOTO 10)
+                         10
+                         (list GOTO 20)
+                         20
+                         HALT)
+                        '(a b)))
+
+(define M3L '(list
+              (list GOTO 10)
+              10
+              (list GOTO 20)
+              20
+              HALT))
