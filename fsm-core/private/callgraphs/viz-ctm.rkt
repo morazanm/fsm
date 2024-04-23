@@ -453,19 +453,17 @@
 ;; ctm-viz
 ;; ctm a-list (listof symbol) number -> void
 (define (ctm-viz ctm ctm-list tape head)
-  (let* [(ce (fix-blank-label (computation-edges ctm ctm-list tape head))
-             )
+  (let* [(ce (fix-blank-label (computation-edges ctm ctm-list tape head)))
          (last-node (if (empty? ce)
                         (first (last (dot-nodes (parse-program ctm-list))))
                         (second (last ce))))
-         (comp-edges (if (equal? (first (first ce)) "dummy")
+         (comp-edges (if (and (not (empty? ce))
+                              (equal? (first (first ce)) "dummy"))
                          (append ce
-                                 (list (list last-node "edge-dummy" (list '(label "dummy") '(style "dummy")'(color "dummy") '(headlabel "dummy"))))
-                                 )
+                                 (list (list last-node "edge-dummy" (list '(label "dummy") '(style "dummy")'(color "dummy") '(headlabel "dummy")))))
                          (append (list (list "dummy-edge" "edge-dummy" (list '(label "dummy")'(style "dummy") '(color "dummy") '(headlabel "dummy"))))
                                  ce
-                                 (list (list last-node "edge-dummy" (list '(label "dummy") '(style "dummy")'(color "dummy") '(headlabel "dummy"))))
-                                 )
+                                 (list (list last-node "edge-dummy" (list '(label "dummy") '(style "dummy")'(color "dummy") '(headlabel "dummy")))))
                          ))
          (loedges (fix-blank-label (clean-list (dot-edges (parse-program ctm-list))))
                   )
