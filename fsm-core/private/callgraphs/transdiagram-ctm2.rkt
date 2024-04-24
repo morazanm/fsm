@@ -53,7 +53,6 @@
       (cond ((tm-exp? (car l))
              (string-append (symbol->string (tm-exp-sym (car l))) (number->string (tm-exp-int (car l)))))
             ((branch-exp? (car l))
-             (displayln (car l))
              (branch-exp-branches (car l)))
             ((goto-exp? (car l))
              (find-next-tm (find-goto (goto-exp-label (car l)) l2) l2))
@@ -84,8 +83,7 @@
                    (map (lambda (y)
                           (list fromst y
                                 `((label ,a-label) (style "dashed") (color "black") (headlabel ""))))
-                        (begin (displayln (find-next-tm2 (find-goto (cadr (cadr x)) l2) l2))
-                               (find-next-tm2 (find-goto (cadr (cadr x)) l2) l2)))
+                               (find-next-tm2 (find-goto (cadr (cadr x)) l2) l2))
                    (list fromst (find-next-tm2 (find-goto (cadr (cadr x)) l2) l2)
                          `((label ,a-label) (style "dashed") (color "black") (headlabel "")))))
              tost)
@@ -221,6 +219,15 @@
                            '()
                            (branch-helper2 (list (cons 'BRANCH (cdr (cdr (car l))))))))
                (branch-helper2 (cdr l))))
+        (else (cons (car l) (branch-helper2 (cdr l))))))
+
+(define (branch-helper2 l)
+  (cond ((null? l) '())
+        ((and (pair? (car l))
+              (equal? 'BRANCH (car (car l)))
+              (pair? (cadr (cadr (car l))))
+              (equal? 'BRANCH (car (cadr (cadr (car l))))))
+         (error "ctm contains a branch to a branch"))
         (else (cons (car l) (branch-helper2 (cdr l))))))
 
 ;; list -> list
@@ -374,9 +381,9 @@
   (ctmd-exp
    (let ((parsed-list
           (map (lambda (l i)
-                 (parse-ctmd l i (adjust-var (new-branch-list2 (branch-helper (filter-list list))))))
-               (adjust-var (new-branch-list2 (branch-helper (filter-list list))))
-               (make-int-list (adjust-var (new-branch-list2 (branch-helper (filter-list list)))) 0))))
+                 (parse-ctmd l i (adjust-var (new-branch-list2 (branch-helper (branch-helper2 (filter-list list)))))))
+               (adjust-var (new-branch-list2 (branch-helper (branch-helper2 (filter-list list)))))
+               (make-int-list (adjust-var (new-branch-list2 (branch-helper (branch-helper2 (filter-list list))))) 0))))
      (p parsed-list parsed-list))))
    
 ;.................................................
@@ -521,5 +528,3 @@
                     #t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-      

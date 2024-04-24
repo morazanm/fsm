@@ -35,25 +35,46 @@
                        '(a b)))
 
 (define M2 (combine-tms (list (list BRANCH
-                                    (list 'a
+                                    (list 'a HALT
                                           (list BRANCH
                                                 (list 'a HALT)
                                                 (list 'b HALT)))
-                                    (list 'b
+                                    (list 'b HALT
                                           (list BRANCH
                                                 (list 'a R R HALT)
-                                                (list 'b 'b R R HALT)))))
+                                                (list 'b R R R HALT)))))
                         '(a b)))
 
 (define M2L '(list (list BRANCH
-                         (list 'a
+                         (list 'a HALT
                                (list BRANCH
                                      (list 'a HALT)
                                      (list 'b HALT)))
-                         (list 'b
+                         (list 'b HALT
                                (list BRANCH
                                      (list 'a R R HALT)
-                                     (list 'b 'b R R HALT))))))
+                                     (list 'b R R R HALT))))))
+
+(define M2-noH (combine-tms (list (list BRANCH
+                                    (list 'a 
+                                          (list BRANCH
+                                                (list 'a HALT)
+                                                (list 'b HALT)))
+                                    (list 'b 
+                                          (list BRANCH
+                                                (list 'a R R HALT)
+                                                (list 'b R R R HALT)))))
+                        '(a b)))
+
+(define M2L-noH '(list (list BRANCH
+                         (list 'a 
+                               (list BRANCH
+                                     (list 'a HALT)
+                                     (list 'b HALT)))
+                         (list 'b 
+                               (list BRANCH
+                                     (list 'a R R HALT)
+                                     (list 'b R R R HALT))))))
 
 (define M3 (combine-tms (list
                          (list GOTO 10)
