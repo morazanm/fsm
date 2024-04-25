@@ -18,6 +18,8 @@
     ;; Accumulator Invariants:
     ;;  visited  = list of pda-stucis already explored 
     (define (add-to-stucis edges to-visit visited)
+      ;(displayln edges)
+      ;(displayln to-visit)
       ;; pda-Edge pda-stuci -> stack
       ;; Purpose: Given an edge and a pda-stuci, creates the new stack
       ;;          by popping and pushing
@@ -71,20 +73,28 @@
            '()
            (let* [(new-stucis (add-to-stucis-helper edges (first to-visit)))]
              (if (or (empty? new-stucis)
-                     (ormap (lambda (s) 
+                     #;(ormap (lambda (s) 
                               (ormap (lambda (s2) (pda-stucis-equal? s s2)) 
                                      new-stucis))
                             visited))
                  (add-to-stucis edges (rest to-visit) visited)
-                 (append new-stucis
+                 (append (filter-non-member new-stucis visited)
                          (add-to-stucis edges (rest to-visit)
                                         (append new-stucis
                                                 visited))))))
        threshold))
+    ;; (listof stuci) (listof stuci) -> (listof stuci)
+    ;; Purpose: Filter out stucis already visited
+    (define (filter-non-member s v)
+      (cond ((empty? s) '())
+            ((ormap (lambda (x) (pda-stucis-equal? (car s) x)) v)
+             (filter-non-member (cdr s) v))
+            (else (cons (car s) (filter-non-member (cdr s) v)))))
     ;; pda-stuci -> (listof pda-Edge)
     ;; Purpose: Given a pda-stuci, creates all possible edges for that
     ;;          pda-stuci
     (define (add-to-edges stuci)
+      ;(displayln stuci)
       ;; rule -> Boolean
       ;; Purpose: Given a rule, determines whether it can be popped off the stack
       (define (can-be-popped? r)
@@ -569,4 +579,5 @@
         res))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 
