@@ -1789,7 +1789,10 @@ A cfg-rl is a (list lhs ARROW rhs)
 (sm-graph nanb)
 (sm-showtransitions nanb '(b a b b))
 
-
+(sm-showtransitions nanb '(b a))
+(sm-showtransitions nanb '(a a a a))
+;(sm-showtransitions numb>numa-pda '(a a a a))
+;(sm-showtransitions (pda2spda numb>numa-pda) '(a a a a))                         
 
 
                            
