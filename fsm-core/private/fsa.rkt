@@ -331,7 +331,7 @@
     
     (let* ((mstates (fsa-getstates m))
            (sts mstates #;(if (member DEAD mstates) mstates (cons DEAD mstates)))
-           (rename-table (generate-rename-table los sts))
+           (rename-table (generate-rename-table (remove-duplicates (append sts los)) sts))
            (new-states (map (lambda (s) (cadr (assoc s rename-table))) sts))
            (new-start (cadr (assoc (fsa-getstart m) rename-table)))
            (new-finals (map (lambda (s) (cadr (assoc s rename-table))) (fsa-getfinals m)))
