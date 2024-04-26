@@ -54,13 +54,20 @@
       (if (empty? to-visit)
           '()
           (let* [(new-stucis (add-to-stucis-helper (first to-visit)))]
-            (if (or (empty? new-stucis)
-                    (andmap (lambda (s) (member s visited)) new-stucis))
+            (if (empty? new-stucis)
                 (add-to-stucis edges (rest to-visit) visited)
-                (append new-stucis
+                (append (filter-non-member new-stucis visited)
                         (add-to-stucis edges (rest to-visit)
                                        (append new-stucis
-                                               visited)))))))                      
+                                               visited)))))))
+
+    ;; (listof stuci) (listof stuci) -> (listof stuci)
+    ;; Purpose: Filter out stucis already visited
+    (define (filter-non-member s v)
+      (cond ((empty? s) '())
+            ((ormap (lambda (x) (ndfa-stucis-equal? (car s) x)) v)
+             (filter-non-member (cdr s) v))
+            (else (cons (car s) (filter-non-member (cdr s) v)))))
     ;; ndfa-stuci -> (listof ndfa-Edge)
     ;; Purpose: Given an ndfa-stuci, creates all possible edges for that
     ;;          ndfa-stuci
