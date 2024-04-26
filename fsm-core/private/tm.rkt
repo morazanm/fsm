@@ -37,7 +37,7 @@
   (define (unparse-rules-without-LM-move-R-default-rule rls)
     (remove-LM-rule-unparsed-tm-rules (unparse-tmrules)))
   
-  ; tm (listof states) --> tm
+  ; (listof states) tm --> tm
   (define (tm-rename-states sts m)
 
     (define (generate-rename-table disallowed sts)
@@ -48,9 +48,9 @@
                   (generate-rename-table (cons new-st disallowed) (rest sts))))))
     
     (let* (
-           (rename-table (generate-rename-table (tm-getstates m) (tm-getstates m))
-                         #;(map (lambda (s) (list s (generate-symbol s sts)))
-                                (tm-getstates m)))
+           (rename-table (generate-rename-table (remove-duplicates (append (tm-getstates m)
+                                                                           sts))
+                                                (tm-getstates m)))
            (new-states (map (lambda (s) (cadr (assoc s rename-table)))
                             (tm-getstates m)))
            (new-start (cadr (assoc (tm-getstart m) rename-table)))
