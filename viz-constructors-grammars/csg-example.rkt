@@ -105,17 +105,19 @@
     
   (let* [
          (res (bfs-deriv '() (list (list (list (list (csg-getstart g)) '() '() )))))
-         (result (move-elements-over (reverse res)))
+         (result (reverse res)
+          ;(move-elements-over (reverse res))
+                 )
          ]
       (if (null? result)
           (format "~s is not in L(G)." w)
           (append-map (lambda (l)
                         (if (equal? w (first l)) 
                             (if (null? l)
-                                (list EMP)
-                                (list (los->symbol (first l)) (los->symbol (second l)) (los->symbol (third l)))
+                                (list (list EMP))
+                                (list (list (los->symbol (first l)) (los->symbol (second l)) (los->symbol (third l))))
                                 )
-                            (list (los->symbol (first l)) (los->symbol (second l)) (los->symbol (third l)) ARROW)
+                            (list (list (los->symbol (first l)) (los->symbol (second l)) (los->symbol (third l))))
                             )
                         )
                        result)
@@ -300,13 +302,13 @@
                                  )
   )
 
-;(csg-derive anbn '(a a a b b b))
+(csg-derive-edited anbn '(a b))
 ;(csg-derive anbn '())
 
 ; ABCABC
 ;(csg-derive P2 '(a b b c c c))
 ;(csg-derive P2 '(a a b b b b c c c c c c))
-(csg-derive COPY '(a b a a b a))
+;(csg-derive COPY '(a b a a b a))
 ;(csg-derive P1 '(a b b a a b b a))
 
 ;(define result1 (csg-derive-edited G1 '(a a b b)))
