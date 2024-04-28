@@ -1,6 +1,6 @@
 #lang racket
 (require
-  "../interface.rkt"
+  "../../main.rkt"
   )
   
 (provide)
