@@ -1,5 +1,5 @@
 #lang fsm
-(provide pda2cfg)
+(provide pda2cfg pda2spda)
 
 (define a2nb2n (make-ndpda '(P Q)
                            '(a b)
