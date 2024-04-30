@@ -15,7 +15,9 @@ This file contains all the functions associated with a button
   "../globals.rkt"
   "../genCode.rkt"
   "../structs/world.rkt"
-  "../../fsm-core/interface.rkt")
+  "../../fsm-core/interface.rkt"
+  "../../fsm-core/private/pda.rkt"
+  )
 
 (require racket/pretty)
 (provide
@@ -632,7 +634,9 @@ This file contains all the functions associated with a button
   (if (or (eq? MACHINE-TYPE 'mttm-language-recognizer)
           (eq? MACHINE-TYPE 'mttm))
       0
-      (let ([ruleIndex (index-of lor rule)]
+      (let (;[testing-rule (displayln rule)]
+            ;[testing-rule0 (displayln lor)]
+            [ruleIndex (index-of lor rule)]
             [rule-num (determine-rule-number MACHINE-TYPE)])
         (cond
           ;; See if there is no current rule. If so return the starting index of the scrollbar
@@ -694,7 +698,17 @@ This file contains all the functions associated with a button
                           (determine-next-steps))])])))
 
 
-
+(define (fsm-machine->pda machine) (begin (displayln (first (machine-state-list machine)))
+                                          (make-ndpda (machine-state-list machine)
+                                                      (machine-sigma-list machine)
+                                                      (pda-machine-stack-alpha-list machine)
+                                                      (machine-start-state machine)
+                                                      (machine-final-state-list machine)
+                                                      (machine-rule-list machine)
+                                                      )
+                                          )
+  )
+                                               
 
 ;; go-next: symbol world -> world
 ;; Determins the next state that the machine needs to be in an then updates the world accordingly
@@ -727,9 +741,17 @@ This file contains all the functions associated with a button
       [(eq? nextState 'halt)
        (redraw-world-with-msg w "The machine has halted" "Notice" MSG-CAUTION)]
       [else
-       (letrec ((cur-rule (getCurRule (append (list nextState) (world-processed-config-list w))
-                                      (machine-rule-list (world-fsm-machine w))))
-
+       (letrec ((cur-rule (if (equal? MACHINE-TYPE 'pda)
+                              (getCurRule (append (list nextState) (world-processed-config-list w))
+                                          (machine-rule-list (world-fsm-machine w))
+                                          (pda-transitions-with-rules ORIGINAL-MACHINE TM-ORIGIONAL-TAPE (machine-start-state (world-fsm-machine w)))
+                                          )
+                              (getCurRule (append (list nextState) (world-processed-config-list w))
+                                      (machine-rule-list (world-fsm-machine w)))
+                              )
+                          )
+                (test1 (displayln TM-ORIGIONAL-TAPE))
+                ;(test0 (displayln (map textbox-text (world-input-list w))))
                 (handle-pop (lambda ()
                               (let ((pop-list (caddar cur-rule)))
                                 (cond
@@ -797,8 +819,14 @@ This file contains all the functions associated with a button
            ;; finally update the processed and unprocessed lists
            (world (update-machine (world-fsm-machine w))
                   (world-tape-position w)
-                  (getCurRule (append (list nextState) (world-processed-config-list w))
+                  (if (equal? MACHINE-TYPE 'pda)
+                      (getCurRule (append (list nextState) (world-processed-config-list w))
+                              (machine-rule-list (world-fsm-machine w))
+                              (pda-transitions-with-rules ORIGINAL-MACHINE TM-ORIGIONAL-TAPE (machine-start-state (world-fsm-machine w)))
+                              )
+                      (getCurRule (append (list nextState) (world-processed-config-list w))
                               (machine-rule-list (world-fsm-machine w)))
+                      )
                   (determin-cur-state)
                   (world-button-list w)
                   (world-input-list w)
@@ -821,14 +849,33 @@ This file contains all the functions associated with a button
                      [else
                       (letrec(
                               (previousState (car (cdr (world-processed-config-list w))))
-                              (cur-rule (getCurRule (cdr (world-processed-config-list w))
-                                                    (machine-rule-list (world-fsm-machine w)))) ;; The current rule that the machine is in after prev is pressed
-                              (rule (getCurRule (if (equal? MACHINE-TYPE 'ndfa)
+                              (cur-rule (if (equal? MACHINE-TYPE 'pda)
+                                             (getCurRule (cdr (world-processed-config-list w))
+                                                         (machine-rule-list (world-fsm-machine w))
+                                                         (pda-transitions-with-rules ORIGINAL-MACHINE TM-ORIGIONAL-TAPE (machine-start-state (world-fsm-machine w)))
+                                                    )
+                                            (getCurRule (cdr (world-processed-config-list w))
+                                                    (machine-rule-list (world-fsm-machine w)))
+                                            )
+                                        ) ;; The current rule that the machine is in after prev is pressed
+                              (rule (if (equal? MACHINE-TYPE 'pda)
+                                        (getCurRule (if (equal? MACHINE-TYPE 'ndfa)
                                                     (world-processed-config-list w)
                                                     (cdr (world-processed-config-list w)))
-                                                (machine-rule-list (world-fsm-machine w))))
-                              (pda-cur-rule (getCurRule (world-processed-config-list w)
-                                                        (machine-rule-list (world-fsm-machine w)))) ;; The current rule that pda machine is in after prev is pressed. Only use this for PDA's
+                                                (machine-rule-list (world-fsm-machine w))
+                                                (pda-transitions-with-rules ORIGINAL-MACHINE TM-ORIGIONAL-TAPE (machine-start-state (world-fsm-machine w)))
+                                                )
+                                        (getCurRule (if (equal? MACHINE-TYPE 'ndfa)
+                                                    (world-processed-config-list w)
+                                                    (cdr (world-processed-config-list w)))
+                                                (machine-rule-list (world-fsm-machine w)))
+                                        )
+                                    )
+                              (pda-cur-rule (getCurRule (cdr (world-processed-config-list w))
+                                                         (machine-rule-list (world-fsm-machine w))
+                                                         (pda-transitions-with-rules ORIGINAL-MACHINE TM-ORIGIONAL-TAPE (machine-start-state (world-fsm-machine w)))
+                                                    )
+                                            ) ;; The current rule that pda machine is in after prev is pressed. Only use this for PDA's
 
                               (input-consumed? (lambda ()
                                                  (case MACHINE-TYPE
