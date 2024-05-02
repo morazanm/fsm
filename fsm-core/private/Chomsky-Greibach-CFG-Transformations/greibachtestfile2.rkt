@@ -1,5 +1,5 @@
 #lang fsm
-(require "pda2cfg-v2-simple-pda.rkt")
+(require "pda2cfg-v2-simple-pda.rkt" #;"greibach.rkt")
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; cfg -> pda
@@ -418,3 +418,68 @@
 (sm-graph new-b>a)                    
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define G (make-cfg '(S)
+                    '(a b)
+                    `((S ,ARROW ,EMP)
+                      (S ,ARROW SaSaSbS)
+                      (S ,ARROW SaSbSaS)
+                      (S ,ARROW SbSaSaS))
+                    'S))
+
+(define PG (grammar->sm G))
+
+;(sm-apply PG '())
+;(sm-apply PG '(a a b))
+;(sm-apply PG '(a a b a b a b a a)) ;; takes too long
+;(sm-apply PG '(a a)) ;; infinite derivation
+(sm-graph PG)
+
+
+;; L = a^nb^n
+(define M (make-ndpda '(S A C D B F)
+                      '(a b)
+                      '(a b C)
+                      'S
+                      '(F)
+                      `(((S ,EMP ,EMP) (A ,EMP))
+                        ((A a ,EMP) (A (a)))
+                        ((A ,EMP ,EMP) (C ,EMP))
+                        ((C ,EMP ,EMP) (C (C)))
+                        ((C ,EMP ,EMP) (D ,EMP))
+                        ((D ,EMP (C)) (D ,EMP))
+                        ((D ,EMP ,EMP) (C ,EMP))
+                        ((D ,EMP ,EMP) (B ,EMP))
+                        ((B b (a)) (B ,EMP))
+                        ((B ,EMP ,EMP) (F ,EMP)))))
+
+(sm-graph M)
+(sm-graph (pda2spda M))
+
+
+;; L = {a^m b^n| m, n ≥ 0 ∧ m ̸= n}
+;; Σ = {a b}
+;; States:
+;;  S: ci = a^m, stack = b^m, start state
+;;  X: ci = a^mb^n, number of as in ci < (number of bs in ci + number of bs in stack), final state
+;;  Y: ci = a^mb^n, number of as in ci > (number of bs in ci + number of bs in stack), final state
+;; Strong enough?
+;;  If stack = ε -> number of as in ci < number of bs in ci
+;;  If stack = ε -> number of as in ci > number of bs in ci
+(define a^mb^n (make-ndpda '(S X Y)
+                           '(a b)
+                           '(b)
+                           'S
+                           '(X Y)
+                           '(((S a ε) (S (b)))
+                             ((S ε ε) (X (b)))
+                             ((X b (b)) (X ε))
+                             ((X b ε) (X ε))
+                             ((S ε (b)) (Y ε))
+                             ((Y b (b)) (Y ε))
+                             ((Y ε (b)) (Y ε)))))
+
+(sm-graph a^mb^n)
+(sm-graph (pda2spda a^mb^n))
+;(sm-graph (cfg2pda (greibach (pda2cfg a^mb^n))))
+(sm-graph (cfg2pda (pda2cfg a^mb^n)))

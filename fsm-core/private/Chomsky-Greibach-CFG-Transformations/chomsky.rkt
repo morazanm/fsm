@@ -1,5 +1,5 @@
 #lang racket
-(require "../../interface.rkt")
+(require #;"../../interface.rkt" "../../../main.rkt")
 (provide chomsky rm-empties)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Chomsky Normal Form

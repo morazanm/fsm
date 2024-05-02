@@ -1795,8 +1795,32 @@ A cfg-rl is a (list lhs ARROW rhs)
 ;(sm-showtransitions (pda2spda numb>numa-pda) '(a a a a))                         
 
 
-                           
+                          
+;; L = {a^m b^n| m, n ≥ 0 ∧ m ̸= n}
+;; Σ = {a b}
+;; States:
+;;  S: ci = a^m, stack = b^m, start state
+;;  X: ci = a^mb^n, number of as in ci < (number of bs in ci + number of bs in stack), final state
+;;  Y: ci = a^mb^n, number of as in ci > (number of bs in ci + number of bs in stack), final state
+;; Strong enough?
+;;  If stack = ε -> number of as in ci < number of bs in ci
+;;  If stack = ε -> number of as in ci > number of bs in ci
+(define a^mb^n (make-ndpda '(S X Y)
+                           '(a b)
+                           '(b)
+                           'S
+                           '(X Y)
+                           '(((S a ε) (S (b)))
+                             ((S ε ε) (X (b)))
+                             ((X b (b)) (X ε))
+                             ((X b ε) (X ε))
+                             ((S ε (b)) (Y ε))
+                             ((Y b (b)) (Y ε))
+                             ((Y ε (b)) (Y ε)))))
 
+(sm-graph a^mb^n)
+(sm-graph (pda2spda a^mb^n))
+(sm-graph (cfg2pda (pda2cfg a^mb^n)))
 
 
 
