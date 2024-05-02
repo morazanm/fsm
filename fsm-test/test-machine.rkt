@@ -9,8 +9,7 @@
                      '(F)       ;; the set of final states
                      '((S a F)  ;; the transition functions
                        (F a F)
-                       (F b F))
-                     'no-dead))
+                       (F b F))))
 
 (define a*a (make-dfa '(S F A)         ;the states
                       '(a b)           ;the alphabet

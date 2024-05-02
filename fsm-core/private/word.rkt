@@ -34,6 +34,14 @@
   (define (word-consumed? a-wi w) (= a-wi (length w)))
   
   (define word-length length)
+
+  ;; natnum --> natnum
+  ;; Purpose: Return the max number of words for the given alphabet size and given word size
+  (define (max-number-words sigma-size word-size)
+    (if (= word-size 0)
+        0
+        (+ (expt sigma-size word-size)
+           (max-number-words sigma-size (sub1 word-size)))))
   
   ; alphabet [natnum] --> word
   (define (generate-word sigma . l)
@@ -42,13 +50,16 @@
       (if (= len 0) 
           '()
           (cons (list-ref sigma (random alpha-size)) (generator (- len 1)))))
-    (let ((len (if (null? l) (random MAX-WORD-LENGTH) (car l))))
+    (let ((len (if (null? l) (random (add1 MAX-WORD-LENGTH)) (car l))))
       (generator len)))
   
   ; natnum alphabet (listof word) --> (listof word)
   (define (generate-words n sigma words)
-    (cond [(= n 0) words]
-          [else (let ((w (generate-word sigma)))
-                  (cond [(member w words) (generate-words n sigma words)]
-                        [else (generate-words (- n 1) sigma (cons w words))]))]))
+    (define (gen-words n sigma words)
+      (cond [(= n 0) words]
+            [else (let ((w (generate-word sigma)))
+                    (cond [(member w words) (gen-words n sigma words)]
+                          [else (gen-words (- n 1) sigma (cons w words))]))]))
+    (let [(max-num-words (min n (max-number-words (length sigma) (add1 MAX-WORD-LENGTH))))]
+      (gen-words max-num-words sigma words)))
   )

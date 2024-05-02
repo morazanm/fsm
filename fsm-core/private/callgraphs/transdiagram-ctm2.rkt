@@ -4,34 +4,23 @@
 (require "../../../fsm-gviz/private/lib.rkt" "cg-defs.rkt")
 (provide computation-edges transition-diagram-ctm dot-nodes dot-edges clean-list parse-program)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; datatype
+;; structs
 
-(define-datatype expression expression?
-  (ctmd-exp
-   (ctmd pair?))
-  (tm-exp
-   (sym symbol?)
-   (int integer?)
-   (next-tm list?))
-  (label-exp
-   (int integer?))
-  (branch-exp
-   (branches pair?))
-  (goto-exp
-   (label expression?))
-  (var-exp
-   (var symbol?)
-   (tm string?)))
+(struct ctmd-exp (ctmd) #:transparent)
+(struct tm-exp (sym int next-tm) #:transparent)
+(struct label-exp (int) #:transparent)
+(struct branch-exp (branches) #:transparent)
+(struct goto-exp (label) #:transparent)
+(struct var-exp (var tm) #:transparent)
+(struct expression (exp) #:transparent)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; helpers
 
-;; expression -> boolean
-;; Purpose: Determine whether exp is a tm-exp
-(define (tm-exp? exp)
-  (cases expression exp
-    (tm-exp (s i n) #t)
-    (else #f)))
+;; expression -> list throws error
+(define (branch-list exp)
+  (cond ((branch-exp? exp) (branch-exp-branches exp))
+        (else (error "not a branch"))))
 
 (define (var-exp? exp)
   (cases expression exp
@@ -61,42 +50,51 @@
 ;; any -> int throws error
 ;; Purpose: Get integer from label or goto
 (define (get-int lab)
-  (cases expression lab
-    (label-exp (int) int)
-    (goto-exp (label) (get-int label))
-    (else (error "expected label-exp, given: ~a" lab))))
+  (cond ((label-exp? lab) (label-exp-int lab))
+        ((goto-exp? lab) (get-int (goto-exp-label lab)))
+        (else (error "expected label-exp, given: ~a" lab))))
 
 ;; integer label -> list
 ;; Purpose: Return rest of ctmd list after goto
 (define (find-goto lab l2)
   (if (null? l2)
       '()
-      (cases expression (car l2)
-        (label-exp (int)
-                   (if (= int (if (integer? lab)
-                                  lab
-                                  (get-int lab)))
-                       (cdr l2)
-                       (find-goto lab (cdr l2))))
-        (else (find-goto lab (cdr l2))))))
+      (cond ((label-exp? (car l2))
+             (if (= (label-exp-int (car l2)) (if (integer? lab)
+                                                 lab
+                                                 (get-int lab)))
+                 (cdr l2)
+                 (find-goto lab (cdr l2))))
+            (else (find-goto lab (cdr l2))))))
 
 ;; list list -> string list
-;; Purpose: Find the next turing machine(s)
+;; Purpose: Find the next turing machine(s) for parsing 
 (define (find-next-tm l l2)
   (if (null? l)
       '()
-      (cases expression (car l)
-        (tm-exp (sym int next-tm)
-                (string-append (symbol->string sym) (number->string int)))
-        (branch-exp (branches)
-                    branches)
-        (goto-exp (label)
-                  (find-next-tm (find-goto label l2) l2))
-        (else (find-next-tm (cdr l) l2)))))
+      (cond ((tm-exp? (car l))
+             (string-append (symbol->string (tm-exp-sym (car l))) (number->string (tm-exp-int (car l)))))
+            ((branch-exp? (car l))
+             (branch-exp-branches (car l)))
+            ((goto-exp? (car l))
+             (find-next-tm (find-goto (goto-exp-label (car l)) l2) l2))
+            (else (find-next-tm (cdr l) l2)))))
 
 ;; symbol list list list -> list
 ;; Purpose: Find the branch edges
 (define (branch-edges fromst branch l l2)
+  ;; list list -> string list
+  ;; Purpose: Find the next turing machine(s) for branching edges
+  (define (find-next-tm2 l l2)
+    (if (null? l)
+        '()
+        (cond ((tm-exp? (car l))
+               (string-append (symbol->string (tm-exp-sym (car l))) (number->string (tm-exp-int (car l)))))
+              ((branch-exp? (car l))
+               (map (lambda (x) (find-next-tm2 (find-goto (goto-exp-label (cadr x)) l2) l2)) (branch-exp-branches (car l))))
+              ((goto-exp? (car l))
+               (find-next-tm2 (find-goto (goto-exp-label (car l)) l2) l2))
+              (else (find-next-tm2 (cdr l) l2)))))
   (let ((tost (find-next-tm (find-goto (cadr (cadr branch)) l2) l2))
         (a-label (symbol->string (if (not (symbol? (car branch)))
                                      (car (cdr (car branch)))
@@ -107,7 +105,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; parser
 
-;; ctmd -> exp
+;; ctmd integer list -> exp
 ;; Purpose: Parse the ctmd
 (define (parse-ctmd datum int acclist)
   (cond ((symbol? datum)
@@ -118,13 +116,16 @@
         ((number? datum)
          (label-exp datum))
         ((pair? datum)
-         (cond ((eqv? (car datum) 'BRANCH)
-                (branch-exp
-                 (cadr datum)))
-               ((eqv? (car datum) 'GOTO)
+         (cond ((equal? (car datum) 'BRANCH)
+                (if (pair? (car (cadr datum)))
+                    (branch-exp
+                     (cadr datum))
+                    (branch-exp
+                     (car (list (cdr datum))))))
+               ((equal? (car datum) 'GOTO)
                 (goto-exp
                  (label-exp (cadr datum))))
-               ((eqv? (car (car datum)) 'VAR)
+               ((equal? (car (car datum)) 'VAR)
                 (var-exp
                  (if (pair? (cadr (car datum)))
                      (car (cdr (cadr (car datum))))
@@ -140,15 +141,14 @@
 (define (p l l2)
   (if (null? l)
       '()
-      (cases expression (car l)
-        (tm-exp (sym int next-tm)
-                (cons (tm-exp sym int (list (find-next-tm (cdr l) l2)))
-                      (p (cdr l) l2)))
-        (var-exp (var tm)
-                 (cons (var-exp var (find-next-tm (cdr l) l2))
-                       (p (cdr l) l2)))
-        (else (cons (car l)
-                    (p (cdr l) l2))))))
+      (cond ((tm-exp? (car l)) 
+             (cons (tm-exp (tm-exp-sym (car l)) (tm-exp-int (car l)) (list (find-next-tm (cdr l) l2)))
+                   (p (cdr l) l2)))
+            ((var-exp? (car l)) 
+             (cons (var-exp (var-exp-var (car l)) (find-next-tm (cdr l) l2))
+                   (p (cdr l) l2)))
+            (else (cons (car l)
+                        (p (cdr l) l2))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -207,6 +207,29 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; more helpers
 
+;; branch -> branch
+;; Purpose: Eliminate redundant lists
+(define (branch-helper l)
+  (cond ((null? l) '())
+        ((and (pair? (car l))
+              (equal? 'BRANCH (car (car l))))
+         (if (pair? (car (cadr (car l))))
+             (cons (cons 'BRANCH (car (cdr (car l)))) (branch-helper (cdr l)))
+             (cons (car l) (branch-helper (cdr l)))))
+        (else
+         (cons (car l) (branch-helper (cdr l))))))
+
+;; list -> list
+;; Purpose: Remove unnesseccary branches
+(define (branch-helper2 l)
+  (cond ((null? l) '())
+        ((and (pair? (car l))
+              (equal? 'BRANCH (car (car l)))
+              (pair? (cadr (cadr (car l))))
+              (equal? 'BRANCH (car (cadr (cadr (car l))))))
+         (error "ctm contains a branch to a branch"))
+        (else (cons (car l) (branch-helper2 (cdr l))))))
+
 ;; list -> list
 ;; Purpose: Filter given list to not include 'list or 'cons or ()
 (define (filter-list l)  
@@ -220,6 +243,94 @@
              (equal? (car l) 'cons))
          (filter-list (cdr l)))
         (else (cons (car l) (filter-list (cdr l))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (listof number)natnum -> number
+;; Purpose: Generate a random number between 0 and 100 that is not already in numlist
+(define (random2 numlist n)
+  (if (member n numlist)
+      (random2 numlist (add1 n))
+      n))
+ 
+;; branch -> boolean
+;; Purpose: Check if branch is in correct form
+(define (correct? b)
+  (and (pair? (cadr b))
+       (equal? 'GOTO (car (cadr b)))))
+  
+;; branch -> boolean
+;; Purpose: Check if branch has goto
+(define (has-goto? b)
+  (and (pair? (last b))
+       (equal? 'GOTO (car (last b)))))
+
+;; branches (listof numbers) number -> list
+;; Purpose: Add machines within branches to their own labels 
+(define (transform-b2 b new-nums initnum)
+  (cond ((null? b) (list initnum))
+        ((correct? (car b))
+         (transform-b2 (cdr b) (cdr new-nums) initnum))
+        ((has-goto? (car b))
+         (append (cons (car new-nums) (cdr (car b))) (transform-b2 (cdr b) (cdr new-nums) initnum)))
+        (else
+         (append (append (cons (car new-nums) (cdr (car b))) `((GOTO ,initnum))) (transform-b2 (cdr b) (cdr new-nums) initnum)))))
+
+;; branches (listof number) number -> list
+;; Purpose: Add branches and gotos to list 
+(define (transform-b branches nums initnum)
+  ;; branches -> list
+  ;; Purpose: Put branches in correct form
+  (define (helper2 b2)
+    ;; branches -> list
+    ;; Purpose: Helper    
+    (define (helper b nums2)
+      (cond ((null? b) '())
+            ((correct? (car b))
+             (cons (car b) (helper (cdr b) nums2)))
+            (else
+             (let ((new-n (random2 nums2 0)))
+               (cons (cons (car (car b)) `((GOTO ,new-n))) (helper (cdr b) (cons new-n nums2)))))))
+    (let* ((new-branches (helper b2 (cons initnum nums)))
+           (new-nums (map (lambda (x) (cadr (cadr x))) new-branches)))
+      (cons (cons 'BRANCH new-branches) (cons `(GOTO ,initnum) (transform-b2 branches new-nums initnum)))))
+  (helper2 branches))
+        
+;; list -> list
+;; Purpose: Get the branches in the correct form
+(define (new-branch-list l acc)
+  ;; branches -> branch
+  ;; Purpose: Fix branch
+  (define (helper b)
+    (cond ((andmap correct? b)
+           (cons (car l) (new-branch-list (cdr l) acc)))
+          (else
+           (let* ((all-labels (filter number? acc))
+                  (new (transform-b b all-labels (random2 all-labels 0)))
+                  (new-nums (filter number? (append acc new))))
+             (append new (new-branch-list (cdr l) new-nums))))))         
+  (cond ((null? l) 
+         '())
+        ((and (pair? (car l))
+              (equal? 'BRANCH (car (car l))))
+         (helper (cdr (car l))))
+        (else (cons (car l) (new-branch-list (cdr l) acc)))))
+
+;; branch -> boolean
+;; Purpose: Check if all branches are correct in list
+(define (correct-b? b)
+  (andmap correct? (cdr b)))
+
+;; list -> list
+;; Purpose: Put branches in correct form
+(define (new-branch-list2 l)
+  (let ((branches (filter (lambda (x) (and (pair? x)
+                                           (equal? 'BRANCH (car x)))) l)))
+    (if (andmap (lambda (x) (correct-b? x)) branches)
+        l
+        (new-branch-list2 (new-branch-list l l)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
 
 ;; list -> list
 ;; Purpose: Adjust the list to make the var sequence part of it
@@ -263,9 +374,9 @@
   (ctmd-exp
    (let ((parsed-list
           (map (lambda (l i)
-                 (parse-ctmd l i (adjust-var (filter-list list))))
-               (adjust-var (filter-list list))
-               (make-int-list (adjust-var (filter-list list)) 0))))
+                 (parse-ctmd l i (adjust-var (new-branch-list2 (branch-helper (branch-helper2 (filter-list list)))))))
+               (adjust-var (new-branch-list2 (branch-helper (branch-helper2 (filter-list list)))))
+               (make-int-list (adjust-var (new-branch-list2 (branch-helper (branch-helper2 (filter-list list))))) 0))))
      (p parsed-list parsed-list))))
    
 ;.................................................
@@ -310,10 +421,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; fsm word -> image
+;; ctm -> image
 ;; Purpose: Given a ctm as list, create a .png file from a .dot file, and return a bitmap
 (define (transition-diagram-ctm ctm)
   (define fname "fsm")
+  (define parsed-program (parse-program ctm))
   ;; image
   ;; Purpose: Store a graph image 
   (define cgraph (create-graph 'cgraph #:atb (hash 'rankdir "LR" 'fontsize 13)))
@@ -327,7 +439,7 @@
                     (label (second (third (second a-node))))]
                (add-node a-graph state #:atb (hash 'color color 'shape shape 'label label)))) 
            cgraph   
-           (clean-list (dot-nodes (parse-program ctm)))))
+           (clean-list (dot-nodes parsed-program))))
     (set! cgraph
           (foldl
            (lambda (a-trans a-graph)
@@ -343,7 +455,7 @@
                     (headlabel (second (fourth (third a-trans))))] 
                (add-edge a-graph label state1 state2 #:atb (hash 'style style 'color color 'headlabel headlabel))))
            cgraph
-           (clean-list (dot-edges (parse-program ctm)))))
+           (clean-list (dot-edges parsed-program))))
     (let [(res (graph->bitmap cgraph))]
       res)))
 
@@ -502,12 +614,12 @@
 ;; ctm (listof ctm) tape int -> (listof edge)
 ;; Purpose: Given a ctm, a ctm list, a tape, and a head position, returns the edges traversed in the computation
 (define (computation-edges ctm ctmlist tape head) 
-  ;; (listof trace) (listof edge) string -> (listof edge)
+  ;; (listof trace) (listof edge) string boolean -> (listof edge)
   ;; Purpose: Returns the traced edges in order
   ;; Accumulator invariant:
   ;;  stored-val = stores the destination state, which is the source state of the following edge
   ;;  edges = list of all edges
-  (define (follow-trace trace edges stored-val)
+  (define (follow-trace trace edges stored-val bool)
     (cond [(or (empty? trace)
                (empty? (cdr trace))
                (equal? stored-val "")) '()]
@@ -517,7 +629,7 @@
              (append new-edge
                      (follow-trace (cdr trace) edges (if (empty? new-edge)
                                                          ""
-                                                         (cadr (car new-edge))))))]
+                                                         (cadr (car new-edge))) #f)))]
           [(and (struct? (car trace))
                 (equal? 'BRANCH (car (cadr trace))))
            (let ((new-edge (filter (lambda (x) (and (equal? (car x) stored-val)
@@ -528,7 +640,7 @@
              (append new-edge
                      (follow-trace (cdr trace) edges (if (empty? new-edge)
                                                          ""
-                                                         (cadr (car new-edge))))))]
+                                                         (cadr (car new-edge))) #f)))]
           [(struct? (car trace))
            (let ((new-edge (filter (lambda (x) (equal? (car x) stored-val)) edges)))
              (append new-edge

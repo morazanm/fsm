@@ -53,7 +53,7 @@
      )
     )
 
-  (define (words-in-sigma/c sigma)
+  (define (words-in-sigma/c sigma field)
     (make-flat-contract
      #:name 'words-made-of-sigma-symbols
      #:first-order (lambda (words) (words-in-sigma? words sigma))
@@ -63,15 +63,15 @@
                       (raise-blame-error
                        blame
                        (invalid-words words sigma)
-                       (format "The following words contain symbols not included in the sigma" )
-                     
+                       (format "Step six of the design recipe has not been successfully completed.
+The following words the machine should ~a contain symbols not included in sigma" field)
                        )
                       )
                     )
      )
     )
 
-  (define (words-in-sigma-tm/c sigma)
+  (define (words-in-sigma-tm/c sigma field)
     (make-flat-contract
      #:name 'words-made-of-sigma-symbols-tm
      #:first-order (lambda (words) (words-in-sigma-tm? words sigma))
@@ -81,8 +81,8 @@
                       (raise-blame-error
                        blame
                        (invalid-words-tm words sigma)
-                       (format-error blame "The following words contain symbols not included in sigma" )
-                     
+                       (format "Step six of the design recipe has not been successfully completed.
+The following words the machine should ~a contain symbols not included in sigma" field)
                        )
                       )
                     )
@@ -100,7 +100,6 @@
                        blame
                        (unacceptable-position words)
                        (format "The following words have positions that are not valid in their list of words")
-                     
                        )
                       )
                     )

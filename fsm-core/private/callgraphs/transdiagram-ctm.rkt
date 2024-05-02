@@ -188,11 +188,11 @@
 
 ;; Tests for WTWICER
 (check-equal? (ctm-run WTWICER `(,LM a ,BLANK) 1)
-              `(h 3 (,LM a a a)))
+              `(H 3 (,LM a a a)))
 (check-equal? (ctm-run WTWICER `(,LM b a a a ,BLANK) 1)
-              `(h 3 (,LM b b b a _)))
+              `(H 3 (,LM b b b a _)))
 (check-equal? (ctm-run WTWICER `(,LM a b ,BLANK ,BLANK a) 2)
-              `(h 4 (,LM a b b b a)))
+              `(H 4 (,LM a b b b a)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Computing with Turing machines
