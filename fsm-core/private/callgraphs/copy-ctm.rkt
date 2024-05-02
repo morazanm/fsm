@@ -198,7 +198,7 @@
 
 ;(transition-diagram-ctm COPYL)
 
-(define COPYTM (make-tm '(S F)
+#;(define COPYTM (make-tm '(S F)
                         '(a b)
                         `(((S a) (F ,RIGHT))
                           ((S b) (F ,RIGHT))
@@ -213,21 +213,11 @@
                           ((
 
                           )
-                        '(F)))
+                        '(F)))))
 
 
 
 ;; POST: tape = (LM w) AND i>k AND tape[i] = BLANK AND tape[k+1..i-1] /= BLANK
-(define FBR (combine-tms
-             (list 0
-                   R
-                   (cons BRANCH
-                         (list (list 'a (list GOTO 0))
-                               (list 'b (list GOTO 0))
-                               (list 'd (list GOTO 0))
-                               (list BLANK (list GOTO 10))))
-                   10)
-             (list 'a 'b 'd)))
 
 
 
