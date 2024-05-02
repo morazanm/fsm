@@ -481,5 +481,21 @@
 
 (sm-graph a^mb^n)
 (sm-graph (pda2spda a^mb^n))
-;(sm-graph (cfg2pda (greibach (pda2cfg a^mb^n))))
-(sm-graph (cfg2pda (pda2cfg a^mb^n)))
+;(sm-graph (cfg2pda (pda2cfg a^mb^n)))
+;(pda2cfg a^mb^n)
+
+(define a^mb^n2 (make-ndpda '(S Q)
+                            '(a b)
+                            '(b S X Y)
+                            'S
+                            '(Q)
+                            '(((S ε ε) (Q (S)))
+                              
+                              ((Q ε (S)) (Q (a b S)))
+                              ((Q a (a)) (Q ε))
+                              
+                              ((Q ε (S)) (Q (Y)))
+                              ((Q ε (S)) (Q (X)))
+
+
+                              )))
