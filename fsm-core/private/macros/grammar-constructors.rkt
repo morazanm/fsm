@@ -17,9 +17,8 @@
 
   (define make-rg/c
     (->i ([states (and/c (is-a-list/c "nonterminals" "two")
-                      (valid-listof/c valid-state? "nonterminal" "list of nonterminals" #:rule "two")
-                      (no-duplicates/c "nonterminals")
-                      )]
+                         (valid-listof/c valid-state? "nonterminal" "list of nonterminals" #:rule "two")
+                         (no-duplicates/c "nonterminals"))]
           [sigma (and/c (is-a-list/c "grammar alphabet" "one")
                         (valid-listof/c valid-alpha? "lowercase alphabet letter" "input alphabet" #:rule "one")
                         (no-duplicates/c "sigma"))]
@@ -29,7 +28,8 @@
                                 correct-grammar-rule-structures/c
                                 (no-emp-rhs/c start)
                                 (correct-rg-rules/c states (cons EMP sigma))
-                                (no-duplicates/c "rules"))]
+                                (no-duplicates/c "rules")
+                                )]
           [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
           )
@@ -61,9 +61,9 @@
 
   (define make-cfg/c
     (->i ([states (and/c (is-a-list/c "nonterminals" "two")
-                      (valid-listof/c valid-state? "nonterminal" "list of nonterminals" #:rule "two")
-                      (no-duplicates/c "nonterminals")
-                      )]
+                         (valid-listof/c valid-state? "nonterminal" "list of nonterminals" #:rule "two")
+                         (no-duplicates/c "nonterminals")
+                         )]
           [sigma (and/c (is-a-list/c "grammar alphabet" "one")
                         (valid-listof/c valid-alpha? "lowercase alphabet letter" "input alphabet" #:rule "one")
                         (no-duplicates/c "sigma"))]
@@ -81,20 +81,20 @@
                               start) (and/c (listof-words/c "accepts")
                                             (words-in-sigma/c sigma)
                                             (cfg-input/c states
-                                                        sigma
-                                                        delta
-                                                        start
-                                                        #t))]
+                                                         sigma
+                                                         delta
+                                                         start
+                                                         #t))]
           #:rejects [rejects (states
                               sigma
                               delta
                               start) (and/c (listof-words/c "rejects")
                                             (words-in-sigma/c sigma)
                                             (cfg-input/c states
-                                                        sigma
-                                                        delta
-                                                        start
-                                                        #f))]
+                                                         sigma
+                                                         delta
+                                                         start
+                                                         #f))]
           )
 
 
@@ -103,9 +103,9 @@
 
   (define make-csg/c
     (->i ([states (and/c (is-a-list/c "nonterminals" "two")
-                      (valid-listof/c valid-state? "nonterminal" "list of nonterminals" #:rule "two")
-                      (no-duplicates/c "nonterminals")
-                      )]
+                         (valid-listof/c valid-state? "nonterminal" "list of nonterminals" #:rule "two")
+                         (no-duplicates/c "nonterminals")
+                         )]
           [sigma (and/c (is-a-list/c "grammar alphabet" "one")
                         (valid-listof/c valid-alpha? "lowercase alphabet letter" "input alphabet" #:rule "one")
                         (no-duplicates/c "sigma"))]
@@ -124,20 +124,20 @@
                               start) (and/c (listof-words/c "accepts")
                                             (words-in-sigma/c sigma)
                                             (csg-input/c states
-                                                        sigma
-                                                        delta
-                                                        start
-                                                        #t))]
+                                                         sigma
+                                                         delta
+                                                         start
+                                                         #t))]
           #:rejects [rejects (states
                               sigma
                               delta
                               start) (and/c (listof-words/c "rejects")
                                             (words-in-sigma/c sigma)
                                             (csg-input/c states
-                                                        sigma
-                                                        delta
-                                                        start
-                                                        #f))]
+                                                         sigma
+                                                         delta
+                                                         start
+                                                         #f))]
           )
 
 

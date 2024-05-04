@@ -12,6 +12,7 @@
            valid-list-of-states?
            valid-non-dead-state?
            valid-state?
+           valid-nonterminal?
            valid-alpha?
            valid-gamma?
            start-in-states?
@@ -63,6 +64,14 @@
   (define (valid-list-of-states? states)
     (valid-list-of states valid-state?)
     )
+
+  ;valid-nonterminal: any --> boolean
+  ;purpose: takes in any value, returns true if the value is a valid nonterminal
+  ; symbol, and false otherwise
+  (define (valid-nonterminal? x)
+    (define regex-pattern (regexp "^[A-Z]$"))
+    (and (symbol? x)
+         (not (not (regexp-match regex-pattern (symbol->string x))))))
 
   ;valid-non-dead-state?: any --> boolean
   ;purpose: takes in any value, returns true if the value is a valid state except

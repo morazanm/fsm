@@ -582,6 +582,9 @@
     (ormap (lambda (x) (and (not (equal? (car x) start)) (equal? EMP (caddr x)))) rules)
     )
 
+  ; incorrect-rhs-rg (listof rg-rule) state --> (listof rg-rule)
+  ; purpose: filters the input list of rules, only keeping rules which do not have
+  ; the start state as the LHS and have EMP as the RHS
   (define (incorrect-rhs-rg rules start)
     (filter (lambda (x) (and (not (equal? (car x) start)) (equal? EMP (caddr x)))) rules)
     )
@@ -626,9 +629,9 @@
         (cond [(or (not (list? elem)) (not (= (length elem) 3)))
                (list (format "The given rule, ~a, does not have the correct structure. A grammar rule must be a list with three elements." elem))]
               [else
-               (append (if (symbol? (first elem))
+               (append (if (valid-nonterminal? (first elem))
                            '()
-                           (list (format "The first element in the rule, ~a, is not a single symbol." (first elem))))
+                           (list (format "The first element in the rule, ~a, is not a single nonterminal symbol." (first elem))))
                        (if (equal? ARROW (second elem))
                            '()
                            (list (format "The second element in the rule, ~a, is not the expected ARROW symbol." (second elem))))
