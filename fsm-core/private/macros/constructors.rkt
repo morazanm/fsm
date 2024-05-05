@@ -63,7 +63,7 @@
                                                start
                                                finals
                                                rules
-                                               add-dead) (and/c (words-in-sigma/c sigma 'accept)
+                                               add-dead) (and/c (words-in-sigma/c sigma 'accepts)
                                                                 (listof-words/c "accepts")
                                                                 (dfa-input/c states
                                                                              sigma
@@ -71,7 +71,7 @@
                                                                              finals
                                                                              rules
                                                                              add-dead
-                                                                             'accept))]
+                                                                             #t))]
                            #:rejects [rejects (states
                                                sigma
                                                start
@@ -85,7 +85,7 @@
                                                                              finals
                                                                              rules
                                                                              add-dead
-                                                                             'reject))]
+                                                                             #f))]
                            )
          
                           [result dfa?]))
@@ -114,13 +114,13 @@
                               start
                               finals
                               rules) (and/c (listof-words/c "accepts")
-                                            (words-in-sigma/c sigma 'accept)
+                                            (words-in-sigma/c sigma 'accepts)
                                             (ndfa-input/c states
                                                           sigma
                                                           start
                                                           finals
                                                           rules
-                                                          'accept))]
+                                                          #t))]
           #:rejects [rejects (states
                               sigma
                               start
@@ -132,7 +132,7 @@
                                                           start
                                                           finals
                                                           rules
-                                                          'reject))]
+                                                          #f))]
           )
          
          [result ndfa?]))
@@ -166,14 +166,14 @@
                               start
                               finals
                               rules) (and/c (listof-words/c "accepts")
-                                            (words-in-sigma/c sigma 'accept)
+                                            (words-in-sigma/c sigma 'accepts)
                                             (ndpda-input/c states
                                                            sigma
                                                            gamma
                                                            start
                                                            finals
                                                            rules
-                                                           'accept))]
+                                                           #t))]
           #:rejects [rejects (states
                               sigma
                               gamma
@@ -187,7 +187,7 @@
                                                            start
                                                            finals
                                                            rules
-                                                           'reject))]
+                                                           #f))]
           )
          [result ndpda?]))
 
@@ -227,7 +227,7 @@
                                                          finals
                                                          rules
                                                          accept
-                                                         'accept)
+                                                         #t)
                                              )]
           #:rejects [rejects (states
                               sigma
@@ -244,7 +244,7 @@
                                                          finals
                                                          rules
                                                          accept
-                                                         'reject))]
+                                                         #f))]
           )
          
          [result tm?]))
@@ -289,7 +289,7 @@
                                                            rules
                                                            num-tapes
                                                            accept
-                                                           'accept)
+                                                           #t)
                                              )]
           #:rejects [rejects (states
                               sigma
@@ -308,7 +308,7 @@
                                                            rules
                                                            num-tapes
                                                            accept
-                                                           'reject))]
+                                                           #f))]
           )
          [result mttm?]
          ))
