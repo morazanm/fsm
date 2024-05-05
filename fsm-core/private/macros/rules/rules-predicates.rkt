@@ -606,9 +606,7 @@
   
   (define (valid-csg-left? elem states sigma)
     (define los (symbol->fsmlos elem))
-    (if (member (car los) states)
-        (andmap (lambda (x) (member x (append states sigma))) los)
-        #f))
+    (andmap (lambda (x) (member x (append states sigma))) los))
 
   (define (invalid-csg-left? elem states sigma)
     (define los (symbol->fsmlos elem))
