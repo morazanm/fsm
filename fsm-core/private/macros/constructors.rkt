@@ -77,7 +77,7 @@
                                                start
                                                finals
                                                rules
-                                               add-dead) (and/c (words-in-sigma/c sigma)
+                                               add-dead) (and/c (words-in-sigma/c sigma 'reject)
                                                                 (listof-words/c "rejects")
                                                                 (dfa-input/c states
                                                                              sigma
@@ -126,7 +126,7 @@
                               start
                               finals
                               rules) (and/c (listof-words/c "rejects")
-                                            (words-in-sigma/c sigma)
+                                            (words-in-sigma/c sigma 'reject)
                                             (ndfa-input/c states
                                                           sigma
                                                           start
@@ -180,7 +180,7 @@
                               start
                               finals
                               rules) (and/c (listof-words/c "rejects")
-                                            (words-in-sigma/c sigma)
+                                            (words-in-sigma/c sigma 'reject)
                                             (ndpda-input/c states
                                                            sigma
                                                            gamma
@@ -220,7 +220,7 @@
                               accept) (and/c (has-accept/c accept finals)
                                              (listof-words-tm/c sigma)
                                              (acceptable-position/c sigma)
-                                             (words-in-sigma-tm/c (append (list BLANK LM) sigma))
+                                             (words-in-sigma-tm/c (append (list BLANK LM) sigma) 'accept)
                                              (tm-input/c states
                                                          sigma
                                                          start
@@ -237,7 +237,7 @@
                               accept) (and/c (has-accept/c accept finals)
                                              (listof-words-tm/c sigma)
                                              (acceptable-position/c sigma)
-                                             (words-in-sigma-tm/c (append (list BLANK LM) sigma))
+                                             (words-in-sigma-tm/c (append (list BLANK LM) sigma) 'reject)
                                              (tm-input/c states
                                                          sigma
                                                          start
@@ -281,7 +281,7 @@
                               accept) (and/c (has-accept/c accept finals)
                                              (listof-words-tm/c sigma)
                                              (acceptable-position/c sigma)
-                                             (words-in-sigma-tm/c (append (list BLANK LM) sigma))
+                                             (words-in-sigma-tm/c (append (list BLANK LM) sigma) 'accept)
                                              (mttm-input/c states
                                                            sigma
                                                            start
@@ -300,7 +300,7 @@
                               accept) (and/c (has-accept/c accept finals)
                                              (listof-words-tm/c sigma)
                                              (acceptable-position/c sigma)
-                                             (words-in-sigma-tm/c (append (list BLANK LM) sigma))
+                                             (words-in-sigma-tm/c (append (list BLANK LM) sigma) 'reject)
                                              (mttm-input/c states
                                                            sigma
                                                            start

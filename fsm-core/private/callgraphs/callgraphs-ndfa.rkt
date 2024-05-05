@@ -5,7 +5,7 @@
          "../sm-apply.rkt")
 (provide make-ndfa-cg-edges dot-nodes-fsa dot-trans-fsa computation-diagram-fsa)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; make-ndfa-cg-edges
+;; make-ndfa-cg-edges 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; machine word -> (listof ndfa-Edge)

@@ -32,4 +32,4 @@ jobs:
         run: xvfb-run raco pkg install
       # Kick off the tests
       - name: Run tests
-        run: xvfb-run raco test -t -j 4 fsm-test fsm-gui fsm-core fsm-gviz
+        run: xvfb-run -a raco test -t -j 4 fsm-test fsm-gui fsm-core fsm-gviz

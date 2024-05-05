@@ -372,7 +372,30 @@ The constructed machine does not reject the following words: ((@ _ a b c))"))
                (format "Step six of the design recipe has not been successfully completed.
 The constructed machine does not accept the following words: ((@ _ a b c c))"))
   
-  ;;RULES
+  ;;ACCEPTS/REJECTS
+  (check-error (make-tm '(S Y N)
+                    '(a b)
+                    `(((S a) (S ,RIGHT))
+                      ((S b) (N b))
+                      ((S ,BLANK) (Y ,BLANK)))
+                    'S
+                    '(Y N)
+                    'Y
+                    #:accepts '((c)))
+                (format "Step six of the design recipe has not been successfully completed.
+The following words the machine should accept contain symbols not included in sigma: ((c))"))
+
+  (check-error (make-tm '(S Y N)
+                    '(a b)
+                    `(((S a) (S ,RIGHT))
+                      ((S b) (N b))
+                      ((S ,BLANK) (Y ,BLANK)))
+                    'S
+                    '(Y N)
+                    'Y
+                    #:rejects '((c)))
+                (format "Step six of the design recipe has not been successfully completed.
+The following words the machine should reject contain symbols not included in sigma: ((c))"))
   
   (test)
   
