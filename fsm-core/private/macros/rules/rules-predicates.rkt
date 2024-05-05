@@ -615,8 +615,9 @@
 
   (define (invalid-csg-left? elem states sigma)
     (define los (symbol->fsmlos elem))
-    (append (if (not (member (car los) states)) (list (car los)) '()) 
-            (filter (lambda (x) (not (member x (append states sigma)))) los))
+    ; The left hand side of a csg rule can be any combination of non-terminals
+    ; and members of the alphabet (sigma).
+    (filter (lambda (x) (not (member x (append states sigma)))) los)
     )
 
   
@@ -629,9 +630,9 @@
         (cond [(or (not (list? elem)) (not (= (length elem) 3)))
                (list (format "The given rule, ~a, does not have the correct structure. A grammar rule must be a list with three elements." elem))]
               [else
-               (append (if (valid-nonterminal? (first elem))
+               (append (if (symbol? (first elem))
                            '()
-                           (list (format "The first element in the rule, ~a, is not a single nonterminal symbol." (first elem))))
+                           (list (format "The first element in the rule, ~a, is not a symbol." (first elem))))
                        (if (equal? ARROW (second elem))
                            '()
                            (list (format "The second element in the rule, ~a, is not the expected ARROW symbol." (second elem))))

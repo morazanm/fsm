@@ -332,6 +332,7 @@
                                           sigma
                                           rules
                                           start
+                                          words
                                           accepts?
                                           make-unchecked-cfg
                                           cfg-derive
@@ -351,6 +352,7 @@
                                           sigma
                                           rules
                                           start
+                                          words
                                           accepts?
                                           make-unchecked-csg
                                           csg-derive

@@ -380,7 +380,7 @@
                                         rules
                                         start))
       (andmap (lambda (x) (if accepts?
-                              (symbol? (derive temp-grammar x))
+                              (not (string? (derive temp-grammar x)))
                               (string? (derive temp-grammar x))))
               words)
       )
