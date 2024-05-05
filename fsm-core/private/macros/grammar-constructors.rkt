@@ -37,7 +37,7 @@
                               sigma
                               delta
                               start) (and/c (listof-words/c "accepts")
-                                            (words-in-sigma/c sigma)
+                                            (words-in-sigma/c sigma 'accepts)
                                             (rg-input/c states
                                                         sigma
                                                         delta
@@ -47,7 +47,7 @@
                               sigma
                               delta
                               start) (and/c (listof-words/c "rejects")
-                                            (words-in-sigma/c sigma)
+                                            (words-in-sigma/c sigma 'rejects)
                                             (rg-input/c states
                                                         sigma
                                                         delta
@@ -79,7 +79,7 @@
                               sigma
                               delta
                               start) (and/c (listof-words/c "accepts")
-                                            (words-in-sigma/c sigma)
+                                            (words-in-sigma/c sigma 'accepts)
                                             (cfg-input/c states
                                                          sigma
                                                          delta
@@ -89,7 +89,7 @@
                               sigma
                               delta
                               start) (and/c (listof-words/c "rejects")
-                                            (words-in-sigma/c sigma)
+                                            (words-in-sigma/c sigma 'rejects)
                                             (cfg-input/c states
                                                          sigma
                                                          delta
@@ -122,7 +122,7 @@
                               sigma
                               delta
                               start) (and/c (listof-words/c "accepts")
-                                            (words-in-sigma/c sigma)
+                                            (words-in-sigma/c sigma 'accepts)
                                             (csg-input/c states
                                                          sigma
                                                          delta
@@ -132,7 +132,7 @@
                               sigma
                               delta
                               start) (and/c (listof-words/c "rejects")
-                                            (words-in-sigma/c sigma)
+                                            (words-in-sigma/c sigma 'rejects)
                                             (csg-input/c states
                                                          sigma
                                                          delta

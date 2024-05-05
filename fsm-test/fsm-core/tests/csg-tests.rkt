@@ -178,7 +178,8 @@ The following starting state, C, is not in the given list of states: (S A B)"))
                            (B ,ARROW A))
                          'S
                          #:accepts '((a b a b) (c d e f g)))
-               (format "The following words contain symbols not included in the sigma: ((c d e f g))"))
+               (format "Step six of the design recipe has not been successfully completed.
+The following words the machine should accepts contain symbols not included in sigma: ((c d e f g))"))
   ; The input to #:rejects must be a list
   (check-error (make-csg '(S A B)
                          '(a b)
@@ -208,7 +209,8 @@ The following starting state, C, is not in the given list of states: (S A B)"))
                            (B ,ARROW A))
                          'S
                          #:rejects '((a b a b) (c d e f g)))
-               (format "The following words contain symbols not included in the sigma: ((c d e f g))"))
+               (format "Step six of the design recipe has not been successfully completed.
+The following words the machine should rejects contain symbols not included in sigma: ((c d e f g))"))
 
   (test)
   )

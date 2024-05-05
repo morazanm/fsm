@@ -151,7 +151,8 @@ The following starting state, C, is not in the given list of states: (S)"))
                            (S ,ARROW aSb))
                          'S
                          #:accepts '((a b) (c d e f g)))
-               (format "The following words contain symbols not included in the sigma: ((c d e f g))"))
+               (format "Step six of the design recipe has not been successfully completed.
+The following words the machine should accepts contain symbols not included in sigma: ((c d e f g))"))
   ; Words in the #:accepts list that are not in the language of the grammar are returned
   ; in the error message
   (check-error (make-cfg '(S)
@@ -186,7 +187,8 @@ The constructed grammar does not accept the following words: ((b))"))
                            (S ,ARROW aSb))
                          'S
                          #:rejects '((a b) (c d e f g)))
-               (format "The following words contain symbols not included in the sigma: ((c d e f g))"))
+               (format "Step six of the design recipe has not been successfully completed.
+The following words the machine should rejects contain symbols not included in sigma: ((c d e f g))"))
   ; Words in the #:rejects list that are in the language of the grammar are returned
   ; in the error message
   (check-error (make-cfg '(S)

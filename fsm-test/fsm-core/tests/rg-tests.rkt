@@ -145,7 +145,8 @@ The following starting state, B, is not in the given list of states: (A S)"))
                           (A ,ARROW bS))
                         'S
                         #:accepts '((a c d)))
-               (format "The following words contain symbols not included in the sigma: ((a c d))"))
+               (format "Step six of the design recipe has not been successfully completed.
+The following words the machine should accepts contain symbols not included in sigma: ((a c d))"))
   (check-error (make-rg '(A S)
                         '(a b)
                         `((S ,ARROW ,EMP)

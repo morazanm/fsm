@@ -63,7 +63,7 @@
                                                start
                                                finals
                                                rules
-                                               add-dead) (and/c (words-in-sigma/c sigma)
+                                               add-dead) (and/c (words-in-sigma/c sigma 'accepts)
                                                                 (listof-words/c "accepts")
                                                                 (dfa-input/c states
                                                                              sigma
@@ -114,7 +114,7 @@
                               start
                               finals
                               rules) (and/c (listof-words/c "accepts")
-                                            (words-in-sigma/c sigma)
+                                            (words-in-sigma/c sigma 'accepts)
                                             (ndfa-input/c states
                                                           sigma
                                                           start
@@ -166,7 +166,7 @@
                               start
                               finals
                               rules) (and/c (listof-words/c "accepts")
-                                            (words-in-sigma/c sigma)
+                                            (words-in-sigma/c sigma 'accepts)
                                             (ndpda-input/c states
                                                            sigma
                                                            gamma
