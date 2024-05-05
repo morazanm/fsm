@@ -211,7 +211,7 @@
                        (list (car (incorrect-mttm-rules states sigma rules)))
                        (format "~a\nThe following rules have errors, which make them invalid" design-recipe-message))))))
 
-  ;functional/c: (listof state) (listof sigma) boolean -> contract
+  ;functional/c: (listof state) (listof sigma) symbol -> contract
   ;predicate: (listof x) --> boolean
   ;Purpose: Ensures that the given list of rules forms an entire function over
   ; the domain of machine states and sigma elements. For this to be true, either:
@@ -219,10 +219,10 @@
   ;    to make the rule-set a function regardless of the existing rules.
   ; b) there must be a rule in the list of rules for every pair in the Cartesian
   ;    product of state-sigma pairings.
-  (define (functional/c states sigma add-dead)
+  (define (functional/c states sigma no-dead)
     (make-flat-contract
      #:name 'functional-list-of-rules?
-     #:first-order (lambda (rules) (functional? rules states sigma add-dead))
+     #:first-order (lambda (rules) (functional? rules states sigma no-dead))
      #:projection (lambda (blame)
                     (lambda (rules)
                       (current-blame-format format-missing-rule-error)

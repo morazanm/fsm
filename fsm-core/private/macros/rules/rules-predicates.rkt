@@ -144,7 +144,7 @@
   (define (functional? rules states sigma add-dead)
     (define pairs (map (lambda (x) (list (first x) (second x))) rules))
     (define cart-prod (cartesian-product states sigma))
-    (or add-dead (if (andmap (lambda (x) (member x pairs)) cart-prod) #t #f))
+    (or (not (equal? add-dead 'no-dead)) (if (andmap (lambda (x) (member x pairs)) cart-prod) #t #f))
     )
 
   ;missing-functional: (listof dfa-rules) (listof states) sigma --> boolean
@@ -775,9 +775,9 @@
     (check-equal? ((valid-mttm-rule-structure? 1) `((A a) (B b))) #f)
 
     ;functional? tests
-    (check-equal? (functional? `((A a B) (A b B)) '(A B) '(a b) #t) #t)
-    (check-equal? (functional? `((A a B) (A b B)) '(A B) '(a b) #f) #f)
-    (check-equal? (functional? `((A a B) (A b B) (B a B) (B b A)) '(A B) '(a b) #f) #t)
+    (check-equal? (functional? `((A a B) (A b B)) '(A B) '(a b) '()) #t)
+    (check-equal? (functional? `((A a B) (A b B)) '(A B) '(a b) 'no-dead) #f)
+    (check-equal? (functional? `((A a B) (A b B) (B a B) (B b A)) '(A B) '(a b) 'no-dead) #t)
 
 
     ;missing-functional tests

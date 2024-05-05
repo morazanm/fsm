@@ -39,7 +39,7 @@
 
    ;; sm graph
    sm-graph
-   
+    
    ; sm testers
    sm-sameresult? sm-testequiv? sm-test
 
@@ -90,6 +90,7 @@
 
    ; some helpful functions
    los->symbol symbol->list generate-symbol symbol->fsmlos symbol-upcase
+   gen-state gen-nt
 
    ; constants
    EMP DEAD RIGHT LEFT LM BLANK BRANCH GOTO ARROW VAR)
@@ -99,9 +100,50 @@
   ;; draws a graph of the given machine and returns the bitmap so it
   ;; can be displayed in the DrRacket Terminal
   #;(define (sm-graph fsa #:color [color-blind-mode 0])
-    (when (or (< color-blind-mode 0) (> color-blind-mode 2))
-      (error 'sm-graph "Invalid color option. Must be either 0, 1, or 2. Given ~a" color-blind-mode))
-    (fsa->bitmap fsa color-blind-mode))
+      (when (or (< color-blind-mode 0) (> color-blind-mode 2))
+        (error 'sm-graph "Invalid color option. Must be either 0, 1, or 2. Given ~a" color-blind-mode))
+      (fsa->bitmap fsa color-blind-mode))
 
+  (define aab* (make-unchecked-ndfa '(W X Y)
+                                    '(a b)
+                                    'W
+                                    '(Y)
+                                    '((W a X)
+                                      (X a Y)
+                                      (Y b Y))))
+
+  (define EQABC2
+    (make-mttm
+     '(S Y C D E F G)
+     '(a b c)
+     'S
+     '(Y)
+     (list
+      (list (list 'S (list BLANK BLANK BLANK BLANK))
+            (list 'C (list RIGHT RIGHT RIGHT RIGHT)))
+      (list (list 'C (list 'a BLANK BLANK BLANK))
+            (list 'D (list 'a 'a BLANK BLANK)))
+      (list (list 'D (list 'a 'a BLANK BLANK))
+            (list 'C (list RIGHT RIGHT BLANK BLANK)))
+      (list (list 'C (list 'b BLANK BLANK BLANK))
+            (list 'E (list 'b BLANK 'b BLANK)))
+      (list (list 'E (list 'b BLANK 'b BLANK))
+            (list 'C (list RIGHT BLANK RIGHT BLANK)))
+      (list (list 'C (list 'c BLANK BLANK BLANK))
+            (list 'F (list 'c BLANK BLANK 'c)))
+      (list (list 'F (list 'c BLANK BLANK 'c))
+            (list 'C (list RIGHT BLANK BLANK RIGHT)))
+      (list (list 'C (list BLANK BLANK BLANK BLANK))
+            (list 'G (list BLANK LEFT LEFT LEFT)))
+      (list (list 'G (list BLANK BLANK BLANK BLANK))
+            (list 'Y (list BLANK BLANK BLANK BLANK)))
+      (list (list 'G (list BLANK 'a 'b 'c))
+            (list 'G (list BLANK LEFT LEFT LEFT))))
+     4
+     'Y))
+
+  ;(sm-graph EQABC2)
+  ;(sm-cmpgraph EQABC2 `(,LM ,BLANK a a b c c b) 1)
+  ;(sm-cmpgraph EQABC2 `(,LM ,BLANK a a b c c) 1)
  
   ) ; close module
