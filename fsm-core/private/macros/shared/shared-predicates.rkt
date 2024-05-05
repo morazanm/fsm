@@ -14,6 +14,7 @@
            valid-state?
            valid-nonterminal?
            valid-alpha?
+           valid-tm-alpha?
            valid-gamma?
            start-in-states?
            valid-start?
@@ -98,6 +99,16 @@
   ; a lowercase roman letter
   (define (valid-alpha? x)
     (define regex-pattern (regexp "^[a-z]$"))
+    (and (symbol? x)
+         (not (not (regexp-match regex-pattern (symbol->string x))))
+         )
+    )
+
+  ;valid-tm-alpha? something --> boolean
+  ;purpose: takes in anything and makes sure that it is a symbol that
+  ; a lowercase roman letter
+  (define (valid-tm-alpha? x)
+    (define regex-pattern (regexp "^[A-Za-z]$"))
     (and (symbol? x)
          (not (not (regexp-match regex-pattern (symbol->string x))))
          )

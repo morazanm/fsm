@@ -196,7 +196,7 @@
                          (valid-listof/c valid-state? "machine state" "list of machine states" #:rule "three")
                          (no-duplicates/c "states"))]
           [sigma (and/c (is-a-list/c "machine alphabet" "one")
-                        (valid-listof/c valid-alpha? "lowercase alphabet letter" "input alphabet" #:rule "one")
+                        (valid-listof/c valid-tm-alpha? "alphabet letter" "input alphabet" #:rule "one")
                         (no-duplicates/c "sigma"))]
           [rules (states
                   sigma) (and/c (is-a-list/c "machine rules" "four")
@@ -254,7 +254,7 @@
                          (valid-listof/c valid-state? "machine state" "list of machine states" #:rule "three")
                          (no-duplicates/c "states"))]
           [sigma (and/c (is-a-list/c "machine alphabet" "one")
-                        (valid-listof/c valid-alpha? "lowercase alphabet letter" "input alphabet" #:rule "one")
+                        (valid-listof/c valid-tm-alpha? "alphabet letter" "input alphabet" #:rule "one")
                         (no-duplicates/c "sigma"))]
           [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
