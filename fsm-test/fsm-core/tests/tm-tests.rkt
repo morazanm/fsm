@@ -93,7 +93,7 @@ The following values, (S Y), are duplicated in the given states: (S Y Y N S S)")
                          '(Y N)
                          'Y
                          ) (format "Step one of the design recipe has not been successfully completed.
-The following: (1) are not valid lowercase alphabet letters in the given input alphabet: (a b 1)"))
+The following: (1) are not valid alphabet letters in the given input alphabet: (a b 1)"))
   (check-error (make-tm '(S Y N)
                          `(a b 1 2)
                          `(((S a) (S ,RIGHT))
@@ -103,10 +103,10 @@ The following: (1) are not valid lowercase alphabet letters in the given input a
                          '(Y N)
                          'Y
                          ) (format "Step one of the design recipe has not been successfully completed.
-The following: (1 2) are not valid lowercase alphabet letters in the given input alphabet: (a b 1 2)"))
+The following: (1 2) are not valid alphabet letters in the given input alphabet: (a b 1 2)"))
   ;invalid letter
   (check-error (make-tm '(S Y N)
-                         `(a b A)
+                         `(a b 1)
                          `(((S a) (S ,RIGHT))
                            ((S b) (N b))
                            ((S ,BLANK) (Y ,BLANK)))
@@ -114,9 +114,9 @@ The following: (1 2) are not valid lowercase alphabet letters in the given input
                          '(Y N)
                          'Y
                          ) (format "Step one of the design recipe has not been successfully completed.
-The following: (A) are not valid lowercase alphabet letters in the given input alphabet: (a b A)"))
+The following: (1) are not valid alphabet letters in the given input alphabet: (a b 1)"))
   (check-error (make-tm '(S Y N)
-                         `(a b A B)
+                         `(a b 1 2)
                          `(((S a) (S ,RIGHT))
                            ((S b) (N b))
                            ((S ,BLANK) (Y ,BLANK)))
@@ -124,7 +124,7 @@ The following: (A) are not valid lowercase alphabet letters in the given input a
                          '(Y N)
                          'Y
                          ) (format "Step one of the design recipe has not been successfully completed.
-The following: (A B) are not valid lowercase alphabet letters in the given input alphabet: (a b A B)"))
+The following: (1 2) are not valid alphabet letters in the given input alphabet: (a b 1 2)"))
   ;duplicate letter
   (check-error (make-tm '(S Y N)
                          `(a b a)
