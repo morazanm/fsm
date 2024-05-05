@@ -25,7 +25,7 @@
            correct-csg-rules/c
            )
 
-  (define design-recipe-message "Step four of the design recipe was not successfully completed.")
+  (define design-recipe-message "Step four of the design recipe has not been successfully completed.")
 
   (define (listof-rules/c pred)
     (make-flat-contract
@@ -248,7 +248,7 @@
                       (raise-blame-error
                        blame
                        (map (lambda (x) (format "~n~s" x)) (check-duplicates-dfa vals))
-                       (format "~a\nThere following state/sigma pairs are duplicated in your ~a: " design-recipe-message type)
+                       (format "~a\nThe following state/sigma pairs are duplicated in your ~a: " design-recipe-message type)
                        )
                       )
                     )
@@ -257,22 +257,24 @@
 
   ;; GRAMMARS
 
+  ;; Purpose: Ensures that only a regular grammar rule that has the start state
+  ;; as the left-hand-side can have the empty state on the right hand side.
   (define (no-emp-rhs/c start)
     (make-flat-contract
      #:name 'emp-check-for-rg
-     #:first-order (lambda (rules) (empty? (check-rhs-rg rules start)))
+     #:first-order (lambda (rules) (empty? (incorrect-rhs-rg rules start)))
      #:projection (lambda (blame)
                     (lambda (rules)
-                      (current-blame-format format-incorrect-rules-error)
+                      (current-blame-format format-error)
                       (if (empty? (incorrect-rhs-rg rules start))
                           rules
                           (raise-blame-error
                            blame
-                           (list (car (incorrect-rhs-rg rules start)))
+                           (incorrect-rhs-rg rules start)
                            (format "~a\nThe following rules cannot have EMP in their RHS" design-recipe-message)))
                       ))))
   
-   ;correct-tm-rule-structures/c: natnum -> contract
+  ;correct-tm-rule-structures/c: natnum -> contract
   ;predicate: (listof x) -> boolean
   ;purpose: Ensures that every element in the list is structured as a valid mttm rule.
   ; It checks each rule to see that it is a (list (list state (listof symbol)) (list state (listof tm-action)))
@@ -282,13 +284,15 @@
      #:first-order (lambda (rules) (empty? (incorrect-grammar-rule-structures rules)))
      #:projection (lambda (blame)
                     (lambda (rules)
-                      (current-blame-format format-incorrect-rules-error)
-                      (if (empty? (incorrect-grammar-rule-structures rules))
-                          rules
-                          (raise-blame-error
-                           blame
-                           (list (car (incorrect-grammar-rule-structures rules)))
-                           (format "~a\nThe following rules have structural errors" design-recipe-message)))
+                      (let [(incorrect-rules (incorrect-grammar-rule-structures rules))]
+                        (current-blame-format format-incorrect-rules-error)
+                        (if (empty? incorrect-rules)
+                            rules
+                            (raise-blame-error
+                             blame
+                             (list (car incorrect-rules))
+                             (format "~a\nThe following rules have structural errors" design-recipe-message)))
+                        )
                       ))))
 
   ;correct-rg-rules/c: (listof nonterminals) (listof alpha) --> contract
@@ -308,7 +312,7 @@
                        (list (car (incorrect-rg-rules states sigma rules)))
                        (format "~a\nThe following rules have errors, which make them invalid" design-recipe-message))))))
 
-   ;correct-cfg-rules/c: (listof nonterminals) (listof alpha) --> contract
+  ;correct-cfg-rules/c: (listof nonterminals) (listof alpha) --> contract
   ;predicate: (listof x) --> boolean
   ;Purpose: Ensures that every element in the list is a valid regular grammar rule.
   ; It checks each rule to see that the first element is in the list of machine
@@ -325,7 +329,7 @@
                        (list (car (incorrect-cfg-rules states sigma rules)))
                        (format "~a\nThe following rules have errors, which make them invalid" design-recipe-message))))))
 
-;correct-cfg-rules/c: (listof nonterminals) (listof alpha) --> contract
+  ;correct-cfg-rules/c: (listof nonterminals) (listof alpha) --> contract
   ;predicate: (listof x) --> boolean
   ;Purpose: Ensures that every element in the list is a valid regular grammar rule.
   ; It checks each rule to see that the first element is in the list of machine

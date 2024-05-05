@@ -114,8 +114,10 @@ The following words the machine should ~a contain symbols not included in sigma"
      )
     )
 
-  (define (accepts/rejects-formatter accepts?)
-    (format "Step six of the design recipe has not been successfully completed.\nThe constructed machine does not ~s the following words: " accepts?))
+  (define (accepts/rejects-formatter type accepts?)
+    (format "Step six of the design recipe has not been successfully completed.\nThe constructed ~a does not ~a the following words"
+            type
+            (if accepts? "accept" "reject")))
 
   (define (dfa-input/c states
                        sigma
@@ -135,7 +137,7 @@ The following words the machine should ~a contain symbols not included in sigma"
                                     accepts?)
      #:projection (lambda (blame)
                     (lambda (words)
-                      (current-blame-format format-accepts-error)
+                      (current-blame-format format-error)
                       (raise-blame-error
                        blame
                        (return-input-dfa states
@@ -146,7 +148,7 @@ The following words the machine should ~a contain symbols not included in sigma"
                                          add-dead
                                          words
                                          accepts?)
-                       (accepts/rejects-formatter accepts?)
+                       (accepts/rejects-formatter 'machine accepts?)
                        )
                       )
                     )
@@ -169,7 +171,7 @@ The following words the machine should ~a contain symbols not included in sigma"
                                      accepts?)
      #:projection (lambda (blame)
                     (lambda (words)
-                      (current-blame-format format-accepts-error)
+                      (current-blame-format format-error)
                       (raise-blame-error
                        blame
                        (return-input-ndfa states
@@ -179,7 +181,7 @@ The following words the machine should ~a contain symbols not included in sigma"
                                           rules
                                           words
                                           accepts?)
-                       (accepts/rejects-formatter accepts?)
+                       (accepts/rejects-formatter 'machine accepts?)
                        )
                       )
                     )
@@ -204,7 +206,7 @@ The following words the machine should ~a contain symbols not included in sigma"
                                       accepts?)
      #:projection (lambda (blame)
                     (lambda (words)
-                      (current-blame-format format-accepts-error)
+                      (current-blame-format format-error)
                       (raise-blame-error
                        blame
                        (return-input-ndpda states
@@ -215,7 +217,7 @@ The following words the machine should ~a contain symbols not included in sigma"
                                            rules
                                            words
                                            accepts?)
-                       (accepts/rejects-formatter accepts?)
+                       (accepts/rejects-formatter 'machine accepts?)
                        )
                       )
                     )
@@ -240,7 +242,7 @@ The following words the machine should ~a contain symbols not included in sigma"
                                    accepts?)
      #:projection (lambda (blame)
                     (lambda (words)
-                      (current-blame-format format-accepts-error)
+                      (current-blame-format format-error)
                       (raise-blame-error
                        blame
                        (return-input-tm states
@@ -251,7 +253,7 @@ The following words the machine should ~a contain symbols not included in sigma"
                                         words
                                         accept
                                         accepts?)
-                       (accepts/rejects-formatter accepts?)
+                       (accepts/rejects-formatter 'machine accepts?)
                        )
                       )
                     )
@@ -264,7 +266,7 @@ The following words the machine should ~a contain symbols not included in sigma"
      #:first-order (check-input-mttm states sigma start finals rules num-tapes accept accepts?)
      #:projection (lambda (blame)
                     (lambda (words)
-                      (current-blame-format format-accepts-error)
+                      (current-blame-format format-error)
                       (raise-blame-error
                        blame
                        (return-input-mttm states
@@ -276,7 +278,7 @@ The following words the machine should ~a contain symbols not included in sigma"
                                           words
                                           accept
                                           accepts?)
-                       (accepts/rejects-formatter accepts?))))))
+                       (accepts/rejects-formatter 'machine accepts?))))))
 
   (define (has-accept/c accept finals)
     (make-flat-contract
@@ -299,40 +301,42 @@ The following words the machine should ~a contain symbols not included in sigma"
   (define (rg-input/c states sigma rules start accepts?)
     (make-flat-contract
      #:name 'rg-accepting-correctly
-     #:first-order (check-input-grammar states sigma rules start accepts? make-unchecked-rg)
+     #:first-order (check-input-grammar states sigma rules start accepts? make-unchecked-rg rg-derive)
      #:projection (lambda (blame)
                     (lambda (words)
-                      (current-blame-format format-accepts-error)
+                      (current-blame-format format-error)
                       (raise-blame-error
                        blame
                        (return-input-grammar states
                                           sigma
                                           rules
                                           start
+                                          words
                                           accepts?
                                           make-unchecked-rg
                                           rg-derive
                                           )
-                       (accepts/rejects-formatter accepts?))))))
+                       (accepts/rejects-formatter 'grammar accepts?))))))
 
   (define (cfg-input/c states sigma rules start accepts?)
     (make-flat-contract
      #:name 'cfg-accepting-correctly
-     #:first-order (check-input-grammar states sigma rules start accepts? make-unchecked-cfg)
+     #:first-order (check-input-grammar states sigma rules start accepts? make-unchecked-cfg cfg-derive)
      #:projection (lambda (blame)
                     (lambda (words)
-                      (current-blame-format format-accepts-error)
+                      (current-blame-format format-error)
                       (raise-blame-error
                        blame
                        (return-input-grammar states
                                           sigma
                                           rules
                                           start
+                                          words
                                           accepts?
                                           make-unchecked-cfg
                                           cfg-derive
                                           )
-                       (accepts/rejects-formatter accepts?))))))
+                       (accepts/rejects-formatter 'grammar accepts?))))))
 
   (define (csg-input/c states sigma rules start accepts?)
     (make-flat-contract
@@ -340,16 +344,17 @@ The following words the machine should ~a contain symbols not included in sigma"
      #:first-order (check-input-grammar states sigma rules start accepts? make-unchecked-csg csg-derive)
      #:projection (lambda (blame)
                     (lambda (words)
-                      (current-blame-format format-accepts-error)
+                      (current-blame-format format-error)
                       (raise-blame-error
                        blame
                        (return-input-grammar states
                                           sigma
                                           rules
                                           start
+                                          words
                                           accepts?
                                           make-unchecked-csg
                                           csg-derive
                                           )
-                       (accepts/rejects-formatter accepts?))))))
+                       (accepts/rejects-formatter 'grammar accepts?))))))
   )

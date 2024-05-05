@@ -142,12 +142,12 @@
                                                finals
                                                rules
                                                add-dead))
-      (andmap (lambda (x) (equal? (temp-machine x) accepts?)) words)
+      (andmap (lambda (x) (equal? (temp-machine x) (if accepts? 'accept 'reject))) words)
       )
     )
 
   ;return-input-dfa:
-  ; (listof states) sigma symbol (listof states) (listof rules) boolean (listof (listof symbols) symbol
+  ; (listof states) sigma symbol (listof states) (listof rules) boolean (listof (listof symbols) boolean
   ; --> (listof (listof symbols))
   ;purpose: builds the machine and finds all the words from the input
   ; list of words that don't accept/reject (based on accepts?)
@@ -165,8 +165,11 @@
                                              finals
                                              rules
                                              add-dead))
-    (filter (lambda (x) (equal? (temp-machine x) (if (equal? 'accept accepts?) 'reject 'accept))) words)
-    )
+    (filter (lambda (x)
+              (equal?
+               (temp-machine x)
+               (if accepts? 'reject 'accept)))
+            words))
 
   ;check-input-ndfa
   ; (listof states) (listof alphabet) symbol (listof states) (listof ndfa-rules) boolean symbol
@@ -188,7 +191,7 @@
                                                 start
                                                 finals
                                                 rules))
-      (andmap (lambda (x) (equal? (temp-machine x) accepts?)) words)
+      (andmap (lambda (x) (equal? (temp-machine x) (if accepts? 'accept 'reject))) words)
       )
     )
 
@@ -209,7 +212,7 @@
                                               start
                                               finals
                                               rules))
-    (filter (lambda (x) (equal? (temp-machine x) (if (equal? 'accept accepts?) 'reject 'accept))) words)
+    (filter (lambda (x) (equal? (temp-machine x) (if accepts? 'reject 'accept))) words)
     )
 
   ;check-input-ndpda
@@ -234,7 +237,7 @@
                                                  start
                                                  finals
                                                  rules))
-      (andmap (lambda (x) (equal? (temp-machine x) accepts?)) words)
+      (andmap (lambda (x) (equal? (temp-machine x) (if accepts? 'accept 'reject))) words)
       )
     )
 
@@ -257,7 +260,7 @@
                                                start
                                                finals
                                                rules))
-    (filter (lambda (x) (equal? (temp-machine x) (if (equal? 'accept accepts?) 'reject 'accept))) words)
+    (filter (lambda (x) (equal? (temp-machine x) (if accepts? 'reject 'accept))) words)
     )
 
   ;apply-input-tm: tm word --> accept/reject
@@ -292,7 +295,7 @@
                                               start
                                               finals
                                               accept))
-      (andmap (lambda (x) (equal? (apply-input-tm temp-machine x) accepts?)) words)
+      (andmap (lambda (x) (equal? (apply-input-tm temp-machine x) (if accepts? 'accept 'reject))) words)
       )
     )
 
@@ -315,7 +318,7 @@
                                             start
                                             finals
                                             accept))
-    (filter (lambda (x) (equal? (apply-input-tm temp-machine x) (if (equal? 'accept accepts?) 'reject 'accept))) words)
+    (filter (lambda (x) (equal? (apply-input-tm temp-machine x) (if accepts? 'reject 'accept))) words)
     )
 
   ;check-input-mttm:
@@ -335,7 +338,7 @@
                              accept
                              accepts?) words)
     (define temp-machine (make-unchecked-mttm states sigma start finals rules num-tapes accept))
-    (andmap (lambda (word) (equal? (apply-input-tm temp-machine word) accepts?)) words)
+    (andmap (lambda (word) (equal? (apply-input-tm temp-machine word) (if accepts? 'accept 'reject))) words)
     )
 
   ;return-input-mttm:
@@ -353,7 +356,7 @@
                              accept
                              accepts?)
     (define temp-machine (make-unchecked-mttm states sigma start finals rules num-tapes accept))
-    (filter (lambda (word) (equal? (apply-input-tm temp-machine word) (if (equal? 'accept accepts?) 'reject 'accept))) words))
+    (filter (lambda (word) (equal? (apply-input-tm temp-machine word) (if accepts? 'reject 'accept))) words))
 
   ;; Grammars
   ;check-input-grammar:
@@ -377,19 +380,23 @@
                                         rules
                                         start))
       (andmap (lambda (x) (if accepts?
-                              (lambda (x) (symbol? (derive temp-grammar x)))
-                              (lambda (x) (string? (derive temp-grammar x)))
-                              )
-                words)
-              )
+                              (not (string? (derive temp-grammar x)))
+                              (string? (derive temp-grammar x))))
+              words)
       )
     )
+    
 
   ;return-input-grammar:
   ; (listof states) sigma (listof rules) symbol (listof (listof symbols) boolean
-  ; --> (listof (listof symbols))
+  ; grammar-constructor grammer-deriver --> (listof (listof symbols))
   ;purpose: builds the machine and finds all the words from the input
   ; list of words that don't accept/reject (based on accepts?)
+  ; The grammar-constructor is a function that takes as input the states,
+  ; sigma, rules, and start state, and constructs an unchecked version of that
+  ; grammar.
+  ; The grammer-deriver is a function that takes in a grammar and a word
+  ; and returns a string if the word is not in the language of the grammar
   (define (return-input-grammar states
                                 sigma
                                 rules
@@ -402,10 +409,16 @@
                                       sigma
                                       rules
                                       start))
-    (filter (if accepts?
-                (lambda (x) (symbol? (derive temp-machine x)))
-                (lambda (x) (string? (derive temp-machine x)))
-                )
+    (filter (lambda (x)
+              (if accepts?
+                  ; If the words are meant to be accepted, since we are returning
+                  ; the list of words that failed, we check if derive returns
+                  ; a string.
+                  (string? (derive temp-machine x))
+                  ; If the words are meant to be rejected, since we are returning
+                  ; the list of words that passed, we check if derive returns
+                  ; not a string.
+                  (not (string? (derive temp-machine x)))))
             words)
     )
 
@@ -478,7 +491,7 @@
                                       (A a A)
                                       (A b B))
                                     #f
-                                    'accept))
+                                    #t))
     (define all-bs (check-input-dfa '(A B)
                                     '(a b)
                                     'B
@@ -488,7 +501,7 @@
                                       (A a A)
                                       (A b B))
                                     #f
-                                    'reject))
+                                    #f))
     (check-equal? (all-as word-list-a) #t)
     (check-equal? (all-as word-list-a) #t)
     (check-equal? (all-as word-list-b) #f)
@@ -506,7 +519,7 @@
                                       (A b B))
                                     #f
                                     word-list-a
-                                    'accept) '())
+                                    #t) '())
     (check-equal? (return-input-dfa '(A B)
                                     '(a b)
                                     'B
@@ -517,7 +530,7 @@
                                       (A b B))
                                     #f
                                     word-list-b
-                                    'accept) `((b b b b)))
+                                    #t) `((b b b b)))
     (check-equal? (return-input-dfa '(A B)
                                     '(a b)
                                     'B
@@ -528,7 +541,7 @@
                                       (A b B))
                                     #f
                                     word-list-b
-                                    'reject) `((a a a)))
+                                    #f) `((a a a)))
     
     ;check-input-ndfa tests
     (define allas (check-input-ndfa '(A B)
@@ -539,7 +552,7 @@
                                       (B b B)
                                       (A a A)
                                       (A b B))
-                                    'accept))
+                                    #t))
     (define allbs (check-input-ndfa '(A B)
                                     '(a b)
                                     'B
@@ -548,7 +561,7 @@
                                       (B b B)
                                       (A a A)
                                       (A b B))
-                                    'reject))
+                                    #f))
     (check-equal? (allas word-list-a) #t)
     (check-equal? (allas word-list-a) #t)
     (check-equal? (allas word-list-b) #f)
@@ -565,7 +578,7 @@
                                        (A a A)
                                        (A b B))
                                      word-list-a
-                                     'accept) '())
+                                     #t) '())
     (check-equal? (return-input-ndfa '(A B)
                                      '(a b)
                                      'B
@@ -575,7 +588,7 @@
                                        (A a A)
                                        (A b B))
                                      word-list-b
-                                     'accept) `((b b b b)))
+                                     #t) `((b b b b)))
     (check-equal? (return-input-ndfa '(A B)
                                      '(a b)
                                      'B
@@ -585,7 +598,7 @@
                                        (A a A)
                                        (A b B))
                                      word-list-b
-                                     'reject) `((a a a)))
+                                     #f) `((a a a)))
     ;check-input-ndpda tests
     (define wcw^r (check-input-ndpda '(S P Q F)
                                      '(a b c)
@@ -599,7 +612,7 @@
                                        ((Q a (a)) (Q ,EMP))
                                        ((Q b (b)) (Q ,EMP))
                                        ((Q ,EMP ,EMP) (F ,EMP)))
-                                     'accept))
+                                     #t))
     (define wcw^r-r (check-input-ndpda '(S P Q F)
                                        '(a b c)
                                        '(a b)
@@ -612,7 +625,7 @@
                                          ((Q a (a)) (Q ,EMP))
                                          ((Q b (b)) (Q ,EMP))
                                          ((Q ,EMP ,EMP) (F ,EMP)))
-                                       'reject))
+                                       #f))
     (check-equal? (wcw^r `((c))) #t)
     (check-equal? (wcw^r-r `((a a a))) #t)
     (check-equal? (wcw^r-r `((c))) #f)
@@ -631,7 +644,7 @@
                                         ((Q b (b)) (Q ,EMP))
                                         ((Q ,EMP ,EMP) (F ,EMP)))
                                       `((c))
-                                      'accept) '())
+                                      #t) '())
     (check-equal? (return-input-ndpda '(S P Q F)
                                       '(a b c)
                                       '(a b)
@@ -645,7 +658,7 @@
                                         ((Q b (b)) (Q ,EMP))
                                         ((Q ,EMP ,EMP) (F ,EMP)))
                                       `((c))
-                                      'reject) '((c)))
+                                      #f) '((c)))
     ;check-input-tm tests
     (define tm-accept (check-input-tm '(S Y N)
                                       `(a b)
@@ -655,7 +668,7 @@
                                         ((S b) (N b))
                                         ((S ,BLANK) (Y ,BLANK)))
                                       'Y
-                                      'accept))
+                                      #t))
     (define tm-reject (check-input-tm '(S Y N)
                                       `(a b)
                                       'S
@@ -664,7 +677,7 @@
                                         ((S b) (N b))
                                         ((S ,BLANK) (Y ,BLANK)))
                                       'Y
-                                      'reject))
+                                      #f))
     (check-equal? (tm-accept `((a a a a) (a a a))) #t)
     (check-equal? (tm-accept `((a a a a) (b b b))) #f)
     (check-equal? (tm-reject `((a a a a) (a a a))) #f)
@@ -680,7 +693,7 @@
                                      ((S ,BLANK) (Y ,BLANK)))
                                    `((a a a a) (a a a))
                                    'Y
-                                   'accept) '())
+                                   #t) '())
     (check-equal? (return-input-tm '(S Y N)
                                    `(a b)
                                    'S
@@ -690,7 +703,7 @@
                                      ((S ,BLANK) (Y ,BLANK)))
                                    `((b b b b) (a a a))
                                    'Y
-                                   'accept) '((b b b b)))
+                                   #t) '((b b b b)))
     (check-equal? (return-input-tm '(S Y N)
                                    `(a b)
                                    'S
@@ -700,7 +713,7 @@
                                      ((S ,BLANK) (Y ,BLANK)))
                                    `((b b b b) (a a a))
                                    'Y
-                                   'reject) '((a a a)))
+                                   #f) '((a a a)))
 
     ;check-input-mttm tests
     (define mttm-accept (check-input-mttm '(S Y N)
@@ -712,7 +725,7 @@
                                             ((S (,BLANK)) (Y (,BLANK))))
                                           1
                                           'Y
-                                          'accept))
+                                          #t))
     (define mttm-reject (check-input-mttm '(S Y N)
                                           `(a b)
                                           'S
@@ -722,7 +735,7 @@
                                             ((S (,BLANK)) (Y (,BLANK))))
                                           1
                                           'Y
-                                          'reject))
+                                          #f))
     (check-equal? (mttm-accept `((a a a a) (a a a))) #t)
     (check-equal? (mttm-accept `((a a a a) (b b b))) #f)
     (check-equal? (mttm-reject `((a a a a) (a a a))) #f) 
@@ -739,7 +752,7 @@
                                      1
                                      `((a a a a) (a a a))
                                      'Y
-                                     'accept) '())
+                                     #t) '())
     (check-equal? (return-input-mttm '(S Y N)
                                      `(a b)
                                      'S
@@ -750,7 +763,7 @@
                                      1
                                      `((b b b b) (a a a))
                                      'Y
-                                     'accept) '((b b b b)))
+                                     #t) '((b b b b)))
     (check-equal? (return-input-mttm '(S Y N)
                                      `(a b)
                                      'S
@@ -761,6 +774,6 @@
                                      1
                                      `((b b b b) (a a a))
                                      'Y
-                                     'reject) '((a a a)))
+                                     #f) '((a a a)))
     )
   )

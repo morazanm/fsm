@@ -582,6 +582,9 @@
     (ormap (lambda (x) (and (not (equal? (car x) start)) (equal? EMP (caddr x)))) rules)
     )
 
+  ; incorrect-rhs-rg (listof rg-rule) state --> (listof rg-rule)
+  ; purpose: filters the input list of rules, only keeping rules which do not have
+  ; the start state as the LHS and have EMP as the RHS
   (define (incorrect-rhs-rg rules start)
     (filter (lambda (x) (and (not (equal? (car x) start)) (equal? EMP (caddr x)))) rules)
     )
@@ -610,8 +613,9 @@
 
   (define (invalid-csg-left? elem states sigma)
     (define los (symbol->fsmlos elem))
-    (append (if (not (member (car los) states)) (list (car los)) '()) 
-            (filter (lambda (x) (not (member x (append states sigma)))) los))
+    ; The left hand side of a csg rule can be any combination of non-terminals
+    ; and members of the alphabet (sigma).
+    (filter (lambda (x) (not (member x (append states sigma)))) los)
     )
 
   
@@ -626,7 +630,7 @@
               [else
                (append (if (symbol? (first elem))
                            '()
-                           (list (format "The first element in the rule, ~a, is not a single symbol." (first elem))))
+                           (list (format "The first element in the rule, ~a, is not a symbol." (first elem))))
                        (if (equal? ARROW (second elem))
                            '()
                            (list (format "The second element in the rule, ~a, is not the expected ARROW symbol." (second elem))))
