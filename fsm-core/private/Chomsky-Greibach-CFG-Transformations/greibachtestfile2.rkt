@@ -201,25 +201,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define wcw^r (make-ndpda '(S P Q F)
-                          '(a b c)
-                          '(a b)
-                          'S
-                          '(F)
-                          `(((S ,EMP ,EMP) (P ,EMP))
-                            ((P a ,EMP) (P (a)))
-                            ((P b ,EMP) (P (b)))
-                            ((P c ,EMP) (Q ,EMP))
-                            ((Q a (a)) (Q ,EMP))
-                            ((Q b (b)) (Q ,EMP))
-                            ((Q ,EMP ,EMP) (F ,EMP)))))
-
-(sm-graph (pda2spda wcw^r))
-
-;.................................................
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; L = {w | w in (a b)* AND  w has more b than a}
 #;(define b>a (make-ndpda '(S Q)
                           '(a b)
@@ -484,18 +465,55 @@
 ;(sm-graph (cfg2pda (pda2cfg a^mb^n)))
 ;(pda2cfg a^mb^n)
 
-(define a^mb^n2 (make-ndpda '(S Q)
+#;(define a^mb^n2 (make-ndpda '(S Q)
                             '(a b)
                             '(b S X Y)
                             'S
                             '(Q)
                             '(((S ε ε) (Q (S)))
+
+                              ((Q a (a)) (Q ε))
+                              ((Q b (b)) (Q ε))
                               
                               ((Q ε (S)) (Q (a b S)))
-                              ((Q a (a)) (Q ε))
                               
                               ((Q ε (S)) (Q (Y)))
+                              ((Q ε (Y)) (Q (b Y)))
+                              ((Q ε (Y)) (Q (A Y)))
+                              ((Q ε (A)) (Q (Y)))
+                              
                               ((Q ε (S)) (Q (X)))
+
+                              )))
+
+(define a^mb^n2 (make-ndpda '(S Q)
+                            '(a b)
+                            '(a b Z S X Y F)
+                            'S
+                            '(Q)
+                            '(((S ε ε) (Q (S Z)))
+
+                              ((Q a (a)) (Q ε))
+                              ((Q b (b)) (Q ε))
+                              
+                              ((Q ε (S b)) (Q (a S b b)))
+                              ((Q ε (S Z)) (Q (a S b Z)))
+
+                              ((Q ε (S b)) (Q (Y)))
+                              ((Q ε (Y b)) (Q (Y)))
+                              ((Q ε (Y b)) (Q (b Y)))
+                              ((Q ε (Y Z)) (Q (F)))
+                        
+                              ((Q ε (S b)) (Q (X b b)))
+                              ((Q ε (S Z)) (Q (X b Z)))
+                              ((Q ε (X b)) (Q (b X b)))
+                              ((Q ε (X Z)) (Q (b X Z)))
+                              ((Q ε (X b)) (Q (b X)))
+                              ((Q ε (X Z)) (Q (F)))
+
+                              ((Q ε (F)) (Q ε))
 
 
                               )))
+
+(sm-graph a^mb^n2)
