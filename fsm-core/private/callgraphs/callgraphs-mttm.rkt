@@ -74,17 +74,20 @@
          '()
          (let* [(new-stucis (filter (lambda (x) (not (member (mttm-stuci-state x) (sm-finals M))))
                                     (add-to-stucis-helper edges (first to-visit))))]
-           (if (or (empty? new-stucis)
-                   (ormap (lambda (s) 
-                            (ormap (lambda (s2) (mttm-stucis-equal? s s2)) 
-                                   new-stucis))
-                          visited))
+           (if (empty? new-stucis)
                (add-to-stucis edges (rest to-visit) visited)
-               (append new-stucis
+               (append (filter-non-member new-stucis visited)
                        (add-to-stucis edges (rest to-visit)
                                       (append new-stucis
                                               visited))))))
-     threshold)) 
+     threshold))
+  ;; (listof stuci) (listof stuci) -> (listof stuci)
+  ;; Purpose: Filter out stucis already visited
+  (define (filter-non-member s v)
+    (cond ((empty? s) '())
+          ((ormap (lambda (x) (mttm-stucis-equal? (car s) x)) v)
+           (filter-non-member (cdr s) v))
+          (else (cons (car s) (filter-non-member (cdr s) v)))))
   ;; mttm-stuci -> (listof mttm-Edge)
   ;; Purpose: Given a mttm-stuci, creates all possible edges for that
   ;;          mttm-stuci
