@@ -340,10 +340,10 @@
                                    g)))
     (if (string? ng-derivation)
         ng-derivation
-        (make-deriv (list (list (list (cfg-get-start g)) '() )) 
+        (make-deriv (list (list (list (cfg-get-start g)) '() ))
                     (list (list (list (list (cfg-get-start g)) '() )))
                     g
-                    false))))
+                    ))))
 
 ;; w-der
 ;; derivation -> derivation-list
