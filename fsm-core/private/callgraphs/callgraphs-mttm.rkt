@@ -460,7 +460,7 @@
   (let* [(new-rules (make-mttm-cg-edges M word head threshold))]
     ;; word -> word
     ;; Purpose: If neccessary, adds a left-end marker
-    (define (add-LM w)
+    #;(define (add-LM w)
       (cond [(null? w) '(@)]
             [(eq? LM (car w)) w]
             [else (cons LM w)]))
@@ -469,25 +469,25 @@
     (define cgraph (create-graph 'cgraph #:atb (hash 'rankdir "LR" 'label (cond [(and (eq? (sm-type M) 'mttm)
                                                                                       (not (empty? (append (filter mttm-cutoff-edge? new-rules)
                                                                                                            (filter mttm-cutoff-spedge? new-rules)))))
-                                                                                 (format "All computations on '~a cut off at threshold ~a" (add-LM word) threshold)]
+                                                                                 (format "All computations on '~a cut off at threshold ~a" word #;(add-LM word) threshold)]
                                                                                 [(and (eq? (sm-type M) 'mttm-language-recognizer)
                                                                                       (not (empty? (append (filter mttm-cutoff-edge? new-rules)
                                                                                                            (filter mttm-cutoff-spedge? new-rules)))))
-                                                                                 (format "All computations on '~a cut off at threshold ~a" (add-LM word) threshold)]
+                                                                                 (format "All computations on '~a cut off at threshold ~a" word #;(add-LM word) threshold)]
                                                                                 [(and (eq? (sm-type M) 'mttm)
                                                                                       (ormap (lambda (e) (member (mttm-Edge-tost e) (sm-finals M)))
                                                                                              (append (filter mttm-spedge? new-rules)
                                                                                                      (filter mttm-cutoff-spedge? new-rules))))
-                                                                                 (format "Machine reaches a halting state on: '~a" (add-LM word))]
+                                                                                 (format "Machine reaches a halting state on: '~a" word #;(add-LM word))]
                                                                                 [(eq? (sm-type M) 'mttm)
-                                                                                 (format "Machine fails to reach a halting state on: '~a" (add-LM word))]
+                                                                                 (format "Machine fails to reach a halting state on: '~a" word #;(add-LM word))]
                                                                                 [(and (eq? (sm-type M) 'mttm-language-recognizer)
                                                                                       (ormap (lambda (r) (eq? (mttm-Edge-tost r) (sm-accept M)))
                                                                                              (append (filter mttm-spedge? new-rules)
                                                                                                      (filter mttm-cutoff-spedge? new-rules))))
-                                                                                 (format "Machine accepts on: '~a" (add-LM word))]
+                                                                                 (format "Machine accepts on: '~a" word #;(add-LM word))]
                                                                                 [else
-                                                                                 (format "Machine rejects on: '~a" (add-LM word))])
+                                                                                 (format "Machine rejects on: '~a" word #;(add-LM word))])
                                                      'fontsize 13)
                                  #:fmtrs (formatters (hash) (hash) (hash 'label one-rule-per-line)))) 
     (begin
@@ -703,4 +703,12 @@
       res)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+
+
+
+
+
+
 
