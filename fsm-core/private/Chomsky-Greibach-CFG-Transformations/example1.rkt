@@ -569,4 +569,73 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; L = a^nb^n
+(define newM (make-ndpda '(S A C D B F)
+                         '(a b)
+                         '(a b C)
+                         'S
+                         '(F)
+                         '(((S ε ε) (A ε))
+                           ((A a ε) (A (a)))
+                           ((A ε ε) (C ε))
+                           ((C ε ε) (C (C)))
+                           ((C ε ε) (D ε))
+                           ((D ε (C)) (D ε))
+                           ((D ε ε) (C ε))
+                           ((D ε ε) (B ε))
+                           ((B b (a)) (B ε))
+                           ;((B b (C)) (B ε))
+                           ((B ε ε) (F ε)))))
 
+(sm-graph newM)
+(sm-graph (pda2spda newM))
+;(sm-graph (pda2spda newM))
+
+(define newM5 (make-ndpda '(S Q)
+                          '(a b)
+                          '(a b C Z S X A D B Y F)
+                          'S
+                          '(Q)
+                          '(((S ε ε) (Q (X))) ;; DONE
+                         
+                            ((Q ε (X)) (Q (S Z))) ;; DONE
+                         
+                            ((Q ε (S Z)) (Q (A Z))) ;; DONE
+
+                            ((Q ε (A C)) (Q (a A a C))) ;; DONE
+                            ((Q ε (A b)) (Q (a A a b))) ;; DONE
+                            ((Q ε (A a)) (Q (a A a a))) ;; DONE
+                            ((Q ε (A Z)) (Q (a A a Z))) ;; DONE
+
+                            ((Q ε (A)) (Q (C))) ;; DONE
+
+                            ((Q ε (C C)) (Q (C))) ;; C -> H    H -> CH | C    I -> 
+                            ((Q ε (C b)) (Q (C b))) ;; b -> Cb
+                            ((Q ε (C a)) (Q (C a))) ;; a -> Ca
+                            ((Q ε (C Z)) (Q (C))) ;; Z -> CZ
+
+                            ((Q ε (C)) (Q (D))) ;; C -> C
+
+                            ((Q ε (D C)) (Q (D))) ;; C -> emp 
+                         
+                            ((Q ε (D)) (Q (C))) ;; DONE
+
+                            ((Q ε (D)) (Q (B))) ;; DONE
+
+                            ((Q ε (B a)) (Q (b B))) ;; DONE
+
+                            ((Q ε (B)) (Q (F))) ;; DONE
+
+                            ((Q ε (F Z)) (Q (Y))) ;; DONE
+
+                            ((Q ε (Y)) (Q ε)) ;; DONE
+
+                            ((Q a (a)) (Q ε)) ;; DONE
+                            ((Q b (b)) (Q ε)) ;; DONE
+
+                            ;((Q ε (C)) (Q (C C)))
+                            ;((Q b (B C)) (Q (b B)))
+                        
+                            )))
+
+(sm-graph newM5)
