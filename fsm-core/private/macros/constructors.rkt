@@ -312,4 +312,10 @@
           )
          [result mttm?]
          ))
+
+  (define combine-tms/c
+    (->i ([ctmd #t]
+          [sigma #t])
+         [result procedure?])
+    )
   )
