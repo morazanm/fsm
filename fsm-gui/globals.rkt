@@ -7,6 +7,10 @@ Created by Joshua Schappel on 12/19/19
 (require 2htdp/image)
 (provide (all-defined-out))
 
+
+(define ORIGINAL-MACHINE (void))
+(define (set-original-machine machine) (set! ORIGINAL-MACHINE machine))
+
 ;; -- VERSION --
 (define VERSION "VERSION 1.6")
 
