@@ -1873,7 +1873,7 @@
                  ]
               (cond [(> (viz-state-scale-factor a-vs) DEFAULT-ZOOM-CAP) 
                      (let [
-                           (new-viz-state  (viz-state '()
+                           (new-viz-state (viz-state '()
                                                       new-pimgs
                                                       new-pimgs-img
                                                       (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x) (+ (posn-y (viz-state-image-posn a-vs)) growth-y))
@@ -2181,7 +2181,7 @@
                     (viz-state-word-img-offset a-vs)
                     (viz-state-word-img-offset-cap a-vs)
                     (viz-state-scroll-accum a-vs)
-                    (viz-state-click-buffer a-vs)
+                    0
                     )
          ]
         ;; Want to keep the mouse updating while it is being dragged
