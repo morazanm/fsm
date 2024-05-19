@@ -119,14 +119,8 @@
   (begin ;(displayln processed-list)
   (cond
     [(< (length processed-list) 2)  '((empty empty empty) (empty empty))]
-    [else
-     (begin
-       (displayln transitions)
-       (displayln processed-list)
-       (second (first (filter (lambda (transition) (equal? (first transition) (first processed-list))) transitions)))
-       )
-     ;(construct-pda-rule processed-list rules)
-     ])
+    [else (second (first (filter (lambda (transition) (equal? (first transition) (first processed-list))) transitions)))]
+    )
   )
   )
 

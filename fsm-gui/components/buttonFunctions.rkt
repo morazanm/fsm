@@ -867,7 +867,7 @@ This file contains all the functions associated with a button
                                                 (machine-rule-list (world-fsm-machine w)))
                                         )
                                     )
-                              (pda-cur-rule (getCurRule (cdr (world-processed-config-list w))
+                              (pda-cur-rule (getCurRule (world-processed-config-list w)
                                                          (machine-rule-list (world-fsm-machine w))
                                                          (pda-transitions-with-rules ORIGINAL-MACHINE TM-ORIGIONAL-TAPE (machine-start-state (world-fsm-machine w)))
                                                     )
