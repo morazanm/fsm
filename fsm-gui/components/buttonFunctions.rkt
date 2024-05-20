@@ -739,7 +739,11 @@ This file contains all the functions associated with a button
       [(eq? nextState 'halt)
        (redraw-world-with-msg w "The machine has halted" "Notice" MSG-CAUTION)]
       [else
-       (letrec ((cur-rule (if (equal? MACHINE-TYPE 'pda)
+       (letrec (
+                (test (displayln (format "Transitions: ~s" (pda-transitions-with-rules ORIGINAL-MACHINE TM-ORIGIONAL-TAPE (machine-start-state (world-fsm-machine w))))))
+                (test1 (displayln (format "processed list: ~s" (append (list nextState) (world-processed-config-list w)))))
+                (test2 (displayln (format "unprocessed list: ~s" (world-unporcessed-config-list w))))
+                (cur-rule (if (equal? MACHINE-TYPE 'pda)
                               (getCurRule (append (list nextState) (world-processed-config-list w))
                                           (machine-rule-list (world-fsm-machine w))
                                           (pda-transitions-with-rules ORIGINAL-MACHINE TM-ORIGIONAL-TAPE (machine-start-state (world-fsm-machine w)))

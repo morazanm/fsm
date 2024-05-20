@@ -166,8 +166,13 @@ Created by Joshua Schappel on 12/19/19
                                            trans))]
                                     ;; dfa, ndfa, pda below
                                     [else
+                                     (begin (displayln (format "runPrg showTrans: ~s" (sm-showtransitions m
+                                                         (machine-sigma-list (world-fsm-machine w)))))
+                                            (displayln (format "machine-sigma: ~s" (machine-sigma-list (world-fsm-machine w))))
                                      (sm-showtransitions m
-                                                         (machine-sigma-list (world-fsm-machine w)))])))
+                                                         (machine-sigma-list (world-fsm-machine w)))
+                                     )
+                                            ])))
                            
          ;; Set up the world to have all the valid machine components below                 
          (begin

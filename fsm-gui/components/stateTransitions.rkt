@@ -117,6 +117,7 @@
 ;; Purpose: Determins if the rule to be made should be empty or a real rule
 (define (get-pda-rule processed-list rules transitions)
   (begin ;(displayln processed-list)
+         ;(display transitions)
   (cond
     [(< (length processed-list) 2)  '((empty empty empty) (empty empty))]
     [else (second (first (filter (lambda (transition) (equal? (first transition) (first processed-list))) transitions)))]
