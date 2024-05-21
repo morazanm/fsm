@@ -616,7 +616,8 @@ Scene Rendering
                         (letrec
                             (
                              (state-color (determin-inv
-                                           (world-fsm-machine w)
+                                           ORIGINAL-MACHINE
+                                           ;(world-fsm-machine w)
                                            (world-cur-state w)))
                              ;; arrow: none -> image
                              ;; Purpose: draws a arrow
