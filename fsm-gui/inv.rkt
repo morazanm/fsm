@@ -29,7 +29,8 @@
 
 (define (determin-inv machine cur-state #:graphViz[gv false])
   (let* ([state-list (machine-state-list machine)]
-         [index (get-state-index state-list cur-state 0)])
+         [index (get-state-index state-list cur-state 0)]
+         )
     (determin-inv-color (fsm-state-function (list-ref (machine-state-list machine) index))
                         (if (or (equal? MACHINE-TYPE 'tm) (equal? MACHINE-TYPE 'tm-language-recognizer))
                             (take (machine-sigma-list machine) (tm-machine-tape-posn machine))

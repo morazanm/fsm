@@ -634,9 +634,7 @@ This file contains all the functions associated with a button
   (if (or (eq? MACHINE-TYPE 'mttm-language-recognizer)
           (eq? MACHINE-TYPE 'mttm))
       0
-      (let (;[testing-rule (displayln rule)]
-            ;[testing-rule0 (displayln lor)]
-            [ruleIndex (index-of lor rule)]
+      (let ([ruleIndex (index-of lor rule)]
             [rule-num (determine-rule-number MACHINE-TYPE)])
         (cond
           ;; See if there is no current rule. If so return the starting index of the scrollbar
@@ -740,13 +738,10 @@ This file contains all the functions associated with a button
        (redraw-world-with-msg w "The machine has halted" "Notice" MSG-CAUTION)]
       [else
        (letrec (
-                (test (displayln (format "Transitions: ~s" (pda-transitions-with-rules ORIGINAL-MACHINE TM-ORIGIONAL-TAPE (machine-start-state (world-fsm-machine w))))))
-                (test1 (displayln (format "processed list: ~s" (append (list nextState) (world-processed-config-list w)))))
-                (test2 (displayln (format "unprocessed list: ~s" (world-unporcessed-config-list w))))
                 (cur-rule (if (equal? MACHINE-TYPE 'pda)
                               (getCurRule (append (list nextState) (world-processed-config-list w))
                                           (machine-rule-list (world-fsm-machine w))
-                                          (pda-transitions-with-rules ORIGINAL-MACHINE TM-ORIGIONAL-TAPE (machine-start-state (world-fsm-machine w)))
+                                          TRANSITIONS
                                           )
                               (getCurRule (append (list nextState) (world-processed-config-list w))
                                       (machine-rule-list (world-fsm-machine w)))
@@ -822,7 +817,7 @@ This file contains all the functions associated with a button
                   (if (equal? MACHINE-TYPE 'pda)
                       (getCurRule (append (list nextState) (world-processed-config-list w))
                               (machine-rule-list (world-fsm-machine w))
-                              (pda-transitions-with-rules ORIGINAL-MACHINE TM-ORIGIONAL-TAPE (machine-start-state (world-fsm-machine w)))
+                              TRANSITIONS
                               )
                       (getCurRule (append (list nextState) (world-processed-config-list w))
                               (machine-rule-list (world-fsm-machine w)))
@@ -852,7 +847,7 @@ This file contains all the functions associated with a button
                               (cur-rule (if (equal? MACHINE-TYPE 'pda)
                                              (getCurRule (cdr (world-processed-config-list w))
                                                          (machine-rule-list (world-fsm-machine w))
-                                                         (pda-transitions-with-rules ORIGINAL-MACHINE TM-ORIGIONAL-TAPE (machine-start-state (world-fsm-machine w)))
+                                                         TRANSITIONS
                                                     )
                                             (getCurRule (cdr (world-processed-config-list w))
                                                     (machine-rule-list (world-fsm-machine w)))
@@ -863,7 +858,7 @@ This file contains all the functions associated with a button
                                                     (world-processed-config-list w)
                                                     (cdr (world-processed-config-list w)))
                                                 (machine-rule-list (world-fsm-machine w))
-                                                (pda-transitions-with-rules ORIGINAL-MACHINE TM-ORIGIONAL-TAPE (machine-start-state (world-fsm-machine w)))
+                                                TRANSITIONS
                                                 )
                                         (getCurRule (if (equal? MACHINE-TYPE 'ndfa)
                                                     (world-processed-config-list w)
@@ -873,7 +868,7 @@ This file contains all the functions associated with a button
                                     )
                               (pda-cur-rule (getCurRule (world-processed-config-list w)
                                                          (machine-rule-list (world-fsm-machine w))
-                                                         (pda-transitions-with-rules ORIGINAL-MACHINE TM-ORIGIONAL-TAPE (machine-start-state (world-fsm-machine w)))
+                                                         TRANSITIONS
                                                     )
                                             ) ;; The current rule that pda machine is in after prev is pressed. Only use this for PDA's
 

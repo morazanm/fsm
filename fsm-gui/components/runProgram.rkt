@@ -5,6 +5,7 @@ Created by Joshua Schappel on 12/19/19
 |#
 
 (require "../../fsm-core/interface.rkt"
+         "../../fsm-core/private/pda.rkt"
          "../structs/world.rkt"
          "../structs/state.rkt"
          "../structs/machine.rkt"
@@ -166,9 +167,8 @@ Created by Joshua Schappel on 12/19/19
                                            trans))]
                                     ;; dfa, ndfa, pda below
                                     [else
-                                     (begin (displayln (format "runPrg showTrans: ~s" (sm-showtransitions m
-                                                         (machine-sigma-list (world-fsm-machine w)))))
-                                            (displayln (format "machine-sigma: ~s" (machine-sigma-list (world-fsm-machine w))))
+                                     (begin (set-original-machine-struct (world-fsm-machine w))
+                                            (set-transitions (pda-transitions-with-rules m (machine-sigma-list (world-fsm-machine w)) (machine-start-state (world-fsm-machine w))))
                                      (sm-showtransitions m
                                                          (machine-sigma-list (world-fsm-machine w)))
                                      )

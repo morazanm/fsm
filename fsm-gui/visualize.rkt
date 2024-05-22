@@ -177,7 +177,6 @@ Cmd Functions
          
          ['pda (begin
                  (set-machine-type 'pda)
-                 (set-original-machine fsm-machine)
                  (run-program
                   (build-world
                    (pda-machine (map (lambda (x) (fsm-state x PDA-TRUE-FUNCTION (posn 0 0))) (sm-states fsm-machine))
@@ -302,7 +301,6 @@ Cmd Functions
            ['pda
             (begin
               (set-machine-type 'pda)
-              (set-original-machine fsm-machine)
               (run-program
                (build-world
                 (pda-machine (map (lambda (x)
@@ -569,11 +567,7 @@ Scene Rendering
 
        (determim-prev-rule (lambda (rule)
                              (let ((c-rule (if (equal? MACHINE-TYPE 'pda)
-                                               (getCurRule rule (machine-rule-list (world-fsm-machine w)) (if (equal? ORIGINAL-MACHINE (void))
-                                                                                                              (error "draw-main-img")
-                                                                                                              (pda-transitions-with-rules ORIGINAL-MACHINE TM-ORIGIONAL-TAPE (machine-start-state (world-fsm-machine w)))
-                                                                                                              )
-                                                                                                              )
+                                               (getCurRule rule (machine-rule-list (world-fsm-machine w)) TRANSITIONS)
                                                (getCurRule rule (machine-rule-list (world-fsm-machine w)))
                                                )
                                            ))
@@ -616,8 +610,7 @@ Scene Rendering
                         (letrec
                             (
                              (state-color (determin-inv
-                                           ORIGINAL-MACHINE
-                                           ;(world-fsm-machine w)
+                                           ORIGINAL-MACHINE-STRUCT
                                            (world-cur-state w)))
                              ;; arrow: none -> image
                              ;; Purpose: draws a arrow
@@ -1144,10 +1137,7 @@ BOTTOM GUI RENDERING
     (define prev-rule (if (equal? MACHINE-TYPE 'pda)
                           (getCurRule (world-processed-config-list w)
                                   (machine-rule-list (world-fsm-machine w))
-                                  (if (equal? ORIGINAL-MACHINE (void))
-                                      (error "gui-bottom prev-rule")
-                                      (pda-transitions-with-rules ORIGINAL-MACHINE TM-ORIGIONAL-TAPE (machine-start-state (world-fsm-machine w)))
-                                      )
+                                  TRANSITIONS
                                   )
                           (getCurRule (world-processed-config-list w)
                                   (machine-rule-list (world-fsm-machine w)))
