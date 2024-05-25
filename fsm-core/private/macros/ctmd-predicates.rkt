@@ -135,18 +135,20 @@
   ;;   list of 2
   ;;   starting with a symbol
   ;;   ending with a valid GOTO expression
-  (define (invalid-branches input labels)
+  (define (invalid-branches input labels sigma)
     (filter (lambda (x) (not (and (list? x)
                                   (= (length x) 2)
-                                  (symbol? (car x))
+                                  (member (car x) sigma)
                                   (valid-goto? (cadr x) labels)))) input))
 
   (check-expect (invalid-branches `((a (,GOTO 10))
-                                    (b (,GOTO 15))) '(10 15)) '())
+                                    (b (,GOTO 15))) '(10 15) '(a b)) '())
   (check-expect (invalid-branches `((10 (,GOTO 10))
-                                    (b (,GOTO 15))) '(10 15)) `((10 (,GOTO 10))))
+                                    (b (,GOTO 15))) '(10 15) '(a b)) `((10 (,GOTO 10))))
   (check-expect (invalid-branches `((a (,BRANCH 10))
-                                    (b (,GOTO 15))) '(10 15)) `((a (,BRANCH 10))))
+                                    (b (,GOTO 15))) '(10 15) '(a b)) `((a (,BRANCH 10))))
+  (check-expect (invalid-branches `((a (,GOTO 10))
+                                    (b (,GOTO 20))) '(10 20) '(a)) `((b (,GOTO 20)))) 
 
   ;;valid-list-case: takes the first portion of a ctmd, if that portion is a list
   ;;it must either be
@@ -154,64 +156,64 @@
   ;;    a valid BRANCH expression
   ;;    a valid VAR declaration followed by a valid CTMD
   ;;    a full valid ctmd or valid tm
-  (define (valid-list-case? input labels)
+  (define (valid-list-case? input labels sigma)
     (cond [(equal? GOTO (car input)) (if (not (= (length input) 2)) "A GOTO expression must be of length 2"
                                          (if (in-labels? (cadr input) labels) #t
                                              "The second part of GOTO must be a label that exists in your machine"))] ;;; must be an existing label
           [(equal? BRANCH (car input)) (if (not (= (length input) 2)) "A BRANCH expression must be of length 2"
                                            (if (not (list? (cadr input))) "The second part of a BRANCH must be a list"
-                                               (let [(all-invalid-branches (invalid-branches (cadr input) labels))]
+                                               (let [(all-invalid-branches (invalid-branches (cadr input) labels sigma))]
                                                  (if (empty? all-invalid-branches) #t
                                                      (format "The following branches have errors: ~a" all-invalid-branches)))))]
           [(and (list? (car input))
                 (equal? (car (car input)) VAR)) (if (not (= (length (car input)) 2)) "A VAR declaration must be of length 2"
                                                     (if (not (symbol? (cadr (car input)))) "The second part of a VAR declaration must be a symbol"
-                                                        (valid-ctmd? (cadr input) labels)))]
-          [else (valid-ctmd? input labels)]
+                                                        (valid-ctmd? (cadr input) labels sigma)))]
+          [else (valid-ctmd? input labels sigma)]
           ))
 
-  (check-expect (valid-list-case? `(,GOTO 10) '(10)) #t)
-  (check-expect (valid-list-case? `(,GOTO 20 30) '(20)) "A GOTO expression must be of length 2")
-  (check-expect (valid-list-case? `(,GOTO 'a) '()) "The second part of GOTO must be a label that exists in your machine")
+  (check-expect (valid-list-case? `(,GOTO 10) '(10) '()) #t)
+  (check-expect (valid-list-case? `(,GOTO 20 30) '(20) '()) "A GOTO expression must be of length 2")
+  (check-expect (valid-list-case? `(,GOTO 'a) '() '()) "The second part of GOTO must be a label that exists in your machine")
 
   (check-expect (valid-list-case? `(,BRANCH ((a (,GOTO 10))
-                                             (b (,GOTO 20)))) '(10 20))
+                                             (b (,GOTO 20)))) '(10 20) '(a b))
                 #t)
   (check-expect (valid-list-case? `(,BRANCH (a (,GOTO 10))
-                                            (b (,GOTO 20))) '(10 20))
+                                            (b (,GOTO 20))) '(10 20) '(a b))
                 "A BRANCH expression must be of length 2")
-  (check-expect (valid-list-case? `(,BRANCH a) '())
+  (check-expect (valid-list-case? `(,BRANCH a) '() '(a))
                 "The second part of a BRANCH must be a list")
   (check-expect (valid-list-case? `(,BRANCH ((a (,GOTO a))
-                                             (b (,GOTO 20)))) '(20))
+                                             (b (,GOTO 20)))) '(20) '(a b))
                 "The following branches have errors: ((a (GOTO a)))")
 
   ;; may need accumulator for variables defined in scope
-  (define (valid-ctmd? input labels)
+  (define (valid-ctmd? input labels sigma)
     (cond [(empty? input) #t]
-          [(number? (car input)) (valid-ctmd? (cdr input) labels)]
-          [(symbol? (car input)) (valid-ctmd? (cdr input) labels)] ;; is symbol in accumulated lsit
-          [(list? (car input)) (let [(list-case (valid-list-case? (car input) labels))]
+          [(number? (car input)) (valid-ctmd? (cdr input) labels sigma)]
+          [(symbol? (car input)) (valid-ctmd? (cdr input) labels sigma)] ;; is symbol in accumulated lsit
+          [(list? (car input)) (let [(list-case (valid-list-case? (car input) labels sigma))]
                                  (if (string? list-case) list-case
-                                     (valid-ctmd? (cdr input) labels)))]
+                                     (valid-ctmd? (cdr input) labels sigma)))]
           [(procedure? (car input)) (if (or (equal? (sm-type (car input)) 'tm)
                                             (equal? (sm-type (car input)) 'tm-language-recognizer))
-                                        (valid-ctmd? (cdr input) labels)
+                                        (valid-ctmd? (cdr input) labels sigma)
                                         "Only machines allowed are turing machines")]
           )
     )
 
-  (check-expect (valid-ctmd? '() '()) #t)
-  (check-expect (valid-ctmd? '(5) '(5)) #t) ;; Rest of ctmd is empty, which is valid
-  (check-expect (valid-ctmd? '(sym) '()) #t) ;; Rest of ctmd is empty, which is valid
-  (check-expect (valid-ctmd? `((,GOTO 5) 's) '(5)) #t)
-  (check-expect (valid-ctmd? `((,BRANCH ((a (,GOTO 10)) (b (,GOTO 20)))) 'd) '(10 20)) #t)
-  (check-expect (valid-ctmd? `((,BRANCH ((a (,GOTO a)) (b (,GOTO 20)))) 'd) '(20))
+  (check-expect (valid-ctmd? '() '() '()) #t)
+  (check-expect (valid-ctmd? '(5) '(5) '()) #t) ;; Rest of ctmd is empty, which is valid
+  (check-expect (valid-ctmd? '(sym) '() '()) #t) ;; Rest of ctmd is empty, which is valid
+  (check-expect (valid-ctmd? `((,GOTO 5) 's) '(5) '()) #t)
+  (check-expect (valid-ctmd? `((,BRANCH ((a (,GOTO 10)) (b (,GOTO 20)))) 'd) '(10 20) '(a b d)) #t)
+  (check-expect (valid-ctmd? `((,BRANCH ((a (,GOTO a)) (b (,GOTO 20)))) 'd) '(20) '(a b d))
                 "The following branches have errors: ((a (GOTO a)))")
 
-  (define (check-ctmd input)
+  (define (check-ctmd input sigma)
     (let [(labels (gather-labels input))]
-      (valid-ctmd? input '())))
+      (valid-ctmd? input '() sigma)))
   
   (test)
   )
