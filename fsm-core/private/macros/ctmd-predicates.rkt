@@ -160,17 +160,16 @@
     (cond [(equal? GOTO (car input)) (if (not (= (length input) 2)) "A GOTO expression must be of length 2"
                                          (if (in-labels? (cadr input) labels) #t
                                              "The second part of GOTO must be a label that exists in your machine"))] ;;; must be an existing label
-          [(equal? BRANCH (car input)) (if (not (= (length input) 2)) "A BRANCH expression must be of length 2"
-                                           (if (not (list? (cadr input))) "The second part of a BRANCH must be a list"
-                                               (let [(all-invalid-branches (invalid-branches (cadr input) labels sigma))]
-                                                 (if (empty? all-invalid-branches) #t
-                                                     (format "The following branches have errors: ~a" all-invalid-branches)))))]
+          [(equal? BRANCH (car input)) (if (not (>= (length input) 2)) "A BRANCH expression must be of at least length 2"
+                                           (let [(all-invalid-branches (invalid-branches (cdr input) labels sigma))]
+                                             (if (empty? all-invalid-branches) #t
+                                                 (format "The following branches have errors: ~a" all-invalid-branches))))]
           [(and (list? (car input))
                 (equal? (car (car input)) VAR)) (if (not (= (length (car input)) 2))
                                                     "A VAR declaration must be of length 2"
                                                     (if (not (symbol? (cadr (car input))))
                                                         "The second part of a VAR declaration must be a symbol"
-                                                        (valid-ctmd? (cadr input) labels sigma (cons (cadr (car input)) variables))))]
+                                                        (valid-ctmd? (cdr input) labels sigma (cons (cadr (car input)) variables))))]
           [else (valid-ctmd? input labels sigma variables)]
           ))
 
@@ -178,16 +177,19 @@
   (check-expect (valid-list-case? `(,GOTO 20 30) '(20) '() '()) "A GOTO expression must be of length 2")
   (check-expect (valid-list-case? `(,GOTO 'a) '() '() '()) "The second part of GOTO must be a label that exists in your machine")
 
-  (check-expect (valid-list-case? `(,BRANCH ((a (,GOTO 10))
-                                             (b (,GOTO 20)))) '(10 20) '(a b) '())
+  (check-expect (valid-list-case? `(,BRANCH
+                                    (a (,GOTO 10))
+                                    (b (,GOTO 20))) '(10 20) '(a b) '())
                 #t)
-  (check-expect (valid-list-case? `(,BRANCH (a (,GOTO 10))
-                                            (b (,GOTO 20))) '(10 20) '(a b) '())
-                "A BRANCH expression must be of length 2")
+  (check-expect (valid-list-case? `(,BRANCH
+                                    (a (,GOTO 10))
+                                    (b (,GOTO 20))) '(10 20) '(a b) '())
+                #t)
   (check-expect (valid-list-case? `(,BRANCH a) '() '(a) '())
-                "The second part of a BRANCH must be a list")
-  (check-expect (valid-list-case? `(,BRANCH ((a (,GOTO a))
-                                             (b (,GOTO 20)))) '(20) '(a b) '())
+                "The following branches have errors: (a)")
+  (check-expect (valid-list-case? `(,BRANCH
+                                    (a (,GOTO a))
+                                    (b (,GOTO 20))) '(20) '(a b) '())
                 "The following branches have errors: ((a (GOTO a)))")
   (check-expect (valid-list-case? `((,VAR a) (b)) '() '() '())
                 "The variable being referenced is not defined in this scope.")
@@ -208,7 +210,8 @@
                                      "The variable being referenced is not defined in this scope."
                                      (valid-ctmd? (cdr input) labels sigma variables))] ;; is symbol in accumulated list
           [(procedure? (car input)) (if (or (equal? (sm-type (car input)) 'tm)
-                                            (equal? (sm-type (car input)) 'tm-language-recognizer))
+                                            (equal? (sm-type (car input)) 'tm-language-recognizer)
+                                            (equal? (sm-type (car input)) 'ctm))
                                         (valid-ctmd? (cdr input) labels sigma variables)
                                         "Only machines allowed are turing machines")]
           )
@@ -218,8 +221,12 @@
   (check-expect (valid-ctmd? '(5) '(5) '() '()) #t) ;; Rest of ctmd is empty, which is valid
   (check-expect (valid-ctmd? '(sym) '() '() '(sym)) #t) ;; Rest of ctmd is empty, which is valid
   (check-expect (valid-ctmd? `((,GOTO 5) s) '(5) '() '(s)) #t)
-  (check-expect (valid-ctmd? `((,BRANCH ((a (,GOTO 10)) (b (,GOTO 20)))) d) '(10 20) '(a b d) '(d)) #t)
-  (check-expect (valid-ctmd? `((,BRANCH ((a (,GOTO a)) (b (,GOTO 20)))) 'd) '(20) '(a b d) '())
+  (check-expect (valid-ctmd? `((,BRANCH
+                                (a (,GOTO 10))
+                                (b (,GOTO 20))) d) '(10 20) '(a b d) '(d)) #t)
+  (check-expect (valid-ctmd? `((,BRANCH
+                                (a (,GOTO a))
+                                (b (,GOTO 20))) 'd) '(20) '(a b d) '())
                 "The following branches have errors: ((a (GOTO a)))")
   (check-expect (valid-ctmd? `(s) '() '() '()) "The variable being referenced is not defined in this scope.")
 
@@ -229,17 +236,21 @@
   (define (check-ctmd input sigma)
     (let [(labels (gather-labels input))
           (initial-variables '())]
-      (valid-ctmd? input labels sigma initial-variables)))
+      (valid-ctmd? input labels (append (list BLANK L R) sigma) initial-variables)))
 
-  (check-expect (check-ctmd `(((,VAR a) (a))) '()) #t)
-  (check-expect (check-ctmd `(((,VAR a) (b))) '()) "The variable being referenced is not defined in this scope.")
-  (check-expect (check-ctmd `((, BRANCH ((a (,GOTO 10)) (b (,GOTO 20)))) 10 20) '(a b)) #t)
-  (check-expect (check-ctmd `((, BRANCH ((a (,GOTO 10)) (b (,GOTO 20)))) 10 230) '(a b))
+  (check-expect (check-ctmd `(((,VAR a) a)) '()) #t)
+  (check-expect (check-ctmd `(((,VAR a) b)) '()) "The variable being referenced is not defined in this scope.")
+  (check-expect (check-ctmd `((, BRANCH
+                               (a (,GOTO 10))
+                               (b (,GOTO 20))) 10 20) '(a b)) #t)
+  (check-expect (check-ctmd `((, BRANCH
+                               (a (,GOTO 10))
+                               (b (,GOTO 20))) 10 230) '(a b))
                 "The following branches have errors: ((b (GOTO 20)))") ; TODO: Should improve this to incorporate the underlying error message.
   
   (test)
 
-  #;(define copy-ctmd (list FBL 
+  (define copy-ctmd (list FBL 
                           0 
                           R 
                           (cons BRANCH (list (list BLANK (list GOTO 2))                                                                
@@ -247,14 +258,14 @@
                                              (list 'b (list GOTO 1))))
                           1
                           (list (list VAR 'k)
-                                WB
-                                FBR
-                                FBR
-                                'k
-                                FBL
-                                FBL
-                                'k
-                                (list GOTO 0))
+                                (list WB
+                                      FBR
+                                      FBR
+                                      'k
+                                      FBL
+                                      FBL
+                                      'k
+                                      (list GOTO 0)))
                           2
                           FBR
                           L
@@ -269,5 +280,5 @@
                           (list GOTO 5)
                           5))
 
-  #;(check-ctmd copy-ctmd '(a b))
+  (check-ctmd copy-ctmd '(a b))
   )
