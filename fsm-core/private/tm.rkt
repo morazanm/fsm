@@ -493,8 +493,8 @@
             [trace
              (if (null? inputctm)
                  (list (tmconfig HALT i tape))
-                 (reverse (eval inputctm (label-pairs inputctm) START (list (tmconfig START i tape)))))
-             (if (null? inputctm)
+                 (reverse (eval inputctm (label-pairs inputctm) START (list (tmconfig START i tape)))))]
+             [else (if (null? inputctm)
                  (tmconfig HALT i tape)
                  (first (eval inputctm (label-pairs inputctm) START (list (tmconfig START i tape)))))])))
   
