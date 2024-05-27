@@ -396,7 +396,6 @@
   A LABEL is a natnum.  
   |#
   
-  
   ; ctmd alphabet --> ctm
   (define (combine-tms inputctm sigma-input)
 
@@ -490,15 +489,15 @@
                      (cons (list 'VAR (cadaar m) (list-ref tape i)) acc))]
               [else (error (format "~s found unknown element in ctm: ~s" "eval" (car m)))]))
       
-      (if trace
-          (if (null? inputctm)
-              (list (tmconfig HALT i tape))
-              (reverse (eval inputctm (label-pairs inputctm) START (list (tmconfig START i tape)))))
-          (if (null? inputctm)
-              (tmconfig HALT i tape)
-              (first (eval inputctm (label-pairs inputctm) START (list (tmconfig START i tape))))))))
-
-
+      (cond [(eq? tape 'whatami) 'ctm]
+            [trace
+             (if (null? inputctm)
+                 (list (tmconfig HALT i tape))
+                 (reverse (eval inputctm (label-pairs inputctm) START (list (tmconfig START i tape)))))
+             (if (null? inputctm)
+                 (tmconfig HALT i tape)
+                 (first (eval inputctm (label-pairs inputctm) START (list (tmconfig START i tape)))))])))
+  
   ; L = a*
   (define Alla (make-unchecked-tm '(S Y N)
                                   `(a b ,LM)
@@ -533,6 +532,16 @@
 
   (define tm-rename-sts-WriteI (tm-rename-states (tm-getstates tm-WriteI) tm-WriteI))
 
+  (define R (make-unchecked-tm '(S F)
+                               '(a b)
+                               `(((S a) (F ,RIGHT))
+                                 ((S b) (F ,RIGHT))
+                                 ((S ,BLANK) (F ,RIGHT)))
+                               'S
+                               '(F)))
+  
+  (define RR (combine-tms (list R R) '(a b)))
+  
   ;k(tm-apply tm-rename-sts-WriteI `(i ,BLANK i ,BLANK i i ,BLANK) 1)
 
   ) ; closes module

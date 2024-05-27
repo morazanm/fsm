@@ -206,7 +206,7 @@
           [(number? (car input)) (valid-ctmd? (cdr input) labels sigma variables)]
           [(symbol? (car input)) (if (not (valid-variable? (car input) variables))
                                      "The variable being referenced is not defined in this scope."
-                                      (valid-ctmd? (cdr input) labels sigma variables))] ;; is symbol in accumulated list
+                                     (valid-ctmd? (cdr input) labels sigma variables))] ;; is symbol in accumulated list
           [(procedure? (car input)) (if (or (equal? (sm-type (car input)) 'tm)
                                             (equal? (sm-type (car input)) 'tm-language-recognizer))
                                         (valid-ctmd? (cdr input) labels sigma variables)
@@ -238,4 +238,36 @@
                 "The following branches have errors: ((b (GOTO 20)))") ; TODO: Should improve this to incorporate the underlying error message.
   
   (test)
+
+  #;(define copy-ctmd (list FBL 
+                          0 
+                          R 
+                          (cons BRANCH (list (list BLANK (list GOTO 2))                                                                
+                                             (list 'a (list GOTO 1))
+                                             (list 'b (list GOTO 1))))
+                          1
+                          (list (list VAR 'k)
+                                WB
+                                FBR
+                                FBR
+                                'k
+                                FBL
+                                FBL
+                                'k
+                                (list GOTO 0))
+                          2
+                          FBR
+                          L
+                          (cons BRANCH (list (list BLANK (list GOTO 3))
+                                             (list 'a (list GOTO 4))
+                                             (list 'b (list GOTO 4))))
+                          3
+                          RR
+                          (list GOTO 5)
+                          4
+                          R
+                          (list GOTO 5)
+                          5))
+
+  #;(check-ctmd copy-ctmd '(a b))
   )
