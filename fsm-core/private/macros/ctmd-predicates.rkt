@@ -3,7 +3,7 @@
 ; Written by: Marco T. Morazan
 
 (module ctmd-predicates racket 
-  (require "../constants.rkt" "../sm-getters.rkt" "../../interface.rkt")
+  (require "../constants.rkt" "../sm-getters.rkt" "../../interface.rkt" "shared/shared-predicates.rkt")
 
   (local-require test-engine/racket-tests)
                                
@@ -130,6 +130,14 @@
   (check-expect (valid-goto? `(,GOTO 10) '(10)) #t)
   (check-expect (valid-goto? `(,GOTO 'a) '()) #f)
 
+  (define (duplicate-branches input)
+    (define branches (foldl (lambda (x y) (cons (car x) y)) '() input))
+    (define duplicates (return-duplicates branches))
+    (if (empty? duplicates) #t
+        (format "the following symbols are repeated in your branches ~s" duplicates)
+        )
+    )
+
   ;;invalid-branches: takes as input a list of items in a branch expression
   ;; these must all be valid branches of the format
   ;;   list of 2
@@ -162,7 +170,7 @@
                                              "The second part of GOTO must be a label that exists in your machine"))] ;;; must be an existing label
           [(equal? BRANCH (car input)) (if (not (>= (length input) 2)) "A BRANCH expression must be of at least length 2"
                                            (let [(all-invalid-branches (invalid-branches (cdr input) labels sigma))]
-                                             (if (empty? all-invalid-branches) #t
+                                             (if (empty? all-invalid-branches) (duplicate-branches (cdr input))
                                                  (format "The following branches have errors: ~a" all-invalid-branches))))]
           [(and (list? (car input))
                 (equal? (car (car input)) VAR)) (if (not (= (length (car input)) 2))
@@ -255,7 +263,7 @@
                           R 
                           (cons BRANCH (list (list BLANK (list GOTO 2))                                                                
                                              (list 'a (list GOTO 1))
-                                             (list 'b (list GOTO 1))))
+                                             (list 'a (list GOTO 1))))
                           1
                           (list (list VAR 'k)
                                 (list WB
