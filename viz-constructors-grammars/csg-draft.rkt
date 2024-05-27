@@ -97,7 +97,7 @@
                                (take-right (symbol->fsmlos updated-yield)
                                            (find-index-right (symbol->fsmlos (third level))
                                                              (symbol->fsmlos (first level)))))))
-         (to-sub (rename-symbols (symbol->fsmlos (second level)) accum))
+         (to-sub (symbol->fsmlos (second level)))
          (tak (append (symbol->fsmlos sub) accum))
          (new-yield (los->symbol (list bef sub aft)))
          ;(dd (display (format "~s" new-yield)))
@@ -118,58 +118,30 @@
         (cons new-yield
               (make-yields (rest der) (yield-taken new-yield) (yield-ny new-yield))))))
 
-;; replace-edges-in-accum
+;; compute-hexes
 ;; yield accum -> accum
-;; Purpose: To replace the edges in accum with new hex edges
+;; Purpose: To compute hexes
 (define (compute-hexes a-yield accum hexes)
-  (let* [(yield-exploded (symbol->fsmlos (yield-subst a-yield)))
-         (hex-edges (if (empty? hexes)
-                        empty
-                        (first hexes)))]
-
-    (define (symbol-in-accum symbol curr-accum)
-      (if (empty? curr-accum)
-          empty
-          (map (λ (edge) (if (equal? symbol (second edge))
-                             (list (first edge) a-yield)
-                             edge)) curr-accum)))
-
-    (define (filter-accum-edges ye curr-accum)
-      (if (empty? ye)
-          empty
-          (cons (symbol-in-accum (first ye) curr-accum)
-                (filter-accum-edges (rest ye) curr-accum))))
-
-    (define (symbol-in-hex symbol curr-hex)
-      (if (empty? curr-hex)
-          empty
-          (map (λ (edge) (if (equal? symbol (second edge))
-                             (list (first edge) a-yield)
-                             edge)) curr-hex)))
-
-    (define (filter-unused-hexes ye curr-hex)
-      (if (empty? ye)
-          empty
-          (cons (symbol-in-hex (first ye) curr-hex)
-                (filter-unused-hexes (rest ye) curr-hex))))
- 
-
-      
-    (filter (λ (x) (not (equal? '() x)))
-            (reverse (remove-duplicates (append
-                                         (filter-accum-edges yield-exploded accum)
-                                         (filter-unused-hexes yield-exploded hex-edges)))))))
+  (let* [(s-exploded (symbol->fsmlos (yield-subst a-yield)))]
+    (append (map (λ (edge) (if (member (second edge) (yield-to-subst a-yield))
+                               (list (first edge) (los->symbol (yield-to-subst a-yield)))
+                               edge))
+                 accum)
+            hexes)
+    ))
 
 ;; create-single-level
 ;; yield (listof edge) -> edges
 ;; Purpose: To create edges of a single step using new yield and accum
 (define (create-single-level a-yield a-nl)
-  (let* [(hexes (filter (λ (x) (not (member x (edges-accum a-nl))))
-                        (compute-hexes a-yield (edges-accum a-nl)
+  (let* [(new-accum-edges (filter (λ (edge) (not (member (second edge) (yield-to-subst a-yield))))
+                                  (append (map (λ (x) (flatten (list (los->symbol (yield-to-subst a-yield)) x)))
+                                               (symbol->fsmlos (yield-subst a-yield)))
+                                          (edges-accum a-nl))))
+         (hexes (filter (λ (edge) (not (member edge new-accum-edges)))
+                        (compute-hexes a-yield
+                                       (edges-accum a-nl)
                                        (edges-hex a-nl))))
-         (new-accum-edges (append (map (λ (x) (list (yield-to-subst a-yield) x))
-                                       (symbol->fsmlos (yield-subst a-yield)))
-                                  (edges-accum a-nl)))
          ]
     (edges hexes new-accum-edges)))
 
