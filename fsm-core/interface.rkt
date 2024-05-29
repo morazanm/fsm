@@ -513,6 +513,13 @@
       )
   )
 
+(define/contract (make-ndfa states sigma start finals rules
+                            #:accepts [accepts '()]
+                            #:rejects [rejects '()])
+  make-ndfa/c
+  (make-unchecked-ndfa states sigma start finals rules)
+  )
+
 ;;(list (list state symbol pop) (list state push)) 
 (define (replace-empty rules)
   (map (lambda (x) (list (list (car (car x))
@@ -527,13 +534,6 @@
        rules)
   )
 
-(define/contract (make-ndfa states sigma start finals rules
-                            #:accepts [accepts '()]
-                            #:rejects [rejects '()])
-  make-ndfa/c
-  (make-unchecked-ndfa states sigma start finals (replace-empty rules))
-  )
-
 ;; Purpose: Constructs an ndpda given a set of states, a machine alphabet,
 ;; set of stack symbols, a start state, a list of final states, and a list
 ;; of ndpda rules. The function checks that all fields are valid before
@@ -542,7 +542,7 @@
                              #:accepts [accepts '()]
                              #:rejects [rejects '()])
   make-ndpda/c
-  (make-unchecked-ndpda states sigma gamma start finals rules)
+  (make-unchecked-ndpda states sigma gamma start finals (replace-empty rules))
   )
 
    
