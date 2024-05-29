@@ -169,13 +169,13 @@
      )
     )
 
-  ;no-duplicates/c: string string --> contract
+  ;no-duplicates/c: string --> contract
   ;; predicate: (listof any) --> boolean
   ;; helper: (listof any) --> (listof any)
   ;Purpose: to check if there are any duplicates in a list, and if there are
   ; returns an error that contains the offending value, and the type of list that
   ; those values are coming from
-  (define (no-duplicates/c type step)
+  (define (no-duplicates/c type)
     (make-flat-contract
      #:name (string->symbol (format "distinct-list-of-~a" type))
      #:first-order (lambda (vals) (not (check-duplicates vals)))
@@ -187,9 +187,8 @@
                           (raise-blame-error
                            blame
                            vals
-                           (format "Step ~a of the design recipe has not been successfully completed.\nThe following values, ~a, are duplicated in the given ~a"
-                                   step
-                                   #;(if (or (equal? type "sigma") (equal? type "gamma"))
+                           (format "Step ~a of the design recipe has not been sucessfully completed.\nThe following values, ~a, are duplicated in the given ~a"
+                                   (if (or (equal? type "sigma") (equal? type "gamma"))
                                        "one"
                                        (if (or (equal? type "states") (equal? type "final states"))
                                            "three"
