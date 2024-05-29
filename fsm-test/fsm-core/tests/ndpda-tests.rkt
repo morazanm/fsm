@@ -79,7 +79,7 @@ The following: (a b) are not valid machine states in the given list of machine s
                              (A c C)
                              (B c B)
                              (B a B))
-                           ) (format "Step three of the design recipe has not been sucessfully completed.
+                           ) (format "Step three of the design recipe has not been successfully completed.
 The following values, (A), are duplicated in the given states: (A B C A)"))
   (check-error (make-ndpda '(A B C A A)
                            '(a b c d)
@@ -90,7 +90,7 @@ The following values, (A), are duplicated in the given states: (A B C A)"))
                              (A c C)
                              (B c B)
                              (B a B))
-                           ) (format "Step three of the design recipe has not been sucessfully completed.
+                           ) (format "Step three of the design recipe has not been successfully completed.
 The following values, (A), are duplicated in the given states: (A B C A A)"))
   (check-error (make-ndpda '(A B B C A A)
                            '(a b c d)
@@ -101,7 +101,7 @@ The following values, (A), are duplicated in the given states: (A B C A A)"))
                              (A c C)
                              (B c B)
                              (B a B))
-                           ) (format "Step three of the design recipe has not been sucessfully completed.
+                           ) (format "Step three of the design recipe has not been successfully completed.
 The following values, (A B), are duplicated in the given states: (A B B C A A)"))
   ;;SIGMA
   ;invalid number
@@ -145,7 +145,7 @@ The following: (A B) are not valid lowercase alphabet letters in the given input
                            'A
                            '(B C)
                            `((A a (g)) (B (f)))
-                           ) (format "Step one of the design recipe has not been sucessfully completed.
+                           ) (format "Step one of the design recipe has not been successfully completed.
 The following values, (a), are duplicated in the given sigma: (a b c a)"))
   (check-error (make-ndpda '(A B C D)
                            '(a b c a a)
@@ -153,7 +153,7 @@ The following values, (a), are duplicated in the given sigma: (a b c a)"))
                            'A
                            '(B C)
                            `((A a (g)) (B (f)))
-                           ) (format "Step one of the design recipe has not been sucessfully completed.
+                           ) (format "Step one of the design recipe has not been successfully completed.
 The following values, (a), are duplicated in the given sigma: (a b c a a)"))
   (check-error (make-ndpda '(A B C D)
                            '(a b c a b)
@@ -161,7 +161,7 @@ The following values, (a), are duplicated in the given sigma: (a b c a a)"))
                            'A
                            '(B C)
                            `((A a (g)) (B (f)))
-                           ) (format "Step one of the design recipe has not been sucessfully completed.
+                           ) (format "Step one of the design recipe has not been successfully completed.
 The following values, (a b), are duplicated in the given sigma: (a b c a b)"))
   ;;FINALS
   ;invalid final state
@@ -230,7 +230,7 @@ The following final states, (F G), are not in your list of states: (A B C D)"))
                            'A
                            '(B C C)
                            `((A a (g)) (B (f)))
-                           ) (format "Step three of the design recipe has not been sucessfully completed.
+                           ) (format "Step three of the design recipe has not been successfully completed.
 The following values, (C), are duplicated in the given final states: (B C C)"))
   (check-error (make-ndpda '(A B C D)
                            '(a b c d)
@@ -238,7 +238,7 @@ The following values, (C), are duplicated in the given final states: (B C C)"))
                            'A
                            '(B C C B)
                            `((A a (g)) (B (f)))
-                           ) (format "Step three of the design recipe has not been sucessfully completed.
+                           ) (format "Step three of the design recipe has not been successfully completed.
 The following values, (B C), are duplicated in the given final states: (B C C B)"))
 
   ;;START STATE

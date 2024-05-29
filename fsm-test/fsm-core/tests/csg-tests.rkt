@@ -42,8 +42,7 @@ The following: (6) are not valid nonterminals in the given list of nonterminals:
                            (AAaAAA ,ARROW ,EMP)
                            (B ,ARROW A))
                          'S)
-               (format "Step four of the design recipe has not been sucessfully completed.
-The following values, (S), are duplicated in the given nonterminals: (S A S)"))
+               (format "Step two of the design recipe has not been successfully completed.\nThe following values, (S), are duplicated in the given nonterminals: (S A S)"))
 
   ; Sigma errors
   ; Sigma must be a list
@@ -74,7 +73,7 @@ The following: (B) are not valid lowercase alphabet letters in the given input a
                            (AAaAAA ,ARROW ,EMP)
                            (B ,ARROW A))
                          'S)
-               (format "Step one of the design recipe has not been sucessfully completed.
+               (format "Step one of the design recipe has not been successfully completed.
 The following values, (b), are duplicated in the given sigma: (a b b)"))
 
   ; Delta errors
@@ -123,7 +122,7 @@ The given grammar nonterminals must be a list: A"))
                            (B ,ARROW A)
                            (B, ARROW A))
                          'S)
-               (format "Step four of the design recipe has not been sucessfully completed.
+               (format "Step three of the design recipe has not been successfully completed.
 The following values, ((B -> A)), are duplicated in the given rules: ((S -> AAaAAB) (AAaAAA -> aSb) (AAaAAA -> ε) (B -> A) (B -> A))"))
 
   ; Start state errors

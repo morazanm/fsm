@@ -60,7 +60,7 @@ The following: (a b) are not valid machine states in the given list of machine s
                          'S
                          '(Y N)
                          'Y
-                         ) (format "Step three of the design recipe has not been sucessfully completed.
+                         ) (format "Step three of the design recipe has not been successfully completed.
 The following values, (S), are duplicated in the given states: (S Y N S)"))
   (check-error (make-tm '(S Y N S S)
                          `(a b)
@@ -70,7 +70,7 @@ The following values, (S), are duplicated in the given states: (S Y N S)"))
                          'S
                          '(Y N)
                          'Y
-                         ) (format "Step three of the design recipe has not been sucessfully completed.
+                         ) (format "Step three of the design recipe has not been successfully completed.
 The following values, (S), are duplicated in the given states: (S Y N S S)"))
   (check-error (make-tm '(S Y Y N S S)
                          `(a b)
@@ -80,7 +80,7 @@ The following values, (S), are duplicated in the given states: (S Y N S S)"))
                          'S
                          '(Y N)
                          'Y
-                         ) (format "Step three of the design recipe has not been sucessfully completed.
+                         ) (format "Step three of the design recipe has not been successfully completed.
 The following values, (S Y), are duplicated in the given states: (S Y Y N S S)"))
   ;;SIGMA
   ;invalid number
@@ -134,7 +134,7 @@ The following: (1 2) are not valid alphabet letters in the given input alphabet:
                          'S
                          '(Y N)
                          'Y
-                         ) (format "Step one of the design recipe has not been sucessfully completed.
+                         ) (format "Step one of the design recipe has not been successfully completed.
 The following values, (a), are duplicated in the given sigma: (a b a)"))
   (check-error (make-tm '(S Y N)
                          `(a b a a)
@@ -144,7 +144,7 @@ The following values, (a), are duplicated in the given sigma: (a b a)"))
                          'S
                          '(Y N)
                          'Y
-                         ) (format "Step one of the design recipe has not been sucessfully completed.
+                         ) (format "Step one of the design recipe has not been successfully completed.
 The following values, (a), are duplicated in the given sigma: (a b a a)"))
   (check-error (make-tm '(S Y N)
                          `(a b a b)
@@ -154,7 +154,7 @@ The following values, (a), are duplicated in the given sigma: (a b a a)"))
                          'S
                          '(Y N)
                          'Y
-                         ) (format "Step one of the design recipe has not been sucessfully completed.
+                         ) (format "Step one of the design recipe has not been successfully completed.
 The following values, (a b), are duplicated in the given sigma: (a b a b)"))
   ;;FINALS
   ;invalid final state
@@ -239,7 +239,7 @@ The following final states, (F G), are not in your list of states: (S Y N)"))
                          'S
                          '(Y N N)
                          'Y
-                         ) (format "Step three of the design recipe has not been sucessfully completed.
+                         ) (format "Step three of the design recipe has not been successfully completed.
 The following values, (N), are duplicated in the given final states: (Y N N)"))
   (check-error (make-tm '(S Y N)
                          `(a b)
@@ -249,7 +249,7 @@ The following values, (N), are duplicated in the given final states: (Y N N)"))
                          'S
                          '(Y N N Y)
                          'Y
-                         ) (format "Step three of the design recipe has not been sucessfully completed.
+                         ) (format "Step three of the design recipe has not been successfully completed.
 The following values, (Y N), are duplicated in the given final states: (Y N N Y)"))
 
   ;;START STATE

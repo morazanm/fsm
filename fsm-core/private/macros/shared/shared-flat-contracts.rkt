@@ -187,7 +187,10 @@
                           (raise-blame-error
                            blame
                            vals
-                           step
+                           (format "Step ~a of the design recipe has not been successfully completed.\nThe following values, ~a, are duplicated in the given ~a"
+                                   step
+                                   (return-duplicates vals)
+                                   type)
                            )
                           )
                       
