@@ -513,13 +513,25 @@
       )
   )
 
-  
+;;(list (list state symbol pop) (list state push)) 
+(define (replace-empty rules)
+  (map (lambda (x) (list (list (car (car x))
+                               (cadr (car x))
+                               (if (empty? (third (car x)))
+                                   EMP
+                                   (third (car x))))
+                         (list (car (cadr x))
+                               (if (empty? (cadr (cadr x)))
+                                   EMP
+                                   (cadr (cadr x))))))
+       rules)
+  )
 
 (define/contract (make-ndfa states sigma start finals rules
                             #:accepts [accepts '()]
                             #:rejects [rejects '()])
   make-ndfa/c
-  (make-unchecked-ndfa states sigma start finals rules)
+  (make-unchecked-ndfa states sigma start finals (replace-empty rules))
   )
 
 ;; Purpose: Constructs an ndpda given a set of states, a machine alphabet,
