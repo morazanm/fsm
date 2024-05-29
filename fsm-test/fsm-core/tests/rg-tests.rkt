@@ -32,7 +32,7 @@ The following: (5) are not valid nonterminals in the given list of nonterminals:
                           (S ,ARROW aA)
                           (A ,ARROW bS))
                         'S)
-               (format "Step four of the design recipe has not been sucessfully completed.
+               (format "Step two of the design recipe has not been successfully completed.
 The following values, (S), are duplicated in the given nonterminals: (A S S)"))
   
   ; Alphabet Errors
@@ -61,7 +61,7 @@ The following: (B) are not valid lowercase alphabet letters in the given input a
                           (S ,ARROW aA)
                           (A ,ARROW bS))
                         'S)
-               (format "Step one of the design recipe has not been sucessfully completed.
+               (format "Step one of the design recipe has not been successfully completed.
 The following values, (a), are duplicated in the given sigma: (a b a)"))
   
   ; Rule errors
@@ -105,7 +105,7 @@ The following rules cannot have EMP in their RHS: ((A -> ε))"))
                           (S ,ARROW aA)
                           (A ,ARROW bS))
                         'S)
-               (format "Step four of the design recipe has not been sucessfully completed.
+               (format "Step three of the design recipe has not been sucsessfully completed.
 The following values, ((S -> aA)), are duplicated in the given rules: ((S -> ε) (S -> aA) (S -> aA) (A -> bS))"))
   
   ; Starting state errors
@@ -145,8 +145,7 @@ The following starting state, B, is not in the given list of states: (A S)"))
                           (A ,ARROW bS))
                         'S
                         #:accepts '((a c d)))
-               (format "Step six of the design recipe has not been successfully completed.
-The following words the machine should accepts contain symbols not included in sigma: ((a c d))"))
+               (format "Step six of the design recipe has not been successfully completed. The following words in the accepts list contain symbols not included in sigma: ((a c d))"))
   (check-error (make-rg '(A S)
                         '(a b)
                         `((S ,ARROW ,EMP)
