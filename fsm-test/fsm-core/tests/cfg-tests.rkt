@@ -35,7 +35,7 @@ The following: (6) are not valid nonterminals in the given list of nonterminals:
                          `((S ,ARROW ,EMP)
                            (S ,ARROW aSb))
                          'S)
-               (format "Step four of the design recipe has not been sucessfully completed.
+               (format "Step two of the design recipe has not been successfully completed.
 The following values, (S), are duplicated in the given nonterminals: (S S)"))
 
   ; Sigma errors
@@ -61,7 +61,7 @@ The following: (B) are not valid lowercase alphabet letters in the given input a
                          `((S ,ARROW ,EMP)
                            (S ,ARROW aSb))
                          'S)
-               (format "Step one of the design recipe has not been sucessfully completed.
+               (format "Step one of the design recipe has not been successfully completed.
 The following values, (b), are duplicated in the given sigma: (a b b)"))
 
   ; Delta errors
@@ -106,7 +106,7 @@ The given grammar nonterminals must be a list: A"))
                            (S ,ARROW aSb)
                            (S ,ARROW aSb))
                          'S)
-               (format "Step four of the design recipe has not been sucessfully completed.
+               (format "Step three of the design recipe has not been successfully completed.
 The following values, ((S -> aSb)), are duplicated in the given rules: ((S -> ε) (S -> aSb) (S -> aSb))"))
 
   ; Start state errors
@@ -152,7 +152,7 @@ The following starting state, C, is not in the given list of states: (S)"))
                          'S
                          #:accepts '((a b) (c d e f g)))
                (format "Step six of the design recipe has not been successfully completed.
-The following words the machine should accepts contain symbols not included in sigma: ((c d e f g))"))
+The following words in the accepts list contain symbols not included in sigma: ((c d e f g))"))
   ; Words in the #:accepts list that are not in the language of the grammar are returned
   ; in the error message
   (check-error (make-cfg '(S)
@@ -188,7 +188,7 @@ The constructed grammar does not accept the following words: ((b))"))
                          'S
                          #:rejects '((a b) (c d e f g)))
                (format "Step six of the design recipe has not been successfully completed.
-The following words the machine should rejects contain symbols not included in sigma: ((c d e f g))"))
+The following words in the rejects list contain symbols not included in sigma: ((c d e f g))"))
   ; Words in the #:rejects list that are in the language of the grammar are returned
   ; in the error message
   (check-error (make-cfg '(S)

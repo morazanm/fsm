@@ -39,16 +39,16 @@
 
   (define make-dfa/c (->i ([states (and/c (is-a-list/c "machine states" "three")
                                           (valid-listof/c valid-state? "machine state" "list of machine states" #:rule "three")
-                                          (no-duplicates/c "states"))]
+                                          (no-duplicates/c "states" "three"))]
                            [sigma (and/c (is-a-list/c "machine alphabet" "one")
                                          (valid-listof/c valid-alpha? "lowercase alphabet letter" "input alphabet" #:rule "one")
-                                         (no-duplicates/c "sigma"))]
+                                         (no-duplicates/c "sigma" "one"))]
                            [start (states) (and/c (valid-start/c states)
                                                   (start-in-states/c states))]
                            [finals (states) (and/c (is-a-list/c "machine final states" "three")
                                                    (valid-listof/c valid-state? "machine state" "list of machine finals" #:rule "three")
                                                    (valid-finals/c states)
-                                                   (no-duplicates/c "final states"))]
+                                                   (no-duplicates/c "final states" "three"))]
                            [rules (states
                                    sigma
                                    add-dead) (and/c (is-a-list/c "machine rules" "four")
@@ -93,21 +93,21 @@
   (define make-ndfa/c
     (->i ([states (and/c (is-a-list/c "machine states" "three")
                          (valid-listof/c valid-state? "machine state" "list of machine states" #:rule "three")
-                         (no-duplicates/c "states"))]
+                         (no-duplicates/c "states" "three"))]
           [sigma (and/c (is-a-list/c "machine alphabet" "one")
                         (valid-listof/c valid-alpha? "lowercase alphabet letter" "input alphabet" #:rule "one")
-                        (no-duplicates/c "sigma"))]
+                        (no-duplicates/c "sigma" "one"))]
           [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
           [finals (states) (and/c (is-a-list/c "machine final states" "three")
                                   (valid-listof/c valid-state? "machine state" "list of machine finals" #:rule "three")
                                   (valid-finals/c states)
-                                  (no-duplicates/c "final states"))]
+                                  (no-duplicates/c "final states" "three"))]
           [rules (states
                   sigma) (and/c (is-a-list/c "machine rules" "four")
                                 correct-dfa-rule-structures/c
                                 (correct-dfa-rules/c states (cons EMP sigma))
-                                (no-duplicates/c "rules"))]
+                                (no-duplicates/c "rules" "four"))]
           )
          (#:accepts [accepts (states
                               sigma
@@ -140,25 +140,25 @@
   (define make-ndpda/c
     (->i ([states (and/c (is-a-list/c "machine states" "three")
                          (valid-listof/c valid-state? "machine state" "list of machine states" #:rule "three")
-                         (no-duplicates/c "states"))]
+                         (no-duplicates/c "states" "three"))]
           [sigma (and/c (is-a-list/c "machine sigma" "one")
                         (valid-listof/c valid-alpha? "lowercase alphabet letter" "input alphabet" #:rule "one")
-                        (no-duplicates/c "sigma"))]
+                        (no-duplicates/c "sigma" "one"))]
           [gamma (and/c (is-a-list/c "machine gamma" "one")
                         (valid-listof/c (lambda (g) (or (valid-state? g) (valid-alpha? g))) "stack symbol" "stack alphabet" #:rule "one")
-                        (no-duplicates/c "gamma"))]
+                        (no-duplicates/c "gamma" "one"))]
           [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
           [finals (states) (and/c (is-a-list/c "machine final states" "three")
                                   (valid-listof/c valid-state? "machine state" "list of machine finals" #:rule "three")
                                   (valid-finals/c states)
-                                  (no-duplicates/c "final states"))]
+                                  (no-duplicates/c "final states" "three"))]
           [rules (states
                   sigma
                   gamma) (and/c (is-a-list/c "machine rules" "four")
                                 correct-ndpda-rule-structures/c
                                 (correct-ndpda-rules/c states sigma gamma)
-                                (no-duplicates/c "rules"))]
+                                (no-duplicates/c "rules" "four"))]
           )
          (#:accepts [accepts (states
                               sigma
@@ -194,21 +194,21 @@
   (define make-tm/c
     (->i ([states (and/c (is-a-list/c "machine states" "three")
                          (valid-listof/c valid-state? "machine state" "list of machine states" #:rule "three")
-                         (no-duplicates/c "states"))]
+                         (no-duplicates/c "states" "three"))]
           [sigma (and/c (is-a-list/c "machine alphabet" "one")
                         (valid-listof/c valid-tm-alpha? "alphabet letter" "input alphabet" #:rule "one")
-                        (no-duplicates/c "sigma"))]
+                        (no-duplicates/c "sigma" "one"))]
           [rules (states
                   sigma) (and/c (is-a-list/c "machine rules" "four")
                                 correct-tm-rule-structures/c
                                 (correct-tm-rules/c states sigma)
-                                (no-duplicates/c "rules"))]
+                                (no-duplicates/c "rules" "four"))]
           [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
           [finals (states) (and/c (is-a-list/c "machine final states" "three")
                                   (valid-listof/c valid-state? "machine state" "list of machine finals" #:rule "three")
                                   (valid-finals/c states)
-                                  (no-duplicates/c "final states"))]
+                                  (no-duplicates/c "final states" "three"))]
           )
          ([accept (finals) (and/c valid-non-dead-state/c
                                   (is-state-in-finals/c finals))]
@@ -252,22 +252,22 @@
   (define make-mttm/c
     (->i ([states (and/c (is-a-list/c "machine states" "three")
                          (valid-listof/c valid-state? "machine state" "list of machine states" #:rule "three")
-                         (no-duplicates/c "states"))]
+                         (no-duplicates/c "states" "three"))]
           [sigma (and/c (is-a-list/c "machine alphabet" "one")
                         (valid-listof/c valid-tm-alpha? "alphabet letter" "input alphabet" #:rule "one")
-                        (no-duplicates/c "sigma"))]
+                        (no-duplicates/c "sigma" "one"))]
           [start (states) (and/c (valid-start/c states)
                                  (start-in-states/c states))]
           [finals (states) (and/c (is-a-list/c "machine final states" "three")
                                   (valid-listof/c valid-state? "machine state" "list of machine finals" #:rule "three")
                                   (valid-finals/c states)
-                                  (no-duplicates/c "final states"))]
+                                  (no-duplicates/c "final states" "three"))]
           [rules (states
                   sigma
                   num-tapes) (and/c (is-a-list/c "machine rules" "four")
                                     (correct-mttm-rule-structures/c num-tapes)
                                     (correct-mttm-rules/c states sigma)
-                                    (no-duplicates/c "rules"))]
+                                    (no-duplicates/c "rules" "four"))]
           [num-tapes  (and/c valid-num-tapes/c)]
           )
          ([accept (finals) (and/c valid-non-dead-state/c
