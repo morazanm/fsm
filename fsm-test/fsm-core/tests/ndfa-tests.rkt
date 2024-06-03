@@ -231,7 +231,7 @@ The following final states, (F), are not in your list of states: (A B C D)"))
                           ) (format "Step three of the design recipe has not been successfully completed.
 The following final states, (F G), are not in your list of states: (A B C D)"))
   ;duplicates
- (check-error (make-ndfa '(A B C D)
+  (check-error (make-ndfa '(A B C D)
                           '(a b c d)
                           'A
                           '(B C C)
@@ -294,7 +294,7 @@ The given starting state: (A) is not a valid state"))
                           ) (format "Step three of the design recipe has not been successfully completed.
 The following starting state, F, is not in the given list of states: (A B C D)"))
 
-    (check-error (make-ndfa '(A B)
+  (check-error (make-ndfa '(A B)
                           '(a b)
                           'A
                           '(A)
@@ -304,7 +304,7 @@ The following starting state, F, is not in the given list of states: (A B C D)")
                             (B a B))
                           #:accepts '((a a b a a a))
                           #:rejects '((b a a a) (a a a a b a)))
-                 (format "Step six of the design recipe has not been successfully completed.
+               (format "Step six of the design recipe has not been successfully completed.
 The constructed machine does not accept the following words: ((a a b a a a))"))
 
   (check-error (make-ndfa '(A B)
@@ -323,5 +323,21 @@ The constructed machine does not reject the following words: ((a a a))"))
   ;;RULES
   
   (test)
+
+  (define ALOM (make-ndfa '(S A B C)
+                          '(a b c)
+                          'S
+                          '(A B C)
+                          `((S ,EMP A)
+                            (S ,EMP B)
+                            (S ,EMP C)
+                            (A b A)
+                            (A c A)
+                            (B a B)
+                            (B c B)
+                            (C a C)
+                            (C b C))
+                          #:accepts '((a a c) (b c) (c a a) (a b))
+                          #:rejects '((a b c) (b a b b c))))
 
   )

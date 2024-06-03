@@ -168,4 +168,13 @@ The constructed grammar does not reject the following words: ((a b a b a b))"))
   
 
   (test)
+
+  (define G (make-rg '(S A)
+                     '(a b)
+                     `((S ,ARROW ,EMP)
+                       (S ,ARROW aA)
+                       (A ,ARROW bS))
+                     'S))
+
+  
   )

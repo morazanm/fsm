@@ -8,18 +8,18 @@
   (provide 
    )
 
-;  (make-ndpda '(S P Q F)
-;              '(a b c)
-;              '(a b S)
-;              'S
-;              '(F)
-;              `(((S ,EMP ,EMP) (P ,EMP))
-;                ((P a ,EMP) (P (S a)))
-;                ((P b ,EMP) (P (b)))
-;                ((P c ,EMP) (Q ,EMP))
-;                ((Q a (a)) (Q ,EMP))
-;                ((Q b (b)) (Q ,EMP))
-;                ((Q ,EMP ,EMP) (F ,EMP))))
+  ;  (make-ndpda '(S P Q F)
+  ;              '(a b c)
+  ;              '(a b S)
+  ;              'S
+  ;              '(F)
+  ;              `(((S ,EMP ,EMP) (P ,EMP))
+  ;                ((P a ,EMP) (P (S a)))
+  ;                ((P b ,EMP) (P (b)))
+  ;                ((P c ,EMP) (Q ,EMP))
+  ;                ((Q a (a)) (Q ,EMP))
+  ;                ((Q b (b)) (Q ,EMP))
+  ;                ((Q ,EMP ,EMP) (F ,EMP))))
   
   ;;valid-listof/c tests
   ;;STATES
@@ -312,5 +312,18 @@ The constructed machine does not accept the following words: ((a a a a))"))
 The constructed machine does not reject the following words: ((c))"))
   
   (test)
+
+  (define wcw^r (make-ndpda '(S P Q F)
+                            '(a b c)
+                            '(a b)
+                            'S
+                            '(F)
+                            `(((S ,EMP ()) (P ()))
+                              ((P a ,EMP) (P (a)))
+                              ((P b ,EMP) (P (b)))
+                              ((P c ()) (Q ,EMP))
+                              ((Q a (a)) (Q ,EMP))
+                              ((Q b (b)) (Q ,EMP))
+                              ((Q ,EMP ,EMP) (F ,EMP)))))
 
   )

@@ -1,7 +1,7 @@
 #lang racket
 #|
 Created by Joshua Schappel on 12/19/19
-  This field contains the runPorgam function. That checks a given machine and determines if the program should run
+  This field contains the runProgram function. That checks a given machine and determines if the program should run
 |#
 
 (require "../../fsm-core/interface.rkt"
@@ -55,7 +55,8 @@ Created by Joshua Schappel on 12/19/19
                                                    (machine-alpha-list (world-fsm-machine w))
                                                    (machine-start-state (world-fsm-machine w))
                                                    (machine-final-state-list (world-fsm-machine w))
-                                                   (machine-rule-list (world-fsm-machine w)))
+                                                   (machine-rule-list (world-fsm-machine w))
+                                                   'no-dead)
                                (make-unchecked-dfa state-list
                                                    (machine-alpha-list (world-fsm-machine w))
                                                    (machine-start-state (world-fsm-machine w))
