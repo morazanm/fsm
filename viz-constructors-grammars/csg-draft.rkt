@@ -32,7 +32,8 @@
 ;; subst - whatever replaced to-subst in the yield
 ;; taken - names of the nodes that are already taken
 ;; ny - new yield created from renamed subst to be used in creating the next yield
-(struct yield (before to-subst after subst taken ny) #:transparent)
+;; old - yield not renamed
+(struct yield (before to-subst after subst taken old ny) #:transparent)
 
 ;; edges is a structure that has
 ;; hex which are hexagon edges
@@ -82,60 +83,63 @@
           (cons (first subst) (rename-symbols (rest subst) accum)))))
 
 
+;; TODO: ON THE RIGHT TRACK, ADD THE UPDATED YIELD AS A PARAMETER SO WE CAN EXTRACT TO-SUB
+;; AND USE IT TO MAKE HEXES
+
 ;; before-after-subst
 ;; level -> struct
 ;; Purpose: To extract before, to-subst, after, and subst from the level
-(define (before-after-substs level accum updated-yield)
+(define (before-after-substs level accum updated-yield old-up-yield)
   (let* [(sub (los->symbol (rename-symbols (symbol->fsmlos (third level)) accum)))
-         (bef (los->symbol (if (empty? (third level))
-                               empty
-                               (take (symbol->fsmlos updated-yield)
-                                     (find-index-left (symbol->fsmlos (third level))
-                                                      (symbol->fsmlos (first level)))))))
-         (aft (los->symbol (if (empty? (third level))
-                               empty
-                               (take-right (symbol->fsmlos updated-yield)
-                                           (find-index-right (symbol->fsmlos (third level))
-                                                             (symbol->fsmlos (first level)))))))
-         (to-sub (symbol->fsmlos (second level)))
+         (bef (los->symbol (take (symbol->fsmlos updated-yield)
+                                 (find-index-left (symbol->fsmlos (second level))
+                                                  (symbol->fsmlos updated-yield)))))
+         (aft (los->symbol (take-right (symbol->fsmlos updated-yield)
+                                       (find-index-right (symbol->fsmlos (second level))
+                                                         (symbol->fsmlos updated-yield)))))
+          
          (tak (append (symbol->fsmlos sub) accum))
          (new-yield (los->symbol (list bef sub aft)))
-         ;(dd (display (format "~s" new-yield)))
+         (to-sub (drop-right (drop (symbol->fsmlos old-up-yield)
+                                   (find-index-left (symbol->fsmlos (second level))
+                                                    (symbol->fsmlos updated-yield)))
+                             (find-index-right (symbol->fsmlos (second level))
+                                               (symbol->fsmlos updated-yield))))
+         (dd (display (format "~s\n\n" to-sub)))
          ]
-    (yield bef to-sub aft sub tak new-yield)))
-
-;; the error is that i'm renaming sub only, and not considering that i'm looking for something in
-;; the new yield that doesn't exist there - how to rename everything and look for it in the new yield?
+    (yield bef to-sub aft sub tak (first level) new-yield)))
 
 
 ;; make-yields
 ;; der accum -> (listof yield)
 ;; Purpose: To create a list of yields to use for building edges
-(define (make-yields der accum updated-yield)
+(define (make-yields der accum previous-yield updated-yield)
   (if (empty? der)
       empty
-      (let [(new-yield (before-after-substs (first der) accum updated-yield))]
+      (let [(new-yield (before-after-substs (first der) accum previous-yield updated-yield))]
         (cons new-yield
-              (make-yields (rest der) (yield-taken new-yield) (yield-ny new-yield))))))
+              (make-yields (rest der) (yield-taken new-yield) (yield-old new-yield) (yield-ny new-yield))))))
 
 ;; compute-hexes
 ;; yield accum -> accum
 ;; Purpose: To compute hexes
 (define (compute-hexes a-yield accum hexes)
   (let* [(s-exploded (symbol->fsmlos (yield-subst a-yield)))]
-    (append (map (λ (edge) (if (member (second edge) (yield-to-subst a-yield))
-                               (list (first edge) (los->symbol (yield-to-subst a-yield)))
-                               edge))
-                 accum)
-            hexes)
-    ))
+    (remove-duplicates (append (map (λ (edge) (if (member (second edge) (yield-to-subst a-yield))
+                                                  (list (first edge) (los->symbol (yield-to-subst a-yield)))
+                                                  edge))
+                                    accum)
+                               hexes)
+                       )))
 
 ;; create-single-level
 ;; yield (listof edge) -> edges
 ;; Purpose: To create edges of a single step using new yield and accum
 (define (create-single-level a-yield a-nl)
-  (let* [(new-accum-edges (filter (λ (edge) (not (member (second edge) (yield-to-subst a-yield))))
-                                  (append (map (λ (x) (flatten (list (los->symbol (yield-to-subst a-yield)) x)))
+  (let* [(new-accum-edges (filter (λ (edge) (not (member (second edge)
+                                                         (yield-to-subst a-yield))))
+                                  (append (map (λ (x) (flatten (list (los->symbol
+                                                                      (yield-to-subst a-yield)) x)))
                                                (symbol->fsmlos (yield-subst a-yield)))
                                           (edges-accum a-nl))))
          (hexes (filter (λ (edge) (not (member edge new-accum-edges)))
