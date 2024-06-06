@@ -10,7 +10,7 @@
            rg rg? rg-nts rg-sigma rg-rules rg-s
            make-unchecked-rg parse-rrules printable-rrules
            rg-rule-lhs rg-rule-rhs2 rg-rule-rhs1 rg-getalphabet rg-getnts rg-getstart rg-getrules rg-getunparsedrules
-           rg-rename-nts rg-derive test-rg
+           rg-rename-nts rg-derive test-rg rg-derive-with-rules
            )
   
   ; S --> e

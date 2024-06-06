@@ -312,5 +312,8 @@
                     'S
                     )
   )
+
+(rg-viz even-bs-odd-as '(b b a b b b b b b b b b b b b a b b b b b b b b b b b b b b a b b b b b b b b b b b b b b b b a b b b b b b b b b b a))
+
 ;(grammar-derive G '(a a a))
 (rg-viz G '(a a a))
