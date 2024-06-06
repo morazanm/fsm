@@ -286,12 +286,6 @@
                           
                           (above/align "middle"  S-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Zoom out" (- FONT-SIZE 2) 'black))
                           (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
-
-                          (above/align "middle"  A-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Word start" (- FONT-SIZE 2) 'black))
-                          (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
-
-                          (above/align "middle"  D-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Word end" (- FONT-SIZE 2) 'black))
-                          (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
                           
                           (above/align "middle" R-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Min zoom" (- FONT-SIZE 2) 'black))
                           (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
@@ -300,6 +294,12 @@
                           (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
                           
                           (above/align "middle" F-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Max zoom" (- FONT-SIZE 2) 'black))
+                          (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
+
+                          (above/align "middle"  A-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Word start" (- FONT-SIZE 2) 'black))
+                          (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
+
+                          (above/align "middle"  D-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Word end" (- FONT-SIZE 2) 'black))
                           )
                   )
     )
@@ -502,108 +502,6 @@
                       )
                    )
   )
-(define A-KEY-DIMS
-  (bounding-limits (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-                      ARROW-KEY-WIDTH-BUFFER
-                      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
-                      ARROW-KEY-WIDTH-BUFFER
-                      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
-                      ARROW-KEY-WIDTH-BUFFER
-                      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
-                      ARROW-KEY-WIDTH-BUFFER
-                      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
-                      ARROW-KEY-WIDTH-BUFFER
-                      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
-                      LETTER-KEY-WIDTH-BUFFER
-                      (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
-                      LETTER-KEY-WIDTH-BUFFER
-                      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-                      (/ (- (image-width (text "Word start" (- FONT-SIZE 2) 'black)) (image-width A-KEY)) 2)
-                      )
-                   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-                      ARROW-KEY-WIDTH-BUFFER
-                      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
-                      ARROW-KEY-WIDTH-BUFFER
-                      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
-                      ARROW-KEY-WIDTH-BUFFER
-                      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
-                      ARROW-KEY-WIDTH-BUFFER
-                      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
-                      ARROW-KEY-WIDTH-BUFFER
-                      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
-                      LETTER-KEY-WIDTH-BUFFER
-                      (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
-                      LETTER-KEY-WIDTH-BUFFER
-                      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-                      (/ (- (image-width (text "Word start" (- FONT-SIZE 2) 'black)) (image-width A-KEY)) 2)
-                      (image-width A-KEY)
-                      )
-                   (+ EXTRA-HEIGHT-FROM-CURSOR
-                      E-SCENE-HEIGHT
-                      (bounding-limits-height RULE-YIELD-DIMS)
-                      INS-TOOLS-BUFFER
-                      )
-                   (+ EXTRA-HEIGHT-FROM-CURSOR
-                      E-SCENE-HEIGHT
-                      (bounding-limits-height RULE-YIELD-DIMS)
-                      INS-TOOLS-BUFFER
-                      (image-height A-KEY)
-                      )
-                   )
-  )
-(define D-KEY-DIMS
-  (bounding-limits (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-                      ARROW-KEY-WIDTH-BUFFER
-                      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
-                      ARROW-KEY-WIDTH-BUFFER
-                      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
-                      ARROW-KEY-WIDTH-BUFFER
-                      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
-                      ARROW-KEY-WIDTH-BUFFER
-                      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
-                      ARROW-KEY-WIDTH-BUFFER
-                      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
-                      LETTER-KEY-WIDTH-BUFFER
-                      (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
-                      LETTER-KEY-WIDTH-BUFFER
-                      (image-width (text "Word start" (- FONT-SIZE 2) 'black))
-                      LETTER-KEY-WIDTH-BUFFER
-                      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-                      (/ (- (image-width (text "Word end" (- FONT-SIZE 2) 'black)) (image-width D-KEY)) 2)
-                      )
-                   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-                      ARROW-KEY-WIDTH-BUFFER
-                      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
-                      ARROW-KEY-WIDTH-BUFFER
-                      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
-                      ARROW-KEY-WIDTH-BUFFER
-                      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
-                      ARROW-KEY-WIDTH-BUFFER
-                      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
-                      ARROW-KEY-WIDTH-BUFFER
-                      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
-                      LETTER-KEY-WIDTH-BUFFER
-                      (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
-                      LETTER-KEY-WIDTH-BUFFER
-                      (image-width (text "Word start" (- FONT-SIZE 2) 'black))
-                      LETTER-KEY-WIDTH-BUFFER
-                      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-                      (/ (- (image-width (text "Word end" (- FONT-SIZE 2) 'black)) (image-width D-KEY)) 2)
-                      (image-width D-KEY)
-                      )
-                   (+ EXTRA-HEIGHT-FROM-CURSOR
-                      E-SCENE-HEIGHT
-                      (bounding-limits-height RULE-YIELD-DIMS)
-                      INS-TOOLS-BUFFER
-                      )
-                   (+ EXTRA-HEIGHT-FROM-CURSOR
-                      E-SCENE-HEIGHT
-                      (bounding-limits-height RULE-YIELD-DIMS)
-                      INS-TOOLS-BUFFER
-                      (image-height D-KEY)
-                      )
-                   )
-  )
 
 (define R-KEY-DIMS
   (bounding-limits (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
@@ -620,10 +518,7 @@
                       LETTER-KEY-WIDTH-BUFFER
                       (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
                       LETTER-KEY-WIDTH-BUFFER
-                      (image-width (text "Word start" (- FONT-SIZE 2) 'black))
-                      LETTER-KEY-WIDTH-BUFFER
-                      (image-width (text "Word end" (- FONT-SIZE 2) 'black))
-                      LETTER-KEY-WIDTH-BUFFER
+                      
                       (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
                       (/ (- (image-width (text "Min zoom" (- FONT-SIZE 2) 'black)) (image-width R-KEY)) 2)
                       )
@@ -641,10 +536,7 @@
                       LETTER-KEY-WIDTH-BUFFER
                       (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
                       LETTER-KEY-WIDTH-BUFFER
-                      (image-width (text "Word start" (- FONT-SIZE 2) 'black))
-                      LETTER-KEY-WIDTH-BUFFER
-                      (image-width (text "Word end" (- FONT-SIZE 2) 'black))
-                      LETTER-KEY-WIDTH-BUFFER
+                      
                       (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
                       (/ (- (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black)) (image-width R-KEY)) 2)
                       (image-width R-KEY)
@@ -678,10 +570,6 @@
                       LETTER-KEY-WIDTH-BUFFER
                       (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
                       LETTER-KEY-WIDTH-BUFFER
-                      (image-width (text "Word start" (- FONT-SIZE 2) 'black))
-                      LETTER-KEY-WIDTH-BUFFER
-                      (image-width (text "Word end" (- FONT-SIZE 2) 'black))
-                      LETTER-KEY-WIDTH-BUFFER
                       (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black))
                       LETTER-KEY-WIDTH-BUFFER
                       (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
@@ -701,10 +589,7 @@
                       LETTER-KEY-WIDTH-BUFFER
                       (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
                       LETTER-KEY-WIDTH-BUFFER
-                      (image-width (text "Word start" (- FONT-SIZE 2) 'black))
-                      LETTER-KEY-WIDTH-BUFFER
-                      (image-width (text "Word end" (- FONT-SIZE 2) 'black))
-                      LETTER-KEY-WIDTH-BUFFER
+                      
                       (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black))
                       LETTER-KEY-WIDTH-BUFFER
                       (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
@@ -740,10 +625,7 @@
                       LETTER-KEY-WIDTH-BUFFER
                       (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
                       LETTER-KEY-WIDTH-BUFFER
-                      (image-width (text "Word start" (- FONT-SIZE 2) 'black))
-                      LETTER-KEY-WIDTH-BUFFER
-                      (image-width (text "Word end" (- FONT-SIZE 2) 'black))
-                      LETTER-KEY-WIDTH-BUFFER
+                      
                       (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black))
                       LETTER-KEY-WIDTH-BUFFER
                       (image-width (text "Mid Zoom" (- FONT-SIZE 2) 'black))
@@ -765,10 +647,7 @@
                       LETTER-KEY-WIDTH-BUFFER
                       (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
                       LETTER-KEY-WIDTH-BUFFER
-                      (image-width (text "Word start" (- FONT-SIZE 2) 'black))
-                      LETTER-KEY-WIDTH-BUFFER
-                      (image-width (text "Word end" (- FONT-SIZE 2) 'black))
-                      LETTER-KEY-WIDTH-BUFFER
+                      
                       (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black))
                       LETTER-KEY-WIDTH-BUFFER
                       (image-width (text "Mid Zoom" (- FONT-SIZE 2) 'black))
@@ -787,6 +666,133 @@
                       (bounding-limits-height RULE-YIELD-DIMS)
                       INS-TOOLS-BUFFER
                       (image-height F-KEY)
+                      )
+                   )
+  )
+
+(define A-KEY-DIMS
+  (bounding-limits (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Mid Zoom" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Max Zoom" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+                      (/ (- (image-width (text "Word start" (- FONT-SIZE 2) 'black)) (image-width A-KEY)) 2)
+                      )
+                   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Mid Zoom" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Max Zoom" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+                      (/ (- (image-width (text "Word start" (- FONT-SIZE 2) 'black)) (image-width A-KEY)) 2)
+                      (image-width A-KEY)
+                      )
+                   (+ EXTRA-HEIGHT-FROM-CURSOR
+                      E-SCENE-HEIGHT
+                      (bounding-limits-height RULE-YIELD-DIMS)
+                      INS-TOOLS-BUFFER
+                      )
+                   (+ EXTRA-HEIGHT-FROM-CURSOR
+                      E-SCENE-HEIGHT
+                      (bounding-limits-height RULE-YIELD-DIMS)
+                      INS-TOOLS-BUFFER
+                      (image-height A-KEY)
+                      )
+                   )
+  )
+(define D-KEY-DIMS
+  (bounding-limits (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Mid Zoom" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Max Zoom" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Word start" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+                      (/ (- (image-width (text "Word end" (- FONT-SIZE 2) 'black)) (image-width D-KEY)) 2)
+                      )
+                   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Mid Zoom" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Max Zoom" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Word start" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+                      (/ (- (image-width (text "Word end" (- FONT-SIZE 2) 'black)) (image-width D-KEY)) 2)
+                      (image-width D-KEY)
+                      )
+                   (+ EXTRA-HEIGHT-FROM-CURSOR
+                      E-SCENE-HEIGHT
+                      (bounding-limits-height RULE-YIELD-DIMS)
+                      INS-TOOLS-BUFFER
+                      )
+                   (+ EXTRA-HEIGHT-FROM-CURSOR
+                      E-SCENE-HEIGHT
+                      (bounding-limits-height RULE-YIELD-DIMS)
+                      INS-TOOLS-BUFFER
+                      (image-height D-KEY)
                       )
                    )
   )
@@ -2587,6 +2593,9 @@
               [(within-bounding-limits? A-KEY-DIMS (viz-state-curr-mouse-posn a-vs))
                (buffer-held-click a-vs a-key-pressed)
                ]
+              [(within-bounding-limits? D-KEY-DIMS (viz-state-curr-mouse-posn a-vs))
+               (buffer-held-click a-vs d-key-pressed)
+               ]
               [(within-bounding-limits? R-KEY-DIMS (viz-state-curr-mouse-posn a-vs))
                (buffer-held-click a-vs r-key-pressed)
                ]
@@ -2623,24 +2632,6 @@
         )
     )
   )
-
-;; create-rules
-;; (listof symbol) -> (listof string)
-(define (create-rules w-der)
-  (cond [(empty? w-der)
-         '()]
-        [(= 1 (length w-der))
-         '()]
-        [(= 2 (length w-der))
-         (append (list (string-append (symbol->string (last (first w-der)))
-                                      " → "
-                                      (symbol->string (last (second w-der)))))
-                 (create-rules (rest w-der)))]
-        [else (append  (list (string-append (symbol->string (last (first w-der)))
-                                            " → "
-                                            (string-append (first (map symbol->string (take-right (second w-der) 2)))
-                                                           (second (map symbol->string (take-right (second w-der) 2))))))
-                       (create-rules (rest w-der)))]))
 
 ;; create-first-img
 ;; node -> img
