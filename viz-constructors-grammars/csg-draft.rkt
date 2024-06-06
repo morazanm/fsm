@@ -37,8 +37,9 @@
 
 ;; edges is a structure that has
 ;; hex which are hexagon edges
-;; accum which are edges that need to be saved in the accum because they might change
-(struct edges (hex accum) #:transparent)
+;; yield which are edges that are not hexes and are in the current yield of the grammar
+;; all which are hex and yield edges appended and grouped how they appear in the graph
+(struct edges (hex yield all) #:transparent)
 
 ;; find-index-right
 ;; subst yield -> (listof node)
@@ -105,7 +106,6 @@
                                                     (symbol->fsmlos updated-yield)))
                              (find-index-right (symbol->fsmlos (second level))
                                                (symbol->fsmlos updated-yield))))
-         (dd (display (format "~s\n\n" to-sub)))
          ]
     (yield bef to-sub aft sub tak (first level) new-yield)))
 
@@ -129,8 +129,26 @@
                                                   (list (first edge) (los->symbol (yield-to-subst a-yield)))
                                                   edge))
                                     accum)
-                               hexes)
+                               (reverse hexes))
                        )))
+
+
+;; group-edges
+;; (listof node) (listof edge) -> (listof level)
+(define (group-edges lon loe)
+  (remove-duplicates (if (empty? lon)
+                         empty
+                         (cons (filter (λ (edge) (equal? (first lon) (first edge)))
+                                       loe)
+                               (group-edges (rest lon) loe)))))
+
+
+;; create-levels
+;; (listof edge) -> (listof edge)
+;; Purpose: To arrange edges into levels
+(define (create-levels loe)
+  (group-edges (map (λ (edge) (first edge)) loe)
+               loe))
 
 ;; create-single-level
 ;; yield (listof edge) -> edges
@@ -141,13 +159,13 @@
                                   (append (map (λ (x) (flatten (list (los->symbol
                                                                       (yield-to-subst a-yield)) x)))
                                                (symbol->fsmlos (yield-subst a-yield)))
-                                          (edges-accum a-nl))))
-         (hexes (filter (λ (edge) (not (member edge new-accum-edges)))
-                        (compute-hexes a-yield
-                                       (edges-accum a-nl)
-                                       (edges-hex a-nl))))
+                                          (edges-yield a-nl))))
+         (hexes (reverse (filter (λ (edge) (not (member edge new-accum-edges)))
+                                 (compute-hexes a-yield
+                                                (edges-yield a-nl)
+                                                (edges-hex a-nl)))))
          ]
-    (edges hexes new-accum-edges)))
+    (edges hexes new-accum-edges (create-levels (append hexes new-accum-edges)))))
 
 ;; create-edges
 ;; (listof yield) -> (listof edges)

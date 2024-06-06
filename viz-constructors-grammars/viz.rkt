@@ -2718,7 +2718,7 @@
                     0
                     0
                     )
-         draw-world 'rg-ctm)
+         draw-world 'grammar-viz)
     )
   )
 
