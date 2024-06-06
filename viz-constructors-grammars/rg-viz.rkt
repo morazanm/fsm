@@ -281,9 +281,9 @@
              (derivation (rg-derive-with-rules rg word))
              (w-der (map symbol->fsmlos (map first (filter (λ (x) (not (equal? (first x) '->)))
                                                 derivation)) ))
-             (test (displayln (format "w-der: ~s" w-der)))
+             
              (rules (cons "" (map (lambda (x) (string-append (symbol->string (first x)) " → " (symbol->string (third x)))) (map second (rest derivation)))))
-             (test (displayln (format "rules: ~s" rules)))
+             
              (extracted-edges (create-edges w-der))
              (renamed (rename-nodes (rename-edges extracted-edges)))
              (loe (map (λ (el) (if (symbol? (first el))
@@ -316,4 +316,4 @@
 (rg-viz even-bs-odd-as '(b b a b b b b b b b b b b b b a b b b b b b b b b b b b b b a b b b b b b b b b b b b b b b b a b b b b b b b b b b a))
 
 ;(grammar-derive G '(a a a))
-(rg-viz G '(a a a))
+;(rg-viz G '(a a a))
