@@ -3,6 +3,7 @@
 (require "../fsm-gviz/private/lib.rkt"
          rackunit
          "../fsm-core/interface.rkt"
+         "../fsm-core/private/regular-grammar.rkt"
          "../fsm-gviz/private/parallel.rkt"
          "viz.rkt"
          )
@@ -72,8 +73,13 @@
          (list (list (list (last (first wd))
                            null)))]
         [(= 2 (length wd))
+         (if (equal? (length (first wd)) (length (second wd)))
          (list (list (list (last (first wd))
-                           (last (second wd)))))]
+                           (last (second wd)))))
+         (list (list (list (last (first wd))
+                           EMP)))
+         )
+         ]
         [else (append (list (map (λ (x) (list (last (first wd)) x)) (take-right (second wd) 2)))
                       (create-edges (rest wd)))]))
 
@@ -87,10 +93,17 @@
         [(= 1 (length w-der))
          '()]
         [(= 2 (length w-der))
+         (if (equal? (length (first w-der)) (length (second w-der)))
          (append (list (string-append (symbol->string (last (first w-der)))
                                       " → "
                                       (symbol->string (last (second w-der)))))
-                 (create-rules (rest w-der)))]
+                 (create-rules (rest w-der)))
+         (append (list (string-append (symbol->string (last (first w-der)))
+                                      " → "
+                                      (symbol->string EMP)))
+                 (create-rules (rest w-der)))
+         )
+         ]
         [else (append  (list (string-append (symbol->string (last (first w-der)))
                                             " → "
                                             (string-append (first (map symbol->string (take-right (second w-der) 2)))
@@ -264,9 +277,13 @@
 (define (rg-viz rg word #:cpu-cores [cpu-cores #f])
   (if (string? (grammar-derive rg word))
       (grammar-derive rg word)
-      (let* [(w-der (map symbol->fsmlos (filter (λ (x) (not (equal? x '->)))
-                                                (grammar-derive rg word))))
-             (rules (cons "" (create-rules w-der)))
+      (let* [
+             (derivation (rg-derive-with-rules rg word))
+             (w-der (map symbol->fsmlos (map first (filter (λ (x) (not (equal? (first x) '->)))
+                                                derivation)) ))
+             (test (displayln (format "w-der: ~s" w-der)))
+             (rules (cons "" (map (lambda (x) (string-append (symbol->string (first x)) " → " (symbol->string (third x)))) (map second (rest derivation)))))
+             (test (displayln (format "rules: ~s" rules)))
              (extracted-edges (create-edges w-der))
              (renamed (rename-nodes (rename-edges extracted-edges)))
              (loe (map (λ (el) (if (symbol? (first el))
@@ -285,4 +302,15 @@
 ;)
 ;(rg-viz even-bs-odd-as '(a a a a a b b b b b b b b b b b b b b b b))
 
-(rg-viz even-bs-odd-as '(a a a b b))
+;(rg-viz even-bs-odd-as '(a a a b b))
+
+(define G (make-rg '(S)
+                    '(a b)
+                    `((S ,ARROW ,EMP)
+                      (S ,ARROW aS)
+                      )
+                    'S
+                    )
+  )
+;(grammar-derive G '(a a a))
+(rg-viz G '(a a a))

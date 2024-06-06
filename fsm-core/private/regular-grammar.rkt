@@ -191,5 +191,100 @@
     
     (let ((test-words (generate-words number-tests (rg-getalphabet g) null)))
       (map (lambda (w) (list w (rg-derive g w))) test-words)))
-  
+
+  ;; --------------------------------------------------- EDITED STUFF ---------------------------------------------------
+
+  (define (rg-derive-with-rules g w)
+    
+    (define (generate-nexts current r seen res)
+      
+      (define (generate-rhs r)
+        (cond [(erule? r) '()]
+              [(srule? r) (list (rg-rule-rhs1 r))]
+              [else (list (rg-rule-rhs1 r) (rg-rule-rhs2 r))]))
+      
+      (cond [(null? current) res]
+            [(not (eq? (rg-rule-lhs r) (car current))) 
+             (generate-nexts (cdr current) r (append seen (list (car current))) res)]
+            [else 
+             (generate-nexts (cdr current) r (append seen (list (car current))) (list (append seen
+                                                                                              (generate-rhs r)
+                                                                                              (cdr current)) r)
+                             )
+                    
+             ]
+            )
+      )
+    
+    (define (apply-one-step current rules)
+      (let* ((current-nts (remove-duplicates (filter (lambda (s) (member s (rg-getnts g))) current)))
+             (rls (filter (lambda (r) (member (rg-rule-lhs r) current-nts)) rules)))
+        (map (lambda (r) (let [ (res (generate-nexts current r '() '())) ]
+                           res
+                           ;;(append (first res) (second res))
+                           )) rls)
+        ;;(append-map (lambda (r) (generate-nexts current r '() '())) rls)
+        )
+      )
+    
+    ; word word --> boolean
+    ; ASSUMPTION: s != w
+    (define (same-start s w)
+      (or (null? s) 
+          (member (car s) (rg-getnts g)) 
+          (and (not (null? w)) (eq? (car s) (car w)) (same-start (cdr s) (cdr w)))))
+    
+    
+    (define (derive visited tovisit)
+      
+      (cond [(null? tovisit) null]
+            [else (let* (
+                         
+                         (firstpath (car tovisit))
+                         
+                         (curr (car firstpath))
+                         
+                         )
+                    (cond [(equal? (first curr) w) firstpath]
+                          [else (let*
+                                    (
+                                     
+                                     (new-words (apply-one-step (first curr) (rg-getrules g)))
+                                     
+                                     (newstrings (if (null? new-words) 
+                                                     null
+                                                     (filter (lambda (s) (and (<= (length (first s)) (add1 (length w)))
+                                                                              (same-start (first s) w) 
+                                                                              (not (member (first s) visited))))
+                                                             new-words)))
+                                     
+                                     (newpaths (append (cdr tovisit)
+                                                       (map (lambda (s) (cons s firstpath)) newstrings)))
+                                     
+                                     )
+                                  (derive (cons curr visited) newpaths)
+                                  )
+                                ]
+                          )
+                    )
+                  ]
+            )
+      )
+
+    (define (convert-rule-struct-to-list rule-struct) (cond [(erule? rule-struct) (list (erule-lhs rule-struct) ARROW EMP)]
+                                                            [(srule? rule-struct) (list (srule-lhs rule-struct) ARROW (srule-rhs rule-struct))]
+                                                            [(crule? rule-struct) (list (crule-lhs rule-struct) ARROW (los->symbol (list (crule-rhs1 rule-struct) (crule-rhs2 rule-struct))))]
+                                                            [(empty? rule-struct) '()]
+                                                            )
+      )
+    
+    (let* (
+           (res (derive '() (list (list (list (list (rg-getstart g)) '())))))
+           )
+      (if (null? res)
+          (format "~s is not in L(G)." w)
+          (append-map (lambda (l) (if (equal? w (first l)) 
+                                      (if (null? w) (list EMP) (list (list (los->symbol (first l)) (convert-rule-struct-to-list (second l))))) 
+                                      (list (list (los->symbol (first l)) (convert-rule-struct-to-list (second l))))))
+                      (reverse res)))))
   ) ;closes module
