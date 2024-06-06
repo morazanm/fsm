@@ -570,7 +570,6 @@
                       LETTER-KEY-WIDTH-BUFFER
                       (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
                       LETTER-KEY-WIDTH-BUFFER
-                      
                       (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black))
                       LETTER-KEY-WIDTH-BUFFER
                       (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
@@ -797,7 +796,6 @@
                       )
                    )
   )
-
 
 ;; viz-state -> Image
 ;; Returns a image containing all the information regarding what is being derived and what the current yield is
@@ -2595,6 +2593,9 @@
               [(within-bounding-limits? A-KEY-DIMS (viz-state-curr-mouse-posn a-vs))
                (buffer-held-click a-vs a-key-pressed)
                ]
+              [(within-bounding-limits? D-KEY-DIMS (viz-state-curr-mouse-posn a-vs))
+               (buffer-held-click a-vs d-key-pressed)
+               ]
               [(within-bounding-limits? R-KEY-DIMS (viz-state-curr-mouse-posn a-vs))
                (buffer-held-click a-vs r-key-pressed)
                ]
@@ -2631,24 +2632,6 @@
         )
     )
   )
-
-;; create-rules
-;; (listof symbol) -> (listof string)
-(define (create-rules w-der)
-  (cond [(empty? w-der)
-         '()]
-        [(= 1 (length w-der))
-         '()]
-        [(= 2 (length w-der))
-         (append (list (string-append (symbol->string (last (first w-der)))
-                                      " → "
-                                      (symbol->string (last (second w-der)))))
-                 (create-rules (rest w-der)))]
-        [else (append  (list (string-append (symbol->string (last (first w-der)))
-                                            " → "
-                                            (string-append (first (map symbol->string (take-right (second w-der) 2)))
-                                                           (second (map symbol->string (take-right (second w-der) 2))))))
-                       (create-rules (rest w-der)))]))
 
 ;; create-first-img
 ;; node -> img
