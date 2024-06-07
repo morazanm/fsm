@@ -5,6 +5,8 @@
          "../fsm-core/private/csg.rkt"
          )
 
+(provide csg-derive-edited)
+
 (define (csg-derive-edited g w)
     
   ; csg-rule natnum (listof symbol) --> (listof (listof symbol))
@@ -302,7 +304,7 @@
                                  )
   )
 
-(csg-derive-edited anbn '(a b))
+;(csg-derive-edited anbn '(a b))
 ;(csg-derive anbn '())
 
 ; ABCABC
