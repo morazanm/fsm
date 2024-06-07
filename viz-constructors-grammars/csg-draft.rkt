@@ -75,37 +75,79 @@
 ;; rename-symbols
 ;; symbol (listof symbol) -> (listof symbol)
 ;; Purpose: To rename the symbols in the substituted part of the yield if needed
-(define (rename-symbols subst accum)
+(define (rename-symbols-old subst accum)
   (if (empty? subst)
       empty
       (if (member (first subst) accum)
           (cons (generate-symbol (first subst) accum)
-                (rename-symbols (rest subst) accum))
-          (cons (first subst) (rename-symbols (rest subst) accum)))))
+                (rename-symbols-old (rest subst) accum))
+          (cons (first subst) (rename-symbols-old (rest subst) accum)))))
+
+(define (rename-symbols nt hashtb)
+  (let [(result (hash-ref hashtb nt #f))] 
+    (if result
+        (begin (hash-set! hashtb nt (add1 result))
+               (string->symbol (format "~s~s" nt (add1 result))))
+        (begin (hash-set! hashtb nt 0)
+               (string->symbol (format "~s0" nt)))))
+  )
 
 
 ;; TODO: ON THE RIGHT TRACK, ADD THE UPDATED YIELD AS A PARAMETER SO WE CAN EXTRACT TO-SUB
 ;; AND USE IT TO MAKE HEXES
 
+
+(define (symbol->csgsymb-helper str-list prev prev-nums symbols-list) (if (empty? str-list)
+                                                                          (cons (string->symbol (string-append prev prev-nums)) symbols-list)
+                                                                          (if (or (equal? (first str-list) "0")
+                                                                                  (equal? (first str-list) "1")
+                                                                                  (equal? (first str-list) "2")
+                                                                                  (equal? (first str-list) "3")
+                                                                                  (equal? (first str-list) "4")
+                                                                                  (equal? (first str-list) "5")
+                                                                                  (equal? (first str-list) "6")
+                                                                                  (equal? (first str-list) "7")
+                                                                                  (equal? (first str-list) "8")
+                                                                                  (equal? (first str-list) "9")
+                                                                                  )
+                                                                              (symbol->csgsymb-helper (rest str-list) prev (string-append prev-nums (first str-list)) symbols-list)
+                                                                              (symbol->csgsymb-helper (rest str-list) (first str-list) "" (cons (string->symbol (string-append prev prev-nums)) symbols-list))
+                                                                              )
+                                                                          )
+  )
+                                                           
+                                              
+(define (symbol->csglos symbol) (let [
+                                       (str-list (map string (string->list (symbol->string symbol))))
+                                       ]
+                                   (reverse (symbol->csgsymb-helper (rest str-list) (first str-list) "" '()))
+                                   )
+  )
 ;; before-after-subst
 ;; level -> struct
 ;; Purpose: To extract before, to-subst, after, and subst from the level
-(define (before-after-substs level accum updated-yield old-up-yield)
-  (let* [(sub (los->symbol (rename-symbols (symbol->fsmlos (third level)) accum)))
+(define (before-after-substs level accum updated-yield old-up-yield hashtb)
+  (let* [
+         (test3 (displayln (format "third level: ~s" (third level))))
+         (sub  (los->symbol (map (lambda (symb) (rename-symbols symb hashtb)) (symbol->fsmlos (third level)))))
+         (test (displayln (format "sub: ~s" sub)))
+         
          (bef (los->symbol (take (symbol->fsmlos updated-yield)
-                                 (find-index-left (symbol->fsmlos (second level))
-                                                  (symbol->fsmlos updated-yield)))))
+                                 (find-index-left (symbol->csglos (second level))
+                                                  (symbol->csglos updated-yield)))))
+         (test0 (displayln (format "before: ~s" bef)))
          (aft (los->symbol (take-right (symbol->fsmlos updated-yield)
-                                       (find-index-right (symbol->fsmlos (second level))
-                                                         (symbol->fsmlos updated-yield)))))
-          
-         (tak (append (symbol->fsmlos sub) accum))
+                                       (find-index-right (symbol->csglos (second level))
+                                                         (symbol->csglos updated-yield)))))
+         (test1 (displayln (format "after: ~s" aft)))
+         (tak (append (symbol->csglos sub) accum))
          (new-yield (los->symbol (list bef sub aft)))
-         (to-sub (drop-right (drop (symbol->fsmlos old-up-yield)
-                                   (find-index-left (symbol->fsmlos (second level))
-                                                    (symbol->fsmlos updated-yield)))
-                             (find-index-right (symbol->fsmlos (second level))
-                                               (symbol->fsmlos updated-yield))))
+         (to-sub (drop-right (drop (symbol->csglos old-up-yield)
+                                   (find-index-left (symbol->csglos (second level))
+                                                    (symbol->csglos updated-yield)))
+                             (find-index-right (symbol->csglos (second level))
+                                               (symbol->csglos updated-yield))))
+         (test5 (displayln (format "to-sub ~s" to-sub)))
          ]
     (yield bef to-sub aft sub tak (first level) new-yield)))
 
@@ -113,12 +155,12 @@
 ;; make-yields
 ;; der accum -> (listof yield)
 ;; Purpose: To create a list of yields to use for building edges
-(define (make-yields der accum previous-yield updated-yield)
+(define (make-yields der accum previous-yield updated-yield hashtb)
   (if (empty? der)
       empty
-      (let [(new-yield (before-after-substs (first der) accum previous-yield updated-yield))]
+      (let [(new-yield (before-after-substs (first der) accum previous-yield updated-yield hashtb))]
         (cons new-yield
-              (make-yields (rest der) (yield-taken new-yield) (yield-old new-yield) (yield-ny new-yield))))))
+              (make-yields (rest der) (yield-taken new-yield) (yield-old new-yield) (yield-ny new-yield) hashtb)))))
 
 ;; compute-hexes
 ;; yield accum -> accum
@@ -158,7 +200,7 @@
                                                          (yield-to-subst a-yield))))
                                   (append (map (λ (x) (flatten (list (los->symbol
                                                                       (yield-to-subst a-yield)) x)))
-                                               (symbol->fsmlos (yield-subst a-yield)))
+                                               (symbol->csglos (yield-subst a-yield)))
                                           (edges-yield a-nl))))
          (hexes (reverse (filter (λ (edge) (not (member edge new-accum-edges)))
                                  (compute-hexes a-yield
@@ -177,12 +219,47 @@
         (cons new-level (create-edges (rest loy) new-level)))))
 
 
+#;(symbol? (second (second (edges-yield (first (create-edges (make-yields (list '(AaB S AaB)
+                                                                                '(AaA B A)
+                                                                                '(aSb AaA aSb)
+                                                                                '(aAaBb S AaB)
+                                                                                '(aAaAb B A)
+                                                                                '(ab AaA ε)) '(S) 'AaB 'S (make-hash)) (edges '() '() '())))))))
+
+(create-edges (make-yields (list '(AaB S AaB)
+                                 '(AaA B A)
+                                 '(aSb AaA aSb)
+                                 '(aAaBb S AaB)
+                                 '(aAaAb B A)
+                                 '(ab AaA ε)) '(S) 'AaB 'S (make-hash)) (edges '() '() '()))
 
 
 
+'(
+  (S B0)
+  (B0 AaA1)
+  (AaA1 S0)
+  (S0 B1)
+  (B1 AaA3)
+  )
+  '(
+    (AaA3 ε0)
+    (S0 A2)
+    (S0 a2)
+    (AaA1 a1)
+    (AaA1 b0)
+    (S A0)
+    (S a0)
+    )
 
-
-
+  '(
+    ((B0 AaA1))
+    ((B1 AaA3))
+    ((AaA3 ε0))
+    ((S0 B1) (S0 A2) (S0 a2))
+    ((AaA1 S0) (AaA1 a1) (AaA1 b0))
+    ((S B0) (S A0) (S a0))
+    )
 
 
 
