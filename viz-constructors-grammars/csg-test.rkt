@@ -3,17 +3,10 @@
 (require "../fsm-gviz/private/lib.rkt"
          "../fsm-gviz/private/parallel.rkt"
          "../fsm-core/private/csg.rkt"
-         "../fsm-core/interface.rkt"
          "../fsm-core/private/constants.rkt"
          "../fsm-core/private/misc.rkt"
          "viz.rkt"
-         "csg-example.rkt"
-         2htdp/universe
          rackunit
-         (rename-in racket/gui/base
-                    [make-color loc-make-color]
-                    [make-pen loc-make-pen])
-         2htdp/image
          )
 
 (define anbn (make-unchecked-csg '(S A B)
@@ -25,8 +18,125 @@
                                        )
                                  'S))
 
+(define HEDGE-COLOR 'red)
+(define YIELD-COLOR 'orange)
+(define FONT-SIZE 12)
+(define HEXAGON-COLOR 'violet)
 
-(define HEXAGON-COLOR 'gray)
+;; csg word -> Derivation with rules
+;; Creates a derivation with the rule applied besides each step
+(define (csg-derive-edited g w)
+    
+  ; csg-rule natnum (listof symbol) --> (listof (listof symbol))
+  (define (use-csg-rule r str i)
+   
+    ; (listof symbol) (listof symbol) natnum --> (listof (listof symbol))
+    (define (helper lhs rhs i)
+      (cond [(< (- (length (first str)) i) (length lhs)) '()]
+            [else
+             (let* [
+                    (subword (sublist (first str) i (length lhs)))
+                    ]
+               (cond [(equal? lhs subword)
+                      (if (equal? rhs (list EMP))
+                          (cons (list (subst-in-list (first str) i (length lhs) '()) lhs rhs)
+                                (helper lhs rhs (+ i 1))
+                                )
+                          (cons (list (subst-in-list (first str) i (length lhs) rhs) lhs rhs)
+                                (helper lhs rhs (+ i 1))
+                                )
+                          )
+                      ]
+                     [else (helper lhs rhs (+ i 1))]
+                     )
+               )
+             ]
+            )
+      )
+    (let [
+          (res (helper (csg-rule-lhs r) (csg-rule-rhs r) i))
+          ]
+      res
+      )
+    )
+    
+  ; (listof symbol) (listof csg-rule) --> (listof (listof symbol))
+  (define (apply-one-step curr rls)
+    (cond [(null? rls) '()]
+          [else
+           (append (use-csg-rule (car rls) curr 0) (apply-one-step curr (cdr rls)))
+           ]
+          )
+    )
+    
+  ; (listof symbol) (listof (listof (listof symbol))) -> (listof (listof symbol))
+  (define (bfs-deriv generated-derivations tovisit)
+
+    ;(displayln generated-derivations)
+    (define (ins paths)
+      (define (insert path sortedpaths)
+        (cond [(null? sortedpaths) (list path)]
+              [(< (length (car (first path))) (length (caar (first sortedpaths))))
+               (cons path sortedpaths)]
+              [else (cons (car sortedpaths) (insert path (cdr sortedpaths)))]
+              )
+        )
+        
+      (cond [(null? paths) '()]
+            [else (insert (car paths) (ins (cdr paths)))]
+            )
+      )
+      
+      
+    (cond [(null? tovisit) '()]
+          [else
+           (let* ((firstpath (car tovisit))
+                  (current (car firstpath))
+                  )
+             (cond [(equal? w (first current)) firstpath]
+                   [else (let* [
+                                (new-words (apply-one-step current (csg-getrules g)))
+                                (newstrings (filter (lambda (s) (not (member (first s) generated-derivations)))
+                                                    new-words)
+                                            )
+                                (new-queue-paths (map (lambda (s)
+                                                              (cons s firstpath))
+                                                            newstrings)
+                                                 )
+                                (newpaths (ins (append (cdr tovisit)
+                                                       new-queue-paths)
+                                               )
+                                          )
+                                ]
+                           (bfs-deriv (append newstrings generated-derivations) newpaths)
+                           )
+                         ]
+                   )
+             )
+           ]
+          )
+    )
+  
+  (let* [
+         (res (bfs-deriv '() (list (list (list (list (csg-getstart g)) '() '() )))))
+         (result (reverse res))
+         ]
+      (if (null? result)
+          (format "~s is not in L(G)." w)
+          (append-map (lambda (l)
+                        (if (equal? w (first l)) 
+                            (if (null? l)
+                                (list (list EMP))
+                                (list (list (los->symbol (first l)) (los->symbol (second l)) (los->symbol (third l))))
+                                )
+                            (list (list (los->symbol (first l)) (los->symbol (second l)) (los->symbol (third l))))
+                            )
+                        )
+                       result)
+          )
+    )
+  )
+
 ;; symbol -> symbol
 ;; Just removes number renaming that we have to do for graphviz and returns the original symbol
 (define (undo-renaming symb) (string->symbol
@@ -114,13 +224,9 @@
                                                  (after-replace (cons (append before-replacement replacement-symbols after-removed) before-replace))
                                                  ]
                                             after-replace
-                                            #;(cons (append before-replacement replacement-symbols after-removed)
-                                                    (cons (append before-replacement replacement-symbols after-removed) yield-nodes))
                                             )
                                           (let* [
-                                                 ;(test (displayln (format "levels: ~s" levels)))
                                                  (before-replace (foldr (lambda (val accum) (cons (list val removed-combined-symbol) accum)) '() removed))
-                                                 ;(test (displayln (format "before: ~s" before-replace)))
                                                  (not-replaced-edges (filter (lambda (edge) (not (member (second edge) removed)))
                                                                              (if (empty? levels)
                                                                                  '()
@@ -138,25 +244,11 @@
                                                                                         )
                                                                      )
                                                                  )
-                                                 #;'(
-                                                     ((B1 A1) (A0 B1) (a0 B1) (S0 A0) (S0 a0))
-                                                     ((B0 B1) (S0 A0) (S0 a0) (S0 B0))
-                                                     ((S0 A0) (S0 a0) (S0 B0))
-                                                     ((S S0))
-                                                     )
-                                                 ;(test (displayln (format "not-replaced-edges: ~s" not-replaced-edges)))
-                                                 ;(test (displayln (format "replaced-edges: ~s" replaced-edges)))
-                                                 ;(test (displayln (format "combined to edges: ~s" (foldr (lambda (val accum) (cons (list removed-combined-symbol val) accum)) '() replacement-symbols))))
-                                                 ;(test (displayln (format "dropped edges: ~s" (drop before-replace (length removed)))))
-                                                 (after-replace (cons ;(append
+                                                 (after-replace (cons
                                                                  (append (foldr (lambda (val accum) (cons (list removed-combined-symbol val) accum)) '() replacement-symbols)
                                                                          replaced-edges
                                                                          not-replaced-edges
-                                                                         ;(append (list before-replace) (first levels))
-                                                                         ;(drop before-replace (length removed))
                                                                          )
-                                                                 ;before-replace
-                                                                 ;)
                                                                  (cons (append  before-replace (if (empty? levels)
                                                                                                    '()
                                                                                                    (first levels)
@@ -164,22 +256,8 @@
                                                                                 ) levels)
                                                                  )
                                                                 )
-                                                 #;(test (displayln (format "consed before: ~s" (append before-replace (if (empty? levels)
-                                                                                                                           '()
-                                                                                                                           (first levels)
-                                                                                                                           )
-                                                                                                        )
-                                                                            )
-                                                                    )
-                                                         )
-                                                 ;(test (displayln (format "after levels: ~s" after-replace)))
                                                  ]
                                             after-replace
-                                            #;(cons (foldr (lambda (val accum) (cons (list val removed-combined-symbol) accum)) '() removed)
-                                                    (cons (foldr (lambda (val accum) (cons (list removed-combined-symbol val) accum)) '() replacement-symbols)
-                                                          levels
-                                                          )
-                                                    )
                                             )
                                           
                                           (let* [
@@ -193,36 +271,8 @@
                 )
             )
           ]
-    (map reverse (generate-levels-helper curr-state rules used-names '() '() '() '())
-         #;(map (lambda (x) (map (lambda (y) (reverse y)) x))
-                (generate-levels-helper curr-state rules used-names '() '() '())
-                )
-         )
+    (map reverse (generate-levels-helper curr-state rules used-names '() '() '() '()))
     )
-  )
-
-'(
-  ((B1 A1) (A0 B1) (a0 B1) (S0 A0) (S0 a0))
-  ((B0 B1) (S0 A0) (S0 a0) (S0 B0))
-  ((S0 A0) (S0 a0) (S0 B0))
-  ((S S0))
-  )
-
-
-'(
-  ((A0 B1) (a0 B1) (S0 B1) (B1 A1) (B0 B1) ((S0 A0) (S0 a0) (S0 B0) (S S0)) ((S S0)))
-  ((B0 B1) ((S0 A0) (S0 a0) (S0 B0) (S S0)) ((S S0)))
-  ((S0 A0) (S0 a0) (S0 B0) (S S0))
-  ((S S0))
-  )
-
-
-
-'(
-  ((A0 B1) (a0 B1) (B1 A1) ((S0 A0) (S0 a0) (S0 B0)) ((S S0)))
-  ((B0 B1))
-  ((S0 A0) (S0 a0) (S0 B0))
-  ((S S0))
   )
 
 ;; deriv-with-rules -> deriv-with-rules
@@ -238,12 +288,6 @@
             (move-rule-applications-in-list (rest lst)))
       ))
 
-(csg-derive-edited anbn '(a a b b))
-;  (map (lambda (x) (list (second x) (third x))) (move-rule-applications-in-list (csg-derive-edited anbn '(a a b b))))
-;  (generate-levels (list 'S) (map (lambda (x) (list (second x) (third x))) (move-rule-applications-in-list (csg-derive-edited anbn '(a a b b)))) (make-hash))
-
-
-
 ;; dgrph is a structure that has
 ;; up-levels - unprocessed levels
 ;; p-levels - processed levels
@@ -257,9 +301,7 @@
 ;; p-rules - processed grammar rules
 (struct dgrph (up-levels p-levels nodes up-hex-nodes p-hex-nodes up-yield-nodes p-yield-nodes up-hedges p-hedges up-rules p-rules))
 
-(define HEDGE-COLOR 'red)
-(define YIELD-COLOR 'pink)
-(define FONT-SIZE 12)
+
 
 ;; extract-nodes
 ;; (listof level) -> (listof node)
@@ -272,42 +314,39 @@
 ;; Purpose: To make a node graph
 (define (make-node-graph graph lon hedge-nodes hex-nodes yield-node)
   (foldl (λ (state result)
-           (begin
-             ;(displayln (format "nodes: ~s" (undo-renaming state)))
-             (add-node
-              result
-              state
-              #:atb (hash 'color (cond [(member state hedge-nodes)
-                                        HEDGE-COLOR]
-                                       [(member state yield-node)
-                                        YIELD-COLOR]
-                                       [(member state hex-nodes)
-                                        HEXAGON-COLOR]
-                                       [else 'black])
-                          'shape (cond [(member state hex-nodes)
-                                        'hexagon]
-                                       [else 'circle]
-                                       )
-                          'label (undo-renaming state)
-                          'fontcolor 'black
-                          'font "Sans"))
-             )
+           (add-node
+            result
+            state
+            #:atb (hash 'color (cond [(member state hedge-nodes)
+                                      HEDGE-COLOR]
+                                     [(member state yield-node)
+                                      YIELD-COLOR]
+                                     [(member state hex-nodes)
+                                      HEXAGON-COLOR]
+                                     [else 'black])
+                        'shape (cond [(member state hex-nodes)
+                                      'hexagon]
+                                     [else 'circle]
+                                     )
+                        'label (undo-renaming state)
+                        'fontcolor 'black
+                        'font "Sans"))
+             
            )
          graph
          lon
          )
   )
 
+;; graph (listof edges) -> graph
+;; Creates invisible edges so that ordering of the yield nodes is always maintained
 (define (make-invisible-edge-graph graph loe)
   (foldl (lambda (rule result)
-           (begin
-             ;(displayln (format "edge rule: ~s" rule))
-             (add-edge result
-                       ""
-                       (first rule)
-                       (second rule)
-                       #:atb (hash 'style 'invisible 'arrowhead 'none))
-             )
+           (add-edge result
+                     ""
+                     (first rule)
+                     (second rule)
+                     #:atb (hash 'style 'invisible 'arrowhead 'none))
            )
          graph
          (reverse loe)
@@ -318,47 +357,21 @@
 ;; graph (listof level) -> graph
 ;; Purpose: To make an edge graph
 (define (make-edge-graph graph loe hedges)
-  (begin
-    (println loe)
-    (foldl (lambda (rule result)
-             (begin
-               ;(displayln (format "edge rule: ~s" rule))
-               (add-edge result
-                         ""
-                         (first rule)
-                         (second rule)
-                         #:atb (hash 'fontsize FONT-SIZE
-                                     'style 'solid
-                                     'color (if (member rule hedges)
-                                                HEDGE-COLOR
-                                                'black)))
-               )
-             )
-           graph
-           (reverse loe)
+  (foldl (lambda (rule result)
+           (add-edge result
+                     ""
+                     (first rule)
+                     (second rule)
+                     #:atb (hash 'fontsize FONT-SIZE
+                                 'style 'solid
+                                 'color (if (member rule hedges)
+                                            HEDGE-COLOR
+                                            'black)))
            )
-    )
-  #;(foldl (lambda (rules result)
-             (begin
-               (displayln (format "edge rule: ~s" rules))
-               (if (empty? (first rules))
-                   result
-                   (foldl (lambda (rule result)
-                            (add-edge result
-                                      ""
-                                      (first rule)
-                                      (second rule)
-                                      #:atb (hash 'fontsize FONT-SIZE
-                                                  'style 'solid
-                                                  'color (if (member rule hedges)
-                                                             HEDGE-COLOR
-                                                             'black))))
-                          result
-                          rules))
-               )
-             )
-           graph
-           (reverse loe))
+         graph
+         (reverse loe)
+         )
+    
   )
 
 ;; create-dgraphs
@@ -368,32 +381,20 @@
   (if (empty? (dgrph-up-levels a-dgrph))
       (cons a-dgrph lod)
       (let* [(new-up-levels (rest (dgrph-up-levels a-dgrph)))
-             ;(test (displayln (format "new-up: ~s" new-up-levels)))
              (new-ad-levels (cons (first (dgrph-up-levels a-dgrph))
                                   (dgrph-p-levels a-dgrph)))
                  
              (new-nodes (extract-nodes (first (dgrph-up-levels a-dgrph))))
-             ;(test (displayln (format "new-nodes: ~s" new-nodes)))
              (new-up-hex-nodes (rest (dgrph-up-hex-nodes a-dgrph)))
              (new-p-hex-nodes (cons (first (dgrph-up-hex-nodes a-dgrph)) (dgrph-p-hex-nodes a-dgrph)))
-             ;(new-hex-nodes (first (first (dgrph-up-levels a-dgrph))))
              (new-up-yield-nodes (rest (dgrph-up-yield-nodes a-dgrph)))
              (new-p-yield-nodes (cons (first (dgrph-up-yield-nodes a-dgrph)) (dgrph-p-yield-nodes a-dgrph)))
-             ;(new-yield-nodes (second (first (dgrph-up-levels a-dgrph))))
-             (new-up-hedges (rest (dgrph-up-hedges a-dgrph))
-                            #;(filter (lambda (edge) (member (second edge) (first (dgrph-up-yield-nodes a-dgrph)))) (first (dgrph-up-levels a-dgrph)))
-                            )
+             (new-up-hedges (rest (dgrph-up-hedges a-dgrph)))
              (new-p-hedges (cons (first (dgrph-up-hedges a-dgrph)) (dgrph-p-hedges a-dgrph)))
              (new-up-rules (dgrph-up-rules a-dgrph))
              (new-p-rules (dgrph-p-rules a-dgrph))]
         (if hex?
             (let [
-                  #|
-                  (new-up-hex-nodes (rest (dgrph-up-hex-nodes a-dgrph)))
-                  (new-p-hex-nodes (cons (first (dgrph-up-hex-nodes a-dgrph)) (dgrph-p-hex-nodes a-dgrph)))
-                  (new-up-yield-nodes (rest (dgrph-up-yield-nodes a-dgrph)))
-                  (new-p-yield-nodes (cons (first (dgrph-up-yield-nodes a-dgrph)) (dgrph-p-yield-nodes a-dgrph)))
-                  |#
                   (new-up-rules (rest (dgrph-up-rules a-dgrph)))
                   (new-p-rules (cons (first (dgrph-up-rules a-dgrph))
                                      (dgrph-p-rules a-dgrph)))
@@ -416,12 +417,6 @@
                )
               )
             (let [
-                  #|
-                  (new-up-hex-nodes (dgrph-up-hex-nodes a-dgrph))
-                  (new-p-hex-nodes (dgrph-p-hex-nodes a-dgrph))
-                  (new-up-yield-nodes (dgrph-up-yield-nodes a-dgrph))
-                  (new-p-yield-nodes (dgrph-p-yield-nodes a-dgrph))
-                  |#
                   (new-up-rules (dgrph-up-rules a-dgrph))
                   (new-p-rules (dgrph-p-rules a-dgrph))
                   ]
@@ -447,6 +442,9 @@
       )
   )
 
+;; (listof nodes) -> (listof edges)
+;; Recursively creates an edge between the first and second element of the list until it empty
+;; We use this list of edges to add invisble edges to the graph, guarenteeing ordering of the yield nodes at the bottom of the graph
 (define (create-line-of-edges yield-nodes) (if (= (length yield-nodes) 1)
                                                '()
                                                (cons (list (first yield-nodes) (second yield-nodes)) (create-line-of-edges (rest yield-nodes)))
@@ -458,17 +456,9 @@
 ;; Purpose: Creates the final graph structure that will be used to create the images in graphviz
 (define (create-graph-structs a-dgrph)
   (let* [(nodes (dgrph-nodes a-dgrph))
-         (levels (first (dgrph-p-levels a-dgrph))
-                 ;(reverse (map reverse (dgrph-p-levels a-dgrph)))
-                 )
+         (levels (first (dgrph-p-levels a-dgrph)))
          (hedges (first (dgrph-p-hedges a-dgrph)))
-         ;(test (displayln (format "hedges: ~s" hedges)))
          (hedge-nodes (extract-nodes hedges))
-         #;(yield-node (map (λ (x) (if (empty? x)
-                                       '()
-                                       (first x)))
-                            hedges))
-         ;(test (displayln (format "hnodes: ~s" (dgrph-up-hex-nodes a-dgrph))))
          (yield-nodes (first (dgrph-p-yield-nodes a-dgrph)))
          (hex-nodes (first (dgrph-p-hex-nodes a-dgrph)))
          ]
@@ -492,53 +482,12 @@
                            )
                     )
   )
-(define (filter-even-indexed-items-from-list lst)
-  (local [
-          (define (helper lst even?) (if (empty? lst)
-                                         '()
-                                         (if even?
-                                             (helper (rest lst) #f)
-                                             (cons (first lst) (helper (rest lst) #t))
-                                             )
-                                         )
-            )
-          ]
-    (helper lst #t)
-    )
-  )
-;(println rules)
+
 (define renamed (generate-levels (list 'S) moved-rules (make-hash)))
-;(define renamed (list (first renamed0) (second renamed0) (filter-even-indexed-items-from-list (third renamed0))))
-;renamed
-;(map displayln (first renamed))
-;(println (second renamed))
-;(println (third renamed))
 
-;(up-levels p-levels nodes up-hex-nodes p-hex-nodes up-yield-nodes p-yield-nodes up-hedges p-hedges up-rules p-rules)
 
-(length (third renamed))
-(length (second renamed))
-(length (first renamed))
-(first (third renamed))
 (define dgraph (dgrph (rest (third renamed)) (list (first (third renamed))) '() (rest (first renamed)) (list (first (first renamed))) (rest (second renamed)) (list (first (second renamed)))  (rest (fourth renamed)) (list (first (fourth renamed))) (rest rules) (list (first rules))))
 (define lod (reverse (create-dgrphs dgraph '() #f)))
 (length lod)
-#;(define (make-pairs lst0 lst1) (if (empty? lst0)
-                                     '()
-                                     (cons (list (first lst0) (first lst1)) (make-pairs (rest lst0) (rest lst1)))
-                                     )
-    )
-
 (define pics (parallel-special-graphs->bitmap-thunks (map create-graph-structs lod) (second renamed)))
-
-#|
-((first pics))
-((second pics))
-((third pics))
-((fourth pics))
-((fifth pics))
-((sixth pics))
-((seventh pics))
-|#
-(second renamed)
-(for/list ([pic pics]) (pic))
+(time (for/list ([pic pics]) (pic)))
