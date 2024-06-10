@@ -1,6 +1,7 @@
 #lang racket
 
 (require "../fsm-gviz/private/lib.rkt"
+         "../fsm-gviz/private/parallel.rkt"
          "../fsm-core/private/csg.rkt"
          "../fsm-core/interface.rkt"
          "../fsm-core/private/constants.rkt"
@@ -24,6 +25,8 @@
                                        )
                                  'S))
 
+
+(define HEXAGON-COLOR 'gray)
 ;; symbol -> symbol
 ;; Just removes number renaming that we have to do for graphviz and returns the original symbol
 (define (undo-renaming symb) (string->symbol
@@ -83,9 +86,9 @@
 
           ;; (listof symbols) (listof rules) MutableHashtable (listof symbol) (listof symbol) (listof edges)
           ;; Returns the levels for each graph needed to display the derivation
-          (define (generate-levels-helper curr-state rules used-names hex-nodes yield-nodes levels)
+          (define (generate-levels-helper curr-state rules used-names hex-nodes yield-nodes levels hedge-nodes)
             (if (empty? (first (first rules)))
-                (list hex-nodes yield-nodes levels)
+                (list hex-nodes yield-nodes levels hedge-nodes)
                 (let* [
                        (curr-rule (first rules))
                        (idx-of-replaced (index-of (map undo-renaming curr-state) (symbol->fsmlos (first curr-rule))))
@@ -178,14 +181,22 @@
                                                           )
                                                     )
                                             )
+                                          
+                                          (let* [
+                                                 (before-replace (cons (foldr (lambda (val accum) (cons (list val removed-combined-symbol) accum)) '() removed) hedge-nodes))
+                                                 (after-replace (cons (foldr (lambda (val accum) (cons (list removed-combined-symbol val) accum)) '() replacement-symbols) before-replace))
+                                                 ]
+                                            after-replace
+                                            )
                                           )
                   )
                 )
             )
           ]
-    (map reverse (map (lambda (x) (map (lambda (y) (reverse y)) x))
-                      (generate-levels-helper curr-state rules used-names '() '() '())
-                      )
+    (map reverse (generate-levels-helper curr-state rules used-names '() '() '() '())
+         #;(map (lambda (x) (map (lambda (y) (reverse y)) x))
+                (generate-levels-helper curr-state rules used-names '() '() '())
+                )
          )
     )
   )
@@ -244,7 +255,7 @@
 ;; hedges - highlighted edges of the graphs
 ;; up-rules - unprocessed grammar rules
 ;; p-rules - processed grammar rules
-(struct dgrph (up-levels p-levels nodes up-hex-nodes p-hex-nodes up-yield-nodes p-yield-nodes hedges up-rules p-rules))
+(struct dgrph (up-levels p-levels nodes up-hex-nodes p-hex-nodes up-yield-nodes p-yield-nodes up-hedges p-hedges up-rules p-rules))
 
 (define HEDGE-COLOR 'red)
 (define YIELD-COLOR 'pink)
@@ -266,10 +277,12 @@
              (add-node
               result
               state
-              #:atb (hash 'color (cond #;[(member state hedge-nodes)
+              #:atb (hash 'color (cond [(member state hedge-nodes)
                                         HEDGE-COLOR]
                                        [(member state yield-node)
                                         YIELD-COLOR]
+                                       [(member state hex-nodes)
+                                        HEXAGON-COLOR]
                                        [else 'black])
                           'shape (cond [(member state hex-nodes)
                                         'hexagon]
@@ -285,30 +298,46 @@
          )
   )
 
+(define (make-invisible-edge-graph graph loe)
+  (foldl (lambda (rule result)
+           (begin
+             ;(displayln (format "edge rule: ~s" rule))
+             (add-edge result
+                       ""
+                       (first rule)
+                       (second rule)
+                       #:atb (hash 'style 'invisible 'arrowhead 'none))
+             )
+           )
+         graph
+         (reverse loe)
+         )
+  )
+
 ;; make-edge-graph
 ;; graph (listof level) -> graph
 ;; Purpose: To make an edge graph
 (define (make-edge-graph graph loe hedges)
   (begin
     (println loe)
-      (foldl (lambda (rule result)
-               (begin
-                 ;(displayln (format "edge rule: ~s" rule))
-                 (add-edge result
-                           ""
-                           (first rule)
-                           (second rule)
-                           #:atb (hash 'fontsize FONT-SIZE
-                                       'style 'solid
-                                       'color (if (member rule hedges)
-                                                  HEDGE-COLOR
-                                                  'black)))
-                 )
+    (foldl (lambda (rule result)
+             (begin
+               ;(displayln (format "edge rule: ~s" rule))
+               (add-edge result
+                         ""
+                         (first rule)
+                         (second rule)
+                         #:atb (hash 'fontsize FONT-SIZE
+                                     'style 'solid
+                                     'color (if (member rule hedges)
+                                                HEDGE-COLOR
+                                                'black)))
                )
-             graph
-             (reverse loe)
              )
-        )
+           graph
+           (reverse loe)
+           )
+    )
   #;(foldl (lambda (rules result)
              (begin
                (displayln (format "edge rule: ~s" rules))
@@ -343,7 +372,7 @@
              (new-ad-levels (cons (first (dgrph-up-levels a-dgrph))
                                   (dgrph-p-levels a-dgrph)))
                  
-             (new-nodes (extract-nodes (first new-ad-levels)))
+             (new-nodes (extract-nodes (first (dgrph-up-levels a-dgrph))))
              ;(test (displayln (format "new-nodes: ~s" new-nodes)))
              (new-up-hex-nodes (rest (dgrph-up-hex-nodes a-dgrph)))
              (new-p-hex-nodes (cons (first (dgrph-up-hex-nodes a-dgrph)) (dgrph-p-hex-nodes a-dgrph)))
@@ -351,7 +380,10 @@
              (new-up-yield-nodes (rest (dgrph-up-yield-nodes a-dgrph)))
              (new-p-yield-nodes (cons (first (dgrph-up-yield-nodes a-dgrph)) (dgrph-p-yield-nodes a-dgrph)))
              ;(new-yield-nodes (second (first (dgrph-up-levels a-dgrph))))
-             (new-hedges (first (dgrph-up-levels a-dgrph)))
+             (new-up-hedges (rest (dgrph-up-hedges a-dgrph))
+                            #;(filter (lambda (edge) (member (second edge) (first (dgrph-up-yield-nodes a-dgrph)))) (first (dgrph-up-levels a-dgrph)))
+                            )
+             (new-p-hedges (cons (first (dgrph-up-hedges a-dgrph)) (dgrph-p-hedges a-dgrph)))
              (new-up-rules (dgrph-up-rules a-dgrph))
              (new-p-rules (dgrph-p-rules a-dgrph))]
         (if hex?
@@ -374,7 +406,8 @@
                       new-p-hex-nodes
                       new-up-yield-nodes
                       new-p-yield-nodes
-                      new-hedges
+                      new-up-hedges
+                      new-p-hedges
                       new-up-rules
                       new-p-rules
                       )
@@ -400,7 +433,8 @@
                       new-p-hex-nodes
                       new-up-yield-nodes
                       new-p-yield-nodes
-                      new-hedges
+                      new-up-hedges
+                      new-p-hedges
                       new-up-rules
                       new-p-rules
                       )
@@ -413,6 +447,12 @@
       )
   )
 
+(define (create-line-of-edges yield-nodes) (if (= (length yield-nodes) 1)
+                                               '()
+                                               (cons (list (first yield-nodes) (second yield-nodes)) (create-line-of-edges (rest yield-nodes)))
+                                               )
+  )
+
 ;; create-graph-structs
 ;; dgprh -> img
 ;; Purpose: Creates the final graph structure that will be used to create the images in graphviz
@@ -421,12 +461,9 @@
          (levels (first (dgrph-p-levels a-dgrph))
                  ;(reverse (map reverse (dgrph-p-levels a-dgrph)))
                  )
-         (hedges (dgrph-hedges a-dgrph))
+         (hedges (first (dgrph-p-hedges a-dgrph)))
          ;(test (displayln (format "hedges: ~s" hedges)))
-         (hedge-nodes (map (λ (x) (if (empty? x)
-                                      '()
-                                      (second x)))
-                           hedges))
+         (hedge-nodes (extract-nodes hedges))
          #;(yield-node (map (λ (x) (if (empty? x)
                                        '()
                                        (first x)))
@@ -435,9 +472,13 @@
          (yield-nodes (first (dgrph-p-yield-nodes a-dgrph)))
          (hex-nodes (first (dgrph-p-hex-nodes a-dgrph)))
          ]
-    (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
-                                      nodes hedge-nodes hex-nodes yield-nodes)
-                     levels hedges)))
+    (make-invisible-edge-graph (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in" 'splines "polyline"))
+                                                                 nodes hedge-nodes hex-nodes yield-nodes)
+                                                levels hedges)
+                               (create-line-of-edges yield-nodes)
+                               )
+    )
+  )
 
 (define moved-rules (map (lambda (x) (list (second x) (third x))) (move-rule-applications-in-list (csg-derive-edited anbn '(a a b b)))))
 (define rules (cons ""
@@ -473,15 +514,31 @@
 ;(println (second renamed))
 ;(println (third renamed))
 
-
-;(up-levels p-levels nodes up-hex-nodes p-hex-nodes up-yield-nodes p-yield-nodes hedges up-rules p-rules)
+;(up-levels p-levels nodes up-hex-nodes p-hex-nodes up-yield-nodes p-yield-nodes up-hedges p-hedges up-rules p-rules)
 
 (length (third renamed))
 (length (second renamed))
 (length (first renamed))
 (first (third renamed))
-(define dgraph (dgrph (rest (third renamed)) (list (first (third renamed))) '() (rest (first renamed)) (list (first (first renamed))) (rest (second renamed)) (list (first (second renamed)))  '() (rest rules) (list (first rules))))
+(define dgraph (dgrph (rest (third renamed)) (list (first (third renamed))) '() (rest (first renamed)) (list (first (first renamed))) (rest (second renamed)) (list (first (second renamed)))  (rest (fourth renamed)) (list (first (fourth renamed))) (rest rules) (list (first rules))))
 (define lod (reverse (create-dgrphs dgraph '() #f)))
 (length lod)
-(map graph->bitmap  (map create-graph-structs lod))
+#;(define (make-pairs lst0 lst1) (if (empty? lst0)
+                                     '()
+                                     (cons (list (first lst0) (first lst1)) (make-pairs (rest lst0) (rest lst1)))
+                                     )
+    )
 
+(define pics (parallel-special-graphs->bitmap-thunks (map create-graph-structs lod) (second renamed)))
+
+#|
+((first pics))
+((second pics))
+((third pics))
+((fourth pics))
+((fifth pics))
+((sixth pics))
+((seventh pics))
+|#
+(second renamed)
+(for/list ([pic pics]) (pic))
