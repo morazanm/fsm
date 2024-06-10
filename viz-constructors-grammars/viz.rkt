@@ -887,6 +887,19 @@
       )
   )
 
+;; create-graph-imgs
+;; (listof dgraph) -> (listof image)
+;; Purpose: To create a list of graph images built level by level
+(define (create-special-graph-imgs graphs #:cpu-cores [cpu-cores #f] #:rank-node-lst [rank-node-lst '()])
+  (if (empty? graphs)
+      '()
+      (if (not cpu-cores)
+          (parallel-special-graphs->bitmap-thunks graphs rank-node-lst)
+          (parallel-special-graphs->bitmap-thunks graphs rank-node-lst #:cpu-cores cpu-cores)
+          )
+      )
+  )
+
 ;; resize-image :: image -> int -> int -> image
 ;; Scales a image to the given dimentions 
 (define (resize-image img max-width max-height)
@@ -2110,6 +2123,7 @@
 ;; Purpose: Move the visualization one step forward, one step
 ;;          backwards, or to the end.
 (define (process-key a-vs a-key)
+  (displayln a-key)
   (cond [(key=? "right" a-key)
          (right-key-pressed a-vs)
          ]
@@ -2139,6 +2153,11 @@
         [(key=? "e" a-key)
          (e-key-pressed a-vs)
          ]
+        [(key=? "wheel-down" a-key)
+         (w-key-pressed a-vs)
+         ]
+        [(key=? "wheel-up" a-key)
+         (s-key-pressed a-vs)]
         [else a-vs]
         )
   )
@@ -2677,10 +2696,14 @@
       [name a-name]))
   (void))
 
-(define (rg-viz word w-der rules graphs #:cpu-cores [cpu-cores #f])
+(define (rg-viz word w-der rules graphs #:cpu-cores [cpu-cores #f] #:special-graphs? [special-graphs? #f] #:rank-node-lst [rank-node-lst '()])
   (let* [
          (first-img (create-first-img (first (first w-der))))
-         (imgs (cons first-img (rest (create-graph-imgs graphs #:cpu-cores cpu-cores))))
+         (imgs (if special-graphs?
+                   (cons first-img (rest (create-special-graph-imgs graphs #:cpu-cores cpu-cores #:rank-node-lst rank-node-lst)))
+                   (cons first-img (rest (create-graph-imgs graphs #:cpu-cores cpu-cores)))
+                   )
+               )
          ]
     (viz (viz-state (rest imgs)
                     (list (first imgs))
@@ -2713,4 +2736,5 @@
     )
   )
 
-(define (run-viz grammar word w-der rules graphs) (rg-viz word w-der rules graphs))
+(define (run-viz grammar word w-der rules graphs #:cpu-cores [cpu-cores #f] #:special-graphs? [special-graphs? #f] #:rank-node-lst [rank-node-lst '()])
+  (rg-viz word w-der rules graphs #:cpu-cores cpu-cores #:special-graphs? special-graphs? #:rank-node-lst rank-node-lst))
