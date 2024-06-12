@@ -806,7 +806,7 @@
 
 ;levels: (((S a0) (S S0)) ((S0 a1) (S0 S1)) ((S1 a2) (S1 S2)) ((S2 ε0)))
 ;; cfg-viz
-(define (cfg-viz cfg word derv-type)
+(define (cfg-viz cfg word [derv-type 'left])
   (if (or (eq? derv-type 'left)
           (eq? derv-type 'right)
           )
@@ -873,6 +873,7 @@
 
 ;(cfg-viz even-bs-odd-as '(a a a a) 'left)
 
+;; 
 (define numb>numa (make-cfg '(S A)
                             '(a b)
                             `((S ,ARROW b)
@@ -883,6 +884,16 @@
                               (A ,ARROW bA))
                             'S))
 
+(define buggy-numb>numa (make-cfg '(S A)
+                            '(a b)
+                            `((S ,ARROW b)
+                              (S ,ARROW AbA)
+                              (A ,ARROW AaAbA)
+                              (A ,ARROW AbAaA)
+                              (A ,ARROW a)
+                              (A ,ARROW bA))
+                            'S))
+(grammar-derive buggy-numb>numa '(a b a))
 ;(cfg-viz numb>numa '(a b b a b) 'left)
 ;(time (grammar-derive numb>numa '(a b b a a b b a b b b)))
 
@@ -895,4 +906,4 @@
                     )
   )
 ;(cfg-derive-with-rule-application G '(a a a) 'left)
-;(cfg-viz G '(a a a) 'left)
+(cfg-viz G '(a a a) 'right)
