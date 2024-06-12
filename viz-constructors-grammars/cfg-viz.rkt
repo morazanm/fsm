@@ -6,23 +6,28 @@
          "../fsm-core/private/misc.rkt"
          "viz.rkt"
          )
-
+(provide cfg-viz)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-(define even-bs-odd-as (make-cfg '(S A B C)
+#;(define even-bs-odd-as (make-cfg '(S A B C)
                                  '(a b)
-                                 `((S ,ARROW aA)
-                                   (S ,ARROW bB)
-                                   (S ,ARROW a)
-                                   (A ,ARROW aS)
-                                   (A ,ARROW bC)
-                                   (B ,ARROW aC)
-                                   (B ,ARROW bS)
-                                   (C ,ARROW aB)
-                                   (C ,ARROW bA)
-                                   (C ,ARROW b))
+                                 `((S ,ARROW aA) (S ,ARROW bB) (S ,ARROW a)
+                                   (A ,ARROW aS) (A ,ARROW bC)
+                                   (B ,ARROW aC) (B ,ARROW bS)
+                                   (C ,ARROW aB) (C ,ARROW bA) (C ,ARROW b))
                                  'S))
+
+
+(define even-bs-odd-as
+  (make-cfg '(S A B C)
+            '(a b)
+            `((S ,ARROW aA) (S ,ARROW bB) (S ,ARROW a)
+              (A ,ARROW aaS) (A ,ARROW bC)
+              (B ,ARROW aC) (B ,ARROW bS) (C ,ARROW aB)
+              (C ,ARROW bA) (C ,ARROW b))
+            'S))
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -128,6 +133,25 @@
 ;; make-edge-graph
 ;; graph (listof level) -> graph
 ;; Purpose: To make an edge graph
+#;(define (make-edge-graph graph loe hedges)
+    (foldl (lambda (rules result)
+             (if (empty? (first rules))
+                 result
+                 (foldl (lambda (rule result)
+                          (add-edge result
+                                    ""
+                                    (first rule)
+                                    (second rule)
+                                    #:atb (hash 'fontsize FONT-SIZE
+                                                'style 'solid
+                                                'color (if (member rule hedges)
+                                                           HEDGE-COLOR
+                                                           'black))))
+                        result
+                        rules)))
+           graph
+           (reverse loe)))
+
 (define (make-edge-graph graph loe hedges)
   (foldl (lambda (rules result)
            (if (empty? (first rules))
@@ -143,9 +167,11 @@
                                                          HEDGE-COLOR
                                                          'black))))
                       result
-                      rules)))
+                      rules))
+           )
          graph
-         (reverse loe)))
+         (reverse loe))
+  )
 
 ;; create-graph-structs
 ;; dgprh -> img
@@ -154,6 +180,7 @@
   (let* [(nodes (dgrph-nodes a-dgrph))
          (levels (reverse (map reverse (dgrph-ad-levels a-dgrph))))
          (hedges (dgrph-hedges a-dgrph))
+         ;(test (displayln (format "hedges: ~s" hedges)))
          (hedge-nodes (map (λ (x) (if (empty? x)
                                       '()
                                       (second x)))
@@ -285,7 +312,7 @@
                                                                    )
                                                                 
                                                    )
-                                                        (map (lambda (rght) (list (subst-first-nt (first state) rght)
+                                                 (map (lambda (rght) (list (subst-first-nt (first state) rght)
                                                                            rght)) rights)
                                                         
                                                  )
@@ -776,7 +803,8 @@
                     (list (list (list (yield '() '() (list (cfg-get-start g)) derv-type) '() )))
                     g)))
   )
-         
+
+;levels: (((S a0) (S S0)) ((S0 a1) (S0 S1)) ((S1 a2) (S1 S2)) ((S2 ε0)))
 ;; cfg-viz
 (define (cfg-viz cfg word derv-type)
   (if (or (eq? derv-type 'left)
@@ -792,12 +820,15 @@
                                          [(eq? derv-type 'right)
                                           (create-rules-rightmost (move-rule-applications-in-list der-with-rules))])))
                    (w-der (list-of-states der-with-rules))
+                   ;(test0 (displayln (format "derv: ~s" der-with-rules)))
+                   ;(test1 (displayln (format "w-der: ~s" w-der)))
                    (renamed (generate-levels-list (first (first (first der-with-rules)))
                                                   (list-of-rules (move-rule-applications-in-list der-with-rules))
                                                   '()
                                                   (make-hash)
                                                   derv-type)
                             )
+                   ;(test (displayln renamed))
                    (dgraph (dgrph renamed '() '() '() (rest rules) (list (first rules))))
                    (lod (reverse (create-dgrphs dgraph '())))
                    (graphs (map create-graph-structs lod))]
@@ -840,6 +871,8 @@
       )
   )
 
+;(cfg-viz even-bs-odd-as '(a a a a) 'left)
+
 (define numb>numa (make-cfg '(S A)
                             '(a b)
                             `((S ,ARROW b)
@@ -850,5 +883,16 @@
                               (A ,ARROW bA))
                             'S))
 
-(cfg-viz numb>numa '(a b b a b) 'left)
+;(cfg-viz numb>numa '(a b b a b) 'left)
 ;(time (grammar-derive numb>numa '(a b b a a b b a b b b)))
+
+(define G (make-cfg '(S)
+                    '(a b)
+                    `((S ,ARROW ,EMP)
+                      (S ,ARROW aS)
+                      )
+                    'S
+                    )
+  )
+;(cfg-derive-with-rule-application G '(a a a) 'left)
+;(cfg-viz G '(a a a) 'left)
