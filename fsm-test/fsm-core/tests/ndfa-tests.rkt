@@ -294,6 +294,56 @@ The given starting state: (A) is not a valid state"))
                           ) (format "Step three of the design recipe has not been successfully completed.
 The following starting state, F, is not in the given list of states: (A B C D)"))
 
+  ;; Accepts/Rejects
+
+  (check-error (make-ndfa '(A B)
+                          '(a b)
+                          'A
+                          '(A)
+                          '((A a A)
+                            (B b B)
+                            (A b B)
+                            (B a B))
+                          #:accepts '((c)))
+               (format "Step two of the design recipe has not been successfully completed.
+The following words in the accepts list contain symbols not included in sigma: ((c))"))
+
+  (check-error (make-ndfa '(A B)
+                          '(a b)
+                          'A
+                          '(A)
+                          '((A a A)
+                            (B b B)
+                            (A b B)
+                            (B a B))
+                          #:accepts '(c))
+               (format "Step two of the design recipe has not been successfully completed.
+The expected accepts is not a list of words: (c)"))
+
+  (check-error (make-ndfa '(A B)
+                          '(a b)
+                          'A
+                          '(A)
+                          '((A a A)
+                            (B b B)
+                            (A b B)
+                            (B a B))
+                          #:rejects '((c)))
+               (format "Step two of the design recipe has not been successfully completed.
+The following words in the rejects list contain symbols not included in sigma: ((c))"))
+
+  (check-error (make-ndfa '(A B)
+                          '(a b)
+                          'A
+                          '(A)
+                          '((A a A)
+                            (B b B)
+                            (A b B)
+                            (B a B))
+                          #:rejects '(c))
+               (format "Step two of the design recipe has not been successfully completed.
+The expected rejects is not a list of words: (c)"))
+
   (check-error (make-ndfa '(A B)
                           '(a b)
                           'A

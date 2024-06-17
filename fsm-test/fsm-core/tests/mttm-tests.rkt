@@ -407,6 +407,7 @@ The following values, (Y N), are duplicated in the given final states: (Y N N Y)
                            'Y
                            ) (format "Step three of the design recipe has not been successfully completed.
 The given starting state: 1 is not a valid state"))
+  
   (check-error (make-mttm '(S Y N)
                            `(a b)
                            'a
@@ -423,6 +424,7 @@ The given starting state: 1 is not a valid state"))
                            'Y
                            ) (format "Step three of the design recipe has not been successfully completed.
 The given starting state: a is not a valid state"))
+  
   (check-error (make-mttm '(S Y N)
                            `(a b)
                            '(A)
@@ -439,6 +441,7 @@ The given starting state: a is not a valid state"))
                            'Y
                            ) (format "Step three of the design recipe has not been successfully completed.
 The given starting state: (A) is not a valid state"))
+  
   (check-error (make-mttm '(S Y N)
                            `(a b)
                            'F
@@ -455,6 +458,8 @@ The given starting state: (A) is not a valid state"))
                            'Y
                            ) (format "Step three of the design recipe has not been successfully completed.
 The following starting state, F, is not in the given list of states: (S Y N)"))
+
+  ;; Accepts/Rejects
 
   (check-error (make-mttm '(S Y N C D E F G)
                            '(a b c)
