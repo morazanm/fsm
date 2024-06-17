@@ -35,7 +35,7 @@
                       (raise-blame-error
                        blame
                        words
-                       (format "The expected ~a is not a list of words" type)
+                       (format "Step two of the design recipe has not been successfully completed.\nThe expected ~a is not a list of words" type)
                      
                        )
                       )
@@ -43,7 +43,7 @@
      )
     )
 
-    (define (listof-words-tm/c sigma)
+    (define (listof-words-tm/c type)
     (make-flat-contract
      #:name 'valid-list-of-words-tm
      #:first-order (lambda (words) (listof-words-tm? words))
@@ -53,8 +53,7 @@
                       (raise-blame-error
                        blame
                        words
-                       (format "Turing machine words must be lists of symbols, or pairs of symbol lists and starting indexes ~s")
-                     
+                       (format "Step two of the design recipe has not been successfully completed.\nThe expected ~a is not lists of symbols, or pairs of symbol lists and starting indexes" type)
                        )
                       )
                     )
@@ -71,7 +70,7 @@
                       (raise-blame-error
                        blame
                        (invalid-words words sigma)
-                       (format "Step six of the design recipe has not been successfully completed.\nThe following words in the ~a list contain symbols not included in sigma" field)
+                       (format "Step two of the design recipe has not been successfully completed.\nThe following words in the ~a list contain symbols not included in sigma" field)
                        )
                       )
                     )
@@ -88,7 +87,7 @@
                       (raise-blame-error
                        blame
                        (invalid-words-tm words sigma)
-                       (format "Step six of the design recipe has not been successfully completed.\nThe following words in the ~a list contain symbols not included in sigma" field)
+                       (format "Step two of the design recipe has not been successfully completed.\nThe following words in the ~a list contain symbols not included in sigma" field)
                        )
                       )
                     )

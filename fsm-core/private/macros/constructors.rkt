@@ -77,7 +77,7 @@
                                                start
                                                finals
                                                rules
-                                               add-dead) (and/c (words-in-sigma/c sigma 'reject)
+                                               add-dead) (and/c (words-in-sigma/c sigma 'rejects)
                                                                 (listof-words/c "rejects")
                                                                 (dfa-input/c states
                                                                              sigma
@@ -126,7 +126,7 @@
                               start
                               finals
                               rules) (and/c (listof-words/c "rejects")
-                                            (words-in-sigma/c sigma 'reject)
+                                            (words-in-sigma/c sigma 'rejects)
                                             (ndfa-input/c states
                                                           sigma
                                                           start
@@ -180,7 +180,7 @@
                               start
                               finals
                               rules) (and/c (listof-words/c "rejects")
-                                            (words-in-sigma/c sigma 'reject)
+                                            (words-in-sigma/c sigma 'rejects)
                                             (ndpda-input/c states
                                                            sigma
                                                            gamma
@@ -218,7 +218,7 @@
                               finals
                               rules
                               accept) (and/c (has-accept/c accept finals)
-                                             (listof-words-tm/c sigma)
+                                             (listof-words-tm/c "accepts")
                                              (acceptable-position/c sigma)
                                              (words-in-sigma-tm/c (append (list BLANK LM) sigma) 'accept)
                                              (tm-input/c states
@@ -235,7 +235,7 @@
                               finals
                               rules
                               accept) (and/c (has-accept/c accept finals)
-                                             (listof-words-tm/c sigma)
+                                             (listof-words-tm/c "rejects")
                                              (acceptable-position/c sigma)
                                              (words-in-sigma-tm/c (append (list BLANK LM) sigma) 'reject)
                                              (tm-input/c states
