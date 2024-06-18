@@ -335,6 +335,55 @@ The following state/sigma pairs are duplicated in your rules:  (
 (A b))")
                )
 
+  ;; Accepts/Rejects errors
+  (check-error (make-dfa '(A B)
+                         '(a b)
+                         'A
+                         '(A)
+                         '((A a A)
+                           (B b B)
+                           (A b B)
+                           (B a B))
+                         #:accepts '((c)))
+               (format "Step two of the design recipe has not been successfully completed.
+The following words in the accepts list contain symbols not included in sigma: ((c))"))
+
+  (check-error (make-dfa '(A B)
+                         '(a b)
+                         'A
+                         '(A)
+                         '((A a A)
+                           (B b B)
+                           (A b B)
+                           (B a B))
+                         #:accepts '(c)
+               (format "Step two of the design recipe has not been successfully completed.
+The expected accepts is not a list of words")))
+  
+  (check-error (make-dfa '(A B)
+                         '(a b)
+                         'A
+                         '(A)
+                         '((A a A)
+                           (B b B)
+                           (A b B)
+                           (B a B))
+                         #:rejects '((c)))
+               (format "Step two of the design recipe has not been successfully completed.
+The following words in the rejects list contain symbols not included in sigma: ((c))"))
+
+  (check-error (make-dfa '(A B)
+                         '(a b)
+                         'A
+                         '(A)
+                         '((A a A)
+                           (B b B)
+                           (A b B)
+                           (B a B))
+                         #:rejects '(c)
+               (format "Step two of the design recipe has not been successfully completed.
+The expected rejects is not a list of words")))
+  
   (check-error (make-dfa '(A B)
                          '(a b)
                          'A

@@ -275,7 +275,71 @@ The given starting state: (A) is not a valid state"))
                            ) (format "Step three of the design recipe has not been successfully completed.
 The following starting state, F, is not in the given list of states: (A B C D)"))
 
-  ;;RULES
+  ;; Accepts/Rejects
+
+  (check-error (make-ndpda '(S P Q F)
+                           '(a b c)
+                           '(a b)
+                           'S
+                           '(F)
+                           `(((S ,EMP ,EMP) (P ,EMP))
+                             ((P a ,EMP) (P (a)))
+                             ((P b ,EMP) (P (b)))
+                             ((P c ,EMP) (Q ,EMP))
+                             ((Q a (a)) (Q ,EMP))
+                             ((Q b (b)) (Q ,EMP))
+                             ((Q ,EMP ,EMP) (F ,EMP)))
+                           #:accepts '((d)))
+               (format "Step two of the design recipe has not been successfully completed.
+The following words in the accepts list contain symbols not included in sigma: ((d))"))
+
+  (check-error (make-ndpda '(S P Q F)
+                           '(a b c)
+                           '(a b)
+                           'S
+                           '(F)
+                           `(((S ,EMP ,EMP) (P ,EMP))
+                             ((P a ,EMP) (P (a)))
+                             ((P b ,EMP) (P (b)))
+                             ((P c ,EMP) (Q ,EMP))
+                             ((Q a (a)) (Q ,EMP))
+                             ((Q b (b)) (Q ,EMP))
+                             ((Q ,EMP ,EMP) (F ,EMP)))
+                           #:accepts '(a))
+               (format "Step two of the design recipe has not been successfully completed.
+The expected accepts is not a list of words: (a)"))
+
+  (check-error (make-ndpda '(S P Q F)
+                           '(a b c)
+                           '(a b)
+                           'S
+                           '(F)
+                           `(((S ,EMP ,EMP) (P ,EMP))
+                             ((P a ,EMP) (P (a)))
+                             ((P b ,EMP) (P (b)))
+                             ((P c ,EMP) (Q ,EMP))
+                             ((Q a (a)) (Q ,EMP))
+                             ((Q b (b)) (Q ,EMP))
+                             ((Q ,EMP ,EMP) (F ,EMP)))
+                           #:rejects '((d)))
+               (format "Step two of the design recipe has not been successfully completed.
+The following words in the rejects list contain symbols not included in sigma: ((d))"))
+
+  (check-error (make-ndpda '(S P Q F)
+                           '(a b c)
+                           '(a b)
+                           'S
+                           '(F)
+                           `(((S ,EMP ,EMP) (P ,EMP))
+                             ((P a ,EMP) (P (a)))
+                             ((P b ,EMP) (P (b)))
+                             ((P c ,EMP) (Q ,EMP))
+                             ((Q a (a)) (Q ,EMP))
+                             ((Q b (b)) (Q ,EMP))
+                             ((Q ,EMP ,EMP) (F ,EMP)))
+                           #:rejects '(a))
+               (format "Step two of the design recipe has not been successfully completed.
+The expected rejects is not a list of words: (a)"))
 
   (check-error (make-ndpda '(S P Q F)
                            '(a b c)

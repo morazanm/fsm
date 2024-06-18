@@ -382,7 +382,7 @@ The constructed machine does not accept the following words: ((@ _ a b c c))"))
                     '(Y N)
                     'Y
                     #:accepts '((c)))
-                (format "Step six of the design recipe has not been successfully completed.
+                (format "Step two of the design recipe has not been successfully completed.
 The following words in the accept list contain symbols not included in sigma: ((c))"))
 
   (check-error (make-tm '(S Y N)
@@ -393,9 +393,33 @@ The following words in the accept list contain symbols not included in sigma: ((
                     'S
                     '(Y N)
                     'Y
+                    #:accepts '(a))
+                (format "Step two of the design recipe has not been successfully completed.
+The expected accepts is not lists of symbols, or pairs of symbol lists and starting indexes: (a)"))
+
+  (check-error (make-tm '(S Y N)
+                    '(a b)
+                    `(((S a) (S ,RIGHT))
+                      ((S b) (N b))
+                      ((S ,BLANK) (Y ,BLANK)))
+                    'S
+                    '(Y N)
+                    'Y
                     #:rejects '((c)))
-                (format "Step six of the design recipe has not been successfully completed.
+                (format "Step two of the design recipe has not been successfully completed.
 The following words in the reject list contain symbols not included in sigma: ((c))"))
+
+  (check-error (make-tm '(S Y N)
+                    '(a b)
+                    `(((S a) (S ,RIGHT))
+                      ((S b) (N b))
+                      ((S ,BLANK) (Y ,BLANK)))
+                    'S
+                    '(Y N)
+                    'Y
+                    #:rejects '(a))
+                (format "Step two of the design recipe has not been successfully completed.
+The expected rejects is not lists of symbols, or pairs of symbol lists and starting indexes: (a)"))
   
   (test)
   
