@@ -10,23 +10,23 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-#;(define even-bs-odd-as (make-cfg '(S A B C)
+(define even-bs-odd-as (make-cfg '(S A B C)
                                  '(a b)
                                  `((S ,ARROW aA) (S ,ARROW bB) (S ,ARROW a)
-                                   (A ,ARROW aS) (A ,ARROW bC)
-                                   (B ,ARROW aC) (B ,ARROW bS)
-                                   (C ,ARROW aB) (C ,ARROW bA) (C ,ARROW b))
+                                                 (A ,ARROW aS) (A ,ARROW bC)
+                                                 (B ,ARROW aC) (B ,ARROW bS)
+                                                 (C ,ARROW aB) (C ,ARROW bA) (C ,ARROW b))
                                  'S))
 
 
-(define even-bs-odd-as
-  (make-cfg '(S A B C)
-            '(a b)
-            `((S ,ARROW aA) (S ,ARROW bB) (S ,ARROW a)
-              (A ,ARROW aaS) (A ,ARROW bC)
-              (B ,ARROW aC) (B ,ARROW bS) (C ,ARROW aB)
-              (C ,ARROW bA) (C ,ARROW b))
-            'S))
+#;(define even-bs-odd-as
+    (make-cfg '(S A B C)
+              '(a b)
+              `((S ,ARROW aA) (S ,ARROW bB) (S ,ARROW a)
+                              (A ,ARROW aaS) (A ,ARROW bC)
+                              (B ,ARROW aC) (B ,ARROW bS) (C ,ARROW aB)
+                              (C ,ARROW bA) (C ,ARROW b))
+              'S))
 
 
 
@@ -34,6 +34,8 @@
 
 (define HEDGE-COLOR 'violet)
 (define YIELD-COLOR 'orange)
+(define INVARIANT-HOLDS-COLOR 'green)
+(define INVARIANT-BROKEN-COLOR 'red)
 (define FONT-SIZE 20)
 (define TAPE-SIZE 42)
 
@@ -44,8 +46,165 @@
 ;; hedges - highlighted edges of the graphs
 ;; up-rules - unprocessed grammar rules
 ;; p-rules - processed grammar rules
-(struct dgrph (up-levels ad-levels nodes hedges up-rules p-rules))
+(struct dgrph (up-levels ad-levels nodes hedges up-rules p-rules up-yield-trees p-yield-trees))
 
+
+;; (qof X) → X throws error
+;; Purpose: Return first X of the given queue
+(define (qfirst a-qox)
+  (if (empty? a-qox)
+      (error "qfirst applied to an empty queue")
+      (first a-qox)))
+
+;; (listof X) (qof X) → (qof X)
+;; Purpose: Add the given list of X to the given
+;; queue of X
+(define (enqueue a-lox a-qox) (append a-qox a-lox))
+
+;; (qof X) → (qof X) throws error
+;; Purpose: Return the rest of the given queue
+(define (dequeue a-qox)
+  (if (empty? a-qox)
+      (error "dequeue applied to an empty queue")
+      (rest a-qox)))
+
+;; tree Any -> (U #f tree)
+;; Finds the search value within the tree using a depth first search
+(define (dfs node search-val)
+  (if (equal? (tree-value node) search-val)
+      node
+      (ormap (lambda (node) (dfs node search-val)) (tree-subtrees node))
+      )
+  )
+
+;; A tree has a value and subtrees
+;; A value is Any
+;; A subtree is a listof Any
+(struct tree (value [subtrees #:mutable]) #:transparent)
+
+;; levels -> tree
+;; Creates a tree structure from the levels
+(define (create-yield-tree levels)
+  (foldl (lambda (val accum)
+           (set-tree-subtrees! (dfs accum (first (first val)))
+                               (map (lambda (edge) (tree (second edge) '())) val)
+                               )
+           accum                                 
+           )
+         (tree 'S '())
+         levels)                         
+  )
+
+;; Symbol -> Symbol
+;; Removes all numbers from the symbol (that were originally added for differentiating in graphviz)
+(define (undo-renaming symb)
+  (string->symbol
+   (list->string
+    (filter (lambda (x) (not (or (equal? #\0 x)
+                                 (equal? #\1 x)
+                                 (equal? #\2 x)
+                                 (equal? #\3 x)
+                                 (equal? #\4 x)
+                                 (equal? #\5 x)
+                                 (equal? #\6 x)
+                                 (equal? #\7 x)
+                                 (equal? #\8 x)
+                                 (equal? #\9 x)
+                                 )
+                             )
+              )
+            (string->list (symbol->string symb))
+            )
+    )
+   )
+  )
+
+;; tree -> listof Symbol
+;; Accumulates all of the leave nodes in order (producing the yield of the tree)
+(define (get-yield subtree)
+  (local [
+          (define subtree-copy (struct-copy tree subtree))
+          ]
+    (foldl (lambda (node yield) (cond [(equal? (undo-renaming (tree-value node)) EMP) yield]
+                                      [(empty? (tree-subtrees node)) (append yield (list (tree-value node)))]
+                                      [else (append yield (get-yield node))]
+                                      )
+             )
+           '()
+           (tree-subtrees subtree)
+           )
+    )
+  )
+
+;; tree invariant-function -> (U boolean Symbol)
+;; Evaluates the invariant function given to us by the user on the current yield
+;; generated by its respective nonterminal
+(define (invariant-holds? subtree invar-func) (invar-func (map undo-renaming (get-yield subtree))))
+
+;; tree (listof Symbol) (listof (list Symbol ((listof Symbol) -> (U boolean Symbol)) -> (U boolean Symbol)
+;; Checks all invariants against all of their respective nodes
+(define (check-all-invariants tree nonterminals-to-check invariants)
+  (local [
+          (define (check-invariant invariant-nt invariant-func)
+            (local [
+                    (define (find-all-invariant-nodes nts)
+                      (if (empty? nts)
+                          '()
+                          (if (equal? invariant-nt (undo-renaming (first nts)))
+                              (cons (first nts) (find-all-invariant-nodes (rest nts)))
+                              (find-all-invariant-nodes (rest nts))
+                              )
+                          )
+                      )
+                    (define (check-all-invariant-nodes nonterminals invar-func broken-nodes)
+                      (if (empty? nonterminals)
+                          (if (empty? broken-nodes)
+                              #t
+                              broken-nodes
+                              )
+                          (if (invariant-holds? (dfs tree (first nonterminals)) invar-func)      
+                              (check-all-invariant-nodes (rest nonterminals) invar-func broken-nodes)
+                              (check-all-invariant-nodes (rest nonterminals) invar-func (cons (first nonterminals) broken-nodes))
+                              )
+                          )
+                      )
+                    ]
+              (check-all-invariant-nodes (find-all-invariant-nodes nonterminals-to-check) invariant-func '())
+              )
+            )
+          (define (check-all-invariants-helper nonterminals-to-check invariants broken-nodes)
+            (if (empty? invariants)
+                (if (empty? broken-nodes)
+                    '()
+                    broken-nodes
+                    )
+                (let [(result (check-invariant (first (first invariants)) (second (first invariants))))]
+                  (if (list? result)
+                      (check-all-invariants-helper nonterminals-to-check (rest invariants) (append result broken-nodes))
+                      (check-all-invariants-helper nonterminals-to-check (rest invariants) broken-nodes)
+                      )
+                  )
+                )
+            ) 
+          ]
+    (check-all-invariants-helper nonterminals-to-check invariants '())
+    )
+  )
+
+;; levels -> (listof levels)
+;; Creates a list containing the levels used for each graph generated
+(define (create-list-of-levels levels)
+  (local [
+          (define (create-list-of-levels-helper lvls)
+            (if (empty? lvls)
+                '()
+                (cons lvls (create-list-of-levels-helper (rest lvls)))
+                )
+            )
+          ]
+    (create-list-of-levels-helper (reverse levels))
+    )
+  )
 
 ;; nonterminal?
 ;; symbol -> Boolean
@@ -113,7 +272,7 @@
 ;; make-node-graph
 ;; graph lon -> graph
 ;; Purpose: To make a node graph
-(define (make-node-graph graph lon hedge-nodes yield-node)
+(define (make-node-graph graph lon hedge-nodes yield-node broken-invariants? producing-nodes has-invariant)
   (foldl (λ (state result)
            (add-node
             result
@@ -123,6 +282,25 @@
                                      [(member state yield-node)
                                       YIELD-COLOR]
                                      [else 'black])
+                        'style 'filled
+                        'fillcolor (cond [(not (member (undo-renaming state) has-invariant)) 'white]
+                                          [(and (member (undo-renaming state) has-invariant)
+                                               (not (member state producing-nodes))
+                                               )
+                                          'white]
+                                         [(and (member (undo-renaming state) has-invariant)
+                                               (member state producing-nodes)
+                                               (member state broken-invariants?)
+                                               )
+                                          INVARIANT-BROKEN-COLOR
+                                          ]
+                                         [(and (member (undo-renaming state) has-invariant)
+                                               (member state producing-nodes)
+                                               (not (member state broken-invariants?))
+                                               )
+                                          INVARIANT-HOLDS-COLOR
+                                          ]
+                                         )
                         'shape 'circle
                         'label (string->symbol (string (string-ref (symbol->string state) 0)))
                         'fontcolor 'black
@@ -133,25 +311,6 @@
 ;; make-edge-graph
 ;; graph (listof level) -> graph
 ;; Purpose: To make an edge graph
-#;(define (make-edge-graph graph loe hedges)
-    (foldl (lambda (rules result)
-             (if (empty? (first rules))
-                 result
-                 (foldl (lambda (rule result)
-                          (add-edge result
-                                    ""
-                                    (first rule)
-                                    (second rule)
-                                    #:atb (hash 'fontsize FONT-SIZE
-                                                'style 'solid
-                                                'color (if (member rule hedges)
-                                                           HEDGE-COLOR
-                                                           'black))))
-                        result
-                        rules)))
-           graph
-           (reverse loe)))
-
 (define (make-edge-graph graph loe hedges)
   (foldl (lambda (rules result)
            (if (empty? (first rules))
@@ -176,11 +335,24 @@
 ;; create-graph-structs
 ;; dgprh -> img
 ;; Purpose: Creates the final graph structure that will be used to create the images in graphviz
-(define (create-graph-structs a-dgrph)
+(define (create-graph-structs a-dgrph invariants derv-order)
   (let* [(nodes (dgrph-nodes a-dgrph))
-         (levels (reverse (map reverse (dgrph-ad-levels a-dgrph))))
+         (levels (map reverse (dgrph-ad-levels a-dgrph)))
+         (reversed-levels (reverse levels))
          (hedges (dgrph-hedges a-dgrph))
-         ;(test (displayln (format "hedges: ~s" hedges)))
+         (invariant-nts (map first invariants))
+         (producing-nodes (map (lambda (edge) (first edge)) (append* levels)))
+         (invariant-nodes (append-map (lambda (lvl) (let* [(nodes (map (lambda (edge) (second edge)) lvl))
+                                                           (invar-nodes (filter (lambda (node) (member node producing-nodes)) nodes))
+                                                           ]
+                                                      (cond [(equal? derv-order 'left) (reverse invar-nodes)]
+                                                            [(equal? derv-order 'right) invar-nodes]
+                                                            [else invar-nodes]
+                                                            )
+                                                      )
+                                        ) levels)
+                          )
+         (broken-invariant? (check-all-invariants (first (dgrph-p-yield-trees a-dgrph)) invariant-nodes invariants))
          (hedge-nodes (map (λ (x) (if (empty? x)
                                       '()
                                       (second x)))
@@ -188,10 +360,11 @@
          (yield-node (map (λ (x) (if (empty? x)
                                      '()
                                      (first x)))
-                          hedges))]
+                          hedges))
+         ]
     (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
-                                      nodes hedge-nodes yield-node)
-                     levels hedges)))
+                                      nodes hedge-nodes yield-node broken-invariant? producing-nodes invariant-nts)
+                     reversed-levels hedges)))
 
 ;; create-dgraphs
 ;; dgrph (listof dgrph) -> (listof dgrph)
@@ -206,14 +379,21 @@
              (new-hedges (first (dgrph-up-levels a-dgrph)))
              (new-up-rules (rest (dgrph-up-rules a-dgrph)))
              (new-p-rules (cons (first (dgrph-up-rules a-dgrph))
-                                (dgrph-p-rules a-dgrph)))]
+                                (dgrph-p-rules a-dgrph)))
+             (new-up-yield-trees (rest (dgrph-up-yield-trees a-dgrph)))
+             (new-p-yield-trees (cons (first (dgrph-up-yield-trees a-dgrph))
+                                      (dgrph-p-yield-trees a-dgrph)))
+             ]
         (create-dgrphs
          (dgrph new-up-levels                      
                 new-ad-levels
                 new-nodes
                 new-hedges
                 new-up-rules
-                new-p-rules)
+                new-p-rules
+                new-up-yield-trees
+                new-p-yield-trees
+                )
          (cons a-dgrph lod)))))
 
 
@@ -804,9 +984,8 @@
                     g)))
   )
 
-;levels: (((S a0) (S S0)) ((S0 a1) (S0 S1)) ((S1 a2) (S1 S2)) ((S2 ε0)))
 ;; cfg-viz
-(define (cfg-viz cfg word [derv-type 'left])
+(define (cfg-viz cfg word [derv-type 'left] . invariants)
   (if (or (eq? derv-type 'left)
           (eq? derv-type 'right)
           )
@@ -820,18 +999,16 @@
                                          [(eq? derv-type 'right)
                                           (create-rules-rightmost (move-rule-applications-in-list der-with-rules))])))
                    (w-der (list-of-states der-with-rules))
-                   ;(test0 (displayln (format "derv: ~s" der-with-rules)))
-                   ;(test1 (displayln (format "w-der: ~s" w-der)))
                    (renamed (generate-levels-list (first (first (first der-with-rules)))
                                                   (list-of-rules (move-rule-applications-in-list der-with-rules))
                                                   '()
                                                   (make-hash)
                                                   derv-type)
                             )
-                   ;(test (displayln renamed))
-                   (dgraph (dgrph renamed '() '() '() (rest rules) (list (first rules))))
+                   (yield-trees (map create-yield-tree (map reverse (create-list-of-levels renamed))))
+                   (dgraph (dgrph renamed '() '() '() (rest rules) (list (first rules)) (reverse yield-trees) (list (tree (grammar-start cfg) '()))))
                    (lod (reverse (create-dgrphs dgraph '())))
-                   (graphs (map create-graph-structs lod))]
+                   (graphs (map (lambda (dgrph) (create-graph-structs dgrph invariants derv-type)) lod))]
               (run-viz cfg word w-der rules graphs))))
       (let [(derivation (cfg-derive-levels cfg word derv-type))
             ]
@@ -860,9 +1037,10 @@
                                                       derv-type
                                                       )
                             )
-                   (dgraph (dgrph renamed '() '() '() (rest rules) (list (first rules))))
+                   (yield-trees (map create-yield-tree (map reverse (create-list-of-levels renamed))))
+                   (dgraph (dgrph renamed '() '() '() (rest rules) (list (first rules)) (reverse yield-trees) (list (tree (grammar-start cfg) '()))))
                    (lod (reverse (create-dgrphs dgraph '())))
-                   (graphs (map create-graph-structs lod))
+                   (graphs (map (lambda (dgrph) (create-graph-structs dgrph invariants derv-type)) lod))
                    ]
               (run-viz cfg word w-der rules graphs)
               )
@@ -885,25 +1063,40 @@
                             'S))
 
 (define buggy-numb>numa (make-cfg '(S A)
-                            '(a b)
-                            `((S ,ARROW b)
-                              (S ,ARROW AbA)
-                              (A ,ARROW AaAbA)
-                              (A ,ARROW AbAaA)
-                              (A ,ARROW a)
-                              (A ,ARROW bA))
-                            'S))
-(grammar-derive buggy-numb>numa '(a b a))
-;(cfg-viz numb>numa '(a b b a b) 'left)
+                                  '(a b)
+                                  `((S ,ARROW b)
+                                    (S ,ARROW AbA)
+                                    (A ,ARROW AaAbA)
+                                    (A ,ARROW AbAaA)
+                                    (A ,ARROW a)
+                                    (A ,ARROW bA))
+                                  'S))
+
+#;(grammar-derive buggy-numb>numa '(a b a))
+
+(define palindrome (make-unchecked-cfg '(S A)
+                                       '(a b)
+                                       '((S -> ε)
+                                         (S -> aSa)
+                                         (S -> bSb)
+                                         (S -> aAa)
+                                         (S -> aAb)
+                                         (A -> aS)
+                                         (A -> bS)) 
+                                       'S))
+
+;(cfg-viz palindrome '(a b a b b a) 'left)
+
+(cfg-viz numb>numa '(a b b b) 'level-left (list 'A (lambda (x) #t)) (list 'S (lambda (x) #t)))
 ;(time (grammar-derive numb>numa '(a b b a a b b a b b b)))
 
-(define G (make-cfg '(S)
-                    '(a b)
-                    `((S ,ARROW ,EMP)
-                      (S ,ARROW aS)
+#;(define G (make-cfg '(S)
+                      '(a b)
+                      `((S ,ARROW ,EMP)
+                        (S ,ARROW aS)
+                        )
+                      'S
                       )
-                    'S
-                    )
-  )
+    )
 ;(cfg-derive-with-rule-application G '(a a a) 'left)
-(cfg-viz G '(a a a) 'right)
+;(cfg-viz G '(a a a) 'right)
