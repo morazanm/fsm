@@ -517,14 +517,17 @@
                              (viz-state-ndfa-M a-vs)))]
         [else a-vs]))
 
-;;ndfa word -> (void)
+;;ndfa word -> (void) Throws error
 ;;Purpose: Visualizes the given ndfa processing the given word
+;;Assumption: The given machine is a ndfa
 (define (ndfa-viz M a-word)
-  (run-viz-ndfa
-   (viz-state-ndfa a-word
-                   '()
-                   M)
-   'ndfa-viz))
+  (if (not (eq? (sm-type M) 'ndfa))
+      (error "The given machine must be a ndfa")
+      (run-viz-ndfa
+       (viz-state-ndfa a-word
+                       '()
+                       M)
+       'ndfa-viz)))
 
 ;;viz-state string -> (void)
 ;;Purpose: Visualizes the given viz-state
@@ -890,3 +893,4 @@
                                    (equal? EMP (second rule)))))
                         (sm-rules aa-ab)))
               '((A (a a a)) (B (a a a))))
+;;informative messaging -> number of computations 
