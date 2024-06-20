@@ -107,16 +107,34 @@
 ;; Accumulates all of the leave nodes in order (producing the yield of the tree)
 (define (get-yield subtree)
   (local [
+          ;; lower?
+          ;; symbol -> Boolean
+          ;; Purpose: Determines if a symbol is down case
+          (define (lower? symbol)
+            (not (char-upper-case? (string-ref (symbol->string symbol) 0))))
           (define subtree-copy (struct-copy tree subtree))
+          (define (get-yield-helper subtree)
+            (foldl (lambda (node yield) (cond [(equal? (undo-renaming (tree-value node)) EMP) yield]
+                                              [(empty? (tree-subtrees node)) (append yield (list (tree-value node)))]
+                                              [else (append yield (get-yield-helper node))]
+                                              )
+                     )
+                   '()
+                   (tree-subtrees subtree)
+                   )
+            )
           ]
-    (foldl (lambda (node yield) (cond [(equal? (undo-renaming (tree-value node)) EMP) yield]
+    (filter
+     (lambda (node) (lower? node))
+     (foldl (lambda (node yield) (cond [(equal? (undo-renaming (tree-value node)) EMP) yield]
                                       [(empty? (tree-subtrees node)) (append yield (list (tree-value node)))]
-                                      [else (append yield (get-yield node))]
+                                      [else (append yield (get-yield-helper node))]
                                       )
              )
            '()
            (tree-subtrees subtree)
            )
+     )
     )
   )
 
@@ -405,7 +423,7 @@
 ;; create-graph-structs
 ;; dgprh -> img
 ;; Purpose: Creates the final graph structure that will be used to create the images in graphviz
-(define (create-graph-structs a-dgrph invariants)
+(define (create-graph-structs a-dgrph invariants root-node)
   (let* [(nodes (append (filter lower? (dgrph-nodes a-dgrph))
                         (filter upper? (dgrph-nodes a-dgrph))))
          (levels (map reverse (dgrph-ad-levels a-dgrph)))
@@ -419,11 +437,12 @@
                                      (first x))) hedges))
          (invariant-nts (map first invariants))
          (producing-nodes (get-producing-nodes (append* levels)))
-         (invariant-nodes (append-map (lambda (lvl) (let*
+         (invariant-nodes (cons root-node (append-map (lambda (lvl) (let*
                                                         [(nodes (map (lambda (edge) (second edge)) (filter (lambda (edge) (not (empty? edge))) lvl)))]
                                                       (filter (lambda (node) (member node producing-nodes)) nodes)
                                                       )
                                         ) levels)
+                                )
                           )
          (broken-invariant? (check-all-invariants (first (dgrph-p-yield-trees a-dgrph)) invariant-nodes invariants))
          ]
@@ -485,7 +504,7 @@
              (yield-trees (map create-yield-tree (map reverse (create-list-of-levels loe-without-empty))))
              (dgraph (dgrph loe '() '() '() (rest rules) (list (first rules)) (reverse yield-trees) (list (tree (grammar-start rg) '()))))
              (lod (reverse (create-dgrphs dgraph '())))
-             (graphs (map (lambda (dgrph) (create-graph-structs dgrph invariants)) lod))]
+             (graphs (map (lambda (dgrph) (create-graph-structs dgrph invariants (grammar-start rg))) lod))]
         (run-viz rg word w-der rules graphs))))
 
 ;(rg-viz even-bs-odd-as '(a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a))
@@ -507,7 +526,7 @@
                    )
   )
 
-(rg-viz even-bs-odd-as '(b b a b b b b b b b b b b b b a b b b b b b b b b b b b b b a b b b b b b b b b b b b b b b b a b b b b b b b b b b a) (list 'A (lambda (x) #f)))
+(rg-viz even-bs-odd-as '(b b a b b b b b b b b b b b b a b b b b b b b b b b b b b b a b b b b b b b b b b b b b b b b a b b b b b b b b b b a) (list 'S (lambda (x) #f)))
 
 ;(grammar-derive G '(a a a))
 ;(rg-viz G '(a a a))

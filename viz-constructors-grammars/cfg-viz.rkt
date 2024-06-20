@@ -19,17 +19,6 @@
                                  'S))
 
 
-#;(define even-bs-odd-as
-    (make-cfg '(S A B C)
-              '(a b)
-              `((S ,ARROW aA) (S ,ARROW bB) (S ,ARROW a)
-                              (A ,ARROW aaS) (A ,ARROW bC)
-                              (B ,ARROW aC) (B ,ARROW bS) (C ,ARROW aB)
-                              (C ,ARROW bA) (C ,ARROW b))
-              'S))
-
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define HEDGE-COLOR 'violet)
@@ -47,26 +36,6 @@
 ;; up-rules - unprocessed grammar rules
 ;; p-rules - processed grammar rules
 (struct dgrph (up-levels ad-levels nodes hedges up-rules p-rules up-yield-trees p-yield-trees))
-
-
-;; (qof X) → X throws error
-;; Purpose: Return first X of the given queue
-(define (qfirst a-qox)
-  (if (empty? a-qox)
-      (error "qfirst applied to an empty queue")
-      (first a-qox)))
-
-;; (listof X) (qof X) → (qof X)
-;; Purpose: Add the given list of X to the given
-;; queue of X
-(define (enqueue a-lox a-qox) (append a-qox a-lox))
-
-;; (qof X) → (qof X) throws error
-;; Purpose: Return the rest of the given queue
-(define (dequeue a-qox)
-  (if (empty? a-qox)
-      (error "dequeue applied to an empty queue")
-      (rest a-qox)))
 
 ;; tree Any -> (U #f tree)
 ;; Finds the search value within the tree using a depth first search
@@ -123,16 +92,34 @@
 ;; Accumulates all of the leave nodes in order (producing the yield of the tree)
 (define (get-yield subtree)
   (local [
+          ;; lower?
+          ;; symbol -> Boolean
+          ;; Purpose: Determines if a symbol is down case
+          (define (lower? symbol)
+            (not (char-upper-case? (string-ref (symbol->string symbol) 0))))
           (define subtree-copy (struct-copy tree subtree))
+          (define (get-yield-helper subtree)
+            (foldl (lambda (node yield) (cond [(equal? (undo-renaming (tree-value node)) EMP) yield]
+                                              [(empty? (tree-subtrees node)) (append yield (list (tree-value node)))]
+                                              [else (append yield (get-yield-helper node))]
+                                              )
+                     )
+                   '()
+                   (tree-subtrees subtree)
+                   )
+            )
           ]
-    (foldl (lambda (node yield) (cond [(equal? (undo-renaming (tree-value node)) EMP) yield]
-                                      [(empty? (tree-subtrees node)) (append yield (list (tree-value node)))]
-                                      [else (append yield (get-yield node))]
-                                      )
-             )
-           '()
-           (tree-subtrees subtree)
-           )
+    (filter
+     (lambda (node) (lower? node))
+     (foldl (lambda (node yield) (cond [(equal? (undo-renaming (tree-value node)) EMP) yield]
+                                       [(empty? (tree-subtrees node)) (append yield (list (tree-value node)))]
+                                       [else (append yield (get-yield-helper node))]
+                                       )
+              )
+            '()
+            (tree-subtrees subtree)
+            )
+     )
     )
   )
 
@@ -195,6 +182,8 @@
 ;; Creates a list containing the levels used for each graph generated
 (define (create-list-of-levels levels)
   (local [
+          ;; levels -> (listof levels)
+          ;; 
           (define (create-list-of-levels-helper lvls)
             (if (empty? lvls)
                 '()
@@ -284,7 +273,7 @@
                                      [else 'black])
                         'style 'filled
                         'fillcolor (cond [(not (member (undo-renaming state) has-invariant)) 'white]
-                                          [(and (member (undo-renaming state) has-invariant)
+                                         [(and (member (undo-renaming state) has-invariant)
                                                (not (member state producing-nodes))
                                                )
                                           'white]
@@ -335,22 +324,23 @@
 ;; create-graph-structs
 ;; dgprh -> img
 ;; Purpose: Creates the final graph structure that will be used to create the images in graphviz
-(define (create-graph-structs a-dgrph invariants derv-order)
+(define (create-graph-structs a-dgrph invariants derv-order root-node)
   (let* [(nodes (dgrph-nodes a-dgrph))
          (levels (map reverse (dgrph-ad-levels a-dgrph)))
          (reversed-levels (reverse levels))
          (hedges (dgrph-hedges a-dgrph))
          (invariant-nts (map first invariants))
          (producing-nodes (map (lambda (edge) (first edge)) (append* levels)))
-         (invariant-nodes (append-map (lambda (lvl) (let* [(nodes (map (lambda (edge) (second edge)) lvl))
-                                                           (invar-nodes (filter (lambda (node) (member node producing-nodes)) nodes))
-                                                           ]
-                                                      (cond [(equal? derv-order 'left) (reverse invar-nodes)]
-                                                            [(equal? derv-order 'right) invar-nodes]
-                                                            [else invar-nodes]
-                                                            )
-                                                      )
-                                        ) levels)
+         (invariant-nodes (cons root-node (append-map (lambda (lvl) (let* [(nodes (map (lambda (edge) (second edge)) lvl))
+                                                                    (invar-nodes (filter (lambda (node) (member node producing-nodes)) nodes))
+                                                                    ]
+                                                               (cond [(equal? derv-order 'left) (reverse invar-nodes)]
+                                                                     [(equal? derv-order 'right) invar-nodes]
+                                                                     [else invar-nodes]
+                                                                     )
+                                                               )
+                                                 ) levels)
+                                )
                           )
          (broken-invariant? (check-all-invariants (first (dgrph-p-yield-trees a-dgrph)) invariant-nodes invariants))
          (hedge-nodes (map (λ (x) (if (empty? x)
@@ -1008,7 +998,7 @@
                    (yield-trees (map create-yield-tree (map reverse (create-list-of-levels renamed))))
                    (dgraph (dgrph renamed '() '() '() (rest rules) (list (first rules)) (reverse yield-trees) (list (tree (grammar-start cfg) '()))))
                    (lod (reverse (create-dgrphs dgraph '())))
-                   (graphs (map (lambda (dgrph) (create-graph-structs dgrph invariants derv-type)) lod))]
+                   (graphs (map (lambda (dgrph) (create-graph-structs dgrph invariants derv-type (grammar-start cfg))) lod))]
               (run-viz cfg word w-der rules graphs))))
       (let [(derivation (cfg-derive-levels cfg word derv-type))
             ]
@@ -1040,7 +1030,7 @@
                    (yield-trees (map create-yield-tree (map reverse (create-list-of-levels renamed))))
                    (dgraph (dgrph renamed '() '() '() (rest rules) (list (first rules)) (reverse yield-trees) (list (tree (grammar-start cfg) '()))))
                    (lod (reverse (create-dgrphs dgraph '())))
-                   (graphs (map (lambda (dgrph) (create-graph-structs dgrph invariants derv-type)) lod))
+                   (graphs (map (lambda (dgrph) (create-graph-structs dgrph invariants derv-type (grammar-start cfg))) lod))
                    ]
               (run-viz cfg word w-der rules graphs)
               )
@@ -1049,9 +1039,6 @@
       )
   )
 
-;(cfg-viz even-bs-odd-as '(a a a a) 'left)
-
-;; 
 (define numb>numa (make-cfg '(S A)
                             '(a b)
                             `((S ,ARROW b)
@@ -1087,7 +1074,23 @@
 
 ;(cfg-viz palindrome '(a b a b b a) 'left)
 
-(cfg-viz numb>numa '(a b b b) 'level-left (list 'A (lambda (x) #t)) (list 'S (lambda (x) #t)))
+(define (A-INV w)
+  (let [(as (filter (lambda (symb) (eq? symb 'a)) w))
+        (bs (filter (lambda (symb) (eq? symb 'b)) w))
+        ]
+    (>= (length bs) (length as))
+    )
+  )
+
+(define (S-INV w)
+  (let [(as (filter (lambda (symb) (eq? symb 'a)) w))
+        (bs (filter (lambda (symb) (eq? symb 'b)) w))
+        ]
+    (< (length bs) (length as))
+    )
+  )
+
+(cfg-viz numb>numa '(b b b b b b a a) 'left (list 'S S-INV) (list 'A A-INV))
 ;(time (grammar-derive numb>numa '(a b b a a b b a b b b)))
 
 #;(define G (make-cfg '(S)
