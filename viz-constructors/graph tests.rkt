@@ -140,11 +140,11 @@
                             (third rule)
                             #:atb (hash 'color destin-color 'fontsize 20 'style 'solid))]
                  [(member rule prev-path)
-                    (add-edge result
-                              (second rule)
-                              (first rule)
-                              (third rule)
-                              #:atb (hash 'color 'gray 'fontsize 20 'style 'solid))]
+                  (add-edge result
+                            (second rule)
+                            (first rule)
+                            (third rule)
+                            #:atb (hash 'color 'gray 'fontsize 20 'style 'solid))]
                  [else
                   (add-edge result
                             (second rule)
@@ -444,8 +444,8 @@
                                          path))
                                curr-path)))
           (begin
-            (display (format "curr-path ~s \n" curr-path))
-            (display (format "full-prev-path ~s \n" full-prev-path))
+            ;(display (format "curr-path ~s \n" curr-path))
+            ;(display (format "full-prev-path ~s \n" full-prev-path))
             (return-differences full-prev-path curr-path)))
          #;(map (λ (path)
                   (filter (λ (p) (equal? (last (viz-state-ndfa-pci a-vs))
@@ -464,122 +464,137 @@
                               current-place)))
          ;;image
          (informative-messages (cond [(empty? (viz-state-ndfa-upci a-vs))
-                                     (if (eq? (sm-apply (viz-state-ndfa-M a-vs)
-                                                   (viz-state-ndfa-pci a-vs))
-                                              'accept)
-                                         (above/align 'left (beside (text "Word: " 20' black)
-                                                    (text (los2str (viz-state-ndfa-pci a-vs))
-                                                          20
-                                                          'gray))
-                                            (text "Computations: " 20 'black)
-                                            (text "Word Status: Accept" 20 'green))
-                                         (above/align 'left (beside (text "Word: " 20 'black)
-                                                    (text (los2str (viz-state-ndfa-pci a-vs))
-                                                          20
-                                                          'gray))
-                                            (text "Computations: " 20 'black)
-                                            (text "Word Status: Reject" 20 'red)))]
-                                    [(empty? (viz-state-ndfa-pci a-vs))
-                                     (above/align 'left
-                                                  (beside (text "Word: " 20 'black)
-                                                    (text (los2str (viz-state-ndfa-upci a-vs))
-                                                          20
-                                                          'black))
-                                            (text "Computations: " 20 'black)
-                                            (text "Word Status: accept " 20 'white))]
-                                    [else (above/align 'left (beside (text "Word: " 20 'black)
-                                                         (text (los2str (viz-state-ndfa-pci a-vs))
-                                                               20
-                                                               'gray)
-                                                         (text (los2str (viz-state-ndfa-upci a-vs))
-                                                               20
-                                                               'black))
-                                                 (text "Computations: " 20 'black)
-                                                 (text "Word Status: accept " 20 'white))]))]
+                                      (if (eq? (sm-apply (viz-state-ndfa-M a-vs)
+                                                         (viz-state-ndfa-pci a-vs))
+                                               'accept)
+                                          (above/align 'left
+                                                       (beside (text "Word: " 20' black)
+                                                               (text (los2str (viz-state-ndfa-pci a-vs))
+                                                                     20
+                                                                     'gray))
+                                                       (beside (text "Consumed: " 20' black)
+                                                               (text (los2str (viz-state-ndfa-pci a-vs))
+                                                                     20
+                                                                     'black))                                                     
+                                                       (text "Computations: " 20 'black)
+                                                       (text "Word Status: Accept" 20 'green))
+                                          (above/align 'left (beside (text "Word: " 20 'black)
+                                                                     (text (los2str (viz-state-ndfa-pci a-vs))
+                                                                           20
+                                                                           'gray))
+                                                   
+                                                       (beside (text "Consumed: " 20' black)
+                                                               (text (los2str (viz-state-ndfa-pci a-vs))
+                                                                     20
+                                                                     'black))
+                                                       (text "Computations: " 20 'black)
+                                                       (text "Word Status: Reject" 20 'red)))]
+                                     [(empty? (viz-state-ndfa-pci a-vs))
+                                      (above/align 'left
+                                                   (beside (text "Word: " 20 'black)
+                                                           (text (los2str (viz-state-ndfa-upci a-vs))
+                                                                 20
+                                                                 'black))
+                                                   (text "Consumed: " 20' black)
+                                                   (text "Computations: " 20 'black)
+                                                   (text "Word Status: accept " 20 'white))]
+                                     [else (above/align 'left (beside (text "Word: " 20 'black)
+                                                                      (text (los2str (viz-state-ndfa-pci a-vs))
+                                                                            20
+                                                                            'gray)
+                                                                      (text (los2str (viz-state-ndfa-upci a-vs))
+                                                                            20
+                                                                            'black))
+                                                        (beside (text "Consumed: " 20' black)
+                                                                (text (los2str (viz-state-ndfa-pci a-vs))
+                                                                      20
+                                                                      'black))
+                                                        (text "Computations: " 20 'black)
+                                                        (text "Word Status: accept " 20 'white))]))]
     #;(cond [(empty? (viz-state-ndfa-upci a-vs))
-           (place-image 
-       informative-messages
-       250 450
-       (above (first (resize-image
-                      (graph->bitmap
-                       (edge-graph
-                        (node-graph (create-graph 'ndfagraph #:atb
-                                                  (hash 'rankdir "LR"))
+             (place-image 
+              informative-messages
+              250 450
+              (above (first (resize-image
+                             (graph->bitmap
+                              (edge-graph
+                               (node-graph (create-graph 'ndfagraph #:atb
+                                                         (hash 'rankdir "LR"))
+                                           (viz-state-ndfa-M a-vs)
+                                           current-states
+                                           destin-states
+                                           (viz-state-ndfa-pci a-vs))
+                               (viz-state-ndfa-M a-vs)
+                               (viz-state-ndfa-pci a-vs)
+                               current-place
+                               prev-path))
+                             500
+                             585))
+                     E-SCENE-TOOLS))]
+            [(empty? (viz-state-ndfa-pci a-vs))
+             (place-image 
+              informative-messages
+              250 450
+              (above (first (resize-image
+                             (graph->bitmap
+                              (edge-graph
+                               (node-graph (create-graph 'ndfagraph #:atb
+                                                         (hash 'rankdir "LR"))
+                                           (viz-state-ndfa-M a-vs)
+                                           current-states
+                                           destin-states
+                                           (viz-state-ndfa-pci a-vs))
+                               (viz-state-ndfa-M a-vs)
+                               (viz-state-ndfa-pci a-vs)
+                               current-place
+                               prev-path))
+                             500
+                             585))
+                     E-SCENE-TOOLS)
+              E-SCENE-TOOLS)]
+            [else (place-image 
+                   informative-messages
+                   250 450
+                   (above (first (resize-image
+                                  (graph->bitmap
+                                   (edge-graph
+                                    (node-graph (create-graph 'ndfagraph #:atb
+                                                              (hash 'rankdir "LR"))
+                                                (viz-state-ndfa-M a-vs)
+                                                current-states
+                                                destin-states
+                                                (viz-state-ndfa-pci a-vs))
                                     (viz-state-ndfa-M a-vs)
-                                    current-states
-                                    destin-states
-                                    (viz-state-ndfa-pci a-vs))
-                        (viz-state-ndfa-M a-vs)
-                        (viz-state-ndfa-pci a-vs)
-                        current-place
-                        prev-path))
-                      500
-                      585))
-              E-SCENE-TOOLS))]
-          [(empty? (viz-state-ndfa-pci a-vs))
-           (place-image 
-       informative-messages
-       250 450
-       (above (first (resize-image
-                      (graph->bitmap
-                       (edge-graph
-                        (node-graph (create-graph 'ndfagraph #:atb
-                                                  (hash 'rankdir "LR"))
-                                    (viz-state-ndfa-M a-vs)
-                                    current-states
-                                    destin-states
-                                    (viz-state-ndfa-pci a-vs))
-                        (viz-state-ndfa-M a-vs)
-                        (viz-state-ndfa-pci a-vs)
-                        current-place
-                        prev-path))
-                      500
-                      585))
-              E-SCENE-TOOLS)
-           E-SCENE-TOOLS)]
-[else (place-image 
-       informative-messages
-       250 450
-       (above (first (resize-image
-                      (graph->bitmap
-                       (edge-graph
-                        (node-graph (create-graph 'ndfagraph #:atb
-                                                  (hash 'rankdir "LR"))
-                                    (viz-state-ndfa-M a-vs)
-                                    current-states
-                                    destin-states
-                                    (viz-state-ndfa-pci a-vs))
-                        (viz-state-ndfa-M a-vs)
-                        (viz-state-ndfa-pci a-vs)
-                        current-place
-                        prev-path))
-                      500
-                      585))
-              E-SCENE-TOOLS))])
+                                    (viz-state-ndfa-pci a-vs)
+                                    current-place
+                                    prev-path))
+                                  500
+                                  585))
+                          E-SCENE-TOOLS))])
     ;(above/align 'left ;place-image 
-     ;  informative-messages
-       ;150 450
-       (above (first (resize-image
-                      (graph->bitmap
-                       (edge-graph
-                        (node-graph (create-graph 'ndfagraph #:atb
-                                                  (hash 'rankdir "LR"))
-                                    (viz-state-ndfa-M a-vs)
-                                    current-states
-                                    destin-states
-                                    (viz-state-ndfa-pci a-vs))
-                        (viz-state-ndfa-M a-vs)
-                        (viz-state-ndfa-pci a-vs)
-                        current-place
-                        full-prev-path))
-                      500
-                      535))
-              (above/align 'left
-                     informative-messages      
-              E-SCENE-TOOLS))))
+    ;  informative-messages
+    ;150 450
+    (above (first (resize-image
+                   (graph->bitmap
+                    (edge-graph
+                     (node-graph (create-graph 'ndfagraph #:atb
+                                               (hash 'rankdir "LR"))
+                                 (viz-state-ndfa-M a-vs)
+                                 current-states
+                                 destin-states
+                                 (viz-state-ndfa-pci a-vs))
+                     (viz-state-ndfa-M a-vs)
+                     (viz-state-ndfa-pci a-vs)
+                     current-place
+                     full-prev-path))
+                   500
+                   535))
+           (above/align 'left
+                        informative-messages      
+                        E-SCENE-TOOLS))))
 #;(underlay/xy E-SCENE
                6 500
-           (scale .99 E-SCENE-TOOLS))
+               (scale .99 E-SCENE-TOOLS))
 ;; process-key
 ;; viz-state key -> viz-state
 ;; Purpose: Move the visualization one step forward, one step
@@ -950,10 +965,13 @@
              #;(display (format "alt style ~s \n" (append
                                                    (path-constructor a-word lor (cons (first config) (rest (rest config))) (append get-rules '()) prev-config)
                                                    (path-constructor a-word lor (rest config) (append get-rules '()) prev-config)))) 
-             (remove-duplicates
-              (append
-               (path-constructor a-word lor (cons (first config) (rest (rest config))) (append get-rules path) prev-config)
-               (path-constructor a-word lor (rest config) (append get-rules path) prev-config)))))]
+             #;(remove-duplicates
+                (append
+                 (path-constructor a-word lor (cons (first config) (rest (rest config))) (append get-rules path) prev-config)
+                 (path-constructor a-word lor (rest config) (append get-rules path) prev-config)))
+             (append (reverse path)
+              (path-constructor a-word lor (cons (first config) (rest (rest config))) (append get-rules '()) prev-config)
+              (path-constructor a-word lor (rest config) (append get-rules '()) prev-config))))]
         [(empty? (second (first config)))
          (let [(get-rules (filter (λ (rule)
                                     (and (equal? (first (first config)) (first rule))
