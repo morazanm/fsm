@@ -608,9 +608,16 @@
 (define (draw-etc a-etc)
   (if (empty? (viz-state-pimgs a-etc))
       #;(above (above ((first (first (viz-state-upimgs a-etc)))) ((second (first (viz-state-upimgs a-etc))))) E-SCENE-TOOLS)
-      (above (create-img (first (first (viz-state-upimgs a-etc))) (second (first (viz-state-upimgs a-etc))) (first (viz-state-p-low a-etc))) E-SCENE-TOOLS)
+      (above
+       (create-img (first (first (viz-state-upimgs a-etc)))
+                   (second (first (viz-state-upimgs a-etc)))
+                   (first (viz-state-up-low a-etc)))
+       E-SCENE-TOOLS)
       #;(above (above ((first (first (viz-state-pimgs a-etc)))) ((second (first (viz-state-pimgs a-etc))))) E-SCENE-TOOLS)
-      (above (create-img (first (first (viz-state-pimgs a-etc))) (second (first (viz-state-pimgs a-etc))) (first (viz-state-up-low a-etc))) E-SCENE-TOOLS)
+      (above (create-img (first (first (viz-state-pimgs a-etc)))
+                         (second (first (viz-state-pimgs a-etc)))
+                         (first (viz-state-p-low a-etc)))
+             E-SCENE-TOOLS)
       )
   )
 
@@ -650,11 +657,15 @@
          (dfa-dgrphs (map (lambda (world) (create-dfa-graph (etc-ad-edges world)
                                                             (etc-incl-nodes world)
                                                             (ndfa2dfa-finals-only (etc-M world)))) low))
-         (ndfa-graph-thunks (parallel-graphs->bitmap-thunks ndfa-dgrphs))
-         (dfa-graph-thunks (parallel-graphs->bitmap-thunks dfa-dgrphs))
+         (grph-thunks (parallel-graphs->bitmap-thunks (append ndfa-dgrphs dfa-dgrphs)))
+         
+         (ndfa-graph-thunks (take grph-thunks (length ndfa-dgrphs)))
+         (dfa-graph-thunks (drop grph-thunks (length ndfa-dgrphs)))
+         (grph-thunks (parallel-graphs->bitmap-thunks (append ndfa-dgrphs dfa-dgrphs)))
+         
          (imgs (combine-lists ndfa-graph-thunks dfa-graph-thunks))
          ]
-    (run-viz (viz-state (rest imgs) (list (first imgs)) (rest low) (list (first imgs)))
+    (run-viz (viz-state (rest imgs) (list (first imgs)) (rest low) (list (first low)))
              draw-etc
              'ndfa2dfa-viz)))
 
@@ -684,4 +695,4 @@
                                           (C b C))))
 
 ;(ndfa2dfa-viz aa-ab)
-(ndfa2dfa-viz AT-LEAST-ONE-MISSING)
+;(ndfa2dfa-viz AT-LEAST-ONE-MISSING)
