@@ -24,27 +24,43 @@
              a-vs
              (viz-state (rest (viz-state-upimgs a-vs))
                         (cons (first (viz-state-upimgs a-vs))
-                              (viz-state-pimgs a-vs))))]
+                              (viz-state-pimgs a-vs))
+                        (rest (viz-state-up-low a-vs))
+                        (cons (first (viz-state-up-low a-vs))
+                              (viz-state-p-low a-vs))
+                        ))]
         [(key=? "left" a-key)
          (if (= (length (viz-state-pimgs a-vs)) 1)
              a-vs
              (viz-state (cons (first (viz-state-pimgs a-vs))
                               (viz-state-upimgs a-vs))
                         (rest (viz-state-pimgs a-vs))
+                        (cons (first (viz-state-p-low a-vs))
+                              (viz-state-up-low a-vs))
+                        (rest (viz-state-p-low a-vs))
                         ))]
         [(key=? "down" a-key)
          (if (empty? (viz-state-upimgs a-vs))
              a-vs
              (viz-state '()
                         (append (reverse (viz-state-upimgs a-vs))
-                                (viz-state-pimgs a-vs))))]
+                                (viz-state-pimgs a-vs))
+                        '()
+                        (append (reverse (viz-state-up-low a-vs))
+                                (viz-state-p-low a-vs))
+                        ))]
         [(key=? "up" a-key)
          (if (= (length (viz-state-pimgs a-vs)) 1)
              a-vs
              (viz-state (rest (append (reverse (viz-state-pimgs a-vs))
                                       (viz-state-upimgs a-vs)))
                         (list (first (append (reverse (viz-state-pimgs a-vs))
-                                             (viz-state-upimgs a-vs))))))]
+                                             (viz-state-upimgs a-vs))))
+                        (rest (append (reverse (viz-state-p-low a-vs))
+                                      (viz-state-up-low a-vs)))
+                        (list (first (append (reverse (viz-state-p-low a-vs))
+                                             (viz-state-up-low a-vs))))
+                        ))]
         [else a-vs]))
 
 
