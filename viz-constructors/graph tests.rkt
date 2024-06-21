@@ -15,8 +15,8 @@
 (define cgraph (create-graph 'cgraph
                              #:atb (hash 'rankdir "LR")))
 
-(define destin-color 'blue)
-(define curr-color 'purple)
+(define destin-color 'violet)
+(define curr-color 'blue)
 ;; graph machine (listof states)-> graph
 ;; Purpose: To create a graph of nodes from the given list of rules
 (define (node-graph cgraph M current-states destin-states pci)
@@ -139,7 +139,7 @@
                             (first rule)
                             (third rule)
                             #:atb (hash 'color destin-color 'fontsize 20 'style 'solid))]
-                 #;[(member rule prev-path)
+                 [(member rule prev-path)
                     (add-edge result
                               (second rule)
                               (first rule)
@@ -265,7 +265,7 @@
         [(equal? (first prev-path) (first curr-path))
          (remove-similiarities (rest prev-path) (rest curr-path) acc)]
         [(remove-similiarities prev-path (rest curr-path)
-                             (append acc (list (first curr-path))))]))
+                               (append acc (list (first curr-path))))]))
 
 ;;(listof rules) (listof rules) -> (listof rules)
 ;;Purpose: Appends empty transitions to the end of the path if applicable
@@ -318,73 +318,56 @@
                        (helper (rest los)))))
   (helper los))
 
-<<<<<<< Updated upstream
-=======
 ;; resize-image
 ;; image -> int -> int -> image
 ;; PurpScales a image to the given dimentions 
 (define (resize-image img max-width max-height)
-  (define src-width (image-width img))
-  (define src-height (image-height img))
-  (define aspect (/ src-width src-height))
-  (define scale (min
+  (let* [(src-width (image-width img))
+         (src-height (image-height img))
+         (aspect (/ src-width src-height))
+         (scale (min
                  (/ max-width src-width)
                  (/ max-height src-height)))
 
-  (define scaled-width (* src-width scale))
-  (define scaled-height (* src-height scale))
-
-  (cond [(and (> scaled-width max-width)
-              (<= scaled-height max-height))
-         (list (scale/xy
-                (/ max-width src-width)
-                (/ (/ scaled-width aspect) src-height)
-                img)
-               (/ max-width src-width)
-               (/ (/ scaled-width aspect) src-height))
-         ]
-        [(and (<= scaled-width max-width)
-              (> scaled-height max-height))
-         (let ([scaled-aspect (/ scaled-width scaled-height)])
+         (scaled-width (* src-width scale))
+         (scaled-height (* src-height scale))]
+    (cond [(and (> scaled-width max-width)
+                (<= scaled-height max-height))
            (list (scale/xy
-                  (/ (* scaled-height scaled-aspect) src-width)
-                  (/ max-height src-height)
+                  (/ max-width src-width)
+                  (/ (/ scaled-width aspect) src-height)
                   img)
-                 (/ (* scaled-height scaled-aspect) src-width)
-                 (/ max-height src-height)
-                 ))]
-        [(and (> scaled-width max-width)
-              (> scaled-height max-height)
-              )
-         (let* (
-                [new-scaled-height (/ max-width aspect)]
-                [scaled-aspect (/ max-width new-scaled-height)]
-                )
+                 (/ max-width src-width)
+                 (/ (/ scaled-width aspect) src-height))]
+          [(and (<= scaled-width max-width)
+                (> scaled-height max-height))
+           (let [(scaled-aspect (/ scaled-width scaled-height))]
+             (list (scale/xy
+                    (/ (* scaled-height scaled-aspect) src-width)
+                    (/ max-height src-height)
+                    img)
+                   (/ (* scaled-height scaled-aspect) src-width)
+                   (/ max-height src-height)))]
+          [(and (> scaled-width max-width)
+                (> scaled-height max-height))
+           (let* [(new-scaled-height (/ max-width aspect))
+                  (scaled-aspect (/ max-width new-scaled-height))] 
+             (list (scale/xy
+                    (/ (* max-height scaled-aspect) src-width)
+                    (/ max-height src-height)
+                    img)
+                   (/ (* max-height scaled-aspect) src-width)
+                   (/ max-height src-height)))]
+          [(and (<= scaled-width max-width)
+                (<= scaled-height max-height))
            (list (scale/xy
-                  (/ (* max-height scaled-aspect) src-width)
-                  (/ max-height src-height)
+                  (/ scaled-width src-width)
+                  (/ scaled-height src-height)
                   img)
-                 (/ (* max-height scaled-aspect) src-width)
-                 (/ max-height src-height)
-                 )
-           )
-         ]
-        #;[(and (<= scaled-width max-width)
-              (<= scaled-height max-height)
-              )
-         (list (scale/xy
-                (/ scaled-width src-width)
-                (/ scaled-height src-height)
-                img)
-               (/ scaled-width src-width)
-               (/ scaled-height src-height)
-               )
-         ]
-        [else (list img)]
-        )
-  )
+                 (/ scaled-width src-width)
+                 (/ scaled-height src-height))]
+          )))
 
->>>>>>> Stashed changes
 ;;viz-state -> scene
 ;;Purpose: Draws the given viz-state onto the scene
 (define (draw-graph a-vs)
@@ -409,11 +392,11 @@
                                      (viz-state-ndfa-pci a-vs)
                                      (sm-rules (viz-state-ndfa-M a-vs)))
                         (append-map (λ (rule) (attach-empties rule (sm-rules (viz-state-ndfa-M a-vs))))
-                             (path-maker (viz-state-ndfa-pci a-vs)
-                                    (sm-rules (viz-state-ndfa-M a-vs))
-                                    (get-configs (viz-state-ndfa-pci a-vs)
-                                                 (sm-rules (viz-state-ndfa-M a-vs))
-                                                 (sm-start (viz-state-ndfa-M a-vs)))))))
+                                    (path-maker (viz-state-ndfa-pci a-vs)
+                                                (sm-rules (viz-state-ndfa-M a-vs))
+                                                (get-configs (viz-state-ndfa-pci a-vs)
+                                                             (sm-rules (viz-state-ndfa-M a-vs))
+                                                             (sm-start (viz-state-ndfa-M a-vs)))))))
          
          
          ;;(listof rules)
@@ -438,11 +421,11 @@
                                      (append-map (λ (rule) (attach-empties rule (sm-rules (viz-state-ndfa-M a-vs))))
                                                  (path-maker (take (viz-state-ndfa-pci a-vs)
                                                                    (sub1 (length (viz-state-ndfa-pci a-vs))))
-                                                 (sm-rules (viz-state-ndfa-M a-vs))
-                                                 (get-configs (take (viz-state-ndfa-pci a-vs)
-                                                                    (sub1 (length (viz-state-ndfa-pci a-vs))))
-                                                              (sm-rules (viz-state-ndfa-M a-vs))
-                                                              (sm-start (viz-state-ndfa-M a-vs)))))]))
+                                                             (sm-rules (viz-state-ndfa-M a-vs))
+                                                             (get-configs (take (viz-state-ndfa-pci a-vs)
+                                                                                (sub1 (length (viz-state-ndfa-pci a-vs))))
+                                                                          (sm-rules (viz-state-ndfa-M a-vs))
+                                                                          (sm-start (viz-state-ndfa-M a-vs)))))]))
          ;;(listof rules)
          ;;Purpose: All paths that have similiarities with
          ;;         the current path
@@ -451,19 +434,19 @@
          ;;(listof rules)
          ;;Purpose: The current rules that the ndfa is using to consume the proccess CI
          (current-place ;(return-differences full-prev-path curr-path)
-                        #;(if (empty? (viz-state-ndfa-pci a-vs))
-                            curr-path
-                            (map last curr-path)
-                            #;(remove-duplicates
-                               (append-map (λ (path)
-                                             (filter (λ (p) (equal? (last (viz-state-ndfa-pci a-vs))
-                                                                    (second p)))
-                                                     path))
-                                           curr-path)))
-                        (begin
-                          (display (format "curr-path ~s \n" curr-path))
-                          (display (format "full-prev-path ~s \n" full-prev-path))
-                          (return-differences full-prev-path curr-path)))
+          #;(if (empty? (viz-state-ndfa-pci a-vs))
+                curr-path
+                (map last curr-path)
+                #;(remove-duplicates
+                   (append-map (λ (path)
+                                 (filter (λ (p) (equal? (last (viz-state-ndfa-pci a-vs))
+                                                        (second p)))
+                                         path))
+                               curr-path)))
+          (begin
+            (display (format "curr-path ~s \n" curr-path))
+            (display (format "full-prev-path ~s \n" full-prev-path))
+            (return-differences full-prev-path curr-path)))
          #;(map (λ (path)
                   (filter (λ (p) (equal? (last (viz-state-ndfa-pci a-vs))
                                          (second p)))
@@ -478,137 +461,125 @@
          ;;Purpose: The current state that the ndfa is in
          (destin-states (remove-duplicates
                          (map last
-                              current-place)))]
-<<<<<<< Updated upstream
-    (cond [(and (empty? (viz-state-ndfa-upci a-vs))
-                (empty? (viz-state-ndfa-pci a-vs)))
-           (above (graph->bitmap
-                   (edge-graph
-                    (node-graph (create-graph 'ndfagraph #:atb
-                                              (hash 'rankdir "LR"))
-                                (viz-state-ndfa-M a-vs)
-                                current-states
-                                destin-states
-                                (viz-state-ndfa-pci a-vs))
-                    (viz-state-ndfa-M a-vs)
-                    (viz-state-ndfa-pci a-vs)
-                    current-place
-                    prev-path))
-                  E-SCENE-TOOLS)]
-          [(empty? (viz-state-ndfa-upci a-vs))
-           (above (text (los2str (viz-state-ndfa-pci a-vs))
-                        20
-                        'gray)
-                  (above (graph->bitmap
-                          (edge-graph
-                           (node-graph (create-graph 'ndfagraph #:atb
-                                                     (hash 'rankdir "LR"))
-                                       (viz-state-ndfa-M a-vs)
-                                       current-states
-                                       destin-states
-                                       (viz-state-ndfa-pci a-vs))
-                           (viz-state-ndfa-M a-vs)
-                           (viz-state-ndfa-pci a-vs)
-                           current-place
-                           prev-path))
-                         E-SCENE-TOOLS))]
-=======
-    (cond [(empty? (viz-state-ndfa-upci a-vs))
-           (above (text (los2str (viz-state-ndfa-pci a-vs))
-                        20
-                        'gray)
-                  (first (resize-image
-                          (graph->bitmap
-                           (edge-graph
-                            (node-graph (create-graph 'ndfagraph #:atb
-                                                      (hash 'rankdir "LR"))
-                                        (viz-state-ndfa-M a-vs)
-                                        current-states
-                                        destin-states
-                                        (viz-state-ndfa-pci a-vs))
-                            (viz-state-ndfa-M a-vs)
-                            (viz-state-ndfa-pci a-vs)
-                            current-place
-                            prev-path))
-                          (image-width E-SCENE)
-                          (image-height E-SCENE)))
-                  E-SCENE-TOOLS)]
->>>>>>> Stashed changes
+                              current-place)))
+         ;;image
+         (informative-messages (cond [(empty? (viz-state-ndfa-upci a-vs))
+                                     (if (eq? (sm-apply (viz-state-ndfa-M a-vs)
+                                                   (viz-state-ndfa-pci a-vs))
+                                              'accept)
+                                         (above/align 'left (beside (text "Word: " 20' black)
+                                                    (text (los2str (viz-state-ndfa-pci a-vs))
+                                                          20
+                                                          'gray))
+                                            (text "Computations: " 20 'black)
+                                            (text "Word Status: Accept" 20 'green))
+                                         (above/align 'left (beside (text "Word: " 20 'black)
+                                                    (text (los2str (viz-state-ndfa-pci a-vs))
+                                                          20
+                                                          'gray))
+                                            (text "Computations: " 20 'black)
+                                            (text "Word Status: Reject" 20 'red)))]
+                                    [(empty? (viz-state-ndfa-pci a-vs))
+                                     (above/align 'left
+                                                  (beside (text "Word: " 20 'black)
+                                                    (text (los2str (viz-state-ndfa-upci a-vs))
+                                                          20
+                                                          'black))
+                                            (text "Computations: " 20 'black)
+                                            (text "Word Status: accept " 20 'white))]
+                                    [else (above/align 'left (beside (text "Word: " 20 'black)
+                                                         (text (los2str (viz-state-ndfa-pci a-vs))
+                                                               20
+                                                               'gray)
+                                                         (text (los2str (viz-state-ndfa-upci a-vs))
+                                                               20
+                                                               'black))
+                                                 (text "Computations: " 20 'black)
+                                                 (text "Word Status: accept " 20 'white))]))]
+    #;(cond [(empty? (viz-state-ndfa-upci a-vs))
+           (place-image 
+       informative-messages
+       250 450
+       (above (first (resize-image
+                      (graph->bitmap
+                       (edge-graph
+                        (node-graph (create-graph 'ndfagraph #:atb
+                                                  (hash 'rankdir "LR"))
+                                    (viz-state-ndfa-M a-vs)
+                                    current-states
+                                    destin-states
+                                    (viz-state-ndfa-pci a-vs))
+                        (viz-state-ndfa-M a-vs)
+                        (viz-state-ndfa-pci a-vs)
+                        current-place
+                        prev-path))
+                      500
+                      585))
+              E-SCENE-TOOLS))]
           [(empty? (viz-state-ndfa-pci a-vs))
-           (above (text (los2str (viz-state-ndfa-upci a-vs))
-                        20
-                        'black)
-<<<<<<< Updated upstream
-                  (above (graph->bitmap
-                          (edge-graph
-                           (node-graph (create-graph 'ndfagraph #:atb
-                                                     (hash 'rankdir "LR"))
-                                       (viz-state-ndfa-M a-vs)
-                                       current-states
-                                       destin-states
-                                       (viz-state-ndfa-pci a-vs))
-                           (viz-state-ndfa-M a-vs)
-                           (viz-state-ndfa-pci a-vs)
-                           current-place
-                           prev-path))
-                         E-SCENE-TOOLS))]
-=======
-                  (first (resize-image
-                          (graph->bitmap
-                           (edge-graph
-                            (node-graph (create-graph 'ndfagraph #:atb
-                                                      (hash 'rankdir "LR"))
-                                        (viz-state-ndfa-M a-vs)
-                                        current-states
-                                        destin-states
-                                        (viz-state-ndfa-pci a-vs))
-                            (viz-state-ndfa-M a-vs)
-                            (viz-state-ndfa-pci a-vs)
-                            current-place
-                            prev-path))
-                          (image-width E-SCENE)
-                          (image-height E-SCENE)))
-                  E-SCENE-TOOLS)]
->>>>>>> Stashed changes
-          [else (above (beside (text (los2str (viz-state-ndfa-pci a-vs))
-                                     20
-                                     'gray)
-                               (text (los2str (viz-state-ndfa-upci a-vs))
-                                     20
-                                     'black))
-<<<<<<< Updated upstream
-                       (above (graph->bitmap
-                               (edge-graph
-                                (node-graph (create-graph 'ndfagraph #:atb
-                                                          (hash 'rankdir "LR"))
-                                            (viz-state-ndfa-M a-vs)
-                                            current-states
-                                            destin-states
-                                            (viz-state-ndfa-pci a-vs))
-                                (viz-state-ndfa-M a-vs)
-                                (viz-state-ndfa-pci a-vs)
-                                current-place
-                                prev-path))
-                              E-SCENE-TOOLS))])))
-=======
-                       (first (resize-image
-                               (graph->bitmap
-                                (edge-graph
-                                 (node-graph (create-graph 'ndfagraph #:atb
-                                                           (hash 'rankdir "LR"))
-                                             (viz-state-ndfa-M a-vs)
-                                             current-states
-                                             destin-states
-                                             (viz-state-ndfa-pci a-vs))
-                                 (viz-state-ndfa-M a-vs)
-                                 (viz-state-ndfa-pci a-vs)
-                                 current-place
-                                 prev-path))
-                               (image-width E-SCENE)
-                               (image-height E-SCENE)))
-                       E-SCENE-TOOLS)])))
->>>>>>> Stashed changes
-
+           (place-image 
+       informative-messages
+       250 450
+       (above (first (resize-image
+                      (graph->bitmap
+                       (edge-graph
+                        (node-graph (create-graph 'ndfagraph #:atb
+                                                  (hash 'rankdir "LR"))
+                                    (viz-state-ndfa-M a-vs)
+                                    current-states
+                                    destin-states
+                                    (viz-state-ndfa-pci a-vs))
+                        (viz-state-ndfa-M a-vs)
+                        (viz-state-ndfa-pci a-vs)
+                        current-place
+                        prev-path))
+                      500
+                      585))
+              E-SCENE-TOOLS)
+           E-SCENE-TOOLS)]
+[else (place-image 
+       informative-messages
+       250 450
+       (above (first (resize-image
+                      (graph->bitmap
+                       (edge-graph
+                        (node-graph (create-graph 'ndfagraph #:atb
+                                                  (hash 'rankdir "LR"))
+                                    (viz-state-ndfa-M a-vs)
+                                    current-states
+                                    destin-states
+                                    (viz-state-ndfa-pci a-vs))
+                        (viz-state-ndfa-M a-vs)
+                        (viz-state-ndfa-pci a-vs)
+                        current-place
+                        prev-path))
+                      500
+                      585))
+              E-SCENE-TOOLS))])
+    ;(above/align 'left ;place-image 
+     ;  informative-messages
+       ;150 450
+       (above (first (resize-image
+                      (graph->bitmap
+                       (edge-graph
+                        (node-graph (create-graph 'ndfagraph #:atb
+                                                  (hash 'rankdir "LR"))
+                                    (viz-state-ndfa-M a-vs)
+                                    current-states
+                                    destin-states
+                                    (viz-state-ndfa-pci a-vs))
+                        (viz-state-ndfa-M a-vs)
+                        (viz-state-ndfa-pci a-vs)
+                        current-place
+                        full-prev-path))
+                      500
+                      535))
+              (above/align 'left
+                     informative-messages      
+              E-SCENE-TOOLS))))
+#;(underlay/xy E-SCENE
+               6 500
+           (scale .99 E-SCENE-TOOLS))
 ;; process-key
 ;; viz-state key -> viz-state
 ;; Purpose: Move the visualization one step forward, one step
@@ -976,23 +947,13 @@
            (begin
              ;(display (format "get-rules ~s \n" get-rules))
              ;(display (format "prev-config ~s \n" prev-config ))
-<<<<<<< Updated upstream
+             #;(display (format "alt style ~s \n" (append
+                                                   (path-constructor a-word lor (cons (first config) (rest (rest config))) (append get-rules '()) prev-config)
+                                                   (path-constructor a-word lor (rest config) (append get-rules '()) prev-config)))) 
              (remove-duplicates
               (append
                (path-constructor a-word lor (cons (first config) (rest (rest config))) (append get-rules path) prev-config)
                (path-constructor a-word lor (rest config) (append get-rules path) prev-config)))))]
-=======
-             (display (format "alt style ~s \n" #;(append
-               (path-constructor a-word lor (cons (first config) (rest (rest config))) (append get-rules '()) prev-config)
-               (path-constructor a-word lor (rest config) (append get-rules '()) prev-config)))) 
-             (remove-duplicates
-              (append
-               (path-constructor a-word lor (cons (first config) (rest (rest config))) (append get-rules path) prev-config)
-               (path-constructor a-word lor (rest config) (append get-rules path) prev-config)))
-             #;(append
-               (path-constructor a-word lor (cons (first config) (rest (rest config))) (append get-rules '()) prev-config)
-               (path-constructor a-word lor (rest config) (append get-rules '()) prev-config))))]
->>>>>>> Stashed changes
         [(empty? (second (first config)))
          (let [(get-rules (filter (λ (rule)
                                     (and (equal? (first (first config)) (first rule))
@@ -1001,23 +962,7 @@
                                              (equal? EMP (second rule)))))
                                   lor))]
            (path-constructor a-word lor (rest config) (append get-rules path) (first config)))]
-<<<<<<< Updated upstream
-        #;[(= (length (second (first config)))
-              (length (second (second config))))
-           (let* [(similiar-configs (append (list (first config)) (list (second config))))
-                  (get-rules (append-map (λ (sim-config)
-                                           (filter (λ (rule)
-                                                     (and (equal? (first prev-config) (first rule))
-                                                          (equal? (first sim-config) (third rule))
-                                                          (or (equal? (first (second prev-config)) (second rule))
-                                                              (equal? EMP (second rule)))))
-                                                   lor))
-                                         similiar-configs))]
-             (append (path-constructor a-word lor (cons (first config) (rest (rest config))) (append get-rules path) prev-config)
-                     (path-constructor a-word lor (rest config) (append get-rules path) prev-config)))]
-=======
        
->>>>>>> Stashed changes
         [else (let [(get-rules (filter (λ (rule)
                                          (and (equal? (first (first config)) (first rule))
                                               (equal? (first (second config)) (third rule))
@@ -1038,12 +983,13 @@
                                    (equal? EMP (second rule)))))
                         (sm-rules aa-ab)))
               '((A (a a a)) (B (a a a))))
-<<<<<<< Updated upstream
-=======
 
 ;;using new method without remove duplicates
 #;'(((S b A) (S b S) (S b A) (S b S) (S b A) (S b S) (S b A) (S b S))
-  ((S b A) (S b S) (S b A) (S b S) (A b B) (A b B))
-  ((S b A) (S b S) (B b B) (S b A) (S b S) (A b B) (B b B)))
->>>>>>> Stashed changes
+    ((S b A) (S b S) (S b A) (S b S) (A b B) (A b B))
+    ((S b A) (S b S) (B b B) (S b A) (S b S) (A b B) (B b B)))
+;;using remove duplicates
+#;'(((S a S) (S b S) (S b A))
+    ((S a S) (S b S) (S b A) (A b B))
+    ((S a S) (S b S) (S b A) (B b B) (A b B)))
 ;;informative messaging -> number of computations 
