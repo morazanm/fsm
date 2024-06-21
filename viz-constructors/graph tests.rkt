@@ -318,6 +318,73 @@
                        (helper (rest los)))))
   (helper los))
 
+<<<<<<< Updated upstream
+=======
+;; resize-image
+;; image -> int -> int -> image
+;; PurpScales a image to the given dimentions 
+(define (resize-image img max-width max-height)
+  (define src-width (image-width img))
+  (define src-height (image-height img))
+  (define aspect (/ src-width src-height))
+  (define scale (min
+                 (/ max-width src-width)
+                 (/ max-height src-height)))
+
+  (define scaled-width (* src-width scale))
+  (define scaled-height (* src-height scale))
+
+  (cond [(and (> scaled-width max-width)
+              (<= scaled-height max-height))
+         (list (scale/xy
+                (/ max-width src-width)
+                (/ (/ scaled-width aspect) src-height)
+                img)
+               (/ max-width src-width)
+               (/ (/ scaled-width aspect) src-height))
+         ]
+        [(and (<= scaled-width max-width)
+              (> scaled-height max-height))
+         (let ([scaled-aspect (/ scaled-width scaled-height)])
+           (list (scale/xy
+                  (/ (* scaled-height scaled-aspect) src-width)
+                  (/ max-height src-height)
+                  img)
+                 (/ (* scaled-height scaled-aspect) src-width)
+                 (/ max-height src-height)
+                 ))]
+        [(and (> scaled-width max-width)
+              (> scaled-height max-height)
+              )
+         (let* (
+                [new-scaled-height (/ max-width aspect)]
+                [scaled-aspect (/ max-width new-scaled-height)]
+                )
+           (list (scale/xy
+                  (/ (* max-height scaled-aspect) src-width)
+                  (/ max-height src-height)
+                  img)
+                 (/ (* max-height scaled-aspect) src-width)
+                 (/ max-height src-height)
+                 )
+           )
+         ]
+        #;[(and (<= scaled-width max-width)
+              (<= scaled-height max-height)
+              )
+         (list (scale/xy
+                (/ scaled-width src-width)
+                (/ scaled-height src-height)
+                img)
+               (/ scaled-width src-width)
+               (/ scaled-height src-height)
+               )
+         ]
+        [else (list img)]
+        )
+  )
+
+>>>>>>> Stashed changes
 ;;viz-state -> scene
 ;;Purpose: Draws the given viz-state onto the scene
 (define (draw-graph a-vs)
@@ -412,6 +479,7 @@
          (destin-states (remove-duplicates
                          (map last
                               current-place)))]
+<<<<<<< Updated upstream
     (cond [(and (empty? (viz-state-ndfa-upci a-vs))
                 (empty? (viz-state-ndfa-pci a-vs)))
            (above (graph->bitmap
@@ -444,10 +512,33 @@
                            current-place
                            prev-path))
                          E-SCENE-TOOLS))]
+=======
+    (cond [(empty? (viz-state-ndfa-upci a-vs))
+           (above (text (los2str (viz-state-ndfa-pci a-vs))
+                        20
+                        'gray)
+                  (first (resize-image
+                          (graph->bitmap
+                           (edge-graph
+                            (node-graph (create-graph 'ndfagraph #:atb
+                                                      (hash 'rankdir "LR"))
+                                        (viz-state-ndfa-M a-vs)
+                                        current-states
+                                        destin-states
+                                        (viz-state-ndfa-pci a-vs))
+                            (viz-state-ndfa-M a-vs)
+                            (viz-state-ndfa-pci a-vs)
+                            current-place
+                            prev-path))
+                          (image-width E-SCENE)
+                          (image-height E-SCENE)))
+                  E-SCENE-TOOLS)]
+>>>>>>> Stashed changes
           [(empty? (viz-state-ndfa-pci a-vs))
            (above (text (los2str (viz-state-ndfa-upci a-vs))
                         20
                         'black)
+<<<<<<< Updated upstream
                   (above (graph->bitmap
                           (edge-graph
                            (node-graph (create-graph 'ndfagraph #:atb
@@ -461,12 +552,31 @@
                            current-place
                            prev-path))
                          E-SCENE-TOOLS))]
+=======
+                  (first (resize-image
+                          (graph->bitmap
+                           (edge-graph
+                            (node-graph (create-graph 'ndfagraph #:atb
+                                                      (hash 'rankdir "LR"))
+                                        (viz-state-ndfa-M a-vs)
+                                        current-states
+                                        destin-states
+                                        (viz-state-ndfa-pci a-vs))
+                            (viz-state-ndfa-M a-vs)
+                            (viz-state-ndfa-pci a-vs)
+                            current-place
+                            prev-path))
+                          (image-width E-SCENE)
+                          (image-height E-SCENE)))
+                  E-SCENE-TOOLS)]
+>>>>>>> Stashed changes
           [else (above (beside (text (los2str (viz-state-ndfa-pci a-vs))
                                      20
                                      'gray)
                                (text (los2str (viz-state-ndfa-upci a-vs))
                                      20
                                      'black))
+<<<<<<< Updated upstream
                        (above (graph->bitmap
                                (edge-graph
                                 (node-graph (create-graph 'ndfagraph #:atb
@@ -480,6 +590,24 @@
                                 current-place
                                 prev-path))
                               E-SCENE-TOOLS))])))
+=======
+                       (first (resize-image
+                               (graph->bitmap
+                                (edge-graph
+                                 (node-graph (create-graph 'ndfagraph #:atb
+                                                           (hash 'rankdir "LR"))
+                                             (viz-state-ndfa-M a-vs)
+                                             current-states
+                                             destin-states
+                                             (viz-state-ndfa-pci a-vs))
+                                 (viz-state-ndfa-M a-vs)
+                                 (viz-state-ndfa-pci a-vs)
+                                 current-place
+                                 prev-path))
+                               (image-width E-SCENE)
+                               (image-height E-SCENE)))
+                       E-SCENE-TOOLS)])))
+>>>>>>> Stashed changes
 
 ;; process-key
 ;; viz-state key -> viz-state
@@ -848,10 +976,23 @@
            (begin
              ;(display (format "get-rules ~s \n" get-rules))
              ;(display (format "prev-config ~s \n" prev-config ))
+<<<<<<< Updated upstream
              (remove-duplicates
               (append
                (path-constructor a-word lor (cons (first config) (rest (rest config))) (append get-rules path) prev-config)
                (path-constructor a-word lor (rest config) (append get-rules path) prev-config)))))]
+=======
+             (display (format "alt style ~s \n" #;(append
+               (path-constructor a-word lor (cons (first config) (rest (rest config))) (append get-rules '()) prev-config)
+               (path-constructor a-word lor (rest config) (append get-rules '()) prev-config)))) 
+             (remove-duplicates
+              (append
+               (path-constructor a-word lor (cons (first config) (rest (rest config))) (append get-rules path) prev-config)
+               (path-constructor a-word lor (rest config) (append get-rules path) prev-config)))
+             #;(append
+               (path-constructor a-word lor (cons (first config) (rest (rest config))) (append get-rules '()) prev-config)
+               (path-constructor a-word lor (rest config) (append get-rules '()) prev-config))))]
+>>>>>>> Stashed changes
         [(empty? (second (first config)))
          (let [(get-rules (filter (λ (rule)
                                     (and (equal? (first (first config)) (first rule))
@@ -860,6 +1001,7 @@
                                              (equal? EMP (second rule)))))
                                   lor))]
            (path-constructor a-word lor (rest config) (append get-rules path) (first config)))]
+<<<<<<< Updated upstream
         #;[(= (length (second (first config)))
               (length (second (second config))))
            (let* [(similiar-configs (append (list (first config)) (list (second config))))
@@ -873,6 +1015,9 @@
                                          similiar-configs))]
              (append (path-constructor a-word lor (cons (first config) (rest (rest config))) (append get-rules path) prev-config)
                      (path-constructor a-word lor (rest config) (append get-rules path) prev-config)))]
+=======
+       
+>>>>>>> Stashed changes
         [else (let [(get-rules (filter (λ (rule)
                                          (and (equal? (first (first config)) (first rule))
                                               (equal? (first (second config)) (third rule))
@@ -893,4 +1038,12 @@
                                    (equal? EMP (second rule)))))
                         (sm-rules aa-ab)))
               '((A (a a a)) (B (a a a))))
+<<<<<<< Updated upstream
+=======
+
+;;using new method without remove duplicates
+#;'(((S b A) (S b S) (S b A) (S b S) (S b A) (S b S) (S b A) (S b S))
+  ((S b A) (S b S) (S b A) (S b S) (A b B) (A b B))
+  ((S b A) (S b S) (B b B) (S b A) (S b S) (A b B) (B b B)))
+>>>>>>> Stashed changes
 ;;informative messaging -> number of computations 
