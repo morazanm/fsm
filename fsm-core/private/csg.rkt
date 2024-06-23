@@ -38,7 +38,7 @@
   
   ;(listof (list (listof symbol) '-> (listof symbol))) --> (listof csg-rule)
   (define (parse-csg-rules R)
-    (map (lambda (r) (csg-rule (symbol->list (car r)) (symbol->list (caddr r)))) R))
+    (map (lambda (r) (csg-rule (symbol->fsmlos (car r)) (symbol->fsmlos (caddr r)))) R))
   
   ; (listof symbol) (listof symbol) (listof (list symbol '-> symbol)) symbol --> csg
   (define (make-csg V sigma R S)
