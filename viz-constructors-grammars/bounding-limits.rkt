@@ -3,7 +3,8 @@
          bounding-limits-width bounding-limits-height within-bounding-limits? outside-north-side-bounding-limits?
          outside-south-side-bounding-limits? outside-east-side-bounding-limits? outside-west-side-bounding-limits?
          outside-west-north-sides-bounding-limits? outside-west-south-sides-bounding-limits?
-         outside-east-north-sides-bounding-limits? outside-east-south-sides-bounding-limits?)
+         outside-east-north-sides-bounding-limits? outside-east-south-sides-bounding-limits?
+         posn posn-x posn-y)
 
 ;; Coordinate pair
 ;; num num -> posn

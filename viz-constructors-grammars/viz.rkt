@@ -16,7 +16,7 @@
 ;; posn is a structure that has
 ;; x coordinate
 ;; y coordinate
-(struct posn (x y))
+;(struct posn (x y))
 
 (define E-SCENE-WIDTH 1250)
 (define E-SCENE-HEIGHT 500)
@@ -872,8 +872,7 @@
                           #:point point)
   (let* [(reflection (if reflect
                          -1
-                         1
-                         ))
+                         1))
          (result (matrix* (matrix [[(* reflection x-scale (cos rotate)) (* x-shear (* -1 (sin rotate))) x-translate ]
                                    [(* (sin rotate) y-shear) (* y-scale (cos rotate)) y-translate]
                                    [0 0 1]])
