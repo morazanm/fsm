@@ -4,8 +4,10 @@
          "../fsm-core/interface.rkt"
          "../fsm-core/private/constants.rkt"
          "../fsm-core/private/misc.rkt"
+         
          "viz.rkt"
          "zipper.rkt"
+         2htdp/image
          )
 (provide cfg-viz)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -55,8 +57,8 @@
 (define (create-yield-tree levels)
   (foldl (lambda (val accum)
            (begin (set-tree-subtrees! (dfs accum (first (first val)))
-                               (map (lambda (edge) (tree (second edge) '())) val))
-           accum))
+                                      (map (lambda (edge) (tree (second edge) '())) val))
+                  accum))
          (tree 'S '())
          levels))
 
@@ -89,8 +91,7 @@
           (define (get-yield-helper subtree)
             (foldl (lambda (node yield) (cond [(equal? (undo-renaming (tree-value node)) EMP) yield]
                                               [(empty? (tree-subtrees node)) (append yield (list (tree-value node)))]
-                                              [else (append yield (get-yield-helper node))]
-                                              ))
+                                              [else (append yield (get-yield-helper node))]))
                    '()
                    (tree-subtrees subtree)))]
     (filter
@@ -182,9 +183,9 @@
   (cond [(empty? w-der) '()]
         [(= 1 (length w-der)) '()]
         [else (append (list (string-append (symbol->string (find-leftmost-nt (first (first w-der))))
-                                      " → "
-                                      (string-join (map symbol->string (second (first w-der))))))
-                 (create-rules-leftmost (rest w-der)))]))
+                                           " → "
+                                           (string-join (map symbol->string (second (first w-der))))))
+                      (create-rules-leftmost (rest w-der)))]))
 
 ;; create-rules
 ;; (listof symbol) -> (listof string)
@@ -193,9 +194,9 @@
   (cond [(empty? w-der) '()]
         [(= 1 (length w-der)) '()]
         [else (append (list (string-append (symbol->string (find-rightmost-nt (first (first w-der))))
-                                      " → "
-                                      (string-join (map symbol->string (second (first w-der))))))
-                 (create-rules-rightmost (rest w-der)))]))
+                                           " → "
+                                           (string-join (map symbol->string (second (first w-der))))))
+                      (create-rules-rightmost (rest w-der)))]))
 
 ;; extract-nodes
 ;; (listof level) -> (listof node)
@@ -269,10 +270,10 @@
          (invariant-nts (map first invariants))
          (producing-nodes (map (lambda (edge) (first edge)) (append* levels)))
          (invariant-nodes (cons root-node (append-map (lambda (lvl) (let* [(nodes (map (lambda (edge) (second edge)) lvl))
-                                                                    (invar-nodes (filter (lambda (node) (member node producing-nodes)) nodes))]
-                                                               (cond [(equal? derv-order 'left) (reverse invar-nodes)]
-                                                                     [(equal? derv-order 'right) invar-nodes]
-                                                                     [else invar-nodes])))
+                                                                           (invar-nodes (filter (lambda (node) (member node producing-nodes)) nodes))]
+                                                                      (cond [(equal? derv-order 'left) (reverse invar-nodes)]
+                                                                            [(equal? derv-order 'right) invar-nodes]
+                                                                            [else invar-nodes])))
                                                       levels)))
          (broken-invariant? (check-all-invariants (first (dgrph-p-yield-trees a-dgrph)) invariant-nodes invariants))
          (hedge-nodes (map (λ (x) (if (empty? x)
@@ -295,11 +296,11 @@
          (producing-nodes (map (lambda (edge) (first edge)) (append* levels)))
          (invariant-nodes (let [(all-but-starting-nt
                                  (append-map (lambda (lvl) (let* [(nodes (map (lambda (edge) (second edge)) lvl))
-                                                                    (invar-nodes (filter (lambda (node) (member node producing-nodes)) nodes))]
-                                                               (cond [(equal? derv-order 'left) (reverse invar-nodes)]
-                                                                     [(equal? derv-order 'right) invar-nodes]
-                                                                     [(equal? derv-order 'level-left) (reverse invar-nodes)]
-                                                                     [(equal? derv-order 'level-right) invar-nodes])))
+                                                                  (invar-nodes (filter (lambda (node) (member node producing-nodes)) nodes))]
+                                                             (cond [(equal? derv-order 'left) (reverse invar-nodes)]
+                                                                   [(equal? derv-order 'right) invar-nodes]
+                                                                   [(equal? derv-order 'level-left) (reverse invar-nodes)]
+                                                                   [(equal? derv-order 'level-right) invar-nodes])))
                                              levels))]
                             (if (member root-node producing-nodes)
                                 (cons root-node all-but-starting-nt)
@@ -420,13 +421,12 @@
                                                                     (los->symbol (second l))) ARROW)))
                                         (reverse fderiv))
                             (make-deriv visited (cdr derivs) g))
-                        (let*
-                            ((rls (get-rules fnt g))
-                             (rights (map cfg-rule-rhs rls))
-                             (new-states (filter (lambda (st) (and (not (member st visited))
-                                                                   (check-terminals? (first state))))
-                                                 (map (lambda (rght) (list (subst-first-nt (first state) rght)
-                                                                           rght)) rights))))
+                        (let* ((rls (get-rules fnt g))
+                               (rights (map cfg-rule-rhs rls))
+                               (new-states (filter (lambda (st) (and (not (member st visited))
+                                                                     (check-terminals? (first state))))
+                                                   (map (lambda (rght) (list (subst-first-nt (first state) rght)
+                                                                             rght)) rights))))
                           (make-deriv (append new-states visited)
                                       (append (cdr derivs) 
                                               (map (lambda (st) (cons st fderiv)) 
@@ -453,12 +453,12 @@
                                         (reverse fderiv))
                             (make-deriv visited (cdr derivs) g))
                         (let* ((rls (get-rules fnt g))
-                             (rights (map cfg-rule-rhs rls))
-                             (new-states (filter (lambda (st) (and (not (member st visited))
-                                                                   (check-terminals? (first state)))) 
-                                                 (map (lambda (rght) (list (subst-last-nt (first state) rght)
-                                                                           rght))
-                                                      rights))))
+                               (rights (map cfg-rule-rhs rls))
+                               (new-states (filter (lambda (st) (and (not (member st visited))
+                                                                     (check-terminals? (first state)))) 
+                                                   (map (lambda (rght) (list (subst-last-nt (first state) rght)
+                                                                             rght))
+                                                        rights))))
                           (make-deriv (append new-states visited)
                                       (append (cdr derivs) 
                                               (map (lambda (st) (cons st fderiv)) 
@@ -827,6 +827,8 @@
                     g))))
 
 ;; cfg-viz
+;; cfg (listof Symbol) Symbol . (listof (list Symbol ((listof Symbol) -> boolean))) -> visualization
+;; Starts the visualization
 (define (cfg-viz cfg word [derv-type 'left] . invariants)
   (if (or (eq? derv-type 'left)
           (eq? derv-type 'right))
@@ -872,7 +874,10 @@
                    (yield-trees (map create-yield-tree (map reverse (create-list-of-levels renamed))))
                    (dgraph (dgrph renamed '() '() '() (rest rules) (list (first rules)) (reverse yield-trees) (list (tree (grammar-start cfg) '()))))
                    (lod (reverse (create-dgrphs dgraph '())))
-                   (broken-invariants (list->zipper (map (lambda (a-dgrph) (create-invariant-nodes a-dgrph invariants (grammar-start cfg) derv-type)) lod)))
+                   (broken-invariants (list->zipper
+                                       (map (lambda (a-dgrph) (remove-duplicates
+                                                               (map undo-renaming (create-invariant-nodes a-dgrph invariants (grammar-start cfg) derv-type))))
+                                            lod)))
                    (graphs (map (lambda (dgrph) (create-graph-structs dgrph invariants derv-type (grammar-start cfg))) lod))]
               (run-viz cfg word w-der rules graphs broken-invariants))))))
 
@@ -904,12 +909,12 @@
                                          (S -> aSa)
                                          (S -> bSb)
                                          (S -> aAa)
-                                         (S -> aAb)
+                                         (S -> bAb)
                                          (A -> aS)
                                          (A -> bS)) 
                                        'S))
 
-;(cfg-viz palindrome '(a b a b b a) 'left)
+;(cfg-viz palindrome '(a b a a b b a b a) 'left)
 
 (define (A-INV w)
   (let [(as (filter (lambda (symb) (eq? symb 'a)) w))
@@ -926,8 +931,6 @@
     (> (length bs) (length as))
     )
   )
-;(cfg-viz numb>numa '(b b b b) 'left)
-
 
 (define test-cfg (make-cfg '(S A B)
                            '(a b c d)
@@ -953,11 +956,11 @@
                             (A ,ARROW ,EMP)
                             (B ,ARROW ,EMP))
                           'S
-                            )
+                          )
   )
 #;(time (cfg-derive-queue-and-hash testcfg '(a a a a a a a a b b b b b b b b b c c c c c c c c d d d d d d d d) 'left))
-(cfg-viz testcfg '(a a a a a a a a a a a a a a a a b b b b b b b b b b b b b b b b c c c c c c c c c c c c c c c c d d d d d d d d d d d d d d d d)
-         'left (list 'S (lambda (x) #f)))
+#;(cfg-viz testcfg '(a a a a a a a a a a a a a a a a b b b b b b b b b b b b b b b b c c c c c c c c c c c c c c c c d d d d d d d d d d d d d d d d)
+           'left (list 'S (lambda (x) #f)) (list 'A (lambda (x) #f)))
 ;(grammar-derive numb>numa '(a b b a a b b a b b b))
 
 #;(define G (make-cfg '(S)

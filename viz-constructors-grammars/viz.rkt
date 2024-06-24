@@ -8,15 +8,9 @@
          "../fsm-gviz/private/parallel.rkt"
          "../fsm-gviz/private/lib.rkt"
          "zipper.rkt"
-         "bounding-limits.rkt"
-         )
+         "bounding-limits.rkt")
 
 (provide run-viz)
-
-;; posn is a structure that has
-;; x coordinate
-;; y coordinate
-;(struct posn (x y))
 
 (define E-SCENE-WIDTH 1250)
 (define E-SCENE-HEIGHT 500)
@@ -43,8 +37,7 @@
   (define (make-tape-img loi start-index)
     (if (empty? (rest loi))
         (first loi)
-        (beside (first loi) (make-tape-img (rest loi) (add1 start-index)))
-        ))
+        (beside (first loi) (make-tape-img (rest loi) (add1 start-index)))))
   (let [(letter-imgs (build-list TAPE-SIZE
                                  (λ (i) (if (< (+ start-index i) (length tape))
                                             (overlay (text (symbol->string (list-ref tape (+ start-index i)))
@@ -54,17 +47,14 @@
                                                               (square (add1 25) 'solid 'white)))
                                             (overlay (square 25 'solid 'white)
                                                      (square (add1 25) 'solid 'white))))))]
-    (make-tape-img letter-imgs start-index)
-    ))
+    (make-tape-img letter-imgs start-index)))
 
 (define TAPE-IMG-HEIGHT (image-height (make-tape-img (list 'a) 0)))
 (define RULE-YIELD-DIMS
   (let [(DREV (let [(drev-text (text "Deriving: " FONT-SIZE 'black))]
-                (overlay drev-text (rectangle (image-width drev-text) TAPE-IMG-HEIGHT 'solid 'white))
-                ))
+                (overlay drev-text (rectangle (image-width drev-text) TAPE-IMG-HEIGHT 'solid 'white))))
         (YIELD (let [(yield-text (text "Current Yield: " FONT-SIZE 'black))]
-                 (overlay yield-text (rectangle (image-width yield-text) TAPE-IMG-HEIGHT 'solid 'white))
-                 ))
+                 (overlay yield-text (rectangle (image-width yield-text) TAPE-IMG-HEIGHT 'solid 'white))))
         (RULE-USED (text "The rule used: " FONT-SIZE 'black))]
     (bounding-limits (+ (image-width (rectangle 1 (* 2 FONT-SIZE) "solid" 'white))
                         (image-width (beside (rectangle 1 (* 2 FONT-SIZE) "solid" 'white)
@@ -75,8 +65,7 @@
                                                              (above/align "right" RULE-USED DREV YIELD)))))))
 
 ;; viz-state is a structure that has
-;; upimgs - unprocessed graph images
-;; pimgs - processed graph images
+;; imgs - graph images
 ;; curr-image - current image to be drawn to the screen
 ;; image-posn - position of the graph image
 ;; scale-factor - mulitplicative factor used to scale the image while zooming
@@ -85,28 +74,18 @@
 ;; curr-mouse-posn - position of the mouse
 ;; dest-mouse-posn - position where the mouse is dragged
 ;; mouse-pressed - boolean indicating whether the mouse is pressed
-;; up-dgraph - unprocessed dgraphs
-;; p-dgraph - processed dgraphs
-;; up-yield - unprocessed yield
-;; p-yield - processed yield
+;; rules - production rules
+;; yield - derivation yields
 ;; input-word - The word given by the user to visualize
 ;; word-img-offset - an index into the tape img used to display a subset of the word that will fit on the screen
 ;; word-img-offset-cap - the largest maximum value of word-img-offset
 ;; scroll-accum - save the amount that the user has scrolled the instructions (allows smooth scrolling while allowing the discrete movements of the tape)
-(struct viz-state (upimgs pimgs curr-image image-posn
-                          scale-factor scale-factor-cap scale-factor-floor
-                          curr-mouse-posn dest-mouse-posn mouse-pressed
-
-                          ;; Maybe an informative-message-state struct?
-                          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-                          ;; These fields need to be abstracted away from viz state
-                          up-rules p-rules up-yield p-yield
-                          input-word word-img-offset word-img-offset-cap scroll-accum
-                          broken-invariants
-                          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-                          
-                          click-buffer
-                          ))
+;; click-buffer - an accumulator that prevents a function from being spammed when the user holds down a mouse click
+(struct viz-state (imgs curr-image image-posn
+                        scale-factor scale-factor-cap scale-factor-floor
+                        prev-mouse-posn curr-mouse-posn mouse-pressed
+                        rules yield input-word word-img-offset word-img-offset-cap
+                        scroll-accum broken-invariants click-buffer))
 
 (define S-KEY (bitmap/file "./keyboard_key_s.png"))
 
@@ -134,9 +113,7 @@
   (let [(cursor-rect (let [(inner-white (rectangle 5 17.5 'solid 'white))
                            (outer-black (rectangle 9 20 'solid 'black))
                            (white-triangle-infill (rectangle 9 5 'solid 'white))]
-                       (above white-triangle-infill (overlay/xy inner-white -2 0 outer-black))
-                       )
-                     )
+                       (above white-triangle-infill (overlay/xy inner-white -2 0 outer-black))))
         (cursor-tri (let [(inner-white
                            (overlay/align/offset "right"
                                                  "middle"
@@ -676,22 +653,22 @@
                                        (viz-state-word-img-offset a-vs)
                                        0)))
                   (define YIELD-WORD
-                    (let [(normalized-p-yield (if (list? (first (viz-state-p-yield a-vs)))
-                                                  (first (viz-state-p-yield a-vs))
-                                                  (list (first (viz-state-p-yield a-vs)))))]
+                    (let [(normalized-p-yield (if (list? (zipper-current (viz-state-yield a-vs)))
+                                                  (zipper-current (viz-state-yield a-vs))
+                                                  (list (zipper-current (viz-state-yield a-vs)))))]
                       (make-tape-img normalized-p-yield (if (> (length normalized-p-yield) TAPE-SIZE)
                                                             (viz-state-word-img-offset a-vs)
                                                             0))))
                   (define RULE-USED
-                    (if (equal? "" (first (viz-state-p-rules a-vs)))
+                    (if (equal? "" (zipper-current (viz-state-rules a-vs)))
                         ;; Use white so its invisible, makes it so the words dont shift (using an empty string would make the words shift)
                         (text "The rule used: " FONT-SIZE 'white)
                         (text "The rule used: " FONT-SIZE 'black)))
                   (define RULE-USED-WORD
-                    (if (equal? "" (first (viz-state-p-rules a-vs)))
+                    (if (equal? "" (zipper-current (viz-state-rules a-vs)))
                         (text "" FONT-SIZE 'white)
-                        (beside (text (format "~a" (substring (first (viz-state-p-rules a-vs)) 0 1)) FONT-SIZE YIELD-COLOR)
-                                (text (format " ~a" (substring (first (viz-state-p-rules a-vs)) 1)) FONT-SIZE HEDGE-COLOR))))
+                        (beside (text (format "~a" (substring (zipper-current (viz-state-rules a-vs)) 0 1)) FONT-SIZE YIELD-COLOR)
+                                (text (format " ~a" (substring (zipper-current (viz-state-rules a-vs)) 1)) FONT-SIZE HEDGE-COLOR))))
                   (define INVARIANT-MSG (text "Invariant: " FONT-SIZE 'black))
                   (define INVARIANT-STATE
                     (if (empty? (zipper-current (viz-state-broken-invariants a-vs)))
@@ -703,8 +680,7 @@
                                   (image-width RULE-USED-WORD)
                                   (image-width INVARIANT-MSG)
                                   (image-width INVARIANT-STATE)
-                                  10
-                                  )
+                                  10)
                                (image-height RULE-USED)
                                'solid
                                'white))
@@ -789,6 +765,10 @@
                 img)
                (/ scaled-width src-width)
                (/ scaled-height src-height))]))
+
+(define (does-img-need-resizing? img)
+  (or (< E-SCENE-WIDTH (image-width img))
+      (< E-SCENE-HEIGHT (image-height img))))
 
 ;; img num>0 -> viewport-limits
 ;; Calculates the min and max values of x and y that keep the graph on the screen at all times
@@ -923,43 +903,32 @@
 ;; viz-state -> viz-state
 ;; Purpose: Moves the visualization to the next step of the derivation
 (define (right-key-pressed a-vs)
-  (if (empty? (viz-state-upimgs a-vs))
+  (if (zipper-at-end? (viz-state-imgs a-vs))
       a-vs
-      (let* [(new-up-yield (if (empty? (viz-state-up-yield a-vs))
-                               '()
-                               (rest (viz-state-up-yield a-vs))))
-             (new-p-yield (if (empty? (viz-state-up-yield a-vs))
-                              (viz-state-p-yield a-vs)
-                              (cons (first (viz-state-up-yield a-vs))
-                                    (viz-state-p-yield a-vs))))
-             (new-pimgs (cons (first (viz-state-upimgs a-vs))
-                              (viz-state-pimgs a-vs)))
-             (new-pimgs-img ((first new-pimgs)))
-             (curr-pimgs-img ((first (viz-state-pimgs a-vs))))
-             (new-p-rules (cons (first (viz-state-up-rules a-vs))
-                                (viz-state-p-rules a-vs)))
+      (let* [(new-yield (if (zipper-at-end? (viz-state-yield a-vs))
+                            (viz-state-yield a-vs)
+                            (zipper-next (viz-state-yield a-vs))))
+             (new-imgs (zipper-next (viz-state-imgs a-vs)))
+             (new-pimgs-img ((zipper-current new-imgs)))
+             (curr-pimgs-img ((zipper-current (viz-state-imgs a-vs))))
              (img-resize (resize-image new-pimgs-img (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))
              (growth-x (- (/ (image-width (scale (viz-state-scale-factor a-vs) new-pimgs-img)) 2)
                           (/ (image-width (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2)))
              (growth-y (- (/ (image-height (scale (viz-state-scale-factor a-vs) new-pimgs-img)) 2)
                           (/ (image-height (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2)))]
-        (if (or (< E-SCENE-WIDTH (image-width new-pimgs-img))
-                (< E-SCENE-HEIGHT (image-height new-pimgs-img)))
+        (if (does-img-need-resizing? new-pimgs-img)
             (let [(NEW-FLOOR (min (second img-resize) (third img-resize)))]
               (cond [(> (viz-state-scale-factor a-vs) DEFAULT-ZOOM-CAP)
                      (let [(new-viz-state (struct-copy viz-state a-vs
-                                                       [upimgs (rest (viz-state-upimgs a-vs))]
-                                                       [pimgs new-pimgs]
+                                                       [imgs new-imgs]
                                                        [curr-image new-pimgs-img]
                                                        [image-posn (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
                                                                          (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
                                                        [scale-factor DEFAULT-ZOOM-CAP]
                                                        [scale-factor-cap DEFAULT-ZOOM-CAP]
                                                        [scale-factor-floor NEW-FLOOR]
-                                                       [up-rules (rest (viz-state-up-rules a-vs))]
-                                                       [p-rules new-p-rules]
-                                                       [up-yield new-up-yield]
-                                                       [p-yield new-p-yield]
+                                                       [rules (zipper-next (viz-state-rules a-vs))]
+                                                       [yield new-yield]
                                                        [broken-invariants (zipper-next (viz-state-broken-invariants a-vs))]))]
                        (reposition-out-of-bounds-img new-viz-state
                                                      (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state) new-pimgs-img)
@@ -968,18 +937,15 @@
                                                      (viz-state-scale-factor new-viz-state)))]
                     [(< (viz-state-scale-factor a-vs) NEW-FLOOR)
                      (let [(new-viz-state (struct-copy viz-state a-vs
-                                                       [upimgs (rest (viz-state-upimgs a-vs))]
-                                                       [pimgs new-pimgs]
+                                                       [imgs new-imgs]
                                                        [curr-image new-pimgs-img]
                                                        [image-posn (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
                                                                          (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
                                                        [scale-factor NEW-FLOOR]
                                                        [scale-factor-cap DEFAULT-ZOOM-CAP]
                                                        [scale-factor-floor NEW-FLOOR]
-                                                       [up-rules (rest (viz-state-up-rules a-vs))]
-                                                       [p-rules new-p-rules]
-                                                       [up-yield new-up-yield]
-                                                       [p-yield new-p-yield]
+                                                       [rules (zipper-next (viz-state-rules a-vs))]
+                                                       [yield new-yield]
                                                        [broken-invariants (zipper-next (viz-state-broken-invariants a-vs))]))]
                        (reposition-out-of-bounds-img new-viz-state
                                                      (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state) new-pimgs-img)
@@ -987,17 +953,14 @@
                                                      new-pimgs-img
                                                      (viz-state-scale-factor new-viz-state)))]
                     [else (let [(new-viz-state (struct-copy viz-state a-vs
-                                                            [upimgs (rest (viz-state-upimgs a-vs))]
-                                                            [pimgs new-pimgs]
+                                                            [imgs new-imgs]
                                                             [curr-image new-pimgs-img]
                                                             [image-posn (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
                                                                               (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
                                                             [scale-factor-cap DEFAULT-ZOOM-CAP]
                                                             [scale-factor-floor NEW-FLOOR]
-                                                            [up-rules (rest (viz-state-up-rules a-vs))]
-                                                            [p-rules new-p-rules]
-                                                            [up-yield new-up-yield]
-                                                            [p-yield new-p-yield]
+                                                            [rules (zipper-next (viz-state-rules a-vs))]
+                                                            [yield new-yield]
                                                             [broken-invariants (zipper-next (viz-state-broken-invariants a-vs))]))]
                             (reposition-out-of-bounds-img new-viz-state
                                                           (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state) new-pimgs-img)
@@ -1005,17 +968,14 @@
                                                           new-pimgs-img
                                                           (viz-state-scale-factor new-viz-state)))]))
             (let [(new-viz-state (struct-copy viz-state a-vs
-                                              [upimgs (rest (viz-state-upimgs a-vs))]
-                                              [pimgs new-pimgs]
+                                              [imgs new-imgs]
                                               [curr-image new-pimgs-img]
                                               [image-posn (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
                                                                 (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
                                               [scale-factor-cap DEFAULT-ZOOM-CAP]
                                               [scale-factor-floor DEFAULT-ZOOM-FLOOR]
-                                              [up-rules (rest (viz-state-up-rules a-vs))]
-                                              [p-rules new-p-rules]
-                                              [up-yield new-up-yield]
-                                              [p-yield new-p-yield]
+                                              [rules (zipper-next (viz-state-rules a-vs))]
+                                              [yield new-yield]
                                               [broken-invariants (zipper-next (viz-state-broken-invariants a-vs))]))]
               (reposition-out-of-bounds-img new-viz-state
                                             (calculate-viewport-limits (scale (viz-state-scale-factor a-vs) new-pimgs-img)
@@ -1026,42 +986,29 @@
 ;; viz-state -> viz-state
 ;; Purpose: Restarts the derivation in the visualization
 (define (up-key-pressed a-vs)
-  (if (= (length (viz-state-pimgs a-vs)) 1)
+  (if (zipper-at-begin? (viz-state-imgs a-vs))
       a-vs
-      (let* [(new-up-yield (rest (append (reverse (viz-state-p-yield a-vs))
-                                         (viz-state-up-yield a-vs))))
-             (new-p-yield (list (first (append (reverse (viz-state-p-yield a-vs))
-                                               (viz-state-up-yield a-vs)))))
-             (new-pimgs (list (first (append (reverse (viz-state-pimgs a-vs))
-                                             (viz-state-upimgs a-vs)))))
-             (new-pimgs-img ((first new-pimgs)))
-             (curr-pimgs-img ((first (viz-state-pimgs a-vs))))
-             (new-p-dgraph (list (first (append (reverse (viz-state-p-rules a-vs))
-                                                (viz-state-up-rules a-vs)))))
+      (let* [(new-imgs (zipper-to-begin (viz-state-imgs a-vs)))
+             (new-pimgs-img ((zipper-current new-imgs)))
+             (curr-pimgs-img ((zipper-current (viz-state-imgs a-vs))))
              (img-resize (resize-image new-pimgs-img (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))
              (growth-x (- (/ (image-width (scale (viz-state-scale-factor a-vs) new-pimgs-img)) 2)
                           (/ (image-width (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2)))
              (growth-y (- (/ (image-height (scale (viz-state-scale-factor a-vs) new-pimgs-img)) 2)
                           (/ (image-height (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2)))]
-        (if (or (< E-SCENE-WIDTH (image-width new-pimgs-img))
-                (< E-SCENE-HEIGHT (image-height new-pimgs-img)))
+        (if (does-img-need-resizing? new-pimgs-img)
             (let [(NEW-FLOOR (min (second img-resize) (third img-resize)))]
               (cond [(> (viz-state-scale-factor a-vs) DEFAULT-ZOOM-CAP) 
                      (let [(new-viz-state (struct-copy viz-state a-vs
-                                                       [upimgs (rest (append (reverse (viz-state-pimgs a-vs))
-                                                                             (viz-state-upimgs a-vs)))]
-                                                       [pimgs new-pimgs]
+                                                       [imgs new-imgs]
                                                        [curr-image new-pimgs-img]
                                                        [image-posn (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
                                                                          (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
                                                        [scale-factor DEFAULT-ZOOM-CAP]
                                                        [scale-factor-cap DEFAULT-ZOOM-CAP]
                                                        [scale-factor-floor NEW-FLOOR]
-                                                       [up-rules (rest (append (reverse (viz-state-p-rules a-vs))
-                                                                               (viz-state-up-rules a-vs)))]
-                                                       [p-rules new-p-dgraph]
-                                                       [up-yield new-up-yield]
-                                                       [p-yield new-p-yield]
+                                                       [rules (zipper-to-begin (viz-state-rules a-vs))]
+                                                       [yield (zipper-to-begin (viz-state-yield a-vs))]
                                                        [broken-invariants (zipper-to-begin (viz-state-broken-invariants a-vs))]))]
                        (reposition-out-of-bounds-img new-viz-state
                                                      (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state) new-pimgs-img)
@@ -1070,20 +1017,15 @@
                                                      (viz-state-scale-factor new-viz-state)))]
                     [(< (viz-state-scale-factor a-vs) NEW-FLOOR)
                      (let [(new-viz-state (struct-copy viz-state a-vs
-                                                       [upimgs (rest (append (reverse (viz-state-pimgs a-vs))
-                                                                             (viz-state-upimgs a-vs)))]
-                                                       [pimgs new-pimgs]
+                                                       [imgs new-imgs]
                                                        [curr-image new-pimgs-img]
                                                        [image-posn (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
                                                                          (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
                                                        [scale-factor NEW-FLOOR]
                                                        [scale-factor-cap DEFAULT-ZOOM-CAP]
                                                        [scale-factor-floor NEW-FLOOR]
-                                                       [up-rules (rest (append (reverse (viz-state-p-rules a-vs))
-                                                                               (viz-state-up-rules a-vs)))]
-                                                       [p-rules new-p-dgraph]
-                                                       [up-yield new-up-yield]
-                                                       [p-yield new-p-yield]
+                                                       [rules (zipper-to-begin (viz-state-rules a-vs))]
+                                                       [yield (zipper-to-begin (viz-state-yield a-vs))]
                                                        [broken-invariants (zipper-to-begin (viz-state-broken-invariants a-vs))]))]
                        (reposition-out-of-bounds-img new-viz-state
                                                      (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state) new-pimgs-img)
@@ -1092,19 +1034,14 @@
                                                      (viz-state-scale-factor new-viz-state)))
                      ]
                     [else (let [(new-viz-state (struct-copy viz-state a-vs
-                                                            [upimgs (rest (append (reverse (viz-state-pimgs a-vs))
-                                                                                  (viz-state-upimgs a-vs)))]
-                                                            [pimgs new-pimgs]
+                                                            [imgs new-imgs]
                                                             [curr-image new-pimgs-img]
                                                             [image-posn (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
                                                                               (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
                                                             [scale-factor-cap DEFAULT-ZOOM-CAP]
                                                             [scale-factor-floor NEW-FLOOR]
-                                                            [up-rules (rest (append (reverse (viz-state-p-rules a-vs))
-                                                                                    (viz-state-up-rules a-vs)))]
-                                                            [p-rules new-p-dgraph]
-                                                            [up-yield new-up-yield]
-                                                            [p-yield new-p-yield]
+                                                            [rules (zipper-to-begin (viz-state-rules a-vs))]
+                                                            [yield (zipper-to-begin (viz-state-yield a-vs))]
                                                             [broken-invariants (zipper-to-begin (viz-state-broken-invariants a-vs))]))]
                             (reposition-out-of-bounds-img new-viz-state
                                                           (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state) new-pimgs-img)
@@ -1112,19 +1049,14 @@
                                                           new-pimgs-img
                                                           (viz-state-scale-factor new-viz-state)))]))
             (let [(new-viz-state (struct-copy viz-state a-vs
-                                              [upimgs (rest (append (reverse (viz-state-pimgs a-vs))
-                                                                    (viz-state-upimgs a-vs)))]
-                                              [pimgs new-pimgs]
+                                              [imgs new-imgs]
                                               [curr-image new-pimgs-img]
                                               [image-posn (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
                                                                 (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
                                               [scale-factor-cap DEFAULT-ZOOM-CAP]
                                               [scale-factor-floor DEFAULT-ZOOM-FLOOR]
-                                              [up-rules (rest (append (reverse (viz-state-p-rules a-vs))
-                                                                      (viz-state-up-rules a-vs)))]
-                                              [p-rules new-p-dgraph]
-                                              [up-yield new-up-yield]
-                                              [p-yield new-p-yield]
+                                              [rules (zipper-to-begin (viz-state-rules a-vs))]
+                                              [yield (zipper-to-begin (viz-state-yield a-vs))]
                                               [broken-invariants (zipper-to-begin (viz-state-broken-invariants a-vs))]))]
               (reposition-out-of-bounds-img new-viz-state
                                             (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state) new-pimgs-img)
@@ -1135,40 +1067,32 @@
 ;; viz-state -> viz-state
 ;; Purpose: Moves the visualization one step back in the derivation
 (define (left-key-pressed a-vs)
-  (if (= (length (viz-state-pimgs a-vs)) 1)
+  (if (zipper-at-begin? (viz-state-imgs a-vs))
       a-vs
-      (let* [(new-up-yield (cons (first (viz-state-p-yield a-vs))
-                                 (viz-state-up-yield a-vs)))
-             (new-p-yield (rest (viz-state-p-yield a-vs)))
-             (new-pimgs (rest (viz-state-pimgs a-vs)))
-             (new-pimgs-img ((first new-pimgs)))
-             (curr-pimgs-img ((first (viz-state-pimgs a-vs))))
-             (new-p-dgraph (rest (viz-state-p-rules a-vs)))
+      (let* [(new-yield (if (zipper-at-begin? (viz-state-yield a-vs))
+                            (viz-state-yield a-vs)
+                            (zipper-prev (viz-state-yield a-vs))))
+             (new-imgs (zipper-prev (viz-state-imgs a-vs)))
+             (new-pimgs-img ((zipper-current new-imgs)))
+             (curr-pimgs-img ((zipper-current (viz-state-imgs a-vs))))
              (img-resize (resize-image new-pimgs-img (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))
              (growth-x (- (/ (image-width (scale (viz-state-scale-factor a-vs) new-pimgs-img)) 2)
                           (/ (image-width (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2)))
              (growth-y (- (/ (image-height (scale (viz-state-scale-factor a-vs) new-pimgs-img)) 2)
                           (/ (image-height (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2)))]
-        (if (or (< E-SCENE-WIDTH (image-width new-pimgs-img))
-                (< E-SCENE-HEIGHT (image-height new-pimgs-img))
-                )
+        (if (does-img-need-resizing? new-pimgs-img)
             (let [(NEW-FLOOR (min (second img-resize) (third img-resize)))]
               (cond [(> (viz-state-scale-factor a-vs) DEFAULT-ZOOM-CAP)
                      (reposition-out-of-bounds-img (struct-copy viz-state a-vs
-                                                                [upimgs (cons (first (viz-state-pimgs a-vs))
-                                                                              (viz-state-upimgs a-vs))]
-                                                                [pimgs new-pimgs]
+                                                                [imgs new-imgs]
                                                                 [curr-image new-pimgs-img]
                                                                 [image-posn (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
                                                                                   (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
                                                                 [scale-factor DEFAULT-ZOOM-CAP]
                                                                 [scale-factor-cap DEFAULT-ZOOM-CAP]
                                                                 [scale-factor-floor NEW-FLOOR]
-                                                                [up-rules (cons (first (viz-state-p-rules a-vs))
-                                                                                (viz-state-up-rules a-vs))]
-                                                                [p-rules new-p-dgraph]
-                                                                [up-yield new-up-yield]
-                                                                [p-yield new-p-yield]
+                                                                [rules (zipper-prev (viz-state-rules a-vs))]
+                                                                [yield new-yield]
                                                                 [broken-invariants (zipper-prev (viz-state-broken-invariants a-vs))]
                                                                 )
                                                    (calculate-viewport-limits (scale (viz-state-scale-factor a-vs) new-pimgs-img) (viz-state-scale-factor a-vs))
@@ -1176,37 +1100,27 @@
                                                    (viz-state-scale-factor a-vs))]
                     [(< (viz-state-scale-factor a-vs) NEW-FLOOR)
                      (reposition-out-of-bounds-img (struct-copy viz-state a-vs
-                                                                [upimgs (cons (first (viz-state-pimgs a-vs))
-                                                                              (viz-state-upimgs a-vs))]
-                                                                [pimgs new-pimgs]
+                                                                [imgs new-imgs]
                                                                 [curr-image new-pimgs-img]
                                                                 [scale-factor NEW-FLOOR]
                                                                 [scale-factor-cap DEFAULT-ZOOM-CAP]
                                                                 [scale-factor-floor NEW-FLOOR]
-                                                                [up-rules (cons (first (viz-state-p-rules a-vs))
-                                                                                (viz-state-up-rules a-vs))]
-                                                                [p-rules new-p-dgraph]
-                                                                [up-yield new-up-yield]
-                                                                [p-yield new-p-yield]
+                                                                [rules (zipper-prev (viz-state-rules a-vs))]
+                                                                [yield new-yield]
                                                                 [broken-invariants (zipper-prev (viz-state-broken-invariants a-vs))]
                                                                 )
                                                    (calculate-viewport-limits (scale (viz-state-scale-factor a-vs) new-pimgs-img) (viz-state-scale-factor a-vs))
                                                    new-pimgs-img
                                                    (viz-state-scale-factor a-vs))]
                     [else (reposition-out-of-bounds-img (struct-copy viz-state a-vs
-                                                                     [upimgs (cons (first (viz-state-pimgs a-vs))
-                                                                                   (viz-state-upimgs a-vs))]
-                                                                     [pimgs new-pimgs]
+                                                                     [imgs new-imgs]
                                                                      [curr-image new-pimgs-img]
                                                                      [image-posn (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
                                                                                        (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
                                                                      [scale-factor-cap DEFAULT-ZOOM-CAP]
                                                                      [scale-factor-floor NEW-FLOOR]
-                                                                     [up-rules (cons (first (viz-state-p-rules a-vs))
-                                                                                     (viz-state-up-rules a-vs))]
-                                                                     [p-rules new-p-dgraph]
-                                                                     [up-yield new-up-yield]
-                                                                     [p-yield new-p-yield]
+                                                                     [rules (zipper-prev (viz-state-rules a-vs))]
+                                                                     [yield new-yield]
                                                                      [broken-invariants (zipper-prev (viz-state-broken-invariants a-vs))]
                                                                      )
                                                         (calculate-viewport-limits (scale (viz-state-scale-factor a-vs) new-pimgs-img)
@@ -1214,19 +1128,14 @@
                                                         new-pimgs-img
                                                         (viz-state-scale-factor a-vs))]))
             (reposition-out-of-bounds-img (struct-copy viz-state a-vs
-                                                       [upimgs (cons (first (viz-state-pimgs a-vs))
-                                                                     (viz-state-upimgs a-vs))]
-                                                       [pimgs new-pimgs]
+                                                       [imgs new-imgs]
                                                        [curr-image new-pimgs-img]
                                                        [image-posn (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
                                                                          (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
                                                        [scale-factor-cap DEFAULT-ZOOM-CAP]
                                                        [scale-factor-floor DEFAULT-ZOOM-FLOOR]
-                                                       [up-rules (cons (first (viz-state-p-rules a-vs))
-                                                                       (viz-state-up-rules a-vs))]
-                                                       [p-rules new-p-dgraph]
-                                                       [up-yield new-up-yield]
-                                                       [p-yield new-p-yield]
+                                                       [rules (zipper-prev (viz-state-rules a-vs))]
+                                                       [yield new-yield]
                                                        [broken-invariants (zipper-prev (viz-state-broken-invariants a-vs))]
                                                        )
                                           (calculate-viewport-limits (scale (viz-state-scale-factor a-vs) new-pimgs-img) (viz-state-scale-factor a-vs))
@@ -1236,39 +1145,30 @@
 ;; viz-state -> viz-state
 ;; Purpose: Finishes the derivations in the visualization
 (define (down-key-pressed a-vs)
-  (if (empty? (viz-state-upimgs a-vs))
+  (if (zipper-at-end? (viz-state-imgs a-vs))
       a-vs
-      (let* [(new-p-yield (append (reverse (viz-state-up-yield a-vs))
-                                  (viz-state-p-yield a-vs)))
-             (new-pimgs (append (reverse (viz-state-upimgs a-vs))
-                                (viz-state-pimgs a-vs)))
-             (new-pimgs-img ((first new-pimgs)))
-             (curr-pimgs-img ((first (viz-state-pimgs a-vs))))
-             (new-p-dgraph (append (reverse (viz-state-up-rules a-vs))
-                                   (viz-state-p-rules a-vs)))
+      (let* [(new-imgs (zipper-to-end (viz-state-imgs a-vs)))
+             (new-pimgs-img ((zipper-current new-imgs)))
+             (curr-pimgs-img ((zipper-current (viz-state-imgs a-vs))))
              (img-resize (resize-image new-pimgs-img (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))
              (growth-x (- (/ (image-width (scale (viz-state-scale-factor a-vs) new-pimgs-img)) 2)
                           (/ (image-width (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2)))
              (growth-y (- (/ (image-height (scale (viz-state-scale-factor a-vs) new-pimgs-img)) 2)
                           (/ (image-height (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2)))
              ]
-        (if (or (< E-SCENE-WIDTH (image-width new-pimgs-img))
-                (< E-SCENE-HEIGHT (image-height new-pimgs-img)))
+        (if (does-img-need-resizing? new-pimgs-img)
             (let [(NEW-FLOOR (min (second img-resize) (third img-resize)))]
               (cond [(> (viz-state-scale-factor a-vs) DEFAULT-ZOOM-CAP) 
                      (let [(new-viz-state (struct-copy viz-state a-vs
-                                                       [upimgs '()]
-                                                       [pimgs new-pimgs]
+                                                       [imgs new-imgs]
                                                        [curr-image new-pimgs-img]
                                                        [image-posn (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
                                                                          (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
                                                        [scale-factor DEFAULT-ZOOM-CAP]
                                                        [scale-factor-cap DEFAULT-ZOOM-CAP]
                                                        [scale-factor-floor NEW-FLOOR]
-                                                       [up-rules '()]
-                                                       [p-rules new-p-dgraph]
-                                                       [up-yield '()]
-                                                       [p-yield new-p-yield]
+                                                       [rules (zipper-to-end (viz-state-rules a-vs))]
+                                                       [yield (zipper-to-end (viz-state-yield a-vs))]
                                                        [broken-invariants (zipper-to-end (viz-state-broken-invariants a-vs))]))]
                        (reposition-out-of-bounds-img new-viz-state
                                                      (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state) new-pimgs-img)
@@ -1277,16 +1177,13 @@
                                                      (viz-state-scale-factor new-viz-state)))]
                     [(< (viz-state-scale-factor a-vs) NEW-FLOOR)
                      (let [(new-viz-state (struct-copy viz-state a-vs
-                                                       [upimgs '()]
-                                                       [pimgs new-pimgs]
+                                                       [imgs new-imgs]
                                                        [curr-image new-pimgs-img]
                                                        [scale-factor NEW-FLOOR]
                                                        [scale-factor-cap DEFAULT-ZOOM-CAP]
                                                        [scale-factor-floor NEW-FLOOR]
-                                                       [up-rules '()]
-                                                       [p-rules new-p-dgraph]
-                                                       [up-yield '()]
-                                                       [p-yield new-p-yield]
+                                                       [rules (zipper-to-end (viz-state-rules a-vs))]
+                                                       [yield (zipper-to-end (viz-state-yield a-vs))]
                                                        [broken-invariants (zipper-to-end (viz-state-broken-invariants a-vs))]))]
                        (reposition-out-of-bounds-img new-viz-state
                                                      (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state) new-pimgs-img)
@@ -1294,17 +1191,14 @@
                                                      new-pimgs-img
                                                      (viz-state-scale-factor new-viz-state)))]
                     [else (let [(new-viz-state (struct-copy viz-state a-vs
-                                                            [upimgs '()]
-                                                            [pimgs new-pimgs]
+                                                            [imgs new-imgs]
                                                             [curr-image new-pimgs-img]
                                                             [image-posn (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
                                                                               (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
                                                             [scale-factor-cap DEFAULT-ZOOM-CAP]
                                                             [scale-factor-floor NEW-FLOOR]
-                                                            [up-rules '()]
-                                                            [p-rules new-p-dgraph]
-                                                            [up-yield '()]
-                                                            [p-yield new-p-yield]
+                                                            [rules (zipper-to-end (viz-state-rules a-vs))]
+                                                            [yield (zipper-to-end (viz-state-yield a-vs))]
                                                             [broken-invariants (zipper-to-end (viz-state-broken-invariants a-vs))]))]
                             (reposition-out-of-bounds-img new-viz-state
                                                           (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state) new-pimgs-img)
@@ -1312,15 +1206,14 @@
                                                           new-pimgs-img
                                                           (viz-state-scale-factor new-viz-state)))]))
             (let [(new-viz-state (struct-copy viz-state a-vs
-                                              [upimgs '()]
-                                              [pimgs new-pimgs]
+                                              [imgs new-imgs]
                                               [curr-image new-pimgs-img]
                                               [image-posn (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
                                                                 (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
                                               [scale-factor-cap DEFAULT-ZOOM-CAP]
                                               [scale-factor-floor DEFAULT-ZOOM-FLOOR]
-                                              [up-rules '()]
-                                              [p-rules new-p-yield]
+                                              [rules (zipper-to-end (viz-state-rules a-vs))]
+                                              [yield (zipper-to-end (viz-state-yield a-vs))]
                                               [broken-invariants (zipper-to-end (viz-state-broken-invariants a-vs))]))]
               (reposition-out-of-bounds-img new-viz-state
                                             (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state) new-pimgs-img)
@@ -1374,7 +1267,6 @@
 ;; Purpose: Move the visualization one step forward, one step
 ;;          backwards, or to the end.
 (define (process-key a-vs a-key)
-  ;(displayln a-key)
   (cond [(key=? "right" a-key) (right-key-pressed a-vs)]
         [(key=? "left" a-key) (left-key-pressed a-vs)]
         [(key=? "down" a-key) (down-key-pressed a-vs)]
@@ -1395,30 +1287,30 @@
 (define (process-mouse a-vs x y mouse-event)
   (cond [(string=? mouse-event "button-down")
          (struct-copy viz-state a-vs
-                      [dest-mouse-posn (posn x y)]
+                      [curr-mouse-posn (posn x y)]
                       [mouse-pressed #t])]
         [(string=? mouse-event "button-up")
          (struct-copy viz-state a-vs
-                      [dest-mouse-posn (posn x y)]
+                      [curr-mouse-posn (posn x y)]
                       [mouse-pressed #f]
                       [click-buffer 0])]
         ;; Want to keep the mouse updating while it is being dragged
         [(string=? mouse-event "drag")
          (struct-copy viz-state a-vs
-                      [dest-mouse-posn (posn x y)]
+                      [curr-mouse-posn (posn x y)]
                       [mouse-pressed #t])]           
         ;; Can happen in both clicked and unclicked states so leave it in whatever it was
         [(string=? mouse-event "move")
          (struct-copy viz-state a-vs
-                      [dest-mouse-posn (posn x y)])]
+                      [curr-mouse-posn (posn x y)])]
         ;; This one is ambigious, think its better to leave as whatever it already was
         [(string=? mouse-event "enter")
          (struct-copy viz-state a-vs
-                      [dest-mouse-posn (posn x y)])]
+                      [curr-mouse-posn (posn x y)])]
         ;; Stop updating if the mouse leaves the visualization screen
         [(string=? mouse-event "leave")
          (struct-copy viz-state a-vs
-                      [dest-mouse-posn (posn x y)]
+                      [curr-mouse-posn (posn x y)]
                       [mouse-pressed #f])]
         [else a-vs]))
 
@@ -1428,23 +1320,24 @@
   (if (= (viz-state-click-buffer a-vs) 0)
       (func (struct-copy viz-state a-vs
                          [click-buffer 1]
-                         [curr-mouse-posn (viz-state-dest-mouse-posn a-vs)]))
+                         [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)]))
       (if (= (viz-state-click-buffer a-vs) CLICK-BUFFER-SECONDS)
           (struct-copy viz-state a-vs
                        [click-buffer 0]
-                       [curr-mouse-posn (viz-state-dest-mouse-posn a-vs)])
+                       [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])
           (struct-copy viz-state a-vs
                        [click-buffer (add1 (viz-state-click-buffer a-vs))]
-                       [curr-mouse-posn (viz-state-dest-mouse-posn a-vs)]))))
+                       [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)]))))
 
 ;; viz-state
 ;; Updates the position of the image displayed based on the movement of the mouse
 (define (process-tick a-vs)
   (let* [;; Determines the movement of the mouse that occured since the last tick
-         (x-diff (- (posn-x (viz-state-dest-mouse-posn a-vs)) (posn-x (viz-state-curr-mouse-posn a-vs))))
-         (y-diff (- (posn-y (viz-state-dest-mouse-posn a-vs)) (posn-y (viz-state-curr-mouse-posn a-vs))))
+         (x-diff (- (posn-x (viz-state-curr-mouse-posn a-vs)) (posn-x (viz-state-prev-mouse-posn a-vs))))
+         (y-diff (- (posn-y (viz-state-curr-mouse-posn a-vs)) (posn-y (viz-state-prev-mouse-posn a-vs))))
          (new-img-x (+ (posn-x (viz-state-image-posn a-vs)) x-diff))
          (new-img-y (+ (posn-y (viz-state-image-posn a-vs)) y-diff))
+         (new-img-posn (posn (+ (posn-x (viz-state-image-posn a-vs)) x-diff) (+ (posn-y (viz-state-image-posn a-vs)) y-diff)))
          (scaled-image (scale (viz-state-scale-factor a-vs) (viz-state-curr-image a-vs)))
          (viewport-lims (calculate-viewport-limits scaled-image (viz-state-scale-factor a-vs)))
          (MIN-X (bounding-limits-min-x viewport-lims))
@@ -1453,78 +1346,64 @@
          (MAX-Y (bounding-limits-max-y viewport-lims))
          (scroll-dimensions RULE-YIELD-DIMS)]
     (if (viz-state-mouse-pressed a-vs)
-        (cond [(within-bounding-limits? E-SCENE-BOUNDING-LIMITS (viz-state-curr-mouse-posn a-vs))
-               (cond [(and (<= MIN-X new-img-x)
-                           (<= new-img-x MAX-X)
-                           (<= MIN-Y new-img-y)
-                           (<= new-img-y MAX-Y))
+        (cond [(within-bounding-limits? E-SCENE-BOUNDING-LIMITS (viz-state-prev-mouse-posn a-vs))
+               (cond [(within-bounding-limits? viewport-lims new-img-posn)
                       (struct-copy viz-state a-vs
-                                   [image-posn (posn new-img-x new-img-y)]
-                                   [curr-mouse-posn (viz-state-dest-mouse-posn a-vs)])]
-                     [(and (or (> MIN-X new-img-x)
-                               (> new-img-x MAX-X)
-                               )
-                           (<= MIN-Y new-img-y)
-                           (<= new-img-y MAX-Y))
+                                   [image-posn new-img-posn]
+                                   [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])]
+                     [(outside-x-axis-bounding-limits? viewport-lims new-img-posn)
                       (struct-copy viz-state a-vs
                                    [image-posn (posn (posn-x (viz-state-image-posn a-vs)) new-img-y)]
-                                   [curr-mouse-posn (viz-state-dest-mouse-posn a-vs)])]
-                     [(and (<= MIN-X new-img-x)
-                           (<= new-img-x MAX-X)
-                           (or (> MIN-Y new-img-y)
-                               (> new-img-y MAX-Y)
-                               ))
+                                   [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])]
+                     [(outside-y-axis-bounding-limits? viewport-lims new-img-posn)
                       (struct-copy viz-state a-vs
                                    [image-posn (posn new-img-x (posn-y (viz-state-image-posn a-vs)))]
-                                   [curr-mouse-posn (viz-state-dest-mouse-posn a-vs)])]
-                     [(and (or (> MIN-X new-img-x)
-                               (> new-img-x MAX-X))
-                           (or (> MIN-Y new-img-y)
-                               (> new-img-y MAX-Y)))
+                                   [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])]
+                     [(outside-x-and-y-axis-bounding-limits? viewport-lims new-img-posn)
                       (struct-copy viz-state a-vs
-                                   [curr-mouse-posn (viz-state-dest-mouse-posn a-vs)])])]
-              [(within-bounding-limits? scroll-dimensions (viz-state-curr-mouse-posn a-vs))
+                                   [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])])]
+              [(within-bounding-limits? scroll-dimensions (viz-state-prev-mouse-posn a-vs))
                (let [(new-scroll-accum (+ (viz-state-scroll-accum a-vs) x-diff))]
                  (cond [(and (>= (viz-state-word-img-offset-cap a-vs) (viz-state-word-img-offset a-vs))
                              (<= (quotient new-scroll-accum 25) -1))
                         (struct-copy viz-state a-vs
-                                     [curr-mouse-posn (viz-state-dest-mouse-posn a-vs)]
+                                     [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)]
                                      [word-img-offset (+ (viz-state-word-img-offset a-vs) 1)]
                                      [scroll-accum 0])]
                        [(and (> (viz-state-word-img-offset a-vs) 0)
                              (>= (quotient new-scroll-accum 25) 1))
                         (struct-copy viz-state a-vs
-                                     [curr-mouse-posn (viz-state-dest-mouse-posn a-vs)]
+                                     [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)]
                                      [word-img-offset (- (viz-state-word-img-offset a-vs) 1)]
                                      [scroll-accum 0])]
                        [else (struct-copy viz-state a-vs
-                                          [curr-mouse-posn (viz-state-dest-mouse-posn a-vs)]
+                                          [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)]
                                           [scroll-accum new-scroll-accum])]))]
-              [(within-bounding-limits? ARROW-UP-KEY-DIMS (viz-state-curr-mouse-posn a-vs))
+              [(within-bounding-limits? ARROW-UP-KEY-DIMS (viz-state-prev-mouse-posn a-vs))
                (buffer-held-click a-vs up-key-pressed)]
-              [(within-bounding-limits? ARROW-RIGHT-KEY-DIMS (viz-state-curr-mouse-posn a-vs))
+              [(within-bounding-limits? ARROW-RIGHT-KEY-DIMS (viz-state-prev-mouse-posn a-vs))
                (buffer-held-click a-vs right-key-pressed)]
-              [(within-bounding-limits? ARROW-LEFT-KEY-DIMS (viz-state-curr-mouse-posn a-vs))
+              [(within-bounding-limits? ARROW-LEFT-KEY-DIMS (viz-state-prev-mouse-posn a-vs))
                (buffer-held-click a-vs left-key-pressed)]
-              [(within-bounding-limits? ARROW-DOWN-KEY-DIMS (viz-state-curr-mouse-posn a-vs))
+              [(within-bounding-limits? ARROW-DOWN-KEY-DIMS (viz-state-prev-mouse-posn a-vs))
                (buffer-held-click a-vs down-key-pressed)]
-              [(within-bounding-limits? W-KEY-DIMS (viz-state-curr-mouse-posn a-vs))
+              [(within-bounding-limits? W-KEY-DIMS (viz-state-prev-mouse-posn a-vs))
                (w-key-pressed a-vs)]
-              [(within-bounding-limits? S-KEY-DIMS (viz-state-curr-mouse-posn a-vs))
+              [(within-bounding-limits? S-KEY-DIMS (viz-state-prev-mouse-posn a-vs))
                (s-key-pressed a-vs)]
-              [(within-bounding-limits? A-KEY-DIMS (viz-state-curr-mouse-posn a-vs))
+              [(within-bounding-limits? A-KEY-DIMS (viz-state-prev-mouse-posn a-vs))
                (buffer-held-click a-vs a-key-pressed)]
-              [(within-bounding-limits? D-KEY-DIMS (viz-state-curr-mouse-posn a-vs))
+              [(within-bounding-limits? D-KEY-DIMS (viz-state-prev-mouse-posn a-vs))
                (buffer-held-click a-vs d-key-pressed)]
-              [(within-bounding-limits? R-KEY-DIMS (viz-state-curr-mouse-posn a-vs))
+              [(within-bounding-limits? R-KEY-DIMS (viz-state-prev-mouse-posn a-vs))
                (buffer-held-click a-vs r-key-pressed)]
-              [(within-bounding-limits? E-KEY-DIMS (viz-state-curr-mouse-posn a-vs))
+              [(within-bounding-limits? E-KEY-DIMS (viz-state-prev-mouse-posn a-vs))
                (buffer-held-click a-vs e-key-pressed)]
-              [(within-bounding-limits? F-KEY-DIMS (viz-state-curr-mouse-posn a-vs))
+              [(within-bounding-limits? F-KEY-DIMS (viz-state-prev-mouse-posn a-vs))
                (buffer-held-click a-vs f-key-pressed)]
               [else a-vs])
         (struct-copy viz-state a-vs
-                     [curr-mouse-posn (viz-state-dest-mouse-posn a-vs)]))))
+                     [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)]))))
 
 ;; create-first-img
 ;; node -> img
@@ -1568,11 +1447,8 @@
          (imgs (if special-graphs?
                    (cons first-img (rest (create-special-graph-imgs graphs #:cpu-cores cpu-cores #:rank-node-lst rank-node-lst)))
                    (cons first-img (rest (create-graph-imgs graphs #:cpu-cores cpu-cores)))))]
-    (viz (viz-state (rest imgs)
-                    (list (first imgs))
-                    (
-                     (first imgs)
-                     )
+    (viz (viz-state (list->zipper imgs)
+                    ((first imgs))
                     (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2))
                     DEFAULT-ZOOM
                     DEFAULT-ZOOM-CAP
@@ -1580,55 +1456,16 @@
                     (posn 0 0)
                     (posn 0 0)
                     #f
-                    (rest rules)
-                    (list (first rules))
-                    (rest w-der)
-                    (first w-der)
+                    (list->zipper rules)
+                    (list->zipper w-der)
                     word
                     0
                     (let [(offset-cap (- (length word) TAPE-SIZE))]
                       (if (> 0 offset-cap)
                           0
-                          offset-cap
-                          )
-                      )
+                          offset-cap))
                     0
                     broken-invariants
-                    0
-                    )
-         draw-world 'grammar-viz)))
-
-(define (rg-viz-invariants word w-der rules graphs
-                           #:cpu-cores [cpu-cores #f] #:special-graphs? [special-graphs? #f] #:rank-node-lst [rank-node-lst '()])
-  (let* [(first-img (create-first-img (first (first w-der))))
-         (imgs (if special-graphs?
-                   (cons first-img (rest (create-special-graph-imgs graphs #:cpu-cores cpu-cores #:rank-node-lst rank-node-lst)))
-                   (cons first-img (rest (create-graph-imgs graphs #:cpu-cores cpu-cores)))))]
-    (viz (viz-state (rest imgs)
-                    (list (first imgs))
-                    (
-                     (first imgs)
-                     )
-                    (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2))
-                    DEFAULT-ZOOM
-                    DEFAULT-ZOOM-CAP
-                    DEFAULT-ZOOM-FLOOR
-                    (posn 0 0)
-                    (posn 0 0)
-                    #f
-                    (rest rules)
-                    (list (first rules))
-                    (rest w-der)
-                    (first w-der)
-                    word
-                    0
-                    (let [(offset-cap (- (length word) TAPE-SIZE))]
-                      (if (> 0 offset-cap)
-                          0
-                          offset-cap
-                          )
-                      )
-                    0
                     0
                     )
          draw-world 'grammar-viz)))
@@ -1636,7 +1473,3 @@
 (define (run-viz grammar word w-der rules graphs broken-invariants
                  #:cpu-cores [cpu-cores #f] #:special-graphs? [special-graphs? #f] #:rank-node-lst [rank-node-lst '()])
   (rg-viz word w-der rules graphs broken-invariants #:cpu-cores cpu-cores #:special-graphs? special-graphs? #:rank-node-lst rank-node-lst))
-
-(define (run-viz-invariants grammar word w-der rules graphs
-                            #:cpu-cores [cpu-cores #f] #:special-graphs? [special-graphs? #f] #:rank-node-lst [rank-node-lst '()])
-  (rg-viz-invariants word w-der rules graphs #:cpu-cores cpu-cores #:special-graphs? special-graphs? #:rank-node-lst rank-node-lst))
