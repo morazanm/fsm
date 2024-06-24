@@ -15,13 +15,13 @@
 (define cgraph (create-graph 'cgraph
                              #:atb (hash 'rankdir "LR")))
 
-(define destin-color 'violet)
+(define destin-color 'violetred)
 (define curr-color 'blue)
 ;; graph machine (listof states)-> graph
 ;; Purpose: To create a graph of nodes from the given list of rules
 (define (node-graph cgraph M current-states destin-states pci)
   (foldl (λ (state result)
-           (cond [(and (empty? pci)
+           (cond #;[(and (empty? pci)
                        (equal? state (sm-start M))
                        (member state (sm-finals M)))
                   (add-node
@@ -31,7 +31,7 @@
                                'shape 'doublecircle
                                'label state
                                'fontcolor 'black))]
-                 [(and (empty? pci)
+                 #;[(and (empty? pci)
                        (equal? state (sm-start M)))
                   (add-node
                    result
@@ -57,7 +57,7 @@
                                'shape 'circle
                                'label state
                                'fontcolor 'black))]
-                 [(and (member state current-states) 
+                 #;[(and (member state current-states) 
                        (member state (sm-finals M)))
                   (add-node
                    result
@@ -66,7 +66,7 @@
                                'shape 'doublecircle
                                'label state
                                'fontcolor 'black))]
-                 [(member state current-states)
+                 #;[(member state current-states)
                   (add-node
                    result
                    state
@@ -139,7 +139,7 @@
                             (first rule)
                             (third rule)
                             #:atb (hash 'color destin-color 'fontsize 20 'style 'solid))]
-                 [(member rule prev-path)
+                 #;[(member rule prev-path)
                   (add-edge result
                             (second rule)
                             (first rule)
@@ -251,9 +251,9 @@
       (construct-path destin word (first rfw) (rest rfw))))
 
 (define (return-differences prev-path curr-path)
-  (if (not (> (length curr-path) (length prev-path)))
-      curr-path
-      (remove-similiarities prev-path curr-path '())))
+  ;(if (not (> (length curr-path) (length prev-path)))
+   ;   curr-path
+      (remove-similiarities prev-path curr-path '()));)
 
 ;;(listof rules) (listof rules) (listof rules) -> (listof rules)
 ;;Purpose: Returns the complement of the intersection
@@ -444,8 +444,8 @@
                                          path))
                                curr-path)))
           (begin
-            ;(display (format "curr-path ~s \n" curr-path))
-            ;(display (format "full-prev-path ~s \n" full-prev-path))
+            (display (format "curr-path ~s \n" curr-path))
+            (display (format "full-prev-path ~s \n \n" full-prev-path))
             (return-differences full-prev-path curr-path)))
          #;(map (λ (path)
                   (filter (λ (p) (equal? (last (viz-state-ndfa-pci a-vs))
@@ -463,42 +463,99 @@
                          (map last
                               current-place)))
          ;;image
+         ;;Purpose: Determines which informative message is displayed to the user
          (informative-messages (cond [(empty? (viz-state-ndfa-upci a-vs))
                                       (if (eq? (sm-apply (viz-state-ndfa-M a-vs)
                                                          (viz-state-ndfa-pci a-vs))
                                                'accept)
-                                          (above/align 'left
-                                                       (beside (text "Word: " 20' black)
-                                                               (text (los2str (viz-state-ndfa-pci a-vs))
-                                                                     20
-                                                                     'gray))
-                                                       (beside (text "Consumed: " 20' black)
-                                                               (text (los2str (viz-state-ndfa-pci a-vs))
-                                                                     20
-                                                                     'black))                                                     
-                                                       (text "Computations: " 20 'black)
-                                                       (text "Word Status: Accept" 20 'green))
-                                          (above/align 'left (beside (text "Word: " 20 'black)
-                                                                     (text (los2str (viz-state-ndfa-pci a-vs))
-                                                                           20
-                                                                           'gray))
-                                                   
-                                                       (beside (text "Consumed: " 20' black)
-                                                               (text (los2str (viz-state-ndfa-pci a-vs))
-                                                                     20
-                                                                     'black))
-                                                       (text "Computations: " 20 'black)
-                                                       (text "Word Status: Reject" 20 'red)))]
-                                     [(empty? (viz-state-ndfa-pci a-vs))
-                                      (above/align 'left
-                                                   (beside (text "Word: " 20 'black)
+                                          (above (beside
+                                              (overlay/offset
+                                              (overlay/offset (text "Word: " 20 'black)        
+                                                              -23 23
+                                                              (text "Consumed: " 20' black))
+                                                             -15 35
+                                                             (text "Computations: " 20 'black))
+                                              (above/align 'left
+                                                           (text (los2str (viz-state-ndfa-pci a-vs))
+                                                                            20
+                                                                            'gray)
+                                                           (text (los2str (viz-state-ndfa-pci a-vs))
+                                                                      20
+                                                                      'black)
+                                                           (text "There is a computation that leads to accept" 20 'black)))
+                                             (text "Word Status: accept " 20 'white))
+                                          (above (beside
+                                              (overlay/offset
+                                              (overlay/offset (text "Word: " 20 'black)        
+                                                              -23 23
+                                                              (text "Consumed: " 20' black))
+                                                             -15 35
+                                                             (text "Computations: " 20 'black))
+                                              (above/align 'left
+                                                           (text (los2str (viz-state-ndfa-pci a-vs))
+                                                                            20
+                                                                            'gray)
+                                                           (text (los2str (viz-state-ndfa-pci a-vs))
+                                                                      20
+                                                                      'black)
+                                                           (text "All computations lead to reject" 20 'black)))
+                                             (text "Word Status: accept " 20 'white)))]
+                                     [(and (empty? destin-states)
+                                           (not (empty? (viz-state-ndfa-pci a-vs))))
+                                      (above (beside
+                                              (overlay/offset
+                                              (overlay/offset (text "Word: " 20 'black)        
+                                                              -23 23
+                                                              (text "Consumed: " 20' black))
+                                                             -15 35
+                                                             (text "Computations: " 20 'black))
+                                              (above/align 'left
+                                                           (beside (text (los2str (viz-state-ndfa-pci a-vs))
+                                                                            20
+                                                                            'gray)
+                                                                      (text (los2str (viz-state-ndfa-upci a-vs))
+                                                                            20
+                                                                            'black))
+                                                           (text (los2str (viz-state-ndfa-pci a-vs))
+                                                                      20
+                                                                      'black)
+                                                           (text "All computations lead to reject" 20 'black)))
+                                             (text "Word Status: accept " 20 'white))]
+                                     [(empty? (viz-state-ndfa-pci a-vs)) 
+                                      (above (beside
+                                              (overlay/offset
+                                              (overlay/offset (text "Word: " 20 'black)        
+                                                              -23 23
+                                                              (text "Consumed: " 20 'black))
+                                                             -15 35
+                                                             (text "Computations: " 20 'black))
+                                              (above/align 'left
                                                            (text (los2str (viz-state-ndfa-upci a-vs))
-                                                                 20
-                                                                 'black))
-                                                   (text "Consumed: " 20' black)
-                                                   (text "Computations: " 20 'black)
-                                                   (text "Word Status: accept " 20 'white))]
-                                     [else (above/align 'left (beside (text "Word: " 20 'black)
+                                                                            20
+                                                                            'black)
+                                                           (text "Consumed: " 20 'white)
+                                                           (text (number->string (length destin-states)) 20 'black)))
+                                             (text "Word Status: accept " 20 'white))]
+                                     [else (above (beside
+                                              (overlay/offset
+                                              (overlay/offset (text "Word: " 20 'black)        
+                                                              -23 23
+                                                              (text "Consumed: " 20 'black))
+                                                             -15 35
+                                                             (text "Computations: " 20 'black))
+                                              (above/align 'left
+                                                           (beside (text (los2str (viz-state-ndfa-pci a-vs))
+                                                                            20
+                                                                            'gray)
+                                                                      (text (los2str (viz-state-ndfa-upci a-vs))
+                                                                            20
+                                                                            'black))
+                                                           (text (los2str (viz-state-ndfa-pci a-vs))
+                                                                      20
+                                                                      'black)
+                                                           (text (number->string (length destin-states)) 20 'black)))
+                                             (text "Word Status: accept " 20 'white))
+                                           #;(above/align 'left (beside (text "Word: " 20 'black)
                                                                       (text (los2str (viz-state-ndfa-pci a-vs))
                                                                             20
                                                                             'gray)
@@ -509,8 +566,9 @@
                                                                 (text (los2str (viz-state-ndfa-pci a-vs))
                                                                       20
                                                                       'black))
-                                                        (text "Computations: " 20 'black)
-                                                        (text "Word Status: accept " 20 'white))]))]
+                                                        (beside (text "Computations: " 20 'black)
+                                                           (text (number->string (length destin-states)) 20 'black))
+                                                        (text "Word Status " 20 'white))]))]
     #;(cond [(empty? (viz-state-ndfa-upci a-vs))
              (place-image 
               informative-messages
@@ -588,7 +646,7 @@
                      current-place
                      full-prev-path))
                    500
-                   535))
+                   515))
            (above/align 'left
                         informative-messages      
                         E-SCENE-TOOLS))))
@@ -762,6 +820,20 @@
                         (D ,EMP S)
                         (E ,EMP S))))
 
+(define ND2 (make-ndfa '(S A B C D E F)
+                      '(a b)
+                      'S
+                      '(D E)
+                      `((S ,EMP A)
+                        (S ,EMP B)
+                        (A ,EMP D)
+                        (D b D)
+                        (D ,EMP F)
+                        (B a E)
+                        (B b B)
+                        (E a E)
+                        (E b E)
+                        (E ,EMP C))))
 
 #;(let [(res (graph->bitmap cgraph (current-directory) FNAME))]
     (begin
@@ -963,7 +1035,8 @@
              ;(display (format "get-rules ~s \n" get-rules))
              ;(display (format "prev-config ~s \n" prev-config ))
              #;(display (format "alt style ~s \n" (append
-                                                   (path-constructor a-word lor (cons (first config) (rest (rest config))) (append get-rules '()) prev-config)
+                                                   (path-constructor a-word lor (cons (first config)
+                                                                                      (rest (rest config))) (append get-rules '()) prev-config)
                                                    (path-constructor a-word lor (rest config) (append get-rules '()) prev-config)))) 
              #;(remove-duplicates
                 (append
@@ -1010,4 +1083,21 @@
 #;'(((S a S) (S b S) (S b A))
     ((S a S) (S b S) (S b A) (A b B))
     ((S a S) (S b S) (S b A) (B b B) (A b B)))
-;;informative messaging -> number of computations 
+;;informative messaging -> number of computations
+
+(define (add-empties-to-start path lor)
+  (if (empty? path)
+      '()
+      (append-map (λ (rule)
+                (if (equal? (first (first path))
+                            (third rule))
+                    (append rule path)
+                    '()))
+              lor)))
+
+#|
+want to say why every component used for the tool is important
+want to implement a bug on bigger machines to emphasis importance of yield and colors
+want an example that highlights the importance of zoom
+want show a combination of all the features if possible
+|#
