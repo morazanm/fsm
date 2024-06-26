@@ -304,6 +304,310 @@
                  lor))]
     (append path empty-from-path)))
 
+;;symbol (listof rules) -> (listof states)
+;;Purpose: Returns all states that have an empty transitions from the given start state
+(define (get-empty-states-from-start start lor)
+  (flatten
+   (map (λ (rule)
+          (if (and (equal? (first rule)  start)
+                   (equal? (second rule) EMP))
+              (cons (third rule) (list (get-empty-states-from-start (third rule) lor)))
+              '()))
+        lor)))
+
+;;(listof symbols) (listof rules) symbol -> (listof configurations)
+;;Purpose: Returns all possible configurations from start that consume the given word
+(define (get-configs a-word lor start)
+  (let* [;;(listof states)
+         ;;Purpose: A list of states reachable from the start state on an empty transition
+         (empty-states-frm-start (cons start (get-empty-states-from-start start lor)))
+         ;;(listof configurations)
+         ;;Purpose: All configurations from the start state
+         (configs (map (λ (state) (append (list state) (list a-word)))
+                       empty-states-frm-start))]
+    (filter (λ (config)
+              (empty? (last (last config))))
+            (remove-duplicates
+             (get-configs-helper configs a-word lor configs)))))
+
+;;(listof configurations) (listof symbols) (listof rule) (listof configurations) -> (listof configurations)
+;;Purpose: Returns all possible configurations using the given word and  (listof rules)
+;;Visited = All configurations of the consumed portion of the given word
+(define (get-configs-helper configs a-word lor visited)
+  (cond [(empty? configs) '()]
+        ;[(empty? a-word) configs]
+        [else (append (make-configs (first configs) a-word lor visited (list (first configs)))
+                      (get-configs-helper (rest configs) a-word lor visited))]))
+
+;;(listof configurations) (listof symbols) (listof rule) (listof configurations) (listof configurations) -> (listof configurations)
+;;Purpose: Explores all possible configurations using the given word, (listof rules), and visited
+;;Visited = All configurations of the consumed the processed word
+;;Path = The configurations that consumed the processed word
+(define (make-configs config a-word lor visited path)
+  (let* [;;(listof rules)
+         ;;Purpose: Returns all rules
+         (connected-rules (if (empty? a-word)
+                              #;(filter (λ (rule)
+                                          (and (equal? (first rule) (first config))
+                                               (equal? (second rule) EMP)))
+                                        lor)
+                              '()
+                              (filter (λ (rule)
+                                        (and (equal? (first rule) (first config))
+                                             (equal? (second rule) (first (second config)))))
+                                      lor)))
+         (new-config (filter (λ (new-config)
+                               (not (member? new-config visited)))
+                             ;'()
+                             ;new-config))
+                             (map (λ (rule)
+                                    (cond [(empty? a-word) (append (list (third rule)) (list a-word))]
+                                          ;[(equal? (second rule) EMP) (append (list (third rule)) (list a-word))]
+                                          [else (append (list (third rule)) (list (rest a-word)))]))
+                                  connected-rules)))
+         (connected-rules-via-emp (filter (λ (rule)
+                                            (and (equal? (first rule) (first config))
+                                                 (equal? (second rule) EMP)))
+                                          lor))       
+         (new-config-via-emp (filter (λ (new-config)
+                                       (not (member? new-config visited)))
+                                     ; '()
+                                     ;new-config))
+                                     (map (λ (rule)
+                                            (append (list (third rule)) (list a-word)))
+                                          connected-rules-via-emp)))]
+    (begin
+      
+      ;(display (format "visited ~s \n" visited))
+      ;(display (format "config ~s \n" config))
+      ;(display (format "word ~s \n" a-word))
+      ;(display (format "new-config post ~s \n" new-config))
+      ;(display (format "connected-rules ~s \n" connected-rules))
+      ;(display (format "new-config-via-emp post ~s \n" new-config-via-emp))
+      ;(display (format "connected-rules-via-emp ~s \n" connected-rules-via-emp))
+      ;(display (format "path ~s \n" (append path new-config)))
+      ;(display (format "path-via-emp ~s \n" (append path new-config-via-emp)))
+      (cond [(and (empty? new-config)
+                  (empty? new-config-via-emp))
+             (list path)]
+            [(and (empty? a-word) (empty? new-config-via-emp)
+                  (= (length new-config) 1))
+             (make-configs (first new-config)
+                           a-word
+                           lor
+                           (append new-config visited)
+                           (append path new-config))]
+            
+            [(and (empty? a-word) (empty? new-config)
+                  (= (length new-config-via-emp) 1))
+             
+             (make-configs (first new-config-via-emp)
+                           a-word
+                           lor
+                           (append new-config-via-emp visited)
+                           (append path new-config-via-emp))]
+            
+            [(and (empty? a-word) (empty? new-config-via-emp))
+             (make-configs-helper new-config
+                                  a-word
+                                  lor
+                                  (append new-config visited)
+                                  (append path new-config))]
+            [(and (empty? a-word) (empty? new-config))
+             (make-configs-helper new-config-via-emp
+                                  a-word
+                                  lor
+                                  (append new-config visited)
+                                  (append path new-config))]
+            [(and (empty? new-config-via-emp)
+                  (= (length new-config) 1))
+             (make-configs (first new-config)
+                           (rest a-word)
+                           lor
+                           (append new-config visited)
+                           (append path new-config))]
+            [(and (empty? new-config-via-emp)
+                  (> (length new-config) 1))
+             (make-configs-helper new-config
+                                  (rest a-word)
+                                  lor
+                                  (append new-config visited)
+                                  (append path new-config))]
+            [(and (empty? new-config)
+                  (= (length new-config-via-emp) 1))
+             (make-configs (first new-config-via-emp)
+                           a-word
+                           lor
+                           (append new-config-via-emp visited)
+                           (append path new-config-via-emp))]
+            [(and (empty? new-config)
+                  (> (length new-config-via-emp) 1))
+             (make-configs-helper new-config-via-emp
+                                  a-word
+                                  lor
+                                  (append path new-config-via-emp)
+                                  (append path new-config-via-emp))]
+            [else (append (make-configs-helper new-config
+                                               (rest a-word)
+                                               lor
+                                               (append new-config visited)
+                                               (append path new-config))
+                          (make-configs-helper new-config-via-emp
+                                               a-word
+                                               lor
+                                               (append new-config-via-emp visited)
+                                               (append path new-config-via-emp)))]))))
+
+;;(listof configurations) (listof symbols) (listof rule) (listof configurations) (listof configurations) -> (listof configurations)
+;;Purpose: Ensures that all possible configurations are explored
+;;Visited = All configurations that consumed the processed word
+;;Path = The configurations that consumed the processed word
+(define (make-configs-helper configs a-word lor visited path)
+  (if (empty? configs)
+      '()
+      (append (make-configs (first configs) a-word lor visited path)
+              (make-configs-helper (rest configs) a-word lor visited path))))
+
+(define (path-maker a-word lor configs)
+  (if (empty? configs)
+      '()
+      (cons (path-constructor a-word lor (first configs) '() (first configs))
+              (path-maker a-word lor (rest configs)))))
+
+(define (path-constructor a-word lor config path prev-config)
+  (cond [(= (length config) 1) (reverse path)]
+        [(and (= (length (second (first config)))
+                 (length (second (second config))))
+              (empty? (second (first config)))
+              (empty? (second (second config))))
+         (let* [(similiar-configs (append (list (first config)) (list (second config))))
+                (get-rules (remove-duplicates
+                            (filter (λ (rules)
+                                     (not (member? rules path)))
+                                     (append-map
+                                      (λ (sim-config)
+                                         (filter (λ (rule)
+                                                   (or (and (equal? (first prev-config) (first rule))
+                                                            (equal? (first sim-config) (third rule)))
+                                                       (and (equal? (first (first config)) (first rule))
+                                                            (equal? (first (second config)) (third rule))
+                                                            (equal? EMP (second rule)))
+                                                        #;(or (equal? (last (second prev-config)) (second rule))
+                                                            (equal? EMP (second rule)))))
+                                                 lor))
+                                       similiar-configs))))]
+          
+             (begin
+               ;(display (format "get-rules emp ~s \n" get-rules))
+               ;(display (format "(first (first config)) emp ~s \n" (first (first config))))
+               ;(display (format "(first (second config)) emp ~s \n" (first (second config))))
+               (path-constructor a-word lor (rest config) (append get-rules path) (first config))))]
+        [(= (length (second (first config)))
+            (length (second (second config))))
+         (let* [(similiar-configs (append (list (first config)) (list (second config))))
+                (get-rules (remove-duplicates
+                            (filter (λ (rules)
+                                     (not (member? rules path)))
+                                     (append-map
+                                      (λ (sim-config)
+                                         (filter (λ (rule)
+                                                   (or (and (equal? (first prev-config) (first rule))
+                                                            (equal? (first sim-config) (third rule)))
+                                                       (and (equal? (first (first config)) (first rule))
+                                                            (equal? (first (second config)) (third rule))
+                                                            (equal? EMP (second rule)))
+                                                        #;(or (equal? (last (second prev-config)) (second rule))
+                                                            (equal? EMP (second rule)))))
+                                                 lor))
+                                       similiar-configs))))]
+           (begin
+             ;(display (format "get-rules ~s \n" get-rules))
+             ;(display (format "(first (first config)) ~s \n" (first (first config))))
+             ;(display (format "(first (second config)) ~s \n" (first (second config))))
+             ;(display (format "prev-config ~s \n" prev-config ))
+             #;(display (format "alt style ~s \n" (append
+                                                   (path-constructor a-word lor (cons (first config)
+                                                                                      (rest (rest config))) (append get-rules '()) prev-config)
+                                                   (path-constructor a-word lor (rest config) (append get-rules '()) prev-config)))) 
+             #;(remove-duplicates
+                (append
+                 (path-constructor a-word lor (cons (first config) (rest (rest config))) (append get-rules path) prev-config)
+                 (path-constructor a-word lor (rest config) (append get-rules path) prev-config)))
+             (append (reverse (append get-rules path))
+                     (path-constructor a-word lor (cons (first config) (rest (rest config))) '() prev-config)
+                     (path-constructor a-word lor (rest config)                              '() (first config)))))]
+        [(empty? (second (first config)))
+         (let [(get-rules (filter (λ (rule)
+                                    (and (equal? (first (first config)) (first rule))
+                                         (equal? (first (second config)) (third rule))
+                                         (equal? EMP (second rule))))
+                                  lor))]
+           (path-constructor a-word lor (rest config) (append get-rules path) (first config)))]
+       
+        [else (let [(get-rules (filter (λ (rules)
+                                         (not (member? rules path)))
+                                         (filter (λ (rule)
+                                         (and (equal? (first (first config)) (first rule))
+                                              (equal? (first (second config)) (third rule))
+                                              (or (equal? (first (second (first config))) (second rule))
+                                                  (equal? EMP (second rule)))))
+                                       lor)))]
+               (if (empty? get-rules)
+                   '()
+               (begin
+                  ;(display (format "get-rules else ~s \n" get-rules))
+                  ;(display (format "(first (first config)) else ~s \n" (first (first config))))
+                  ;(display (format "(first (second config)) else ~s \n" (first (second config))))
+                  (path-constructor a-word lor (rest config) (append get-rules path) (first config)))))]))
+
+
+#;'(((S a S) (S b S) (S b S) (S b S) (S b A) (S a S) (S b S) (S b S) (S b A) (S a S) (S b S) (S b S) (S b A) (S a S) (S b S) (S b A))
+    ((S a S) (S b S) (S b S) (S a S) (S b S) (S b S) (A b B) (S a S) (S b S) (S a S) (S b S) (A b B))
+    ((S a S) (S b S) (B b B) (S a S) (S b S) (A b B) (B b B)))
+
+#;(append-map (λ (sim-config)
+                (filter (λ (rule)
+                          (and (equal? (first (first '((S (a a a a))))) (first rule))
+                               (equal? (first sim-config) (third rule))
+                               (or (equal? (first (second (first '((S (a a a a)))))) (second rule))
+                                   (equal? EMP (second rule)))))
+                        (sm-rules aa-ab)))
+              '((A (a a a)) (B (a a a))))
+
+;;using new method without remove duplicates
+#;'(((S b A) (S b S) (S b A) (S b S) (S b A) (S b S) (S b A) (S b S))
+    ((S b A) (S b S) (S b A) (S b S) (A b B) (A b B))
+    ((S b A) (S b S) (B b B) (S b A) (S b S) (A b B) (B b B)))
+;;using remove duplicates
+#;'(((S a S) (S b S) (S b A))
+    ((S a S) (S b S) (S b A) (A b B))
+    ((S a S) (S b S) (S b A) (B b B) (A b B)))
+;;informative messaging -> number of computations
+
+(define (add-empties-to-start path lor)
+  (if (empty? path)
+      '()
+      (append-map (λ (rule)
+                (if (equal? (first (first path))
+                            (third rule))
+                    (append rule path)
+                    '()))
+              lor)))
+
+#|
+want to say why every component used for the tool is important
+want to implement a bug on bigger machines to emphasis importance of yield and colors
+want an example that highlights the importance of zoom
+want show a combination of all the features if possible
+|#
+
+(define (get-empties-from-start2 start lor)
+   (append-map (λ (rule)
+          (if (and (equal? (first rule)  start)
+                   (equal? (second rule) EMP))
+              (append (list rule) (get-empties-from-start2 (third rule) lor))
+              '()))
+        lor))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;upci is the unprocessed consumed input
@@ -449,13 +753,15 @@
                                                         (sub1 (length (viz-state-ndfa-pci a-vs))))
                                                   (sm-rules (viz-state-ndfa-M a-vs)))
                                      ;(append-map (λ (rule) (attach-empties rule (sm-rules (viz-state-ndfa-M a-vs))))
-                                                 (path-maker (take (viz-state-ndfa-pci a-vs)
+                                                 (begin
+                                                   ;(display "\n \n prev-path \n")
+                                                   (path-maker (take (viz-state-ndfa-pci a-vs)
                                                                    (sub1 (length (viz-state-ndfa-pci a-vs))))
                                                              (sm-rules (viz-state-ndfa-M a-vs))
                                                              (get-configs (take (viz-state-ndfa-pci a-vs)
                                                                                 (sub1 (length (viz-state-ndfa-pci a-vs))))
                                                                           (sm-rules (viz-state-ndfa-M a-vs))
-                                                                          (sm-start (viz-state-ndfa-M a-vs))))]))
+                                                                          (sm-start (viz-state-ndfa-M a-vs)))))]))
          ;;(listof rules)
          ;;Purpose: All paths that have similiarities with
          ;;         the current path
@@ -475,7 +781,7 @@
                                curr-path)))
           (begin
             ;(display (format "curr-path ~s \n" curr-path))
-            ;(display (format "prev-path ~s \n \n" full-prev-path))
+            ;(display (format "prev-path ~s \n" full-prev-path))
             #;(foldl (λ (prev curr)
                    (return-differences prev curr))
                    curr-path
@@ -488,9 +794,11 @@
                 curr-path)
          ;;(listof symbols)
          ;;Purpose: The current state that the ndfa is in
-         (current-states (remove-duplicates
+         (current-states (begin
+                           ;(display (format "current-place ~s \n \n" current-place))
+                           (remove-duplicates
                           (map first
-                               current-place)))
+                               current-place))))
          ;;(listof symbols)
          ;;Purpose: The current state that the ndfa is in
          (destin-states (remove-duplicates
@@ -892,7 +1200,7 @@
 (ndfa-viz ends-with-two-bs '(a b a b a b b a a a b b))
 (ndfa-viz p2-ndfa '(a b a b))
 (ndfa-viz AB*B*UAB* '(a b a b))
-|#
+
 
 ;;sample configurations uses empties from start
 ;;ex using p2-ndfa -> word is (a b a)
@@ -1098,23 +1406,31 @@
           
              (begin
                ;(display (format "get-rules emp ~s \n" get-rules))
+               ;(display (format "(first (first config)) emp ~s \n" (first (first config))))
+               ;(display (format "(first (second config)) emp ~s \n" (first (second config))))
                (path-constructor a-word lor (rest config) (append get-rules path) (first config))))]
         [(= (length (second (first config)))
             (length (second (second config))))
          (let* [(similiar-configs (append (list (first config)) (list (second config))))
-                (get-rules (filter (λ (rules)
+                (get-rules (remove-duplicates
+                            (filter (λ (rules)
                                      (not (member? rules path)))
                                      (append-map
                                       (λ (sim-config)
                                          (filter (λ (rule)
-                                                   (and (equal? (first prev-config) (first rule))
-                                                        (equal? (first sim-config) (third rule))
-                                                        (or (equal? (last (second prev-config)) (second rule))
+                                                   (or (and (equal? (first prev-config) (first rule))
+                                                            (equal? (first sim-config) (third rule)))
+                                                       (and (equal? (first (first config)) (first rule))
+                                                            (equal? (first (second config)) (third rule))
+                                                            (equal? EMP (second rule)))
+                                                        #;(or (equal? (last (second prev-config)) (second rule))
                                                             (equal? EMP (second rule)))))
                                                  lor))
-                                       similiar-configs)))]
+                                       similiar-configs))))]
            (begin
              ;(display (format "get-rules ~s \n" get-rules))
+             ;(display (format "(first (first config)) ~s \n" (first (first config))))
+             ;(display (format "(first (second config)) ~s \n" (first (second config))))
              ;(display (format "prev-config ~s \n" prev-config ))
              #;(display (format "alt style ~s \n" (append
                                                    (path-constructor a-word lor (cons (first config)
@@ -1135,13 +1451,21 @@
                                   lor))]
            (path-constructor a-word lor (rest config) (append get-rules path) (first config)))]
        
-        [else (let [(get-rules (filter (λ (rule)
+        [else (let [(get-rules (filter (λ (rules)
+                                         (not (member? rules path)))
+                                         (filter (λ (rule)
                                          (and (equal? (first (first config)) (first rule))
                                               (equal? (first (second config)) (third rule))
                                               (or (equal? (first (second (first config))) (second rule))
                                                   (equal? EMP (second rule)))))
-                                       lor))]
-                (path-constructor a-word lor (rest config) (append get-rules path) (first config)))]))
+                                       lor)))]
+               (if (empty? get-rules)
+                   '()
+               (begin
+                  ;(display (format "get-rules else ~s \n" get-rules))
+                  ;(display (format "(first (first config)) else ~s \n" (first (first config))))
+                  ;(display (format "(first (second config)) else ~s \n" (first (second config))))
+                  (path-constructor a-word lor (rest config) (append get-rules path) (first config)))))]))
 
 
 #;'(((S a S) (S b S) (S b S) (S b S) (S b A) (S a S) (S b S) (S b S) (S b A) (S a S) (S b S) (S b S) (S b A) (S a S) (S b S) (S b A))
@@ -1191,3 +1515,23 @@ want show a combination of all the features if possible
               (append (list rule) (get-empties-from-start2 (third rule) lor))
               '()))
         lor))
+
+#|
+curr-path    (((S a A) (S a B) (A b C) (C a E) (E ε S) (C a E) (E ε S)) ((S a A) (S a B) (D ε S) (S a A) (S a B) (B b D) (D ε S) (S a A) (S a B))) 
+prev-path    (((S a A) (S a B) (A b C))                                 ((S a A) (S a B) (D ε S) (B b D) (D ε S))) 
+current-place                         ((C a E) (E ε S) (C a E) (E ε S)                           (S a A) (S a B) (B b D) (D ε S) (S a A) (S a B)) 
+|#
+#;(map (λ (curr)
+       (map (λ (prev)
+              (remove-similiarities prev curr '()))
+              '(prev goes here)))
+       '(curr goes here))
+curr-path (((S a A) (S a B) (B b D) (D ε S) (S a A) (S a B) (A b C) (C a E) (E ε S)) ((S a A) (S a B) (B b D) (D ε S) (S a A) (S a B) (B b D) (D ε S) (S a A) (S a B))) 
+prev-path (((S a A) (S a B) (B b D) (D ε S) (S a A) (S a B) (A b C))                 ((S a A) (S a B) (B b D) (D ε S) (S a A) (S a B) (B b D) (D ε S))) 
+current-place                                                       ((C a E) (E ε S)                                                                  (S a A) (S a B))
+
+
+curr-path (((S a A) (S a B) (B b D) (D ε S) (S a A) (S a B) (A b C)) ((S a A) (S a B) (B b D) (D ε S) (S a A) (S a B) (B b D) (D ε S))) 
+prev-path (((S a A) (S a B) (A b C) (C a E) (E ε S))                 ((S a A) (S a B) (B b D) (D ε S) (S a A) (S a B))) 
+current-place              ((B b D) (D ε S) (S a A) (S a B) (A b C)                                                    (B b D) (D ε S))
+|#
