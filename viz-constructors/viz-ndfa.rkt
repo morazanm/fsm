@@ -296,13 +296,14 @@
 
 ;; graph NDFA word (listof rules) (listof rules) -> graph
 ;; Purpose: To create a graph of edges from the given list of rules
-(define (edge-graph cgraph M pci current-place)
-  (foldl (λ (rule result)
+(define (edge-graph cgraph M pci current-place dead)
+  (foldl (λ (rule result) 
            (cond [(and (not (empty? pci))
-                       (or (member? rule current-place)
-                       (ormap (λ (p) (and (equal? (first rule) (first p))
-                                          (equal? (third rule) DEAD)))
-                             current-place)))
+                       (or (and (member? rule current-place)
+                           (ormap (λ (p) (and (equal? (first rule) (first p))
+                                              (equal? (second rule) (last pci))
+                                              (equal? (third rule) dead)))
+                                  current-place)))
                     (add-edge result
                             (second rule)
                             (first rule)
@@ -310,14 +311,14 @@
                             #:atb (hash 'color destin-color
                                         'fontsize 20
                                         'style 'dashed))]
-                [(equal? (third rule) DEAD)
+                [(equal? (third rule) dead)
                   (add-edge result
                             (second rule)
                             (first rule)
                             (third rule)
                             #:atb (hash 
                                    'fontsize 20 
-                                   'style 'dashed))]
+                                   'style 'dashed))]       
                  [(or (member? rule current-place)
                       (ormap (λ (p) (and (equal? (first rule) (first p))
                                          (equal? (third rule) (third p))))
@@ -340,10 +341,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;upci is the unprocessed consumed input
-;;pci is the proccessed consumed input
-;;M is an ndfa
-(struct viz-state-ndfa (upci pci M))
+;;upci is the unprocessed consumed input (listof symbols)
+;;pci is the proccessed consumed input (listof symbols)
+;;M is an ndfa (machine)
+;;inv is a the (listof (state (listof symbols -> boolean)))
+(struct viz-state-ndfa (upci pci M inv dead))
 
 (define E-SCENE (empty-scene 1250 600))
 (define E-SCENE-TOOLS (overlay (beside (above (above (triangle  30    'solid 'black)
@@ -560,7 +562,7 @@
                                                                  'forestgreen))
                                                    (text "Word Status: accept " 20 'white))]
                                                  [(and (equal? (sm-apply (viz-state-ndfa-M a-vs) (viz-state-ndfa-pci a-vs)) 'reject)
-                                                       (member? DEAD (sm-states (viz-state-ndfa-M a-vs))))
+                                                       (member? (viz-state-ndfa-dead a-vs) (sm-states (viz-state-ndfa-M a-vs))))
                                                   (above/align 'left
                                                                (beside (text "aaaa" 20 'white)
                                                                        (text "Word: " 20 'black)
@@ -638,7 +640,8 @@
                                  destin-states)
                      (viz-state-ndfa-M a-vs)
                      (viz-state-ndfa-pci a-vs)
-                     current-rules))
+                     current-rules
+                     (viz-state-ndfa-dead a-vs)))
                    500
                    515))
            (above/align 'left
@@ -660,7 +663,9 @@
              (viz-state-ndfa (rest (viz-state-ndfa-upci a-vs))
                              (append (viz-state-ndfa-pci a-vs)
                                      (list (first (viz-state-ndfa-upci a-vs))))
-                             (viz-state-ndfa-M a-vs)))]
+                             (viz-state-ndfa-M a-vs)
+                             (viz-state-ndfa-inv a-vs)
+                             (viz-state-ndfa-dead a-vs)))]
         [(key=? "left" a-key) 
          (if (empty? (viz-state-ndfa-pci a-vs))
              a-vs
@@ -668,7 +673,9 @@
                                    (viz-state-ndfa-upci a-vs))
                              (take (viz-state-ndfa-pci a-vs)
                                    (sub1 (length (viz-state-ndfa-pci a-vs))))
-                             (viz-state-ndfa-M a-vs)))]
+                             (viz-state-ndfa-M a-vs)
+                             (viz-state-ndfa-inv a-vs)
+                             (viz-state-ndfa-dead a-vs)))]
         [(key=? "down" a-key) 
          (let* [;;(listof symbols)
                 ;;Purpose: The last word that could be fully consumed by the ndfa
@@ -686,58 +693,106 @@
                                                           (viz-state-ndfa-upci a-vs))))
                   (viz-state-ndfa (rest unconsumed-word)
                                   (append last-consumed-word (take unconsumed-word 1))
-                                  (viz-state-ndfa-M a-vs))]  ;;there are no computations that consumes the entire word
+                                  (viz-state-ndfa-M a-vs)
+                                  (viz-state-ndfa-inv a-vs)
+                                  (viz-state-ndfa-dead a-vs))]  ;;there are no computations that consumes the entire word
                  [else (viz-state-ndfa '()   ;;there at least one computation that consumes the entire word 
                                        (append (viz-state-ndfa-pci a-vs)
                                                (viz-state-ndfa-upci a-vs))
-                                       (viz-state-ndfa-M a-vs))]))]
+                                       (viz-state-ndfa-M a-vs)
+                                       (viz-state-ndfa-inv a-vs)
+                                       (viz-state-ndfa-dead a-vs))]))]
         [(key=? "up" a-key)
          (if (= (length (viz-state-ndfa-pci a-vs)) 1)
              a-vs
              (viz-state-ndfa (append (viz-state-ndfa-pci a-vs)
                                      (viz-state-ndfa-upci a-vs))
                              '()
-                             (viz-state-ndfa-M a-vs)))]
+                             (viz-state-ndfa-M a-vs)
+                             (viz-state-ndfa-inv a-vs)
+                             (viz-state-ndfa-dead a-vs)))]
         [else a-vs]))
 
+;;machine -> machine
+;;Purpose: Produces an equivalent machine with the addition of the dead state and rules to the dead state
+(define (make-new-M M)
+  (local [;;symbol
+          ;;Purpose: If ds is already used as a state in M, then generates a random seed symbol,
+          ;;         otherwise uses ds
+          (define dead (if (member? 'ds (sm-states M))
+                           #;(generate-symbol DEAD `(,DEAD))
+                           (error (format "The state: ~s cannot be in the the given list of machine state: ~s if you wish to add the dead state. \n"
+                                  'ds (sm-states M)))
+                           DEAD))
+          ;;(listof rules)
+          ;;Purpose: Makes rules for every combination of states in M and symbols in sigma of M
+          (define new-rules (for*/list ([states (sm-states M)]
+                                        [sigma (sm-sigma M)])
+                              (list states sigma states)))
+          ;;(listof rules)
+          ;;Purpose: Makes rules for every dead state transition to itself using the symbols in sigma of M
+          (define dead-rules (for*/list ([ds (list dead)]
+                                         [sigma (sm-sigma M)])
+                               (list ds sigma ds)))
+          ;;(listof rules)
+          ;;Purpose: Gets rules that are not currently in the original rules of M
+          (define get-rules-not-in-M (filter (λ (rule)
+                                               (not (member? rule (sm-rules M))))
+                                             new-rules))
+          ;;(listof rules)
+          ;;Purpose: Maps the dead state as a destination for all rules that are not currently in the original rules of M
+          (define rules-to-dead (map (λ (rule)
+                                       (append (list (first rule))
+                                               (list (second rule))
+                                               (list dead)))
+                                     get-rules-not-in-M))]
+    (make-ndfa (append (sm-states M) (list dead))
+               (sm-sigma M)
+               (sm-start M)
+               (sm-finals M)
+               (append (sm-rules M)
+                       rules-to-dead
+                       dead-rules))))
+  
 ;;ndfa word -> (void) Throws error
 ;;Purpose: Visualizes the given ndfa processing the given word
 ;;Assumption: The given machine is a ndfa
-(define (ndfa-viz M a-word #:add-dead [add-dead #f])
-  (cond [(not (eq? (sm-type M) 'ndfa)) (error "The given machine must be a ndfa")]
-        [add-dead (let* [(new-rules (for*/list ([frm-states (sm-states M)]
-                                                 [sigma (sm-sigma M)])
-                                       (list frm-states sigma frm-states)))
-                          (dead-rules (for*/list ([dead `(,DEAD)]
-                                                  [sigma (sm-sigma M)])
-                                        (list dead sigma dead)))
-
-                          (get-dummy-rules (filter (λ (rule)
-                                                            (not (member? rule (sm-rules M))))
-                                                          new-rules))
-
-                          (dummy-rules (map (λ (rule)
-                                                     (append (list (first rule))
-                                                             (list (second rule))
-                                                             (list DEAD)))
-                                                   get-dummy-rules))
-
-                          (new-M (make-ndfa (append (sm-states M) `(,DEAD))
-                                            '(a b c)
-                                            'S
-                                            '(A B C)
-                                            (append (sm-rules M)
-                                                    dummy-rules
-                                                    dead-rules)))]
-                      (run-viz-ndfa
-                     (viz-state-ndfa a-word
-                                     '()
-                                     new-M)
-                     'ndfa-viz))]
+(define (ndfa-viz M a-word #:inv [inv '()] #:add-dead [add-dead #f])
+  (cond [(not (eq? (sm-type M) 'ndfa))
+         (error "The given machine must be a ndfa.")]
+        [(and add-dead
+              (not (empty? inv)))
+         (let [(new-M (make-new-M M))]
+           (run-viz-ndfa
+            (viz-state-ndfa a-word
+                            '()
+                            new-M
+                            inv
+                            (last (sm-states new-M)))
+            'ndfa-viz))]
+        [add-dead
+         (let [(new-M (make-new-M M))]
+           (run-viz-ndfa
+            (viz-state-ndfa a-word
+                            '()
+                            new-M
+                            '()
+                            (last (sm-states new-M)))
+            'ndfa-viz))]
+        [(not (empty? inv))
+         (run-viz-ndfa
+          (viz-state-ndfa a-word
+                          '()
+                          M
+                          inv
+                          'no-dead)
+          'ndfa-viz)]
         [else (run-viz-ndfa
                (viz-state-ndfa a-word
                                '()
-                               M)
+                               M
+                               '()
+                               'no-dead)
                'ndfa-viz)]))
 
 ;;viz-state string -> (void)
@@ -899,6 +954,13 @@
                          (D ,EMP B)
                          (B b B))))
 
+(define ND4 (make-ndfa '(S ds)
+                       '(a b)
+                       'S
+                       '(ds)
+                       `((S a ds)
+                         (ds a ds))))
+
 #;(let [(res (graph->bitmap cgraph (current-directory) FNAME))]
     (begin
       (delete-file (string-append FNAME ".dot"))
@@ -924,10 +986,7 @@
 (ndfa-viz AB*B*UAB* '(a b a b))
 |#
 
-
-
-;(sm-cmpgraph AT-LEAST-ONE-MISSING '(c c c c b b a b b c b a))
-
 ;;next step
-;;learn about for loops and keyword arguments
-;;implement invariants and an option for cmpgraphs
+;;implement invariants 
+
+
