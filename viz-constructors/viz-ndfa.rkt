@@ -35,12 +35,12 @@
 ;;Purpose: Removes all similiarities between lst1 and lst2
 ;;Acc = The differences between the previous path and the current path
 ;;ASSUMPTION: lst1 and lst2 must be similar
-(define (remove-similiarities prev-path curr-path acc)
+(define (remove-similarities prev-path curr-path acc)
   (cond [(empty? prev-path) (append acc curr-path)]
         [(empty? curr-path) prev-path]
         [(equal? (first prev-path) (first curr-path))
-         (remove-similiarities (rest prev-path) (rest curr-path) acc)]
-        [(remove-similiarities (rest prev-path) (rest curr-path)
+         (remove-similarities (rest prev-path) (rest curr-path) acc)]
+        [(remove-similarities (rest prev-path) (rest curr-path)
                                (append acc (list (first curr-path))))]))
 
 ;;(listof rules) (listof rules) -> (listof rules)
@@ -220,9 +220,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; graph machine (listof states)-> graph
+;; graph machine (listof states) -> graph
 ;; Purpose: To create a graph of nodes from the given list of rules
-(define (node-graph cgraph M destin-states pci)
+(define (node-graph cgraph M destin-states)
   (foldl (λ (state result)
            (cond [(and (member? state destin-states) 
                        (member? state (sm-finals M))
@@ -287,8 +287,9 @@
                                'fontcolor 'darkgreen))]
                  [else (add-node result 
                                  state
-                                 #:atb (hash 'color 'black 'shape 'circle 'label
-                                             state
+                                 #:atb (hash 'color 'black
+                                             'shape 'circle
+                                             'label state
                                              'fontcolor 'black))]))
          cgraph
          (sm-states M)))
@@ -297,22 +298,26 @@
 ;; Purpose: To create a graph of edges from the given list of rules
 (define (edge-graph cgraph M pci current-place)
   (foldl (λ (rule result)
-           (cond [(and (empty? pci)
-                       (member? rule (get-empties-from-start (sm-start M) (sm-rules M))))
-                  (add-edge result
-                            (second rule)
-                            (first rule)
-                            (third rule)
-                            #:atb (hash 'color destin-color 'fontsize 20 'style 'solid))]
-                 [(and (empty? pci)
+           (cond [(and (not (empty? pci))
+                       (or (member? rule current-place)
                        (ormap (λ (p) (and (equal? (first rule) (first p))
-                                          (not (equal? (second rule) EMP))))
-                              current-place))
+                                          (equal? (third rule) DEAD)))
+                             current-place)))
+                    (add-edge result
+                            (second rule)
+                            (first rule)
+                            (third rule)
+                            #:atb (hash 'color destin-color
+                                        'fontsize 20
+                                        'style 'dashed))]
+                [(equal? (third rule) DEAD)
                   (add-edge result
                             (second rule)
                             (first rule)
                             (third rule)
-                            #:atb (hash 'fontsize 20 'style 'solid))]
+                            #:atb (hash 
+                                   'fontsize 20 
+                                   'style 'dashed))]
                  [(or (member? rule current-place)
                       (ormap (λ (p) (and (equal? (first rule) (first p))
                                          (equal? (third rule) (third p))))
@@ -321,13 +326,15 @@
                             (second rule)
                             (first rule)
                             (third rule)
-                            #:atb (hash 'color destin-color 'fontsize 20 'style 'solid))]
-                 [else
-                  (add-edge result
-                            (second rule)
-                            (first rule)
-                            (third rule)
-                            #:atb (hash 'fontsize 20 'style 'solid))]))
+                            #:atb (hash 'color destin-color
+                                        'fontsize 20
+                                        'style 'solid))] 
+                 [else (add-edge result
+                                 (second rule)
+                                 (first rule)
+                                 (third rule)
+                                 #:atb (hash 'fontsize 20
+                                             'style 'solid))]))
          cgraph
          (sm-rules M)))
 
@@ -428,9 +435,12 @@
                                 (cons (sm-start (viz-state-ndfa-M a-vs))
                                       (get-empty-states-from-start (sm-start (viz-state-ndfa-M a-vs))
                                                                    (sm-rules (viz-state-ndfa-M a-vs))))))
-         ;;(listof (listof rules))
+         
+         ;;for reference, a config(computation) is a pair(list) with a state as the first element and a word as the second
+         ;;EX. (S (a b a))
+         ;;(listof configurations)
          ;;Purpose: Returns all configurations using the CI
-         (curr-path  (if (empty? (viz-state-ndfa-pci a-vs))
+         (curr-config  (if (empty? (viz-state-ndfa-pci a-vs))
                          (get-empties-from-start (sm-start (viz-state-ndfa-M a-vs))
                                                  (sm-rules (viz-state-ndfa-M a-vs)))
                          (append-map (λ (config)
@@ -443,9 +453,9 @@
                                                   (sm-start (viz-state-ndfa-M a-vs))))))
          
          
-         ;;(listof rules)
+         ;;(listof configurations)
          ;;Purpose: Returns the all configurations using the CI that is one step behind
-         (prev-path (cond [(empty?    (viz-state-ndfa-pci a-vs)) '()]
+         (prev-config (cond [(empty?    (viz-state-ndfa-pci a-vs)) '()]
                           [(= (length (viz-state-ndfa-pci a-vs)) 1)
                            starting-empties]
                           [else (append-map (λ (config)
@@ -461,28 +471,30 @@
                              
          ;;(listof rules)
          ;;Purpose: The current rules that the ndfa is using to consume the last of the CI
-         (current-place (if (empty? (viz-state-ndfa-pci a-vs))
-                            curr-path
+         ;;How: By checking every possible combintion, compares each state in the previous
+         ;;     config with the first of the rule,  each state in the current config with
+         ;;     the third of the rule, and the first of letter in the word of the previous
+         ;;     config with the second of the rule to obtain the current rule(s) being applied 
+         (current-rules (if (empty? (viz-state-ndfa-pci a-vs))
+                            curr-config
                             (append-map (λ (path)
                                           (attach-empties path (sm-rules (viz-state-ndfa-M a-vs))))
-                                        (remove-duplicates (append-map (λ (prev)
-                                                                         (append-map (λ (curr)
-                                                                                       (filter (λ (rule)
-                                                                                                 (and (equal? (first prev) (first rule))
-                                                                                                      (equal? (first curr) (third rule))
-                                                                                                      (equal? (first (second prev))
-                                                                                                              (second rule))))
-                                                                                               (sm-rules (viz-state-ndfa-M a-vs))))
-                                                                                     curr-path))
-                                                                       prev-path)))))
+                                        (remove-duplicates (for*/list ([prev prev-config]
+                                                                       [curr curr-config]
+                                                                       [rule (sm-rules (viz-state-ndfa-M a-vs))]
+                                                                       #:when (and (equal? (first prev) (first rule))
+                                                                                   (equal? (first curr) (third rule))
+                                                                                   (equal? (first (second prev))
+                                                                                           (second rule))))
+                                                             rule))))) 
          
         
          ;;(listof symbols)
          ;;Purpose: The states that the ndfa could go to 
          (destin-states (if (not (empty? (viz-state-ndfa-pci a-vs)))
-                            (map last current-place)
+                            (map last current-rules)
                             (cons (sm-start (viz-state-ndfa-M a-vs))
-                                  (map last current-place))))
+                                  (map last current-rules))))
          ;;(listof symbols)
          ;;Purpose: The last word that could be fully consumed by the ndfa
          (last-consumed-word (last-fully-consumed (viz-state-ndfa-pci a-vs)
@@ -490,7 +502,7 @@
 
          ;;(listof symbols)
          ;;Purpose: The portion of the word that cannont be consumed
-         (unconsumed-word (remove-similiarities last-consumed-word
+         (unconsumed-word (remove-similarities last-consumed-word
                                                 (append (viz-state-ndfa-pci a-vs)
                                                         (viz-state-ndfa-upci a-vs))
                                                 '()))
@@ -507,7 +519,10 @@
                                                            (beside (text (los2str last-consumed-word)
                                                                          20
                                                                          'gray)
-                                                                   (text (los2str unconsumed-word)
+                                                                   (text (los2str (list (first unconsumed-word)))
+                                                                         20
+                                                                         'red)
+                                                                   (text (los2str (rest unconsumed-word))
                                                                          20
                                                                          'black)))
                                                    (beside (text "Consumed: " 20 'black)
@@ -523,7 +538,8 @@
                                                                  'red))
                                                    (text "Word Status: accept " 20 'white))]
                                      [(empty? (viz-state-ndfa-upci a-vs)) ;;the word is accepted
-                                      (above/align 'left
+                                      (cond [(equal? (sm-apply (viz-state-ndfa-M a-vs) (viz-state-ndfa-pci a-vs)) 'accept)
+                                                  (above/align 'left
                                                    (beside (text "aaaa" 20 'white)
                                                            (text "Word: " 20 'black)
                                                            (text (los2str (viz-state-ndfa-pci a-vs))
@@ -538,10 +554,51 @@
                                                                  20
                                                                  'brown)
                                                            (text "aaaaa" 20 'white)
-                                                           (text "There is a computation that leads to accept."
+                                                           (text "There is a computation that the machine accepts."
+                                                                 ;"There is a computation that leads to accept."
                                                                  20
                                                                  'forestgreen))
                                                    (text "Word Status: accept " 20 'white))]
+                                                 [(and (equal? (sm-apply (viz-state-ndfa-M a-vs) (viz-state-ndfa-pci a-vs)) 'reject)
+                                                       (member? DEAD (sm-states (viz-state-ndfa-M a-vs))))
+                                                  (above/align 'left
+                                                               (beside (text "aaaa" 20 'white)
+                                                                       (text "Word: " 20 'black)
+                                                                       (text (los2str (viz-state-ndfa-pci a-vs))
+                                                                             20
+                                                                             'gray))
+                                                               (beside (text "Consumed: " 20 'black)
+                                                                       (text (los2str (viz-state-ndfa-pci a-vs))
+                                                                             20
+                                                                             'black))
+                                                               (beside (text (format "The number of possible computations is ~a. "
+                                                                                     (number->string (length destin-states)))
+                                                                             20
+                                                                             'brown)
+                                                                       (text "aaaaa" 20 'white)
+                                                                       (text "All computations end in the dead state and the machine rejects."
+                                                                             20
+                                                                             'red))
+                                                               (text "Word Status: accept " 20 'white))]
+                                                 [else (above/align 'left
+                                                                    (beside (text "aaaa" 20 'white)
+                                                                            (text "Word: " 20 'black)
+                                                                            (text (los2str (viz-state-ndfa-pci a-vs))
+                                                                                  20
+                                                                                  'gray))
+                                                                    (beside (text "Consumed: " 20 'black)
+                                                                            (text (los2str (viz-state-ndfa-pci a-vs))
+                                                                                  20
+                                                                                  'black))
+                                                                    (beside (text (format "The number of possible computations is ~a. "
+                                                                                          (number->string (length destin-states)))
+                                                                                  20
+                                                                                  'brown)
+                                                                            (text "aaaaa" 20 'white)
+                                                                            (text "All computations end in a non-final state and the machine rejects."
+                                                                                  20
+                                                                                  'red))
+                                                                    (text "Word Status: accept " 20 'white))])]
                                      [(empty? (viz-state-ndfa-pci a-vs)) ;;nothing has been consumed
                                       (above/align 'left
                                                    (beside (text "aaaa" 20 'white)
@@ -578,11 +635,10 @@
                      (node-graph (create-graph 'ndfagraph #:atb
                                                (hash 'rankdir "LR"))
                                  (viz-state-ndfa-M a-vs)
-                                 destin-states
-                                 (viz-state-ndfa-pci a-vs))
+                                 destin-states)
                      (viz-state-ndfa-M a-vs)
                      (viz-state-ndfa-pci a-vs)
-                     current-place))
+                     current-rules))
                    500
                    515))
            (above/align 'left
@@ -614,12 +670,27 @@
                                    (sub1 (length (viz-state-ndfa-pci a-vs))))
                              (viz-state-ndfa-M a-vs)))]
         [(key=? "down" a-key) 
-         (if (empty? (viz-state-ndfa-upci a-vs))
-             a-vs
-             (viz-state-ndfa '()
-                             (append (viz-state-ndfa-pci a-vs)
-                                     (viz-state-ndfa-upci a-vs))
-                             (viz-state-ndfa-M a-vs)))]
+         (let* [;;(listof symbols)
+                ;;Purpose: The last word that could be fully consumed by the ndfa
+                (last-consumed-word (last-fully-consumed (append (viz-state-ndfa-pci a-vs)
+                                                                 (viz-state-ndfa-upci a-vs))
+                                                         (viz-state-ndfa-M a-vs)))
+                ;;(listof symbols)
+                ;;Purpose: The portion of the word that cannont be consumed
+                (unconsumed-word (remove-similarities last-consumed-word
+                                                      (append (viz-state-ndfa-pci a-vs)
+                                                              (viz-state-ndfa-upci a-vs))
+                                                      '()))]
+           (cond [(empty? (viz-state-ndfa-upci a-vs)) a-vs] ;;the word has either been consumed or not fully consumed
+                 [(not (equal? last-consumed-word (append (viz-state-ndfa-pci a-vs)
+                                                          (viz-state-ndfa-upci a-vs))))
+                  (viz-state-ndfa (rest unconsumed-word)
+                                  (append last-consumed-word (take unconsumed-word 1))
+                                  (viz-state-ndfa-M a-vs))]  ;;there are no computations that consumes the entire word
+                 [else (viz-state-ndfa '()   ;;there at least one computation that consumes the entire word 
+                                       (append (viz-state-ndfa-pci a-vs)
+                                               (viz-state-ndfa-upci a-vs))
+                                       (viz-state-ndfa-M a-vs))]))]
         [(key=? "up" a-key)
          (if (= (length (viz-state-ndfa-pci a-vs)) 1)
              a-vs
@@ -632,14 +703,42 @@
 ;;ndfa word -> (void) Throws error
 ;;Purpose: Visualizes the given ndfa processing the given word
 ;;Assumption: The given machine is a ndfa
-(define (ndfa-viz M a-word)
-  (if (not (eq? (sm-type M) 'ndfa))
-      (error "The given machine must be a ndfa")
-      (run-viz-ndfa
-       (viz-state-ndfa a-word
-                       '()
-                       M)
-       'ndfa-viz)))
+(define (ndfa-viz M a-word #:add-dead [add-dead #f])
+  (cond [(not (eq? (sm-type M) 'ndfa)) (error "The given machine must be a ndfa")]
+        [add-dead (let* [(new-rules (for*/list ([frm-states (sm-states M)]
+                                                 [sigma (sm-sigma M)])
+                                       (list frm-states sigma frm-states)))
+                          (dead-rules (for*/list ([dead `(,DEAD)]
+                                                  [sigma (sm-sigma M)])
+                                        (list dead sigma dead)))
+
+                          (get-dummy-rules (filter (λ (rule)
+                                                            (not (member? rule (sm-rules M))))
+                                                          new-rules))
+
+                          (dummy-rules (map (λ (rule)
+                                                     (append (list (first rule))
+                                                             (list (second rule))
+                                                             (list DEAD)))
+                                                   get-dummy-rules))
+
+                          (new-M (make-ndfa (append (sm-states M) `(,DEAD))
+                                            '(a b c)
+                                            'S
+                                            '(A B C)
+                                            (append (sm-rules M)
+                                                    dummy-rules
+                                                    dead-rules)))]
+                      (run-viz-ndfa
+                     (viz-state-ndfa a-word
+                                     '()
+                                     new-M)
+                     'ndfa-viz))]
+        [else (run-viz-ndfa
+               (viz-state-ndfa a-word
+                               '()
+                               M)
+               'ndfa-viz)]))
 
 ;;viz-state string -> (void)
 ;;Purpose: Visualizes the given viz-state
@@ -828,3 +927,7 @@
 
 
 ;(sm-cmpgraph AT-LEAST-ONE-MISSING '(c c c c b b a b b c b a))
+
+;;next step
+;;learn about for loops and keyword arguments
+;;implement invariants and an option for cmpgraphs
