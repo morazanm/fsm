@@ -5,7 +5,7 @@
          "../fsm-core/private/constants.rkt"
          "../fsm-core/private/misc.rkt"
          
-         "viz.rkt"
+         "grammar-viz.rkt"
          "zipper.rkt"
          2htdp/image
          )
@@ -854,7 +854,7 @@
                                                                (map undo-renaming (create-invariant-nodes a-dgrph invariants (grammar-start cfg) derv-type))))
                                             lod)))
                    (graphs (map (lambda (dgrph) (create-graph-structs dgrph invariants derv-type (grammar-start cfg))) lod))]
-              (run-viz cfg word w-der rules graphs broken-invariants))))
+              (init-viz cfg word w-der rules graphs broken-invariants))))
       (let [(derivation (cfg-derive-levels cfg word derv-type))]
         (if (string? derivation)
             derivation
@@ -879,7 +879,7 @@
                                                                (map undo-renaming (create-invariant-nodes a-dgrph invariants (grammar-start cfg) derv-type))))
                                             lod)))
                    (graphs (map (lambda (dgrph) (create-graph-structs dgrph invariants derv-type (grammar-start cfg))) lod))]
-              (run-viz cfg word w-der rules graphs broken-invariants))))))
+              (init-viz cfg word w-der rules graphs broken-invariants))))))
 
 (define numb>numa (make-cfg '(S A)
                             '(a b)
@@ -958,8 +958,9 @@
                           'S
                           )
   )
+
 #;(time (cfg-derive-queue-and-hash testcfg '(a a a a a a a a b b b b b b b b b c c c c c c c c d d d d d d d d) 'left))
-#;(cfg-viz testcfg '(a a a a a a a a a a a a a a a a b b b b b b b b b b b b b b b b c c c c c c c c c c c c c c c c d d d d d d d d d d d d d d d d)
+(cfg-viz testcfg '(a a a a a a a a a a a a a a a a b b b b b b b b b b b b b b b b c c c c c c c c c c c c c c c c d d d d d d d d d d d d d d d d)
            'left (list 'S (lambda (x) #f)) (list 'A (lambda (x) #f)))
 ;(grammar-derive numb>numa '(a b b a a b b a b b b))
 
@@ -972,4 +973,4 @@
                       )
     )
 ;(cfg-derive-with-rule-application G '(a a a) 'left)
-;(cfg-viz G '(a a a) 'right)
+#;(cfg-viz G '(a a a) 'right)

@@ -14,7 +14,7 @@
 ;; Bounding limits is a struct containing the bounding X and Y
 ;; values of where we want the image to be placed within
 ;; num num num num -> bounding-limits
-(struct bounding-limits (min-x max-x min-y max-y))
+(struct bounding-limits (min-x max-x min-y max-y) #:transparent)
 
 ;; bounding-limits -> num
 ;; Purpose: Returns the height of the bounded area
