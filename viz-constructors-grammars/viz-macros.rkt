@@ -6,79 +6,30 @@
          2htdp/image
          "viz-state.rkt"
          "bounding-limits.rkt"
-         "default-viz-functions.rkt"
-         )
-(provide  create-viz-process-key
-         create-viz-draw-world
-         create-viz-process-tick)
+         "default-viz-functions.rkt")
 
-(define-syntax (create-imsg-process-tick stx)
-  (syntax-parse stx
-    #:literals (list)
-    [(_ '((b-limit func)...))
-     #'(lambda (a-vs x-diff y-diff)
-         (let [(updated-vs (struct-copy viz-state a-vs
-                                        [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)]))]
-           (cond [(within-bounding-limits? b-limit (viz-state-prev-mouse-posn updated-vs))
-                  (struct-copy viz-state updated-vs
-                               [informative-messages (struct-copy informative-messages (viz-state-informative-messages updated-vs)
-                                                                  [component-state (func (informative-messages-component-state (viz-state-informative-messages updated-vs))
-                                                                                         x-diff
-                                                                                         y-diff)]
-                                                                  )
-                                                     ]
-                               )
-                  ]...
-                   [else updated-vs]
-                   )
-           )
-         )]
-    [(_ (list (~or* '(b-limit func) (list b-limit func))...))
-     #'(lambda (a-vs x-diff y-diff)
-         (let [(updated-vs (struct-copy viz-state a-vs
-                                        [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)]))]
-           (cond [(within-bounding-limits? b-limit (viz-state-prev-mouse-posn updated-vs))
-                  (struct-copy viz-state updated-vs
-                               [informative-messages (struct-copy informative-messages (viz-state-informative-messages updated-vs)
-                                                                  [component-state (func (informative-messages-component-state (viz-state-informative-messages updated-vs))
-                                                                                         x-diff y-diff)]
-                                                                  )
-                                                     ]
-                               )
-                  ]...
-                   [else updated-vs]
-                   )
-           )
-         )]))
+(provide  create-viz-process-key
+          create-viz-draw-world
+          create-viz-process-tick)
 
 (define-syntax (create-viz-process-key stx)
   (syntax-parse stx
     #:literals (list)
     [(_ '((key viz-func imsg-func)...))
      #'(lambda (a-vs key-pressed)
-           (cond [(key=? key key-pressed) (viz-func (imsg-func a-vs))]...
-                 [else a-vs]
-                 )
-         )
-     ]
+         (cond [(key=? key key-pressed) (viz-func (imsg-func a-vs))]...
+               [else a-vs]))]
     [(_ (list (~or* '(key viz-func imsg-func) (list key viz-func imsg-func))...))
      #'(lambda (a-vs key-pressed)
-           (cond [(key=? key key-pressed) (viz-func (imsg-func a-vs))]...
-                 [else a-vs]
-                 )
-           
-         )
-     ]
-    )
-  )
+         (cond [(key=? key key-pressed) (viz-func (imsg-func a-vs))]...
+               [else a-vs]))]))
 
 (define-syntax (create-viz-process-tick stx)
   (syntax-parse stx
     #:literals (list quote)
     [(_ E-SCENE-BOUNDING-LIMITS NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT
         CLICK-BUFFER-SECONDS (quote (imsg-b-limit imsg-process-tick-func)...)
-        (quote (instruction-b-limit viz-key-func imsg-key-func)...)
-        )
+        (quote (instruction-b-limit viz-key-func imsg-key-func)...))
      #'(lambda (a-vs)
          (if (viz-state-mouse-pressed a-vs)
              (let* [;; Determines the movement of the mouse that occured since the last tick
@@ -91,7 +42,6 @@
                     (viewport-lims (create-calculate-viewport-limits scaled-image (viz-state-scale-factor a-vs) NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT))
                     ]
                (cond [(within-bounding-limits? E-SCENE-BOUNDING-LIMITS (viz-state-prev-mouse-posn a-vs))
-                    
                       (cond [(within-bounding-limits? viewport-lims new-img-posn)
                              (struct-copy viz-state a-vs
                                           [image-posn new-img-posn]
@@ -109,29 +59,30 @@
                                           [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])])
                       
                       ]
-                     [(within-bounding-limits? (informative-messages-bounding-limits (viz-state-informative-messages a-vs))
-                                               (viz-state-prev-mouse-posn a-vs))
-                      ((create-imsg-process-tick '((imsg-b-limit imsg-process-tick-func)...)) a-vs x-diff y-diff)
-                    
-                      ]
+                     [(within-bounding-limits? imsg-b-limit (viz-state-prev-mouse-posn a-vs))
+                      (struct-copy viz-state a-vs
+                                   [informative-messages
+                                    (struct-copy informative-messages
+                                                 (viz-state-informative-messages a-vs)
+                                                 [component-state (imsg-process-tick-func
+                                                                   (informative-messages-component-state
+                                                                    (viz-state-informative-messages a-vs))
+                                                                   x-diff y-diff)])]
+                                   [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])]
+                     ...
                      [(within-bounding-limits? instruction-b-limit (viz-state-prev-mouse-posn a-vs))
                       (buffer-held-click
                        (struct-copy viz-state a-vs
                                     [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])
-                       (lambda (a-vs) (imsg-key-func (viz-key-func a-vs))) CLICK-BUFFER-SECONDS)]...
-                                                                                                                                         
-                                                          [else (struct-copy viz-state a-vs
-                                                                             [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])]
-                                                          )
-               )
+                       (lambda (a-vs) (imsg-key-func (viz-key-func a-vs))) CLICK-BUFFER-SECONDS)]
+                     ...
+                     [else (struct-copy viz-state a-vs
+                                        [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])]) )
              (struct-copy viz-state a-vs
-                          [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])
-             )
-         )
-     ]
+                          [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])))]
     [(_ E-SCENE-BOUNDING-LIMITS NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT
-          CLICK-BUFFER-SECONDS (list (~or* '(imsg-b-limit imsg-process-tick-func) (list imsg-b-limit imsg-process-tick-func))...)
-          (list (~or* '(instruction-b-limit viz-key-func imsg-key-func) (list instruction-b-limit viz-key-func imsg-key-func))...))
+        CLICK-BUFFER-SECONDS (list (~or* '(imsg-b-limit imsg-process-tick-func) (list imsg-b-limit imsg-process-tick-func))...)
+        (list (~or* '(instruction-b-limit viz-key-func imsg-key-func) (list instruction-b-limit viz-key-func imsg-key-func))...))
      #'(lambda (a-vs)
          (if (viz-state-mouse-pressed a-vs)
              (let* [;; Determines the movement of the mouse that occured since the last tick
@@ -141,10 +92,8 @@
                     (new-img-y (+ (posn-y (viz-state-image-posn a-vs)) y-diff))
                     (new-img-posn (posn (+ (posn-x (viz-state-image-posn a-vs)) x-diff) (+ (posn-y (viz-state-image-posn a-vs)) y-diff)))
                     (scaled-image (scale (viz-state-scale-factor a-vs) (viz-state-curr-image a-vs)))
-                    (viewport-lims (create-calculate-viewport-limits scaled-image (viz-state-scale-factor a-vs) NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT))
-                    ]
+                    (viewport-lims (create-calculate-viewport-limits scaled-image (viz-state-scale-factor a-vs) NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT))]
                (cond [(within-bounding-limits? E-SCENE-BOUNDING-LIMITS (viz-state-prev-mouse-posn a-vs))
-                    
                       (cond [(within-bounding-limits? viewport-lims new-img-posn)
                              (struct-copy viz-state a-vs
                                           [image-posn new-img-posn]
@@ -159,32 +108,31 @@
                                           [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])]
                             [(outside-x-and-y-axis-bounding-limits? viewport-lims new-img-posn)
                              (struct-copy viz-state a-vs
-                                          [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])])
-                      
-                      ]
-                     [(within-bounding-limits? (informative-messages-bounding-limits (viz-state-informative-messages a-vs))
-                                               (viz-state-prev-mouse-posn a-vs))
-                      ((create-imsg-process-tick '((imsg-b-limit imsg-process-tick-func)...)) a-vs x-diff y-diff)
-                    
-                      ]
+                                          [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])])]
+                     [(within-bounding-limits? imsg-b-limit (viz-state-prev-mouse-posn a-vs))
+                      (struct-copy viz-state a-vs
+                                   [informative-messages
+                                    (struct-copy informative-messages
+                                                 (viz-state-informative-messages a-vs)
+                                                 [component-state (imsg-process-tick-func
+                                                                   (informative-messages-component-state
+                                                                    (viz-state-informative-messages a-vs))
+                                                                   x-diff y-diff)])]
+                                   [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])]
+                     ...
                      [(within-bounding-limits? instruction-b-limit (viz-state-prev-mouse-posn a-vs))
                       (buffer-held-click
                        (struct-copy viz-state a-vs
                                     [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])
-                       (lambda (a-vs) (imsg-key-func (viz-key-func a-vs))) CLICK-BUFFER-SECONDS)]...
-                                                                                                                                         
-                                                          [else (struct-copy viz-state a-vs
-                                                                             [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])]
-                                                          )
-               )
+                       (lambda (a-vs) (imsg-key-func (viz-key-func a-vs))) CLICK-BUFFER-SECONDS)]
+                     ...
+                     [else (struct-copy viz-state a-vs
+                                        [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])]))
              (struct-copy viz-state a-vs
-                          [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])
-             )
-         )
-       ]
+                          [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])))]
     [(_ E-SCENE-BOUNDING-LIMITS NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT
-          CLICK-BUFFER-SECONDS (quote (imsg-b-limit imsg-process-tick-func)...)
-          (list (~or* '(instruction-b-limit viz-key-func imsg-key-func) (list instruction-b-limit viz-key-func imsg-key-func))...))
+        CLICK-BUFFER-SECONDS (quote (imsg-b-limit imsg-process-tick-func)...)
+        (list (~or* '(instruction-b-limit viz-key-func imsg-key-func) (list instruction-b-limit viz-key-func imsg-key-func))...))
      #'(lambda (a-vs)
          (if (viz-state-mouse-pressed a-vs)
              (let* [;; Determines the movement of the mouse that occured since the last tick
@@ -194,10 +142,8 @@
                     (new-img-y (+ (posn-y (viz-state-image-posn a-vs)) y-diff))
                     (new-img-posn (posn (+ (posn-x (viz-state-image-posn a-vs)) x-diff) (+ (posn-y (viz-state-image-posn a-vs)) y-diff)))
                     (scaled-image (scale (viz-state-scale-factor a-vs) (viz-state-curr-image a-vs)))
-                    (viewport-lims (create-calculate-viewport-limits scaled-image (viz-state-scale-factor a-vs) NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT))
-                    ]
+                    (viewport-lims (create-calculate-viewport-limits scaled-image (viz-state-scale-factor a-vs) NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT))]
                (cond [(within-bounding-limits? E-SCENE-BOUNDING-LIMITS (viz-state-prev-mouse-posn a-vs))
-                    
                       (cond [(within-bounding-limits? viewport-lims new-img-posn)
                              (struct-copy viz-state a-vs
                                           [image-posn new-img-posn]
@@ -212,32 +158,30 @@
                                           [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])]
                             [(outside-x-and-y-axis-bounding-limits? viewport-lims new-img-posn)
                              (struct-copy viz-state a-vs
-                                          [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])])
-                      
-                      ]
-                     [(within-bounding-limits? (informative-messages-bounding-limits (viz-state-informative-messages a-vs))
-                                               (viz-state-prev-mouse-posn a-vs))
-                      ((create-imsg-process-tick '((imsg-b-limit imsg-process-tick-func)...)) a-vs x-diff y-diff)
-                    
-                      ]
+                                          [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])])]
+                     [(within-bounding-limits? imsg-b-limit (viz-state-prev-mouse-posn a-vs))
+                      (struct-copy viz-state a-vs
+                                   [informative-messages
+                                    (struct-copy informative-messages
+                                                 (viz-state-informative-messages a-vs)
+                                                 [component-state (imsg-process-tick-func
+                                                                   (informative-messages-component-state
+                                                                    (viz-state-informative-messages a-vs))
+                                                                   x-diff y-diff)])]
+                                   [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])]
+                     ...
                      [(within-bounding-limits? instruction-b-limit (viz-state-prev-mouse-posn a-vs))
                       (buffer-held-click
                        (struct-copy viz-state a-vs
                                     [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])
-                       (lambda (a-vs) (imsg-key-func (viz-key-func a-vs))) CLICK-BUFFER-SECONDS)]...
-                                                                                                                                         
-                                                          [else (struct-copy viz-state a-vs
-                                                                             [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])]
-                                                          )
-               )
-             (struct-copy viz-state a-vs
-                          [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])
-             )
-         )
-       ]
+                       (lambda (a-vs) (imsg-key-func (viz-key-func a-vs))) CLICK-BUFFER-SECONDS)]
+                     ...                                                                                                                 
+                     [else (struct-copy viz-state a-vs
+                                        [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])]))
+             (struct-copy viz-state a-vs [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])))]
     [(_ E-SCENE-BOUNDING-LIMITS NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT
-          CLICK-BUFFER-SECONDS (list (~or* '(imsg-b-limit imsg-process-tick-func) (list imsg-b-limit imsg-process-tick-func))...)
-          (quote (instruction-b-limit viz-key-func imsg-key-func)...))
+        CLICK-BUFFER-SECONDS (list (~or* '(imsg-b-limit imsg-process-tick-func) (list imsg-b-limit imsg-process-tick-func))...)
+        (quote (instruction-b-limit viz-key-func imsg-key-func)...))
      #'(lambda (a-vs)
          (if (viz-state-mouse-pressed a-vs)
              (let* [;; Determines the movement of the mouse that occured since the last tick
@@ -247,10 +191,8 @@
                     (new-img-y (+ (posn-y (viz-state-image-posn a-vs)) y-diff))
                     (new-img-posn (posn (+ (posn-x (viz-state-image-posn a-vs)) x-diff) (+ (posn-y (viz-state-image-posn a-vs)) y-diff)))
                     (scaled-image (scale (viz-state-scale-factor a-vs) (viz-state-curr-image a-vs)))
-                    (viewport-lims (create-calculate-viewport-limits scaled-image (viz-state-scale-factor a-vs) NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT))
-                    ]
+                    (viewport-lims (create-calculate-viewport-limits scaled-image (viz-state-scale-factor a-vs) NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT))]
                (cond [(within-bounding-limits? E-SCENE-BOUNDING-LIMITS (viz-state-prev-mouse-posn a-vs))
-                    
                       (cond [(within-bounding-limits? viewport-lims new-img-posn)
                              (struct-copy viz-state a-vs
                                           [image-posn new-img-posn]
@@ -265,31 +207,28 @@
                                           [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])]
                             [(outside-x-and-y-axis-bounding-limits? viewport-lims new-img-posn)
                              (struct-copy viz-state a-vs
-                                          [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])])
-                      
-                      ]
-                     [(within-bounding-limits? (informative-messages-bounding-limits (viz-state-informative-messages a-vs))
-                                               (viz-state-prev-mouse-posn a-vs))
-                      ((create-imsg-process-tick '((imsg-b-limit imsg-process-tick-func)...)) a-vs x-diff y-diff)
-                    
-                      ]
+                                          [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])])]
+                     [(within-bounding-limits? imsg-b-limit (viz-state-prev-mouse-posn a-vs))
+                      (struct-copy viz-state a-vs
+                                   [informative-messages
+                                    (struct-copy informative-messages
+                                                 (viz-state-informative-messages a-vs)
+                                                 [component-state (imsg-process-tick-func
+                                                                   (informative-messages-component-state
+                                                                    (viz-state-informative-messages a-vs))
+                                                                   x-diff y-diff)])]
+                                   [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])]
+                     ...
                      [(within-bounding-limits? instruction-b-limit (viz-state-prev-mouse-posn a-vs))
                       (buffer-held-click
                        (struct-copy viz-state a-vs
                                     [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])
-                       (lambda (a-vs) (imsg-key-func (viz-key-func a-vs))) CLICK-BUFFER-SECONDS)]...
-                                                                                                                                         
-                                                          [else (struct-copy viz-state a-vs
-                                                                             [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])]
-                                                          )
-               )
+                       (lambda (a-vs) (imsg-key-func (viz-key-func a-vs))) CLICK-BUFFER-SECONDS)]
+                     ...
+                     [else (struct-copy viz-state a-vs
+                                        [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])]))
              (struct-copy viz-state a-vs
-                          [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])
-             )
-         )
-       ]
-    )
-  )
+                          [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])))]))
 
 (define-syntax (create-viz-draw-world stx)
   (syntax-parse stx
