@@ -31,7 +31,7 @@
                           point))]
     result))
 
-;; img posn num>0 -> matrix x y 1
+;; img posn num>0 num num-> matrix x y 1
 ;; Calculates the transform needed to zoom correctly 
 (define (create-zoom-affine-transform img img-posn scale E-SCENE-WIDTH E-SCENE-HEIGHT)
   (let* [(transformed-x (* -1 (+ (- (/ E-SCENE-WIDTH 2)
@@ -50,7 +50,7 @@
     
   )
 
-;; img num>0 -> viewport-limits
+;; img num>0 num num num -> viewport-limits
 ;; Calculates the min and max values of x and y that keep the graph on the screen at all times
 (define (create-calculate-viewport-limits scaled-image scale NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT)
   (let* [(img-width-node-diff (- (/ (image-width scaled-image) 2) (* NODE-SIZE scale)))
@@ -214,6 +214,8 @@
                (/ scaled-width src-width)
                (/ scaled-height src-height))]))
 
+;; img -> boolean
+;; Checks to see if an image needs to be resized
 (define (create-does-img-need-resizing? img E-SCENE-WIDTH E-SCENE-HEIGHT)
   (or (< E-SCENE-WIDTH (image-width img))
       (< E-SCENE-HEIGHT (image-height img))))

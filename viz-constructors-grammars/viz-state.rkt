@@ -25,15 +25,12 @@
                         click-buffer informative-messages instructions-graphic))
 
 ;; informative-messages is a structure that has
-;; process-key - Function that updates the struct based on a key press
-;; process-tick - Function that updates the struct based on mouse movement/usage
 ;; draw-component - Function that renders an image of the informative messages
 ;; component-state - A struct that holds all the data needed to render the informative messages
 ;; bounding-limits - A struct that contains the bounding coordinates of the informative messages
-(struct informative-messages (process-key process-tick draw-component component-state bounding-limits))
+(struct informative-messages (draw-component component-state bounding-limits))
 
-;; clickable-bounding-limits - Need to remove this field
+
 ;; img - The static image to be rendered as the instructions
 ;; bounding-limits - A struct that contains the bounding coordinates of the instructions graphics
-;; process-tick - Function that updates the visualization based on mouse movement/usage
-(struct instructions-graphic (clickable-bounding-limits img bounding-limits process-tick))
+(struct instructions-graphic (img bounding-limits))
