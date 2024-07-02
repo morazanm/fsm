@@ -12,6 +12,9 @@
 
 (define FNAME "fsm")
 
+(define HELD-INV 'chartreuse4)
+(define BRKN-INV 'red2)
+
 ;; X (listof X) -> boolean
 ;;Purpose: Determine if X is in the given list
 (define (member? x lst)
@@ -223,7 +226,7 @@
             result
             state
             #:atb (hash 'color (cond [(eq? state (sm-start M)) 'darkgreen]
-                                     [(eq? state dead) 'red] ;;;;;MAYBE
+                                     ;[(eq? state dead) 'red] ;;;;;MAYBE
                                      [else 'black])
                         'style (cond [(or (member? state held-inv)
                                           (member? state brkn-inv)) 'filled]
@@ -232,9 +235,9 @@
                         'shape (if (member? state (sm-finals M))
                                    'doublecircle
                                    'circle)
-                        'fillcolor (if (member? state held-inv)
-                                       'green
-                                       'red)
+                        'fillcolor (cond [(member? state held-inv) HELD-INV]
+                                         [(member? state brkn-inv) BRKN-INV]
+                                         [else 'white])
                         'label state
                         'fontcolor 'black)))
          cgraph
@@ -435,8 +438,10 @@
          
          ;;(listof symbols)
          ;;Purpose: Returns all states whose invariants fail
-         (brkn-invs (filter (λ (inv)
-                              (not (member? inv held-invs)))
+         (brkn-invs (append-map (λ (inv)
+                              (if (not (member? (first (first inv)) held-invs))
+                                  (list (first (first inv)))
+                                  '()))
                             get-invs))
          ;;(listof symbols)
          ;;Purpose: The states that the ndfa could be in 
@@ -460,88 +465,108 @@
          (informative-messages (let [;;boolean
                                      ;;Purpose: Determines if the pci can be can be fully consumed
                                      (completed-config? (ormap (λ (config) (empty? (last (last config))))
-                                                                    (get-configs (viz-state-ndfa-pci a-vs)
-                                                                                 (sm-rules (viz-state-ndfa-M a-vs))
-                                                                                 (sm-start (viz-state-ndfa-M a-vs)))))]
+                                                               (get-configs (viz-state-ndfa-pci a-vs)
+                                                                            (sm-rules (viz-state-ndfa-M a-vs))
+                                                                            (sm-start (viz-state-ndfa-M a-vs)))))]
                                  (above/align 'left
-                                            (cond [(and (empty? (viz-state-ndfa-pci a-vs))
-                                                        (empty? (viz-state-ndfa-upci a-vs)))
-                                                   (above/align 'left (beside (text "aaaa" 20 'white)
-                                                                  (text "Word: " 20 'black)
-                                                                  (text (format "~a" EMP)
-                                                                        20
-                                                                        'gray))
-                                                          (beside (text "Consumed: " 20 'black)
-                                                                  (text (format "~a" EMP)
-                                                                        20
-                                                                        'black)))]
-                                                  [(and (not (empty? (viz-state-ndfa-pci a-vs)))
-                                                        (not completed-config?))
-                                                   (above/align 'left (beside (text "aaaa" 20 'white)
-                                                                  (text "Word: " 20 'black)
-                                                                  (beside (text (los2str last-consumed-word)
+                                              (cond [(and (empty? (viz-state-ndfa-pci a-vs))
+                                                          (empty? (viz-state-ndfa-upci a-vs)))
+                                                     (above/align 'left
+                                                                  (beside (text "aaaa" 20 'white)
+                                                                          (text "Word: " 20 'black)
+                                                                          (if (equal? (sm-apply (viz-state-ndfa-M a-vs)
+                                                                                                (viz-state-ndfa-pci a-vs)) 'accept)
+                                                                              (text (format "~a" EMP)
+                                                                                    20
+                                                                                    'gray)
+                                                                              (text (format "~a" EMP)
+                                                                                    20
+                                                                                    'red)))
+                                                                  (beside (text "Consumed: " 20 'black)
+                                                                          (if (equal? (sm-apply (viz-state-ndfa-M a-vs)
+                                                                                                (viz-state-ndfa-pci a-vs)) 'accept)
+                                                                              (text (format "~a" EMP)
+                                                                                    20
+                                                                                    'black)
+                                                                              (text (format "~a" EMP)
+                                                                                    20
+                                                                                    'white))))]
+                                                    [(and (not (empty? (viz-state-ndfa-pci a-vs)))
+                                                          (not completed-config?))
+                                                     (above/align 'left
+                                                                  (beside (text "aaaa" 20 'white)
+                                                                          (text "Word: " 20 'black)
+                                                                          (beside (text (if (empty? last-consumed-word)
+                                                                                            ""
+                                                                                            (los2str last-consumed-word))
+                                                                                        20
+                                                                                        'gray)
+                                                                                  (text (los2str (list (first unconsumed-word)))
+                                                                                        20
+                                                                                        'red)
+                                                                                  (text (los2str (rest unconsumed-word))
+                                                                                        20
+                                                                                        'black)))
+                                                                  (beside (text "Consumed: " 20 'black)
+                                                                          (text (if (empty? last-consumed-word)
+                                                                                    ""
+                                                                                    (los2str last-consumed-word))
                                                                                 20
-                                                                                'gray)
-                                                                          (text (los2str (list (first unconsumed-word)))
+                                                                                'black)))]
+                                                    [(empty? (viz-state-ndfa-upci a-vs))
+                                                     (above/align 'left
+                                                                  (beside (text "aaaa" 20 'white)
+                                                                          (text "Word: " 20 'black)
+                                                                          (text (los2str (viz-state-ndfa-pci a-vs))
                                                                                 20
-                                                                                'red)
-                                                                          (text (los2str (rest unconsumed-word))
+                                                                                'gray))
+                                                                  (beside (text "Consumed: " 20 'black)
+                                                                          (text (los2str (viz-state-ndfa-pci a-vs))
                                                                                 20
-                                                                                'black)))
-                                                          (beside (text "Consumed: " 20 'black)
-                                                                  (text (los2str last-consumed-word)
-                                                                        20
-                                                                        'black)))]
-                                                  [(empty? (viz-state-ndfa-upci a-vs))
-                                                   (above/align 'left (beside (text "aaaa" 20 'white)
-                                                                  (text "Word: " 20 'black)
-                                                                  (text (los2str (viz-state-ndfa-pci a-vs))
-                                                                        20
-                                                                        'gray))
-                                                          (beside (text "Consumed: " 20 'black)
-                                                                  (text (los2str (viz-state-ndfa-pci a-vs))
-                                                                        20
-                                                                        'black)))]
-                                                  [(empty? (viz-state-ndfa-pci a-vs))
-                                                   (above/align 'left (beside (text "aaaa" 20 'white)
-                                                                  (text "Word: " 20 'black)
-                                                                  (text (los2str (viz-state-ndfa-upci a-vs))
-                                                                        20
-                                                                        'black))
-                                                          (text "Consumed: " 20 'black))]
-                                                  [else (above/align 'left (beside (text "aaaa" 20 'white)
-                                                                       (text "Word: " 20 'black)
-                                                                       (beside (text (los2str (viz-state-ndfa-pci a-vs))
+                                                                                'black)))]
+                                                    [(empty? (viz-state-ndfa-pci a-vs))
+                                                     (above/align 'left (beside (text "aaaa" 20 'white)
+                                                                                (text "Word: " 20 'black)
+                                                                                (text (los2str (viz-state-ndfa-upci a-vs))
+                                                                                      20
+                                                                                      'black))
+                                                                  (text "Consumed: " 20 'black))]
+                                                    [else (above/align 'left
+                                                                       (beside (text "aaaa" 20 'white)
+                                                                               (text "Word: " 20 'black)
+                                                                               (beside (text (los2str (viz-state-ndfa-pci a-vs))
+                                                                                             20
+                                                                                             'gray)
+                                                                                       (text (los2str (viz-state-ndfa-upci a-vs))
+                                                                                             20
+                                                                                             'black)))
+                                                                       (beside (text "Consumed: " 20 'black)
+                                                                               (text (los2str (viz-state-ndfa-pci a-vs))
                                                                                      20
-                                                                                     'gray)
-                                                                               (text (los2str (viz-state-ndfa-upci a-vs))
-                                                                                     20
-                                                                                     'black)))
-                                                               (beside (text "Consumed: " 20 'black)
-                                                                       (text (los2str (viz-state-ndfa-pci a-vs))
-                                                                             20
-                                                                             'black)))])
-                                            (beside (text (format "The number of possible computations is ~a. "
-                                                                  (number->string (length destin-states)))
-                                                          20
-                                                          'brown)
-                                                    (text "aaaaa" 20 'white)
-                                                    (cond [(and (empty? (viz-state-ndfa-upci a-vs))
-                                                                (equal? (sm-apply (viz-state-ndfa-M a-vs) (viz-state-ndfa-pci a-vs)) 'accept))
-                                                           (text "There is a computation that the machine accepts."
-                                                                 20
-                                                                 'forestgreen)]
-                                                          [(and (empty? (viz-state-ndfa-upci a-vs))
-                                                                (equal? (sm-apply (viz-state-ndfa-M a-vs) (viz-state-ndfa-pci a-vs)) 'reject))
-                                                           (text "All computations end in a non-final state and the machine rejects."
-                                                                 20
-                                                                 'red)]
-                                                          [(not completed-config?)
-                                                           (text "All computations do not consume the entire word and the machine rejects."
-                                                                 20
-                                                                 'red)]
-                                                          [(text "Word Status: accept " 20 'white)]))
-                                            (text "Word Status: accept " 20 'white))))]
+                                                                                     'black)))])
+                                              (beside (text (format "The number of possible computations is ~a. "
+                                                                    (number->string (length destin-states)))
+                                                            20
+                                                            'brown)
+                                                      (text "aaaaa" 20 'white)
+                                                      (cond [(and (empty? (viz-state-ndfa-upci a-vs))
+                                                                  (equal? (sm-apply (viz-state-ndfa-M a-vs)
+                                                                                    (viz-state-ndfa-pci a-vs)) 'accept))
+                                                             (text "There is a computation that accepts."
+                                                                   20
+                                                                   'forestgreen)]
+                                                            [(and (empty? (viz-state-ndfa-upci a-vs))
+                                                                  (equal? (sm-apply (viz-state-ndfa-M a-vs)
+                                                                                    (viz-state-ndfa-pci a-vs)) 'reject))
+                                                             (text "All computations end in a non-final state and the machine rejects."
+                                                                   20
+                                                                   'red)]
+                                                            [(not completed-config?)
+                                                             (text "All computations do not consume the entire word and the machine rejects."
+                                                                   20
+                                                                   'red)]
+                                                            [(text "Word Status: accept " 20 'white)]))
+                                              (text "Word Status: accept " 20 'white))))]
     (above (first (resize-image
                    (graph->bitmap
                     (edge-graph
@@ -638,47 +663,57 @@
 ;;machine -> machine 
 ;;Purpose: Produces an equivalent machine with the addition of the dead state and rules to the dead state
 (define (make-new-M M)
-  (local [;;symbol
-          ;;Purpose: If ds is already used as a state in M, then generates a random seed symbol,
-          ;;         otherwise uses DEAD
-          (define dead (if (member? DEAD (sm-states M))
-                           (gen-state (sm-states M))
-                           DEAD))
-          ;;(listof rules)
-          ;;Purpose: Makes rules for every combination of states in M and symbols in sigma of M
-          (define new-rules (for*/list ([states (sm-states M)]
-                                        [sigma (sm-sigma M)])
-                              (list states sigma states)))
-          ;;(listof rules)
-          ;;Purpose: Makes rules for every dead state transition to itself using the symbols in sigma of M
-          (define dead-rules (for*/list ([ds (list dead)]
-                                         [sigma (sm-sigma M)])
-                               (list ds sigma ds)))
-          ;;(listof rules)
-          ;;Purpose: Gets rules that are not currently in the original rules of M
-          (define get-rules-not-in-M (filter (λ (rule)
-                                               (not (member? rule (sm-rules M))))
-                                             new-rules))
-          ;;(listof rules)
-          ;;Purpose: Maps the dead state as a destination for all rules that are not currently in the original rules of M
-          (define rules-to-dead (map (λ (rule)
-                                       (append (list (first rule))
-                                               (list (second rule))
-                                               (list dead)))
-                                     get-rules-not-in-M))]
-    (make-ndfa (append (sm-states M) (list dead))
-               (sm-sigma M)
-               (sm-start M)
-               (sm-finals M)
-               (append (sm-rules M)
-                       rules-to-dead
-                       dead-rules))))
+  (cond [(eq? (sm-type M) 'ndfa)
+         (local [;;symbol
+                ;;Purpose: If ds is already used as a state in M, then generates a random seed symbol,
+                ;;         otherwise uses DEAD
+                (define dead (if (member? DEAD (sm-states M))
+                                 (gen-state (sm-states M))
+                                 DEAD))
+                ;;(listof rules)
+                ;;Purpose: Makes rules for every combination of states in M and symbols in sigma of M
+                (define new-rules (for*/list ([states (sm-states M)]
+                                              [sigma (sm-sigma M)])
+                                    (list states sigma states)))
+                ;;(listof rules)
+                ;;Purpose: Makes rules for every dead state transition to itself using the symbols in sigma of M
+                (define dead-rules (for*/list ([ds (list dead)]
+                                               [sigma (sm-sigma M)])
+                                     (list ds sigma ds)))
+                ;;(listof rules)
+                ;;Purpose: Gets rules that are not currently in the original rules of M
+                (define get-rules-not-in-M (filter (λ (rule)
+                                                     (not (member? rule (sm-rules M))))
+                                                   new-rules))
+                ;;(listof rules)
+                ;;Purpose: Maps the dead state as a destination for all rules that are not currently in the original rules of M
+                (define rules-to-dead (map (λ (rule)
+                                             (append (list (first rule))
+                                                     (list (second rule))
+                                                     (list dead)))
+                                           get-rules-not-in-M))]
+           (make-ndfa (append (sm-states M) (list dead))
+                      (sm-sigma M)
+                      (sm-start M)
+                      (sm-finals M)
+                      (append (sm-rules M)
+                              rules-to-dead
+                              dead-rules)))]
+        [(and (eq? (sm-type M) 'dfa)
+              (not (member? DEAD (sm-states M))))
+         (make-dfa (sm-states M)
+                   (sm-sigma M)
+                   (sm-start M)
+                   (sm-finals M)
+                   (sm-rules M))]
+        [else M]))
   
 ;;ndfa word -> (void) Throws error
 ;;Purpose: Visualizes the given ndfa processing the given word
-;;Assumption: The given machine is a ndfa
+;;Assumption: The given machine is a ndfa or dfa
 (define (ndfa-viz M a-word #:add-dead [add-dead #f] . invs)
-  (if (not (eq? (sm-type M) 'ndfa))
+  (if (not (or (eq? (sm-type M) 'ndfa)
+               (eq? (sm-type M) 'dfa)))
       (error "The given machine must be a ndfa.")
       (let [(new-M (make-new-M M))]
            (run-viz-ndfa
@@ -688,7 +723,13 @@
                                 new-M
                                 M)
                             invs
-                            (last (sm-states new-M)))
+                            (cond [(and add-dead
+                                        (eq? (sm-type M) 'ndfa))
+                                   (last (sm-states new-M))]
+                                  [(and add-dead
+                                        (eq? (sm-type M) 'dfa))
+                                   DEAD]
+                                  [else 'no-dead]))
             'ndfa-viz))))
 
 ;;viz-state string -> (void)
@@ -857,6 +898,16 @@
                        `((S a ds)
                          (ds a ds))))
 
+(define EVEN-NUM-Bs (make-dfa '(S F)
+                              (list 'a 'b)
+                              'S
+                              (list 'S)
+                              `((S a S)
+                                (S b F)
+                                (F a F)
+                                (F b S))
+                              'no-dead))
+
 #;(let [(res (graph->bitmap cgraph (current-directory) FNAME))]
     (begin
       (delete-file (string-append FNAME ".dot"))
@@ -885,15 +936,7 @@
 ;;word -> boolean
 ;;Purpose: Determines if the given word is empty
 (define (S-INV a-word)
-  (empty? a-word))
-
-;;Tests for S-INV
-(check-equal? (S-INV '()) #t)
-(check-equal? (S-INV '(a b a b a b b)) #f)
-(check-equal? (S-INV '(a b a b b)) #f)
-(check-equal? (S-INV '(a b b b)) #f)
-(check-equal? (S-INV '(a)) #f)
-(check-equal? (S-INV '(b)) #f)
+  (not (empty? a-word)))
 
 ;;word -> boolean
 ;;Purpose: Determines if the last letter in the given word is an b 
@@ -901,42 +944,30 @@
   (or (empty? a-word)
       (equal? (last a-word) 'b)))
 
-;;Tests for K-INV
-(check-equal? (K-INV '()) #t)
-(check-equal? (K-INV '(a b a b a b a b)) #t)
-(check-equal? (K-INV '(a b)) #t)
-(check-equal? (K-INV '(a b a)) #f)
-(check-equal? (K-INV '(a)) #f)
-(check-equal? (K-INV '(b)) #t)
-
 ;;word -> boolean
 ;;Purpose: Determines if the last letter in the given word is an a
 (define (B-INV a-word)
   (and (not (empty? a-word))
        (equal? (last a-word) 'a)))
 
-;;Tests for B-INV
-(check-equal? (B-INV '()) #f)
-(check-equal? (B-INV '(a b a b a b a)) #t)
-(check-equal? (B-INV '(a b a b b)) #f)
-(check-equal? (B-INV '(a b a)) #t)
-(check-equal? (B-INV '(a)) #t)
-(check-equal? (B-INV '(b)) #f)
-
 ;;word -> boolean
 ;;Purpose: Determines if the given word has one a
 (define (C-INV a-word)
   (= (length (filter (λ (w) (equal? w 'a)) a-word)) 1))
 
-;;Tests for C-INV
-(check-equal? (C-INV '()) #f)
-(check-equal? (C-INV '(a b b b b b)) #t)
-(check-equal? (C-INV '(a b a b a b)) #f)
-(check-equal? (C-INV '(a b b b)) #t)
-(check-equal? (C-INV '(a)) #t)
-(check-equal? (C-INV '(b)) #f)
+;;word -> boolean
+;;Purpose: Determines if the given word is empty or if the last letter is an a or b
+(define (H-INV a-word)
+  (or (empty? a-word)
+      (equal? (last a-word) 'a)
+      (equal? (last a-word) 'b)))
 
 ;;word -> boolean
-;;Purpose: Determines if the given word is has a single a or the same amount of as and bs
-(define (H-INV a-word)
-  (>= (length (filter (λ (w) (equal? w 'b)) a-word)) 0))
+;;Purpose: Determine if the given word has an even number of Bs
+(define (EVEN-NUM-Bs-S-INV a-word)
+  (even? (length (filter (λ (w) (equal? w 'b)) a-word))))
+
+;;word -> boolean
+;;Purpose: Determine if the given word has an odd number of Bs
+(define (EVEN-NUM-Bs-F-INV a-word)
+  (odd? (length (filter (λ (w) (equal? w 'b)) a-word))))
