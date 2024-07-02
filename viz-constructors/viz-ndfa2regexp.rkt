@@ -189,8 +189,10 @@
 ;; Assume: The transition diagram of the given machine is a connected
 ;;         directed graph
 (define (ndfa2regexp m)
-  (let* [(new-start (generate-symbol 'S (sm-states m)))
-         (new-final (generate-symbol 'F (sm-states m)))
+  (let* [;(new-start (generate-symbol 'S (sm-states m)))
+         ;(new-final (generate-symbol 'F (sm-states m)))
+         (new-start (gen-state (sm-states m)))
+         (new-final (gen-state (cons new-start (sm-states m))))
          (init-dgraph (make-dgraph
                        (cons (list new-start EMP (sm-start m))
                              (append (map (λ (f) (list f EMP new-final))
@@ -325,8 +327,8 @@
 ;; Purpose: To create a list of images of graphs that build a regular
 ;; expression from the  given ndfa
 (define (create-graph-imgs M)
-  (define new-start (generate-symbol 'S (sm-states M)))
-  (define new-final (generate-symbol 'F (sm-states M)))
+  (define new-start (gen-state (sm-states M)))
+  (define new-final (gen-state (cons new-start(sm-states M))))
   (define new-rules (cons (list new-start EMP (sm-start M))
                           (map (λ (fst) (list fst EMP new-final))
                                (sm-finals M))))
@@ -406,8 +408,8 @@
 ;; ndfa -> img
 ;; Purpose: To create the image of the initial ndfa graph
 (define (make-init-graph-img M)
-  (let* [(new-start (generate-symbol 'S (sm-states M)))
-         (new-final (generate-symbol 'F (sm-states M)))
+  (let* [(new-start (gen-state (sm-states M)))
+         (new-final (gen-state (cons new-start (sm-states M))))
          (new-rules (cons (list new-start EMP (sm-start M))
                           (map (λ (fst) (list fst EMP new-final))
                                (sm-finals M))))
@@ -459,7 +461,7 @@
     (if (or (> width (image-width E-SCENE))
             (> height (image-height E-SCENE)))
         (above (overlay (resize-image graph-img (image-width E-SCENE) (image-height E-SCENE))
-                                       E-SCENE) E-SCENE-TOOLS)
+                        E-SCENE) E-SCENE-TOOLS)
         (above (overlay graph-img E-SCENE) E-SCENE-TOOLS))))
 
 
@@ -475,14 +477,15 @@
 
 (define aa-ab
   (make-ndfa 
-   '(S A B) 
+   '(S A B F) 
    '(a b) 
    'S
    '(A B)
    `((S a A)
      (S a B)
      (A a A)
-     (B b B))))
+     (B b B)
+     (S ,EMP F))))
 
 ;(run AT-LEAST-ONE-MISSING)
 

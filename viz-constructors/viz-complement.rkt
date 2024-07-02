@@ -68,26 +68,26 @@
   (define E-SCENE (empty-scene 1250 600))
 
   (define E-SCENE-TOOLS (overlay (beside (above (above (triangle 30 'solid 'black)
-                                                     (rectangle 10 30 'solid 'black))
-                                              (square 20 'solid 'white)
-                                              (text "Restart the visualization" 18 'black))
-                                       (square 40 'solid 'white)
-                                       (above (beside (rectangle 30 10 'solid 'black)
-                                                      (rotate 270 (triangle 30 'solid 'black)))
-                                              (square 20 'solid 'white)
-                                              (text "Move one step forward" 18 'black))
-                                       (square 40 'solid 'white)
-                                       (above (beside (rotate 90 (triangle 30 'solid 'black))
-                                                      (rectangle 30 10 'solid 'black))
-                                              (square 20 'solid 'white)
-                                              (text "Move one step backward" 18 'black))
-                                       (square 40 'solid 'white)
-                                       (above (above (rectangle 10 30 'solid 'black)
-                                                     (rotate 180 (triangle 30 'solid 'black)))
-                                              (square 20 'solid 'white)
-                                              (text "Complete the visualization" 18 'black))
-                                       )
-                               (empty-scene 1250 100)))
+                                                       (rectangle 10 30 'solid 'black))
+                                                (square 20 'solid 'white)
+                                                (text "Restart the visualization" 18 'black))
+                                         (square 40 'solid 'white)
+                                         (above (beside (rectangle 30 10 'solid 'black)
+                                                        (rotate 270 (triangle 30 'solid 'black)))
+                                                (square 20 'solid 'white)
+                                                (text "Move one step forward" 18 'black))
+                                         (square 40 'solid 'white)
+                                         (above (beside (rotate 90 (triangle 30 'solid 'black))
+                                                        (rectangle 30 10 'solid 'black))
+                                                (square 20 'solid 'white)
+                                                (text "Move one step backward" 18 'black))
+                                         (square 40 'solid 'white)
+                                         (above (above (rectangle 10 30 'solid 'black)
+                                                       (rotate 180 (triangle 30 'solid 'black)))
+                                                (square 20 'solid 'white)
+                                                (text "Complete the visualization" 18 'black))
+                                         )
+                                 (empty-scene 1250 100)))
 
   ;; make-node-graph
   ;; graph los start final -> graph
@@ -139,15 +139,14 @@
   ;; Purpose: To create a graph image for complement
   (define (create-graph-img M)
     (let* [(new-finals (filter (λ (s) (not (member s (sm-finals M)))) (sm-states M)))]
-      (overlay (above (graph->bitmap (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                                       (sm-states M) 
-                                                                       (sm-start M)
-                                                                       new-finals)
-                                                      M))
-                      (text "Complement of MD" 20 'black)
-                      (text (format "New final states: ~a" new-finals) 20 'black)
-                      (text (format "Starting state: ~a" (sm-start M)) 20 'black))
-               E-SCENE)))
+      (above (graph->bitmap (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                                              (sm-states M) 
+                                                              (sm-start M)
+                                                              new-finals)
+                                             M))
+             (text "Complement of MD" 20 'black)
+             (text (format "New final states: ~a" new-finals) 20 'black)
+             (text (format "Starting state: ~a" (sm-start M)) 20 'black))))
 
 
 
@@ -156,13 +155,11 @@
   ;; ndfa ndfa -> img
   ;; Purpose: To draw the graph of the initial ndfa's
   (define (make-init-grph-img M)
-    (overlay
-     (above
-      (sm-graph M)
-      (if (eq? (sm-type M) 'dfa)
-          (text "DM: input machine" 20 'black)
-          (text "M: input machine" 20 'black)))
-     E-SCENE))
+    (above
+     (sm-graph M)
+     (if (eq? (sm-type M) 'dfa)
+         (text "DM: input machine" 20 'black)
+         (text "M: input machine" 20 'black))))
      
 
   ;; draw-world

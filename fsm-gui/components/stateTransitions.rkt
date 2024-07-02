@@ -9,16 +9,18 @@
 ;; Determins what the current rule is from the processed-list
 ;; The rules arg is only used for PDA's. See contruct-pda-rule for more info
 ;; on why this is needed.
-(define (getCurRule processed-list (rules #f))
+(define (getCurRule processed-list (rules #f) (transitions #f))
   (match MACHINE-TYPE
     ['pda
-     (get-pda-rule processed-list rules)]
+     (get-pda-rule processed-list rules transitions)]
     [(or 'tm 'tm-language-recognizer)
      (get-tm-rule processed-list)]
     [(or 'mttm 'mttm-language-recognizer)
      (get-mttm-rule processed-list)]
     [_ ; dfa/ndfa
-     (get-dfa-ndfa-rule processed-list)]))
+     (get-dfa-ndfa-rule processed-list)]
+    )
+  )
 
 
 ;;get-dfa-ndfa-rule: Returns the current rule for a dfa/ndfa
@@ -99,16 +101,29 @@
          next-tapes))
   `((,cur-state ,(map car tuple-list)) (,next-state ,(map cdr tuple-list))))
 
-  
- 
+(define (format-helper rule) (if (empty? rule)
+                                 '()
+                                 (if (eq? '() (first rule))
+                                     (cons EMP (format-helper (rest rule)))
+                                     (cons (first rule) (format-helper (rest rule)))
+                                     )
+                                 )
+  )
+
+(define (format-rule rule) (format-helper rule))
 
 
 ;; get-pda-rule: processed-list listof(rules) -> pda-rule
 ;; Purpose: Determins if the rule to be made should be empty or a real rule
-(define (get-pda-rule processed-list rules)
+(define (get-pda-rule processed-list rules transitions)
+  (begin ;(displayln processed-list)
+         ;(display transitions)
   (cond
     [(< (length processed-list) 2)  '((empty empty empty) (empty empty))]
-    [else (construct-pda-rule processed-list rules)]))
+    [else (second (first (filter (lambda (transition) (equal? (first transition) (first processed-list))) transitions)))]
+    )
+  )
+  )
 
 
 ;; construct-pda-rule: processed-list  listof(rules) -> pda-rule
@@ -128,10 +143,14 @@
   ;; determin-pushed: list list -> list | symbol
   ;; Purpose: Returns the list or elements to be pushed
   (define/match (determin-pushed _init-stack next-stack)
-    [(_ '()) EMP]
+      [(_ '()) EMP]
     [('() n) n]
     [((list-rest a1 ... b1 _) (list-rest a2 ... b2 _))
-     (if (not (equal? b1 b2)) next-stack (determin-pushed a1 a2))])
+     (begin
+       ;(displayln (format "~s\n~s" _init-stack next-stack))
+       (if (not (equal? b1 b2)) next-stack (determin-pushed a1 a2))
+       )
+     ])
 
   ;; determin-poped: list list -> list | symbol
   ;; Purpose: Returns the list or elements to be popped

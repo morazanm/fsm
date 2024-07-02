@@ -1,6 +1,7 @@
 #lang racket
 
 (require "../fsm-gviz/private/lib.rkt"
+         "../fsm-gviz/private/parallel.rkt"
          2htdp/universe
          rackunit
          (rename-in racket/gui/base
@@ -294,7 +295,7 @@
 ;; dfa-node-graph
 ;; (listof rules) graph (listof states) -> graph
 ;; Purpose: To create a graph of nodes from the given list of rules
-(define (dfa-node-graph cgraph los finals)
+(define (dfa-node-graph cgraph los finals edge)
   (foldl (λ (state result)  (if  (contains-final-state? state finals)
                                  (add-node
                                   result
@@ -303,6 +304,11 @@
                                                          'darkgreen
                                                          'black)
                                               'shape 'doublecircle
+                                              'style (cond [(empty? edge)
+                                                            'bold]
+                                                           [(equal? state (third edge))
+                                                            'bold]
+                                                           [else 'solid])        
                                               'label (if (equal? state '())
                                                          'ds  
                                                          (los2symb state))
@@ -315,6 +321,11 @@
                                   #:atb (hash 'color (if (equal? state (last los))
                                                          'darkgreen
                                                          'black)
+                                              'style (cond [(empty? edge)
+                                                            'solid]
+                                                           [(equal? state (third edge))
+                                                            'bold]
+                                                           [else 'solid])
                                               'shape 'circle
                                               'label (if (equal? state '())
                                                          'ds  
@@ -347,14 +358,14 @@
 
   
 ;; create-dfa-graph
-;; (listof rules) -> graph img
+;; (listof rules) (listof states) (listof final-states) -> graph-struct
 ;; Purpose: To create a dfa graph from a given ndfa
 (define (create-dfa-graph lor los finals)
   (if (empty? lor)
-      (graph->bitmap (dfa-edge-graph (dfa-node-graph (create-graph 'dfagraph #:atb (hash 'rankdir "LR")) los finals)
-                                     lor '()))
-      (graph->bitmap (dfa-edge-graph (dfa-node-graph (create-graph 'dfagraph #:atb (hash 'rankdir "LR")) los finals)
-                                     lor (first lor)))))
+      (dfa-edge-graph (dfa-node-graph (create-graph 'dfagraph #:atb (hash 'rankdir "LR")) los finals '())
+                      lor '())
+      (dfa-edge-graph (dfa-node-graph (create-graph 'dfagraph #:atb (hash 'rankdir "LR")) los finals (first lor)) 
+                      lor (first lor))))
 
 ;; find-empty-transitions
 ;; (listof state) (listof state) (listof rules) -> (listof rules)
@@ -425,13 +436,16 @@
 
 ;; (listof symbols) -> graph
 ;; Purpose: To create a graph of nodes from the given list of rules
-(define (ndfa-node-graph cgraph M)
+(define (ndfa-node-graph cgraph M hedges)
   (foldl (λ (state result) (cond [(contains-final-state? state (sm-finals M))
                                   (add-node
                                    result
                                    state
                                    #:atb (hash 'color 'black
                                                'shape 'doublecircle
+                                               'style (if (ormap (λ (edge) (equal? state (third edge))) hedges)
+                                                          'bold
+                                                          'solid)
                                                'label state
                                                'fontcolor 'black))]
                                  [(eq? state (sm-start M))
@@ -441,6 +455,9 @@
                                    #:atb (hash 'color 'darkgreen
                                                'shape 'circle
                                                'label state
+                                               'style (if (ormap (λ (edge) (equal? (second edge) 'ε)) hedges)
+                                                          'bold
+                                                          'solid)
                                                'fontcolor 'black))]
                                  [else (add-node
                                         result
@@ -448,6 +465,9 @@
                                         #:atb (hash 'color 'black
                                                     'shape 'circle
                                                     'label state
+                                                    'style (if (ormap (λ (edge) (equal? state (third edge))) hedges)
+                                                               'bold
+                                                               'solid)
                                                     'fontcolor 'black))]))
          cgraph
          (sm-states M)))
@@ -475,15 +495,15 @@
            (append hedges no-duplicates-fedges no-duplicates-bledges))))
 
 ;; make-ndfa-graph
-;; etc -> graph img
+;; etc -> graph-struct
 ;; Purpose: To make an ndfa-graph from the given ndfa
 (define (make-ndfa-graph a-etc)
   (let* [(ndfa-edge-graph-x (ndfa-edge-graph (ndfa-node-graph (create-graph 'ndfagraph #:atb (hash 'rankdir "LR"))
-                                                              (etc-M a-etc))
+                                                              (etc-M a-etc) (etc-hedges a-etc))
                                              (etc-hedges a-etc)
                                              (etc-fedges a-etc)
                                              (etc-bledges a-etc)))]
-    (graph->bitmap ndfa-edge-graph-x)))
+    ndfa-edge-graph-x))
 
 
 ;; create-etcs
@@ -517,10 +537,10 @@
                    new-bledges)
          (cons a-etc low)))))
 
-;; create-all-imgs
-;; (listof etc) -> (listof img)
-;; Purpose: To create all graph imgs
-(define (create-all-imgs low)
+;; create-img
+;; dgrph dgrph etc -> img
+;; Purpose: Creates a graph image to display on screen
+(define (create-img ndfa-grph dfa-grph world)
   (define (resize-img img)
     (let [(e-scn-w (- (image-width E-SCENE) 10))
           (e-scn-h (- (image-height E-SCENE) 10))
@@ -531,45 +551,51 @@
             [(> w e-scn-w) (resize-image img e-scn-w h)]
             [(> h (/ e-scn-h 2)) (resize-image img w (/ e-scn-h 2))]
             [else img])))
-  (if (empty? low)
-      '()
       (let* [(ndfa-graph (overlay (resize-img
                                    (beside (text "NDFA    " 24 'darkgreen)
-                                           (make-ndfa-graph (first low))))
+                                           (ndfa-grph)))
                                   (empty-scene (image-width E-SCENE)
                                                (/ (image-height E-SCENE) 2))))
              (dfa-graph
-              (let* [(new-edge (if (empty? (etc-ad-edges (first low)))
+              (let* [(new-edge (if (empty? (etc-ad-edges world))
                                    '()
-                                   (first (etc-ad-edges (first low)))))
-                     (edge-str (if (empty? new-edge)
-                                   "Starting Super State"
-                                   (string-append "SS Edge Added: "
-                                                  "("
-                                                  (symbol->string (if (empty? (first new-edge))
-                                                                      DEAD
-                                                                      (los->symbol (first new-edge))))
-                                                  " "
-                                                  (symbol->string (second new-edge))
-                                                  " "
-                                                  (symbol->string (if (empty? (third new-edge))
-                                                                      DEAD
-                                                                      (los->symbol (third new-edge))))
-                                                  ")")))
-                     (edge-msg-img (text edge-str 24 'violet))]              
+                                   (first (etc-ad-edges world))))
+                     (edge-str (cond [(empty? new-edge)
+                                      "Starting Super State"]
+                                     [(or (empty? (third new-edge))
+                                          (empty? (first new-edge)))
+                                      (string-append "SS Edge Added: "
+                                                     "("
+                                                     (symbol->string (if (empty? (first new-edge))
+                                                                         DEAD
+                                                                         (los->symbol (first new-edge))))
+                                                     " "
+                                                     (symbol->string (second new-edge))
+                                                     " "
+                                                     (symbol->string (if (empty? (third new-edge))
+                                                                         DEAD
+                                                                         (los->symbol (third new-edge))))
+                                                     ") - no corresponding ndfa transition.")]                                     
+                                     [else (string-append "SS Edge Added: "
+                                                          "("
+                                                          (symbol->string (los->symbol (first new-edge)))
+                                                          " "
+                                                          (symbol->string (second new-edge))
+                                                          " "
+                                                          (symbol->string (los->symbol (third new-edge)))
+                                                          ")")]))
+                     (edge-msg-img (text edge-str 24 'violet))]          
                 (overlay (resize-img
                           (above
-                           (create-dfa-graph
-                            (etc-ad-edges (first low))
-                            (etc-incl-nodes (first low))
-                            (ndfa2dfa-finals-only (etc-M (first low))))
+                           (dfa-grph)
                            edge-msg-img))
                          (empty-scene (image-width E-SCENE)
                                       (/ (image-height E-SCENE) 2)))))]
-        (cons (above ndfa-graph
-                     dfa-graph)
-              (create-all-imgs (rest low))))))
-
+        (above ndfa-graph
+                    dfa-graph)
+              
+        )    
+  )
 
 
 
@@ -581,8 +607,19 @@
 ;; Purpose: To draw a etc image
 (define (draw-etc a-etc)
   (if (empty? (viz-state-pimgs a-etc))
-      (above (first (viz-state-upimgs a-etc)) E-SCENE-TOOLS)
-      (above (first (viz-state-pimgs a-etc)) E-SCENE-TOOLS)))
+      #;(above (above ((first (first (viz-state-upimgs a-etc)))) ((second (first (viz-state-upimgs a-etc))))) E-SCENE-TOOLS)
+      (above
+       (create-img (first (first (viz-state-upimgs a-etc)))
+                   (second (first (viz-state-upimgs a-etc)))
+                   (first (viz-state-up-low a-etc)))
+       E-SCENE-TOOLS)
+      #;(above (above ((first (first (viz-state-pimgs a-etc)))) ((second (first (viz-state-pimgs a-etc))))) E-SCENE-TOOLS)
+      (above (create-img (first (first (viz-state-pimgs a-etc)))
+                         (second (first (viz-state-pimgs a-etc)))
+                         (first (viz-state-p-low a-etc)))
+             E-SCENE-TOOLS)
+      )
+  )
 
 
 ;; contains-final-state-run?
@@ -590,7 +627,16 @@
 (define (contains-final-state-run? sss sm-finals)
   (ormap (λ (s) (member s sm-finals)) sss))
 
-
+;; (listof Any) (listof Any) -> (listof (list Any Any))
+;; Purpose: Combines two lists into a list of pairs
+(define (combine-lists list0 list1)
+  (if (and (empty? list0)
+           (empty? list1)
+           )
+      '()
+      (cons (list (first list0) (first list1)) (combine-lists (rest list0) (rest list1)))
+      )
+  )
 ;; ndfa2dfa-viz 
 ;; ndfa -> void
 (define (ndfa2dfa-viz M)
@@ -607,8 +653,19 @@
                         '()
                         (remove init-hedges (sm-rules M))))
          (low (reverse (create-etcs etc '())))
-         (imgs (create-all-imgs low))]
-    (run-viz (viz-state (rest imgs) (list (first imgs)))
+         (ndfa-dgrphs (map make-ndfa-graph low))
+         (dfa-dgrphs (map (lambda (world) (create-dfa-graph (etc-ad-edges world)
+                                                            (etc-incl-nodes world)
+                                                            (ndfa2dfa-finals-only (etc-M world)))) low))
+         (grph-thunks (parallel-graphs->bitmap-thunks (append ndfa-dgrphs dfa-dgrphs)))
+         
+         (ndfa-graph-thunks (take grph-thunks (length ndfa-dgrphs)))
+         (dfa-graph-thunks (drop grph-thunks (length ndfa-dgrphs)))
+         (grph-thunks (parallel-graphs->bitmap-thunks (append ndfa-dgrphs dfa-dgrphs)))
+         
+         (imgs (combine-lists ndfa-graph-thunks dfa-graph-thunks))
+         ]
+    (run-viz (viz-state (rest imgs) (list (first imgs)) (rest low) (list (first low)))
              draw-etc
              'ndfa2dfa-viz)))
 
@@ -637,5 +694,5 @@
                                           (C a C)
                                           (C b C))))
 
-;(run aa-ab)
-;(run AT-LEAST-ONE-MISSING)
+;(ndfa2dfa-viz aa-ab)
+;(ndfa2dfa-viz AT-LEAST-ONE-MISSING)

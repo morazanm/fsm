@@ -84,6 +84,29 @@
                                        )
                                (empty-scene 1250 100)))
 
+;; (listof state) --> state
+;; Purpose: To generate a state name not in the given list of states
+(define (gen-state disallowed)
+  (define STS '(A B C D E F G H I J K L M N O P Q R S T U V W X Y Z))
+
+  ;; state natnum --> symbol
+  ;; Purpose: To append a dash and the given natnum to the given state
+  (define (concat-n s n)
+    (string->symbol (string-append (symbol->string s) "-" (number->string n))))
+
+  ;; natnum (listof states) --> state
+  ;; Purpose: Generate an allowed state
+  (define (gen-helper n s-choices)
+    (if (not (empty? s-choices))
+        (first s-choices)
+        (gen-helper (add1 n)
+                    (filter (λ (s) (not (member s disallowed)))
+                            (map (λ (s) (concat-n s n)) STS)))))
+
+  (gen-helper 0 (filter (λ (a) (not (member a disallowed))) STS)))
+
+(define gen-nt gen-state)
+
 ;; make-node-graph
 ;; graph los start final -> graph
 ;; Purpose: To make a node graph
@@ -178,41 +201,68 @@
 ;; Purpose: To create a graph image for the union
 ;; Assume: The intersection of the states of the given machines is empty
 (define (create-graph-img M N)
-  (let* [(new-start (generate-symbol 'S (append (sm-states M) (sm-states N))))
+  (let* [(new-start (gen-state (append (sm-states M) (sm-states N))))
          (new-states (cons new-start
                            (append (sm-states M) (sm-states N))))
          (added-edges (list (list new-start EMP (sm-start M))
                             (list new-start EMP (sm-start N))))
-         (new-finals (append (sm-finals M) (sm-finals N)))]
-    (overlay (above (graph->bitmap (make-edge-graph (make-node-graph
-                                                     (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                     new-states new-start new-finals) M N new-start))
-                    (text "Union of the ndfas \n" 20 'black)
-                    (text (format "Generated edges: ~a \n" added-edges) 20 'black)
-                    (text (format "Final states: ~a \n" new-finals) 20 'black)
-                    (text (format "Starting state: ~a \n" new-start) 20 'black))
-             E-SCENE)))
+         (new-finals (append (sm-finals M) (sm-finals N)))
+         (graph (graph->bitmap (make-edge-graph (make-node-graph
+                                                 (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                                 new-states new-start new-finals) M N new-start)))
+         (width (image-width graph))
+         (height (image-height graph))]
+    (if (or (> width (image-width E-SCENE))
+            (> height (image-height E-SCENE)))
+        (above (resize-image graph
+                             (image-width E-SCENE) (image-height E-SCENE))
+               (text "Union of the ndfas \n" 20 'black)
+               (text (format "Generated edges: ~a \n" added-edges) 20 'black)
+               (text (format "Final states: ~a \n" new-finals) 20 'black)
+               (text (format "Starting state: ~a \n" new-start) 20 'black))
+        (above graph
+               (text "Union of the ndfas \n" 20 'black)
+               (text (format "Generated edges: ~a \n" added-edges) 20 'black)
+               (text (format "Final state(s): ~a \n" new-finals) 20 'black)
+               (text (format "Starting state: ~a \n" new-start) 20 'black)))))
      
 ;; make-init-grph-img
 ;; ndfa ndfa -> img
 ;; Purpose: To draw the graph of the initial ndfa's
 (define (make-init-grph-img M N)
-  (overlay (above (text "First ndfa:" 20 'black)
-                  (graph->bitmap (make-first-edge-graph (make-node-graph
+  (let* [(graph1 (graph->bitmap (make-first-edge-graph (make-node-graph
+                                                        (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                                        (sm-states N)
+                                                        (sm-start N)
+                                                        (sm-finals N))
+                                                       N (sm-start N))))
+         (graph2 (graph->bitmap (make-second-edge-graph (make-node-graph
                                                          (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                         (sm-states N)
-                                                         (sm-start N)
-                                                         (sm-finals N))
-                                                        N (sm-start N)))
-                  (text " " 20 'white)
-                  (text "Second ndfa:" 20 'black)
-                  (graph->bitmap (make-second-edge-graph (make-node-graph
-                                                          (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                          (sm-states M)
-                                                          (sm-start M)
-                                                          (sm-finals M))
-                                                         M (sm-start M))))
-           E-SCENE))
+                                                         (sm-states M)
+                                                         (sm-start M)
+                                                         (sm-finals M))
+                                                        M (sm-start M))))
+         (width1 (image-width graph1))
+         (height1 (image-height graph1))
+         (width2 (image-width graph2))
+         (height2 (image-height graph2))]
+    (overlay (beside (beside (text "First ndfa:" 20 'black)
+                             (square 20 'solid 'white)
+                             (if (or (> width1 (image-width E-SCENE))
+                                     (> height1 (image-height E-SCENE)))
+                                 (resize-image graph1 (image-width E-SCENE) (image-height E-SCENE))
+                                 graph1)
+                             )
+                  
+                     (square 50 'solid 'white)
+                     (beside (text "Second ndfa:" 20 'black)
+                             (square 20 'solid 'white)
+                             (if (or (> width2 (image-width E-SCENE))
+                                     (> height2 (image-height E-SCENE)))
+                                 (resize-image graph2 (image-width E-SCENE) (image-height E-SCENE))
+                                 graph2))
+                     )
+             E-SCENE)))
      
 
 ;; draw-world
@@ -223,8 +273,8 @@
         (height (image-height (first (viz-state-pimgs a-vs))))]
     (if (or (> width (image-width E-SCENE))
             (> height (image-height E-SCENE)))
-        (above (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE)) E-SCENE-TOOLS)               
-        (above (first (viz-state-pimgs a-vs)) E-SCENE-TOOLS))))
+        (above (overlay (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE)) E-SCENE) E-SCENE-TOOLS)               
+        (above (overlay (first (viz-state-pimgs a-vs)) E-SCENE) E-SCENE-TOOLS))))
 
 ;; union-viz
 ;; fsa fsa -> void

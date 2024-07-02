@@ -22,7 +22,9 @@
   "./components/buttons.rkt"
   "./components/stateTransitions.rkt"
   "../fsm-core/interface.rkt"
-  "../fsm-gviz/interface.rkt")
+  "../fsm-gviz/interface.rkt"
+  "../fsm-core/private/pda.rkt"
+  )
 
 (provide
  visualize
@@ -564,7 +566,11 @@ Scene Rendering
                                        (cadr (world-cur-rule w)))])))
 
        (determim-prev-rule (lambda (rule)
-                             (let ((c-rule (getCurRule rule (machine-rule-list (world-fsm-machine w)))))
+                             (let ((c-rule (if (equal? MACHINE-TYPE 'pda)
+                                               (getCurRule rule (machine-rule-list (world-fsm-machine w)) TRANSITIONS)
+                                               (getCurRule rule (machine-rule-list (world-fsm-machine w)))
+                                               )
+                                           ))
                                (case MACHINE-TYPE
                                  [(pda) (caar c-rule)]
                                  [(tm) (caar c-rule)]
@@ -604,7 +610,7 @@ Scene Rendering
                         (letrec
                             (
                              (state-color (determin-inv
-                                           (world-fsm-machine w)
+                                           ORIGINAL-MACHINE-STRUCT
                                            (world-cur-state w)))
                              ;; arrow: none -> image
                              ;; Purpose: draws a arrow
@@ -1128,8 +1134,15 @@ BOTTOM GUI RENDERING
                                  (cdar (world-processed-config-list w)))
                              (world-cur-state w)
                              (world-fsm-machine w)))
-    (define prev-rule (getCurRule (world-processed-config-list w)
-                                  (machine-rule-list (world-fsm-machine w))))
+    (define prev-rule (if (equal? MACHINE-TYPE 'pda)
+                          (getCurRule (world-processed-config-list w)
+                                  (machine-rule-list (world-fsm-machine w))
+                                  TRANSITIONS
+                                  )
+                          (getCurRule (world-processed-config-list w)
+                                  (machine-rule-list (world-fsm-machine w)))
+                          )
+      )
     (define mttm-cur-rule-view
       (if cur-rule (overlay
                     (text cur-rule FONT-SIZE "black")

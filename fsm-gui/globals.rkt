@@ -7,6 +7,11 @@ Created by Joshua Schappel on 12/19/19
 (require 2htdp/image)
 (provide (all-defined-out))
 
+(define ORIGINAL-MACHINE-STRUCT (void))
+(define TRANSITIONS (void))
+(define (set-original-machine-struct machine) (set! ORIGINAL-MACHINE-STRUCT machine))
+(define (set-transitions transitions) (set! TRANSITIONS transitions))
+
 ;; -- VERSION --
 (define VERSION "VERSION 1.6")
 
