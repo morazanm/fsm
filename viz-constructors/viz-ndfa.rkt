@@ -12,8 +12,8 @@
 
 (define FNAME "fsm")
 
-(define HELD-INV 'chartreuse4)
-(define BRKN-INV 'red2)
+(define HELD-INV-COLOR 'chartreuse4)
+(define BRKN-INV-COLOR 'red2)
 
 ;; X (listof X) -> boolean
 ;;Purpose: Determine if X is in the given list
@@ -220,32 +220,33 @@
 
 ;; graph machine (listof symbols) symbol (listof symbols) (listof symbols) -> graph
 ;; Purpose: To create a graph of nodes from the given list of rules
-(define (node-graph cgraph M destin-states dead held-inv brkn-inv)
+(define (node-graph cgraph M dead held-inv brkn-inv)
   (foldl (λ (state result)
            (add-node
             result
             state
-            #:atb (hash 'color (cond [(eq? state (sm-start M)) 'darkgreen]
-                                     ;[(eq? state dead) 'red] ;;;;;MAYBE
-                                     [else 'black])
+            #:atb (hash 'color (if (eq? state (sm-start M))
+                                   'darkgreen
+                                   'black)
                         'style (cond [(or (member? state held-inv)
-                                          (member? state brkn-inv)) 'filled]
-                                     [(eq? state dead) 'dashed]  ;;;;;MAYBE
+                                          (member? state brkn-inv))
+                                      'filled]
+                                     [(eq? state dead) 'dashed]
                                      [else 'solid])
                         'shape (if (member? state (sm-finals M))
                                    'doublecircle
                                    'circle)
-                        'fillcolor (cond [(member? state held-inv) HELD-INV]
-                                         [(member? state brkn-inv) BRKN-INV]
+                        'fillcolor (cond [(member? state held-inv) HELD-INV-COLOR]
+                                         [(member? state brkn-inv) BRKN-INV-COLOR]
                                          [else 'white])
                         'label state
                         'fontcolor 'black)))
          cgraph
          (sm-states M)))
 
-;; graph NDFA word (listof rules) (listof rules) symbol -> graph
+;; graph machine word (listof rules) (listof rules) symbol -> graph
 ;; Purpose: To create a graph of edges from the given list of rules
-(define (edge-graph cgraph M pci current-rules dead)
+(define (edge-graph cgraph M current-rules dead)
   (foldl (λ (rule result) 
            (add-edge result
                      (second rule)
@@ -272,11 +273,11 @@
          cgraph
          (sm-rules M)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;upci is the unprocessed consumed input (listof symbols)
 ;;pci is the proccessed consumed input (listof symbols)
-;;M is an ndfa (machine)
+;;M is a machine
 ;;inv is a the (listof (state (listof symbols -> boolean)))
 ;;dead is the sybmol of dead state
 (struct viz-state-ndfa (upci pci M inv dead))
@@ -364,31 +365,31 @@
 ;;viz-state -> scene
 ;;Purpose: Draws the given viz-state onto the scene
 (define (draw-graph a-vs)
-  (let* [;;(listof configurations)
+  (let* [ ;;for reference, a config(computation) is a pair(list) with a state as the first element and a word as the second
+         ;;EX. (S (a b a))
+         ;;(listof configurations)
          ;;Purpose: Returns all starting configurations of for the entire word
          (starting-configs (map (λ (state) (append (list state) (list (append (viz-state-ndfa-pci a-vs)
                                                                               (viz-state-ndfa-upci a-vs)))))
                                 (cons (sm-start (viz-state-ndfa-M a-vs))
                                       (get-empty-states-from-start (sm-start (viz-state-ndfa-M a-vs))
                                                                    (sm-rules (viz-state-ndfa-M a-vs))))))
-         
-         ;;for reference, a config(computation) is a pair(list) with a state as the first element and a word as the second
-         ;;EX. (S (a b a))
+       
          ;;(listof configurations)
          ;;Purpose: Returns all configurations using the CI
-         (curr-config  (append-map (λ (config)
-                                       (filter (λ (configs)
-                                                 (equal? (second configs) (viz-state-ndfa-upci a-vs)))
-                                               config))
-                                     (get-configs (append (viz-state-ndfa-pci a-vs)
-                                                          (viz-state-ndfa-upci a-vs))
-                                                  (sm-rules (viz-state-ndfa-M a-vs))
-                                                  (sm-start (viz-state-ndfa-M a-vs)))))
+         (curr-config (append-map (λ (config)
+                                    (filter (λ (configs)
+                                              (equal? (second configs) (viz-state-ndfa-upci a-vs)))
+                                            config))
+                                  (get-configs (append (viz-state-ndfa-pci a-vs)
+                                                       (viz-state-ndfa-upci a-vs))
+                                               (sm-rules (viz-state-ndfa-M a-vs))
+                                               (sm-start (viz-state-ndfa-M a-vs)))))
          
          
          ;;(listof configurations)
          ;;Purpose: Returns the all configurations using the CI that is one step behind
-         (prev-config (cond [(empty?    (viz-state-ndfa-pci a-vs)) '()]
+         (prev-config (cond [(empty? (viz-state-ndfa-pci a-vs)) '()]
                             [(= (length (viz-state-ndfa-pci a-vs)) 1)
                              starting-configs]
                             [else (append-map (λ (config)
@@ -504,7 +505,9 @@
                                                                                   (text (los2str (list (first unconsumed-word)))
                                                                                         20
                                                                                         'red)
-                                                                                  (text (los2str (rest unconsumed-word))
+                                                                                  (text (if (empty? (rest unconsumed-word))
+                                                                                            ""
+                                                                                            (los2str (rest unconsumed-word)))
                                                                                         20
                                                                                         'black)))
                                                                   (beside (text "Consumed: " 20 'black)
@@ -573,12 +576,10 @@
                      (node-graph (create-graph 'ndfagraph #:atb
                                                (hash 'rankdir "LR"))
                                  (viz-state-ndfa-M a-vs)
-                                 destin-states
                                  (viz-state-ndfa-dead a-vs)
                                  held-invs
                                  brkn-invs)
                      (viz-state-ndfa-M a-vs)
-                     (viz-state-ndfa-pci a-vs)
                      current-rules
                      (viz-state-ndfa-dead a-vs)))
                    500
@@ -936,7 +937,7 @@
 ;;word -> boolean
 ;;Purpose: Determines if the given word is empty
 (define (S-INV a-word)
-  (not (empty? a-word)))
+  (empty? a-word))
 
 ;;word -> boolean
 ;;Purpose: Determines if the last letter in the given word is an b 
