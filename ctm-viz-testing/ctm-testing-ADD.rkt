@@ -1,20 +1,8 @@
-#lang fsm
+#lang racket
 
-;(require "main.rkt")
-
-#|
-
-A natural number in unary notation (nn) is either:
-       1. (BLANK)
-       2. (d nn)
-
-|#
-
-;; nn examples
-
-(define ZERO  (list BLANK))
-(define THREE '(d d d))
-(define EIGHT '(d d d d d d d d))
+(require "../fsm-core/private/callgraphs/viz-ctm.rkt"
+         "../main.rkt"
+         rackunit)
 
 ;;  PRE: tape = (LMw) AND i=k>0 AND w in (d)*
 ;; POST: tape = (LMw) AND i=k+1 AND w in (d)*
@@ -162,7 +150,6 @@ A natural number in unary notation (nn) is either:
                    L
                    `(,GOTO 1000)
                    1000)
-             
              '(d)))
 
 
@@ -180,101 +167,89 @@ A natural number in unary notation (nn) is either:
               `(7 (@ ,BLANK d d d d d ,BLANK ,BLANK)))
 
 (define ADDL  '(list R
-                     `(,BRANCH (,BLANK (GOTO 100))
-                               (d (GOTO 200)))
-                     100 ;; a=0
-                     R
-                     R
-                     `(,BRANCH (,BLANK (GOTO 500)) ;; a=b=0
-                               (d (GOTO 300)))
-                     200 ;; a!=0
-                     FBR
-                     Wd
-                     FBR
-                     L
-                     WB
-                     `(,GOTO 1000)
-                     300 ;; a=0 and b!=0
-                     L
-                     SHL
-                     FBL
-                     SHL
-                     `(,GOTO 1000)
-                     500 ;; a=0 and b=0
-                     L
-                     `(,GOTO 1000)
-                     1000))
+                   `(,BRANCH (,BLANK (GOTO 100))
+                             (d (GOTO 200)))
+                   100 ;; a=0
+                   R
+                   R
+                   `(,BRANCH (,BLANK (GOTO 500)) ;; a=b=0
+                             (d (GOTO 300)))
+                   200 ;; a!=0
+                   FBR
+                   Wd
+                   FBR
+                   L
+                   WB
+                   `(,GOTO 1000)
+                   300 ;; a=0 and b!=0
+                   L
+                   SHL
+                   FBL
+                   SHL
+                   `(,GOTO 1000)
+                   500 ;; a=0 and b=0
+                   L
+                   `(,GOTO 1000)
+                   1000))
 
 ;(ctm-viz ADD ADDL `(,LM ,BLANK d d d ,BLANK d d) 1)
 
 
-#;(define ADD2 (combine-tms
-                (list FBR Wd FBR L WB L (list BRANCH (list BLANK R R R (list BRANCH (list BLANK L)
-                                                                             (list 'd L SHL FBL SHL)))
-                                              (list 'd R)))
-                '(d)))
-
-#;(define ADD2L (list FBR Wd FBR L WB L (list BRANCH (list BLANK R R R (list BRANCH (list BLANK L)
-                                                                             (list 'd L SHL FBL SHL)))
-                                              (list 'd R))))
-
 (define ADD2 (combine-tms
-              (list
-               FBR
-               Wd
-               FBR
-               L
-               WB
-               L
-               (list BRANCH (list BLANK (list GOTO 200))
-                            (list 'd (list GOTO 300)))
-               200
-               R
-               R
-               R
-               (list BRANCH (list BLANK (list GOTO 250))
-                            (list 'd (list GOTO 400)))
-               250
-               L
-               (list GOTO 500)
-               300
-               R
-               (list GOTO 500)
-               400
-               L
-               SHL
-               FBL
-               SHL
-               500)
+              (list FBR
+                    Wd
+                    FBR
+                    L
+                    WB
+                    L 
+                    (list BRANCH (list BLANK (list GOTO 100))
+                                 (list 'd (list GOTO 200)))
+                    100
+                    R
+                    R
+                    R
+                    (list BRANCH (list BLANK (list GOTO 300))
+                                 (list 'd (list GOTO 400)))
+                    200
+                    R
+                    (list GOTO 500)
+                    300
+                    L
+                    (list GOTO 500)
+                    400
+                    L
+                    SHL
+                    FBL
+                    SHL
+                    500)
               '(d)))
 
-(define ADD2L '(list
-               FBR
-               Wd
-               FBR
-               L
-               WB
-               L
-               (list BRANCH (list BLANK (list GOTO 200))
-                            (list 'd (list GOTO 300)))
-               200
-               R
-               R
-               R
-               (list BRANCH (list BLANK (list GOTO 250))
-                            (list 'd (list GOTO 400)))
-               250
-               L
-               (list GOTO 500)
-               300
-               R
-               (list GOTO 500)
-               400
-               L
-               SHL
-               FBL
-               SHL
-               500))
+(define ADD2L '(list FBR
+                    Wd
+                    FBR
+                    L
+                    WB
+                    L
+                    (list BRANCH (list BLANK (list GOTO 100))
+                                 (list 'd (list GOTO 200)))
+                    100
+                    R
+                    R
+                    R
+                    (list BRANCH (list BLANK (list GOTO 300))
+                                 (list 'd (list GOTO 400)))
+                    200
+                    R
+                    (list GOTO 500)
+                    300
+                    L
+                    (list GOTO 500)
+                    400
+                    L
+                    SHL
+                    FBL
+                    SHL
+                    500))
 
 ;; a=0 and b=0
 (check-equal? (rest (ctm-run ADD2 `(,LM ,BLANK) 1))
@@ -289,7 +264,8 @@ A natural number in unary notation (nn) is either:
 (check-equal? (rest (ctm-run ADD2 `(,LM ,BLANK d d d ,BLANK d d) 1))
               `(7 (@ ,BLANK d d d d d ,BLANK ,BLANK)))
 
-;; Marcelina working on a parsing bug
+
 ;(ctm-viz ADD2 ADD2L `(,LM ,BLANK d d d ,BLANK d d) 1)
-;(ctm-viz ADD2 ADD2L `(,LM ,BLANK ,BLANK d d d ,BLANK) 1)
+;(ctm-viz ADD2 ADD2L `(,LM ,BLANK ,BLANK ,BLANK d d d) 1)
 ;(ctm-viz ADD2 ADD2L `(,LM ,BLANK ,BLANK ,BLANK) 1)
+;(ctm-viz ADD2 ADD2L `(,LM ,BLANK d d d ,BLANK) 1)

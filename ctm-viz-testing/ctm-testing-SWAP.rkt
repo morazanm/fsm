@@ -1,7 +1,7 @@
 #lang racket
 
-(require "viz-ctm.rkt"
-         "../../interface.rkt"
+(require "../fsm-core/private/callgraphs/viz-ctm.rkt"
+         "../main.rkt"
          rackunit)
 
 ;;  PRE: tape = (LMw) AND i=k>0 AND w in (a b)*

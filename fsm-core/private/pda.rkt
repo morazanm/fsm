@@ -448,7 +448,7 @@
                   (generate-rename-table (cons new-st disallowed) (rest sts))))))
     
     (let* ((sts (pda-getstates m))
-           (rename-table (generate-rename-table sts sts))
+           (rename-table (generate-rename-table (remove-duplicates (append sts los)) sts))
            (new-states (map (lambda (s) (cadr (assoc s rename-table))) sts))
            (new-start (cadr (assoc (pda-getstart m) rename-table)))
            (new-finals (map (lambda (s) (cadr (assoc s rename-table))) (pda-getfinals m)))

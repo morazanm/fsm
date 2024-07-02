@@ -217,14 +217,16 @@
                                rules
                                (cons curr-ss ssts))))))
 
-    ;; (listof ss) --> ss-name-tbl
-    ;; Purpose: Create a table for ss names
     (define (compute-ss-name-tbl super-states)
       (foldr (λ (ss acc) (cons (list ss (gen-state (map second acc))) acc))
              '()
              super-states))
-      #;(map (λ (ss) (list ss (generate-symbol 'X '(X))))                                      
-           super-states)
+
+    ;; (listof ss) --> ss-name-tbl
+    ;; Purpose: Create a table for ss names
+    ;(define (compute-ss-name-tbl super-states)
+    ;  (map (λ (ss) (list ss (generate-symbol 'X '(X))))                                      
+    ;       super-states))
 
     ;; (listof state) rules --> emps-tbl
     ;; Purpose: Compute empties table for all given states
@@ -261,7 +263,7 @@
                                     sigma
                                     empties
                                     rules
-                                    '()))
+                                    '())) ;; the first rule(s) are for the starting ss
              (super-states (remove-duplicates
                             (append-map
                              (λ (r) (list (first r) (third r)))
@@ -329,7 +331,7 @@
     
     (let* ((mstates (fsa-getstates m))
            (sts mstates #;(if (member DEAD mstates) mstates (cons DEAD mstates)))
-           (rename-table (generate-rename-table los sts))
+           (rename-table (generate-rename-table (remove-duplicates (append sts los)) sts))
            (new-states (map (lambda (s) (cadr (assoc s rename-table))) sts))
            (new-start (cadr (assoc (fsa-getstart m) rename-table)))
            (new-finals (map (lambda (s) (cadr (assoc s rename-table))) (fsa-getfinals m)))
@@ -779,18 +781,33 @@
                             (make-unchecked-singleton "b"))))
 
   (define ab* (make-unchecked-ndfa '(S A)
-                       '(a b)
-                       'S
-                       '(A)
-                       '((S a A)
-                         (A b A))))
-(define aab* (make-unchecked-ndfa '(W X Y)
-                        '(a b)
-                        'W
-                        '(Y)
-                        '((W a X)
-                          (X a Y)
-                          (Y b Y))))
-  
+                                   '(a b)
+                                   'S
+                                   '(A)
+                                   '((S a A)
+                                     (A b A))))
+  (define aab* (make-unchecked-ndfa '(W X Y)
+                                    '(a b)
+                                    'W
+                                    '(Y)
+                                    '((W a X)
+                                      (X a Y)
+                                      (Y b Y))))
+
+  (define BB-NDFA (make-unchecked-ndfa
+                   '(S A B)
+                   '(a b)
+                   'S
+                   '(B)
+                   `((S a S)
+                     (S b S)
+                     (S b A)
+                     (A b B))))
+
+  (define BB (ndfa->dfa BB-NDFA))
+
+  ;(fsa-getstart BB)
+  ;(fsa-getfinals BB)
+  ;(fsa-getrules BB)
                          
   )  ; closes module

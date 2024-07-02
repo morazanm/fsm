@@ -1,9 +1,8 @@
 #lang racket
-
-(require "viz-ctm.rkt"
-         "../../interface.rkt"
+(require "../fsm-core/private/callgraphs/viz-ctm.rkt"
+         "../fsm-core/private/callgraphs/transdiagram-ctm2.rkt"
+         "../main.rkt"
          rackunit)
- 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; tms
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -177,7 +176,7 @@
 
 ;; PRE:  tape = (LM BLANK w BLANK) and head on blank after w
 ;; POST: tape = (LM BLANK w BLANK w BLANK) and head on blank after second w 
-(define COPY (combine-tms
+#;(define COPY (combine-tms
               (list FBL
                     0
                     R
@@ -205,229 +204,11 @@
                     (list GOTO 5)
                     4
                     R
+                    (list GOTO 5)
                     5)
               '(a b)))
 
-;; Sample ctm as list
-(define COPYL
-  '(FBL
-    0
-    R
-    (cons BRANCH (list (list _ (list GOTO 2))
-                       (list a (list GOTO 1))
-                       (list b (list GOTO 1))
-                       (list 'd (list GOTO 1))))
-    1
-    (list (list VAR 'k)
-          WB
-          FBR
-          FBR
-          k
-          FBL
-          FBL
-          k
-          (list GOTO 0))
-    2
-    FBR
-    L
-    (cons BRANCH (list (list _ (list GOTO 3))
-                       (list a (list GOTO 4))
-                       (list b (list GOTO 4))
-                       (list 'd (list GOTO 4))))
-    3
-    RR
-    (list GOTO 5)
-    4
-    R
-    (list GOTO 5)
-    5))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Design and implement a ctm that shifts its input word one space to the right.
-
-;; Name: w->_w
-;; Σ = {a b}
-
-;; PRE:  tape = (@ w) and i = 1
-;; POST: tape = (@ _ w) and i = |w|+2
-(define shiftr (combine-tms
-                (list FBR
-                      0
-                      L
-                      (cons BRANCH (list (list 'a (list GOTO 1))
-                                         (list 'b (list GOTO 1))
-                                         (list 'd (list GOTO 1))
-                                         (list '@ (list GOTO 3))
-                                         (list '_ (list GOTO 3))))
-                      1
-                      (list (list VAR 'x)
-                            R
-                            'x
-                            L
-                            WB
-                            (list GOTO 0))
-                      3
-                      FBR)
-                '(a b d)))
-
-;.................................................
-#|             
-;; Tests for w->_w
-(check-equal? (rest (ctm-run w->_w '(@ a b a) 1))
-              '(5 (@ _ a b a _)))
-(check-equal? (rest (ctm-run w->_w '(@ _ _) 1))
-              '(2 (@ _ _)))
-(check-equal? (rest (ctm-run w->_w '(@ a b b a) 1))
-              '(6 (@ _ a b b a _)))
-|#
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Design and implement a ctm that shifts its input word one space to the left.
-
-;; Name: _w->w
-;; Σ = {a b}
-
-;; PRE:  tape = (@ _ w) and i = 1
-;; POST: tape = (@ w _ _) and i = |w|+2
-(define shiftl (combine-tms
-                (list 0
-                      R
-                      (cons BRANCH (list (list 'a (list GOTO 1))
-                                         (list 'b (list GOTO 1))
-                                         (list 'd (list GOTO 1))
-                                         (list '_ (list GOTO 3))))
-                      1
-                      (list (list VAR 'x)
-                            L
-                            'x
-                            R
-                            WB
-                            (list GOTO 0))
-                      3)
-                '(a b d)))
-
-(define shiftr-list '(FBR
-                      0
-                      L
-                      (cons BRANCH (list (list a (list GOTO 1))
-                                         (list b (list GOTO 1))
-                                         (list d (list GOTO 1))
-                                         (list @ (list GOTO 3))
-                                         (list _ (list GOTO 3))))
-                      1
-                      (list (list VAR 'x)
-                            R
-                            x
-                            L
-                            WB
-                            (list GOTO 0))
-                      3
-                      FBR))
-
-
-
-(define COPYL2
-  '(FBL
-    0
-    R
-    (cons BRANCH (list (list _ (list GOTO 2)) (list 'a (list GOTO 1)) (list 'b (list GOTO 1))))
-    1
-    (list (list VAR 'k) WB FBR FBR k FBL FBL k (list GOTO 0))
-    2
-    FBR
-    L
-    (cons BRANCH (list (list _ (list GOTO 3)) (list 'a (list GOTO 4)) (list 'b (list GOTO 4))))
-    3
-    RR
-    (list GOTO 5)
-    4
-    R
-    (list GOTO 5)
-    5))
-
-
-;.................................................
-
-
-;;  PRE: headpos = k AND tape[k] = x and tape[k+1] = y
-;; POST: headpos = k AND tape[k] = y and tape[k+1] = x
-(define SWAP (combine-tms (list (list (list VAR 'i)
-                                      R
-                                      (list (list VAR 'j)
-                                            'i
-                                            L
-                                            'j))) '(a b)))
-
-
-(define SWAPL '(list (list (list VAR 'i)
-                           R
-                           (list (list VAR 'j)
-                                 i
-                                 L
-                                 j))))
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-(define RGHT (make-tm '(S F)
-                      '(i)
-                      `(((S ,BLANK) (F ,RIGHT))
-                        ((S i) (F ,RIGHT)))
-                      'S
-                      '(F)))
-
-(define LFT (make-tm '(S F)
-                     '(i)
-                     `(((S ,BLANK) (F ,LEFT))
-                       ((S i) (F ,LEFT)))
-                     'S
-                     '(F)))
-
-(define FBL2 (make-tm '(S F A)
-                      '(i)
-                      `(((S ,BLANK) (A ,LEFT))
-                        ((A i) (A ,LEFT))
-                        ((A ,BLANK) (F ,BLANK)))
-                      'S
-                      '(F)))
-
-(define SHIFTL (make-tm '(S F A B C)
-                        '(i)
-                        `(((S ,BLANK) (A ,RIGHT))
-                          ((A i) (B ,BLANK))
-                          ((A ,BLANK) (F ,LEFT))
-                          ((B ,BLANK) (C ,LEFT))
-                          ((C ,BLANK) (C i))
-                          ((C i) (S ,RIGHT)))
-                        'S
-                        '(F)))
-
-(define ADDL '(list FBL2
-                    SHIFTL
-                    LFT
-                    (cons BRANCH (list (list BLANK (list GOTO 20))
-                                       (list 'i   (list GOTO 5))))
-                    5
-                    RGHT
-                    20))
-;;  PRE: tape = (LM BLANK a BLANK b BLANK) and head on first blank after b
-;; POST: tape = (LM BLANK a+b BLANK) and head on first blank after a+b
-(define ADD (combine-tms (list FBL2
-                               SHIFTL
-                               LFT
-                               (cons BRANCH (list (list BLANK (list GOTO 20))
-                                                  (list 'i   (list GOTO 5))))
-                               5
-                               RGHT
-                               20)
-                         '(i)))
-
-
-
-
-
-;;; COPY FOR MULT ;;;;
-
-
-(define COPYM (combine-tms
+(define COPY (combine-tms
               (list FBL
                     0
                     R
@@ -462,7 +243,7 @@
               '(a b d)))
 
 ;; Sample ctm as list
-(define COPYLM
+(define COPYL
   '(FBL
     0
     R
@@ -496,6 +277,89 @@
     5))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Design and implement a ctm that shifts its input word one space to the right.
+
+;; Name: w->_w
+;; Σ = {a b}
+
+;; PRE:  tape = (@ w) and i = 1
+;; POST: tape = (@ _ w) and i = |w|+2
+(define shiftr (combine-tms
+               (list FBR
+                     0
+                     L
+                     (cons BRANCH (list (list 'a (list GOTO 1))
+                                        (list 'b (list GOTO 1))
+                                        (list 'd (list GOTO 1))
+                                        (list '@ (list GOTO 3))
+                                        (list '_ (list GOTO 3))))
+                     1
+                     (list (list VAR 'x)
+                           R
+                           'x
+                           L
+                           WB
+                           (list GOTO 0))
+                     3
+                     FBR)
+               '(a b d)))
+
+;.................................................
+#|             
+;; Tests for w->_w
+(check-equal? (rest (ctm-run w->_w '(@ a b a) 1))
+              '(5 (@ _ a b a _)))
+(check-equal? (rest (ctm-run w->_w '(@ _ _) 1))
+              '(2 (@ _ _)))
+(check-equal? (rest (ctm-run w->_w '(@ a b b a) 1))
+              '(6 (@ _ a b b a _)))
+|#
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Design and implement a ctm that shifts its input word one space to the left.
+
+;; Name: _w->w
+;; Σ = {a b}
+
+;; PRE:  tape = (@ _ w) and i = 1
+;; POST: tape = (@ w _ _) and i = |w|+2
+(define shiftl (combine-tms
+               (list 0
+                     R
+                     (cons BRANCH (list (list 'a (list GOTO 1))
+                                        (list 'b (list GOTO 1))
+                                        (list 'd (list GOTO 1))
+                                        (list '_ (list GOTO 3))))
+                     1
+                     (list (list VAR 'x)
+                           L
+                           'x
+                           R
+                           WB
+                           (list GOTO 0))
+                     3)
+               '(a b d)))
+
+(define shiftr-list '(FBR
+                      0
+                      L
+                      (cons BRANCH (list (list a (list GOTO 1))
+                                         (list b (list GOTO 1))
+                                         (list d (list GOTO 1))
+                                         (list @ (list GOTO 3))
+                                         (list _ (list GOTO 3))))
+                      1
+                      (list (list VAR 'x)
+                            R
+                            x
+                            L
+                            WB
+                            (list GOTO 0))
+                      3
+                      FBR))
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; ctm to compute mult(a b) = a * b
 
 ;; A given number is represented in nr of ds. A d can be part of the first number or of the second number of the equation.
@@ -507,10 +371,11 @@
 ;; POST: tape = '(@ _ (_^|ad*|) _ _ (ad* * bd*) _) and i = |ad*| + |ad* * bd*| + 4
 (define MULT (combine-tms
               (list R
-                    (cons BRANCH (list (list 'd (list GOTO 0))
-                                       (list '_ (list GOTO 3))))
-                    0
+                    (cons BRANCH (list (list 'd (list GOTO 7))
+                                       (list '_ (list GOTO 8))))
+                    7
                     WB
+                    0
                     R
                     (cons BRANCH (list (list 'd (list GOTO 1))
                                        (list '_ (list GOTO 2))))
@@ -518,7 +383,79 @@
                     WB
                     FBR
                     FBR
-                    COPYM
+                    COPY
+                    FBL
+                    FBL
+                    FBL
+                    (list GOTO 0)
+                    2
+                    FBR
+                    (list GOTO 4)
+                    8
+                    R
+                    (list GOTO 3)
+                    9
+                    WB
+                    R
+                    3
+                    (cons BRANCH (list (list '_ (list GOTO 4))
+                                       (list 'd (list GOTO 9))))
+                    4
+                    FBL
+                    shiftr
+                    FBR)         
+              '(d)))
+
+(define MULTL '(list R
+                    (cons BRANCH (list (list 'd (list GOTO 7))
+                                       (list '_ (list GOTO 8))))
+                    7
+                    WB
+                    0
+                    R
+                    (cons BRANCH (list (list 'd (list GOTO 1))
+                                       (list '_ (list GOTO 2))))
+                    1
+                    WB
+                    FBR
+                    FBR
+                    COPY
+                    FBL
+                    FBL
+                    FBL
+                    (list GOTO 0)
+                    2
+                    FBR
+                    (list GOTO 4)
+                    8
+                    R
+                    (list GOTO 3)
+                    9
+                    WB
+                    R
+                    3
+                    (cons BRANCH (list (list '_ (list GOTO 4))
+                                       (list 'd (list GOTO 9))))
+                    4
+                    FBL
+                    shiftr
+                    FBR))
+
+;; using ctm syntax for branches (i.e., not just a goto)
+
+(define MULT2 (combine-tms
+               (list R
+                    (cons BRANCH (list (list 'd WB (list GOTO 0))
+                                       (list '_ R (list GOTO 3))))
+                    0
+                    R
+                    (cons BRANCH (list (list 'd (list GOTO 1))
+                                       (list '_ (list GOTO 2))))
+                    1
+                    WB
+                    FBR
+                    FBR
+                    COPY
                     FBL
                     FBL
                     FBL
@@ -527,65 +464,43 @@
                     FBR
                     (list GOTO 4)
                     3
-                    R
-                    (list GOTO 5)
-                    5
                     (cons BRANCH (list (list '_ (list GOTO 4))
-                                       (list 'd (list GOTO 6))))
-                    6
-                    WB
-                    R
-                    (list GOTO 5)
+                                       (list 'd
+                                             WB
+                                             R
+                                             (list GOTO 3))))
                     4
                     FBL
-                    shiftl
-                    FBR)           
-              '(d)))
+                    shiftr
+                    FBR)
+               '(d)))
 
-(define MULTL '(R
-                (cons BRANCH (list (list 'd (list GOTO 0))
-                                   (list '_ (list GOTO 3))))
-                0
-                WB
-                R
-                (cons BRANCH (list (list 'd (list GOTO 1))
-                                   (list '_ (list GOTO 2))))
-                1
-                WB
-                FBR
-                FBR
-                COPYM
-                FBL
-                FBL
-                FBL
-                (list GOTO 0)
-                2
-                FBR
-                (list GOTO 4)
-                3
-                R
-                (list GOTO 5)
-                5
-                (cons BRANCH (list (list '_ (list GOTO 4))
-                                   (list 'd (list GOTO 6))))
-                6
-                WB
-                R
-                (list GOTO 5)
-                4
-                FBL
-                shiftr
-                FBR))
-
-
-;(sm-showtransitions FBL2 `(,LM ,BLANK i i i ,BLANK i i i i ,BLANK) 10)
-
-;(ctm-run ADD `(,LM ,BLANK i i i ,BLANK i i i i ,BLANK) 10)
-
-;(ctm-run ADD `(,LM ,BLANK ,BLANK ,BLANK ,BLANK ,BLANK) 5)
-
-;(ctm-viz ADD ADDL `(,LM ,BLANK i i i ,BLANK i i i i ,BLANK) 10)
-
-;(ctm-viz COPY COPYL2 `(,LM ,BLANK a b ,BLANK) 4)
-
-
+(define MULTL2 '(list R
+                    (cons BRANCH (list (list 'd WB (list GOTO 0))
+                                       (list '_ R (list GOTO 3))))
+                    0
+                    R
+                    (cons BRANCH (list (list 'd (list GOTO 1))
+                                       (list '_ (list GOTO 2))))
+                    1
+                    WB
+                    FBR
+                    FBR
+                    COPY
+                    FBL
+                    FBL
+                    FBL
+                    (list GOTO 0)
+                    2
+                    FBR
+                    (list GOTO 4)
+                    3
+                    (cons BRANCH (list (list '_ (list GOTO 4))
+                                       (list 'd
+                                             WB
+                                             R
+                                             (list GOTO 3))))
+                    4
+                    FBL
+                    shiftr
+                    FBR))

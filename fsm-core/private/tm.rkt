@@ -37,7 +37,7 @@
   (define (unparse-rules-without-LM-move-R-default-rule rls)
     (remove-LM-rule-unparsed-tm-rules (unparse-tmrules)))
   
-  ; tm (listof states) --> tm
+  ; (listof states) tm --> tm
   (define (tm-rename-states sts m)
 
     (define (generate-rename-table disallowed sts)
@@ -48,9 +48,9 @@
                   (generate-rename-table (cons new-st disallowed) (rest sts))))))
     
     (let* (
-           (rename-table (generate-rename-table (tm-getstates m) (tm-getstates m))
-                         #;(map (lambda (s) (list s (generate-symbol s sts)))
-                                (tm-getstates m)))
+           (rename-table (generate-rename-table (remove-duplicates (append (tm-getstates m)
+                                                                           sts))
+                                                (tm-getstates m)))
            (new-states (map (lambda (s) (cadr (assoc s rename-table)))
                             (tm-getstates m)))
            (new-start (cadr (assoc (tm-getstart m) rename-table)))
@@ -285,7 +285,11 @@
               [else (let* ((path (car tovisit))
                            (config (car path))
                            (st (tmconfig-state config))
-                           (read (list-ref (tmconfig-tape config) (tmconfig-index config)))
+                           (read (let [(tape (tmconfig-tape config))
+                                       (headpos (tmconfig-index config))]
+                                   (if (<= 0 headpos (sub1 (length tape)))
+                                       (list-ref tape headpos)
+                                       (error (format "The head position, ~s, is not valid for the given tape: ~s. The interval for valid head positions is [0..~s]" headpos tape (sub1 (length tape)))))))
                            (rls (filter (lambda (r) (and (eq? st (tmrule-froms r)) (eq? read (tmrule-read r)))) delta))
                            (newconfigs (filter (lambda (c) (not (member c visited))) (gen-newtm-configs config rls))))
                       (consume (cons (caar tovisit) visited)
@@ -530,4 +534,5 @@
   (define tm-rename-sts-WriteI (tm-rename-states (tm-getstates tm-WriteI) tm-WriteI))
 
   ;k(tm-apply tm-rename-sts-WriteI `(i ,BLANK i ,BLANK i i ,BLANK) 1)
+
   ) ; closes module

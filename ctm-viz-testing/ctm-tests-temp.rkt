@@ -1,7 +1,7 @@
 #lang racket
 
-(require "viz-ctm.rkt"
-         "../../interface.rkt"
+(require "../fsm-core/private/callgraphs/viz-ctm.rkt"
+         "../main.rkt"
          rackunit)
  
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -498,6 +498,23 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; ctm to compute mult(a b) = a * b
 
+;; A given number is represented in nr of ds. A d can be
+;; part of the first number or of the second number of the equation.
+;; In our proof we distinguish between both as follows:
+;; 1. ad = a d that is in the first number of the equation 
+;; 2. bd = a d that is in the second number of the equation
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ctm to compute mult(a b) = a * b
+
+;; A given number is represented in nr of ds. A d can be part of the first number or of the second number of the equation.
+;; In our proof we distinguish between both as follows:
+;; 1. ad = a d that is in the first number of the equation 
+;; 2. bd = a d that is in the second number of the equation
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ctm to compute mult(a b) = a * b
+
 ;; A given number is represented in nr of ds. A d can be part of the first number or of the second number of the equation.
 ;; In our proof we distinguish between both as follows:
 ;; 1. ad = a d that is in the first number of the equation 
@@ -507,10 +524,11 @@
 ;; POST: tape = '(@ _ (_^|ad*|) _ _ (ad* * bd*) _) and i = |ad*| + |ad* * bd*| + 4
 (define MULT (combine-tms
               (list R
-                    (cons BRANCH (list (list 'd (list GOTO 0))
-                                       (list '_ (list GOTO 3))))
-                    0
+                    (cons BRANCH (list (list 'd (list GOTO 7))
+                                       (list '_ (list GOTO 8))))
+                    7
                     WB
+                    0
                     R
                     (cons BRANCH (list (list 'd (list GOTO 1))
                                        (list '_ (list GOTO 2))))
@@ -518,7 +536,7 @@
                     WB
                     FBR
                     FBR
-                    COPYM
+                    COPY
                     FBL
                     FBL
                     FBL
@@ -526,57 +544,55 @@
                     2
                     FBR
                     (list GOTO 4)
-                    3
+                    8
                     R
-                    (list GOTO 5)
-                    5
-                    (cons BRANCH (list (list '_ (list GOTO 4))
-                                       (list 'd (list GOTO 6))))
-                    6
+                    (list GOTO 3)
+                    9
                     WB
                     R
-                    (list GOTO 5)
+                    3
+                    (cons BRANCH (list (list '_ (list GOTO 4))
+                                       (list 'd (list GOTO 9))))
                     4
                     FBL
-                    shiftl
+                    shiftr
                     FBR)           
               '(d)))
 
-(define MULTL '(R
-                (cons BRANCH (list (list 'd (list GOTO 0))
-                                   (list '_ (list GOTO 3))))
-                0
-                WB
-                R
-                (cons BRANCH (list (list 'd (list GOTO 1))
-                                   (list '_ (list GOTO 2))))
-                1
-                WB
-                FBR
-                FBR
-                COPYM
-                FBL
-                FBL
-                FBL
-                (list GOTO 0)
-                2
-                FBR
-                (list GOTO 4)
-                3
-                R
-                (list GOTO 5)
-                5
-                (cons BRANCH (list (list '_ (list GOTO 4))
-                                   (list 'd (list GOTO 6))))
-                6
-                WB
-                R
-                (list GOTO 5)
-                4
-                FBL
-                shiftr
-                FBR))
-
+(define MULTL '(list R
+                    (cons BRANCH (list (list 'd (list GOTO 7))
+                                       (list '_ (list GOTO 8))))
+                    7
+                    WB
+                    0
+                    R
+                    (cons BRANCH (list (list 'd (list GOTO 1))
+                                       (list '_ (list GOTO 2))))
+                    1
+                    WB
+                    FBR
+                    FBR
+                    COPY
+                    FBL
+                    FBL
+                    FBL
+                    (list GOTO 0)
+                    2
+                    FBR
+                    (list GOTO 4)
+                    8
+                    R
+                    (list GOTO 3)
+                    9
+                    WB
+                    R
+                    3
+                    (cons BRANCH (list (list '_ (list GOTO 4))
+                                       (list 'd (list GOTO 9))))
+                    4
+                    FBL
+                    shiftr
+                    FBR))
 
 ;(sm-showtransitions FBL2 `(,LM ,BLANK i i i ,BLANK i i i i ,BLANK) 10)
 
@@ -588,4 +604,4 @@
 
 ;(ctm-viz COPY COPYL2 `(,LM ,BLANK a b ,BLANK) 4)
 
-
+; (ctm-viz COPY COPYL2 `(,LM ,BLANK ,BLANK) 2)

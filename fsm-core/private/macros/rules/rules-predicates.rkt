@@ -3,6 +3,7 @@
            rackunit
            "../../constants.rkt"
            "../shared/shared-predicates.rkt"
+           "../../misc.rkt"
            )
   (provide add-dead-state-rules
            valid-rules?
@@ -34,6 +35,17 @@
            incorrect-members-tm
            incorrect-members-mttm
            incorrect-members-ndpda
+
+           ;;grammars
+           check-rhs-rg
+           incorrect-rhs-rg
+           incorrect-grammar-rule-structures
+           correct-members-rg?
+           incorrect-rg-rules
+           correct-members-cfg?
+           incorrect-cfg-rules
+           correct-members-csg?
+           incorrect-csg-rules
            )
 
   ;true?: any -> boolean
@@ -564,6 +576,167 @@
   (define (incorrect-members-mttm states sigma rules)
     (filter (lambda (rule) (not (valid-mttm-rule? states sigma rule))) rules))
 
+
+  ;; GRAMMARS
+  (define (check-rhs-rg rules start)
+    (ormap (lambda (x) (and (not (equal? (car x) start)) (equal? EMP (caddr x)))) rules)
+    )
+
+  ; incorrect-rhs-rg (listof rg-rule) state --> (listof rg-rule)
+  ; purpose: filters the input list of rules, only keeping rules which do not have
+  ; the start state as the LHS and have EMP as the RHS
+  (define (incorrect-rhs-rg rules start)
+    (filter (lambda (x) (and (not (equal? (car x) start)) (equal? EMP (caddr x)))) rules)
+    )
+  
+  (define (valid-rg-right? elem states sigma)
+    (define los (symbol->fsmlos elem))
+    (if (= (length los) 1)
+        (member (car los) sigma)
+        (and (= (length los) 2)
+             (member (car los) sigma)
+             (member (cadr los) states)))
+    )
+
+  (define (valid-cfg-right? elem states sigma)
+    (define los (symbol->fsmlos elem))
+    (andmap (lambda (x) (member x (append states sigma))) los))
+
+  (define (invalid-cfg-right? elem states sigma)
+    (define los (symbol->fsmlos elem))
+    (filter (lambda (x) (not (member x (append states sigma)))) los))
+
+  
+  (define (valid-csg-left? elem states sigma)
+    (define los (symbol->fsmlos elem))
+    (andmap (lambda (x) (member x (append states sigma))) los))
+
+  (define (invalid-csg-left? elem states sigma)
+    (define los (symbol->fsmlos elem))
+    ; The left hand side of a csg rule can be any combination of non-terminals
+    ; and members of the alphabet (sigma).
+    (filter (lambda (x) (not (member x (append states sigma)))) los)
+    )
+
+  
+  ;incorrect-grammar-rule-structures: (listof any) --> (listof invalid-rule)
+  ;purpose: filters the input list of elements, such that any element that is not structured
+  ; as a valid grammar rule is returned as an invalid-rule struct containing all the offenses.
+  (define (incorrect-grammar-rule-structures elems)
+    (define (rule-with-errors elem)
+      (define all-errors
+        (cond [(or (not (list? elem)) (not (= (length elem) 3)))
+               (list (format "The given rule, ~a, does not have the correct structure. A grammar rule must be a list with three elements." elem))]
+              [else
+               (append (if (symbol? (first elem))
+                           '()
+                           (list (format "The first element in the rule, ~a, is not a symbol." (first elem))))
+                       (if (equal? ARROW (second elem))
+                           '()
+                           (list (format "The second element in the rule, ~a, is not the expected ARROW symbol." (second elem))))
+                       (if (symbol? (third elem))
+                           '()
+                           (list (format "The third element in the rule, ~a, is not a symbol with 2 or less elements." (third elem)))))]
+              )
+        )
+      (if (empty? all-errors) '() (list (make-invalid-rule elem all-errors)))
+      )
+    (flatten (map rule-with-errors elems))
+    )
+
+  ;;correct-members-rg?: (listof nonterminals) sigma (listof dfa-rules) --> boolean
+  ;purpose: to check that the first element is from the list of nonterminals,
+  ; and the third element of each rule are from the alphabet and states
+  (define (correct-members-rg? states sigma rules)
+    (if (andmap (lambda (x) (and (member (car x) states)
+                                 (valid-rg-right? (caddr x) states sigma))) rules) #t #f))
+  
+  ;;incorrect-rg-rules: (listof nonterminals) (listof alpha) (listof rg-rule) --> (listof invalid-rule)
+  ;purpose: for all the rules in the list of rg-rules, returns tuples of all
+  ; states and alphabet letters that are invalid (meaning not in the states or sigma)
+  (define (incorrect-rg-rules states sigma rules)
+    ;rule-with-errors: dfa-rule --> (listof invalid-rule)
+    ;Purpose: If there is anything wrong with the give rule (see possible errors
+    ; in above purpose), then returns a list containing an invalid-rule with all
+    ; appropriate error messages for that rule. If the rule is valid, returns
+    ; an empty list.
+    (define (rule-with-errors rule)
+      (define from-state (first rule))
+      (define to-state (third rule))
+      (define all-errors
+        (append (if (not (member from-state states))
+                    (list (format "The left hand side, ~a, is not a single nonterminal from the list of nonterminals." from-state))
+                    '())
+                (if (not (valid-rg-right? to-state states sigma))
+                    (list (format "The right hand side, ~a, is not an alphabet character, or combination of valid defined nonterminals and terminals." to-state))
+                    '())))
+      (if (empty? all-errors) '() (list (make-invalid-rule rule all-errors))))
+    (flatten (map rule-with-errors rules)))
+
+  ;;correct-members-cfg?: (listof nonterminals) sigma (listof dfa-rules) --> boolean
+  ;purpose: to check that the first element is from the list of nonterminals,
+  ; and the third element of each rule are from the alphabet and states
+  (define (correct-members-cfg? states sigma rules)
+    (if (andmap (lambda (x) (and (member (car x) states)
+                                 (valid-cfg-right? (caddr x) states sigma))) rules) #t #f))
+  
+  ;;incorrect-rg-rules: (listof nonterminals) (listof alpha) (listof rg-rule) --> (listof invalid-rule)
+  ;purpose: for all the rules in the list of rg-rules, returns tuples of all
+  ; states and alphabet letters that are invalid (meaning not in the states or sigma)
+  (define (incorrect-cfg-rules states sigma rules)
+    ;rule-with-errors: dfa-rule --> (listof invalid-rule)
+    ;Purpose: If there is anything wrong with the give rule (see possible errors
+    ; in above purpose), then returns a list containing an invalid-rule with all
+    ; appropriate error messages for that rule. If the rule is valid, returns
+    ; an empty list.
+    (define (rule-with-errors rule)
+      (define from-state (first rule))
+      (define to-state (third rule))
+      (define all-errors
+        (append (if (not (member from-state states))
+                    (list (format "The left hand side, ~a, is not a single nonterminal from the list of nonterminals." from-state))
+                    '())
+                (if (not (valid-cfg-right? to-state states sigma))
+                    (list (format "The following members ~a of right hand side, ~a, are not in your list of terminals or nonterminals."
+                                  (invalid-cfg-right? to-state states sigma)
+                                  to-state))
+                    '())))
+      (if (empty? all-errors) '() (list (make-invalid-rule rule all-errors))))
+    (flatten (map rule-with-errors rules)))
+
+  ;;correct-members-csg?: (listof nonterminals) sigma (listof dfa-rules) --> boolean
+  ;purpose: to check that the first element is from the list of nonterminals and sigma,
+  ; and the third element of each rule are from the alphabet and states
+  (define (correct-members-csg? states sigma rules)
+    (if (andmap (lambda (x) (and (valid-csg-left? (car x) states sigma)
+                                 (valid-cfg-right? (caddr x) states sigma))) rules) #t #f))
+  
+  ;;incorrect-csg-rules: (listof nonterminals) (listof alpha) (listof rg-rule) --> (listof invalid-rule)
+  ;purpose: for all the rules in the list of csg-rules, returns tuples of all
+  ; states and alphabet letters that are invalid (meaning not in the states or sigma)
+  (define (incorrect-csg-rules states sigma rules)
+    ;rule-with-errors: csrule --> (listof invalid-rule)
+    ;Purpose: If there is anything wrong with the give rule (see possible errors
+    ; in above purpose), then returns a list containing an invalid-rule with all
+    ; appropriate error messages for that rule. If the rule is valid, returns
+    ; an empty list.
+    (define (rule-with-errors rule)
+      (define from-state (first rule))
+      (define to-state (third rule))
+      (define all-errors
+        (append (if (not (valid-csg-left? from-state states sigma))
+                    (list (format "The following members ~a of the left hand side, ~a, is not a combination of valid defined nonterminals and terminals."
+                                  (invalid-csg-left? from-state states sigma)
+                                  from-state))
+                    '())
+                (if (not (valid-cfg-right? to-state states sigma))
+                    (list (format "The following ~a of the right hand side, ~a, are not in your list of terminals or nonterminals."
+                                  (invalid-cfg-right? to-state states sigma)
+                                  to-state))
+                    '())))
+      (if (empty? all-errors) '() (list (make-invalid-rule rule all-errors))))
+    (flatten (map rule-with-errors rules)))
+  
   (module+ test
     ;add-dead-state-rules tests
     (check-equal? (add-dead-state-rules `((A a B) (A b B)) '(A B) '(a b))

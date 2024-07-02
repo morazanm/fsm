@@ -566,31 +566,42 @@
                 '(0 (i _ i _ i i _)))                                        
 
   (define tm-RI (make-tm '(S H) 
-                         '(i j k) 
+                         '(i a s) 
                          (list
                           (list (list 'S 'i) (list 'H RIGHT))
-                          (list (list 'S 'j) (list 'H RIGHT))
-                          (list (list 'S 'k) (list 'H RIGHT))
+                          (list (list 'S 'a) (list 'H RIGHT))
+                          (list (list 'S 's) (list 'H RIGHT))
                           (list (list 'S BLANK) (list 'H RIGHT)))
                          'S
                          '(H)))
 
   (define tm-LI (make-tm '(S H) 
-                         '(i j k) 
+                         '(i a s) 
                          (list 
                           (list (list 'S 'i) (list 'H LEFT))
-                          (list (list 'S 'j) (list 'H LEFT))
-                          (list (list 'S 'k) (list 'H LEFT))
+                          (list (list 'S 'a) (list 'H LEFT))
+                          (list (list 'S 's) (list 'H LEFT))
                           (list (list 'S BLANK) (list 'H LEFT)))
                          'S
                          '(H)))
 
-  (define tm-LB (combine-tms (list 0 tm-LI (list BRANCH 
-                                                 (list 'I (list GOTO 0))
-                                                 (list BLANK tm-RI tm-LI)
-                                                 (list 'add1 (list GOTO 0))
-                                                 (list 'sub1 (list GOTO 0)))) 
-                             '(I add1 sub1)))
+  (define tm-LB (combine-tms (list 0
+                                   tm-LI
+                                   (list BRANCH 
+                                         (list 'i (list GOTO 0))
+                                         (list BLANK (list GOTO 20))
+                                         (list 'a (list GOTO 0))
+                                         (list 's (list GOTO 0)))
+                                   20
+                                   tm-RI
+                                   tm-LI) 
+                             '(i a s)))
+  
+  (check-equal? (rest (ctm-run tm-LB `(I ,BLANK i i a i ,BLANK) 6))
+                '(1 (I _ i i a i _)))
+
+  (check-equal? (rest (ctm-run tm-LB `(I ,BLANK i i a i ,BLANK ,BLANK) 7))
+                '(6 (I _ i i a i _ _)))
 
   #|
 (check-equal? (ctm-apply tm-LB `(I ,BLANK I I add1 I ,BLANK) 5) (tmconfig 'h 1 '(I _ I I add1 I _)))
@@ -648,29 +659,43 @@
                                          (T -> ,EMP))
                                        'S))
 
-  ;(check-equal? (last (grammar-derive cfg-moreAs-than-Bs '(a b b a a)))
-  ;              (los->symbol '(a b b a a)))
-  ;(check-equal? (last (grammar-derive cfg-moreAs-than-Bs '(a b b b a a a a)))
-  ;              (los->symbol '(a b b b a a a a)))
+  (check-equal? (last (grammar-derive cfg-moreAs-than-Bs '(a b b a a)))
+                (los->symbol '(a b b a a)))
+  (check-equal? (last (grammar-derive cfg-moreAs-than-Bs '(a b b b a a a a)))
+                (los->symbol '(a b b b a a a a)))
   ;(check-equal? (grammar-derive cfg-moreAs-than-Bs '(a b b a)) 
   ;              "(a b b a) is not in L(G)") ;!!!!Runs forever? 
   ;(check-equal? (grammar-derive cfg-moreAs-than-Bs '(a b b b)) 
-  ;              "(a b b b) is not in L(G)") ;!!!!! Runs forever? 
+  ;              "(a b b b) is not in L(G)") ;!!!!! Runs forever?
 
-  (define cfg-moreBs-than-As (make-cfg '(S P)
-                                       '(a b)
-                                       `((S -> PbP)
-                                         (P -> aPb)
-                                         (P -> bPa)
-                                         (P -> PP)
-                                         (P -> b)
-                                         (P -> ,EMP))
-                                       'S))
-  ;(check-equal? (last (grammar-derive cfg-moreBs-than-As '(a b b a b))) (los->symbol '(a b b a b)))
-  ;(check-equal? (grammar-derive cfg-moreBs-than-As '(a b b a b a)) 
-  ;              "(a b b a b a) is not in L(G)") ;runs forever? ! !!!!
-  ;(check-equal? (grammar-derive cfg-moreBs-than-As '())  
-  ;              "The word () is too short to test.") ;runs forever? ! !!!!
+  (define numb>numa (make-cfg '(S A)
+                              '(a b)
+                              `((S ,ARROW b)
+                                (S ,ARROW AbA)
+                                (A ,ARROW AaAbA)
+                                (A ,ARROW AbAaA)
+                                (A ,ARROW ,EMP)
+                                (A ,ARROW bA))
+                              'S))
+
+  (check-equal? (grammar-derive numb>numa '())  
+                "() is not in L(G).")
+
+  (check-equal? (last (grammar-derive numb>numa '(a b b a b)))
+                (los->symbol '(a b b a b)))
+
+  (check-equal? (last (grammar-derive numb>numa '(a b b a a b b a b b b b b a a a)))
+                (los->symbol '(a b b a a b b a b b b b b a a a)))
+
+  (check-equal? (last (grammar-derive numb>numa '(a b b a a b b b b b b)))
+                (los->symbol '(a b b a a b b b b b b)))
+
+  (check-equal? (last (grammar-derive numb>numa '(a b b a a b b a b b b)))
+                (los->symbol '(a b b a a b b a b b b)))
+
+  #;(check-equal? (grammar-derive cfg-moreBs-than-As '(a b b a b a)) 
+                  "(a b b a b a) is not in L(G)") ;runs forever
+   
 
   (define cfg-1B-before-anA (make-cfg '(S A)
                                       '(a b)
@@ -683,7 +708,7 @@
   (check-equal? (last (grammar-derive cfg-1B-before-anA '(a b a b))) (los->symbol '(a b a b)))
   (check-equal? (grammar-derive cfg-1B-before-anA '(b b b)) "(b b b) is not in L(G).")
   (check-equal? (last (grammar-derive cfg-1B-before-anA '(b b b a))) (los->symbol '(b b b a)))
-  (check-equal? (grammar-derive cfg-1B-before-anA '()) "The word () is too short to test.")
+  (check-equal? (grammar-derive cfg-1B-before-anA '()) "() is not in L(G).")
 
   ;{w| w contains at least three a's}
   (define cfg-test1 (make-cfg '(S X)
@@ -693,7 +718,7 @@
                                 (X -> aX)
                                 (X -> ,EMP))
                               'S))
-  (check-equal? (grammar-derive cfg-test1 '()) "The word () is too short to test.")
+  (check-equal? (grammar-derive cfg-test1 '()) "() is not in L(G).")
   (check-equal? (grammar-derive cfg-test1 '(b b b a b a b)) "(b b b a b a b) is not in L(G).")
   (check-equal? (last (grammar-derive cfg-test1 '(a a a))) (los->symbol '(a a a)))
   (check-equal? (last (grammar-derive cfg-test1 '(b b b a b a b a))) (los->symbol '(b b b a b a b a)))
@@ -723,12 +748,12 @@
                                 (P -> bS))
                               'S))
 
-  (check-equal? (grammar-derive cfg-test3 '()) "The word () is too short to test.")
+  (check-equal? (grammar-derive cfg-test3 '()) "() is not in L(G).")
   (check-equal? (grammar-derive cfg-test3 '(a b)) "(a b) is not in L(G).")
   (check-equal? (last (grammar-derive cfg-test3 '(a b a))) (los->symbol '(a b a)))
   (check-equal? (last (grammar-derive cfg-test3 '(a b a b a))) (los->symbol '(a b a b a)))
-  (check-equal? (grammar-derive cfg-test3 '(a)) "The word (a) is too short to test.")
-  (check-equal? (grammar-derive cfg-test3 '(b)) "The word (b) is too short to test.")
+  (check-equal? (grammar-derive cfg-test3 '(a)) '(S -> aP -> a))
+  (check-equal? (grammar-derive cfg-test3 '(b)) '(S -> bP -> b))
 
   ;{w| the length of w is odd and its middle symbol is an "a"}
   (define cfg-test4 (make-cfg '(S)
@@ -739,11 +764,11 @@
                                 (S -> bSa)
                                 (S -> bSb))
                               'S))
-  (check-equal? (grammar-derive cfg-test4 '(a)) "The word (a) is too short to test.")
+  (check-equal? (grammar-derive cfg-test4 '(a)) '(S -> a))
   (check-equal? (last (grammar-derive cfg-test4 '(b a b))) (los->symbol '(b a b)))
   (check-equal? (last (grammar-derive cfg-test4 '(b b a a a))) (los->symbol '(b b a a a)))
   (check-equal? (grammar-derive cfg-test4 '(b b b a a a)) "(b b b a a a) is not in L(G)." )
-  (check-equal? (grammar-derive cfg-test4 '()) "The word () is too short to test.")
+  (check-equal? (grammar-derive cfg-test4 '()) "() is not in L(G).")
   ;{w| w = w reverse, that is, w is a plindrome} 
   (define cfg-test5 (make-cfg '(S)
                               '(a b)
@@ -754,9 +779,12 @@
                                 (S -> aSa))
                               'S))
 
-  (check-equal? (grammar-derive cfg-test5 '()) "The word () is too short to test.")
-  (check-equal? (grammar-derive cfg-test5 '(a)) "The word (a) is too short to test.")
-  (check-equal? (grammar-derive cfg-test5 '(b)) "The word (b) is too short to test.")
+  (check-equal? (grammar-derive cfg-test5 '())
+                '(S -> ε))
+  (check-equal? (grammar-derive cfg-test5 '(a))
+                '(S -> a))
+  (check-equal? (grammar-derive cfg-test5 '(b))
+                '(S -> b))
   (check-equal? (last (grammar-derive cfg-test5 '(a b a))) (los->symbol '(a b a)))
   (check-equal? (last (grammar-derive cfg-test5 '(b a b))) (los->symbol '(b a b)))
   (check-equal? (last (grammar-derive cfg-test5 '(a a b b a a))) (los->symbol '(a a b b a a)))
@@ -810,9 +838,9 @@
   (define CSG-an-bn-an-bn-cn (grammar-concat CSG-an-bn CSG-an-bn-cn))
 
   (check-equal? (last (grammar-derive CSG-an-bn-an-bn-cn '())) 
-                  EMP)
+                EMP)
   (check-equal? (last (grammar-derive CSG-an-bn-an-bn-cn '(a a b b a b c)))
-                  'aabbabc)
+                'aabbabc)
 
   ;NOTE WE DONT CHECK FOR NOT IN THE GRAMMAR BCZ IT MAY NEVER END
   (define RENAME-CSG-an-bn-cn (grammar-rename-nts (grammar-nts CSG-an-bn-cn) 
