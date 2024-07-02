@@ -244,10 +244,4 @@
            (above PARSE-TREE-IMG
                   ((informative-messages-draw-component (viz-state-informative-messages a-vs)) (informative-messages-component-state (viz-state-informative-messages a-vs)))
                   (square INS-TOOLS-BUFFER 'solid 'white)
-                  (instructions-graphic-img (viz-state-instructions-graphic a-vs))
-                  ;(create-instructions-and-tools a-vs)
-                  ))
-         )
-     ]
-    )
-  )
+                  (instructions-graphic-img (viz-state-instructions-graphic a-vs)))))]))

@@ -7,6 +7,7 @@
          "../fsm-gviz/private/parallel.rkt"
          "viz.rkt"
          "zipper.rkt"
+         "grammar-viz.rkt"
          )
 
 (define FNAME "fsm")
@@ -442,7 +443,7 @@
                                                                       (map undo-renaming (create-invariant-nodes a-dgrph invariants (grammar-start rg)))))
                                                    lod)))
              (graphs (map (lambda (dgrph) (create-graph-structs dgrph invariants (grammar-start rg))) lod))]
-        (run-viz rg word w-der rules graphs broken-invariants))))
+        (init-viz rg word w-der rules graphs broken-invariants))))
 
 ;(rg-viz even-bs-odd-as '(a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a))
  
@@ -463,7 +464,7 @@
                    )
   )
 
-;(rg-viz even-bs-odd-as '(b b a b b b b b b b b b b b b a b b b b b b b b b b b b b b a b b b b b b b b b b b b b b b b a b b b b b b b b b b a) (list 'S (lambda (x) #f)))
+(rg-viz even-bs-odd-as '(b b a b b b b b b b b b b b b a b b b b b b b b b b b b b b a b b b b b b b b b b b b b b b b a b b b b b b b b b b a) (list 'S (lambda (x) #f)))
 
 ;(grammar-derive G '(a a a))
 ;(rg-viz G '(a a a))
