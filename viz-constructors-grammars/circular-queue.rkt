@@ -3,78 +3,11 @@
          "../fsm-core/private/cfg.rkt"
          "../fsm-core/private/constants.rkt"
          "../fsm-core/private/misc.rkt"
+         "../fsm-core/private/string.rkt"
          racket/treelist
+         "circular-queue-safe.rkt"
          )
-(provide make-queue qfull? qempty? enqueue! dequeue! qpeek queue)
-(struct queue (values front rear) #:mutable #:transparent)
 
-(define (make-queue init-size [init-value 0])
-  (queue (make-vector init-size init-value) -1 -1))
-
-(define (qfull? a-queue)
-  (or (and (unsafe-fx= (unsafe-struct*-ref a-queue 1) 0)
-           (unsafe-fx= (unsafe-struct*-ref a-queue 2) (unsafe-fx- (unsafe-vector*-length (unsafe-struct*-ref a-queue 0)) 1)
-                       ))
-      (unsafe-fx= (unsafe-struct*-ref a-queue 2) (unsafe-fxremainder (unsafe-fx- (unsafe-struct*-ref a-queue 1) 1) (unsafe-fx- (unsafe-vector*-length (unsafe-struct*-ref a-queue 0)) 1)))
-      )
-  )
-
-(define (qempty? a-queue)
-  (unsafe-fx= (unsafe-struct*-ref a-queue 1) -1))
-
-(define (qpeek a-queue) (unsafe-vector*-ref (unsafe-struct*-ref a-queue 0) (unsafe-struct*-ref a-queue 1)))
-
-(define (enqueue! a-queue val)
-  (if (qfull? a-queue)
-      (begin
-        (unsafe-struct*-set! a-queue 0 (vector-extend (unsafe-struct*-ref a-queue 0) (unsafe-fx* (unsafe-vector*-length (unsafe-struct*-ref a-queue 0)) 2) 0))
-        (enqueue! a-queue val)
-        )
-      (if (qempty? a-queue)
-          (begin
-            (unsafe-struct*-set! a-queue 1 0)
-            (unsafe-struct*-set! a-queue 2 0)
-            (unsafe-vector*-set! (unsafe-struct*-ref a-queue 0) (unsafe-struct*-ref a-queue 2) val)
-            a-queue
-            )
-          (if (and (unsafe-fx= (unsafe-struct*-ref a-queue 2) (unsafe-fx- (unsafe-vector*-length (unsafe-struct*-ref a-queue 0)) 1))
-                   (not (unsafe-fx= (unsafe-struct*-ref a-queue 1) 1))
-                   )
-              (begin
-                (unsafe-struct*-set! a-queue 2 0)
-                (unsafe-vector*-set! (unsafe-struct*-ref a-queue 0) (unsafe-struct*-ref a-queue 2) val)
-                a-queue
-                )
-              (begin
-                (unsafe-struct*-set! a-queue 2 (unsafe-fx+ (unsafe-struct*-ref a-queue 2) 1))
-                (unsafe-vector*-set! (unsafe-struct*-ref a-queue 0) (unsafe-struct*-ref a-queue 2) val)
-                a-queue
-                )
-              )
-          )
-      )
-  )
-(define (dequeue! a-queue)
-  (let [(temp (unsafe-vector*-ref (unsafe-struct*-ref a-queue 0) (unsafe-struct*-ref a-queue 1)))]
-    (if (unsafe-fx= (unsafe-struct*-ref a-queue 1) (unsafe-struct*-ref a-queue 2))
-        (begin
-          (unsafe-struct*-set! a-queue 1 -1)
-          (unsafe-struct*-set! a-queue 2 -1)
-          temp
-          )
-        (if (unsafe-fx= (unsafe-struct*-ref a-queue 1) (unsafe-fx- (unsafe-vector*-length (unsafe-struct*-ref a-queue 0)) 1))
-            (begin
-              (unsafe-struct*-set! a-queue 1 0)
-              temp
-              )
-            (begin
-              (unsafe-struct*-set! a-queue 1 (unsafe-fx+ (unsafe-struct*-ref a-queue 1) 1))
-              temp
-              )
-            )
-        )
-    )
-  )
 #|
 (define test (make-queue 5))
 (enqueue! test 'a)
@@ -199,14 +132,15 @@ test
                  )
            ]
           [(eq? derv-type 'right)
-           (cond [(empty? derivs) (format "~s is not in L(G)." w)]
+           (cond [(qempty? derivs) (format "~s is not in L(G)." w)]
                  [(or (and chomsky
-                           (> (length (first (first (first derivs)))) (+ 2 (length w))))
-                      (> (count-terminals (first (first (first derivs))) (cfg-get-alphabet g)) (length w)))
-                  (make-deriv visited (cdr derivs) g chomsky)]
+                           (> (length (first (first (qpeek derivs)))) (+ 2 (length w))))
+                      (> (count-terminals (first (first (qpeek derivs))) (cfg-get-alphabet g)) (length w)))
+                  (make-deriv visited (begin (dequeue! derivs)
+                                             derivs) g chomsky)]
                  [else 
                   (let* (
-                         (fderiv (car derivs))
+                         (fderiv (qpeek derivs))
                          (state (car fderiv))
                          (fnt (get-last-nt (first state)))
                          )
@@ -222,7 +156,8 @@ test
                                                                     (los->symbol (second l))) ARROW)))
                                         (reverse fderiv)
                                         )
-                            (make-deriv visited (cdr derivs) g chomsky))
+                            (make-deriv visited (begin (dequeue! derivs)
+                                                       derivs) g chomsky))
                         (let*
                             ((rls (get-rules fnt g))
                              (rights (map cfg-rule-rhs rls))
@@ -232,12 +167,17 @@ test
                                                                            rght))
                                                       rights))))
                           (make-deriv (begin
+                                        
                                         (map (lambda (new-st) (hash-set! visited new-st 1)) new-states)
                                         visited
                                         )
-                                      (append (cdr derivs) 
-                                              (map (lambda (st) (cons st fderiv)) 
-                                                   new-states))
+                                      (let [ (new-queue (begin (dequeue! derivs)
+                                                               derivs))]
+                                        (foldr (lambda (val accum) (enqueue! accum val))
+                                               new-queue
+                                               (map (lambda (st) (cons st fderiv))
+                                                    new-states))
+                                        )
                                       g
                                       chomsky))))])])) 
   (if (< (length w) 2)
@@ -280,7 +220,8 @@ test
 
 
 (define (cfg-derive-unsafe-rightmost g w derv-type)
-  
+
+  (define treelist-w (list->treelist w))
   (define (get-last-nt-helper st i)
       (if (= i -1)
           #f
@@ -314,14 +255,12 @@ test
   ;; (listof symbol) (listof symbol) -> (listof symbol)
   ;; Purpose: Replaces the rightmost nonterminal with a righthand side of a rule
   (define (subst-last-nt-helper st rght i)
-    ;(displayln (treelist-ref st i))
-    ;(displayln rght)
-    ;(displayln i)
     (if (= i -1)
         (treelist-insert-list (treelist-delete st 0) 0 rght)
         (if (not (member (treelist-ref st i) (cfg-get-alphabet g)))
             (if (eq? (first rght) EMP)
-                (subst-last-nt-helper st rght (sub1 i))
+                (treelist-delete st i)
+                ;(subst-last-nt-helper st rght (sub1 i))
                 (treelist-insert-list (treelist-delete st i) i rght)
                 ) 
             ;(treelist-append (treelist-sublist 
@@ -350,9 +289,8 @@ test
           tl
           (if (not (member (treelist-ref st i) (cfg-get-alphabet g)))
               (begin
-                (displayln tl)
                 tl)
-              (get-starting-terminals st (treelist-insert tl (treelist-length tl) (treelist-ref st i)) (add1 i))
+              (get-starting-terminals-helper st (treelist-insert tl (treelist-length tl) (treelist-ref st i)) (add1 i))
               )
           )
       )
@@ -364,16 +302,30 @@ test
       [else (cons (treelist-first st) (get-starting-terminals (cdr st)))]))
 
   ; (listof (listof symbol)) natnum --> (listof symbol)
-  (define (get-first-n-terms w n)
+  #;(define (get-first-n-terms w n)
     (cond [(= n 0) '()]
           [else (cons (car w) (get-first-n-terms (cdr w) (- n 1)))]))
+
+  ; (listof (listof symbol)) natnum --> (listof symbol)
+  (define (get-first-n-terms w n)
+    (treelist-sublist w 0 n)
+    #;(cond [(= n 0) '()]
+          [else (cons (car w) (get-first-n-terms (cdr w) (- n 1)))]))
+
+  #;(define (check-terminals? st)
+    (let* ((start-terms-st (get-starting-terminals st))
+           (start-terms-w (if (> (length start-terms-st) (length w))
+                              #f
+                              (get-first-n-terms w (length start-terms-st)))))
+      (cond [(false? start-terms-w) #f]
+            [else (equal? start-terms-st start-terms-w)])))
 
   ; (list (listof symbol)) --> boolean
   (define (check-terminals? st)
     (let* ((start-terms-st (get-starting-terminals st))
-           (start-terms-w (if (> (treelist-length start-terms-st) (length w))
+           (start-terms-w (if (> (treelist-length start-terms-st) (treelist-length treelist-w))
                               #f
-                              (get-first-n-terms w (treelist-length start-terms-st)))))
+                              (get-first-n-terms treelist-w (treelist-length start-terms-st)))))
       (cond [(false? start-terms-w) #f]
             [else (equal? start-terms-st start-terms-w)])))
 
@@ -395,60 +347,62 @@ test
   (define (treelist-filter pred tl)
     (treelist-filter-helper pred tl (sub1 (treelist-length tl)))
     )
+
+  (define (tlos->symbol l)
+    (define (tlostr->string l)
+      (cond [(treelist-empty? l) ""]
+            [else (string-append (treelist-first l) (tlostr->string (treelist-rest l)))]))
+    (define (tlos->tlostr ss) (treelist-map ss symbol->string ))
+    (string->symbol (tlostr->string (tlos->tlostr l))))
   
   ;; (Listof (List (Listof Symbol) (Listof Symbol))) (Listof (Listof (List (Listof Symbol) (Listof Symbol)))) CFG Boolean ->
   ;; (U (Listof (U (Listof Symbol) Symbol)) String))
   (define (make-deriv visited derivs g chomsky)
+    (displayln derivs)
     ;; (Listof Symbol) (Listof Symbol) -> Natural
     (define (count-terminals st sigma)
       (treelist-length (treelist-filter (lambda (a) (member a sigma)) st)))
 
     (cond [(eq? derv-type 'right)
-           (cond [(empty? derivs) (format "~s is not in L(G)." w)]
+           (cond [(qempty? derivs) (format "~s is not in L(G)." w)]
                  [(begin
-                    (displayln (qpeek derivs))
                     (or (and chomsky
-                           (> (length (first (first (qpeek derivs)))) (+ 2 (length w))))
-                      (> (count-terminals (first (first (qpeek derivs))) (cfg-get-alphabet g)) (length w)))
+                           (> (length (first (first (qpeek derivs)))) (+ 2 (treelist-length treelist-w))))
+                      (> (count-terminals (first (first (qpeek derivs))) (cfg-get-alphabet g)) (treelist-length treelist-w)))
                     )
                   (make-deriv visited (begin (dequeue! derivs)
                                              derivs) g chomsky)]
                  [else 
                   (let* (
-                         (test0 (displayln "here"))
                          (fderiv (qpeek derivs))
                          (state (car fderiv))
                          (fnt (get-last-nt (first state)))
                          )
                     (if (false? fnt)
-                        (begin (displayln "hello")
-                        (if (equal? w (first state))
-                            (append-map (lambda (l) (if (equal? w (first l))
+                        (begin 
+                        (if (equal? treelist-w (first state))
+                            (append* (map (lambda (l)
+                                          (if (equal? treelist-w (first l))
                                                         (if (null? l)
                                                             (list EMP)
-                                                            (list (list (los->symbol (first l))
+                                                            (list (list (tlos->symbol (first l))
                                                                         (los->symbol (second l))))
                                                             )
-                                                        (list (list (los->symbol (first l))
+                                                        (list (list (tlos->symbol (first l))
                                                                     (los->symbol (second l))) ARROW)))
                                         (reverse fderiv)
-                                        )
+                                        ))
                             (make-deriv visited (begin (dequeue! derivs)
                                              derivs) g chomsky)))
                         (let*
                             ((rls (get-rules fnt g))
                              (rights (map cfg-rule-rhs rls))
-                             (test0 (displayln (format "check-terminals: ~s" (check-terminals? (first state)))))
-                             (test1 (displayln (format "subst-last-nt: ~s" (map (lambda (rght) (list (subst-last-nt (first state) rght)
-                                                                           rght))
-                                                      rights))))
                              (new-states (filter (lambda (st) (and (not (hash-ref visited st #f))
                                                                    (check-terminals? (first state))))
                                                  (map (lambda (rght) (list (subst-last-nt (first state) rght)
                                                                            rght))
                                                       rights))
                                          )
-                             (test2 (displayln (format "new-states: ~s" new-states)))
                              )
                           (make-deriv (begin
                                         (map (lambda (new-st) (hash-set! visited new-st 1)) new-states)
@@ -474,7 +428,7 @@ test
              )
         ;(if (string? ng-derivation)
         ;ng-derivation
-        (let [(deriv-queue (make-queue 2097152))]
+        (let [(deriv-queue (make-queue 50))]
           (make-deriv
            (make-hash)
            (begin
@@ -488,7 +442,7 @@ test
         ;)
         )))
 
-#;(define testcfg (make-unchecked-cfg '(S A B)
+(define testcfg (make-unchecked-cfg '(S A B)
                                     '(a b c d)
                                     `(
                                       (S ,ARROW ,EMP)
@@ -502,8 +456,9 @@ test
   )
 
 ;(cfg-derive testcfg '(a a b b c c c d d d))
-#;(cfg-derive-unsafe-rightmost testcfg '(a a b b c c c d d d) 'right)
-#;(time (cfg-derive-unsafe testcfg '(a a a a a a a a a a a a a a a a b b b b b b b b b b b b b b b b c c c c c c c c c c c c c c c c d d d d d d d d d d d d d d d d) 'left))
-
+;(time (cfg-derive-unsafe testcfg '(a a a a a a a a a a a a a a a a b b b b b b b b b b b b b b b b c c c c c c c c c c c c c c c c d d d d d d d d d d d d d d d d) 'right))
+(time (cfg-derive-unsafe-rightmost testcfg '(a a a b b b c c c d d d) 'right))
+;(time (cfg-derive-unsafe-rightmost testcfg '(a a a a a a a a a a a a b b b b b b b b b b b b c c c c c c c c c c c c d d d d d d d d d d d d) 'right))
+;(time (cfg-derive-unsafe testcfg '(a a a a a a a a a a a a a a a a b b b b b b b b b b b b b b b b c c c c c c c c c c c c c c c c d d d d d d d d d d d d d d d d) 'right))
 ;(unsafe-fx= 1 2 1)
 ;(fx= 1 1 1)
