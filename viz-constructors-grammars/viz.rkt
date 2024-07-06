@@ -32,6 +32,14 @@
           (parallel-special-graphs->bitmap-thunks graphs rank-node-lst #:cpu-cores cpu-cores)
           )))
 
+(define (create-cfg-graph-imgs graphs #:cpu-cores [cpu-cores #f] #:rank-node-lst [rank-node-lst '()])
+  (if (empty? graphs)
+      '()
+      (if (not cpu-cores)
+          (parallel-cfg-graphs->bitmap-thunks graphs rank-node-lst)
+          (parallel-cfg-graphs->bitmap-thunks graphs rank-node-lst #:cpu-cores cpu-cores)
+          )))
+
 ;; viz-state int int MouseEvent
 ;; Updates viz-state as to whether the mouse is currently being pressed while on the visualization
 (define (process-mouse a-vs x y mouse-event)
@@ -100,9 +108,9 @@
                  imsg-struct instructions-struct draw-world process-key process-tick
                  
                 #:cpu-cores [cpu-cores #f] #:special-graphs? [special-graphs? #f] #:rank-node-lst [rank-node-lst '()])
-  (let* [(imgs (if special-graphs?
-                   (cons first-img (rest (create-special-graph-imgs graphs #:cpu-cores cpu-cores #:rank-node-lst rank-node-lst)))
-                   (cons first-img (rest (create-graph-imgs graphs #:cpu-cores cpu-cores)))))]
+  (let* [(imgs (cond [(eq? special-graphs? 'cfg) (cons first-img (rest (create-cfg-graph-imgs graphs #:cpu-cores cpu-cores #:rank-node-lst rank-node-lst)))]
+                     [(eq? special-graphs? 'csg) (cons first-img (rest (create-special-graph-imgs graphs #:cpu-cores cpu-cores #:rank-node-lst rank-node-lst)))]
+                     [else (cons first-img (rest (create-graph-imgs graphs #:cpu-cores cpu-cores)))]))]
     (viz (viz-state (list->zipper imgs)
                     ((first imgs))
                     first-img-coord

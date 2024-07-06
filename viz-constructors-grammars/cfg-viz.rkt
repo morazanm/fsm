@@ -4,6 +4,7 @@
          "../fsm-core/interface.rkt"
          "../fsm-core/private/constants.rkt"
          "../fsm-core/private/misc.rkt"
+         "circular-queue.rkt"
          
          "grammar-viz.rkt"
          "zipper.rkt"
@@ -237,6 +238,28 @@
          graph
          (reverse lon)))
 
+(define (make-invis-edges graph lvl)
+  (if (= (length lvl) 1)
+      graph
+      (make-invis-edges (add-edge graph
+                              ""
+                              (first lvl)
+                              (second lvl)
+                              #:atb (hash 'style 'invisible 'arrowhead 'none)) (rest lvl))
+      )
+  )
+
+;; graph (listof edges) -> graph
+;; Creates invisible edges so that ordering of the yield nodes is always maintained
+(define (make-invisible-edge-graph graph rank-node-lvls)
+  (foldr (lambda (lvls accum)
+           (make-invis-edges accum lvls)
+           )
+         graph
+         rank-node-lvls
+         )
+  )
+
 ;; make-edge-graph
 ;; graph (listof level) -> graph
 ;; Purpose: To make an edge graph
@@ -262,7 +285,7 @@
 ;; create-graph-structs
 ;; dgprh -> img
 ;; Purpose: Creates the final graph structure that will be used to create the images in graphviz
-(define (create-graph-structs a-dgrph invariants derv-order root-node)
+(define (create-graph-structs a-dgrph invariants derv-order root-node rank-node-lvls)
   (let* [(nodes (dgrph-nodes a-dgrph))
          (levels (map reverse (dgrph-ad-levels a-dgrph)))
          (reversed-levels (reverse levels))
@@ -284,9 +307,11 @@
                                      '()
                                      (first x)))
                           hedges))]
-    (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
+    (make-invisible-edge-graph (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
                                       nodes hedge-nodes yield-node broken-invariant? producing-nodes invariant-nts)
-                     reversed-levels hedges)))
+                     reversed-levels hedges)
+                          rank-node-lvls)
+    ))
 
 ;; dgrph (listof (list nonterminal predicate)) starting-nonterminal derivation-order
 ;; Purpose: Creates the list of broken invariants for a given dgrph
@@ -826,6 +851,97 @@
                     (list (list (list (yield '() '() (list (cfg-get-start g)) derv-type) '() )))
                     g))))
 
+(define (get-leftmost-order-helper subtrees)
+  (if (empty? subtrees)
+      '()
+      (append (get-leftmost-order (first subtrees)) (get-leftmost-order-helper (rest subtrees)))
+      )
+  )
+
+(define (get-leftmost-order yt)
+  (if (empty? (tree-subtrees yt))
+      (if (eq? (tree-value yt) EMP)
+          '()
+          (list (tree-value yt))
+          )
+      (append (list (tree-value yt)) (get-leftmost-order-helper (tree-subtrees yt)))
+      )
+  )
+
+
+(define (get-rightmost-order-helper subtrees)
+  (if (empty? subtrees)
+      '()
+      (append (get-rightmost-order (last subtrees)) (get-rightmost-order-helper (drop-right subtrees 1)))
+      )
+  )
+
+(define (get-rightmost-order yt)
+  (if (empty? (tree-subtrees yt))
+      (if (eq? (tree-value yt) EMP)
+          '()
+          (list (tree-value yt))
+          )
+      (append (list (tree-value yt)) (get-rightmost-order-helper (tree-subtrees yt)))
+      )
+  )
+
+(define (get-levelmost-left-order yt)
+  (define node-queue (queue 50))
+  (define (get-nodes-enqueued yt accum)
+    (if (empty? (tree-subtrees yt))
+        (get-nodes-enqueued (dequeue! node-queue) (append accum (list (tree-value yt))))
+        #;(if (eq? (tree-value yt) EMP)
+            (enqueue! node-queue EMP)
+            (enqueue! node-queue (tree-value yt))
+            )
+        (begin
+          (map (lambda (subtree) (enqueue! node-queue subtree)) (tree-subtrees yt))
+          (get-nodes-enqueued (dequeue! node-queue) (append accum (list (tree-value yt))))
+          )
+        )
+    )
+  (get-nodes-enqueued yt '())
+  )
+   
+(define (get-levelmost-right-order yt)
+  (define node-queue (queue 50))
+  (define (get-nodes-enqueued yt accum)
+    (if (empty? (tree-subtrees yt))
+        (get-nodes-enqueued (dequeue! node-queue) (append accum (list (tree-value yt))))
+        #;(if (eq? (tree-value yt) EMP)
+            (enqueue! node-queue EMP)
+            (enqueue! node-queue (tree-value yt))
+            )
+        (begin
+          (map (lambda (subtree) (enqueue! node-queue subtree)) (reverse (tree-subtrees yt)))
+          (get-nodes-enqueued (dequeue! node-queue) (append accum (list (tree-value yt))))
+          )
+        )
+    )
+  (get-nodes-enqueued yt '())
+  )     
+        
+
+(define (get-ordered-invariant-nodes ordered-nodes invar-nodes)
+  (define (get-ordered-invariant-nodes-helper ordered-nodes invar-nodes)
+    (filter (lambda (node) (member node invar-nodes)) ordered-nodes))
+  (if (empty? ordered-nodes)
+      '()
+      (cons (get-ordered-invariant-nodes-helper (first ordered-nodes) (first invar-nodes))
+            (get-ordered-invariant-nodes (rest ordered-nodes) (rest invar-nodes)))
+      )
+  )
+
+(define (accumulate-previous-ranks rank-node-lst accum)
+  (if (empty? rank-node-lst)
+      '()
+      (let [(new-accum (append accum (list (first rank-node-lst))))]
+  (cons new-accum (accumulate-previous-ranks (rest rank-node-lst) new-accum))
+    )
+      )
+  )
+
 ;; cfg-viz
 ;; cfg (listof Symbol) Symbol . (listof (list Symbol ((listof Symbol) -> boolean))) -> visualization
 ;; Starts the visualization
@@ -846,15 +962,28 @@
                                                   '()
                                                   (make-hash)
                                                   derv-type))
+                   
+                   ;(rank-node-lvls (cons (list 'S) (map (lambda (x) (map (lambda (y) (second y)) x)) renamed)))
+                   (rank-node-lvls (cons (list (list 'S))
+                                         (accumulate-previous-ranks (map (lambda (x) (map (lambda (y) (second y)) x)) renamed) (list (list 'S)) )))
+                   ;(test4 (displayln (length rank-node-lvls)))
                    (yield-trees (map create-yield-tree (map reverse (create-list-of-levels renamed))))
                    (dgraph (dgrph renamed '() '() '() (rest rules) (list (first rules)) (reverse yield-trees) (list (tree (grammar-start cfg) '()))))
                    (lod (reverse (create-dgrphs dgraph '())))
-                   (broken-invariants (list->zipper
-                                       (map (lambda (a-dgrph) (remove-duplicates
-                                                               (map undo-renaming (create-invariant-nodes a-dgrph invariants (grammar-start cfg) derv-type))))
-                                            lod)))
-                   (graphs (map (lambda (dgrph) (create-graph-structs dgrph invariants derv-type (grammar-start cfg))) lod))]
-              (init-viz cfg word w-der rules graphs broken-invariants))))
+                   ;(test0 (println (get-leftmost-order (first yield-trees))))
+                   (invar-nodes (map (lambda (a-dgrph) (create-invariant-nodes a-dgrph invariants (grammar-start cfg) derv-type))
+                                            lod))
+                   (ordered-nodes (map (if (eq? derv-type 'left)
+                                           get-leftmost-order
+                                           get-rightmost-order)
+                                       yield-trees))
+                   ;(test1 (displayln (get-ordered-invariant-nodes ordered-nodes invar-nodes)))
+                   (broken-invariants (list->zipper (cons '() (map (lambda (lst) (map undo-renaming lst))
+                                                                   (map reverse (rest (get-ordered-invariant-nodes ordered-nodes invar-nodes)))))))
+                   (graphs (map (lambda (dgrph node-lvls) (create-graph-structs dgrph invariants derv-type (grammar-start cfg) node-lvls)) lod rank-node-lvls))
+                   ;(test5 (displayln (length graphs)))
+                   ]
+              (init-viz cfg word w-der rules graphs broken-invariants #:special-graphs? 'cfg #:rank-node-lst rank-node-lvls))))
       (let [(derivation (cfg-derive-levels cfg word derv-type))]
         (if (string? derivation)
             derivation
@@ -879,7 +1008,7 @@
                                                                (map undo-renaming (create-invariant-nodes a-dgrph invariants (grammar-start cfg) derv-type))))
                                             lod)))
                    (graphs (map (lambda (dgrph) (create-graph-structs dgrph invariants derv-type (grammar-start cfg))) lod))]
-              (init-viz cfg word w-der rules graphs broken-invariants))))))
+              (init-viz cfg word w-der rules graphs broken-invariants ))))))
 
 (define numb>numa (make-cfg '(S A)
                             '(a b)

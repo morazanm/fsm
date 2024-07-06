@@ -14,6 +14,7 @@
  find-dot
  find-tmp-dir
  special-graph->dot
+ cfg-graph->dot
  (contract-out
   (struct formatters ((graph (hash/c symbol? (-> any/c string?)))
                       (node (hash/c symbol? (-> any/c string?)))
@@ -184,6 +185,30 @@
           ""
           (graph-subgraph-list g))
    (format "    {rank=same;~a};\n" (foldr (lambda (val accum) (string-append (symbol->string val) ";" accum)) "" rank-node-lst))
+   "}")
+  )
+
+(define (cfg-graph->str g rank-node-lst)
+  (define name (format "digraph ~s {\n" (graph-name g)))
+  (define fmtrs (graph-fmtrs g))
+  ;(define test (displayln rank-node-lst))
+  (string-append
+   name
+   (format "    ~a;\n" (hash->str (graph-atb g) (formatters-graph fmtrs) ";\n    "))
+   (foldl (lambda (n a) (string-append a (node->str n (formatters-node fmtrs))))
+          ""
+          (graph-node-list g))
+   (foldl (lambda (e a) (string-append a (edge->str e (formatters-edge fmtrs))))
+          ""
+          (graph-edge-list g))
+   (foldl (lambda (e a) (string-append a (subgraph->str e fmtrs)))
+          ""
+          (graph-subgraph-list g))
+   (foldr (lambda (lvl accum)
+            ;(displayln lvl)
+            (string-append (format "    {rank=same;~a};\n" (foldr (lambda (val accum) (string-append (symbol->string val) ";" accum)) "" lvl)) accum))
+          ""
+          rank-node-lst)
    "}")
   )
 
@@ -398,6 +423,14 @@
     #:exists 'replace
     (lambda (out)
       (displayln (special-graph->str graph rank-node-lst) out)))
+  dot-path)
+
+(define (cfg-graph->dot graph rank-node-lst save-dir filename)
+  (define dot-path (build-path save-dir (format "~a.dot" filename)))
+  (call-with-output-file dot-path
+    #:exists 'replace
+    (lambda (out)
+      (displayln (cfg-graph->str graph rank-node-lst) out)))
   dot-path)
 
 ;; dot->output-fmt: symbolof(file-format) path -> path

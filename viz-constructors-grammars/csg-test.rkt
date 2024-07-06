@@ -6,6 +6,8 @@
          "../fsm-core/private/constants.rkt"
          "../fsm-core/private/misc.rkt"
          "viz.rkt"
+         "grammar-viz.rkt"
+         "zipper.rkt"
          rackunit
          )
 
@@ -474,7 +476,7 @@
   (local [
           (define derv (csg-derive-edited g w))
           (define w-derv (map (lambda (x) (symbol->fsmlos (first x))) derv))
-          (define test0 (begin (displayln w-derv)))
+          ;(define test0 (begin (displayln w-derv)))
           (define moved-rules (map (lambda (x) (list (second x) (third x))) (move-rule-applications-in-list derv)))
           (define rules (cons ""
                               (foldr (lambda (x accum) (if (empty? (first x))
@@ -501,8 +503,10 @@
                                 (list (first rules))))
           (define lod (reverse (create-dgrphs dgraph '() #f)))
           (define graphs (map create-graph-structs lod))
+          (define test2 (displayln (second renamed)))
           ]
-    (run-viz g w w-derv rules graphs #:special-graphs? #t #:rank-node-lst (second renamed))
+    (init-viz g w w-derv rules graphs (list->zipper (map (lambda (x) '()) lod)) #:special-graphs? 'csg #:rank-node-lst (second renamed))
+    ;(run-viz g w w-derv rules graphs #:special-graphs? #t #:rank-node-lst (second renamed))
     )
   )
 (csg-viz anbn '(a a b b))

@@ -4,7 +4,8 @@
          )
 
 (provide parallel-graphs->bitmap-thunks
-         parallel-special-graphs->bitmap-thunks)
+         parallel-special-graphs->bitmap-thunks
+         parallel-cfg-graphs->bitmap-thunks)
 
 (define SAVE-DIR (find-tmp-dir))
 
@@ -295,6 +296,20 @@
                                      )
   )
 
+;; Listof graph -> Num
+;; Creates all of the dotfiles based on the graph structs given
+(define (cfg-graphs->dots graphs rank-node-lst) ;(displayln rank-node-lst)
+  (foldl (lambda (value accum) (begin (cfg-graph->dot (first value) (second value) SAVE-DIR (format "dot~s" accum))
+                                                                  (add1 accum)
+                                                                  )
+                                       )
+                                     0
+                                     (make-pairs graphs rank-node-lst)
+                                     )
+  )
+
+
+
 (define (parallel-special-graphs->bitmap-thunks graphs rank-node-lst #:cpu-cores [cpu-cores (quotient (find-number-of-cores) 2)])
   (begin
     (define list-dot-files (for/list ([i (range 0 (length graphs))])
@@ -302,6 +317,18 @@
                              )
       )
     (special-graphs->dots graphs rank-node-lst)
+    (parallel-dots->pngs list-dot-files cpu-cores)
+    (pngs->bitmap-thunks 0 (length graphs))
+    )
+  )
+
+(define (parallel-cfg-graphs->bitmap-thunks graphs rank-node-lst #:cpu-cores [cpu-cores (quotient (find-number-of-cores) 2)])
+  (begin
+    (define list-dot-files (for/list ([i (range 0 (length graphs))])
+                             (format "~adot~s" SAVE-DIR i)
+                             )
+      )
+    (cfg-graphs->dots graphs rank-node-lst)
     (parallel-dots->pngs list-dot-files cpu-cores)
     (pngs->bitmap-thunks 0 (length graphs))
     )
