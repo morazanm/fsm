@@ -280,6 +280,7 @@
 ;;M is a machine
 ;;inv is a the (listof (state (listof symbols -> boolean)))
 ;;dead is the sybmol of dead state
+(struct viz-state (upci pci M inv dead))
 (struct viz-state-ndfa (upci pci M inv dead imsg instruct graphs))
 
 (struct imsg-state (destin-states last-consumed-word unconsumed-word))
@@ -487,39 +488,39 @@
          ;;EX. (S (a b a))
          ;;(listof configurations)
          ;;Purpose: Returns all starting configurations of for the entire word
-         (starting-configs (map (λ (state) (append (list state) (list (append (viz-state-ndfa-pci a-vs)
-                                                                              (viz-state-ndfa-upci a-vs)))))
-                                (cons (sm-start (viz-state-ndfa-M a-vs))
-                                      (get-empty-states-from-start (sm-start (viz-state-ndfa-M a-vs))
-                                                                   (sm-rules (viz-state-ndfa-M a-vs))))))
+         (starting-configs (map (λ (state) (append (list state) (list (append (viz-state-pci a-vs)
+                                                                              (viz-state-upci a-vs)))))
+                                (cons (sm-start (viz-state-M a-vs))
+                                      (get-empty-states-from-start (sm-start (viz-state-M a-vs))
+                                                                   (sm-rules (viz-state-M a-vs))))))
        
          ;;(listof configurations)
          ;;Purpose: Returns all configurations using the CI
          (curr-config (append-map (λ (config)
                                     (filter (λ (configs)
-                                              (equal? (second configs) (viz-state-ndfa-upci a-vs)))
+                                              (equal? (second configs) (viz-state-upci a-vs)))
                                             config))
-                                  (get-configs (append (viz-state-ndfa-pci a-vs)
-                                                       (viz-state-ndfa-upci a-vs))
-                                               (sm-rules (viz-state-ndfa-M a-vs))
-                                               (sm-start (viz-state-ndfa-M a-vs)))))
+                                  (get-configs (append (viz-state-pci a-vs)
+                                                       (viz-state-upci a-vs))
+                                               (sm-rules (viz-state-M a-vs))
+                                               (sm-start (viz-state-M a-vs)))))
          
          
          ;;(listof configurations)
          ;;Purpose: Returns the all configurations using the CI that is one step behind
-         (prev-config (cond [(empty? (viz-state-ndfa-pci a-vs)) '()]
-                            [(= (length (viz-state-ndfa-pci a-vs)) 1)
+         (prev-config (cond [(empty? (viz-state-pci a-vs)) '()]
+                            [(= (length (viz-state-pci a-vs)) 1)
                              starting-configs]
                             [else (append-map (λ (config)
                                                 (filter (λ (configs)
                                                           (equal? (second configs)
-                                                                  (cons (last (viz-state-ndfa-pci a-vs))
-                                                                        (viz-state-ndfa-upci a-vs))))
+                                                                  (cons (last (viz-state-pci a-vs))
+                                                                        (viz-state-upci a-vs))))
                                                         config))
-                                              (get-configs (append (viz-state-ndfa-pci a-vs)
-                                                                   (viz-state-ndfa-upci a-vs))
-                                                           (sm-rules (viz-state-ndfa-M a-vs))
-                                                           (sm-start (viz-state-ndfa-M a-vs))))]))
+                                              (get-configs (append (viz-state-pci a-vs)
+                                                                   (viz-state-upci a-vs))
+                                                           (sm-rules (viz-state-M a-vs))
+                                                           (sm-start (viz-state-M a-vs))))]))
                              
          ;;(listof rules)
          ;;Purpose: The current rules that the ndfa is using to consume the last of the CI
@@ -527,14 +528,14 @@
          ;;     config with the first of the rule,  each state in the current config with
          ;;     the third of the rule, and the first of letter in the word of the previous
          ;;     config with the second of the rule to obtain the current rule(s) being applied 
-         (current-rules (if (empty? (viz-state-ndfa-pci a-vs))
-                            (get-empties-from-start (sm-start (viz-state-ndfa-M a-vs))
-                                                    (sm-rules (viz-state-ndfa-M a-vs)))
+         (current-rules (if (empty? (viz-state-pci a-vs))
+                            (get-empties-from-start (sm-start (viz-state-M a-vs))
+                                                    (sm-rules (viz-state-M a-vs)))
                             (append-map (λ (path)
-                                          (attach-empties path (sm-rules (viz-state-ndfa-M a-vs))))
+                                          (attach-empties path (sm-rules (viz-state-M a-vs))))
                                         (remove-duplicates (for*/list ([prev prev-config]
                                                                        [curr curr-config]
-                                                                       [rule (sm-rules (viz-state-ndfa-M a-vs))]
+                                                                       [rule (sm-rules (viz-state-M a-vs))]
                                                                        #:when (and (equal? (first prev) (first rule))
                                                                                    (equal? (first curr) (third rule))
                                                                                    (equal? (first (second prev))
@@ -542,10 +543,10 @@
                                                              rule)))))
          ;;(listof (listof symbol ((listof symbols) -> boolean))) (listof symbols))
          ;;Purpose: Extracts all invariants for the states that the machine can be in
-         (get-invs (for*/list ([invs (viz-state-ndfa-inv a-vs)]
+         (get-invs (for*/list ([invs (viz-state-inv a-vs)]
                                [curr curr-config]
                                #:when (equal? (first invs) (first curr)))
-                     (list invs (viz-state-ndfa-pci a-vs))))
+                     (list invs (viz-state-pci a-vs))))
 
          ;;(listof symbols)
          ;;Purpose: Returns all states whose invariants holds
@@ -563,26 +564,51 @@
                                       '()))
                                 get-invs))
          
-         (informative-messages (void))
-         ]
-    (above (first (resize-image
-                   (graph->bitmap
-                    (edge-graph
-                     (node-graph (create-graph 'ndfagraph #:atb
-                                               (hash 'rankdir "LR"))
-                                 (viz-state-ndfa-M a-vs)
-                                 (viz-state-ndfa-dead a-vs)
-                                 held-invs
-                                 brkn-invs)
-                     (viz-state-ndfa-M a-vs)
-                     current-rules
-                     (viz-state-ndfa-dead a-vs))
-                    )
-                   500
-                   515))
-           (above/align 'left
-                        informative-messages      
-                        E-SCENE-TOOLS))))
+         (informative-messages (void))]
+    #;(above (first (resize-image
+                     (graph->bitmap
+                      (edge-graph
+                       (node-graph (create-graph 'ndfagraph #:atb
+                                                 (hash 'rankdir "LR"))
+                                   (viz-state-M a-vs)
+                                   (viz-state-dead a-vs)
+                                   held-invs
+                                   brkn-invs)
+                       (viz-state-M a-vs)
+                       current-rules
+                       (viz-state-dead a-vs))
+                      )
+                     500
+                     515))
+             (above/align 'left
+                          informative-messages      
+                          E-SCENE-TOOLS))
+    (graph->bitmap
+     (edge-graph
+      (node-graph (create-graph 'ndfagraph #:atb
+                                (hash 'rankdir "LR"))
+                  (viz-state-M a-vs)
+                  (viz-state-dead a-vs)
+                  held-invs
+                  brkn-invs)
+      (viz-state-M a-vs)
+      current-rules
+      (viz-state-dead a-vs)))))
+
+
+(define (draw-graphs a-vs acc)
+  (if (or (empty? (viz-state-upci a-vs))
+          (not (ormap (λ (config) (empty? (last (last config))))
+                      (get-configs (viz-state-pci a-vs)
+                                   (sm-rules (viz-state-M a-vs))
+                                   (sm-start (viz-state-M a-vs))))))
+      (reverse acc)
+      (let [(next-graph (create-graph-thunks a-vs))]
+        (draw-graphs (struct-copy viz-state a-vs
+                                  [upci (rest (viz-state-upci a-vs))]
+                                  [pci  (append (viz-state-pci a-vs)
+                                                (list (first (viz-state-upci a-vs))))])
+                     (cons next-graph acc)))))
 
 
 (define (right-key-pressed a-vs)
@@ -605,42 +631,14 @@
                                                '()))]
     (struct-copy viz-state-ndfa a-vs
                  [upci (if (or (empty? (viz-state-ndfa-upci a-vs))
-                            (not completed-config?))
-                        (viz-state-ndfa-upci a-vs)
-                        (rest (viz-state-ndfa-upci a-vs)))]
-                    [pci (if (or (empty? (viz-state-ndfa-upci a-vs))
-                            (not completed-config?))
-                        (viz-state-ndfa-pci a-vs)
-                        (append (viz-state-ndfa-pci a-vs)
-                                (list (first (viz-state-ndfa-upci a-vs)))))])))
-
-(define (left-key-pressed a-vs)
-  (let* [;;boolean
-         ;;Purpose: Determines if the pci can be can be fully consumed
-         (completed-config? (ormap (λ (config) (empty? (last (last config))))
-                                   (get-configs (viz-state-ndfa-pci a-vs)
-                                                (sm-rules (viz-state-ndfa-M a-vs))
-                                                (sm-start (viz-state-ndfa-M a-vs)))))
-         ;;(listof symbols)
-         ;;Purpose: The last word that could be fully consumed by the ndfa
-         (last-consumed-word (last-fully-consumed (append (viz-state-ndfa-pci a-vs)
-                                                          (viz-state-ndfa-upci a-vs))
-                                                  (viz-state-ndfa-M a-vs)))
-         ;;(listof symbols)
-         ;;Purpose: The portion of the word that cannont be consumed
-         (unconsumed-word (remove-similarities last-consumed-word
-                                               (append (viz-state-ndfa-pci a-vs)
-                                                       (viz-state-ndfa-upci a-vs))
-                                               '()))]
-    (struct-copy viz-state-ndfa a-vs
-     [upci (if (empty? (viz-state-ndfa-pci a-vs))
-         (viz-state-ndfa-upci a-vs)
-         (cons (last (viz-state-ndfa-pci a-vs))
-               (viz-state-ndfa-upci a-vs)))]
-     [pci (if (empty? (viz-state-ndfa-pci a-vs))
-         (viz-state-ndfa-pci a-vs)
-         (take (viz-state-ndfa-pci a-vs)
-               (sub1 (length (viz-state-ndfa-pci a-vs)))))])))
+                               (not completed-config?))
+                           (viz-state-ndfa-upci a-vs)
+                           (rest (viz-state-ndfa-upci a-vs)))]
+                 [pci (if (or (empty? (viz-state-ndfa-upci a-vs))
+                              (not completed-config?))
+                          (viz-state-ndfa-pci a-vs)
+                          (append (viz-state-ndfa-pci a-vs)
+                                  (list (first (viz-state-ndfa-upci a-vs)))))])))
 
 (define (down-key-pressed a-vs)
   (let* [;;boolean
@@ -675,7 +673,7 @@
                           [else (append (viz-state-ndfa-pci a-vs)
                                         (viz-state-ndfa-upci a-vs))])])))
 
-(define (up-key-pressed a-vs)
+(define (left-key-pressed a-vs)
   (let* [;;boolean
          ;;Purpose: Determines if the pci can be can be fully consumed
          (completed-config? (ormap (λ (config) (empty? (last (last config))))
@@ -695,12 +693,24 @@
                                                '()))]
     (struct-copy viz-state-ndfa a-vs
                  [upci (if (empty? (viz-state-ndfa-pci a-vs))
-                        (viz-state-ndfa-upci a-vs)
-                        (append (viz-state-ndfa-pci a-vs)
-                                (viz-state-ndfa-upci a-vs)))]
-                    [pci (if (empty? (viz-state-ndfa-pci a-vs))
+                           (viz-state-ndfa-upci a-vs)
+                           (cons (last (viz-state-ndfa-pci a-vs))
+                                 (viz-state-ndfa-upci a-vs)))]
+                 [pci (if (empty? (viz-state-ndfa-pci a-vs))
+                          (viz-state-ndfa-pci a-vs)
+                          (take (viz-state-ndfa-pci a-vs)
+                                (sub1 (length (viz-state-ndfa-pci a-vs)))))])))
+
+
+(define (up-key-pressed a-vs)
+  (struct-copy viz-state-ndfa a-vs
+               [upci (if (empty? (viz-state-ndfa-pci a-vs))
+                         (viz-state-ndfa-upci a-vs)
+                         (append (viz-state-ndfa-pci a-vs)
+                                 (viz-state-ndfa-upci a-vs)))]
+               [pci (if (empty? (viz-state-ndfa-pci a-vs))
                         (viz-state-ndfa-pci a-vs)
-                        '())])))
+                        '())]))
 
 ;; process-key
 ;; viz-state key -> viz-state
@@ -781,21 +791,40 @@
   (if (not (or (eq? (sm-type M) 'ndfa)
                (eq? (sm-type M) 'dfa)))
       (error "The given machine must be a ndfa.")
-      (let [(new-M (make-new-M M))]
-        (run-viz-ndfa
+      (let* [(new-M (make-new-M M))
+             (dead-state (cond [(and add-dead
+                               (eq? (sm-type M) 'ndfa))
+                          (last (sm-states new-M))]
+                         [(and add-dead
+                               (eq? (sm-type M) 'dfa))
+                          DEAD]
+                         [else 'no-dead]))]
+        (draw-graphs (viz-state a-word
+                                '()
+                                (if add-dead
+                                    new-M
+                                    M)
+                                invs
+                                dead-state)
+                     '())
+        #;(run-viz-ndfa
          (viz-state-ndfa a-word
                          '()
                          (if add-dead
                              new-M
                              M)
                          invs
-                         (cond [(and add-dead
-                                     (eq? (sm-type M) 'ndfa))
-                                (last (sm-states new-M))]
-                               [(and add-dead
-                                     (eq? (sm-type M) 'dfa))
-                                DEAD]
-                               [else 'no-dead]))
+                         dead-state
+                         '()
+                         '()
+                         (draw-graphs (viz-state a-word
+                                                 '()
+                                                 (if add-dead
+                                                     new-M
+                                                     M)
+                                                 invs
+                                                 dead-state)
+                                      '()))
          'ndfa-viz))))
 
 (define aa*Uab* (make-ndfa '(K B D)
