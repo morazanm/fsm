@@ -924,6 +924,7 @@
         
 
 (define (get-ordered-invariant-nodes ordered-nodes invar-nodes)
+  ;(displayln invar-nodes)
   (define (get-ordered-invariant-nodes-helper ordered-nodes invar-nodes)
     (filter (lambda (node) (member node invar-nodes)) ordered-nodes))
   (if (empty? ordered-nodes)
@@ -966,20 +967,25 @@
                    ;(rank-node-lvls (cons (list 'S) (map (lambda (x) (map (lambda (y) (second y)) x)) renamed)))
                    (rank-node-lvls (cons (list (list 'S))
                                          (accumulate-previous-ranks (map (lambda (x) (map (lambda (y) (second y)) x)) renamed) (list (list 'S)) )))
-                   ;(test4 (displayln (length rank-node-lvls)))
+                   ;(test4 (displayln  rank-node-lvls))
                    (yield-trees (map create-yield-tree (map reverse (create-list-of-levels renamed))))
                    (dgraph (dgrph renamed '() '() '() (rest rules) (list (first rules)) (reverse yield-trees) (list (tree (grammar-start cfg) '()))))
                    (lod (reverse (create-dgrphs dgraph '())))
                    ;(test0 (println (get-leftmost-order (first yield-trees))))
                    (invar-nodes (map (lambda (a-dgrph) (create-invariant-nodes a-dgrph invariants (grammar-start cfg) derv-type))
                                             lod))
-                   (ordered-nodes (map (if (eq? derv-type 'left)
+                   (ordered-nodes (reverse (map (if (eq? derv-type 'left)
                                            get-leftmost-order
                                            get-rightmost-order)
-                                       yield-trees))
-                   ;(test1 (displayln (get-ordered-invariant-nodes ordered-nodes invar-nodes)))
+                                       yield-trees)))
+                   ;(test9 (map displayln ordered-nodes))
+                   ;(test8 (map displayln invar-nodes))
+                   ;(test1 (displayln (map reverse (rest (get-ordered-invariant-nodes ordered-nodes invar-nodes)))))
                    (broken-invariants (list->zipper (cons '() (map (lambda (lst) (map undo-renaming lst))
-                                                                   (map reverse (rest (get-ordered-invariant-nodes ordered-nodes invar-nodes)))))))
+                                                                   (map reverse
+                                                                        (rest (get-ordered-invariant-nodes ordered-nodes invar-nodes))
+                                                                        )
+                                                                   ))))
                    (graphs (map (lambda (dgrph node-lvls) (create-graph-structs dgrph invariants derv-type (grammar-start cfg) node-lvls)) lod rank-node-lvls))
                    ;(test5 (displayln (length graphs)))
                    ]
