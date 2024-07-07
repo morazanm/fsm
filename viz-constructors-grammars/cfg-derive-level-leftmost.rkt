@@ -7,24 +7,24 @@
          )
 
 (define (treelist-filter-helper pred tl i)
-    (if (= i -1)
-        tl
-        (if (pred (treelist-ref tl i))
-            (treelist-filter-helper pred tl (sub1 i))
-            (treelist-filter-helper pred (treelist-delete tl i) (sub1 i))
-            )
-        )
-    )
-  (define (treelist-filter pred tl)
-    (treelist-filter-helper pred tl (sub1 (treelist-length tl)))
-    )
+  (if (= i -1)
+      tl
+      (if (pred (treelist-ref tl i))
+          (treelist-filter-helper pred tl (sub1 i))
+          (treelist-filter-helper pred (treelist-delete tl i) (sub1 i))
+          )
+      )
+  )
+(define (treelist-filter pred tl)
+  (treelist-filter-helper pred tl (sub1 (treelist-length tl)))
+  )
 
 (define (treelist-insert-list tl i lst)
-    (if (empty? lst)
-        tl
-        (treelist-insert-list (treelist-insert tl i (first lst)) (add1 i) (rest lst))
-        )
-    )
+  (if (empty? lst)
+      tl
+      (treelist-insert-list (treelist-insert tl i (first lst)) (add1 i) (rest lst))
+      )
+  )
 
 ;; yield is a structure that has
 ;; pr - processed part of the word
@@ -34,21 +34,21 @@
 
 (define (cfg-derive-level-leftmost g w)
   (define alphabet-ht (foldr (lambda (val accum)
-                             (begin
-                               (hash-set! accum val 1)
-                               accum
+                               (begin
+                                 (hash-set! accum val 1)
+                                 accum
+                                 )
                                )
+                             (make-hash)
+                             (cfg-get-alphabet g)
                              )
-                           (make-hash)
-                           (cfg-get-alphabet g)
-                           )
-  )
+    )
 
   (define rules-ht (foldr (lambda (val accum)
                             (begin
-                            (hash-set! accum val (filter (lambda (r) (eq? val (cfg-rule-lhs r))) 
-                                                         (cfg-get-the-rules g)))
-                            accum)
+                              (hash-set! accum val (filter (lambda (r) (eq? val (cfg-rule-lhs r))) 
+                                                           (cfg-get-the-rules g)))
+                              accum)
                             )
                           (make-hash)
                           (cfg-get-v g)))
@@ -60,9 +60,9 @@
   ;; Purpose: Returns leftmost nonterminal
   (define (get-first-nt st)
     (define (get-first-nt-helper i)
-    (cond [(= i (treelist-length (yield-state st))) #f]
-          [(not (hash-ref alphabet-ht (treelist-ref (yield-state st) i) #f)) (treelist-ref (yield-state st) i)]
-          [else (get-first-nt-helper (add1 i))]))
+      (cond [(= i (treelist-length (yield-state st))) #f]
+            [(not (hash-ref alphabet-ht (treelist-ref (yield-state st) i) #f)) (treelist-ref (yield-state st) i)]
+            [else (get-first-nt-helper (add1 i))]))
     (get-first-nt-helper (yield-up st))
     )
   
@@ -99,7 +99,7 @@
   (define (subst-first-nt yd rght)
     (define (subst-first-nt-helper i)
       (if (= i (treelist-length (yield-state yd)))
-          (subst-first-nt (yield (yield-state yd) 0))
+          (subst-first-nt (yield (yield-state yd) 0) rght)
           (if (not (hash-ref alphabet-ht (treelist-ref (yield-state yd) i) #f))
               (if (eq? (first rght) EMP)
                   (struct-copy yield yd
@@ -147,7 +147,7 @@
     (cond [(qempty? derivs) (format "~s is not in L(G)." w)]
           [(> (count-terminals (yield-state (first (first (qpeek derivs))))
                                )
-              (length w))
+              (treelist-length treelist-w))
            (make-deriv visited (dequeue! derivs) g)]
           [else
            (let* [(current-deriv (qpeek derivs))
@@ -160,12 +160,15 @@
                      (reverse (cons (list current-yield (second current-yield-and-rule)) (rest current-deriv)))
                      (if (any-nt? state)
                          (make-deriv visited (enqueue! (dequeue! derivs)
-                                                      (treelist-insert current-deriv 0 (list (yield state 0)
-                                                                       (second current-yield-and-rule))
-                                                                 )
-                                                     )
+                                                       (cons (list (yield state 0)
+                                                                   (second current-yield-and-rule))
+                                                             current-deriv
+                                                             )
+                                                       )
                                      g)
-                         (make-deriv visited (dequeue! derivs) g)))
+                                
+                         (make-deriv visited (dequeue! derivs) g))
+                     )
                  (let* [(rls (hash-ref rules-ht current-nt))
                         (rights (map cfg-rule-rhs rls))
                         (new-yields (filter (lambda (st) (and (not (hash-ref visited st #f))
@@ -181,15 +184,15 @@
                                  (foldr (lambda (val accum) (enqueue! accum val))
                                         new-derivs
                                         (map (lambda (yd) (cons yd current-deriv)) 
-                                            new-yields))
+                                             new-yields))
 
                                  )
                                
                                g))))]))
-        (make-deriv (make-hash) 
-                    (enqueue! (make-queue) (list (list (yield (treelist (cfg-get-start g)) 0) '() )))
-                    g)
-    )
+  (make-deriv (make-hash) 
+              (enqueue! (make-queue) (list (list (yield (treelist (cfg-get-start g)) 0) '() )))
+              g)
+  )
 
 (define testcfg (make-unchecked-cfg '(S A B)
                                     '(a b c d)
@@ -207,7 +210,7 @@
 ;; (listof symbol) (listof yield) -> w-der
 ;; Purpose: Converts a yield derivation into the form of a word derivation that the viz expects
 #;(define (convert-yield-deriv-to-word-deriv input-word yield-deriv)
-  (remove-duplicates (map (lambda (x) (get-current-state (first x))) yield-deriv)))
+    (remove-duplicates (map (lambda (x) (get-current-state (first x))) yield-deriv)))
 
 ;(time (cfg-derive-level-leftmost testcfg '(a a b b c c c d d d)))
 (time (cfg-derive-level-leftmost testcfg '(a a a a a a a a a a a a a a a a b b b b b b b b b b b b b b b b c c c c c c c c c c c c c c c c d d d d d d d d d d d d d d d d)))
