@@ -4,11 +4,11 @@
          "../fsm-core/interface.rkt"
          "../fsm-core/private/constants.rkt"
          "../fsm-core/private/misc.rkt"
-         "circular-queue.rkt"
-         
+         "circular-queue-treelist.rkt"
          "grammar-viz.rkt"
          "zipper.rkt"
-         2htdp/image
+         "cfg-derive-rightmost.rkt"
+         "cfg-derive-leftmost.rkt"
          )
 (provide cfg-viz)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -367,7 +367,7 @@
 ;; cfg word derivation-type -> derivation-with-rules
 ;; A derivaton-with-rule takes the form of: (Listof (Listof Symbol) OR Symbol) OR String
 ;; A derivation type is a symbol that is either 'left, 'right, or 'level
-(define (cfg-derive-with-rule-application g w derv-type)
+#;(define (cfg-derive-with-rule-application g w derv-type)
   ;; (listof symbol) -> Symbol
   ;; Purpose: Returns leftmost nonterminal
   (define (get-first-nt st)
@@ -887,7 +887,7 @@
   )
 
 (define (get-levelmost-left-order yt)
-  (define node-queue (queue 50))
+  (define node-queue (make-queue))
   (define (get-nodes-enqueued yt accum)
     (if (empty? (tree-subtrees yt))
         (get-nodes-enqueued (dequeue! node-queue) (append accum (list (tree-value yt))))
@@ -905,7 +905,7 @@
   )
    
 (define (get-levelmost-right-order yt)
-  (define node-queue (queue 50))
+  (define node-queue (make-queue))
   (define (get-nodes-enqueued yt accum)
     (if (empty? (tree-subtrees yt))
         (get-nodes-enqueued (dequeue! node-queue) (append accum (list (tree-value yt))))
@@ -949,7 +949,9 @@
 (define (cfg-viz cfg word [derv-type 'left] . invariants)
   (if (or (eq? derv-type 'left)
           (eq? derv-type 'right))
-      (let [(derivation (cfg-derive-with-rule-application cfg word derv-type))]
+      (let [(derivation (if (eq? derv-type 'left)
+                            (cfg-derive-leftmost cfg word)
+                            (cfg-derive-rightmost cfg word)))]
         (if (string? derivation)
             derivation
             (let* [(der-with-rules (w-der-with-rules derivation))
