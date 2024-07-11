@@ -12,11 +12,31 @@
 
 (define (cfg-derive-rightmost g w)
 
+  (define alphabet-ht (foldr (lambda (val accum)
+                               (begin
+                                 (hash-set! accum val 1)
+                                 accum
+                                 )
+                               )
+                             (make-hash)
+                             (cfg-get-alphabet g)
+                             )
+    )
+
+  (define rules-ht (foldr (lambda (val accum)
+                            (begin
+                              (hash-set! accum val (filter (lambda (r) (eq? val (cfg-rule-lhs r))) 
+                                                           (cfg-get-the-rules g)))
+                              accum)
+                            )
+                          (make-hash)
+                          (cfg-get-v g)))
+  
   (define treelist-w (list->treelist w))
   (define (get-last-nt-helper st i)
     (if (fx= i -1)
         #f
-        (if (not (member (treelist-ref st i) (cfg-get-alphabet g)))
+        (if (not (hash-ref alphabet-ht (treelist-ref st i) #f))
             (treelist-ref st i)
             (get-last-nt-helper st (sub1 i))
             )
