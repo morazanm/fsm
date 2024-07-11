@@ -597,18 +597,19 @@
 
 
 (define (draw-graphs a-vs acc)
-  (if (or (empty? (viz-state-upci a-vs))
-          (not (ormap (λ (config) (empty? (last (last config))))
-                      (get-configs (viz-state-pci a-vs)
-                                   (sm-rules (viz-state-M a-vs))
-                                   (sm-start (viz-state-M a-vs))))))
-      (reverse acc)
-      (let [(next-graph (create-graph-thunks a-vs))]
-        (draw-graphs (struct-copy viz-state a-vs
-                                  [upci (rest (viz-state-upci a-vs))]
-                                  [pci  (append (viz-state-pci a-vs)
-                                                (list (first (viz-state-upci a-vs))))])
-                     (cons next-graph acc)))))
+  (cond [(empty? (viz-state-upci a-vs))
+         (reverse (cons (create-graph-thunks a-vs) acc))]
+        [(not (ormap (λ (config) (empty? (last (last config))))
+                     (get-configs (viz-state-pci a-vs)
+                                  (sm-rules (viz-state-M a-vs))
+                                  (sm-start (viz-state-M a-vs)))))
+         (reverse (cons (create-graph-thunks a-vs) acc))]
+        [else (let [(next-graph (create-graph-thunks a-vs))]
+                (draw-graphs (struct-copy viz-state a-vs
+                                          [upci (rest (viz-state-upci a-vs))]
+                                          [pci  (append (viz-state-pci a-vs)
+                                                        (list (first (viz-state-upci a-vs))))])
+                             (cons next-graph acc)))]))
 
 
 (define (right-key-pressed a-vs)
@@ -617,37 +618,20 @@
          (completed-config? (ormap (λ (config) (empty? (last (last config))))
                                    (get-configs (viz-state-ndfa-pci a-vs)
                                                 (sm-rules (viz-state-ndfa-M a-vs))
-                                                (sm-start (viz-state-ndfa-M a-vs)))))
-         ;;(listof symbols)
-         ;;Purpose: The last word that could be fully consumed by the ndfa
-         (last-consumed-word (last-fully-consumed (append (viz-state-ndfa-pci a-vs)
-                                                          (viz-state-ndfa-upci a-vs))
-                                                  (viz-state-ndfa-M a-vs)))
-         ;;(listof symbols)
-         ;;Purpose: The portion of the word that cannont be consumed
-         (unconsumed-word (remove-similarities last-consumed-word
-                                               (append (viz-state-ndfa-pci a-vs)
-                                                       (viz-state-ndfa-upci a-vs))
-                                               '()))]
+                                                (sm-start (viz-state-ndfa-M a-vs)))))]
     (struct-copy viz-state-ndfa a-vs
                  [upci (if (or (empty? (viz-state-ndfa-upci a-vs))
                                (not completed-config?))
                            (viz-state-ndfa-upci a-vs)
                            (rest (viz-state-ndfa-upci a-vs)))]
-                 [pci (if (or (empty? (viz-state-ndfa-upci a-vs))
+                 [pci (if (or (empty? (viz-state-ndfa-pci a-vs))
                               (not completed-config?))
                           (viz-state-ndfa-pci a-vs)
                           (append (viz-state-ndfa-pci a-vs)
                                   (list (first (viz-state-ndfa-upci a-vs)))))])))
 
 (define (down-key-pressed a-vs)
-  (let* [;;boolean
-         ;;Purpose: Determines if the pci can be can be fully consumed
-         (completed-config? (ormap (λ (config) (empty? (last (last config))))
-                                   (get-configs (viz-state-ndfa-pci a-vs)
-                                                (sm-rules (viz-state-ndfa-M a-vs))
-                                                (sm-start (viz-state-ndfa-M a-vs)))))
-         ;;(listof symbols)
+  (let* [;;(listof symbols)
          ;;Purpose: The last word that could be fully consumed by the ndfa
          (last-consumed-word (last-fully-consumed (append (viz-state-ndfa-pci a-vs)
                                                           (viz-state-ndfa-upci a-vs))
@@ -660,51 +644,34 @@
                                                '()))]
     (struct-copy viz-state-ndfa a-vs
                  [upci (cond [(empty? (viz-state-ndfa-upci a-vs))
-                           (viz-state-ndfa-upci a-vs)]
-                          [(not (equal? last-consumed-word (append (viz-state-ndfa-pci a-vs)
-                                                                   (viz-state-ndfa-upci a-vs))))
-                           (rest unconsumed-word)]
-                          [else '()])]
-                    [pci (cond [(empty? (viz-state-ndfa-upci a-vs))
-                           (viz-state-ndfa-pci a-vs)]
-                          [(not (equal? last-consumed-word (append (viz-state-ndfa-pci a-vs)
-                                                                   (viz-state-ndfa-upci a-vs))))
-                           (append last-consumed-word (take unconsumed-word 1))]
-                          [else (append (viz-state-ndfa-pci a-vs)
-                                        (viz-state-ndfa-upci a-vs))])])))
+                              (viz-state-ndfa-upci a-vs)]
+                             [(not (equal? last-consumed-word (append (viz-state-ndfa-pci a-vs)
+                                                                      (viz-state-ndfa-upci a-vs))))
+                              (rest unconsumed-word)]
+                             [else '()])]
+                 [pci (cond [(empty? (viz-state-ndfa-pci a-vs))
+                             (viz-state-ndfa-pci a-vs)]
+                            [(not (equal? last-consumed-word (append (viz-state-ndfa-pci a-vs)
+                                                                     (viz-state-ndfa-upci a-vs))))
+                             (append last-consumed-word (take unconsumed-word 1))]
+                            [else (append (viz-state-ndfa-pci a-vs)
+                                          (viz-state-ndfa-upci a-vs))])])))
 
 (define (left-key-pressed a-vs)
-  (let* [;;boolean
-         ;;Purpose: Determines if the pci can be can be fully consumed
-         (completed-config? (ormap (λ (config) (empty? (last (last config))))
-                                   (get-configs (viz-state-ndfa-pci a-vs)
-                                                (sm-rules (viz-state-ndfa-M a-vs))
-                                                (sm-start (viz-state-ndfa-M a-vs)))))
-         ;;(listof symbols)
-         ;;Purpose: The last word that could be fully consumed by the ndfa
-         (last-consumed-word (last-fully-consumed (append (viz-state-ndfa-pci a-vs)
-                                                          (viz-state-ndfa-upci a-vs))
-                                                  (viz-state-ndfa-M a-vs)))
-         ;;(listof symbols)
-         ;;Purpose: The portion of the word that cannont be consumed
-         (unconsumed-word (remove-similarities last-consumed-word
-                                               (append (viz-state-ndfa-pci a-vs)
-                                                       (viz-state-ndfa-upci a-vs))
-                                               '()))]
-    (struct-copy viz-state-ndfa a-vs
-                 [upci (if (empty? (viz-state-ndfa-pci a-vs))
-                           (viz-state-ndfa-upci a-vs)
-                           (cons (last (viz-state-ndfa-pci a-vs))
-                                 (viz-state-ndfa-upci a-vs)))]
-                 [pci (if (empty? (viz-state-ndfa-pci a-vs))
-                          (viz-state-ndfa-pci a-vs)
-                          (take (viz-state-ndfa-pci a-vs)
-                                (sub1 (length (viz-state-ndfa-pci a-vs)))))])))
+  (struct-copy viz-state-ndfa a-vs
+               [upci (if (empty? (viz-state-ndfa-upci a-vs))
+                         (viz-state-ndfa-upci a-vs)
+                         (cons (last (viz-state-ndfa-pci a-vs))
+                               (viz-state-ndfa-upci a-vs)))]
+               [pci (if (empty? (viz-state-ndfa-pci a-vs))
+                        (viz-state-ndfa-pci a-vs)
+                        (take (viz-state-ndfa-pci a-vs)
+                              (sub1 (length (viz-state-ndfa-pci a-vs)))))]))
 
 
 (define (up-key-pressed a-vs)
   (struct-copy viz-state-ndfa a-vs
-               [upci (if (empty? (viz-state-ndfa-pci a-vs))
+               [upci (if (empty? (viz-state-ndfa-upci a-vs))
                          (viz-state-ndfa-upci a-vs)
                          (append (viz-state-ndfa-pci a-vs)
                                  (viz-state-ndfa-upci a-vs)))]
