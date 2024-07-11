@@ -1385,7 +1385,7 @@
    )
 
 
-(cfg-viz testcfg '(a a b b c c c d d d) 'level-left)
+(cfg-viz testcfg '(a a b b c c c d d d) 'right)
 #;(time (cfg-derive-queue-and-hash testcfg '(a a a a a a a a b b b b b b b b b c c c c c c c c d d d d d d d d) 'left))
 #;(cfg-viz testcfg '(a a a a a a a a a a a a a a a a b b b b b b b b b b b b b b b b c c c c c c c c c c c c c c c c d d d d d d d d d d d d d d d d)
            'left (list 'S (lambda (x) #f)) (list 'A (lambda (x) #f)))

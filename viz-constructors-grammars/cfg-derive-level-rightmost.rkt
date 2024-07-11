@@ -227,5 +227,5 @@
   (remove-duplicates (map (lambda (x) (yield-state (first x))) yield-deriv)))
 
 ;(time (cfg-derive-level-rightmost testcfg '(a a b b c c c d d d)))
-(time (cfg-derive-level-rightmost testcfg '(a a a a a a a a a a a a a a a a b b b b b b b b b b b b b b b b c c c c c c c c c c c c c c c c d d d d d d d d d d d d d d d d)))
+;(time (cfg-derive-level-rightmost testcfg '(a a a a a a a a a a a a a a a a b b b b b b b b b b b b b b b b c c c c c c c c c c c c c c c c d d d d d d d d d d d d d d d d)))
 ;(convert-yield-deriv-to-word-deriv (cfg-derive-level-rightmost testcfg '(a a b b c c c d d d)))

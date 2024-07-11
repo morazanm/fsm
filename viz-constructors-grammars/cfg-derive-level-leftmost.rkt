@@ -276,4 +276,4 @@
     (remove-duplicates (map (lambda (x) (get-current-state (first x))) yield-deriv)))
 
 ;(cfg-derive-level-leftmost testcfg '(a a b b c c c d d d))
-(time (cfg-derive-level-leftmost testcfg '(a a a a a a a a a a a a a a a a b b b b b b b b b b b b b b b b c c c c c c c c c c c c c c c c d d d d d d d d d d d d d d d d)))
+;(time (cfg-derive-level-leftmost testcfg '(a a a a a a a a a a a a a a a a b b b b b b b b b b b b b b b b c c c c c c c c c c c c c c c c d d d d d d d d d d d d d d d d)))
