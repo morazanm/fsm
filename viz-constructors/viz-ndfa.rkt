@@ -1175,7 +1175,7 @@
         (zoom a-vs (/ (min (second img-resize) (third img-resize)) (viz-state-scale-factor a-vs))))
       (struct-copy viz-state a-vs [scale-factor DEFAULT-ZOOM])))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; X (listof X) -> boolean
 ;;Purpose: Determine if X is in the given list
@@ -1577,7 +1577,8 @@
     (above/align
      'left
      (cond
-       [(and (empty? (imsg-state-pci imsg-st)) (empty? (imsg-state-upci imsg-st)))
+       [(and (empty? (imsg-state-pci imsg-st))
+             (empty? (imsg-state-upci imsg-st)))
         (above/align
          'left
          (beside (text "aaaa" 20 'white)
@@ -1720,9 +1721,7 @@
          [brkn-invs
           (append-map
            (λ (inv) (if (not (member? (first (first inv)) held-invs)) (list (first (first inv))) '()))
-           get-invs)]
-
-         [informative-messages (void)])
+           get-invs)])
     (edge-graph (node-graph (create-graph 'ndfagraph #:atb (hash 'rankdir "LR"))
                             (building-viz-state-M a-vs)
                             (building-viz-state-dead a-vs)
@@ -1992,7 +1991,7 @@
                  DEFAULT-ZOOM-CAP
                  DEFAULT-ZOOM-FLOOR
                  (informative-messages create-draw-informative-message
-                                       (imsg-state new-M a-word '())
+                                       (imsg-state (if add-dead new-M M) a-word '())
                                        RULE-YIELD-DIMS)
                  (instructions-graphic E-SCENE-TOOLS
                                        (bounding-limits 0
@@ -2047,6 +2046,7 @@
              'S
              '(A B C)
              `((S ,EMP A) (S ,EMP B) (S ,EMP C) (A b A) (A c A) (B a B) (B c B) (C a C) (C b C))))
+
 (ndfa-viz AT-LEAST-ONE-MISSING '(a b c))
 
 (define p2-ndfa
