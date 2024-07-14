@@ -34,7 +34,7 @@
 (define NODE-SIZE 50)
 
 (define DEFAULT-ZOOM 1)
-(define DEFAULT-ZOOM-FLOOR .5)
+(define DEFAULT-ZOOM-FLOOR .75)
 (define DEFAULT-ZOOM-CAP 2)
 (define ZOOM-INCREASE 1.1)
 (define ZOOM-DECREASE (/ 1 ZOOM-INCREASE))
@@ -2232,6 +2232,7 @@
 (ndfa-viz AT-LEAST-ONE-MISSING '(a b c))
 (ndfa-viz p2-ndfa '(a b a b))
 (ndfa-viz AB*B*UAB* '(a b a b))
+
 ;;Invariant examples
 (ndfa-viz AT-LEAST-ONE-MISSING '(a b c)
           (list 'S S-INV)
