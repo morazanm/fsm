@@ -909,12 +909,15 @@
                         #:special-graphs? 'cfg
                         #:rank-node-lst rank-node-lvls))))))
 
-(define numb>numa
-  (make-cfg
-   '(S A)
-   '(a b)
-   `((S ,ARROW b) (S ,ARROW AbA) (A ,ARROW AaAbA) (A ,ARROW AbAaA) (A ,ARROW a) (A ,ARROW aA))
-   'S))
+(define numb>numa (make-cfg '(S A)
+                            '(a b)
+                            `((S ,ARROW b)
+                              (S ,ARROW AbA)
+                              (A ,ARROW AaAbA)
+                              (A ,ARROW AbAaA)
+                              (A ,ARROW ,EMP)
+                              (A ,ARROW bA))
+                            'S))
 
 (define buggy-numb>numa
   (make-cfg
