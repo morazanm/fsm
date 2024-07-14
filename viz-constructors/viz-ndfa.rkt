@@ -1630,14 +1630,14 @@
             'brown)
       (text "aaaaa" 20 'white)
       (cond
+        [(not completed-config?)
+         (text "All computations do not consume the entire word and the machine rejects." 20 'red)]
         [(and (empty? (imsg-state-upci imsg-st))
               (equal? (sm-apply (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'accept))
          (text "There is a computation that accepts." 20 'forestgreen)]
         [(and (empty? (imsg-state-upci imsg-st))
               (equal? (sm-apply (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'reject))
          (text "All computations end in a non-final state and the machine rejects." 20 'red)]
-        [(not completed-config?)
-         (text "All computations do not consume the entire word and the machine rejects." 20 'red)]
         [(text "Word Status: accept " 20 'white)]))
      (text "Word Status: accept " 20 'white))))
 
