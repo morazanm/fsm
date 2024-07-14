@@ -955,7 +955,7 @@
    `((S ,ARROW ,EMP) (S ,ARROW AB) (A ,ARROW aSb) (B ,ARROW cBd) (A ,ARROW ,EMP) (B ,ARROW ,EMP))
    'S))
 
-(cfg-viz testcfg '(a a b b c c c d d d) 'level-right)
+#;(cfg-viz testcfg '(a a b b c c c d d d) 'left)
 #;
 (time (cfg-derive-queue-and-hash testcfg
                                  '(a a a a a a a a b b b b b b b b b c c c c c c c c d d d d d d d d)
