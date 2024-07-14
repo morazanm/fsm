@@ -34,7 +34,7 @@
 (define NODE-SIZE 50)
 
 (define DEFAULT-ZOOM 1)
-(define DEFAULT-ZOOM-FLOOR 1)
+(define DEFAULT-ZOOM-FLOOR .5)
 (define DEFAULT-ZOOM-CAP 2)
 (define ZOOM-INCREASE 1.1)
 (define ZOOM-DECREASE (/ 1 ZOOM-INCREASE))
@@ -754,7 +754,7 @@
                       [(eq? factor ZOOM-INCREASE) (> (viz-state-scale-factor-cap a-vs) new-scale)]
                       [(eq? factor ZOOM-DECREASE)
                        (< (viz-state-scale-factor-floor a-vs) new-scale)])])
-    (if scalable?
+     (if scalable?
         (let* ([scaled-image (scale new-scale (viz-state-curr-image a-vs))]
                [viewport-lims (calculate-viewport-limits scaled-image new-scale)]
                [scale-increase (/ new-scale (viz-state-scale-factor a-vs))]
@@ -1184,10 +1184,11 @@
 
 ;;symbol (listof rules) -> (listof rules)
 ;;Purpose: Returns all empty transitions from the start state
-(define (get-empties-from-start start lor)
+(define (get-empties-from-start start lor visited)
   (append-map (λ (rule)
-                (if (and (equal? (first rule) start) (equal? (second rule) EMP))
-                    (append (list rule) (get-empties-from-start (third rule) lor))
+                (if (and (equal? (first rule) start) (equal? (second rule) EMP)
+                         (not (member? rule visited)))
+                    (append (list rule) (get-empties-from-start (third rule) lor (cons rule visited)))
                     '()))
               lor))
 
@@ -1216,10 +1217,11 @@
 
 ;;symbol (listof rules) -> (listof states)
 ;;Purpose: Returns all states that have an empty transitions from the given start state
-(define (get-empty-states-from-start start lor)
+(define (get-empty-states-from-start start lor visited)
   (flatten (map (λ (rule)
-                  (if (and (equal? (first rule) start) (equal? (second rule) EMP))
-                      (cons (third rule) (list (get-empty-states-from-start (third rule) lor)))
+                  (if (and (equal? (first rule) start) (equal? (second rule) EMP)
+                           (not (member? rule visited)))
+                      (cons (third rule) (list (get-empty-states-from-start (third rule) lor (cons rule visited))))
                       '()))
                 lor)))
 
@@ -1228,7 +1230,7 @@
 (define (get-configs a-word lor start)
   (let* (;;(listof states)
          ;;Purpose: A list of states reachable from the start state on an empty transition
-         [empty-states-frm-start (cons start (get-empty-states-from-start start lor))]
+         [empty-states-frm-start (cons start (get-empty-states-from-start start lor '()))]
          ;;(listof configurations)
          ;;Purpose: All configurations from the start state
          [configs (map (λ (state) (append (list state) (list a-word))) empty-states-frm-start)])
@@ -1510,7 +1512,8 @@
                          (list (append (imsg-state-pci imsg-st) (imsg-state-upci imsg-st)))))
                (cons (sm-start (imsg-state-M imsg-st))
                      (get-empty-states-from-start (sm-start (imsg-state-M imsg-st))
-                                                  (sm-rules (imsg-state-M imsg-st)))))]
+                                                  (sm-rules (imsg-state-M imsg-st))
+                                                  '())))]
 
          ;;(listof configurations)
          ;;Purpose: Returns all configurations using the CI
@@ -1548,7 +1551,8 @@
          [current-rules
           (if (empty? (imsg-state-pci imsg-st))
               (get-empties-from-start (sm-start (imsg-state-M imsg-st))
-                                      (sm-rules (imsg-state-M imsg-st)))
+                                      (sm-rules (imsg-state-M imsg-st))
+                                      '())
               (append-map (λ (path) (attach-empties path (sm-rules (imsg-state-M imsg-st))))
                           (remove-duplicates
                            (for*/list ([prev prev-config]
@@ -1574,72 +1578,74 @@
                                                (append (imsg-state-pci imsg-st)
                                                        (imsg-state-upci imsg-st))
                                                '())])
-    (above/align
-     'left
-     (cond
-       [(and (empty? (imsg-state-pci imsg-st))
-             (empty? (imsg-state-upci imsg-st)))
-        (above/align
-         'left
-         (beside (text "aaaa" 20 'white)
-                 (text "Word: " 20 'black)
-                 (if (equal? (sm-apply (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'accept)
-                     (text (format "~a" EMP) 20 'gray)
-                     (text (format "~a" EMP) 20 'red)))
-         (beside (text "Consumed: " 20 'black)
-                 (if (equal? (sm-apply (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'accept)
-                     (text (format "~a" EMP) 20 'black)
-                     (text (format "~a" EMP) 20 'white))))]
-       [(and (not (empty? (imsg-state-pci imsg-st))) (not completed-config?))
-        (above/align
-         'left
-         (beside
-          (text "aaaa" 20 'white)
-          (text "Word: " 20 'black)
-          (beside
-           (text (if (empty? last-consumed-word) "" (los2str last-consumed-word)) 20 'gray)
-           (text (los2str (list (first unconsumed-word))) 20 'red)
-           (text (if (empty? (rest unconsumed-word)) "" (los2str (rest unconsumed-word))) 20 'black)))
-         (beside (text "Consumed: " 20 'black)
-                 (text (if (empty? last-consumed-word) "" (los2str last-consumed-word)) 20 'black)))]
-       [(empty? (imsg-state-upci imsg-st))
-        (above/align 'left
-                     (beside (text "aaaa" 20 'white)
-                             (text "Word: " 20 'black)
-                             (text (los2str (imsg-state-pci imsg-st)) 20 'gray))
-                     (beside (text "Consumed: " 20 'black)
-                             (text (los2str (imsg-state-pci imsg-st)) 20 'black)))]
-       [(empty? (imsg-state-pci imsg-st))
-        (above/align 'left
-                     (beside (text "aaaa" 20 'white)
-                             (text "Word: " 20 'black)
-                             (text (los2str (imsg-state-upci imsg-st)) 20 'black))
-                     (text "Consumed: " 20 'black))]
-       [else
-        (above/align 'left
-                     (beside (text "aaaa" 20 'white)
-                             (text "Word: " 20 'black)
-                             (beside (text (los2str (imsg-state-pci imsg-st)) 20 'gray)
-                                     (text (los2str (imsg-state-upci imsg-st)) 20 'black)))
-                     (beside (text "Consumed: " 20 'black)
-                             (text (los2str (imsg-state-pci imsg-st)) 20 'black)))])
-     (beside
-      (text (format "The number of possible computations is ~a. "
-                    (number->string (length destin-states)))
-            20
-            'brown)
-      (text "aaaaa" 20 'white)
+    (overlay/align
+     'left 'middle
+     (above/align
+      'left
       (cond
-        [(not completed-config?)
-         (text "All computations do not consume the entire word and the machine rejects." 20 'red)]
-        [(and (empty? (imsg-state-upci imsg-st))
-              (equal? (sm-apply (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'accept))
-         (text "There is a computation that accepts." 20 'forestgreen)]
-        [(and (empty? (imsg-state-upci imsg-st))
-              (equal? (sm-apply (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'reject))
-         (text "All computations end in a non-final state and the machine rejects." 20 'red)]
-        [(text "Word Status: accept " 20 'white)]))
-     (text "Word Status: accept " 20 'white))))
+        [(and (empty? (imsg-state-pci imsg-st))
+              (empty? (imsg-state-upci imsg-st)))
+         (above/align
+          'left
+          (beside (text "aaaa" 20 'white)
+                  (text "Word: " 20 'black)
+                  (if (equal? (sm-apply (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'accept)
+                      (text (format "~a" EMP) 20 'gray)
+                      (text (format "~a" EMP) 20 'red)))
+          (beside (text "Consumed: " 20 'black)
+                  (if (equal? (sm-apply (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'accept)
+                      (text (format "~a" EMP) 20 'black)
+                      (text (format "~a" EMP) 20 'white))))]
+        [(and (not (empty? (imsg-state-pci imsg-st))) (not completed-config?))
+         (above/align
+          'left
+          (beside
+           (text "aaaa" 20 'white)
+           (text "Word: " 20 'black)
+           (beside
+            (text (if (empty? last-consumed-word) "" (los2str last-consumed-word)) 20 'gray)
+            (text (los2str (list (first unconsumed-word))) 20 'red)
+            (text (if (empty? (rest unconsumed-word)) "" (los2str (rest unconsumed-word))) 20 'black)))
+          (beside (text "Consumed: " 20 'black)
+                  (text (if (empty? last-consumed-word) "" (los2str last-consumed-word)) 20 'black)))]
+        [(empty? (imsg-state-upci imsg-st))
+         (above/align 'left
+                      (beside (text "aaaa" 20 'white)
+                              (text "Word: " 20 'black)
+                              (text (los2str (imsg-state-pci imsg-st)) 20 'gray))
+                      (beside (text "Consumed: " 20 'black)
+                              (text (los2str (imsg-state-pci imsg-st)) 20 'black)))]
+        [(empty? (imsg-state-pci imsg-st))
+         (above/align 'left
+                      (beside (text "aaaa" 20 'white)
+                              (text "Word: " 20 'black)
+                              (text (los2str (imsg-state-upci imsg-st)) 20 'black))
+                      (text "Consumed: " 20 'black))]
+        [else
+         (above/align 'left
+                      (beside (text "aaaa" 20 'white)
+                              (text "Word: " 20 'black)
+                              (beside (text (los2str (imsg-state-pci imsg-st)) 20 'gray)
+                                      (text (los2str (imsg-state-upci imsg-st)) 20 'black)))
+                      (beside (text "Consumed: " 20 'black)
+                              (text (los2str (imsg-state-pci imsg-st)) 20 'black)))])
+      (beside
+       (text (format "The current number of possible computations is ~a. "
+                     (number->string (length destin-states)))
+             20
+             'brown)
+       (text "aaaaa" 20 'white)
+       (cond
+         [(not completed-config?)
+          (text "All computations do not consume the entire word and the machine rejects." 20 'red)]
+         [(and (empty? (imsg-state-upci imsg-st))
+               (equal? (sm-apply (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'accept))
+          (text "There is a computation that accepts." 20 'forestgreen)]
+         [(and (empty? (imsg-state-upci imsg-st))
+               (equal? (sm-apply (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'reject))
+          (text "All computations end in a non-final state and the machine rejects." 20 'red)]
+         [(text "Word Status: accept " 20 'white)])))
+     (rectangle 1250 50 'solid 'white))))
 
 ;;viz-state -> scene
 ;;Purpose: Draws the given viz-state onto the scene
@@ -1655,7 +1661,8 @@
                                 (cons (sm-start (building-viz-state-M a-vs))
                                       (get-empty-states-from-start
                                        (sm-start (building-viz-state-M a-vs))
-                                       (sm-rules (building-viz-state-M a-vs)))))]
+                                       (sm-rules (building-viz-state-M a-vs))
+                                       '())))]
 
          ;;(listof configurations)
          ;;Purpose: Returns all configurations using the CI
@@ -1693,7 +1700,8 @@
          [current-rules
           (if (empty? (building-viz-state-pci a-vs))
               (get-empties-from-start (sm-start (building-viz-state-M a-vs))
-                                      (sm-rules (building-viz-state-M a-vs)))
+                                      (sm-rules (building-viz-state-M a-vs))
+                                      '())
               (append-map (λ (path) (attach-empties path (sm-rules (building-viz-state-M a-vs))))
                           (remove-duplicates
                            (for*/list ([prev prev-config]
@@ -1756,7 +1764,7 @@
           (ormap (λ (config) (empty? (last (last config))))
                  (get-configs
                   (imsg-state-pci (informative-messages-component-state
-                                   (viz-state-informative-messages a-vs))) ;(viz-state-ndfa-pci a-vs)
+                                   (viz-state-informative-messages a-vs))) 
                   (sm-rules (imsg-state-M (informative-messages-component-state
                                            (viz-state-informative-messages a-vs))))
                   (sm-start (imsg-state-M (informative-messages-component-state
@@ -2038,91 +2046,105 @@
                                                 (list A-KEY-DIMS identity a-key-pressed)
                                                 (list D-KEY-DIMS identity d-key-pressed)))))))
 
-(define aa*Uab* (make-ndfa '(K B D) '(a b) 'K '(B D) `((K a D) (K a B) (B a B) (D b D))))
+(define aa*Uab* (make-ndfa '(K B D)
+                           '(a b)
+                           'K
+                           '(B D)
+                           `((K a D) (K a B)
+                             (B a B)
+                             (D b D))))
 
 (define AT-LEAST-ONE-MISSING
   (make-ndfa '(S A B C)
              '(a b c)
              'S
              '(A B C)
-             `((S ,EMP A) (S ,EMP B) (S ,EMP C) (A b A) (A c A) (B a B) (B c B) (C a C) (C b C))))
-
-(ndfa-viz AT-LEAST-ONE-MISSING '(a b c))
+             `((S ,EMP A) (S ,EMP B) (S ,EMP C)
+               (A b A) (A c A)
+               (B a B) (B c B)
+               (C a C) (C b C))))
 
 (define p2-ndfa
   (make-ndfa '(S A B C D E)
              '(a b)
              'S
              '(C E)
-             `((S ,EMP A) (S ,EMP D) (A a B) (B b A) (A ,EMP C) (C b C) (D a E) (E b E))))
+             `((S ,EMP A) (S ,EMP D)
+               (A a B) (A ,EMP C)
+               (B b A)
+               (C b C)
+               (D a E)
+               (E b E))))
 
 (define AB*B*UAB*
   (make-ndfa '(S K B C H)
              '(a b)
              'S
              '(H)
-             `((S ,EMP K) (S a C) (K a B) (K ,EMP H) (B b K) (C ,EMP H) (H b H))))
+             `((S ,EMP K) (S a C)
+               (K a B) (K ,EMP H)
+               (B b K)
+               (C ,EMP H)
+               (H b H))))
 
 (define AB*B*UAB*2
   (make-ndfa '(S K B C H)
              '(a b)
              'S
              '(H)
-             `((S ,EMP K) (S a C) (K a B) (K ,EMP H) (B b K) (C ,EMP H) (H b H) (H a S))))
+             `((S ,EMP K) (S a C)
+               (K a B) (K ,EMP H)
+               (B b K)
+               (C ,EMP H)
+               (H b H) (H a S))))
 
-(define aa-ab (make-ndfa `(S A B F) '(a b) 'S '(A B F) `((S a A) (S a B) (S ,EMP F) (A a A) (B b B))))
+(define aa-ab (make-ndfa `(S A B F)
+                         '(a b)
+                         'S
+                         '(A B F)
+                         `((S a A) (S a B) (S ,EMP F)
+                           (A a A)
+                           (B b B))))
 
 (define ends-with-two-bs
-  (make-ndfa `(S A B) '(a b) 'S '(B) `((S a S) (S b S) (S b A) (A b B) (B b B))))
+  (make-ndfa `(S A B)
+             '(a b)
+             'S
+             '(B)
+             `((S a S) (S b S) (S b A)
+               (A b B)
+               (B b B))))
 (define ENDS-WITH-TWO-Bs
-  (make-ndfa `(S A B) '(a b) 'S '(B) `((S a S) (S b A) (A b B) (A a S) (B b B) (B a S))))
+  (make-ndfa `(S A B)
+             '(a b)
+             'S
+             '(B)
+             `((S a S) (S b A)
+               (A b B) (A a S)
+               (B b B) (B a S))))
 
 (define missing-exactly-one
   (make-ndfa '(S A B C D E F G H I J K L M N O P)
              '(a b c)
              'S
              '(E G I K M O)
-             `((S ,EMP A) (S ,EMP B)
-                          (S ,EMP C)
-                          (A b D)
-                          (A c F)
-                          (B a H)
-                          (B b J)
-                          (C a L)
-                          (C c N)
-                          (D b D)
-                          (D c E)
-                          (F c F)
-                          (F b G)
-                          (H a H)
-                          (H b I)
-                          (J b J)
-                          (J a K)
-                          (L a L)
-                          (L c M)
-                          (N c N)
-                          (N a O)
-                          (E c E)
-                          (E b E)
-                          (E a P)
-                          (G b G)
-                          (G c G)
-                          (G a P)
-                          (I b I)
-                          (I a I)
-                          (I c P)
-                          (K a K)
-                          (K b K)
-                          (K c P)
-                          (M a M)
-                          (M c M)
-                          (M b P)
-                          (O a O)
-                          (O c O)
-                          (O b P)
-                          (P a P)
-                          (P b P)
-                          (P c P))))
+             `((S ,EMP A) (S ,EMP B) (S ,EMP C)
+               (A b D) (A c F)
+               (B a H) (B b J)
+               (C a L) (C c N)
+               (D b D) (D c E)
+               (F c F) (F b G)
+               (H a H) (H b I)
+               (J b J) (J a K)
+               (L a L) (L c M)
+               (N c N) (N a O)
+               (E c E) (E b E) (E a P)
+               (G b G) (G c G) (G a P)
+               (I b I) (I a I) (I c P)
+               (K a K) (K b K) (K c P)
+               (M a M) (M c M) (M b P)
+               (O a O) (O c O) (O b P)
+               (P a P) (P b P) (P c P))))
 
 ;; L = (aba)* U (ab)*
 (define ND
@@ -2130,7 +2152,12 @@
              '(a b)
              'S
              '(S)
-             `((S a A) (S a B) (A b C) (B b D) (C a E) (D ,EMP S) (E ,EMP S))))
+             `((S a A) (S a B)
+               (A b C)
+               (B b D)
+               (C a E)
+               (D ,EMP S)
+               (E ,EMP S))))
 
 (define ND2
   (make-ndfa
@@ -2138,19 +2165,49 @@
    '(a b)
    'S
    '(D E)
-   `((S ,EMP A) (S ,EMP B) (A ,EMP D) (D b D) (D ,EMP F) (B a E) (B b B) (E a E) (E b E) (E ,EMP C))))
+   `((S ,EMP A) (S ,EMP B)
+     (A ,EMP D)
+     (D b D) (D ,EMP F)
+     (B a E) (B b B)
+     (E a E) (E b E) (E ,EMP C))))
 
 (define ND3
   (make-ndfa '(S A B C D)
              '(a b)
              'S
              '(B)
-             `((S ,EMP A) (S ,EMP B) (A a A) (A ,EMP C) (C ,EMP D) (D ,EMP B) (B b B))))
+             `((S ,EMP A) (S ,EMP B)
+               (A a A) (A ,EMP C)
+               (C ,EMP D)
+               (D ,EMP B)
+               (B b B))))
 
-(define ND4 (make-ndfa '(S ds) '(a b) 'S '(ds) `((S a ds) (ds a ds))))
+(define ND4 (make-ndfa '(S ds)
+                       '(a b)
+                       'S
+                       '(ds)
+                       `((S a ds)
+                         (ds a ds))))
+
+(define ND5
+  (make-ndfa '(S A B C D)
+             '(a b)
+             'S
+             '(B)
+             `((S ,EMP A) 
+               (A ,EMP B)
+               (B ,EMP C)
+               (C ,EMP D)
+               (D ,EMP S))))
 
 (define EVEN-NUM-Bs
-  (make-dfa '(S F) (list 'a 'b) 'S (list 'S) `((S a S) (S b F) (F a F) (F b S)) 'no-dead))
+  (make-dfa '(S F)
+            '(a b)
+            'S
+            '(S)
+            `((S a S) (S b F)
+              (F a F) (F b S))
+            'no-dead))
 
 #;(let ([res (graph->bitmap cgraph (current-directory) FNAME)])
     (begin
@@ -2164,18 +2221,50 @@
 (ndfa-viz missing-exactly-one '(a a a a b b b b a a b b a a))
 (ndfa-viz AT-LEAST-ONE-MISSING '(c c c c b b b b c b))
 (ndfa-viz aa-ab '(a a a a))
+(ndfa-viz ends-with-two-bs '(a b a b a b b b))
+(ndfa-viz ends-with-two-bs '(a b a b a b b a a a b b))
 ;;reject examples
 (ndfa-viz AB*B*UAB* '(a b b a))
 (ndfa-viz p2-ndfa '(a b b a))
 (ndfa-viz missing-exactly-one '(a a a a b b b b a a b b a a c))
 (ndfa-viz AT-LEAST-ONE-MISSING '(c c c c b b b b c b a))
 (ndfa-viz aa-ab '(a b b b a)
-;;buggy examples
-(ndfa-viz ends-with-two-bs '(a b a b a b b b))
-(ndfa-viz ends-with-two-bs '(a b a b a b b a a a b b))
+(ndfa-viz AT-LEAST-ONE-MISSING '(a b c))
 (ndfa-viz p2-ndfa '(a b a b))
 (ndfa-viz AB*B*UAB* '(a b a b))
+;;Invariant examples
+(ndfa-viz AT-LEAST-ONE-MISSING '(a b c)
+          (list 'S S-INV)
+          (list 'A ALON-A-INV)
+          (list 'B ALON-B-INV)
+          (list 'C ALON-C-INV)) 
+(ndfa-viz EVEN-NUM-Bs '(a b b b a b b) 
+          (list 'S EVEN-NUM-Bs-S-INV)
+          (list 'F EVEN-NUM-Bs-F-INV))
+(ndfa-viz AB*B*UAB* '(a b b b b)
+          (list 'S S-INV)
+          (list 'K K-INV)
+          (list 'B B-INV)
+          (list 'C C-INV)
+          (list 'H H-INV))
+
 |#
+;;word -> boolean
+;;Purpose: Determines if the given word is missing an a
+(define (ALON-A-INV a-word)
+  (empty? (filter (λ (w) (equal? w 'a))
+                  a-word)))
+
+;;word -> boolean
+;;Purpose: Determines if the given word is missing an b
+(define (ALON-B-INV a-word)
+  (empty? (filter (λ (w) (equal? w 'b))
+                  a-word)))
+;;word -> boolean
+;;Purpose: Determines if the given word is missing an c
+(define (ALON-C-INV a-word)
+  (empty? (filter (λ (w) (equal? w 'c))
+                  a-word)))
 
 ;;word -> boolean
 ;;Purpose: Determines if the given word is empty
@@ -2211,3 +2300,4 @@
 ;;Purpose: Determine if the given word has an odd number of Bs
 (define (EVEN-NUM-Bs-F-INV a-word)
   (odd? (length (filter (λ (w) (equal? w 'b)) a-word))))
+
