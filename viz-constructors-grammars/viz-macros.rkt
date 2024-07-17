@@ -17,11 +17,26 @@
     #:literals (list)
     [(_ '((key viz-func imsg-func)...))
      #'(lambda (a-vs key-pressed)
-         (cond [(key=? key key-pressed) (viz-func (imsg-func a-vs))]...
+         (cond [(key=? key key-pressed)
+                (viz-func (imsg-func a-vs))]
+               ...
                [else a-vs]))]
-    [(_ (list (~or* '(key viz-func imsg-func) (list key viz-func imsg-func))...))
+    [(_ (list (~or* '(key viz-func imsg-func)
+                    (list key viz-func imsg-func))...))
      #'(lambda (a-vs key-pressed)
-         (cond [(key=? key key-pressed) (viz-func (imsg-func a-vs))]...
+         (cond [(key=? key key-pressed)
+                (viz-func (imsg-func a-vs))]
+               ...
+               [else a-vs]))]))
+
+(define-syntax (create-viz-process-key0 stx)
+  (syntax-parse stx
+    #:literals (list)
+    [(_ [key viz-func imsg-func]...)
+     #'(lambda (a-vs key-pressed)
+         (cond [(key=? key key-pressed)
+                (viz-func (imsg-func a-vs))]
+               ...
                [else a-vs]))]))
 
 (define-syntax (create-viz-process-tick stx)

@@ -5,7 +5,8 @@
 
 (provide parallel-graphs->bitmap-thunks
          parallel-special-graphs->bitmap-thunks
-         parallel-cfg-graphs->bitmap-thunks)
+         parallel-cfg-graphs->bitmap-thunks
+         find-number-of-cores)
 
 (define SAVE-DIR (find-tmp-dir))
 
