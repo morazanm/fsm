@@ -105,14 +105,14 @@
                        [else (append yield (get-yield-helper node))]))
                    '()
                    (tree-subtrees subtree)))]
-         (filter (lambda (node) (lower? node))
-                 (foldl (lambda (node yield)
-                          (cond
-                            [(equal? (undo-renaming (tree-value node)) EMP) yield]
-                            [(empty? (tree-subtrees node)) (append yield (list (tree-value node)))]
-                            [else (append yield (get-yield-helper node))]))
-                        '()
-                        (tree-subtrees subtree)))))
+    (filter (lambda (node) (lower? node))
+            (foldl (lambda (node yield)
+                     (cond
+                       [(equal? (undo-renaming (tree-value node)) EMP) yield]
+                       [(empty? (tree-subtrees node)) (append yield (list (tree-value node)))]
+                       [else (append yield (get-yield-helper node))]))
+                   '()
+                   (tree-subtrees subtree)))))
 
 ;; tree invariant-function -> (U boolean Symbol)
 ;; Evaluates the invariant function given to us by the user on the current yield
@@ -138,9 +138,9 @@
                               (check-all-invariant-nodes (rest nonterminals)
                                                          invar-func
                                                          (cons (first nonterminals) broken-nodes)))))]
-                   (check-all-invariant-nodes (find-all-invariant-nodes nonterminals-to-check)
-                                              invariant-func
-                                              '())))
+              (check-all-invariant-nodes (find-all-invariant-nodes nonterminals-to-check)
+                                         invariant-func
+                                         '())))
           (define (check-all-invariants-helper nonterminals-to-check invariants broken-nodes)
             (if (empty? invariants)
                 (if (empty? broken-nodes) '() broken-nodes)
@@ -153,7 +153,7 @@
                       (check-all-invariants-helper nonterminals-to-check
                                                    (rest invariants)
                                                    broken-nodes)))))]
-         (check-all-invariants-helper nonterminals-to-check invariants '())))
+    (check-all-invariants-helper nonterminals-to-check invariants '())))
 
 ;; levels -> (listof levels)
 ;; Purpose: creates a list containing the levels used for each graph generated
@@ -162,7 +162,7 @@
           ;; Purpose: creates a list containing the levels used for each graph generated in reverse
           (define (create-list-of-levels-helper lvls)
             (if (empty? lvls) '() (cons lvls (create-list-of-levels-helper (rest lvls)))))]
-         (create-list-of-levels-helper (reverse levels))))
+    (create-list-of-levels-helper (reverse levels))))
 
 ;; nonterminal?
 ;; symbol -> Boolean
@@ -438,21 +438,21 @@
                                                used-names
                                                find-nt-func)))
             (local
-             [;; Just sticks a number after the symbol itself, uses a hash table to keep track of what numbers
-              ;; were already used for a specific symbol
-              (define renamed-states (map (lambda (st) (rename-symb used-names st)) (first rules)))
-              ;; Creates a new level by taking the current rule that is meant to be applied at this point of
-              ;; the derivation
-              ;; and creating an edge between each of the elements within and the current nonterminal being
-              ;;processed
-              (define (new-level start)
-                (map (lambda (st) (list start st)) renamed-states))]
-             (cons (new-level current-nt)
-                   (generate-levels-list-helper renamed-states
-                                                (rest rules)
-                                                (cons current-state prev-states)
-                                                used-names
-                                                find-nt-func)))))))
+              [;; Just sticks a number after the symbol itself, uses a hash table to keep track of what numbers
+               ;; were already used for a specific symbol
+               (define renamed-states (map (lambda (st) (rename-symb used-names st)) (first rules)))
+               ;; Creates a new level by taking the current rule that is meant to be applied at this point of
+               ;; the derivation
+               ;; and creating an edge between each of the elements within and the current nonterminal being
+               ;;processed
+               (define (new-level start)
+                 (map (lambda (st) (list start st)) renamed-states))]
+              (cons (new-level current-nt)
+                    (generate-levels-list-helper renamed-states
+                                                 (rest rules)
+                                                 (cons current-state prev-states)
+                                                 used-names
+                                                 find-nt-func)))))))
 
 ;; list any -> list
 ;; Purpose: Returns the list up until and excluding the value given
@@ -502,23 +502,23 @@
                                              find-nt-func
                                              derv-type)
             (local
-             [(define renamed-states (map (lambda (st) (rename-symb used-names st)) (first rules)))
-              (define (new-level start)
-                (map (lambda (st) (list start st)) renamed-states))]
-             (cons (new-level current-nt)
-                   (generate-levels-bfs-list-helper
-                    (if (eq? derv-type 'level-left)
-                        (rest (member current-nt unprocessed-yield))
-                        (take-until unprocessed-yield current-nt))
-                    (if (eq? derv-type 'level-left)
-                        (append (if (list? processed-yield) processed-yield (list processed-yield))
-                                (if (list? renamed-states) renamed-states (list renamed-states)))
-                        (append (if (list? renamed-states) renamed-states (list renamed-states))
-                                (if (list? processed-yield) processed-yield (list processed-yield))))
-                    (rest rules)
-                    used-names
-                    find-nt-func
-                    derv-type)))))))
+              [(define renamed-states (map (lambda (st) (rename-symb used-names st)) (first rules)))
+               (define (new-level start)
+                 (map (lambda (st) (list start st)) renamed-states))]
+              (cons (new-level current-nt)
+                    (generate-levels-bfs-list-helper
+                     (if (eq? derv-type 'level-left)
+                         (rest (member current-nt unprocessed-yield))
+                         (take-until unprocessed-yield current-nt))
+                     (if (eq? derv-type 'level-left)
+                         (append (if (list? processed-yield) processed-yield (list processed-yield))
+                                 (if (list? renamed-states) renamed-states (list renamed-states)))
+                         (append (if (list? renamed-states) renamed-states (list renamed-states))
+                                 (if (list? processed-yield) processed-yield (list processed-yield))))
+                     (rest rules)
+                     used-names
+                     find-nt-func
+                     derv-type)))))))
 
 (define (treelist-insert-list tl i lst)
   (if (empty? lst) tl (treelist-insert-list (treelist-insert tl i (first lst)) (add1 i) (rest lst))))
@@ -912,123 +912,126 @@
 
 
 (define (test-cfg-viz cfg word num-trials)
-      (let [(derivation (cfg-derive-leftmost cfg word 'left))]
-        (if (string? derivation)
-            derivation
-            (let* [(der-with-rules (w-der-with-rules derivation))
-                   (rules (cons "" (create-rules-leftmost (move-rule-applications-in-list der-with-rules))))
-                   (w-der (list-of-states der-with-rules))
-                   (renamed (generate-levels-list (first (first (first der-with-rules)))
-                                                  (list-of-rules (move-rule-applications-in-list der-with-rules))
-                                                  '()
-                                                  (make-hash)
-                                                  'left))
-                   (yield-trees (map create-yield-tree (map reverse (create-list-of-levels renamed))))
-                   (dgraph (dgrph renamed '() '() '() (rest rules) (list (first rules)) (reverse yield-trees) (list (tree (grammar-start cfg) '()))))
-                   (lod (reverse (create-dgrphs dgraph '())))]
+  (let [(derivation (cfg-derive-leftmost cfg word))]
+    (if (string? derivation)
+        derivation
+        (let* [(der-with-rules (w-der-with-rules derivation))
+               (rules (cons "" (create-rules-leftmost (move-rule-applications-in-list der-with-rules))))
+               (w-der (list-of-states der-with-rules))
+               (renamed (generate-levels-list (first (first (first der-with-rules)))
+                                              (list-of-rules (move-rule-applications-in-list der-with-rules))
+                                              '()
+                                              (make-hash)
+                                              'left))
+               (yield-trees (map create-yield-tree (map reverse (create-list-of-levels renamed))))
+               (dgraph (dgrph renamed '() '() '() (rest rules) (list (first rules)) (reverse yield-trees) (list (tree (grammar-start cfg) '()))))
+               (lod (reverse (create-dgrphs dgraph '())))]
               
-              (define normal-graph-times (make-vector num-trials '()))
-              (define parallel-graph-times (make-vector num-trials '()))
+          (define normal-graph-times (make-vector num-trials '()))
+          (define parallel-graph-times (make-vector num-trials '()))
               
-              (define num-cores (find-number-of-cores))
-              (define cpu-1-core (make-vector num-trials '()))
-              (define cpu/8 (make-vector num-trials '()))
-              (displayln (format "cpu/8: ~s" (inexact->exact (floor (/ num-cores 8)))))
-              (define cpu/4 (make-vector num-trials '()))
-              (displayln (format "cpu/4: ~s" (inexact->exact (floor (/ num-cores 4)))))
-              (define cpu3/8 (make-vector num-trials '()))
-              (displayln (format "cpu3/8: ~s" (* (inexact->exact (floor (/ num-cores 8))) 3)))
-              (define cpu/2 (make-vector num-trials '()))
-              (displayln (format "cpu/2: ~s" (inexact->exact (floor (/ num-cores 2)))))
-              (define cpu5/8 (make-vector num-trials '()))
-              (displayln (format "cpu5/8: ~s" (* (inexact->exact (floor (/ num-cores 8))) 5)))
-              (define cpu3/4 (make-vector num-trials '()))
-              (displayln (format "cpu3/4: ~s" (* (inexact->exact (floor (/ num-cores 4))) 3)))
-              (define cpu7/8 (make-vector num-trials '()))
-              (displayln (format "cpu7/8: ~s" (* (inexact->exact (floor (/ num-cores 8))) 7)))
-              (define cpufull (make-vector num-trials '()))
-              (displayln (format "cpufull: ~s" num-cores))
+          (define num-cores (find-number-of-cores))
+          (define cpu-1-core (make-vector num-trials '()))
+          (define cpu/8 (make-vector num-trials '()))
+          (displayln (format "cpu/8: ~s" (inexact->exact (floor (/ num-cores 8)))))
+          (define cpu/4 (make-vector num-trials '()))
+          (displayln (format "cpu/4: ~s" (inexact->exact (floor (/ num-cores 4)))))
+          (define cpu3/8 (make-vector num-trials '()))
+          (displayln (format "cpu3/8: ~s" (* (inexact->exact (floor (/ num-cores 8))) 3)))
+          (define cpu/2 (make-vector num-trials '()))
+          (displayln (format "cpu/2: ~s" (inexact->exact (floor (/ num-cores 2)))))
+          (define cpu5/8 (make-vector num-trials '()))
+          (displayln (format "cpu5/8: ~s" (* (inexact->exact (floor (/ num-cores 8))) 5)))
+          (define cpu3/4 (make-vector num-trials '()))
+          (displayln (format "cpu3/4: ~s" (* (inexact->exact (floor (/ num-cores 4))) 3)))
+          (define cpu7/8 (make-vector num-trials '()))
+          (displayln (format "cpu7/8: ~s" (* (inexact->exact (floor (/ num-cores 8))) 7)))
+          (define cpufull (make-vector num-trials '()))
+          (displayln (format "cpufull: ~s" num-cores))
               
-              (define gstructs (map (lambda (dgrph) (create-graph-structs dgrph '() 'left (grammar-start cfg))) lod))
+          (define gstructs (map (lambda (dgrph node-lvl) (create-graph-structs dgrph '() 'left (grammar-start cfg) node-lvl)) lod (cons (list (list (grammar-start cfg)))
+                                                                                                                      (accumulate-previous-ranks
+                                                                                                                       (map (lambda (x) (map (lambda (y) (second y)) x)) renamed)
+                                                                                                                       (list (list (grammar-start cfg)))))))
               
-              (for ([i (range num-trials)])
-                (vector-set! cpu-1-core i (third (match/values (time-apply (lambda (lod) (parallel-graphs->bitmap-thunks gstructs #:cpu-cores 1)) (list lod))
-                                                          [(cpu-1-core-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpu-1-core-results cpu-time real-time gc-time)]
-                                                          )))
-                (vector-set! cpu/8 i (third (match/values (time-apply (lambda (lod) (parallel-graphs->bitmap-thunks gstructs #:cpu-cores (inexact->exact (floor (/ num-cores 8))))) (list lod))
-                                                          [(cpu-1-core-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpu-1-core-results cpu-time real-time gc-time)]
-                                                          )))
-                (vector-set! cpu/4 i (third (match/values (time-apply (lambda (lod) (parallel-graphs->bitmap-thunks gstructs #:cpu-cores (inexact->exact (floor (/ num-cores 4))))) (list lod))
-                                                          [(cpu/4-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpu/4-results cpu-time real-time gc-time)]
-                                                          )))
-                (vector-set! cpu3/8 i (third (match/values (time-apply (lambda (lod) (parallel-graphs->bitmap-thunks gstructs #:cpu-cores (* (inexact->exact (floor (/ num-cores 8))) 3))) (list lod))
-                                                          [(cpu/3-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpu/3-results cpu-time real-time gc-time)]
-                                                          )))
-                (vector-set! cpu/2 i (third (match/values (time-apply (lambda (lod) (parallel-graphs->bitmap-thunks gstructs #:cpu-cores (inexact->exact (floor (/ num-cores 2))))) (list lod))
-                                                          [(cpu/2-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpu/2-results cpu-time real-time gc-time)]
-                                                          )))
-                (vector-set! cpu5/8 i (third (match/values (time-apply (lambda (lod) (parallel-graphs->bitmap-thunks gstructs #:cpu-cores (* (inexact->exact (floor (/ num-cores 8))) 5))) (list lod))
-                                                          [(cpu/2-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpu/2-results cpu-time real-time gc-time)]
-                                                          )))
-                (vector-set! cpu3/4 i (third (match/values (time-apply (lambda (lod) (parallel-graphs->bitmap-thunks gstructs #:cpu-cores (* (inexact->exact (floor (/ num-cores 4))) 3))) (list lod))
-                                                          [(cpu3/4-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpu3/4-results cpu-time real-time gc-time)]
-                                                          )))
-                (vector-set! cpu7/8 i (third (match/values (time-apply (lambda (lod) (parallel-graphs->bitmap-thunks gstructs #:cpu-cores (* (inexact->exact (floor (/ num-cores 8))) 7))) (list lod))
-                                                          [(cpu3/4-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpu3/4-results cpu-time real-time gc-time)]
-                                                          )))
-                (vector-set! cpufull i (third (match/values (time-apply (lambda (lod) (parallel-graphs->bitmap-thunks gstructs #:cpu-cores num-cores)) (list lod))
-                                                          [(cpufull-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpufull-results cpu-time real-time gc-time)]
-                                                          )))
+          (for ([i (range num-trials)])
+            (vector-set! cpu-1-core i (third (match/values (time-apply (lambda (lod) (parallel-graphs->bitmap-thunks gstructs #:cpu-cores 1)) (list lod))
+                                                           [(cpu-1-core-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpu-1-core-results cpu-time real-time gc-time)]
+                                                           )))
+            (vector-set! cpu/8 i (third (match/values (time-apply (lambda (lod) (parallel-graphs->bitmap-thunks gstructs #:cpu-cores (inexact->exact (floor (/ num-cores 8))))) (list lod))
+                                                      [(cpu-1-core-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpu-1-core-results cpu-time real-time gc-time)]
+                                                      )))
+            (vector-set! cpu/4 i (third (match/values (time-apply (lambda (lod) (parallel-graphs->bitmap-thunks gstructs #:cpu-cores (inexact->exact (floor (/ num-cores 4))))) (list lod))
+                                                      [(cpu/4-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpu/4-results cpu-time real-time gc-time)]
+                                                      )))
+            (vector-set! cpu3/8 i (third (match/values (time-apply (lambda (lod) (parallel-graphs->bitmap-thunks gstructs #:cpu-cores (* (inexact->exact (floor (/ num-cores 8))) 3))) (list lod))
+                                                       [(cpu/3-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpu/3-results cpu-time real-time gc-time)]
+                                                       )))
+            (vector-set! cpu/2 i (third (match/values (time-apply (lambda (lod) (parallel-graphs->bitmap-thunks gstructs #:cpu-cores (inexact->exact (floor (/ num-cores 2))))) (list lod))
+                                                      [(cpu/2-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpu/2-results cpu-time real-time gc-time)]
+                                                      )))
+            (vector-set! cpu5/8 i (third (match/values (time-apply (lambda (lod) (parallel-graphs->bitmap-thunks gstructs #:cpu-cores (* (inexact->exact (floor (/ num-cores 8))) 5))) (list lod))
+                                                       [(cpu/2-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpu/2-results cpu-time real-time gc-time)]
+                                                       )))
+            (vector-set! cpu3/4 i (third (match/values (time-apply (lambda (lod) (parallel-graphs->bitmap-thunks gstructs #:cpu-cores (* (inexact->exact (floor (/ num-cores 4))) 3))) (list lod))
+                                                       [(cpu3/4-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpu3/4-results cpu-time real-time gc-time)]
+                                                       )))
+            (vector-set! cpu7/8 i (third (match/values (time-apply (lambda (lod) (parallel-graphs->bitmap-thunks gstructs #:cpu-cores (* (inexact->exact (floor (/ num-cores 8))) 7))) (list lod))
+                                                       [(cpu3/4-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpu3/4-results cpu-time real-time gc-time)]
+                                                       )))
+            (vector-set! cpufull i (third (match/values (time-apply (lambda (lod) (parallel-graphs->bitmap-thunks gstructs #:cpu-cores num-cores)) (list lod))
+                                                        [(cpufull-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpufull-results cpu-time real-time gc-time)]
+                                                        )))
 
-                #;(vector-set! normal-graph-times i (third (match/values (time-apply (lambda (lod) (parallel-graphs->bitmap-thunks gstructs #:cpu-cores 1)) (list lod))
-                                                          [(ng-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list ng-results cpu-time real-time gc-time)]
-                                                          )))
-                #;(vector-set! parallel-graph-times i (third (match/values (time-apply (lambda (lod) (parallel-graphs->bitmap-thunks gstructs)) (list lod))
-                                                          [(cpufull-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpufull-results cpu-time real-time gc-time)]
-                                                          )))
-                )
-              #|
+            #;(vector-set! normal-graph-times i (third (match/values (time-apply (lambda (lod) (parallel-graphs->bitmap-thunks gstructs #:cpu-cores 1)) (list lod))
+                                                                     [(ng-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list ng-results cpu-time real-time gc-time)]
+                                                                     )))
+            #;(vector-set! parallel-graph-times i (third (match/values (time-apply (lambda (lod) (parallel-graphs->bitmap-thunks gstructs)) (list lod))
+                                                                       [(cpufull-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpufull-results cpu-time real-time gc-time)]
+                                                                       )))
+            )
+          #|
               (displayln "normal graph times")
               (displayln (vector->list normal-graph-times))
               (displayln "parallel graph times")
               (displayln (vector->list parallel-graph-times))
               |#
               
-              (displayln "cpu-1-core")
-              (displayln (vector->list cpu-1-core))
-              (displayln "cpu/8")
-              (displayln (vector->list cpu/8))
-              (displayln "cpu/4")
-              (displayln (vector->list cpu/4))
-              (displayln "cpu3/8")
-              (displayln (vector->list cpu3/8))
-              (displayln "cpu/2")
-              (displayln (vector->list cpu/2))
-              (displayln "cpu5/8")
-              (displayln (vector->list cpu5/8))
-              (displayln "cpu3/4")
-              (displayln (vector->list cpu3/4))
-              (displayln "cpu7/8")
-              (displayln (vector->list cpu7/8))
-              (displayln "cpufull")
-              (displayln (vector->list cpufull))
+          (displayln "cpu-1-core")
+          (displayln (vector->list cpu-1-core))
+          (displayln "cpu/8")
+          (displayln (vector->list cpu/8))
+          (displayln "cpu/4")
+          (displayln (vector->list cpu/4))
+          (displayln "cpu3/8")
+          (displayln (vector->list cpu3/8))
+          (displayln "cpu/2")
+          (displayln (vector->list cpu/2))
+          (displayln "cpu5/8")
+          (displayln (vector->list cpu5/8))
+          (displayln "cpu3/4")
+          (displayln (vector->list cpu3/4))
+          (displayln "cpu7/8")
+          (displayln (vector->list cpu7/8))
+          (displayln "cpufull")
+          (displayln (vector->list cpufull))
               
-              )
-            )
+          )
         )
+    )
   )
 
 (define testing-cfg (make-cfg '(S A B)
-                           '(a b c d)
-                           `((S ,ARROW ,EMP)
-                             (S ,ARROW AB)
-                             (A ,ARROW aAb)
-                             (B ,ARROW cBd)
-                             (A ,ARROW ,EMP)
-                             (B ,ARROW ,EMP)
-                             )
-                           'S
-                           )
+                              '(a b c d)
+                              `((S ,ARROW ,EMP)
+                                (S ,ARROW AB)
+                                (A ,ARROW aAb)
+                                (B ,ARROW cBd)
+                                (A ,ARROW ,EMP)
+                                (B ,ARROW ,EMP)
+                                )
+                              'S
+                              )
   )
 (test-cfg-viz testing-cfg '(a a a a a a a a a a a a b b b b b b b b b b b b c c c c c c c c c c c c d d d d d d d d d d d d) 200)
 
