@@ -34,7 +34,7 @@
 (define NODE-SIZE 50)
 
 (define DEFAULT-ZOOM 1)
-(define DEFAULT-ZOOM-FLOOR .75)
+(define DEFAULT-ZOOM-FLOOR .6)
 (define DEFAULT-ZOOM-CAP 2)
 (define ZOOM-INCREASE 1.1)
 (define ZOOM-DECREASE (/ 1 ZOOM-INCREASE))
@@ -2044,7 +2044,8 @@
                                                 (list E-KEY-DIMS reset-zoom identity)
                                                 (list F-KEY-DIMS max-zoom-in identity)
                                                 (list A-KEY-DIMS identity a-key-pressed)
-                                                (list D-KEY-DIMS identity d-key-pressed)))))))
+                                                (list D-KEY-DIMS identity d-key-pressed)))
+                 'ndfa-viz))))
 
 (define aa*Uab* (make-ndfa '(K B D)
                            '(a b)
@@ -2280,7 +2281,7 @@
 ;;word -> boolean
 ;;Purpose: Determines if the last letter in the given word is an a
 (define (B-INV a-word)
-  (and (not (empty? a-word)) (equal? (last a-word) 'a)))
+  (and (not (empty? a-word)) (not (equal? (last a-word) 'a))))
 
 ;;word -> boolean
 ;;Purpose: Determines if the given word has one a
