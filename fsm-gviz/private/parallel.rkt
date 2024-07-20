@@ -4,6 +4,7 @@
          )
 
 (provide parallel-graphs->bitmap-thunks
+         unsafe-parallel-graphs->bitmap-thunks
          parallel-special-graphs->bitmap-thunks
          parallel-cfg-graphs->bitmap-thunks
          find-number-of-cores)
@@ -192,35 +193,38 @@
 
 ;; Procedure Listof Any -> Void
 ;; Runs a given function in parallel based on information gathered from the system
-(define (parallel-shell func args cpu-cores) (let [
-                                                   (cpu-cores-avail (make-semaphore cpu-cores))
-                                                   (system-os (system-type 'os))
-                                                   ]
-                                               (for/list ([a args])
-                                                 (semaphore-wait cpu-cores-avail)
-                                                 (define shell-process (func a))
-                                                 (thread (lambda () (let [
-                                                                          (result (sync (if (eq? system-os 'windows)
-                                                                                            (read-line-evt (first shell-process) 'any)
-                                                                                            (read-line-evt (first shell-process))
-                                                                                            )
-                                                                                        )
-                                                                                  )
-                                                                          ]
-                                                                      (if (= 0 (string->number result))
-                                                                          ;; This is thrown away, just doing this for the error check
-                                                                          result
-                                                                          (error (format "Graphviz produced an error while compiling the graphs: ~a" result))
-                                                                          )
-                                                                      )
-                                                           (close-input-port (first shell-process))
-                                                           (close-output-port (second shell-process))
-                                                           (close-input-port (fourth shell-process))
-                                                           (semaphore-post cpu-cores-avail)
-                                                           )
-                                                         )
+(define (parallel-shell func args cpu-cores)
+  (let [
+        (cpu-cores-avail (make-semaphore cpu-cores))
+        (system-os (system-type 'os))
+        ]
+    (define (make-thread a)
+      (semaphore-wait cpu-cores-avail)
+      (define shell-process (func a))
+      (thread (lambda () (let [
+                               (result (sync (if (eq? system-os 'windows)
+                                                 (read-line-evt (first shell-process) 'any)
+                                                 (read-line-evt (first shell-process))
                                                  )
-                                               )
+                                             )
+                                       )
+                               ]
+                           (if (= 0 (string->number result))
+                               ;; This is thrown away, just doing this for the error check
+                               result
+                               (error (format "Graphviz produced an error while compiling the graphs: ~a" result))
+                               )
+                           )
+                (close-input-port (first shell-process))
+                (close-output-port (second shell-process))
+                (close-input-port (fourth shell-process))
+                (semaphore-post cpu-cores-avail)
+                )
+              )
+      )
+    (define graphviz-threads (map make-thread args))
+    (for-each thread-wait graphviz-threads)
+    )
   )
 
 ;; Listof String -> Void
@@ -277,6 +281,76 @@
     (parallel-dots->pngs list-dot-files cpu-cores)
     (pngs->bitmap-thunks 0 (length graphs))
     )
+  )
+
+;; Listof graph -> Listof Thunk
+;; Creates all the graph images needed in parallel, and returns a list of thunks that will load them from disk
+(define (unsafe-parallel-graphs->bitmap-thunks graphs #:cpu-cores [cpu-cores (quotient (find-number-of-cores) 2)])
+  ;; Listof String -> Void
+  ;; Creates all the graphviz images
+  (define (unsafe-parallel-dots->pngs dot-files cpu-cores)
+    (define dot-executable-path (find-dot))
+    (define (unsafe-parallel-shell func args cpu-cores)
+      (define (make-thread a)
+        (define shell-process (func a))
+        (thread (lambda () (let [
+                                 (result (sync (if (eq? (system-type 'os) 'windows)
+                                                   (read-line-evt (first shell-process) 'any)
+                                                   (read-line-evt (first shell-process))
+                                                   )
+                                               )
+                                         )
+                                 ]
+                             (if (= 0 (string->number result))
+                                 ;; This is thrown away, just doing this for the error check
+                                 result
+                                 (error (format "Graphviz produced an error while compiling the graphs: ~a" result))
+                                 )
+                             )
+                  (close-input-port (first shell-process))
+                  (close-output-port (second shell-process))
+                  (close-input-port (fourth shell-process))
+                  )
+                )
+        )
+      (define graphviz-threads (map make-thread args))
+      (for-each thread-wait graphviz-threads)
+      )
+  
+    ;; On Mac/Linux we can bypass having to look at the systems PATH by instead
+    ;; using the absolute path to the executable. For unknown reasons this does not
+    ;; work on Windows so we will still use the PATH to call the dot executable
+    ;; Additionally, we need to use a different shell command for windows systems in order to get a status code back 
+    (define (make-process file-path) (process (if (equal? (system-type) 'windows)
+                                                  (format "~a -T~s ~s -o ~s & echo %errorlevel%"
+                                                          "dot"
+                                                          'png
+                                                          (string-append file-path ".dot")
+                                                          (string-append file-path ".png")
+                                                          )
+                                                  (format "~a -T~s ~s -o ~s; echo $?"
+                                                          (path->string dot-executable-path)
+                                                          'png
+                                                          (string-append file-path ".dot")
+                                                          (string-append file-path ".png")
+                                                          )
+                                                  )
+                                              )
+      )
+    (if (path? dot-executable-path)
+        (unsafe-parallel-shell make-process dot-files cpu-cores)
+        (error "Error caused when creating png file. This was probably due to the dot environment variable not existing on the path")
+        )
+                                          
+    )
+    (define list-dot-files (for/list ([i (range 0 (length graphs))])
+                             (format "~adot~s" SAVE-DIR i)
+                             )
+      )
+    (graphs->dots graphs)
+    (unsafe-parallel-dots->pngs list-dot-files cpu-cores)
+    (pngs->bitmap-thunks 0 (length graphs))
+    
   )
 
 

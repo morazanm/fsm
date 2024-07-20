@@ -912,7 +912,7 @@
 
 
 (define (test-cfg-viz cfg word num-trials)
-      (let [(derivation (cfg-derive-leftmost cfg word 'left))]
+      (let [(derivation (cfg-derive-leftmost cfg word))]
         (if (string? derivation)
             derivation
             (let* [(der-with-rules (w-der-with-rules derivation))
@@ -949,7 +949,10 @@
               (define cpufull (make-vector num-trials '()))
               (displayln (format "cpufull: ~s" num-cores))
               
-              (define gstructs (map (lambda (dgrph) (create-graph-structs dgrph '() 'left (grammar-start cfg))) lod))
+              (define gstructs (map (lambda (dgrph node-lvl) (create-graph-structs dgrph '() 'left (grammar-start cfg) node-lvl)) lod (cons (list (list 'S))
+                                         (accumulate-previous-ranks
+                                          (map (lambda (x) (map (lambda (y) (second y)) x)) renamed)
+                                          (list (list 'S))))))
               
               (for ([i (range num-trials)])
                 (vector-set! cpu-1-core i (third (match/values (time-apply (lambda (lod) (parallel-graphs->bitmap-thunks gstructs #:cpu-cores 1)) (list lod))
@@ -1018,6 +1021,60 @@
         )
   )
 
+(define (unsafe-test-cfg-viz  word num-trials)
+  (define cfg (make-cfg '(S A B)
+                           '(a b c d)
+                           `((S ,ARROW ,EMP)
+                             (S ,ARROW AB)
+                             (A ,ARROW aAb)
+                             (B ,ARROW cBd)
+                             (A ,ARROW ,EMP)
+                             (B ,ARROW ,EMP)
+                             )
+                           'S
+                           )
+  )
+  (define (make-word num-pairs)
+    (append (make-list num-pairs 'a) (make-list num-pairs 'b) (make-list num-pairs 'c) (make-list num-pairs 'd))
+    )
+      (let [(derivation (cfg-derive-leftmost cfg word))]
+        (if (string? derivation)
+            derivation
+            (let* [(der-with-rules (w-der-with-rules derivation))
+                   (rules (cons "" (create-rules-leftmost (move-rule-applications-in-list der-with-rules))))
+                   (w-der (list-of-states der-with-rules))
+                   (renamed (generate-levels-list (first (first (first der-with-rules)))
+                                                  (list-of-rules (move-rule-applications-in-list der-with-rules))
+                                                  '()
+                                                  (make-hash)
+                                                  'left))
+                   (yield-trees (map create-yield-tree (map reverse (create-list-of-levels renamed))))
+                   (dgraph (dgrph renamed '() '() '() (rest rules) (list (first rules)) (reverse yield-trees) (list (tree (grammar-start cfg) '()))))
+                   (lod (reverse (create-dgrphs dgraph '())))]
+
+              
+              (define gstructs (map (lambda (dgrph node-lvl) (create-graph-structs dgrph '() 'left (grammar-start cfg) node-lvl)) lod (cons (list (list 'S))
+                                         (accumulate-previous-ranks
+                                          (map (lambda (x) (map (lambda (y) (second y)) x)) renamed)
+                                          (list (list 'S))))))
+              (define unsafe-results (make-vector num-trials '()))
+              (for ([i (range num-trials)])
+                (vector-set! unsafe-results i (third (match/values (time-apply (lambda (lod) (unsafe-parallel-graphs->bitmap-thunks gstructs #:cpu-cores 1)) (list lod))
+                                                          [(ng-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list ng-results cpu-time real-time gc-time)]
+                                                          )))
+                )
+              #|
+              (displayln "normal graph times")
+              (displayln (vector->list normal-graph-times))
+              (displayln "parallel graph times")
+              (displayln (vector->list parallel-graph-times))
+              |#
+              
+              )
+            )
+        )
+  )
+
 (define testing-cfg (make-cfg '(S A B)
                            '(a b c d)
                            `((S ,ARROW ,EMP)
@@ -1030,7 +1087,7 @@
                            'S
                            )
   )
-(test-cfg-viz testing-cfg '(a a a a a a a a a a a a b b b b b b b b b b b b c c c c c c c c c c c c d d d d d d d d d d d d) 200)
+(test-cfg-viz testing-cfg '(a a a a a a a a a a a a b b b b b b b b b b b b c c c c c c c c c c c c d d d d d d d d d d d d) 1)
 
 (define numb>numa (make-cfg '(S A)
                             '(a b)
