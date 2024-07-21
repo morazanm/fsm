@@ -1948,23 +1948,30 @@
        ;;Purpose: If ds is already used as a state in M, then generates a random seed symbol,
        ;;         otherwise uses DEAD
        (define dead (if (member? DEAD (sm-states M)) (gen-state (sm-states M)) DEAD))
-       ;;(listof rules)
-       ;;Purpose: Makes rules for every combination of states in M and symbols in sigma of M
+       ;;(listof symbols)
+       ;;Purpose: Makes partial rules for every combination of states in M and symbols in sigma of M
        (define new-rules
-         (for*/list ([states (sm-states M)] [sigma (sm-sigma M)])
-           (list states sigma states)))
+         (for*/list ([states (sm-states M)]
+                     [sigma (sm-sigma M)])
+           (list states sigma)))
        ;;(listof rules)
        ;;Purpose: Makes rules for every dead state transition to itself using the symbols in sigma of M
        (define dead-rules
-         (for*/list ([ds (list dead)] [sigma (sm-sigma M)])
+         (for*/list ([ds (list dead)]
+                     [sigma (sm-sigma M)])
            (list ds sigma ds)))
        ;;(listof rules)
        ;;Purpose: Gets rules that are not currently in the original rules of M
-       (define get-rules-not-in-M (filter (λ (rule) (not (member? rule (sm-rules M)))) new-rules))
+       (define get-rules-not-in-M  (local [(define partial-rules (map (λ (rule)
+                                                                        (append (list (first rule)) (list (second rule))))
+                                                                      (sm-rules M)))]
+                                     (filter (λ (rule)
+                                               (not (member? rule partial-rules)))
+                                             new-rules)))
        ;;(listof rules)
        ;;Purpose: Maps the dead state as a destination for all rules that are not currently in the original rules of M
        (define rules-to-dead
-         (map (λ (rule) (append (list (first rule)) (list (second rule)) (list dead)))
+         (map (λ (rule) (append rule (list dead)))
               get-rules-not-in-M))]
       (make-ndfa (append (sm-states M) (list dead))
                  (sm-sigma M)
