@@ -1,4 +1,6 @@
-#lang fsm
+#lang racket
+
+(require "../../../../main.rkt")
 
 (provide pda2spda)
 

@@ -1,7 +1,7 @@
 
 (module mttm racket
   (require "constants.rkt" "misc.rkt" "word.rkt")
-  (provide make-mttm
+  (provide make-unchecked-mttm
            mttm-get-states
            mttm-get-sigma
            mttm-get-start
@@ -23,7 +23,7 @@
 
   ;; (listof state) (listof alpha) state state (listof mttm-rule)
   ;; Assume: Rules are for k tapes
-  (define (make-mttm sts alpha start finals rules k . accept)
+  (define (make-unchecked-mttm sts alpha start finals rules k . accept)
     (define sigma (if (member LM alpha) alpha (cons LM alpha)))
     (define accept-state (if (null? accept) (void) (car accept)))
     (define (show-transitions w t1pos)
@@ -41,7 +41,7 @@
                   (cond [(void? accept-state) currpath] ;; if not a lang recog halt
                         [(eq? currstate accept-state)   ;; if lang recog add 'accept
                          (cons 'accept currpath)]
-                        [else (run (rest paths))]) ;; explore the rest of the computation tree
+                        [else (run (rest paths))]) ;; else add 'reject
                   (let* ((pos-tapes (rest (first currpath)))
                          ;(ddd (display (format "pos-tapes: ~s\n" pos-tapes)))
                          (posns (map first pos-tapes))

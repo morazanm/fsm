@@ -109,6 +109,8 @@
   
   ; superstate --> state
   (define (superstate->state ss)
-    (string->symbol (lostr->string (los->lostr ss))))
+    (displayln (format "ss: ~s\n" ss))
+    (generate-symbol 'X '(X))
+    #;(string->symbol (lostr->string (los->lostr ss))))
   
   )

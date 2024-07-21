@@ -2,13 +2,13 @@
 ; Copyright (C) 2020 by Marco T. Morazan
 ; Written by: Marco T. Morazan
 
-(module tm racket
+(module tm racket 
   (require "constants.rkt" "misc.rkt" "word.rkt")
   (provide tm-rename-states
            make-unchecked-tm
            combine-tms
            tm-union tm-concat tm-kleenestar tm-complement tm-intersection
-           ctm-apply tmconfig-state tmconfig-index tmconfig-tape
+           ctm-apply tmconfig-state tmconfig-index tmconfig-tape tmconfig?
            tm-apply tm-showtransitions tm-test
            )
   
@@ -37,11 +37,20 @@
   (define (unparse-rules-without-LM-move-R-default-rule rls)
     (remove-LM-rule-unparsed-tm-rules (unparse-tmrules)))
   
-  ; tm (listof states) --> tm
+  ; (listof states) tm --> tm
   (define (tm-rename-states sts m)
+
+    (define (generate-rename-table disallowed sts)
+      (if (empty? sts)
+          '()
+          (let ((new-st (gen-state disallowed)))
+            (cons (list (first sts) new-st)
+                  (generate-rename-table (cons new-st disallowed) (rest sts))))))
+    
     (let* (
-           (rename-table (map (lambda (s) (list s (generate-symbol s sts)))
-                              (tm-getstates m)))
+           (rename-table (generate-rename-table (remove-duplicates (append (tm-getstates m)
+                                                                           sts))
+                                                (tm-getstates m)))
            (new-states (map (lambda (s) (cadr (assoc s rename-table)))
                             (tm-getstates m)))
            (new-start (cadr (assoc (tm-getstart m) rename-table)))
@@ -75,7 +84,9 @@
   (define (tm-union m1 m2)
     (cond [(and (eq? (tm-whatami? m1) 'tm-language-recognizer)
                 (eq? (tm-whatami? m2) 'tm-language-recognizer))
-           (let* ((rm2 (tm-rename-states (tm-getstates m2) m2))
+           (let* ((rm2 (tm-rename-states (append (tm-getstates m1)
+                                                 (tm-getstates m2))
+                                         m2))
                   (m1-rules (remove-LM-rule-unparsed-tm-rules (tm-getrules m1)))
                   (rm2-rules (remove-LM-rule-unparsed-tm-rules (tm-getrules rm2)))
                   (new-sigma (remove-duplicates (append (tm-getalphabet m1) (tm-getalphabet rm2))))
@@ -120,7 +131,9 @@
   ; ASSUMPTION: ***** The given tms are language recognizers *****
   ; *** BUG: m1 only reaches Y by seeing a blank the concat machine never reaches m2's start state ***
   (define (tm-concat m1 m2)
-    (let* ((rm2 (tm-rename-states (tm-getstates m2) m2))
+    (let* ((rm2 (tm-rename-states (append (tm-getstates m1)
+                                          (tm-getstates m2))
+                                  m2))
            (m1-reject (tm-getreject m1))
            (m1-rules (remove-LM-rule-unparsed-tm-rules (tm-getrules m1)))
            (rm2-rules (remove-LM-rule-unparsed-tm-rules (tm-getrules rm2)))
@@ -272,7 +285,11 @@
               [else (let* ((path (car tovisit))
                            (config (car path))
                            (st (tmconfig-state config))
-                           (read (list-ref (tmconfig-tape config) (tmconfig-index config)))
+                           (read (let [(tape (tmconfig-tape config))
+                                       (headpos (tmconfig-index config))]
+                                   (if (<= 0 headpos (sub1 (length tape)))
+                                       (list-ref tape headpos)
+                                       (error (format "The head position, ~s, is not valid for the given tape: ~s. The interval for valid head positions is [0..~s]" headpos tape (sub1 (length tape)))))))
                            (rls (filter (lambda (r) (and (eq? st (tmrule-froms r)) (eq? read (tmrule-read r)))) delta))
                            (newconfigs (filter (lambda (c) (not (member c visited))) (gen-newtm-configs config rls))))
                       (consume (cons (caar tovisit) visited)
@@ -311,24 +328,24 @@
               [(eq? (car L) 'get-finals) H]
               [(eq? (car L) 'get-accept) (if (null? accept) null (car accept))]
               [else (error (format "Unknown request to tm: ~s" (car L)))])))
-      (if (null? accept)
-          (mk-tm K
-                 (remove-duplicates (cons LM SIGMA))
-                 (remove-duplicates
-                  (parse-tm-rules (append (map (lambda (s) (list (list s LM) (list s RIGHT)))
-                                               (remove* H K))
-                                          delta)))
-                 s
-                 H)
-          (mk-tm K
-                 (remove-duplicates (cons LM SIGMA))
-                 (remove-duplicates
-                  (parse-tm-rules (append (map (lambda (s) (list (list s LM) (list s RIGHT)))
-                                               (remove* H K))
-                                          delta)))
-                 s
-                 H
-                 (car accept))))
+    (if (null? accept)
+        (mk-tm K
+               (remove-duplicates (cons LM SIGMA))
+               (remove-duplicates
+                (parse-tm-rules (append (map (lambda (s) (list (list s LM) (list s RIGHT)))
+                                             (remove* H K))
+                                        delta)))
+               s
+               H)
+        (mk-tm K
+               (remove-duplicates (cons LM SIGMA))
+               (remove-duplicates
+                (parse-tm-rules (append (map (lambda (s) (list (list s LM) (list s RIGHT)))
+                                             (remove* H K))
+                                        delta)))
+               s
+               H
+               (car accept))))
   
   (define (tm-getalphabet m) (m '() 0 'get-alphabet)) 
   
@@ -347,8 +364,9 @@
   (define (tm-whatami? m) (m 'whatami 0 'whatami))
   
   (define (tm-apply m w pos) (m w pos))
-  
-  (define (ctm-apply m w pos) (m w pos))
+
+  (define (ctm-apply m w pos trace) (m w pos trace))
+  ;(define (ctm-apply m w pos) (m w pos))
   
   (define (tm-showtransitions m w pos) (m w pos 'transitions))
   
@@ -386,21 +404,25 @@
     
     ; symbol --> tm
     (define (make-writer a)
-      (make-unchecked-tm '(s h) 
+      (make-unchecked-tm '(S H) 
                          sigma 
                          (map (lambda (symb)
-                                (list (list 's symb) (list 'h a)))
+                                (list (list 'S symb) (list 'H a)))
                               (cons BLANK sigma))
-                         's
-                         '(h)))
+                         'S
+                         '(H)))
     
     (define WRITERS (map (lambda (s)
                            (list s (make-writer s)))
                          (cons BLANK sigma)))
-    
+
+    ;; tape natnum . Boolean --> result
+    ;; Boolean: #t --> trace, #f --> tmconfig
     (lambda (tape i . l)      
       
       (define label? number?)
+
+      (define trace (if (null? l) #f (car l)))
       
       ; ctm --> (listof (list number ctm))
       (define (label-pairs m)
@@ -427,34 +449,55 @@
               [(eq? (caar env) var) (cadar env)]
               [else (apply-env (cdr env) var)]))
       
-      ; ctm env --> tmconfig
+      ; ctm env tmconfig trace --> trace
       ; ASSUMPTION: env is populated with all labels
-      (define (eval m env laststate)
-        (cond [(null? m) (tmconfig laststate i tape)] 
-              [(symbol? (car m)) 
+      (define (eval m env laststate acc)
+        (cond [(null? m) ;; evaluation done
+               (cons (tmconfig laststate i tape) acc)] 
+              [(symbol? (car m)) ;; var means write it to the tape
                (let ((val (apply-env env (car m))))
-                 (eval (cons (cadr (assoc val WRITERS)) (cdr m)) env laststate))]
-              [(procedure? (car m)) 
-               (let* ((res ((car m) tape i 'lastconfig)))
+                 (eval (cons (cadr (assoc val WRITERS)) (cdr m)) env laststate acc))]
+              [(procedure? (car m)) ;; proc means a tm --> run it
+               (let* ((result ((car m) tape i 'lastconfig))
+                      (res (if (tmconfig? result) 
+                               result
+                               (last result)))) ;; res = last config of tm exected
                  (begin
                    (set! tape (tmconfig-tape res))
                    (set! i (tmconfig-index res))
-                   (eval (cdr m) env (tmconfig-state res))))]
-              [(label? (car m))
-               (eval (cdr m) env laststate)]
-              [(and (list? (car m)) (eq? (caar m) BRANCH)) 
-               (let* ((branches (cdar m))
-                      (the-branch-assoc (assoc (list-ref tape i) branches))
-                      (the-branch (if (null? (cdr the-branch-assoc)) null (cdr the-branch-assoc))))
-                 (eval the-branch env laststate))]
-              [(and (list? (car m)) (eq? (caar m) GOTO)) (eval (apply-env env (cadar m)) env laststate)]
-              [(and (list? (car m)) (list? (caar m)) (eq? (caaar m) VAR))
-               (eval (append (cdar m) (cdr m)) (extend-env (cadaar m) (list-ref tape i) env) laststate)]
+                   (eval (cdr m)
+                         env
+                         (tmconfig-state res)
+                         (if (null? (cdr m))
+                             acc
+                             (cons (tmconfig (tmconfig-state res)
+                                             i
+                                             tape)
+                                   acc)))))]
+              [(label? (car m)) ;; skip labels
+               (eval (cdr m) env laststate acc)]
+              [(and (list? (car m)) (eq? (caar m) BRANCH)) ;; a branch execution
+               (let* ((branches (cdar m)) ;; extract the branches
+                      (the-branch-assoc (assoc (list-ref tape i) branches)) ;; extract the applicable branch assoc
+                      (the-branch (if (null? (cdr the-branch-assoc)) null (cdr the-branch-assoc)))) ;; select the branch ctm
+                 (eval the-branch env laststate (cons (list 'BRANCH (car the-branch-assoc)) acc)))] ;; execute the branch ctm
+              [(and (list? (car m)) (eq? (caar m) GOTO))
+               (eval (apply-env env (cadar m)) env laststate (cons (list 'GOTO (cadar m)) acc))] ;; evaluate ctm jumped to
+              [(and (list? (car m)) (list? (caar m)) (eq? (caaar m) VAR)) ;; var declaration add to env and eval ctm in scope
+               (eval (append (cdar m) (cdr m))
+                     (extend-env (cadaar m) (list-ref tape i) env)
+                     laststate
+                     (cons (list 'VAR (cadaar m) (list-ref tape i)) acc))]
               [else (error (format "~s found unknown element in ctm: ~s" "eval" (car m)))]))
       
-      (if (null? inputctm)
-          (tmconfig HALT i tape)
-          (eval inputctm (label-pairs inputctm) START))))
+      (if trace
+          (if (null? inputctm)
+              (list (tmconfig HALT i tape))
+              (reverse (eval inputctm (label-pairs inputctm) START (list (tmconfig START i tape)))))
+          (if (null? inputctm)
+              (tmconfig HALT i tape)
+              (first (eval inputctm (label-pairs inputctm) START (list (tmconfig START i tape))))))))
+
 
   ; L = a*
   (define Alla (make-unchecked-tm '(S Y N)
@@ -491,4 +534,5 @@
   (define tm-rename-sts-WriteI (tm-rename-states (tm-getstates tm-WriteI) tm-WriteI))
 
   ;k(tm-apply tm-rename-sts-WriteI `(i ,BLANK i ,BLANK i i ,BLANK) 1)
+
   ) ; closes module

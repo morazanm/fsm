@@ -1,5 +1,4 @@
-name: Test
-
+name: Build and Test FSM DSL
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
@@ -7,9 +6,7 @@ on:
   pull_request:
     branches: [ master ]
 
-
 jobs:
-  # This workflow contains a single job called "build"
   test:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
@@ -17,7 +14,7 @@ jobs:
       matrix:
         racket-variant: ["CS"]  
         racket-version: ["stable"]
-    name: Run Library Tests on ${{ matrix.racket-variant }} Racket
+    name: Build and Run Tests on ${{ matrix.racket-variant }} Racket
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       - name: Checkout 
@@ -30,10 +27,9 @@ jobs:
           distribution: 'full' # or: 'minimal'
           variant: ${{ matrix.racket-variant }} # Taken from `racket-variant: ["CS"]`
           version: ${{ matrix.racket-version }} # Taken from `racket-version: ["stable"]`
-   
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      # - uses: actions/checkout@v2
-
+      # Build FSM
+      - name: Build FSM DSL
+        run: xvfb-run raco pkg install
       # Kick off the tests
       - name: Run tests
-        run: xvfb-run raco test fsm-test fsm-gui fsm-core fsm-gviz
+        run: xvfb-run -a raco test -t -j 4 fsm-test fsm-gui fsm-core fsm-gviz

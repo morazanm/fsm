@@ -27,7 +27,7 @@
            convert-singleton pick-regexp extract-union-regexps pick-reps
            )
   
-  (define NULL-REGEXP-STRING "()")
+  (define NULL-REGEXP-STRING "∅")
   (define EMPTY-REGEXP-STRING (symbol->string EMP))
   
   ;   --> regexp
@@ -93,7 +93,9 @@
             (define (simplify-kleenestar x)
               (local [(define simp-x (simplify-regexp (kleenestar-regexp-r1 x)))]
                 (cond [(or (kleenestar-regexp? simp-x)
-                           (empty-regexp? simp-x)) simp-x]
+                           (empty-regexp? simp-x)
+                           (null-regexp? simp-x))
+                       simp-x]
                       [else (kleenestar-regexp simp-x)])))
 
             ;simplify-concat: concat --> regexp
@@ -101,7 +103,10 @@
             (define (simplify-concat x)
               (local [(define simp-lhs (simplify-regexp (concat-regexp-r1 x)))
                       (define simp-rhs (simplify-regexp (concat-regexp-r2 x)))]
-                (cond [(empty-regexp? simp-lhs) simp-rhs]
+                (cond [(or (null-regexp? simp-lhs)
+                           (null-regexp? simp-rhs))
+                       (null-regexp)]
+                      [(empty-regexp? simp-lhs) simp-rhs]
                       [(empty-regexp? simp-rhs) simp-lhs]
                       [else (concat-regexp simp-lhs simp-rhs)])))
             ]
@@ -136,25 +141,25 @@
 
             ;remove-duplicates: (listof regexp) --> (listof regexp)
             ;purpose: to remove the duplicates from a list of regular expressions
-            (define (remove-duplicates a-list)
-              (cond [(empty? a-list) empty]
-                    [(or (member (first a-list) (rest a-list))
-                         (ormap (lambda (x) (and (kleenestar-regexp? x)
-                                                 (member (first a-list) (return-components (kleenestar-regexp-r1 x))))) (rest a-list)))                              
-                     (remove-duplicates (rest a-list))]
-                    [(kleenestar-regexp? (first a-list)) (local [(define comps (return-components (kleenestar-regexp-r1 (first a-list))))]
-                                                           (cons (first a-list)
-                                                                 (remove-duplicates (filter (lambda (x) (member x comps)) (rest a-list)))))]
-                    [else (cons (first a-list) (remove-duplicates (rest a-list)))]))
+            #;(define (remove-duplicates a-list)
+                (cond [(empty? a-list) empty]
+                      [(or (member (first a-list) (rest a-list))
+                           (ormap (lambda (x) (and (kleenestar-regexp? x)
+                                                   (member (first a-list) (return-components (kleenestar-regexp-r1 x))))) (rest a-list)))                              
+                       (remove-duplicates (rest a-list))]
+                      [(kleenestar-regexp? (first a-list)) (local [(define comps (return-components (kleenestar-regexp-r1 (first a-list))))]
+                                                             (cons (first a-list)
+                                                                   (remove-duplicates (filter (lambda (x) (member x comps)) (rest a-list)))))]
+                      [else (cons (first a-list) (remove-duplicates (rest a-list)))]))
           
             ;remove the duplicates from the union
-            (define clean-list (reverse (remove-duplicates (append (return-components simp-lhs)
-                                                                   (return-components simp-rhs)))))
+            (define clean-list (remove-duplicates (append (return-components simp-lhs)
+                                                          (return-components simp-rhs))))
 
             ;re-union: (listof regexp) --> regexp
             ;purpose: to recreate a union-regexp
             (define (re-union a-list)
-              (cond [(empty? a-list) (empty-regexp)]
+              (cond [(empty? a-list) (null-regexp)]
                     [(empty? (rest a-list)) (first a-list)]
                     [else (union-regexp (first a-list) (re-union (rest a-list)))]))
 
@@ -178,7 +183,7 @@
             [(union-regexp? r) 
              (let ((r1 (helper (union-regexp-r1 r)))
                    (r2 (helper (union-regexp-r2 r))))
-               (string-append "(" r1 " U " r2 ")"))]
+               (string-append "(" r1 " ∪ " r2 ")"))]
             [(kleenestar-regexp? r) 
              (let* ((r1 (helper (kleenestar-regexp-r1 r))))
                (cond [(= (string-length r1) 1) (string-append r1 "*")]

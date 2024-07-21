@@ -4,38 +4,38 @@
 
 (module misc racket
   (require "string.rkt" "constants.rkt")
-  (provide remove-duplicates los->symbol generate-symbol symbol-upcase equiv-los? 
+  (provide #;remove-duplicates los->symbol generate-symbol symbol-upcase equiv-los? 
            not-in-l2 symbol->list sublist subst-in-list gen-symbol get-differences
-           symbol->fsmlos)
+           symbol->fsmlos gen-state gen-nt)
   
   ; string --> los
-(define (string->fsmlos str)
+  (define (string->fsmlos str)
   
-  (define (end-of-fsm-suffix i)
-    (cond [(= i (string-length str)) (- i 1)]
-          [(or (string=? (substring str i (+ i 1)) "-")
-               (and (string>=? (substring str i (+ i 1)) "0")
-                    (string<=? (substring str i (+ i 1)) "9")))
-           (end-of-fsm-suffix (+ i 1))]
-          [else (- i 1)]))
+    (define (end-of-fsm-suffix i)
+      (cond [(= i (string-length str)) (- i 1)]
+            [(or (string=? (substring str i (+ i 1)) "-")
+                 (and (string>=? (substring str i (+ i 1)) "0")
+                      (string<=? (substring str i (+ i 1)) "9")))
+             (end-of-fsm-suffix (+ i 1))]
+            [else (- i 1)]))
   
-  (define (helper i)
+    (define (helper i)
     
-    ;(define d (if (< i (string-length str)) (displayln (substring str (+ i 1))) 0))
+      ;(define d (if (< i (string-length str)) (displayln (substring str (+ i 1))) 0))
     
-    (cond [(= i (string-length str)) null]
-          [(= i (sub1 (string-length str))) 
-           (let ((substr (substring str i (+ i 1)))) 
-             (if (string=? substr (symbol->string EMP))
-                 (list EMP)
-                 (list (string->symbol substr))))]
-          [(string=? "-" (substring str (+ i 1) (+ i 2)))
-           (let* ((eos (end-of-fsm-suffix (+ i 1))))
-             (cons (string->symbol (substring str i (+ eos 1)))
-                   (helper (+ eos 1))))]
-          [else (cons (string->symbol (substring str i (+ i 1)))
-                      (helper (+ i 1)))]))
-  (helper 0))
+      (cond [(= i (string-length str)) null]
+            [(= i (sub1 (string-length str))) 
+             (let ((substr (substring str i (+ i 1)))) 
+               (if (string=? substr (symbol->string EMP))
+                   (list EMP)
+                   (list (string->symbol substr))))]
+            [(string=? "-" (substring str (+ i 1) (+ i 2)))
+             (let* ((eos (end-of-fsm-suffix (+ i 1))))
+               (cons (string->symbol (substring str i (+ eos 1)))
+                     (helper (+ eos 1))))]
+            [else (cons (string->symbol (substring str i (+ i 1)))
+                        (helper (+ i 1)))]))
+    (helper 0))
   
   ; symbol -> (listof fsm-symbol)
   (define (symbol->fsmlos s) (string->fsmlos (symbol->string s)))
@@ -63,6 +63,29 @@
     (let ((str (symbol->string s)))
       (build-list (string-length str) 
                   (lambda (i) (string->symbol (substring str i (+ i 1)))))))
+
+  ;; (listof state) --> state
+  ;; Purpose: To generate a state name not in the given list of states
+  (define (gen-state disallowed)
+    (define STS '(A B C D E F G H I J K L M N O P Q R S T U V W X Y Z))
+
+    ;; state natnum --> symbol
+    ;; Purpose: To append a dash and the given natnum to the given state
+    (define (concat-n s n)
+      (string->symbol (string-append (symbol->string s) "-" (number->string n))))
+
+    ;; natnum (listof states) --> state
+    ;; Purpose: Generate an allowed state
+    (define (gen-helper n s-choices)
+      (if (not (empty? s-choices))
+          (first s-choices)
+          (gen-helper (add1 n)
+                      (filter (λ (s) (not (member s disallowed)))
+                              (map (λ (s) (concat-n s n)) STS)))))
+
+    (gen-helper 0 (filter (λ (a) (not (member a disallowed))) STS)))
+
+  (define gen-nt gen-state)
   
   ; symbol (listof symbol) --> symbol
   (define (generate-symbol s los)
