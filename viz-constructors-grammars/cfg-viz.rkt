@@ -1059,17 +1059,19 @@
                                           (list (list 'S))))))
               (define unsafe-results (make-vector num-trials '()))
               (for ([i (range num-trials)])
-                (vector-set! unsafe-results i (third (match/values (time-apply (lambda (lod) (unsafe-parallel-graphs->bitmap-thunks gstructs #:cpu-cores 1)) (list lod))
+                (vector-set! unsafe-results i (third (match/values (time-apply (lambda (lod) (unsafe-parallel-graphs->bitmap-thunks gstructs)) (list lod))
                                                           [(ng-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list ng-results cpu-time real-time gc-time)]
                                                           )))
                 )
+              (displayln "unsafe-results")
+              (displayln (vector->list unsafe-results))
+              
               #|
               (displayln "normal graph times")
               (displayln (vector->list normal-graph-times))
               (displayln "parallel graph times")
               (displayln (vector->list parallel-graph-times))
               |#
-              
               )
             )
         )
@@ -1087,7 +1089,7 @@
                               'S
                               )
   )
-(test-cfg-viz testing-cfg '(a a a a a a a a a a a a b b b b b b b b b b b b c c c c c c c c c c c c d d d d d d d d d d d d) 1)
+(unsafe-test-cfg-viz '(a a a a a a a a a a a a b b b b b b b b b b b b c c c c c c c c c c c c d d d d d d d d d d d d) 1)
 
 (define numb>numa (make-cfg '(S A)
                             '(a b)
