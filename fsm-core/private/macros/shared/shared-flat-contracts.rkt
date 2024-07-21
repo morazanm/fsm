@@ -31,7 +31,7 @@
                       (raise-blame-error
                        blame
                        x
-                       (format "Step ~a of the design recipe has not be succesfully completed.\nThe given ~a must be a list" step field-name)
+                       (format "Step ~a of the design recipe has not been successfully completed.\nThe given ~a must be a list" step field-name)
                        ))
                     )
      )
@@ -77,7 +77,7 @@
                        (format "~a.\nThe following: ~a are not valid ~as in the given ~a"
                                (if (equal? rule "")
                                    ""
-                                   (format "Step ~a of the design recipe was not successfully completed" rule))
+                                   (format "Step ~a of the design recipe has not been successfully completed" rule))
                                invalid-vals
                                element-name
                                field-name
@@ -141,7 +141,7 @@
                       (raise-blame-error
                        blame
                        start
-                       (format "Step three of the design recipe was not successfully completed.\nThe given starting state: ~s is not a valid state" start)
+                       (format "Step three of the design recipe has not been successfully completed.\nThe given starting state: ~s is not a valid state" start)
                        )
                       )
                     )
@@ -169,32 +169,31 @@
      )
     )
 
-  ;no-duplicates/c: string --> contract
+  ;no-duplicates/c: string string --> contract
   ;; predicate: (listof any) --> boolean
   ;; helper: (listof any) --> (listof any)
   ;Purpose: to check if there are any duplicates in a list, and if there are
   ; returns an error that contains the offending value, and the type of list that
   ; those values are coming from
-  (define (no-duplicates/c type)
+  (define (no-duplicates/c type step)
     (make-flat-contract
      #:name (string->symbol (format "distinct-list-of-~a" type))
      #:first-order (lambda (vals) (not (check-duplicates vals)))
      #:projection (lambda (blame)
                     (lambda (vals)
-                      (current-blame-format format-duplicates-error)
-                      (raise-blame-error
-                       blame
-                       vals
-                       (format "Step ~a of the design recipe has not been sucessfully completed.\nThere following values, ~a, are duplicated in the given ~a: "
-                               (if (or (equal? type "sigma") (equal? type "gamma"))
-                                   "one"
-                                   (if (or (equal? type "states") (equal? type "final states"))
-                                       "three"
-                                       "four")) 
-                       (return-duplicates vals)
-                       type
-                       )
-                       )
+                      (current-blame-format format-error)
+                      (if (not (check-duplicates vals))
+                          vals
+                          (raise-blame-error
+                           blame
+                           vals
+                           (format "Step ~a of the design recipe has not been successfully completed.\nThe following values, ~a, are duplicated in the given ~a"
+                                   step
+                                   (return-duplicates vals)
+                                   type)
+                           )
+                          )
+                      
                       )
                     )
      )

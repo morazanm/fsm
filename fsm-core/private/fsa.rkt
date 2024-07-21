@@ -217,11 +217,16 @@
                                rules
                                (cons curr-ss ssts))))))
 
+    (define (compute-ss-name-tbl super-states)
+      (foldr (λ (ss acc) (cons (list ss (gen-state (map second acc))) acc))
+             '()
+             super-states))
+
     ;; (listof ss) --> ss-name-tbl
     ;; Purpose: Create a table for ss names
-    (define (compute-ss-name-tbl super-states)
-      (map (λ (ss) (list ss (generate-symbol 'X '(X))))                                      
-           super-states))
+    ;(define (compute-ss-name-tbl super-states)
+    ;  (map (λ (ss) (list ss (generate-symbol 'X '(X))))                                      
+    ;       super-states))
 
     ;; (listof state) rules --> emps-tbl
     ;; Purpose: Compute empties table for all given states
@@ -258,7 +263,7 @@
                                     sigma
                                     empties
                                     rules
-                                    '()))
+                                    '())) ;; the first rule(s) are for the starting ss
              (super-states (remove-duplicates
                             (append-map
                              (λ (r) (list (first r) (third r)))
@@ -317,10 +322,16 @@
   
   ; (listof state) fsa --> fsa
   (define (rename-states-fsa los m)
+    (define (generate-rename-table disallowed sts)
+      (if (empty? sts)
+          '()
+          (let ((new-st (gen-state disallowed)))
+            (cons (list (first sts) new-st)
+                  (generate-rename-table (cons new-st disallowed) (rest sts))))))
+    
     (let* ((mstates (fsa-getstates m))
            (sts mstates #;(if (member DEAD mstates) mstates (cons DEAD mstates)))
-           (rename-table (map (lambda (s) (list s (generate-symbol s los)))
-                              sts))
+           (rename-table (generate-rename-table (remove-duplicates (append sts los)) sts))
            (new-states (map (lambda (s) (cadr (assoc s rename-table))) sts))
            (new-start (cadr (assoc (fsa-getstart m) rename-table)))
            (new-finals (map (lambda (s) (cadr (assoc s rename-table))) (fsa-getfinals m)))
@@ -333,10 +344,10 @@
   
   ; fsa fsa --> ndfa
   (define (union-fsa m1 m)
-    (let* ((nm1 (rename-states-fsa (fsa-getstates m) m1))
+    (let* ((nm1 m1 #;(rename-states-fsa (fsa-getstates m) m1))
            (nm2 (rename-states-fsa (fsa-getstates nm1) m)))
-      (let* ((new-start (generate-symbol START (append (fsa-getstates nm1) 
-                                                       (fsa-getstates nm2))))
+      (let* ((new-start (gen-state (append (fsa-getstates nm1) 
+                                           (fsa-getstates nm2))))
              (new-states (cons new-start
                                (append (fsa-getstates nm1) 
                                        (fsa-getstates nm2)))) ; nm1 & nm2 & s have no common state names
@@ -354,7 +365,9 @@
   
   ; fsa fsa --> fsa
   (define (concat-fsa m1 m2)
-    (let* ((nm1 (rename-states-fsa (fsa-getstates m2) m1))
+    (let* ((nm1 (rename-states-fsa (append (fsa-getstates m1)
+                                           (fsa-getstates m2))
+                                   m1))
            (nm2 m2))
       (make-unchecked-ndfa (union-states (fsa-getstates nm1) (fsa-getstates nm2)) ; nm1 & nm2 have no common state names
                            (remove-duplicates (append (fsa-getalphabet nm1) (fsa-getalphabet nm2)))
@@ -766,5 +779,35 @@
   (define aUb (regexp->fsa (make-unchecked-union
                             (make-unchecked-singleton "a")
                             (make-unchecked-singleton "b"))))
+
+  (define ab* (make-unchecked-ndfa '(S A)
+                                   '(a b)
+                                   'S
+                                   '(A)
+                                   '((S a A)
+                                     (A b A))))
+  (define aab* (make-unchecked-ndfa '(W X Y)
+                                    '(a b)
+                                    'W
+                                    '(Y)
+                                    '((W a X)
+                                      (X a Y)
+                                      (Y b Y))))
+
+  (define BB-NDFA (make-unchecked-ndfa
+                   '(S A B)
+                   '(a b)
+                   'S
+                   '(B)
+                   `((S a S)
+                     (S b S)
+                     (S b A)
+                     (A b B))))
+
+  (define BB (ndfa->dfa BB-NDFA))
+
+  ;(fsa-getstart BB)
+  ;(fsa-getfinals BB)
+  ;(fsa-getrules BB)
                          
   )  ; closes module

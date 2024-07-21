@@ -37,11 +37,20 @@
   (define (unparse-rules-without-LM-move-R-default-rule rls)
     (remove-LM-rule-unparsed-tm-rules (unparse-tmrules)))
   
-  ; tm (listof states) --> tm
+  ; (listof states) tm --> tm
   (define (tm-rename-states sts m)
+
+    (define (generate-rename-table disallowed sts)
+      (if (empty? sts)
+          '()
+          (let ((new-st (gen-state disallowed)))
+            (cons (list (first sts) new-st)
+                  (generate-rename-table (cons new-st disallowed) (rest sts))))))
+    
     (let* (
-           (rename-table (map (lambda (s) (list s (generate-symbol s sts)))
-                              (tm-getstates m)))
+           (rename-table (generate-rename-table (remove-duplicates (append (tm-getstates m)
+                                                                           sts))
+                                                (tm-getstates m)))
            (new-states (map (lambda (s) (cadr (assoc s rename-table)))
                             (tm-getstates m)))
            (new-start (cadr (assoc (tm-getstart m) rename-table)))
@@ -75,7 +84,9 @@
   (define (tm-union m1 m2)
     (cond [(and (eq? (tm-whatami? m1) 'tm-language-recognizer)
                 (eq? (tm-whatami? m2) 'tm-language-recognizer))
-           (let* ((rm2 (tm-rename-states (tm-getstates m2) m2))
+           (let* ((rm2 (tm-rename-states (append (tm-getstates m1)
+                                                 (tm-getstates m2))
+                                         m2))
                   (m1-rules (remove-LM-rule-unparsed-tm-rules (tm-getrules m1)))
                   (rm2-rules (remove-LM-rule-unparsed-tm-rules (tm-getrules rm2)))
                   (new-sigma (remove-duplicates (append (tm-getalphabet m1) (tm-getalphabet rm2))))
@@ -120,7 +131,9 @@
   ; ASSUMPTION: ***** The given tms are language recognizers *****
   ; *** BUG: m1 only reaches Y by seeing a blank the concat machine never reaches m2's start state ***
   (define (tm-concat m1 m2)
-    (let* ((rm2 (tm-rename-states (tm-getstates m2) m2))
+    (let* ((rm2 (tm-rename-states (append (tm-getstates m1)
+                                          (tm-getstates m2))
+                                  m2))
            (m1-reject (tm-getreject m1))
            (m1-rules (remove-LM-rule-unparsed-tm-rules (tm-getrules m1)))
            (rm2-rules (remove-LM-rule-unparsed-tm-rules (tm-getrules rm2)))
@@ -272,7 +285,11 @@
               [else (let* ((path (car tovisit))
                            (config (car path))
                            (st (tmconfig-state config))
-                           (read (list-ref (tmconfig-tape config) (tmconfig-index config)))
+                           (read (let [(tape (tmconfig-tape config))
+                                       (headpos (tmconfig-index config))]
+                                   (if (<= 0 headpos (sub1 (length tape)))
+                                       (list-ref tape headpos)
+                                       (error (format "The head position, ~s, is not valid for the given tape: ~s. The interval for valid head positions is [0..~s]" headpos tape (sub1 (length tape)))))))
                            (rls (filter (lambda (r) (and (eq? st (tmrule-froms r)) (eq? read (tmrule-read r)))) delta))
                            (newconfigs (filter (lambda (c) (not (member c visited))) (gen-newtm-configs config rls))))
                       (consume (cons (caar tovisit) visited)
@@ -517,4 +534,5 @@
   (define tm-rename-sts-WriteI (tm-rename-states (tm-getstates tm-WriteI) tm-WriteI))
 
   ;k(tm-apply tm-rename-sts-WriteI `(i ,BLANK i ,BLANK i i ,BLANK) 1)
+
   ) ; closes module
