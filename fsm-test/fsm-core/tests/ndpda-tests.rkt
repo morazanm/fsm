@@ -8,18 +8,18 @@
   (provide 
    )
 
-;  (make-ndpda '(S P Q F)
-;              '(a b c)
-;              '(a b S)
-;              'S
-;              '(F)
-;              `(((S ,EMP ,EMP) (P ,EMP))
-;                ((P a ,EMP) (P (S a)))
-;                ((P b ,EMP) (P (b)))
-;                ((P c ,EMP) (Q ,EMP))
-;                ((Q a (a)) (Q ,EMP))
-;                ((Q b (b)) (Q ,EMP))
-;                ((Q ,EMP ,EMP) (F ,EMP))))
+  (define some-machine (make-ndpda '(S P Q F)
+                                   '(a b c)
+                                   '(a b S)
+                                   'S
+                                   '(F)
+                                   `(((S ,EMP ,EMP) (P ,EMP))
+                                     ((P a ,EMP) (P (S a)))
+                                     ((P b ,EMP) (P (b)))
+                                     ((P c ,EMP) (Q ,EMP))
+                                     ((Q a (a)) (Q ,EMP))
+                                     ((Q b (b)) (Q ,EMP))
+                                     ((Q ,EMP ,EMP) (F ,EMP)))))
   
   ;;valid-listof/c tests
   ;;STATES
@@ -79,7 +79,7 @@ The following: (a b) are not valid machine states in the given list of machine s
                              (A c C)
                              (B c B)
                              (B a B))
-                           ) (format "Step three of the design recipe has not been sucessfully completed.
+                           ) (format "Step three of the design recipe has not been successfully completed.
 The following values, (A), are duplicated in the given states: (A B C A)"))
   (check-error (make-ndpda '(A B C A A)
                            '(a b c d)
@@ -90,7 +90,7 @@ The following values, (A), are duplicated in the given states: (A B C A)"))
                              (A c C)
                              (B c B)
                              (B a B))
-                           ) (format "Step three of the design recipe has not been sucessfully completed.
+                           ) (format "Step three of the design recipe has not been successfully completed.
 The following values, (A), are duplicated in the given states: (A B C A A)"))
   (check-error (make-ndpda '(A B B C A A)
                            '(a b c d)
@@ -101,7 +101,7 @@ The following values, (A), are duplicated in the given states: (A B C A A)"))
                              (A c C)
                              (B c B)
                              (B a B))
-                           ) (format "Step three of the design recipe has not been sucessfully completed.
+                           ) (format "Step three of the design recipe has not been successfully completed.
 The following values, (A B), are duplicated in the given states: (A B B C A A)"))
   ;;SIGMA
   ;invalid number
@@ -145,7 +145,7 @@ The following: (A B) are not valid lowercase alphabet letters in the given input
                            'A
                            '(B C)
                            `((A a (g)) (B (f)))
-                           ) (format "Step one of the design recipe has not been sucessfully completed.
+                           ) (format "Step one of the design recipe has not been successfully completed.
 The following values, (a), are duplicated in the given sigma: (a b c a)"))
   (check-error (make-ndpda '(A B C D)
                            '(a b c a a)
@@ -153,7 +153,7 @@ The following values, (a), are duplicated in the given sigma: (a b c a)"))
                            'A
                            '(B C)
                            `((A a (g)) (B (f)))
-                           ) (format "Step one of the design recipe has not been sucessfully completed.
+                           ) (format "Step one of the design recipe has not been successfully completed.
 The following values, (a), are duplicated in the given sigma: (a b c a a)"))
   (check-error (make-ndpda '(A B C D)
                            '(a b c a b)
@@ -161,7 +161,7 @@ The following values, (a), are duplicated in the given sigma: (a b c a a)"))
                            'A
                            '(B C)
                            `((A a (g)) (B (f)))
-                           ) (format "Step one of the design recipe has not been sucessfully completed.
+                           ) (format "Step one of the design recipe has not been successfully completed.
 The following values, (a b), are duplicated in the given sigma: (a b c a b)"))
   ;;FINALS
   ;invalid final state
@@ -230,7 +230,7 @@ The following final states, (F G), are not in your list of states: (A B C D)"))
                            'A
                            '(B C C)
                            `((A a (g)) (B (f)))
-                           ) (format "Step three of the design recipe has not been sucessfully completed.
+                           ) (format "Step three of the design recipe has not been successfully completed.
 The following values, (C), are duplicated in the given final states: (B C C)"))
   (check-error (make-ndpda '(A B C D)
                            '(a b c d)
@@ -238,7 +238,7 @@ The following values, (C), are duplicated in the given final states: (B C C)"))
                            'A
                            '(B C C B)
                            `((A a (g)) (B (f)))
-                           ) (format "Step three of the design recipe has not been sucessfully completed.
+                           ) (format "Step three of the design recipe has not been successfully completed.
 The following values, (B C), are duplicated in the given final states: (B C C B)"))
 
   ;;START STATE
@@ -275,7 +275,71 @@ The given starting state: (A) is not a valid state"))
                            ) (format "Step three of the design recipe has not been successfully completed.
 The following starting state, F, is not in the given list of states: (A B C D)"))
 
-  ;;RULES
+  ;; Accepts/Rejects
+
+  (check-error (make-ndpda '(S P Q F)
+                           '(a b c)
+                           '(a b)
+                           'S
+                           '(F)
+                           `(((S ,EMP ,EMP) (P ,EMP))
+                             ((P a ,EMP) (P (a)))
+                             ((P b ,EMP) (P (b)))
+                             ((P c ,EMP) (Q ,EMP))
+                             ((Q a (a)) (Q ,EMP))
+                             ((Q b (b)) (Q ,EMP))
+                             ((Q ,EMP ,EMP) (F ,EMP)))
+                           #:accepts '((d)))
+               (format "Step two of the design recipe has not been successfully completed.
+The following words in the accepts list contain symbols not included in sigma: ((d))"))
+
+  (check-error (make-ndpda '(S P Q F)
+                           '(a b c)
+                           '(a b)
+                           'S
+                           '(F)
+                           `(((S ,EMP ,EMP) (P ,EMP))
+                             ((P a ,EMP) (P (a)))
+                             ((P b ,EMP) (P (b)))
+                             ((P c ,EMP) (Q ,EMP))
+                             ((Q a (a)) (Q ,EMP))
+                             ((Q b (b)) (Q ,EMP))
+                             ((Q ,EMP ,EMP) (F ,EMP)))
+                           #:accepts '(a))
+               (format "Step two of the design recipe has not been successfully completed.
+The expected accepts is not a list of words: (a)"))
+
+  (check-error (make-ndpda '(S P Q F)
+                           '(a b c)
+                           '(a b)
+                           'S
+                           '(F)
+                           `(((S ,EMP ,EMP) (P ,EMP))
+                             ((P a ,EMP) (P (a)))
+                             ((P b ,EMP) (P (b)))
+                             ((P c ,EMP) (Q ,EMP))
+                             ((Q a (a)) (Q ,EMP))
+                             ((Q b (b)) (Q ,EMP))
+                             ((Q ,EMP ,EMP) (F ,EMP)))
+                           #:rejects '((d)))
+               (format "Step two of the design recipe has not been successfully completed.
+The following words in the rejects list contain symbols not included in sigma: ((d))"))
+
+  (check-error (make-ndpda '(S P Q F)
+                           '(a b c)
+                           '(a b)
+                           'S
+                           '(F)
+                           `(((S ,EMP ,EMP) (P ,EMP))
+                             ((P a ,EMP) (P (a)))
+                             ((P b ,EMP) (P (b)))
+                             ((P c ,EMP) (Q ,EMP))
+                             ((Q a (a)) (Q ,EMP))
+                             ((Q b (b)) (Q ,EMP))
+                             ((Q ,EMP ,EMP) (F ,EMP)))
+                           #:rejects '(a))
+               (format "Step two of the design recipe has not been successfully completed.
+The expected rejects is not a list of words: (a)"))
 
   (check-error (make-ndpda '(S P Q F)
                            '(a b c)
@@ -312,5 +376,18 @@ The constructed machine does not accept the following words: ((a a a a))"))
 The constructed machine does not reject the following words: ((c))"))
   
   (test)
+
+  (define wcw^r (make-ndpda '(S P Q F)
+                            '(a b c)
+                            '(a b)
+                            'S
+                            '(F)
+                            `(((S ,EMP ()) (P ()))
+                              ((P a ,EMP) (P (a)))
+                              ((P b ,EMP) (P (b)))
+                              ((P c ()) (Q ,EMP))
+                              ((Q a (a)) (Q ,EMP))
+                              ((Q b (b)) (Q ,EMP))
+                              ((Q ,EMP ,EMP) (F ,EMP)))))
 
   )

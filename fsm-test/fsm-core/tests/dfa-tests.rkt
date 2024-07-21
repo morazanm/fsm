@@ -38,7 +38,8 @@ The following: (1) are not valid machine states in the given list of machine sta
                          `((A b C)
                            (A c C)
                            (B c B)
-                           (B a B))) (format "Step three of the design recipe has not been successfully completed.
+                           (B a B)))
+               (format "Step three of the design recipe has not been successfully completed.
 The following: (1 2) are not valid machine states in the given list of machine states: (A B C 1 2)"))
   ;;Invalid letter
   (check-error (make-dfa '(A B C a)
@@ -48,7 +49,8 @@ The following: (1 2) are not valid machine states in the given list of machine s
                          `((A b C)
                            (A c C)
                            (B c B)
-                           (B a B))) (format "Step three of the design recipe has not been successfully completed.
+                           (B a B)))
+               (format "Step three of the design recipe has not been successfully completed.
 The following: (a) are not valid machine states in the given list of machine states: (A B C a)"))
   (check-error (make-dfa '(A B C a b)
                          '(a b c d)
@@ -57,7 +59,8 @@ The following: (a) are not valid machine states in the given list of machine sta
                          `((A b C)
                            (A c C)
                            (B c B)
-                           (B a B))) (format "Step three of the design recipe has not been successfully completed.
+                           (B a B)))
+               (format "Step three of the design recipe has not been successfully completed.
 The following: (a b) are not valid machine states in the given list of machine states: (A B C a b)"))
   ;;Duplicate states
   (check-error (make-dfa '(A B C A)
@@ -67,7 +70,8 @@ The following: (a b) are not valid machine states in the given list of machine s
                          `((A b C)
                            (A c C)
                            (B c B)
-                           (B a B))) (format "Step three of the design recipe has not been sucessfully completed.
+                           (B a B)))
+               (format "Step three of the design recipe has not been successfully completed.
 The following values, (A), are duplicated in the given states: (A B C A)"))
   (check-error (make-dfa '(A B C A A)
                          '(a b c d)
@@ -76,7 +80,8 @@ The following values, (A), are duplicated in the given states: (A B C A)"))
                          `((A b C)
                            (A c C)
                            (B c B)
-                           (B a B))) (format "Step three of the design recipe has not been sucessfully completed.
+                           (B a B)))
+               (format "Step three of the design recipe has not been successfully completed.
 The following values, (A), are duplicated in the given states: (A B C A A)"))
   (check-error (make-dfa '(A B B C A A)
                          '(a b c d)
@@ -85,7 +90,8 @@ The following values, (A), are duplicated in the given states: (A B C A A)"))
                          `((A b C)
                            (A c C)
                            (B c B)
-                           (B a B))) (format "Step three of the design recipe has not been sucessfully completed.
+                           (B a B)))
+               (format "Step three of the design recipe has not been successfully completed.
 The following values, (A B), are duplicated in the given states: (A B B C A A)"))
   ;;SIGMA
   ;invalid number
@@ -96,7 +102,8 @@ The following values, (A B), are duplicated in the given states: (A B B C A A)")
                          `((A b C)
                            (A c D)
                            (B c D)
-                           (B a B))) (format "Step one of the design recipe has not been successfully completed.
+                           (B a B)))
+               (format "Step one of the design recipe has not been successfully completed.
 The following: (1) are not valid lowercase alphabet letters in the given input alphabet: (a b c 1)"))
   (check-error (make-dfa '(A B C D)
                          '(a b c 1 2)
@@ -105,7 +112,8 @@ The following: (1) are not valid lowercase alphabet letters in the given input a
                          `((A b C)
                            (A c D)
                            (B c D)
-                           (B a B))) (format "Step one of the design recipe has not been successfully completed.
+                           (B a B)))
+               (format "Step one of the design recipe has not been successfully completed.
 The following: (1 2) are not valid lowercase alphabet letters in the given input alphabet: (a b c 1 2)"))
   ;invalid letter
   (check-error (make-dfa '(A B C D)
@@ -115,7 +123,8 @@ The following: (1 2) are not valid lowercase alphabet letters in the given input
                          `((A b C)
                            (A c D)
                            (B c D)
-                           (B a B))) (format "Step one of the design recipe has not been successfully completed.
+                           (B a B)))
+               (format "Step one of the design recipe has not been successfully completed.
 The following: (A) are not valid lowercase alphabet letters in the given input alphabet: (a b c A)"))
   (check-error (make-dfa '(A B C D)
                          '(a b c A B)
@@ -124,7 +133,8 @@ The following: (A) are not valid lowercase alphabet letters in the given input a
                          `((A b C)
                            (A c D)
                            (B c D)
-                           (B a B))) (format "Step one of the design recipe has not been successfully completed.
+                           (B a B)))
+               (format "Step one of the design recipe has not been successfully completed.
 The following: (A B) are not valid lowercase alphabet letters in the given input alphabet: (a b c A B)"))
   ;duplicate letter
   (check-error (make-dfa '(A B C D)
@@ -134,7 +144,8 @@ The following: (A B) are not valid lowercase alphabet letters in the given input
                          `((A b C)
                            (A c D)
                            (B c D)
-                           (B a B))) (format "Step one of the design recipe has not been sucessfully completed.
+                           (B a B)))
+               (format "Step one of the design recipe has not been successfully completed.
 The following values, (a), are duplicated in the given sigma: (a b c a)"))
   (check-error (make-dfa '(A B C D)
                          '(a b c a a)
@@ -143,7 +154,8 @@ The following values, (a), are duplicated in the given sigma: (a b c a)"))
                          `((A b C)
                            (A c D)
                            (B c D)
-                           (B a B))) (format "Step one of the design recipe has not been sucessfully completed.
+                           (B a B)))
+               (format "Step one of the design recipe has not been successfully completed.
 The following values, (a), are duplicated in the given sigma: (a b c a a)"))
   (check-error (make-dfa '(A B C D)
                          '(a b c a b)
@@ -152,7 +164,8 @@ The following values, (a), are duplicated in the given sigma: (a b c a a)"))
                          `((A b C)
                            (A c D)
                            (B c D)
-                           (B a B))) (format "Step one of the design recipe has not been sucessfully completed.
+                           (B a B)))
+               (format "Step one of the design recipe has not been successfully completed.
 The following values, (a b), are duplicated in the given sigma: (a b c a b)"))
   ;;FINALS
   ;invalid final state
@@ -163,7 +176,8 @@ The following values, (a b), are duplicated in the given sigma: (a b c a b)"))
                          `((A b C)
                            (A c D)
                            (B c D)
-                           (B a B))) (format "Step three of the design recipe has not been successfully completed.
+                           (B a B)))
+               (format "Step three of the design recipe has not been successfully completed.
 The following: (1) are not valid machine states in the given list of machine finals: (B C 1)"))
   (check-error (make-dfa '(A B C D)
                          '(a b c d)
@@ -172,7 +186,8 @@ The following: (1) are not valid machine states in the given list of machine fin
                          `((A b C)
                            (A c D)
                            (B c D)
-                           (B a B))) (format "Step three of the design recipe has not been successfully completed.
+                           (B a B)))
+               (format "Step three of the design recipe has not been successfully completed.
 The following: (1 2) are not valid machine states in the given list of machine finals: (B C 1 2)"))
   ;invalid letter
   (check-error (make-dfa '(A B C D)
@@ -182,7 +197,8 @@ The following: (1 2) are not valid machine states in the given list of machine f
                          `((A b C)
                            (A c D)
                            (B c D)
-                           (B a B))) (format "Step three of the design recipe has not been successfully completed.
+                           (B a B)))
+               (format "Step three of the design recipe has not been successfully completed.
 The following: (a) are not valid machine states in the given list of machine finals: (B C a)"))
   (check-error (make-dfa '(A B C D)
                          '(a b c d)
@@ -191,7 +207,8 @@ The following: (a) are not valid machine states in the given list of machine fin
                          `((A b C)
                            (A c D)
                            (B c D)
-                           (B a B))) (format "Step three of the design recipe has not been successfully completed.
+                           (B a B)))
+               (format "Step three of the design recipe has not been successfully completed.
 The following: (a a) are not valid machine states in the given list of machine finals: (B C a a)"))
   (check-error (make-dfa '(A B C D)
                          '(a b c d)
@@ -200,7 +217,8 @@ The following: (a a) are not valid machine states in the given list of machine f
                          `((A b C)
                            (A c D)
                            (B c D)
-                           (B a B))) (format "Step three of the design recipe has not been successfully completed.
+                           (B a B)))
+               (format "Step three of the design recipe has not been successfully completed.
 The following: (a b) are not valid machine states in the given list of machine finals: (B C a b)"))
   ;not in list of states
   (check-error (make-dfa '(A B C D)
@@ -210,7 +228,8 @@ The following: (a b) are not valid machine states in the given list of machine f
                          `((A b C)
                            (A c D)
                            (B c D)
-                           (B a B))) (format "Step three of the design recipe has not been successfully completed.
+                           (B a B)))
+               (format "Step three of the design recipe has not been successfully completed.
 The following final states, (F), are not in your list of states: (A B C D)"))
   (check-error (make-dfa '(A B C D)
                          '(a b c d)
@@ -219,7 +238,8 @@ The following final states, (F), are not in your list of states: (A B C D)"))
                          `((A b C)
                            (A c D)
                            (B c D)
-                           (B a B))) (format "Step three of the design recipe has not been successfully completed.
+                           (B a B)))
+               (format "Step three of the design recipe has not been successfully completed.
 The following final states, (F G), are not in your list of states: (A B C D)"))
   ;duplicates
   (check-error (make-dfa '(A B C D)
@@ -229,7 +249,8 @@ The following final states, (F G), are not in your list of states: (A B C D)"))
                          `((A b C)
                            (A c D)
                            (B c D)
-                           (B a B))) (format "Step three of the design recipe has not been sucessfully completed.
+                           (B a B)))
+               (format "Step three of the design recipe has not been successfully completed.
 The following values, (C), are duplicated in the given final states: (B C C)"))
   (check-error (make-dfa '(A B C D)
                          '(a b c d)
@@ -239,7 +260,7 @@ The following values, (C), are duplicated in the given final states: (B C C)"))
                            (A c D)
                            (B c D)
                            (B a B)))
-               (format "Step three of the design recipe has not been sucessfully completed.
+               (format "Step three of the design recipe has not been successfully completed.
 The following values, (B C), are duplicated in the given final states: (B C C B)"))
 
   ;;START STATE
@@ -250,7 +271,8 @@ The following values, (B C), are duplicated in the given final states: (B C C B)
                          `((A b C)
                            (A c D)
                            (B c D)
-                           (B a B))) (format "Step three of the design recipe has not been successfully completed.
+                           (B a B)))
+               (format "Step three of the design recipe has not been successfully completed.
 The given starting state: 1 is not a valid state"))
   (check-error (make-dfa '(A B C D)
                          '(a b c d)
@@ -259,7 +281,8 @@ The given starting state: 1 is not a valid state"))
                          `((A b C)
                            (A c D)
                            (B c D)
-                           (B a B))) (format "Step three of the design recipe has not been successfully completed.
+                           (B a B)))
+               (format "Step three of the design recipe has not been successfully completed.
 The given starting state: a is not a valid state"))
   (check-error (make-dfa '(A B C D)
                          '(a b c d)
@@ -268,7 +291,8 @@ The given starting state: a is not a valid state"))
                          `((A b C)
                            (A c D)
                            (B c D)
-                           (B a B))) (format "Step three of the design recipe has not been successfully completed.
+                           (B a B)))
+               (format "Step three of the design recipe has not been successfully completed.
 The given starting state: (A) is not a valid state"))
   (check-error (make-dfa '(A B C D)
                          '(a b c d)
@@ -277,7 +301,8 @@ The given starting state: (A) is not a valid state"))
                          `((A b C)
                            (A c D)
                            (B c D)
-                           (B a B))) (format "Step three of the design recipe has not been successfully completed.
+                           (B a B)))
+               (format "Step three of the design recipe has not been successfully completed.
 The following starting state, F, is not in the given list of states: (A B C D)"))
 
   ;;RULES
@@ -293,7 +318,8 @@ The given machine rules must be a list: A"))
                          '(a b c d)
                          'A
                          '(B C)
-                         '(A)) (format "Step four of the design recipe has not been successfully completed.
+                         '(A))
+               (format "Step four of the design recipe has not been successfully completed.
 The following rules have structural errors:
 Rule A:
   The given rule, A, does not have the correct structure. A DFA rule must be a list with three elements.
@@ -309,6 +335,55 @@ The following state/sigma pairs are duplicated in your rules:  (
 (A b))")
                )
 
+  ;; Accepts/Rejects errors
+  (check-error (make-dfa '(A B)
+                         '(a b)
+                         'A
+                         '(A)
+                         '((A a A)
+                           (B b B)
+                           (A b B)
+                           (B a B))
+                         #:accepts '((c)))
+               (format "Step two of the design recipe has not been successfully completed.
+The following words in the accepts list contain symbols not included in sigma: ((c))"))
+
+  (check-error (make-dfa '(A B)
+                         '(a b)
+                         'A
+                         '(A)
+                         '((A a A)
+                           (B b B)
+                           (A b B)
+                           (B a B))
+                         #:accepts '(c)
+               (format "Step two of the design recipe has not been successfully completed.
+The expected accepts is not a list of words")))
+  
+  (check-error (make-dfa '(A B)
+                         '(a b)
+                         'A
+                         '(A)
+                         '((A a A)
+                           (B b B)
+                           (A b B)
+                           (B a B))
+                         #:rejects '((c)))
+               (format "Step two of the design recipe has not been successfully completed.
+The following words in the rejects list contain symbols not included in sigma: ((c))"))
+
+  (check-error (make-dfa '(A B)
+                         '(a b)
+                         'A
+                         '(A)
+                         '((A a A)
+                           (B b B)
+                           (A b B)
+                           (B a B))
+                         #:rejects '(c)
+               (format "Step two of the design recipe has not been successfully completed.
+The expected rejects is not a list of words")))
+  
   (check-error (make-dfa '(A B)
                          '(a b)
                          'A
