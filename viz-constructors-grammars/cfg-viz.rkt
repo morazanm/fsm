@@ -1053,25 +1053,93 @@
                    (lod (reverse (create-dgrphs dgraph '())))]
 
               
+              #;(define gstructs (map (lambda (dgrph node-lvl) (create-graph-structs dgrph '() 'left (grammar-start cfg) node-lvl)) lod (cons (list (list 'S))
+                                         (accumulate-previous-ranks
+                                          (map (lambda (x) (map (lambda (y) (second y)) x)) renamed)
+                                          (list (list 'S))))))
+             #|
+          (define cpu-1-core (make-vector num-trials '()))
+          (define cpu/8 (make-vector num-trials '()))
+          ;;(displayln (format "cpu/8: ~s" (inexact->exact (floor (/ num-cores 8)))))
+          (define cpu/4 (make-vector num-trials '()))
+          ;;(displayln (format "cpu/4: ~s" (inexact->exact (floor (/ num-cores 4)))))
+          (define cpu3/8 (make-vector num-trials '()))
+          ;;(displayln (format "cpu3/8: ~s" (* (inexact->exact (floor (/ num-cores 8))) 3)))
+          (define cpu/2 (make-vector num-trials '()))
+          ;;(displayln (format "cpu/2: ~s" (inexact->exact (floor (/ num-cores 2)))))
+          (define cpu5/8 (make-vector num-trials '()))
+          ;;(displayln (format "cpu5/8: ~s" (* (inexact->exact (floor (/ num-cores 8))) 5)))
+          (define cpu3/4 (make-vector num-trials '()))
+          ;;(displayln (format "cpu3/4: ~s" (* (inexact->exact (floor (/ num-cores 4))) 3)))
+          (define cpu7/8 (make-vector num-trials '()))
+          ;;(displayln (format "cpu7/8: ~s" (* (inexact->exact (floor (/ num-cores 8))) 7)))
+          (define cpufull (make-vector num-trials '()))
+          ;;(displayln (format "cpufull: ~s" num-cores))
+              |#
+               (define unsafe-cpufull (make-vector num-trials '()))
+               (define safe-cpufull (make-vector num-trials '()))
               (define gstructs (map (lambda (dgrph node-lvl) (create-graph-structs dgrph '() 'left (grammar-start cfg) node-lvl)) lod (cons (list (list 'S))
                                          (accumulate-previous-ranks
                                           (map (lambda (x) (map (lambda (y) (second y)) x)) renamed)
                                           (list (list 'S))))))
-              (define unsafe-results (make-vector num-trials '()))
-              (for ([i (range num-trials)])
-                (vector-set! unsafe-results i (third (match/values (time-apply (lambda (lod) (unsafe-parallel-graphs->bitmap-thunks gstructs)) (list lod))
-                                                          [(ng-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list ng-results cpu-time real-time gc-time)]
-                                                          )))
-                )
-              (displayln "unsafe-results")
-              (displayln (vector->list unsafe-results))
               
+          (for ([i (range num-trials)])
+            #|
+            (vector-set! cpu-1-core i (third (match/values (time-apply (lambda (lod) (unsafe-parallel-graphs->bitmap-thunks gstructs)) (list lod))
+                                                           [(cpu-1-core-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpu-1-core-results cpu-time real-time gc-time)]
+                                                           )))
+            (vector-set! cpu/8 i (third (match/values (time-apply (lambda (lod) (unsafe-parallel-graphs->bitmap-thunks gstructs)) (list lod))
+                                                      [(cpu-1-core-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpu-1-core-results cpu-time real-time gc-time)]
+                                                      )))
+            (vector-set! cpu/4 i (third (match/values (time-apply (lambda (lod) (unsafe-parallel-graphs->bitmap-thunks gstructs)) (list lod))
+                                                      [(cpu/4-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpu/4-results cpu-time real-time gc-time)]
+                                                      )))
+            (vector-set! cpu3/8 i (third (match/values (time-apply (lambda (lod) (unsafe-parallel-graphs->bitmap-thunks gstructs)) (list lod))
+                                                       [(cpu/3-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpu/3-results cpu-time real-time gc-time)]
+                                                       )))
+            (vector-set! cpu/2 i (third (match/values (time-apply (lambda (lod) (unsafe-parallel-graphs->bitmap-thunks gstructs)) (list lod))
+                                                      [(cpu/2-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpu/2-results cpu-time real-time gc-time)]
+                                                      )))
+            (vector-set! cpu5/8 i (third (match/values (time-apply (lambda (lod) (unsafe-parallel-graphs->bitmap-thunks gstructs)) (list lod))
+                                                       [(cpu/2-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpu/2-results cpu-time real-time gc-time)]
+                                                       )))
+            (vector-set! cpu3/4 i (third (match/values (time-apply (lambda (lod) (unsafe-parallel-graphs->bitmap-thunks gstructs)) (list lod))
+                                                       [(cpu3/4-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpu3/4-results cpu-time real-time gc-time)]
+                                                       )))
+            (vector-set! cpu7/8 i (third (match/values (time-apply (lambda (lod) (unsafe-parallel-graphs->bitmap-thunks gstructs)) (list lod))
+                                                       [(cpu3/4-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpu3/4-results cpu-time real-time gc-time)]
+                                                       )))
+            |#
+            (vector-set! unsafe-cpufull i (third (match/values (time-apply (lambda (lod) (unsafe-parallel-graphs->bitmap-thunks gstructs)) (list lod))
+                                                        [(cpufull-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpufull-results cpu-time real-time gc-time)]
+                                                        )))
+
+            (vector-set! safe-cpufull i (third (match/values (time-apply (lambda (lod) (parallel-graphs->bitmap-thunks gstructs)) (list lod))
+                                                        [(cpufull-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpufull-results cpu-time real-time gc-time)]
+                                                        )))
+            )
               #|
-              (displayln "normal graph times")
-              (displayln (vector->list normal-graph-times))
-              (displayln "parallel graph times")
-              (displayln (vector->list parallel-graph-times))
-              |#
+          (displayln "cpu-1-core")
+          (displayln (vector->list cpu-1-core))
+          (displayln "cpu/8")
+          (displayln (vector->list cpu/8))
+          (displayln "cpu/4")
+          (displayln (vector->list cpu/4))
+          (displayln "cpu3/8")
+          (displayln (vector->list cpu3/8))
+          (displayln "cpu/2")
+          (displayln (vector->list cpu/2))
+          (displayln "cpu5/8")
+          (displayln (vector->list cpu5/8))
+          (displayln "cpu3/4")
+          (displayln (vector->list cpu3/4))
+          (displayln "cpu7/8")
+          (displayln (vector->list cpu7/8))
+          |#
+          (displayln "unsafe-cpufull")
+          (displayln (vector->list unsafe-cpufull))
+              (displayln "safe-cpufull")
+          (displayln (vector->list safe-cpufull))
               )
             )
         )
@@ -1089,8 +1157,24 @@
                               'S
                               )
   )
-(unsafe-test-cfg-viz '(a a a a a a a a a a a a b b b b b b b b b b b b c c c c c c c c c c c c d d d d d d d d d d d d) 1)
-
+(displayln "16 character word")
+(unsafe-test-cfg-viz '(a a a a b b b b c c c c d d d d) 10)
+(displayln "32 character word")
+(unsafe-test-cfg-viz '(a a a a a a a a b b b b b b b b c c c c c c c c d d d d d d d d) 10)
+(displayln "48 character word")
+(unsafe-test-cfg-viz '(a a a a a a a a a a a a b b b b b b b b b b b b c c c c c c c c c c c c d d d d d d d d d d d d) 10)
+(displayln "64 character word")
+(unsafe-test-cfg-viz '(a a a a a a a a a a a a a a a a b b b b b b b b b b b b b b b b c c c c c c c c c c c c c c c c d d d d d d d d d d d d d d d d) 10)
+(displayln "128 character word")
+(unsafe-test-cfg-viz '(a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a
+                         b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b
+                         c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c
+                         d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d) 10)
+(displayln "256 character word")
+(unsafe-test-cfg-viz '(a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a
+                         b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b
+                         c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c
+                         d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d) 10)
 (define numb>numa (make-cfg '(S A)
                             '(a b)
                             `((S ,ARROW b)
