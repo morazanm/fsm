@@ -1110,11 +1110,11 @@
                                                        [(cpu3/4-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpu3/4-results cpu-time real-time gc-time)]
                                                        )))
             |#
-            (vector-set! unsafe-cpufull i (third (match/values (time-apply (lambda (lod) (unsafe-parallel-graphs->bitmap-thunks gstructs)) (list lod))
+            #;(vector-set! unsafe-cpufull i (third (match/values (time-apply (lambda (lod) (unsafe-parallel-graphs->bitmap-thunks gstructs)) (list lod))
                                                         [(cpufull-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpufull-results cpu-time real-time gc-time)]
                                                         )))
 
-            (vector-set! safe-cpufull i (third (match/values (time-apply (lambda (lod) (parallel-graphs->bitmap-thunks gstructs)) (list lod))
+            (vector-set! safe-cpufull i (third (match/values (time-apply (lambda (lod) (parallel-graphs->bitmap-thunks gstructs #:cpu-cores 1)) (list lod))
                                                         [(cpufull-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpufull-results cpu-time real-time gc-time)]
                                                         )))
             )
@@ -1136,14 +1136,83 @@
           (displayln "cpu7/8")
           (displayln (vector->list cpu7/8))
           |#
-          (displayln "unsafe-cpufull")
-          (displayln (vector->list unsafe-cpufull))
-              (displayln "safe-cpufull")
+          #;(displayln "unsafe-cpufull")
+          #;(displayln (vector->list unsafe-cpufull))
+              #;(displayln "safe-cpufull")
           (displayln (vector->list safe-cpufull))
               )
             )
         )
   )
+
+(define (parallelism-test word num-trials)
+  (define cfg (make-cfg '(S A B)
+                           '(a b c d)
+                           `((S ,ARROW ,EMP)
+                             (S ,ARROW AB)
+                             (A ,ARROW aAb)
+                             (B ,ARROW cBd)
+                             (A ,ARROW ,EMP)
+                             (B ,ARROW ,EMP)
+                             )
+                           'S
+                           )
+  )
+  (define (make-word num-pairs)
+    (append (make-list num-pairs 'a) (make-list num-pairs 'b) (make-list num-pairs 'c) (make-list num-pairs 'd))
+    )
+      (let [(derivation (cfg-derive-leftmost cfg word))]
+        (if (string? derivation)
+            derivation
+            (let* [(der-with-rules (w-der-with-rules derivation))
+                   (rules (cons "" (create-rules-leftmost (move-rule-applications-in-list der-with-rules))))
+                   (w-der (list-of-states der-with-rules))
+                   (renamed (generate-levels-list (first (first (first der-with-rules)))
+                                                  (list-of-rules (move-rule-applications-in-list der-with-rules))
+                                                  '()
+                                                  (make-hash)
+                                                  'left))
+                   (yield-trees (map create-yield-tree (map reverse (create-list-of-levels renamed))))
+                   (dgraph (dgrph renamed '() '() '() (rest rules) (list (first rules)) (reverse yield-trees) (list (tree (grammar-start cfg) '()))))
+                   (lod (reverse (create-dgrphs dgraph '())))]
+              
+               (define unsafe-cpufull (make-vector num-trials '()))
+               (define safe-cpufull (make-vector num-trials '()))
+              (define sequential-cpufull (make-vector num-trials '()))
+              
+              (define gstructs (map (lambda (dgrph node-lvl) (create-graph-structs dgrph '() 'left (grammar-start cfg) node-lvl)) lod (cons (list (list 'S))
+                                         (accumulate-previous-ranks
+                                          (map (lambda (x) (map (lambda (y) (second y)) x)) renamed)
+                                          (list (list 'S))))))
+              
+          (for ([i (range num-trials)])
+            
+            (vector-set! unsafe-cpufull i (third (match/values (time-apply (lambda (lod) (unsafe-parallel-graphs->bitmap-thunks gstructs)) (list lod))
+                                                        [(cpufull-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpufull-results cpu-time real-time gc-time)]
+                                                        )))
+
+            (vector-set! safe-cpufull i (third (match/values (time-apply (lambda (lod) (parallel-graphs->bitmap-thunks gstructs)) (list lod))
+                                                        [(cpufull-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpufull-results cpu-time real-time gc-time)]
+                                                        )))
+            (vector-set! sequential-cpufull i (third (match/values (time-apply (lambda (lod) (parallel-graphs->bitmap-thunks gstructs #:cpu-cores 1)) (list lod))
+                                                        [(cpufull-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpufull-results cpu-time real-time gc-time)]
+                                                        )))
+            
+            )
+              
+              (displayln "Unrestricted")
+              (displayln (vector->list unsafe-cpufull))
+              (displayln "Restricted")
+              (displayln (vector->list safe-cpufull))
+              (displayln "Sequential")
+              (displayln (vector->list sequential-cpufull))
+              
+              )
+            )
+        )
+  )
+
+
 
 (define testing-cfg (make-cfg '(S A B)
                               '(a b c d)
@@ -1157,14 +1226,15 @@
                               'S
                               )
   )
-(displayln "16 character word")
+(displayln "PARALLELISM 16 character word")
 (unsafe-test-cfg-viz '(a a a a b b b b c c c c d d d d) 10)
-(displayln "32 character word")
+(displayln "PARALLELISM 32 character word")
 (unsafe-test-cfg-viz '(a a a a a a a a b b b b b b b b c c c c c c c c d d d d d d d d) 10)
-(displayln "48 character word")
+(displayln "PARALLELISM 48 character word")
 (unsafe-test-cfg-viz '(a a a a a a a a a a a a b b b b b b b b b b b b c c c c c c c c c c c c d d d d d d d d d d d d) 10)
-(displayln "64 character word")
+(displayln "PARALLELISM 64 character word")
 (unsafe-test-cfg-viz '(a a a a a a a a a a a a a a a a b b b b b b b b b b b b b b b b c c c c c c c c c c c c c c c c d d d d d d d d d d d d d d d d) 10)
+#|
 (displayln "128 character word")
 (unsafe-test-cfg-viz '(a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a
                          b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b
@@ -1175,6 +1245,7 @@
                          b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b
                          c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c c
                          d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d d) 10)
+|#
 (define numb>numa (make-cfg '(S A)
                             '(a b)
                             `((S ,ARROW b)
