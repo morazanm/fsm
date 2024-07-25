@@ -1227,13 +1227,13 @@
                               )
   )
 (displayln "PARALLELISM 16 character word")
-(unsafe-test-cfg-viz '(a a a a b b b b c c c c d d d d) 10)
+(unsafe-test-cfg-viz '(a a a a b b b b c c c c d d d d) 200)
 (displayln "PARALLELISM 32 character word")
-(unsafe-test-cfg-viz '(a a a a a a a a b b b b b b b b c c c c c c c c d d d d d d d d) 10)
+(unsafe-test-cfg-viz '(a a a a a a a a b b b b b b b b c c c c c c c c d d d d d d d d) 200)
 (displayln "PARALLELISM 48 character word")
-(unsafe-test-cfg-viz '(a a a a a a a a a a a a b b b b b b b b b b b b c c c c c c c c c c c c d d d d d d d d d d d d) 10)
+(unsafe-test-cfg-viz '(a a a a a a a a a a a a b b b b b b b b b b b b c c c c c c c c c c c c d d d d d d d d d d d d) 200)
 (displayln "PARALLELISM 64 character word")
-(unsafe-test-cfg-viz '(a a a a a a a a a a a a a a a a b b b b b b b b b b b b b b b b c c c c c c c c c c c c c c c c d d d d d d d d d d d d d d d d) 10)
+(unsafe-test-cfg-viz '(a a a a a a a a a a a a a a a a b b b b b b b b b b b b b b b b c c c c c c c c c c c c c c c c d d d d d d d d d d d d d d d d) 200)
 #|
 (displayln "128 character word")
 (unsafe-test-cfg-viz '(a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a
