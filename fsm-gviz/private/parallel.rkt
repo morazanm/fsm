@@ -285,12 +285,12 @@
 
 ;; Listof graph -> Listof Thunk
 ;; Creates all the graph images needed in parallel, and returns a list of thunks that will load them from disk
-(define (unsafe-parallel-graphs->bitmap-thunks graphs #:cpu-cores [cpu-cores (quotient (find-number-of-cores) 2)])
+(define (unsafe-parallel-graphs->bitmap-thunks graphs)
   ;; Listof String -> Void
   ;; Creates all the graphviz images
-  (define (unsafe-parallel-dots->pngs dot-files cpu-cores)
+  (define (unsafe-parallel-dots->pngs dot-files)
     (define dot-executable-path (find-dot))
-    (define (unsafe-parallel-shell func args cpu-cores)
+    (define (unsafe-parallel-shell func args)
       (define (make-thread a)
         (define shell-process (func a))
         (thread (lambda () (let [
@@ -338,7 +338,7 @@
                                               )
       )
     (if (path? dot-executable-path)
-        (unsafe-parallel-shell make-process dot-files cpu-cores)
+        (unsafe-parallel-shell make-process dot-files)
         (error "Error caused when creating png file. This was probably due to the dot environment variable not existing on the path")
         )
                                           
@@ -348,7 +348,7 @@
                              )
       )
     (graphs->dots graphs)
-    (unsafe-parallel-dots->pngs list-dot-files cpu-cores)
+    (unsafe-parallel-dots->pngs list-dot-files)
     (pngs->bitmap-thunks 0 (length graphs))
     
   )
