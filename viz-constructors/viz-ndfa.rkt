@@ -27,8 +27,8 @@
 (define YIELD-COLOR 'orange)
 (define PERCENT-BORDER-GAP 0.9)
 (define HEIGHT-BUFFER 20)
-(define LETTER-KEY-WIDTH-BUFFER 20)
-(define ARROW-KEY-WIDTH-BUFFER 40)
+(define LETTER-KEY-WIDTH-BUFFER 13)
+(define ARROW-KEY-WIDTH-BUFFER 20)
 (define INS-TOOLS-BUFFER 30)
 (define EXTRA-HEIGHT-FROM-CURSOR 4)
 (define NODE-SIZE 50)
@@ -55,6 +55,10 @@
 (define A-KEY (bitmap/file "../viz-constructors-grammars/keyboard_key_a.png"))
 
 (define D-KEY (bitmap/file "../viz-constructors-grammars/keyboard_key_d.png"))
+
+(define L-KEY (bitmap/file "../viz-constructors-grammars/keyboard_key_l.png"))
+
+(define J-KEY (bitmap/file "../viz-constructors-grammars/keyboard_key_j.png"))
 
 (define ARROW-RIGHT-KEY (bitmap/file "../viz-constructors-grammars/keyboard_key_right.png"))
 
@@ -181,7 +185,17 @@
              (above/align "middle"
                           D-KEY
                           (square HEIGHT-BUFFER 'solid 'white)
-                          (text "Word end" (- FONT-SIZE 2) 'black))))))
+                          (text "Word end" (- FONT-SIZE 2) 'black))
+             (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
+             (above/align "middle"
+                          J-KEY
+                          (square HEIGHT-BUFFER 'solid 'white)
+                          (text "Prv brk inv" (- FONT-SIZE 2) 'black))
+             (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
+             (above/align "middle"
+                          L-KEY
+                          (square HEIGHT-BUFFER 'solid 'white)
+                          (text "Nxt brk inv" (- FONT-SIZE 2) 'black))))))
 
 (define ARROW-UP-KEY-DIMS
   (bounding-limits
@@ -618,6 +632,142 @@
       INS-TOOLS-BUFFER
       (image-height D-KEY))))
 
+(define J-KEY-DIMS
+  (bounding-limits
+   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+      ARROW-KEY-WIDTH-BUFFER
+      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+      ARROW-KEY-WIDTH-BUFFER
+      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+      ARROW-KEY-WIDTH-BUFFER
+      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
+      ARROW-KEY-WIDTH-BUFFER
+      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
+      ARROW-KEY-WIDTH-BUFFER
+      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
+      LETTER-KEY-WIDTH-BUFFER
+      (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
+      LETTER-KEY-WIDTH-BUFFER
+      (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black))
+      LETTER-KEY-WIDTH-BUFFER
+      (image-width (text "Mid Zoom" (- FONT-SIZE 2) 'black))
+      LETTER-KEY-WIDTH-BUFFER
+      (image-width (text "Max Zoom" (- FONT-SIZE 2) 'black))
+      LETTER-KEY-WIDTH-BUFFER
+      (image-width (text "Word start" (- FONT-SIZE 2) 'black))
+      LETTER-KEY-WIDTH-BUFFER
+      (image-width (text "Word end" (- FONT-SIZE 2) 'black))
+      LETTER-KEY-WIDTH-BUFFER
+      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+      (/ (- (image-width (text "Prv Brk Inv." (- FONT-SIZE 2) 'black)) (image-width J-KEY)) 2)
+      )
+   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+      ARROW-KEY-WIDTH-BUFFER
+      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+      ARROW-KEY-WIDTH-BUFFER
+      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+      ARROW-KEY-WIDTH-BUFFER
+      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
+      ARROW-KEY-WIDTH-BUFFER
+      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
+      ARROW-KEY-WIDTH-BUFFER
+      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
+      LETTER-KEY-WIDTH-BUFFER
+      (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
+      LETTER-KEY-WIDTH-BUFFER
+      (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black))
+      LETTER-KEY-WIDTH-BUFFER
+      (image-width (text "Mid Zoom" (- FONT-SIZE 2) 'black))
+      LETTER-KEY-WIDTH-BUFFER
+      (image-width (text "Max Zoom" (- FONT-SIZE 2) 'black))
+      LETTER-KEY-WIDTH-BUFFER
+      (image-width (text "Word start" (- FONT-SIZE 2) 'black))
+      LETTER-KEY-WIDTH-BUFFER
+      (image-width (text "Word end" (- FONT-SIZE 2) 'black))
+      LETTER-KEY-WIDTH-BUFFER
+      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+      (/ (- (image-width (text "Prv Brk Inv." (- FONT-SIZE 2) 'black)) (image-width J-KEY)) 2)
+      (image-width J-KEY))
+   (+ EXTRA-HEIGHT-FROM-CURSOR
+      E-SCENE-HEIGHT
+      (bounding-limits-height RULE-YIELD-DIMS)
+      INS-TOOLS-BUFFER)
+   (+ EXTRA-HEIGHT-FROM-CURSOR
+      E-SCENE-HEIGHT
+      (bounding-limits-height RULE-YIELD-DIMS)
+      INS-TOOLS-BUFFER
+      (image-height J-KEY))))
+
+(define L-KEY-DIMS
+  (bounding-limits
+   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+      ARROW-KEY-WIDTH-BUFFER
+      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+      ARROW-KEY-WIDTH-BUFFER
+      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+      ARROW-KEY-WIDTH-BUFFER
+      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
+      ARROW-KEY-WIDTH-BUFFER
+      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
+      ARROW-KEY-WIDTH-BUFFER
+      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
+      LETTER-KEY-WIDTH-BUFFER
+      (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
+      LETTER-KEY-WIDTH-BUFFER
+      (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black))
+      LETTER-KEY-WIDTH-BUFFER
+      (image-width (text "Mid Zoom" (- FONT-SIZE 2) 'black))
+      LETTER-KEY-WIDTH-BUFFER
+      (image-width (text "Max Zoom" (- FONT-SIZE 2) 'black))
+      LETTER-KEY-WIDTH-BUFFER
+      (image-width (text "Word start" (- FONT-SIZE 2) 'black))
+      LETTER-KEY-WIDTH-BUFFER
+      (image-width (text "Word end" (- FONT-SIZE 2) 'black))
+      LETTER-KEY-WIDTH-BUFFER
+      (image-width (text "Prv Brk Inv." (- FONT-SIZE 2) 'black))
+      LETTER-KEY-WIDTH-BUFFER
+      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+      (/ (- (image-width (text "Next Brk Inv." (- FONT-SIZE 2) 'black)) (image-width L-KEY)) 2)
+      )
+   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+      ARROW-KEY-WIDTH-BUFFER
+      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+      ARROW-KEY-WIDTH-BUFFER
+      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+      ARROW-KEY-WIDTH-BUFFER
+      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
+      ARROW-KEY-WIDTH-BUFFER
+      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
+      ARROW-KEY-WIDTH-BUFFER
+      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
+      LETTER-KEY-WIDTH-BUFFER
+      (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
+      LETTER-KEY-WIDTH-BUFFER
+      (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black))
+      LETTER-KEY-WIDTH-BUFFER
+      (image-width (text "Mid Zoom" (- FONT-SIZE 2) 'black))
+      LETTER-KEY-WIDTH-BUFFER
+      (image-width (text "Max Zoom" (- FONT-SIZE 2) 'black))
+      LETTER-KEY-WIDTH-BUFFER
+      (image-width (text "Word start" (- FONT-SIZE 2) 'black))
+      LETTER-KEY-WIDTH-BUFFER
+      (image-width (text "Word end" (- FONT-SIZE 2) 'black))
+      LETTER-KEY-WIDTH-BUFFER
+      (image-width (text "Prv Brk Inv." (- FONT-SIZE 2) 'black))
+      LETTER-KEY-WIDTH-BUFFER
+      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+      (/ (- (image-width (text "Next Brk Inv." (- FONT-SIZE 2) 'black)) (image-width L-KEY)) 2)
+      (image-width L-KEY))
+   (+ EXTRA-HEIGHT-FROM-CURSOR
+      E-SCENE-HEIGHT
+      (bounding-limits-height RULE-YIELD-DIMS)
+      INS-TOOLS-BUFFER)
+   (+ EXTRA-HEIGHT-FROM-CURSOR
+      E-SCENE-HEIGHT
+      (bounding-limits-height RULE-YIELD-DIMS)
+      INS-TOOLS-BUFFER
+      (image-height L-KEY))))
+
 ;; num num num num boolean num num num (matrix [ [x] [y] [1] ]) -> (matrix [ [transformed-x] [transformed-y] [1] ])
 ;; Transforms a given point matrix based on the arguments provided
 (define (affine-transform #:x-translate [x-translate 0]
@@ -751,7 +901,8 @@
 (define (zoom a-vs factor)
   (let* ([new-scale (* factor (viz-state-scale-factor a-vs))]
          [scalable? (cond
-                      [(eq? factor ZOOM-INCREASE) (> (viz-state-scale-factor-cap a-vs) new-scale)]
+                      [(eq? factor ZOOM-INCREASE)
+                       (> (viz-state-scale-factor-cap a-vs) new-scale)]
                       [(eq? factor ZOOM-DECREASE)
                        (< (viz-state-scale-factor-floor a-vs) new-scale)])])
      (if scalable?
@@ -804,6 +955,196 @@
   (if (zipper-at-end? (viz-state-imgs a-vs))
       a-vs
       (let* ([new-imgs (zipper-next (viz-state-imgs a-vs))]
+             [new-curr-img ((zipper-current new-imgs))]
+             [curr-pimgs-img ((zipper-current (viz-state-imgs a-vs)))]
+             [img-resize (resize-image new-curr-img
+                                       (* E-SCENE-WIDTH PERCENT-BORDER-GAP)
+                                       (* E-SCENE-HEIGHT PERCENT-BORDER-GAP))]
+             [growth-x (- (/ (image-width (scale (viz-state-scale-factor a-vs) new-curr-img)) 2)
+                          (/ (image-width (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2))]
+             [growth-y (- (/ (image-height (scale (viz-state-scale-factor a-vs) new-curr-img)) 2)
+                          (/ (image-height (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2))])
+        (if (does-img-need-resizing? new-curr-img)
+            (let ([NEW-FLOOR (min (second img-resize) (third img-resize))])
+              (cond
+                [(> (viz-state-scale-factor a-vs) DEFAULT-ZOOM-CAP)
+                 (let ([new-viz-state
+                        (struct-copy viz-state
+                                     a-vs
+                                     [imgs new-imgs]
+                                     [curr-image new-curr-img]
+                                     [image-posn
+                                      (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
+                                            (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
+                                     [scale-factor DEFAULT-ZOOM-CAP]
+                                     [scale-factor-cap DEFAULT-ZOOM-CAP]
+                                     [scale-factor-floor NEW-FLOOR])])
+                   (reposition-out-of-bounds-img
+                    new-viz-state
+                    (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
+                                                      new-curr-img)
+                                               (viz-state-scale-factor new-viz-state))
+                    new-curr-img
+                    (viz-state-scale-factor new-viz-state)))]
+                [(< (viz-state-scale-factor a-vs) NEW-FLOOR)
+                 (let ([new-viz-state
+                        (struct-copy viz-state
+                                     a-vs
+                                     [imgs new-imgs]
+                                     [curr-image new-curr-img]
+                                     [image-posn
+                                      (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
+                                            (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
+                                     [scale-factor NEW-FLOOR]
+                                     [scale-factor-cap DEFAULT-ZOOM-CAP]
+                                     [scale-factor-floor NEW-FLOOR])])
+                   (reposition-out-of-bounds-img
+                    new-viz-state
+                    (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
+                                                      new-curr-img)
+                                               (viz-state-scale-factor new-viz-state))
+                    new-curr-img
+                    (viz-state-scale-factor new-viz-state)))]
+                [else
+                 (let ([new-viz-state
+                        (struct-copy viz-state
+                                     a-vs
+                                     [imgs new-imgs]
+                                     [curr-image new-curr-img]
+                                     [image-posn
+                                      (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
+                                            (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
+                                     [scale-factor-cap DEFAULT-ZOOM-CAP]
+                                     [scale-factor-floor NEW-FLOOR])])
+                   (reposition-out-of-bounds-img
+                    new-viz-state
+                    (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
+                                                      new-curr-img)
+                                               (viz-state-scale-factor new-viz-state))
+                    new-curr-img
+                    (viz-state-scale-factor new-viz-state)))]))
+            (let ([new-viz-state (struct-copy viz-state
+                                              a-vs
+                                              [imgs new-imgs]
+                                              [curr-image new-curr-img]
+                                              [image-posn
+                                               (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
+                                                     (+ (posn-y (viz-state-image-posn a-vs))
+                                                        growth-y))]
+                                              [scale-factor-cap DEFAULT-ZOOM-CAP]
+                                              [scale-factor-floor DEFAULT-ZOOM-FLOOR])])
+              (reposition-out-of-bounds-img
+               new-viz-state
+               (calculate-viewport-limits (scale (viz-state-scale-factor a-vs) new-curr-img)
+                                          (viz-state-scale-factor a-vs))
+               new-curr-img
+               (viz-state-scale-factor a-vs)))))))
+
+;;viz-state -> viz-state
+;;Purpose: Jumps the visulization to next broken invariant
+(define (jump-next a-vs)
+  (if (or (zipper-at-end? (viz-state-imgs a-vs))
+          (empty? (imsg-state-upinv-con (informative-messages-component-state
+                                                             (viz-state-informative-messages a-vs)))))
+      a-vs
+      (let* ([idx (length (second (first (last (imsg-state-pinv-con (informative-messages-component-state
+                                                             (viz-state-informative-messages a-vs)))))))]
+             [new-imgs (zipper-to-idx (viz-state-imgs a-vs) idx)]
+             [new-curr-img ((zipper-current new-imgs))]
+             [curr-pimgs-img ((zipper-current (viz-state-imgs a-vs)))]
+             [img-resize (resize-image new-curr-img
+                                       (* E-SCENE-WIDTH PERCENT-BORDER-GAP)
+                                       (* E-SCENE-HEIGHT PERCENT-BORDER-GAP))]
+             [growth-x (- (/ (image-width (scale (viz-state-scale-factor a-vs) new-curr-img)) 2)
+                          (/ (image-width (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2))]
+             [growth-y (- (/ (image-height (scale (viz-state-scale-factor a-vs) new-curr-img)) 2)
+                          (/ (image-height (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2))])
+        (if (does-img-need-resizing? new-curr-img)
+            (let ([NEW-FLOOR (min (second img-resize) (third img-resize))])
+              (cond
+                [(> (viz-state-scale-factor a-vs) DEFAULT-ZOOM-CAP)
+                 (let ([new-viz-state
+                        (struct-copy viz-state
+                                     a-vs
+                                     [imgs new-imgs]
+                                     [curr-image new-curr-img]
+                                     [image-posn
+                                      (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
+                                            (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
+                                     [scale-factor DEFAULT-ZOOM-CAP]
+                                     [scale-factor-cap DEFAULT-ZOOM-CAP]
+                                     [scale-factor-floor NEW-FLOOR])])
+                   (reposition-out-of-bounds-img
+                    new-viz-state
+                    (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
+                                                      new-curr-img)
+                                               (viz-state-scale-factor new-viz-state))
+                    new-curr-img
+                    (viz-state-scale-factor new-viz-state)))]
+                [(< (viz-state-scale-factor a-vs) NEW-FLOOR)
+                 (let ([new-viz-state
+                        (struct-copy viz-state
+                                     a-vs
+                                     [imgs new-imgs]
+                                     [curr-image new-curr-img]
+                                     [image-posn
+                                      (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
+                                            (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
+                                     [scale-factor NEW-FLOOR]
+                                     [scale-factor-cap DEFAULT-ZOOM-CAP]
+                                     [scale-factor-floor NEW-FLOOR])])
+                   (reposition-out-of-bounds-img
+                    new-viz-state
+                    (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
+                                                      new-curr-img)
+                                               (viz-state-scale-factor new-viz-state))
+                    new-curr-img
+                    (viz-state-scale-factor new-viz-state)))]
+                [else
+                 (let ([new-viz-state
+                        (struct-copy viz-state
+                                     a-vs
+                                     [imgs new-imgs]
+                                     [curr-image new-curr-img]
+                                     [image-posn
+                                      (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
+                                            (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
+                                     [scale-factor-cap DEFAULT-ZOOM-CAP]
+                                     [scale-factor-floor NEW-FLOOR])])
+                   (reposition-out-of-bounds-img
+                    new-viz-state
+                    (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
+                                                      new-curr-img)
+                                               (viz-state-scale-factor new-viz-state))
+                    new-curr-img
+                    (viz-state-scale-factor new-viz-state)))]))
+            (let ([new-viz-state (struct-copy viz-state
+                                              a-vs
+                                              [imgs new-imgs]
+                                              [curr-image new-curr-img]
+                                              [image-posn
+                                               (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
+                                                     (+ (posn-y (viz-state-image-posn a-vs))
+                                                        growth-y))]
+                                              [scale-factor-cap DEFAULT-ZOOM-CAP]
+                                              [scale-factor-floor DEFAULT-ZOOM-FLOOR])])
+              (reposition-out-of-bounds-img
+               new-viz-state
+               (calculate-viewport-limits (scale (viz-state-scale-factor a-vs) new-curr-img)
+                                          (viz-state-scale-factor a-vs))
+               new-curr-img
+               (viz-state-scale-factor a-vs)))))))
+
+;;viz-state -> viz-state
+;;Purpose: Jumps the visulization to previous broken invariant
+(define (jump-prev a-vs)
+  (if (or (zipper-at-begin? (viz-state-imgs a-vs))
+          (empty? (imsg-state-pinv-con (informative-messages-component-state
+                                        (viz-state-informative-messages a-vs)))))
+      a-vs
+      (let* ([idx (length (second (first (last (imsg-state-pinv-con (informative-messages-component-state
+                                                                         (viz-state-informative-messages a-vs)))))))]
+             [new-imgs (zipper-to-idx (viz-state-imgs a-vs) idx)]
              [new-curr-img ((zipper-current new-imgs))]
              [curr-pimgs-img ((zipper-current (viz-state-imgs a-vs)))]
              [img-resize (resize-image new-curr-img
@@ -1167,13 +1508,19 @@
 ;; viz-state -> viz-state
 ;; Purpose: Zooms all the way out in the visualization
 (define (max-zoom-out a-vs)
-  (if (or (< E-SCENE-WIDTH (image-width (viz-state-curr-image a-vs)))
+  #;(if (or (< E-SCENE-WIDTH (image-width (viz-state-curr-image a-vs)))
           (< E-SCENE-HEIGHT (image-height (viz-state-curr-image a-vs))))
       (let ([img-resize (resize-image (viz-state-curr-image a-vs)
                                       (* E-SCENE-WIDTH PERCENT-BORDER-GAP)
                                       (* E-SCENE-HEIGHT PERCENT-BORDER-GAP))])
-        (zoom a-vs (/ (min (second img-resize) (third img-resize)) (viz-state-scale-factor a-vs))))
-      (struct-copy viz-state a-vs [scale-factor DEFAULT-ZOOM])))
+        (begin
+          (display (format "image-width ~s \n" (image-width (viz-state-curr-image a-vs))))
+          (display (format "image-height ~s \n" (image-height (viz-state-curr-image a-vs))))
+          (display (format "second img-resize ~s \n" (second img-resize)))
+          (display (format "third img-resize ~s \n" (third img-resize)))
+          (zoom a-vs (/ (min (second img-resize) (third img-resize)) (viz-state-scale-factor a-vs)))))
+      (struct-copy viz-state a-vs [scale-factor DEFAULT-ZOOM-FLOOR]))
+  (zoom a-vs (/ DEFAULT-ZOOM-FLOOR (viz-state-scale-factor a-vs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1446,10 +1793,10 @@
 ;;M is a machine
 ;;inv is a the (listof (state (listof symbols -> boolean)))
 ;;dead is the sybmol of dead state
-(struct building-viz-state (upci pci M inv dead))
+(struct building-viz-state (upci pci M inv dead)); upinv-con pinv-con))
 ;(struct viz-state-ndfa (upci pci M inv dead imsg instruct graphs))
 
-(struct imsg-state (M upci pci) #:transparent)
+(struct imsg-state (M upci pci upinv-con pinv-con) #:transparent)
 
 (define E-SCENE (empty-scene 1250 600))
 
@@ -1779,16 +2126,14 @@
        [component-state
         (struct-copy imsg-state
                      (informative-messages-component-state (viz-state-informative-messages a-vs))
-                     [upci
-                      (if (or (empty? (imsg-state-upci (informative-messages-component-state
+                     [upci (if (or (empty? (imsg-state-upci (informative-messages-component-state
                                                         (viz-state-informative-messages a-vs))))
                               (not completed-config?))
                           (imsg-state-upci (informative-messages-component-state
                                             (viz-state-informative-messages a-vs)))
                           (rest (imsg-state-upci (informative-messages-component-state
                                                   (viz-state-informative-messages a-vs)))))]
-                     [pci
-                      (if (or (empty? (imsg-state-upci (informative-messages-component-state
+                     [pci (if (or (empty? (imsg-state-upci (informative-messages-component-state
                                                         (viz-state-informative-messages a-vs))))
                               (not completed-config?))
                           (imsg-state-pci (informative-messages-component-state
@@ -1797,27 +2142,57 @@
                                                    (viz-state-informative-messages a-vs)))
                                   (list (first (imsg-state-upci (informative-messages-component-state
                                                                  (viz-state-informative-messages
-                                                                  a-vs)))))))])])])))
+                                                                  a-vs)))))))]
+                     [upinv-con (if (or (empty? (imsg-state-upinv-con (informative-messages-component-state
+                                                                       (viz-state-informative-messages a-vs))))
+                                        (not completed-config?))
+                                    (imsg-state-upinv-con (informative-messages-component-state
+                                                           (viz-state-informative-messages a-vs)))
+                                    (let* ([pci (imsg-state-pci (informative-messages-component-state
+                                                                 (viz-state-informative-messages a-vs)))]
+                                           [prev (append-map (λ (configs)
+                                                               (filter (λ (config) (equal? pci (second config)))
+                                                                       configs))
+                                                             (imsg-state-upinv-con (informative-messages-component-state
+                                                                                    (viz-state-informative-messages a-vs))))]
+                                           [res (remove prev (imsg-state-upinv-con (informative-messages-component-state
+                                                                                   (viz-state-informative-messages a-vs))))])
+                                      res))]
+                     [pinv-con (if (empty? (imsg-state-upinv-con (informative-messages-component-state
+                                                                 (viz-state-informative-messages a-vs))))
+                                   (imsg-state-pinv-con (informative-messages-component-state
+                                                         (viz-state-informative-messages a-vs)))
+                                   (let* ([pci (imsg-state-pci (informative-messages-component-state
+                                                                (viz-state-informative-messages a-vs)))]
+                                          [prev (append-map (λ (configs)
+                                                              (filter (λ (config) (equal? pci (second config)))
+                                                                      configs))
+                                                            (imsg-state-upinv-con (informative-messages-component-state
+                                                                                  (viz-state-informative-messages a-vs))))]
+                                          [res (if (empty? prev)
+                                                   (imsg-state-pinv-con (informative-messages-component-state
+                                                                         (viz-state-informative-messages a-vs)))
+                                                   (append (imsg-state-pinv-con (informative-messages-component-state
+                                                                                 (viz-state-informative-messages a-vs)))
+                                                           (list prev)))])
+                                     res))])])])))
 
 (define (down-key-pressed a-vs)
   (let* (;;(listof symbols)
+          ;;Purpose: The entire given word
+         [full-word (append (imsg-state-pci (informative-messages-component-state
+                                             (viz-state-informative-messages a-vs)))
+                            (imsg-state-upci (informative-messages-component-state
+                                              (viz-state-informative-messages a-vs))))]
+         ;;(listof symbols)
          ;;Purpose: The last word that could be fully consumed by the ndfa
          [last-consumed-word (last-fully-consumed
-                              (append (imsg-state-pci (informative-messages-component-state
-                                                       (viz-state-informative-messages a-vs)))
-                                      (imsg-state-upci (informative-messages-component-state
-                                                        (viz-state-informative-messages a-vs))))
+                              full-word
                               (imsg-state-M (informative-messages-component-state
                                              (viz-state-informative-messages a-vs))))]
          ;;(listof symbols)
          ;;Purpose: The portion of the word that cannont be consumed
-         [unconsumed-word (remove-similarities
-                           last-consumed-word
-                           (append (imsg-state-pci (informative-messages-component-state
-                                                    (viz-state-informative-messages a-vs)))
-                                   (imsg-state-upci (informative-messages-component-state
-                                                     (viz-state-informative-messages a-vs))))
-                           '())])
+         [unconsumed-word (remove-similarities last-consumed-word full-word '())])
     (struct-copy
      viz-state
      a-vs
@@ -1829,36 +2204,51 @@
         (struct-copy
          imsg-state
          (informative-messages-component-state (viz-state-informative-messages a-vs))
-         [upci
-          (cond
-            [(empty? (imsg-state-upci (informative-messages-component-state
-                                       (viz-state-informative-messages a-vs))))
-             (imsg-state-upci (informative-messages-component-state
-                               (viz-state-informative-messages a-vs)))]
-            [(not (equal? last-consumed-word
-                          (append (imsg-state-pci (informative-messages-component-state
-                                                   (viz-state-informative-messages a-vs)))
-                                  (imsg-state-upci (informative-messages-component-state
-                                                    (viz-state-informative-messages a-vs))))))
-             (rest unconsumed-word)]
-            [else '()])]
-         [pci
-          (cond
-            [(empty? (imsg-state-upci (informative-messages-component-state
-                                       (viz-state-informative-messages a-vs))))
-             (imsg-state-pci (informative-messages-component-state
-                              (viz-state-informative-messages a-vs)))]
-            [(not (equal? last-consumed-word
-                          (append (imsg-state-pci (informative-messages-component-state
-                                                   (viz-state-informative-messages a-vs)))
-                                  (imsg-state-upci (informative-messages-component-state
-                                                    (viz-state-informative-messages a-vs))))))
-             (append last-consumed-word (take unconsumed-word 1))]
-            [else
-             (append (imsg-state-pci (informative-messages-component-state
-                                      (viz-state-informative-messages a-vs)))
-                     (imsg-state-upci (informative-messages-component-state
-                                       (viz-state-informative-messages a-vs))))])])])])))
+         [upci (cond [(empty? (imsg-state-upci (informative-messages-component-state
+                                                (viz-state-informative-messages a-vs))))
+                      (imsg-state-upci (informative-messages-component-state
+                                        (viz-state-informative-messages a-vs)))]
+                     [(not (equal? last-consumed-word full-word))
+                      (rest unconsumed-word)]
+                     [else '()])]
+         [pci (cond [(empty? (imsg-state-upci (informative-messages-component-state
+                                               (viz-state-informative-messages a-vs))))
+                     (imsg-state-pci (informative-messages-component-state
+                                      (viz-state-informative-messages a-vs)))]
+                    [(not (equal? last-consumed-word full-word))
+                     (append last-consumed-word (take unconsumed-word 1))]
+                    [else full-word])]
+         [upinv-con (cond [(empty? (imsg-state-upinv-con (informative-messages-component-state
+                                                      (viz-state-informative-messages a-vs))))
+                          (imsg-state-upinv-con (informative-messages-component-state
+                                               (viz-state-informative-messages a-vs)))]
+                          [(not (equal? last-consumed-word full-word))
+                           (filter (λ (config)
+                                     (not (empty? config)))
+                                   (map (λ (configs)
+                                                 (filter (λ (config)
+                                                           (< (length last-consumed-word) (length (second config))))
+                                                         configs))
+                                               (imsg-state-upinv-con (informative-messages-component-state
+                                                                     (viz-state-informative-messages a-vs)))))]
+                          [else '()])]
+         [pinv-con (cond [(empty? (imsg-state-upinv-con (informative-messages-component-state
+                                                         (viz-state-informative-messages a-vs))))
+                          (imsg-state-pinv-con (informative-messages-component-state
+                                                (viz-state-informative-messages a-vs)))]
+                         [(not (equal? last-consumed-word full-word))
+                          (filter (λ (config)
+                                    (not (empty? config)))
+                                  (map (λ (configs)
+                                         (filter (λ (config)
+                                                   (> (length last-consumed-word) (length (second config))))
+                                                 configs))
+                                       (imsg-state-upinv-con (informative-messages-component-state
+                                                              (viz-state-informative-messages a-vs)))))]
+                         [else (append (imsg-state-pinv-con (informative-messages-component-state
+                                                             (viz-state-informative-messages a-vs)))
+                                       (imsg-state-upinv-con (informative-messages-component-state
+                                                              (viz-state-informative-messages a-vs))))])])])])))
 
 (define (left-key-pressed a-vs)
   (struct-copy
@@ -1871,25 +2261,54 @@
      [component-state
       (struct-copy imsg-state
                    (informative-messages-component-state (viz-state-informative-messages a-vs))
-                   [upci
-                    (if (empty? (imsg-state-pci (informative-messages-component-state
-                                                 (viz-state-informative-messages a-vs))))
-                        (imsg-state-upci (informative-messages-component-state
-                                          (viz-state-informative-messages a-vs)))
-                        (cons (last (imsg-state-pci (informative-messages-component-state
-                                                     (viz-state-informative-messages a-vs))))
-                              (imsg-state-upci (informative-messages-component-state
-                                                (viz-state-informative-messages a-vs)))))]
-                   [pci
-                    (if (empty? (imsg-state-pci (informative-messages-component-state
-                                                 (viz-state-informative-messages a-vs))))
-                        (imsg-state-pci (informative-messages-component-state
-                                         (viz-state-informative-messages a-vs)))
-                        (take (imsg-state-pci (informative-messages-component-state
+                   [upci (if (empty? (imsg-state-pci (informative-messages-component-state
+                                                      (viz-state-informative-messages a-vs))))
+                             (imsg-state-upci (informative-messages-component-state
                                                (viz-state-informative-messages a-vs)))
-                              (sub1 (length (imsg-state-pci (informative-messages-component-state
-                                                             (viz-state-informative-messages
-                                                              a-vs)))))))])])]))
+                             (cons (last (imsg-state-pci (informative-messages-component-state
+                                                          (viz-state-informative-messages a-vs))))
+                                   (imsg-state-upci (informative-messages-component-state
+                                                     (viz-state-informative-messages a-vs)))))]
+                   [pci (if (empty? (imsg-state-pci (informative-messages-component-state
+                                                     (viz-state-informative-messages a-vs))))
+                            (imsg-state-pci (informative-messages-component-state
+                                             (viz-state-informative-messages a-vs)))
+                            (take (imsg-state-pci (informative-messages-component-state
+                                                   (viz-state-informative-messages a-vs)))
+                                  (sub1 (length (imsg-state-pci (informative-messages-component-state
+                                                                 (viz-state-informative-messages a-vs)))))))]
+                   [upinv-con (if (empty? (imsg-state-pinv-con (informative-messages-component-state
+                                                                (viz-state-informative-messages a-vs))))
+                                  (imsg-state-upinv-con (informative-messages-component-state
+                                                         (viz-state-informative-messages a-vs)))
+                                  (let* ([pci (imsg-state-pci (informative-messages-component-state
+                                                                   (viz-state-informative-messages a-vs)))]
+                                         [prev (append-map (λ (configs)
+                                                          (filter (λ (config) (equal? pci (second config)))
+                                                                  configs))
+                                                          (imsg-state-pinv-con (informative-messages-component-state
+                                                               (viz-state-informative-messages a-vs))))]
+                                         [res (if (empty? prev)
+                                                  (imsg-state-upinv-con (informative-messages-component-state
+                                                         (viz-state-informative-messages a-vs)))
+                                                  (append (list prev)
+                                                          (imsg-state-upinv-con (informative-messages-component-state
+                                                                                 (viz-state-informative-messages a-vs)))))])
+                                    res))]
+                   [pinv-con (if (empty? (imsg-state-pinv-con (informative-messages-component-state
+                                                               (viz-state-informative-messages a-vs))))
+                                 (imsg-state-pinv-con (informative-messages-component-state
+                                                       (viz-state-informative-messages a-vs)))
+                                 (let* ([pci (imsg-state-pci (informative-messages-component-state
+                                                                   (viz-state-informative-messages a-vs)))]
+                                         [prev (append-map (λ (configs)
+                                                          (filter (λ (config) (equal? pci (second config)))
+                                                                  configs))
+                                                          (imsg-state-pinv-con (informative-messages-component-state
+                                                               (viz-state-informative-messages a-vs))))]
+                                         [res (remove prev (imsg-state-pinv-con (informative-messages-component-state
+                                                       (viz-state-informative-messages a-vs))))])
+                                   res))])])]))
 
 (define (up-key-pressed a-vs)
   (struct-copy
@@ -1902,21 +2321,32 @@
      [component-state
       (struct-copy imsg-state
                    (informative-messages-component-state (viz-state-informative-messages a-vs))
-                   [upci
-                    (if (empty? (imsg-state-pci (informative-messages-component-state
+                   [upci (if (empty? (imsg-state-pci (informative-messages-component-state
+                                                      (viz-state-informative-messages a-vs))))
+                             (imsg-state-upci (informative-messages-component-state
+                                               (viz-state-informative-messages a-vs)))
+                             (append (imsg-state-pci (informative-messages-component-state
+                                                      (viz-state-informative-messages a-vs)))
+                                     (imsg-state-upci (informative-messages-component-state
+                                                       (viz-state-informative-messages a-vs)))))]
+                   [pci (if (empty? (imsg-state-pci (informative-messages-component-state
+                                                     (viz-state-informative-messages a-vs))))
+                            (imsg-state-pci (informative-messages-component-state
+                                             (viz-state-informative-messages a-vs)))
+                            '())]
+                   [upinv-con (if (empty? (imsg-state-pinv-con (informative-messages-component-state
+                                                             (viz-state-informative-messages a-vs))))
+                                  (imsg-state-upinv-con (informative-messages-component-state
+                                                             (viz-state-informative-messages a-vs)))
+                                  (append (imsg-state-pinv-con (informative-messages-component-state
+                                                               (viz-state-informative-messages a-vs)))
+                                          (imsg-state-upinv-con (informative-messages-component-state
+                                                                 (viz-state-informative-messages a-vs)))))]
+                   [pinv-con (if (empty? (imsg-state-pinv-con (informative-messages-component-state
                                                  (viz-state-informative-messages a-vs))))
-                        (imsg-state-upci (informative-messages-component-state
-                                          (viz-state-informative-messages a-vs)))
-                        (append (imsg-state-pci (informative-messages-component-state
+                                 (imsg-state-pinv-con (informative-messages-component-state
                                                  (viz-state-informative-messages a-vs)))
-                                (imsg-state-upci (informative-messages-component-state
-                                                  (viz-state-informative-messages a-vs)))))]
-                   [pci
-                    (if (empty? (imsg-state-pci (informative-messages-component-state
-                                                 (viz-state-informative-messages a-vs))))
-                        (imsg-state-pci (informative-messages-component-state
-                                         (viz-state-informative-messages a-vs)))
-                        '())])])]))
+                                 '())])])]))
 ;; Purpose: Moves the deriving and current yield to the beginning of their current words
 (define (a-key-pressed a-vs)
   a-vs)
@@ -1926,17 +2356,106 @@
 (define (d-key-pressed a-vs)
   a-vs)
 
-;; process-key
-;; viz-state key -> viz-state
-;; Purpose: Move the visualization one step forward, one step
-;;          backwards, or to the end.
-(define (process-key a-vs a-key)
-  (cond
-    [(key=? "right" a-key) (right-key-pressed a-vs)]
-    [(key=? "left" a-key) (left-key-pressed a-vs)]
-    [(key=? "down" a-key) (down-key-pressed a-vs)]
-    [(key=? "up" a-key) (up-key-pressed a-vs)]
-    [else a-vs]))
+;;viz-state -> viz-state
+;;Purpose: Jumps to the previous broken invariant
+(define (j-key-pressed a-vs)
+  (let ([prev (if (empty? (imsg-state-pinv-con (informative-messages-component-state
+                                                (viz-state-informative-messages a-vs))))
+                  (imsg-state-pinv-con (informative-messages-component-state
+                                        (viz-state-informative-messages a-vs)))
+                  (take (imsg-state-pinv-con (informative-messages-component-state
+                                              (viz-state-informative-messages a-vs)))
+                        (sub1 (length (imsg-state-pinv-con (informative-messages-component-state
+                                                            (viz-state-informative-messages a-vs)))))))])
+    (struct-copy
+     viz-state
+     a-vs
+     [informative-messages
+      (struct-copy
+       informative-messages
+       (viz-state-informative-messages a-vs)
+       [component-state
+        (struct-copy imsg-state
+                     (informative-messages-component-state (viz-state-informative-messages a-vs))
+                     [upci (if (empty? prev)
+                               (imsg-state-upci (informative-messages-component-state
+                                                 (viz-state-informative-messages a-vs)))
+                               (remove-similarities (append (imsg-state-pci (informative-messages-component-state
+                                                                             (viz-state-informative-messages a-vs)))
+                                                            (imsg-state-upci (informative-messages-component-state
+                                                                              (viz-state-informative-messages a-vs))))
+                                                    (second (first (last prev)))
+                                                    '()))]
+                   
+                     [pci
+                      (if (empty? prev)
+                          (imsg-state-pci (informative-messages-component-state
+                                           (viz-state-informative-messages a-vs)))
+                          (second (first (last prev))))]
+                     [upinv-con (if (empty? (imsg-state-pinv-con (informative-messages-component-state
+                                                                  (viz-state-informative-messages a-vs))))
+                                    (imsg-state-upinv-con (informative-messages-component-state
+                                                           (viz-state-informative-messages a-vs)))
+                                    (cons (last (imsg-state-pinv-con (informative-messages-component-state
+                                                                      (viz-state-informative-messages a-vs))))
+                                          (imsg-state-upinv-con (informative-messages-component-state
+                                                                 (viz-state-informative-messages a-vs)))))]
+                     [pinv-con (if (empty? (imsg-state-pinv-con (informative-messages-component-state
+                                                                 (viz-state-informative-messages a-vs))))
+                                   (imsg-state-pinv-con (informative-messages-component-state
+                                                         (viz-state-informative-messages a-vs)))
+                                   (take (imsg-state-pinv-con (informative-messages-component-state
+                                                               (viz-state-informative-messages a-vs)))
+                                         (sub1 (length (imsg-state-pinv-con (informative-messages-component-state
+                                                                             (viz-state-informative-messages a-vs)))))))])])])))
+
+;;viz-state -> viz-state
+;;Purpose: Jumps to the next broken invariant
+(define (l-key-pressed a-vs)
+  (struct-copy
+   viz-state
+   a-vs
+   [informative-messages
+    (struct-copy
+     informative-messages
+     (viz-state-informative-messages a-vs)
+     [component-state
+      (struct-copy imsg-state
+                   (informative-messages-component-state (viz-state-informative-messages a-vs))
+                   [upci
+                    (if (empty? (imsg-state-upinv-con (informative-messages-component-state
+                                                             (viz-state-informative-messages a-vs))))
+                        (imsg-state-upci (informative-messages-component-state
+                                          (viz-state-informative-messages a-vs)))
+                        (remove-similarities (append (imsg-state-pci (informative-messages-component-state
+                                                                       (viz-state-informative-messages a-vs)))
+                                                      (imsg-state-upci (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs))))
+                                              (second (first (first (imsg-state-upinv-con (informative-messages-component-state
+                                                                                           (viz-state-informative-messages a-vs))))))
+                                              '()))]
+                   
+                   [pci
+                    (if (empty? (imsg-state-upinv-con (informative-messages-component-state
+                                                             (viz-state-informative-messages a-vs))))
+                        (imsg-state-pci (informative-messages-component-state
+                                         (viz-state-informative-messages a-vs)))
+                        (second (first (first (imsg-state-upinv-con (informative-messages-component-state
+                                                                                           (viz-state-informative-messages a-vs)))))))]
+                   [upinv-con (if (empty? (imsg-state-upinv-con (informative-messages-component-state
+                                                             (viz-state-informative-messages a-vs))))
+                                  (imsg-state-upinv-con (informative-messages-component-state
+                                                             (viz-state-informative-messages a-vs)))
+                                  (rest (imsg-state-upinv-con (informative-messages-component-state
+                                                             (viz-state-informative-messages a-vs)))))]
+                   [pinv-con (if (empty? (imsg-state-upinv-con (informative-messages-component-state
+                                                 (viz-state-informative-messages a-vs))))
+                                 (imsg-state-pinv-con (informative-messages-component-state
+                                                 (viz-state-informative-messages a-vs)))
+                                 (append (imsg-state-pinv-con (informative-messages-component-state
+                                                               (viz-state-informative-messages a-vs)))
+                                         (list (first (imsg-state-upinv-con (informative-messages-component-state
+                                                                             (viz-state-informative-messages a-vs)))))))])])]))
 
 ;;machine -> machine
 ;;Purpose: Produces an equivalent machine with the addition of the dead state and rules to the dead state
@@ -1994,7 +2513,11 @@
                            [(and add-dead (eq? (sm-type M) 'dfa)) DEAD]
                            [else 'no-dead])]
              [graphs (create-graph-thunks
-                      (building-viz-state a-word '() (if add-dead new-M M) invs dead-state)
+                      (building-viz-state a-word
+                                          '()
+                                          (if add-dead new-M M)
+                                          invs
+                                          dead-state)
                       '())])
         ;(struct building-viz-state (upci pci M inv dead))
         ;(struct imsg-state (M upci pci))
@@ -2006,7 +2529,18 @@
                  DEFAULT-ZOOM-CAP
                  DEFAULT-ZOOM-FLOOR
                  (informative-messages create-draw-informative-message
-                                       (imsg-state (if add-dead new-M M) a-word '())
+                                       (imsg-state (if add-dead new-M M)
+                                                   a-word
+                                                   '()
+                                                   (return-brk-inv-configs
+                                                    (get-inv-config-results
+                                                     (make-inv-configs a-word
+                                                                       (get-configs a-word
+                                                                                    (sm-rules M)
+                                                                                    (sm-start M)))
+                                                     invs)
+                                                    a-word)
+                                                   '())
                                        RULE-YIELD-DIMS)
                  (instructions-graphic E-SCENE-TOOLS
                                        (bounding-limits 0
@@ -2033,7 +2567,9 @@
                                                (list "a" identity a-key-pressed)
                                                (list "d" identity d-key-pressed)
                                                (list "wheel-down" zoom-in identity)
-                                               (list "wheel-up" zoom-out identity)))
+                                               (list "wheel-up" zoom-out identity)
+                                               (list "j" jump-prev j-key-pressed)
+                                               (list "l" jump-next l-key-pressed)))
                  (create-viz-process-tick E-SCENE-BOUNDING-LIMITS
                                           NODE-SIZE
                                           E-SCENE-WIDTH
@@ -2051,7 +2587,9 @@
                                                 (list E-KEY-DIMS reset-zoom identity)
                                                 (list F-KEY-DIMS max-zoom-in identity)
                                                 (list A-KEY-DIMS identity a-key-pressed)
-                                                (list D-KEY-DIMS identity d-key-pressed)))
+                                                (list D-KEY-DIMS identity d-key-pressed)
+                                                (list J-KEY-DIMS jump-prev j-key-pressed)
+                                                (list L-KEY-DIMS jump-next l-key-pressed)))
                  'ndfa-viz))))
 
 (define aa*Uab* (make-ndfa '(K B D)
@@ -2298,7 +2836,9 @@
 ;;word -> boolean
 ;;Purpose: Determines if the given word is empty or if the last letter is an a or b
 (define (H-INV a-word)
+ ;(not
   (or (empty? a-word) (equal? (last a-word) 'a) (equal? (last a-word) 'b)))
+;)
 
 ;;word -> boolean
 ;;Purpose: Determine if the given word has an even number of Bs
@@ -2310,3 +2850,95 @@
 (define (EVEN-NUM-Bs-F-INV a-word)
   (odd? (length (filter (λ (w) (equal? w 'b)) a-word))))
 
+
+(define (s-inv a-word)
+  (empty? a-word))
+
+(define (a-inv a-word)
+  (local [(define num-a (length (filter (λ (w) (equal? w 'a)) a-word)))
+          (define num-b (length (filter (λ (w) (equal? w 'b)) a-word)))]
+    (= num-a num-b)))
+
+(define (b-inv a-word)
+  (local [(define num-a (length (filter (λ (w) (equal? w 'a)) a-word)))
+          (define num-b (length (filter (λ (w) (equal? w 'b)) a-word)))]
+    (> num-a num-b)))
+
+(define (c-inv a-word)
+  (local [(define num-a (length (filter (λ (w) (equal? w 'a)) a-word)))
+          (define num-b (length (filter (λ (w) (equal? w 'b)) a-word)))]
+    (>= num-b num-a)))
+
+(define (d-inv a-word)
+  (local [(define num-a (length (filter (λ (w) (equal? w 'a)) a-word)))
+          (define num-b (length (filter (λ (w) (equal? w 'b)) a-word)))]
+    (= num-a num-b)))
+
+(define (e-inv a-word)
+  (andmap (λ (w) (equal? w 'b)) (rest a-word)))
+
+
+;(ndfa-viz AT-LEAST-ONE-MISSING '(c c c c b b b b c b a))
+;(ndfa-viz AT-LEAST-ONE-MISSING '(c c c c b b b b c b a a a) #:add-dead #t)
+;(ndfa-viz p2-ndfa '(a b a b a b a b a b b b b b) (list 'S s-inv) (list 'A a-inv) (list 'B b-inv) (list 'C c-inv) (list 'D d-inv) (list 'E e-inv))
+
+
+(define (make-inv-configs a-word configs)
+  (if (empty? configs)
+      '()
+      (append (list (make-inv-configs-helper a-word (first configs) (length a-word)))
+              (make-inv-configs a-word (rest configs)))))
+
+
+(define (make-inv-configs-helper a-word configs word-len)
+  (let* ([config (filter (λ (config) (= (length (second config)) word-len)) configs)]
+         [inv-config (map (λ (config)
+                            (append (list (first config))
+                                    (list (take a-word (- (length a-word) word-len)))))
+                            config)])
+    (if (empty? configs)
+      '()
+      (append inv-config
+              (make-inv-configs-helper a-word (rest configs) (sub1 word-len))))))
+
+(define (get-inv-config-results inv-configs invs)
+  (if (or (empty? inv-configs)
+          (empty? invs))
+      '()
+      (append (list (get-inv-config-results-helper (first inv-configs) invs))
+              (get-inv-config-results (rest inv-configs) invs))))
+
+
+(define (get-inv-config-results-helper inv-configs invs)
+    (if (empty? inv-configs)
+      '()
+      (let* ([inv-for-inv-config (second (first (filter (λ (inv)
+                                           (equal? (first inv) (first (first inv-configs))))
+                                         invs)))]
+             [inv-config-result (append (first inv-configs)
+                                        (list (inv-for-inv-config (second (first inv-configs)))))])
+        (append (list inv-config-result)
+                (get-inv-config-results-helper (rest inv-configs) invs)))))
+
+(define inv-list (list (list 'S S-INV)
+          (list 'K K-INV)
+          (list 'B B-INV)
+          (list 'C C-INV)
+          (list 'H H-INV)))
+
+(define (return-brk-inv-configs inv-config-results a-word)
+  (if (empty? inv-config-results)
+      '()
+      (return-brk-inv-configs-helper inv-config-results a-word (length a-word) '())))
+
+(define (return-brk-inv-configs-helper inv-config-results a-word word-len acc)
+  (if (< word-len 0)
+      (filter (λ (res) (not (empty? res))) acc) ;;might remove if not can index using the length of the wht was processed
+      (let* ([new-acc (append-map (λ (inv-configs)
+                             (filter (λ (config)
+                                       (and (equal? (second config) (take a-word (- (length a-word) word-len)))
+                                            (not (third config))))
+                                     inv-configs))
+                             inv-config-results)])
+        (return-brk-inv-configs-helper inv-config-results a-word (sub1 word-len) (append acc (list new-acc))))))
+  
