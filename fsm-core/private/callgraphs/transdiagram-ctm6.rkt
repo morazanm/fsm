@@ -205,6 +205,22 @@
 
 ;; list -> list
 ;; Purpose: Remove unnesseccary branches
+#;(define (branch-helper2 l)
+  (cond ((null? l) '())
+        ((and (pair? (car l))
+              (equal? 'BRANCH (car (car l)))
+              (pair? (cadr (cadr (car l))))
+              (equal? 'BRANCH (car (cadr (cadr (car l))))))
+         (cons (append (cons 'BRANCH (list (cons (car (cadr (car l)))
+                                                 (list (cons 'BRANCH
+                                                             (filter (lambda (x) (equal? (car x) (car (cadr (car l)))))
+                                                                     (cdr (cadr (cadr (car l))))))))))
+                       (if (empty? (cdr (cdr (car l))))
+                           '()
+                           (branch-helper2 (list (cons 'BRANCH (cdr (cdr (car l))))))))
+               (branch-helper2 (cdr l))))
+        (else (cons (car l) (branch-helper2 (cdr l))))))
+
 (define (branch-helper2 l)
   (cond ((null? l) '())
         ((and (pair? (car l))
@@ -232,8 +248,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; (listof number)natnum -> number
+;; (listof number) -> number
 ;; Purpose: Generate a random number between 0 and 100 that is not already in numlist
+#;(define (random2 numlist)
+  (let ((n (random 1000)))
+    (if (member n numlist)
+        (random2 numlist)
+        n)))
 (define (random2 numlist n)
   (if (member n numlist)
       (random2 numlist (add1 n))

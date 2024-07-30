@@ -157,7 +157,8 @@ The following starting state, C, is not in the given list of states: (S A B)"))
                            (B ,ARROW A))
                          'S
                          #:accepts 'abab)
-               (format "The expected accepts is not a list of words: abab"))
+               (format "Step two of the design recipe has not been successfully completed.
+The expected accepts is not a list of words: abab"))
   ; The input to #:accepts must be a list of words (where a word is a list of symbols)
   (check-error (make-csg '(S A B)
                          '(a b)
@@ -167,7 +168,8 @@ The following starting state, C, is not in the given list of states: (S A B)"))
                            (B ,ARROW A))
                          'S
                          #:accepts '(1 2 3 4 5))
-               (format "The expected accepts is not a list of words: (1 2 3 4 5)"))
+               (format "Step two of the design recipe has not been successfully completed.
+The expected accepts is not a list of words: (1 2 3 4 5)"))
   ; Each word in #:accepts must contain only symbols from the grammar alphabet (sigma)
   (check-error (make-csg '(S A B)
                          '(a b)
@@ -177,7 +179,7 @@ The following starting state, C, is not in the given list of states: (S A B)"))
                            (B ,ARROW A))
                          'S
                          #:accepts '((a b a b) (c d e f g)))
-               (format "Step six of the design recipe has not been successfully completed.
+               (format "Step two of the design recipe has not been successfully completed.
 The following words in the accepts list contain symbols not included in sigma: ((c d e f g))"))
   ; The input to #:rejects must be a list
   (check-error (make-csg '(S A B)
@@ -188,7 +190,8 @@ The following words in the accepts list contain symbols not included in sigma: (
                            (B ,ARROW A))
                          'S
                          #:rejects 'abab)
-               (format "The expected rejects is not a list of words: abab"))
+               (format "Step two of the design recipe has not been successfully completed.
+The expected rejects is not a list of words: abab"))
   ; The input to #:rejects must be a list of words (where a word is a list of symbols)
   (check-error (make-csg '(S A B)
                          '(a b)
@@ -198,7 +201,8 @@ The following words in the accepts list contain symbols not included in sigma: (
                            (B ,ARROW A))
                          'S
                          #:rejects '(1 2 3 4 5))
-               (format "The expected rejects is not a list of words: (1 2 3 4 5)"))
+               (format "Step two of the design recipe has not been successfully completed.
+The expected rejects is not a list of words: (1 2 3 4 5)"))
   ; Each word in #:rejects must contain only symbols from the grammar alphabet (sigma)
   (check-error (make-csg '(S A B)
                          '(a b)
@@ -208,7 +212,7 @@ The following words in the accepts list contain symbols not included in sigma: (
                            (B ,ARROW A))
                          'S
                          #:rejects '((a b a b) (c d e f g)))
-               (format "Step six of the design recipe has not been successfully completed.
+               (format "Step two of the design recipe has not been successfully completed.
 The following words in the rejects list contain symbols not included in sigma: ((c d e f g))"))
 
   (test)

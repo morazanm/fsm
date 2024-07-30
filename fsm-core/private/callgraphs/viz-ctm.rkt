@@ -10,7 +10,7 @@
                     [make-color loc-make-color]
                     [make-pen loc-make-pen])
          2htdp/image
-         "transdiagram-ctm2.rkt")
+         "transdiagram-ctm6.rkt")
 
 (provide ctm-viz)
 
@@ -178,10 +178,7 @@
                                                 (second (first new-ptape))
                                                 (third (first new-ptape)))
                                  (square 30 'solid 'white)
-                                 (if (= 1 (length (var-pvar (viz-state-var a-vs))))
-                                     (first new-uvar)
-                                     (first new-pvar)
-                                     )
+                                 (first new-pvar)
                                  )
                           (if (= 1 (length (var-pvar (viz-state-var a-vs))))
                               (viz-state-var a-vs) 
@@ -453,18 +450,14 @@
 ;; ctm-viz
 ;; ctm a-list (listof symbol) number -> void
 (define (ctm-viz ctm ctm-list tape head)
-  (let* [(ce (fix-blank-label (computation-edges ctm ctm-list tape head)))
-         (last-node (if (empty? ce)
-                        (first (last (dot-nodes (parse-program ctm-list))))
-                        (second (last ce))))
-         (comp-edges (if (and (not (empty? ce))
-                              (equal? (first (first ce)) "dummy"))
-                         (append ce
-                                 (list (list last-node "edge-dummy" (list '(label "dummy") '(style "dummy")'(color "dummy") '(headlabel "dummy")))))
-                         (append (list (list "dummy-edge" "edge-dummy" (list '(label "dummy")'(style "dummy") '(color "dummy") '(headlabel "dummy"))))
-                                 ce
-                                 (list (list last-node "edge-dummy" (list '(label "dummy") '(style "dummy")'(color "dummy") '(headlabel "dummy")))))
-                         ))
+  (let* [(ce (fix-blank-label (computation-edges ctm ctm-list tape head))
+             )
+         (last-node (second (last ce)))
+         (comp-edges (append (list (list "dummy-edge" "edge-dummy" (list '(label "dummy")'(style "dummy") '(color "dummy") '(headlabel "dummy"))))
+                             ce
+                             (list (list last-node "edge-dummy" (list '(label "dummy") '(style "dummy")'(color "dummy") '(headlabel "dummy"))))
+                             )
+                     )
          (loedges (fix-blank-label (clean-list (dot-edges (parse-program ctm-list))))
                   )
          (lonodes (clean-list (dot-nodes (parse-program ctm-list))))
@@ -483,15 +476,10 @@
          (loimgs (create-graph-imgs loedges lonodes comp-edges))
          (tapes (create-tape tmconfigs))
          (lovars (extract-labels comp-edges))
-         (tapeimg (if (= (length tmconfigs) 1)
-                      (above (make-tape-img (first (first tapes)) (second (first tapes)) (third (first tapes)))
-                             (square 30 'solid 'white)
-                             (text "The machine halts" 20 'black)
-                             )
-                      (above (make-tape-img (first (first tapes)) (second (first tapes)) (third (first tapes)))
-                             (square 30 'solid 'white)
-                             (first varimgs)
-                             )))
+         (tapeimg (above (make-tape-img (first (first tapes)) (second (first tapes)) (third (first tapes)))
+                         (square 30 'solid 'white)
+                         (first varimgs)
+                         ))
          ]
     (run-viz (viz-state (graph (rest loimgs) (list (first loimgs)))
                         (tapelist (rest tapes) (list (first tapes)))

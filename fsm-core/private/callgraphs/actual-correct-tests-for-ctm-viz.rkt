@@ -1,5 +1,4 @@
 #lang fsm
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; tms
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -436,4 +435,67 @@
                     4
                     FBL
                     shiftr
-                    FBR)) 
+                    FBR))
+
+
+(define MULT2 (combine-tms
+               (list R
+                    (cons BRANCH (list (list 'd WB (list GOTO 0))
+                                       (list '_ R (list GOTO 3))))
+                    0
+                    R
+                    (cons BRANCH (list (list 'd (list GOTO 1))
+                                       (list '_ (list GOTO 2))))
+                    1
+                    WB
+                    FBR
+                    FBR
+                    COPY
+                    FBL
+                    FBL
+                    FBL
+                    (list GOTO 0)
+                    2
+                    FBR
+                    (list GOTO 4)
+                    3
+                    (cons BRANCH (list (list '_ (list GOTO 4))
+                                       (list 'd
+                                             WB
+                                             R
+                                             (list GOTO 3))))
+                    4
+                    FBL
+                    shiftr
+                    FBR)
+               '(d)))
+
+(define MULTL2 '(list R
+                    (cons BRANCH (list (list 'd WB (list GOTO 0))
+                                       (list '_ R (list GOTO 3))))
+                    0
+                    R
+                    (cons BRANCH (list (list 'd (list GOTO 1))
+                                       (list '_ (list GOTO 2))))
+                    1
+                    WB
+                    FBR
+                    FBR
+                    COPY
+                    FBL
+                    FBL
+                    FBL
+                    (list GOTO 0)
+                    2
+                    FBR
+                    (list GOTO 4)
+                    3
+                    (cons BRANCH (list (list '_ (list GOTO 4))
+                                       (list 'd
+                                             WB
+                                             R
+                                             (list GOTO 3))))
+                    4
+                    FBL
+                    shiftr
+                    FBR))
