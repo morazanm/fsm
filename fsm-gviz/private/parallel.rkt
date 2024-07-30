@@ -1,7 +1,7 @@
 #lang racket
 (require "lib.rkt"
          2htdp/image
-         )
+         "dot.rkt")
 
 (provide parallel-graphs->bitmap-thunks
          unsafe-parallel-graphs->bitmap-thunks
