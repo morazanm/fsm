@@ -1,5 +1,5 @@
 #lang fsm
-(require "transdiagram-ctm.rkt")
+(require "transdiagram-ctm6.rkt")
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Move-right machine
 

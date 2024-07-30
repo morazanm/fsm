@@ -93,6 +93,6 @@
            'S
            '(V)))
 
-(sm-showtransitions COPYTM '(@ _ a b _) 4)
-(sm-showtransitions COPYTM '(@ _ _ _) 3)
-(sm-graph COPYTM)
+;(sm-showtransitions COPYTM '(@ _ a b _) 4)
+;(sm-showtransitions COPYTM '(@ _ _ _) 3)
+;(sm-graph COPYTM)
