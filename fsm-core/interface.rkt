@@ -31,7 +31,9 @@
   "private/callgraphs/callgraphs-tm.rkt"
   "private/callgraphs/callgraphs-mttm.rkt"
   "private/callgraphs/transdiagram-mttm.rkt"
-  "private/callgraphs/viz-ctm.rkt")
+  "private/callgraphs/viz-ctm.rkt"
+  "private/Chomsky-Greibach-CFG-Transformations/chomsky.rkt"
+  "private/Chomsky-Greibach-CFG-Transformations/greibach.rkt")
   
 (provide
  check-machine
@@ -69,9 +71,12 @@
  grammar-derive grammar-type
  grammar-nts grammar-sigma grammar-rules grammar-start 
 
- ;grammar testers
+ ; grammar testers
  grammar-both-derive grammar-testequiv grammar-test
 
+ ; grammar transformations
+ cfg->chomsky cfg->greibach
+ 
  ; regexp constructors
  empty-regexp singleton-regexp union-regexp concat-regexp kleenestar-regexp null-regexp
 
@@ -309,6 +314,12 @@
   
   
 ;;; GRAMMARS
+
+; cfg --> cfg
+(define cfg->chomsky chomsky)
+
+; cfg --> cfg
+(define cfg->greibach greibach)
   
 ; grammar --> fsm
 (define (sm->grammar m)

@@ -1,6 +1,5 @@
-;#lang racket
-#lang fsm
-(require #;"../../interface.rkt" "chomsky.rkt" "pda2cfg-v2-simple-pda.rkt")
+#lang racket
+(require "chomsky.rkt" "../grammar-getters.rkt" "../misc.rkt" "../constants.rkt" "../cfg.rkt")
 (provide greibach)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -270,7 +269,7 @@
            (append-map (lambda (conf)
                          (map (lambda (rule) `(,(config-nt conf) -> ,(list->symbol rule))) (config-rules conf)))
                        configs))))
-    (make-cfg new-nts
+    (make-unchecked-cfg new-nts
               (grammar-sigma cfg)
               new-rules
               (grammar-start cfg))))
@@ -291,46 +290,6 @@
                                                     As))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; cfg -> pda
-;; Purpose: Transform the given cfg into a pda
-(define (cfg->pda G)
-  (let [(nts (grammar-nts G))
-        (sigma (grammar-sigma G))
-        (start (grammar-start G))
-        (rules (grammar-rules G))]
-    (make-ndpda '(S Q)
-                sigma
-                (append nts sigma)
-                'S
-                (list 'Q)
-                (append (list (list (list 'S EMP EMP) (list 'Q (list 'S))))
-                        (map (λ (r)
-                               (list (list 'Q EMP (list (first r)))
-                                     (list 'Q (if (eq? (third r) EMP)
-                                                  EMP
-                                                  (symbol->fsmlos (third r))))))
-                             rules)
-                        (map (λ (a) (list (list 'Q a (list a)) (list 'Q EMP)))
-                             sigma)))))
-
-(define anbn (make-ndpda '(S M F)
-                         '(a b)
-                         '(a)
-                         'S
-                         '(F)
-                         '(((S ε ε) (M ε))
-                           ((S a ε) (S (a)))
-                           ((M b (a)) (M ε))
-                           ((M ε ε) (F ε)))))
-
-(sm-graph anbn)
-;(grammar-nts (pda2cfg anbn))
-(greibach (pda2cfg anbn))
-;(cfg->pda (pda2cfg anbn))
-
-
-
 
 
 

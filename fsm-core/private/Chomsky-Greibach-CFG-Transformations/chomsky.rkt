@@ -1,5 +1,5 @@
 #lang racket
-(require #;"../../interface.rkt" "../../../main.rkt")
+(require "../grammar-getters.rkt" "../misc.rkt" "../constants.rkt" "../cfg.rkt")
 (provide chomsky rm-empties)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Chomsky Normal Form
@@ -175,7 +175,7 @@
              (new-start (if (contains? (grammar-start cfg) empties)
                             new-start
                             (grammar-start cfg))))   
-               (make-cfg new-nts
+               (make-unchecked-cfg new-nts
                   (grammar-sigma cfg)
                   new-rules
                   new-start))))
@@ -246,7 +246,7 @@
              (new-nts (remove-duplicates (append (map (lambda (x) (car x)) new-rules)
                                                  (filter nts? (append-map symbol->fsmlos (map (lambda (x) (caddr x))
                                                                                               (grammar-rules cfg))))))))
-               (make-cfg new-nts
+               (make-unchecked-cfg new-nts
                          (grammar-sigma cfg)
                          new-rules
                   (grammar-start cfg))))) 
@@ -403,14 +403,12 @@
                        (append (map (lambda (x) (car x)) new-rules)
                                (filter (lambda (z) (nts? z))
                                        (append-map (lambda (y) (symbol->fsmlos (caddr y))) new-rules))))))
-        (make-cfg new-nts
+        (make-unchecked-cfg new-nts
                   (grammar-sigma new-cfg)
                   new-rules 
                   (grammar-start new-cfg)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
 
 
 

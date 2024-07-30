@@ -55,8 +55,11 @@
    grammar-derive grammar-type
    grammar-nts grammar-sigma grammar-rules grammar-start 
 
-   ;grammar testers
+   ; grammar testers
    grammar-both-derive grammar-testequiv grammar-test
+
+   ; grammar transformations
+   cfg->chomsky cfg->greibach
 
    ; regexp constructors
    empty-regexp singleton-regexp union-regexp concat-regexp kleenestar-regexp null-regexp 
