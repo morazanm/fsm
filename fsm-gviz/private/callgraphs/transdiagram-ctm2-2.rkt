@@ -1,7 +1,7 @@
 #lang fsm
 (require eopl)
 (require 2htdp/image)
-(require "../lib.rkt" "cg-defs.rkt")
+(require "../lib.rkt" "../../../fsm-core/private/callgraphs/cg-defs.rkt")
 (provide computation-edges transition-diagram-ctm dot-nodes dot-edges clean-list parse-program)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; datatype
