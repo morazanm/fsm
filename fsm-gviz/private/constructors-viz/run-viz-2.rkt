@@ -1,5 +1,5 @@
 #lang fsm
-(require 2htdp/universe 2htdp/image rackunit "definitions-viz.rkt")
+(require 2htdp/universe 2htdp/image rackunit "definitions-viz-2.rkt")
 (provide run-viz resize-image)
 
 

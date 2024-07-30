@@ -7,8 +7,8 @@
                     [make-color loc-make-color]
                     [make-pen loc-make-pen])
          2htdp/image
-         "definitions-viz.rkt"
-         "run-viz.rkt")
+         "definitions-viz-2.rkt"
+         "run-viz-2.rkt")
 
 (provide ndfa2dfa-viz)
 
