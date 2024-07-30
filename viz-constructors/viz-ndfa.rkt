@@ -1724,6 +1724,70 @@
      (last-fully-consumed (take a-word (sub1 (length a-word))) M)]
     [a-word]))
 
+;;(listof symbols) (lisof configurations) -> (listof configurations)
+;;Purpose: Makes configurations usable for invariant predicates
+(define (make-inv-configs a-word configs)
+  (if (empty? configs)
+      '()
+      (append (list (make-inv-configs-helper a-word (first configs) (length a-word)))
+              (make-inv-configs a-word (rest configs)))))
+
+;;(listof symbols) (lisof configurations) natnum -> (listof configurations)
+;;Purpose: Makes configurations usable for invariant predicates
+(define (make-inv-configs-helper a-word configs word-len)
+  (let* ([config (filter (λ (config) (= (length (second config)) word-len)) configs)]
+         [inv-config (map (λ (config)
+                            (append (list (first config))
+                                    (list (take a-word (- (length a-word) word-len)))))
+                            config)])
+    (if (empty? configs)
+      '()
+      (append inv-config
+              (make-inv-configs-helper a-word (rest configs) (sub1 word-len))))))
+
+;;(listof configurations) (listof (listof symbol ((listof sybmols) -> boolean))) -> (listof configurations)
+;;Purpose: Adds the results of each invariant oredicate to its corresponding invariant configuration 
+(define (get-inv-config-results inv-configs invs)
+  (if (or (empty? inv-configs)
+          (empty? invs))
+      '()
+      (append (list (get-inv-config-results-helper (first inv-configs) invs))
+              (get-inv-config-results (rest inv-configs) invs))))
+
+;;(listof configurations) (listof (listof symbol ((listof sybmols) -> boolean))) -> (listof configurations)
+;;Purpose: Adds the results of each invariant oredicate to its corresponding invariant configuration
+(define (get-inv-config-results-helper inv-configs invs)
+    (if (empty? inv-configs)
+      '()
+      (let* ([inv-for-inv-config (second (first (filter (λ (inv)
+                                           (equal? (first inv) (first (first inv-configs))))
+                                         invs)))]
+             [inv-config-result (append (first inv-configs)
+                                        (list (inv-for-inv-config (second (first inv-configs)))))])
+        (append (list inv-config-result)
+                (get-inv-config-results-helper (rest inv-configs) invs)))))
+
+;;(listof configurations) (listof sybmols) -> (listof configurations)
+;;Purpose: Extracts all the invariant configurations that failed
+(define (return-brk-inv-configs inv-config-results a-word)
+  (if (empty? inv-config-results)
+      '()
+      (return-brk-inv-configs-helper inv-config-results a-word (length a-word) '())))
+
+;;(listof configurations) (listof sybmols) natnum (listof configurations) -> (listof configurations)
+;;Purpose: Extracts all the invariant configurations that failed
+;;Acc = all invariants that fail when a given portion of the word has been consumed
+(define (return-brk-inv-configs-helper inv-config-results a-word word-len acc)
+  (if (< word-len 0)
+      (filter (λ (res) (not (empty? res))) acc) ;;might remove if not can index using the length of the wht was processed
+      (let* ([new-acc (append-map (λ (inv-configs)
+                             (filter (λ (config)
+                                       (and (equal? (second config) (take a-word (- (length a-word) word-len)))
+                                            (not (third config))))
+                                     inv-configs))
+                             inv-config-results)])
+        (return-brk-inv-configs-helper inv-config-results a-word (sub1 word-len) (append acc (list new-acc))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; graph machine (listof symbols) symbol (listof symbols) (listof symbols) -> graph
@@ -2501,7 +2565,7 @@
      (make-dfa (sm-states M) (sm-sigma M) (sm-start M) (sm-finals M) (sm-rules M))]
     [else M]))
 
-;;ndfa word -> (void) Throws error
+;;ndfa word [boolean] . -> (void) Throws error
 ;;Purpose: Visualizes the given ndfa processing the given word
 ;;Assumption: The given machine is a ndfa or dfa
 (define (ndfa-viz M a-word #:add-dead [add-dead #f] . invs)
@@ -2516,7 +2580,7 @@
                       (building-viz-state a-word
                                           '()
                                           (if add-dead new-M M)
-                                          invs
+                                          (if (and add-dead (not (empty? invs))) (cons (list dead-state (λ (w) #t)) invs) invs) 
                                           dead-state)
                       '())])
         ;(struct building-viz-state (upci pci M inv dead))
@@ -2877,68 +2941,12 @@
 (define (e-inv a-word)
   (andmap (λ (w) (equal? w 'b)) (rest a-word)))
 
-
-;(ndfa-viz AT-LEAST-ONE-MISSING '(c c c c b b b b c b a))
-;(ndfa-viz AT-LEAST-ONE-MISSING '(c c c c b b b b c b a a a) #:add-dead #t)
-;(ndfa-viz p2-ndfa '(a b a b a b a b a b b b b b) (list 'S s-inv) (list 'A a-inv) (list 'B b-inv) (list 'C c-inv) (list 'D d-inv) (list 'E e-inv))
-
-
-(define (make-inv-configs a-word configs)
-  (if (empty? configs)
-      '()
-      (append (list (make-inv-configs-helper a-word (first configs) (length a-word)))
-              (make-inv-configs a-word (rest configs)))))
-
-
-(define (make-inv-configs-helper a-word configs word-len)
-  (let* ([config (filter (λ (config) (= (length (second config)) word-len)) configs)]
-         [inv-config (map (λ (config)
-                            (append (list (first config))
-                                    (list (take a-word (- (length a-word) word-len)))))
-                            config)])
-    (if (empty? configs)
-      '()
-      (append inv-config
-              (make-inv-configs-helper a-word (rest configs) (sub1 word-len))))))
-
-(define (get-inv-config-results inv-configs invs)
-  (if (or (empty? inv-configs)
-          (empty? invs))
-      '()
-      (append (list (get-inv-config-results-helper (first inv-configs) invs))
-              (get-inv-config-results (rest inv-configs) invs))))
-
-
-(define (get-inv-config-results-helper inv-configs invs)
-    (if (empty? inv-configs)
-      '()
-      (let* ([inv-for-inv-config (second (first (filter (λ (inv)
-                                           (equal? (first inv) (first (first inv-configs))))
-                                         invs)))]
-             [inv-config-result (append (first inv-configs)
-                                        (list (inv-for-inv-config (second (first inv-configs)))))])
-        (append (list inv-config-result)
-                (get-inv-config-results-helper (rest inv-configs) invs)))))
-
 (define inv-list (list (list 'S S-INV)
           (list 'K K-INV)
           (list 'B B-INV)
           (list 'C C-INV)
           (list 'H H-INV)))
 
-(define (return-brk-inv-configs inv-config-results a-word)
-  (if (empty? inv-config-results)
-      '()
-      (return-brk-inv-configs-helper inv-config-results a-word (length a-word) '())))
-
-(define (return-brk-inv-configs-helper inv-config-results a-word word-len acc)
-  (if (< word-len 0)
-      (filter (λ (res) (not (empty? res))) acc) ;;might remove if not can index using the length of the wht was processed
-      (let* ([new-acc (append-map (λ (inv-configs)
-                             (filter (λ (config)
-                                       (and (equal? (second config) (take a-word (- (length a-word) word-len)))
-                                            (not (third config))))
-                                     inv-configs))
-                             inv-config-results)])
-        (return-brk-inv-configs-helper inv-config-results a-word (sub1 word-len) (append acc (list new-acc))))))
-  
+;(ndfa-viz AT-LEAST-ONE-MISSING '(c c c c b b b b c b a))
+;(ndfa-viz AT-LEAST-ONE-MISSING '(c c c c b b b b c b a a a) #:add-dead #t)
+;(ndfa-viz p2-ndfa '(a b a b a b a b a b b b b b) (list 'S s-inv) (list 'A a-inv) (list 'B b-inv) (list 'C c-inv) (list 'D d-inv) (list 'E e-inv))
