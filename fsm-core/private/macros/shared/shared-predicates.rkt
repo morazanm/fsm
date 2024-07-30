@@ -12,7 +12,9 @@
            valid-list-of-states?
            valid-non-dead-state?
            valid-state?
+           valid-nonterminal?
            valid-alpha?
+           valid-tm-alpha?
            valid-gamma?
            start-in-states?
            valid-start?
@@ -64,6 +66,14 @@
     (valid-list-of states valid-state?)
     )
 
+  ;valid-nonterminal: any --> boolean
+  ;purpose: takes in any value, returns true if the value is a valid nonterminal
+  ; symbol, and false otherwise
+  (define (valid-nonterminal? x)
+    (define regex-pattern (regexp "^[A-Z]$"))
+    (and (symbol? x)
+         (not (not (regexp-match regex-pattern (symbol->string x))))))
+
   ;valid-non-dead-state?: any --> boolean
   ;purpose: takes in any value, returns true if the value is a valid state except
   ; for DEAD, and false otherwise.
@@ -89,6 +99,16 @@
   ; a lowercase roman letter
   (define (valid-alpha? x)
     (define regex-pattern (regexp "^[a-z]$"))
+    (and (symbol? x)
+         (not (not (regexp-match regex-pattern (symbol->string x))))
+         )
+    )
+
+  ;valid-tm-alpha? something --> boolean
+  ;purpose: takes in anything and makes sure that it is a symbol that
+  ; a lowercase roman letter
+  (define (valid-tm-alpha? x)
+    (define regex-pattern (regexp "^[A-Za-z]$"))
     (and (symbol? x)
          (not (not (regexp-match regex-pattern (symbol->string x))))
          )

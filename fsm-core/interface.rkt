@@ -21,7 +21,9 @@
   "private/regexp-predicate.rkt"
   "private/abstract-predicate.rkt"
   "private/mtape-tm.rkt"
+  "private/macros/regexp-contracts.rkt"
   "private/macros/constructors.rkt"
+  "private/macros/grammar-constructors.rkt"
   "private/sm-apply.rkt"
   "private/sm-apply.rkt"
   "private/callgraphs/callgraphs-ndfa.rkt"
@@ -107,7 +109,7 @@
 ; Primitive constructors imported from other modules
 
 ; sm word [natnum] --> image
-(define (sm-cmpgraph M w #:palette [p 'default] #:cutoff [c 25] . headpos)
+(define (sm-cmpgraph M w #:palette [p 'default] #:cutoff [c 100] . headpos)
   (let ((t1 (sm-type M)))
     (cond [(or (eq? t1 'dfa)
                (eq? t1 'ndfa))
@@ -406,98 +408,6 @@
          (diffs (get-differences res1 res2 testlist)))
     (if (null? diffs) true diffs)))
 
-
-  
-
-;new constructors with contracts
-
-;; make-dfa: (listof state) alphabet state (listof state) (listof rule)) [symbol] --> dfa
-;(define (make-dfa states sigma start finals deltas . adddead)
-;  (cond [(equal? true (check-machine states sigma finals deltas start 'dfa))
-;         (if (null? adddead)
-;             (make-unchecked-dfa states
-;                                 sigma
-;                                 start
-;                                 finals
-;                                 deltas)
-;             (make-unchecked-dfa states
-;                                 sigma
-;                                 start
-;                                 finals
-;                                 deltas
-;                                 adddead))]
-;        [else (begin (newline) (error"Check above message for error"))])
-;  )
-;
-;; make-ndfa: (listof states) alphabet state (listof state) (listof rule)
-;;            --> ndfa
-;(define (make-ndfa states sigma start finals deltas . adddead)
-;  (cond [(equal? true (check-machine states sigma finals deltas start 'ndfa))
-;         (if (null? adddead)
-;             (make-unchecked-ndfa states
-;                                  sigma
-;                                  start
-;                                  finals
-;                                  deltas)
-;             (make-unchecked-ndfa states
-;                                  sigma
-;                                  start
-;                                  finals
-;                                  deltas
-;                                  adddead))]
-;        [else (begin (newline) (error"Check above message for error"))])
-;  )
-;
-;; make-ndpda: (listof states) alphabet alphabet state (listof states) (listof pdarules) --> ndpda
-;(define (make-ndpda states sigma gamma start finals deltas) ;. adddead)
-;  (cond [(check-machine states sigma finals deltas start 'pda gamma)
-;         (make-unchecked-ndpda states
-;                               sigma
-;                               gamma
-;                               start
-;                               finals
-;                               deltas)
-;         #;(if (null? adddead)
-;               (make-unchecked-ndpda states
-;                                     sigma
-;                                     gamma
-;                                     start
-;                                     finals
-;                                     deltas)
-;               (make-unchecked-ndpda states
-;                                     sigma
-;                                     gamma
-;                                     start
-;                                     finals
-;                                     deltas
-;                                     adddead))]
-;        [else (begin (newline) (error "Check above message for error"))])
-;  )
-;  
-;;make-tm (listof state) (listof symbol) (listof (list state symbol) (list state symbol)) (listof state) state --> tm
-;(define (make-tm states sigma delta start finals . accept)
-;  (cond [(equal? (check-machine states
-;                                sigma
-;                                finals
-;                                delta
-;                                start
-;                                'tm) #t)
-;         (if (null? accept) (make-unchecked-tm states
-;                                               sigma
-;                                               delta
-;                                               start
-;                                               finals)
-;             (if (member (car accept) finals)
-;                 (make-unchecked-tm
-;                  states
-;                  sigma
-;                  delta
-;                  start
-;                  finals
-;                  (car accept))
-;                 (begin (newline) (error (format "accept state: ~s, not in final states" accept)))))]
-;        [else (begin (newline) (error"Check above message for error"))])) 
-
   ;; make-dfa: states alphabet state states rules (boolean) -> machine
   ;; Purpose: Eventually, will construct a multi-tape turing-machine from the given
   ;; DFA inputs, but for now just parses inputs and constructs an unchecked-dfa.
@@ -514,106 +424,123 @@
 
   
 
-  (define/contract (make-ndfa states sigma start finals rules
-                               #:accepts [accepts '()]
-                               #:rejects [rejects '()])
-    make-ndfa/c
-    (make-unchecked-ndfa states sigma start finals rules)
-    )
+(define/contract (make-ndfa states sigma start finals rules
+                            #:accepts [accepts '()]
+                            #:rejects [rejects '()])
+  make-ndfa/c
+  (make-unchecked-ndfa states sigma start finals rules)
+  )
 
-  ;; Purpose: Constructs an ndpda given a set of states, a machine alphabet,
-  ;; set of stack symbols, a start state, a list of final states, and a list
-  ;; of ndpda rules. The function checks that all fields are valid before
-  ;; constructing the ndpda.
-  (define/contract (make-ndpda states sigma gamma start finals rules
-                                #:accepts [accepts '()]
-                                #:rejects [rejects '()])
-    make-ndpda/c
-    (make-unchecked-ndpda states sigma gamma start finals rules)
-    )
+;; Purpose: Constructs an ndpda given a set of states, a machine alphabet,
+;; set of stack symbols, a start state, a list of final states, and a list
+;; of ndpda rules. The function checks that all fields are valid before
+;; constructing the ndpda.
+(define/contract (make-ndpda states sigma gamma start finals rules
+                             #:accepts [accepts '()]
+                             #:rejects [rejects '()])
+  make-ndpda/c
+  (make-unchecked-ndpda states sigma gamma start finals rules)
+  )
 
    
-  (define/contract (make-tm states sigma rules start finals
-                             [accept 'null]
-                             #:accepts [accepts '()]
-                             #:rejects [rejects '()]
-                             )
-    make-tm/c
-    (if (equal? accept 'null)
-        (make-unchecked-tm states sigma rules start finals)
-        (make-unchecked-tm states sigma rules start finals accept))
-    )
-
-  (define/contract (make-mttm states sigma start finals rules num-tapes
-                               [accept 'null]
-                               #:accepts [accepts '()]
-                               #:rejects [rejects '()])
-    make-mttm/c
-    (if (equal? accept 'null)
-        (make-unchecked-mttm states sigma start finals rules num-tapes)
-        (make-unchecked-mttm states sigma start finals rules num-tapes accept))
-    )
-
-
-;(make-cfg V sigma R S), where V and sigma are a (listof symbol), R
-; is a (listof cfg-rule), and S is a symbol
-(define (make-cfg nts sigma delta state)
-  (cond [(equal? true (check-grammar  nts sigma delta state 'cfg)) (make-unchecked-cfg nts sigma delta state)]
-        [else (begin (newline) (error"Check above message for error"))])
+(define/contract (make-tm states sigma rules start finals
+                          [accept 'null]
+                          #:accepts [accepts '()]
+                          #:rejects [rejects '()]
+                          )
+  make-tm/c
+  (if (equal? accept 'null)
+      (make-unchecked-tm states sigma rules start finals)
+      (make-unchecked-tm states sigma rules start finals accept))
   )
 
-;make-csg V sigma R S), where V and sigma are a (listof symbol), R
-; is a (listof csg-rule), and S is a symbol
-(define (make-csg nts sigma delta state)
-  (cond [(equal? true(check-grammar nts sigma delta state 'csg)) (make-unchecked-csg nts sigma delta state)]
-        [else (begin (newline) (error"Check above message for error"))])               
-  )
-
-;(make-rg N A R S), such that
-; N is a (listof symbol) (the non-terminals), A is a (listof symbol) (the
-; alphabet), R is a (listof rrule), and S is a symbol (starting symbol)
-(define (make-rg nts sigma delta state)
-  (cond [(equal? true (check-grammar nts sigma delta state 'rg)) (make-unchecked-rg nts sigma delta state)]
-        [else (begin (newline) (error"Check above message for error"))])
+(define/contract (make-mttm states sigma start finals rules num-tapes
+                            [accept 'null]
+                            #:accepts [accepts '()]
+                            #:rejects [rejects '()])
+  make-mttm/c
+  (if (equal? accept 'null)
+      (make-unchecked-mttm states sigma start finals rules num-tapes)
+      (make-unchecked-mttm states sigma start finals rules num-tapes accept))
   )
 
 
-(define (singleton-regexp a)
-  (local [(define tentative (make-unchecked-singleton a))
-          (define final (valid-regexp? tentative))]
-    (if (string? final) (error final)
-        tentative)
-    )
+;;(make-cfg V sigma R S), where V and sigma are a (listof symbol), R
+;; is a (listof cfg-rule), and S is a symbol
+;(define (make-cfg nts sigma delta state)
+;  (cond [(equal? true (check-grammar  nts sigma delta state 'cfg)) (make-unchecked-cfg nts sigma delta state)]
+;        [else (begin (newline) (error"Check above message for error"))])
+;  )
+;
+;;make-csg V sigma R S), where V and sigma are a (listof symbol), R
+;; is a (listof csg-rule), and S is a symbol
+;(define (make-csg nts sigma delta state)
+;  (cond [(equal? true(check-grammar nts sigma delta state 'csg)) (make-unchecked-csg nts sigma delta state)]
+;        [else (begin (newline) (error"Check above message for error"))])               
+;  )
+;
+;;(make-rg N A R S), such that
+;; N is a (listof symbol) (the non-terminals), A is a (listof symbol) (the
+;; alphabet), R is a (listof rrule), and S is a symbol (starting symbol)
+;(define (make-rg nts sigma delta state)
+;  (cond [(equal? true (check-grammar nts sigma delta state 'rg)) (make-unchecked-rg nts sigma delta state)]
+;        [else (begin (newline) (error"Check above message for error"))])
+;  )
+
+;;(make-cfg V sigma R S), where V and sigma are a (listof symbol), R
+;; is a (listof cfg-rule), and S is a symbol
+(define/contract (make-cfg nts sigma delta state
+                           #:accepts [accepts '()]
+                           #:rejects [rejects '()])
+  make-cfg/c
+  (make-unchecked-cfg nts sigma delta state)
   )
-  
-(define (concat-regexp a b)
-  (local [(define tentative (if (and (regexp? a) (regexp? b)) (make-unchecked-concat a b)
-                                (if (regexp? a) (format "~s must be a regexp to be a valid second input to concat-regexp ~s ~s" b a b)
-                                    (format "~s must be a regexp to be a valid first input to concat-regexp ~s ~s" a a b))))
-          (define final (if (string? tentative) tentative
-                            (valid-regexp? tentative)))]
-    (if (string? final) (error final)
-        tentative)
-    )
-  )
-  
-(define (union-regexp a b)
-  (local [(define tentative (if (and (regexp? a) (regexp? b)) (make-unchecked-union a b)
-                                (if (regexp? a) (format "~s must be a regexp to be a valid second input to union-regexp ~s ~s" b a b)
-                                    (format "~s must be a regexp to be a valid first input to union-regexp ~s ~s" a a b))))
-          (define final (if (string? tentative) tentative
-                            (valid-regexp? tentative)))]
-    (if (string? final) (error final)
-        tentative)
-    )
+
+
+;;make-csg V sigma R S), where V and sigma are a (listof symbol), R
+;; is a (listof csg-rule), and S is a symbol
+(define/contract (make-csg nts sigma delta state
+                           #:accepts [accepts '()]
+                           #:rejects [rejects '()])
+  make-csg/c
+  (make-unchecked-csg nts sigma delta state)
   )
   
-(define (kleenestar-regexp a)
-  (local [(define tentative (if (regexp? a) (make-unchecked-kleenestar a)
-                                (format "~s must be a regexp to be a valid input to kleenestar-regexp" a)))
-          (define final (if (string? tentative) tentative
-                            (valid-regexp? tentative)))]
-    (if (string? final) (error final)
-        tentative)
-    )
+;;(make-rg N A R S), such that
+;; N is a (listof symbol) (the non-terminals), A is a (listof symbol) (the
+;; alphabet), R is a (listof rrule), and S is a symbol (starting symbol)
+(define/contract (make-rg nts sigma delta state
+                          #:accepts [accepts '()]
+                          #:rejects [rejects '()])
+  make-rg/c
+  (make-unchecked-rg nts sigma delta state)
   )
+
+;; singleton-regexp: string --> singleton-regexp
+;; purpose: Given a lowercase Roman alphabet character, constructs a singleton
+;;          regular expression for that letter.
+(define/contract (singleton-regexp a)
+  singleton-regexp/c
+  (make-unchecked-singleton a))
+
+;; concat-regexp: regexp regexp --> concat-regexp
+;; purpose: Constructs the regular expression whose language contains words
+;;          that are the concatenation of one word from L(a) and a word from L(b).
+(define/contract (concat-regexp a b)
+  concat-regexp/c
+  (make-unchecked-concat a b))
+
+;; union-regexp: regexp regexp --> union-regexp
+;; purpose: Constructs a regular expression whose language contains all the words
+;;          from L(a) and L(b).
+(define/contract (union-regexp a b)
+  union-regexp/c
+  (make-unchecked-union a b)
+  )
+
+;; kleenestar-regexp: regexp --> kleenestar-regexp
+;; purpose: Constructs a regular expression who language contains any word
+;;          that is constructed by concatenating zero or more words from L(a).
+(define/contract (kleenestar-regexp a)
+  kleenestar-regexp/c
+  (make-unchecked-kleenestar a))

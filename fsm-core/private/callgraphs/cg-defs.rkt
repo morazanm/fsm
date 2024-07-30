@@ -8,6 +8,7 @@
  
  ;; ndfa-stucis
  ndfa-stuci ndfa-stuci? ndfa-stuci-state ndfa-stuci-ui
+ ndfa-stucis-equal?
  
  ;; ndfa-Edges
  ndfa-edge  ndfa-edge?  ndfa-edge-fromst  ndfa-edge-read  ndfa-edge-tost
@@ -280,6 +281,22 @@
 (check-equal? (ndfa-rule-read '(S a ds)) 'a)
 (check-equal? (ndfa-rule-read '(X a ds)) 'a)
 (check-equal? (ndfa-rule-read '(Y b X)) 'b)
+
+;.................................................
+
+;; ndfa-stuci ndfa-stuci -> Boolean
+;; Purpose: Determines if the two given ndfa-stucis are equal
+(define (ndfa-stucis-equal? s1 s2)
+  (and (equal? (ndfa-stuci-state s1) (ndfa-stuci-state s2))
+       (equal? (ndfa-stuci-ui s1) (ndfa-stuci-ui s2))))
+
+;; Tests for ndfa-stucis-equal?
+(check-equal? (ndfa-stucis-equal? (ndfa-stuci 'S '(a b)) (ndfa-stuci 'S '(a))) #f)
+(check-equal? (ndfa-stucis-equal? (ndfa-stuci 'S '(b)) (ndfa-stuci 'S '())) #f)
+(check-equal? (ndfa-stucis-equal? (ndfa-stuci 'Q '()) (ndfa-stuci 'S '())) #f)
+(check-equal? (ndfa-stucis-equal? (ndfa-stuci 'S '(a b)) (ndfa-stuci 'S '(a b))) #t)
+(check-equal? (ndfa-stucis-equal? (ndfa-stuci 'R '(a b b)) (ndfa-stuci 'R '(a b b))) #t)
+(check-equal? (ndfa-stucis-equal? (ndfa-stuci 'S '()) (ndfa-stuci 'S '())) #t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; pda

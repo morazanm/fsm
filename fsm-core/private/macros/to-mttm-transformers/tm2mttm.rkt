@@ -2,7 +2,8 @@
 
 (require "./mtape-tm.rkt")
 
-
+;; tm --> mttm
+;; Purpose: Convert given tm into an mttm
 (define (tm->mttm M)
   (let* [(sts (sm-states M))
          (sigma (sm-sigma M))
@@ -165,3 +166,59 @@
 (check-equal? (sm-apply anbncn-mt `(,LM ,BLANK a b c) 1) 'accept)
 (check-equal? (sm-apply anbncn-mt `(,LM ,BLANK a a b b c c) 1) 'accept)
 (check-equal? (sm-apply anbncn-mt `(,LM ,BLANK a a a b b b c c c) 1) 'accept)
+
+;; ------------- Sanity test for mttm -------------
+
+;;; POST: A+B (on T1)
+;;; HOW: Copy A to T2, Copy B to T3, COPY T2 and T3 to T1
+(define ADD (make-mttm '(S A T U V)
+                       `(I)
+                       'S
+                       '(H)
+                       `(((S (,BLANK ,BLANK ,BLANK)) (A (R R R)))
+                         ((A (I ,BLANK ,BLANK)) (A (,BLANK I ,BLANK)))
+                         ((A (,BLANK I ,BLANK)) (A (R R ,BLANK)))
+                         ((A (,BLANK ,BLANK ,BLANK)) (T (R ,BLANK ,BLANK)))
+                         ((T (I ,BLANK ,BLANK)) (T (,BLANK ,BLANK I)))
+                         ((T (,BLANK ,BLANK I)) (T (R ,BLANK R)))
+                         ((T (,BLANK ,BLANK ,BLANK)) (Q (L ,BLANK ,BLANK)))
+                         ((Q (,BLANK ,BLANK ,BLANK)) (U (L L L)))
+                         ((U (,BLANK I I)) (U (I I ,BLANK)))
+                         ((U (I I ,BLANK)) (U (L I L)))
+                         ((U (,BLANK I ,BLANK)) (V (,BLANK I ,BLANK)))
+                         ((V (,BLANK I ,BLANK)) (V (I ,BLANK ,BLANK)))
+                         ((V (I ,BLANK ,BLANK)) (V (L L ,BLANK)))
+                         ((V (,BLANK ,BLANK ,BLANK)) (H (,BLANK ,BLANK ,BLANK))))
+                       3))
+
+(check-equal? (mttm-apply ADD `(,BLANK I I I ,BLANK I I))
+              '(H (0 (_ I I I I I _ _)) (0 (_ _ _ _ _)) (0 (_ _ _ _))))
+
+(check-equal? (mttm-show-transitions ADD `(,BLANK I I I ,BLANK I I))
+              '((S (0 (_ I I I _ I I)) (0 (_)) (0 (_)))
+                (A (1 (_ I I I _ I I)) (1 (_ _)) (1 (_ _)))
+                (A (1 (_ _ I I _ I I)) (1 (_ I)) (1 (_ _)))
+                (A (2 (_ _ I I _ I I)) (2 (_ I _)) (1 (_ _)))
+                (A (2 (_ _ _ I _ I I)) (2 (_ I I)) (1 (_ _)))
+                (A (3 (_ _ _ I _ I I)) (3 (_ I I _)) (1 (_ _)))
+                (A (3 (_ _ _ _ _ I I)) (3 (_ I I I)) (1 (_ _)))
+                (A (4 (_ _ _ _ _ I I)) (4 (_ I I I _)) (1 (_ _)))
+                (T (5 (_ _ _ _ _ I I)) (4 (_ I I I _)) (1 (_ _)))
+                (T (5 (_ _ _ _ _ _ I)) (4 (_ I I I _)) (1 (_ I)))
+                (T (6 (_ _ _ _ _ _ I)) (4 (_ I I I _)) (2 (_ I _)))
+                (T (6 (_ _ _ _ _ _ _)) (4 (_ I I I _)) (2 (_ I I)))
+                (T (7 (_ _ _ _ _ _ _ _)) (4 (_ I I I _)) (3 (_ I I _)))
+                (Q (6 (_ _ _ _ _ _ _ _)) (4 (_ I I I _)) (3 (_ I I _)))
+                (U (5 (_ _ _ _ _ _ _ _)) (3 (_ I I I _)) (2 (_ I I _)))
+                (U (5 (_ _ _ _ _ I _ _)) (3 (_ I I I _)) (2 (_ I _ _)))
+                (U (4 (_ _ _ _ _ I _ _)) (3 (_ I I I _)) (1 (_ I _ _)))
+                (U (4 (_ _ _ _ I I _ _)) (3 (_ I I I _)) (1 (_ _ _ _)))
+                (U (3 (_ _ _ _ I I _ _)) (3 (_ I I I _)) (0 (_ _ _ _)))
+                (V (3 (_ _ _ _ I I _ _)) (3 (_ I I I _)) (0 (_ _ _ _)))
+                (V (3 (_ _ _ I I I _ _)) (3 (_ I I _ _)) (0 (_ _ _ _)))
+                (V (2 (_ _ _ I I I _ _)) (2 (_ I I _ _)) (0 (_ _ _ _)))
+                (V (2 (_ _ I I I I _ _)) (2 (_ I _ _ _)) (0 (_ _ _ _)))
+                (V (1 (_ _ I I I I _ _)) (1 (_ I _ _ _)) (0 (_ _ _ _)))
+                (V (1 (_ I I I I I _ _)) (1 (_ _ _ _ _)) (0 (_ _ _ _)))
+                (V (0 (_ I I I I I _ _)) (0 (_ _ _ _ _)) (0 (_ _ _ _)))
+                (H (0 (_ I I I I I _ _)) (0 (_ _ _ _ _)) (0 (_ _ _ _)))))

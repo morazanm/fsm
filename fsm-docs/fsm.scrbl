@@ -165,7 +165,7 @@ a is a terminal symbol.
 
 @defidform[csrule]{A context-sensitive grammar rule is a list of the
  form @italic{(H ARROW K)}, where H is an aggregate symbol of terminals and
- at least one nonterminal and J is either
+ at least one nonterminal and K is either
  EMP or a an aggregate symbol of terminals and nonterminals.}
 
 @defidform[state-machine]  

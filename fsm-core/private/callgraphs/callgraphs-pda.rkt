@@ -72,17 +72,20 @@
        (if (empty? to-visit)
            '()
            (let* [(new-stucis (add-to-stucis-helper edges (first to-visit)))]
-             (if (or (empty? new-stucis)
-                     (ormap (lambda (s) 
-                              (ormap (lambda (s2) (pda-stucis-equal? s s2)) 
-                                     new-stucis))
-                            visited))
+             (if (empty? new-stucis)
                  (add-to-stucis edges (rest to-visit) visited)
-                 (append new-stucis
+                 (append (filter-non-member new-stucis visited)
                          (add-to-stucis edges (rest to-visit)
                                         (append new-stucis
                                                 visited))))))
        threshold))
+    ;; (listof stuci) (listof stuci) -> (listof stuci)
+    ;; Purpose: Filter out stucis already visited
+    (define (filter-non-member s v)
+      (cond ((empty? s) '())
+            ((ormap (lambda (x) (pda-stucis-equal? (car s) x)) v)
+             (filter-non-member (cdr s) v))
+            (else (cons (car s) (filter-non-member (cdr s) v)))))
     ;; pda-stuci -> (listof pda-Edge)
     ;; Purpose: Given a pda-stuci, creates all possible edges for that
     ;;          pda-stuci
