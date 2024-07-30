@@ -1,6 +1,6 @@
 #lang fsm
 (require 2htdp/image)
-(require "../lib.rkt" "cg-defs.rkt")
+(require "../lib.rkt" "../../../fsm-core/private/callgraphs/cg-defs.rkt")
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; multitape-tm
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
