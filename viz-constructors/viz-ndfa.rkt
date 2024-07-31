@@ -190,12 +190,12 @@
              (above/align "middle"
                           J-KEY
                           (square HEIGHT-BUFFER 'solid 'white)
-                          (text "Prv brk inv" (- FONT-SIZE 2) 'black))
+                          (text "Prv not inv" (- FONT-SIZE 2) 'black))
              (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
              (above/align "middle"
                           L-KEY
                           (square HEIGHT-BUFFER 'solid 'white)
-                          (text "Nxt brk inv" (- FONT-SIZE 2) 'black))))))
+                          (text "Nxt not inv" (- FONT-SIZE 2) 'black))))))
 
 (define ARROW-UP-KEY-DIMS
   (bounding-limits
@@ -659,7 +659,7 @@
       (image-width (text "Word end" (- FONT-SIZE 2) 'black))
       LETTER-KEY-WIDTH-BUFFER
       (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Prv Brk Inv." (- FONT-SIZE 2) 'black)) (image-width J-KEY)) 2)
+      (/ (- (image-width (text "Prv not Inv." (- FONT-SIZE 2) 'black)) (image-width J-KEY)) 2)
       )
    (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
       ARROW-KEY-WIDTH-BUFFER
@@ -686,7 +686,7 @@
       (image-width (text "Word end" (- FONT-SIZE 2) 'black))
       LETTER-KEY-WIDTH-BUFFER
       (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Prv Brk Inv." (- FONT-SIZE 2) 'black)) (image-width J-KEY)) 2)
+      (/ (- (image-width (text "Prv not Inv." (- FONT-SIZE 2) 'black)) (image-width J-KEY)) 2)
       (image-width J-KEY))
    (+ EXTRA-HEIGHT-FROM-CURSOR
       E-SCENE-HEIGHT
@@ -724,10 +724,10 @@
       LETTER-KEY-WIDTH-BUFFER
       (image-width (text "Word end" (- FONT-SIZE 2) 'black))
       LETTER-KEY-WIDTH-BUFFER
-      (image-width (text "Prv Brk Inv." (- FONT-SIZE 2) 'black))
+      (image-width (text "Prv not Inv." (- FONT-SIZE 2) 'black))
       LETTER-KEY-WIDTH-BUFFER
       (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Next Brk Inv." (- FONT-SIZE 2) 'black)) (image-width L-KEY)) 2)
+      (/ (- (image-width (text "Next not Inv." (- FONT-SIZE 2) 'black)) (image-width L-KEY)) 2)
       )
    (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
       ARROW-KEY-WIDTH-BUFFER
@@ -753,10 +753,10 @@
       LETTER-KEY-WIDTH-BUFFER
       (image-width (text "Word end" (- FONT-SIZE 2) 'black))
       LETTER-KEY-WIDTH-BUFFER
-      (image-width (text "Prv Brk Inv." (- FONT-SIZE 2) 'black))
+      (image-width (text "Prv not Inv." (- FONT-SIZE 2) 'black))
       LETTER-KEY-WIDTH-BUFFER
       (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Next Brk Inv." (- FONT-SIZE 2) 'black)) (image-width L-KEY)) 2)
+      (/ (- (image-width (text "Next not Inv." (- FONT-SIZE 2) 'black)) (image-width L-KEY)) 2)
       (image-width L-KEY))
    (+ EXTRA-HEIGHT-FROM-CURSOR
       E-SCENE-HEIGHT
@@ -1043,12 +1043,19 @@
 ;;viz-state -> viz-state
 ;;Purpose: Jumps the visulization to next broken invariant
 (define (jump-next a-vs)
+  (begin
+    (display "jump next \n" )
+    (display (format "pinv ~s \n" (imsg-state-pinv-con (informative-messages-component-state
+                                        (viz-state-informative-messages a-vs)))))
+    (display (format "upinv ~s \n" (imsg-state-upinv-con (informative-messages-component-state
+                                        (viz-state-informative-messages a-vs)))))
   (if (or (zipper-at-end? (viz-state-imgs a-vs))
           (empty? (imsg-state-upinv-con (informative-messages-component-state
                                                              (viz-state-informative-messages a-vs)))))
       a-vs
-      (let* ([idx (length (second (first (last (imsg-state-pinv-con (informative-messages-component-state
-                                                             (viz-state-informative-messages a-vs)))))))]
+      (let* ([idx (length (second (first (first (filter (λ (config) (not (empty? config)))
+                                                        (imsg-state-pinv-con (informative-messages-component-state
+                                                             (viz-state-informative-messages a-vs))))))))]
              [new-imgs (zipper-to-idx (viz-state-imgs a-vs) idx)]
              [new-curr-img ((zipper-current new-imgs))]
              [curr-pimgs-img ((zipper-current (viz-state-imgs a-vs)))]
@@ -1133,17 +1140,25 @@
                (calculate-viewport-limits (scale (viz-state-scale-factor a-vs) new-curr-img)
                                           (viz-state-scale-factor a-vs))
                new-curr-img
-               (viz-state-scale-factor a-vs)))))))
+               (viz-state-scale-factor a-vs))))))))
 
 ;;viz-state -> viz-state
 ;;Purpose: Jumps the visulization to previous broken invariant
 (define (jump-prev a-vs)
-  (if (or (zipper-at-begin? (viz-state-imgs a-vs))
-          (empty? (imsg-state-pinv-con (informative-messages-component-state
+  (begin
+    (display "jump prev \n" )
+    (display (format "pinv ~s \n" (imsg-state-pinv-con (informative-messages-component-state
                                         (viz-state-informative-messages a-vs)))))
+    (display (format "upinv ~s \n" (imsg-state-upinv-con (informative-messages-component-state
+                                        (viz-state-informative-messages a-vs)))))
+    (if (or (zipper-at-begin? (viz-state-imgs a-vs))
+          (empty? (filter (λ (config) (not (empty? config)))
+                          (imsg-state-pinv-con (informative-messages-component-state
+                                        (viz-state-informative-messages a-vs))))))
       a-vs
-      (let* ([idx (length (second (first (last (imsg-state-pinv-con (informative-messages-component-state
-                                                                         (viz-state-informative-messages a-vs)))))))]
+      (let* ([idx (length (second (first (last (filter (λ (config) (not (empty? config)))
+                                                       (imsg-state-pinv-con (informative-messages-component-state
+                                                                         (viz-state-informative-messages a-vs))))))))]
              [new-imgs (zipper-to-idx (viz-state-imgs a-vs) idx)]
              [new-curr-img ((zipper-current new-imgs))]
              [curr-pimgs-img ((zipper-current (viz-state-imgs a-vs)))]
@@ -1228,7 +1243,7 @@
                (calculate-viewport-limits (scale (viz-state-scale-factor a-vs) new-curr-img)
                                           (viz-state-scale-factor a-vs))
                new-curr-img
-               (viz-state-scale-factor a-vs)))))))
+               (viz-state-scale-factor a-vs))))))))
 
 ;; viz-state -> viz-state
 ;; Purpose: Moves the visualization one step back in the derivation
@@ -1779,7 +1794,7 @@
 ;;Acc = all invariants that fail when a given portion of the word has been consumed
 (define (return-brk-inv-configs-helper inv-config-results a-word word-len acc)
   (if (< word-len 0)
-      (filter (λ (res) (not (empty? res))) acc) ;;might remove if not can index using the length of the wht was processed
+      #;(filter (λ (res) (not (empty? res))) acc) acc ;;might remove if not can index using the length of the wht was processed
       (let* ([new-acc (append-map (λ (inv-configs)
                              (filter (λ (config)
                                        (and (equal? (second config) (take a-word (- (length a-word) word-len)))
@@ -2212,34 +2227,16 @@
                                         (not completed-config?))
                                     (imsg-state-upinv-con (informative-messages-component-state
                                                            (viz-state-informative-messages a-vs)))
-                                    (let* ([pci (imsg-state-pci (informative-messages-component-state
-                                                                 (viz-state-informative-messages a-vs)))]
-                                           [prev (append-map (λ (configs)
-                                                               (filter (λ (config) (equal? pci (second config)))
-                                                                       configs))
-                                                             (imsg-state-upinv-con (informative-messages-component-state
-                                                                                    (viz-state-informative-messages a-vs))))]
-                                           [res (remove prev (imsg-state-upinv-con (informative-messages-component-state
-                                                                                   (viz-state-informative-messages a-vs))))])
-                                      res))]
+                                    (rest (imsg-state-upinv-con (informative-messages-component-state
+                                                                 (viz-state-informative-messages a-vs)))))]
                      [pinv-con (if (empty? (imsg-state-upinv-con (informative-messages-component-state
-                                                                 (viz-state-informative-messages a-vs))))
+                                                                  (viz-state-informative-messages a-vs))))
                                    (imsg-state-pinv-con (informative-messages-component-state
                                                          (viz-state-informative-messages a-vs)))
-                                   (let* ([pci (imsg-state-pci (informative-messages-component-state
-                                                                (viz-state-informative-messages a-vs)))]
-                                          [prev (append-map (λ (configs)
-                                                              (filter (λ (config) (equal? pci (second config)))
-                                                                      configs))
-                                                            (imsg-state-upinv-con (informative-messages-component-state
-                                                                                  (viz-state-informative-messages a-vs))))]
-                                          [res (if (empty? prev)
-                                                   (imsg-state-pinv-con (informative-messages-component-state
-                                                                         (viz-state-informative-messages a-vs)))
-                                                   (append (imsg-state-pinv-con (informative-messages-component-state
-                                                                                 (viz-state-informative-messages a-vs)))
-                                                           (list prev)))])
-                                     res))])])])))
+                                   (append (imsg-state-pinv-con (informative-messages-component-state
+                                                                 (viz-state-informative-messages a-vs)))
+                                           (list (first (imsg-state-upinv-con (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs)))))))])])])))
 
 (define (down-key-pressed a-vs)
   (let* (;;(listof symbols)
@@ -2345,34 +2342,18 @@
                                                                 (viz-state-informative-messages a-vs))))
                                   (imsg-state-upinv-con (informative-messages-component-state
                                                          (viz-state-informative-messages a-vs)))
-                                  (let* ([pci (imsg-state-pci (informative-messages-component-state
-                                                                   (viz-state-informative-messages a-vs)))]
-                                         [prev (append-map (λ (configs)
-                                                          (filter (λ (config) (equal? pci (second config)))
-                                                                  configs))
-                                                          (imsg-state-pinv-con (informative-messages-component-state
-                                                               (viz-state-informative-messages a-vs))))]
-                                         [res (if (empty? prev)
-                                                  (imsg-state-upinv-con (informative-messages-component-state
-                                                         (viz-state-informative-messages a-vs)))
-                                                  (append (list prev)
-                                                          (imsg-state-upinv-con (informative-messages-component-state
-                                                                                 (viz-state-informative-messages a-vs)))))])
-                                    res))]
+                                  (cons (last (imsg-state-pinv-con (informative-messages-component-state
+                                                                (viz-state-informative-messages a-vs))))
+                                        (imsg-state-upinv-con (informative-messages-component-state
+                                                                (viz-state-informative-messages a-vs)))))]
                    [pinv-con (if (empty? (imsg-state-pinv-con (informative-messages-component-state
                                                                (viz-state-informative-messages a-vs))))
                                  (imsg-state-pinv-con (informative-messages-component-state
                                                        (viz-state-informative-messages a-vs)))
-                                 (let* ([pci (imsg-state-pci (informative-messages-component-state
-                                                                   (viz-state-informative-messages a-vs)))]
-                                         [prev (append-map (λ (configs)
-                                                          (filter (λ (config) (equal? pci (second config)))
-                                                                  configs))
-                                                          (imsg-state-pinv-con (informative-messages-component-state
-                                                               (viz-state-informative-messages a-vs))))]
-                                         [res (remove prev (imsg-state-pinv-con (informative-messages-component-state
-                                                       (viz-state-informative-messages a-vs))))])
-                                   res))])])]))
+                                 (take (imsg-state-pinv-con (informative-messages-component-state
+                                                             (viz-state-informative-messages a-vs)))
+                                       (sub1 (length (imsg-state-pinv-con (informative-messages-component-state
+                                                                           (viz-state-informative-messages a-vs)))))))])])]))
 
 (define (up-key-pressed a-vs)
   (struct-copy
@@ -2423,14 +2404,9 @@
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the previous broken invariant
 (define (j-key-pressed a-vs)
-  (let ([prev (if (empty? (imsg-state-pinv-con (informative-messages-component-state
-                                                (viz-state-informative-messages a-vs))))
-                  (imsg-state-pinv-con (informative-messages-component-state
-                                        (viz-state-informative-messages a-vs)))
-                  (take (imsg-state-pinv-con (informative-messages-component-state
-                                              (viz-state-informative-messages a-vs)))
-                        (sub1 (length (imsg-state-pinv-con (informative-messages-component-state
-                                                            (viz-state-informative-messages a-vs)))))))])
+  (let ([prev (filter (λ (config) (not (empty? config)))
+                      (imsg-state-pinv-con (informative-messages-component-state
+                                              (viz-state-informative-messages a-vs))))])
     (struct-copy
      viz-state
      a-vs
@@ -2441,7 +2417,13 @@
        [component-state
         (struct-copy imsg-state
                      (informative-messages-component-state (viz-state-informative-messages a-vs))
-                     [upci (if (empty? prev)
+                     [upci (begin
+                             (display "j pressed \n" )
+    (display (format "pinv ~s \n" (imsg-state-pinv-con (informative-messages-component-state
+                                        (viz-state-informative-messages a-vs)))))
+    (display (format "upinv ~s \n" (imsg-state-upinv-con (informative-messages-component-state
+                                        (viz-state-informative-messages a-vs)))))
+                             (if (empty? prev)
                                (imsg-state-upci (informative-messages-component-state
                                                  (viz-state-informative-messages a-vs)))
                                (remove-similarities (append (imsg-state-pci (informative-messages-component-state
@@ -2449,34 +2431,39 @@
                                                             (imsg-state-upci (informative-messages-component-state
                                                                               (viz-state-informative-messages a-vs))))
                                                     (second (first (last prev)))
-                                                    '()))]
+                                                    '())))]
                    
                      [pci
                       (if (empty? prev)
                           (imsg-state-pci (informative-messages-component-state
                                            (viz-state-informative-messages a-vs)))
                           (second (first (last prev))))]
-                     [upinv-con (if (empty? (imsg-state-pinv-con (informative-messages-component-state
+                     [upinv-con (if (or (empty? (imsg-state-pinv-con (informative-messages-component-state
                                                                   (viz-state-informative-messages a-vs))))
+                                        (empty? prev))
                                     (imsg-state-upinv-con (informative-messages-component-state
                                                            (viz-state-informative-messages a-vs)))
-                                    (cons (last (imsg-state-pinv-con (informative-messages-component-state
-                                                                      (viz-state-informative-messages a-vs))))
-                                          (imsg-state-upinv-con (informative-messages-component-state
-                                                                 (viz-state-informative-messages a-vs)))))]
-                     [pinv-con (if (empty? (imsg-state-pinv-con (informative-messages-component-state
+                                    (append (take (imsg-state-pinv-con (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs)))
+                                                  (add1 (length (second (first (last prev))))))
+                                            (imsg-state-upinv-con (informative-messages-component-state
+                                                                         (viz-state-informative-messages a-vs)))))]
+                     [pinv-con (if (or (empty? (imsg-state-pinv-con (informative-messages-component-state
                                                                  (viz-state-informative-messages a-vs))))
+                                   (empty? prev))
                                    (imsg-state-pinv-con (informative-messages-component-state
                                                          (viz-state-informative-messages a-vs)))
-                                   (take (imsg-state-pinv-con (informative-messages-component-state
+                                   (drop (imsg-state-pinv-con (informative-messages-component-state
                                                                (viz-state-informative-messages a-vs)))
-                                         (sub1 (length (imsg-state-pinv-con (informative-messages-component-state
-                                                                             (viz-state-informative-messages a-vs)))))))])])])))
+                                         (add1 (length (second (first (last prev)))))))])])])))
 
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the next broken invariant
 (define (l-key-pressed a-vs)
-  (struct-copy
+  (let ([prev (filter (λ (config) (not (empty? config)))
+                      (imsg-state-upinv-con (informative-messages-component-state
+                                              (viz-state-informative-messages a-vs))))])
+    (struct-copy
    viz-state
    a-vs
    [informative-messages
@@ -2487,39 +2474,57 @@
       (struct-copy imsg-state
                    (informative-messages-component-state (viz-state-informative-messages a-vs))
                    [upci
-                    (if (empty? (imsg-state-upinv-con (informative-messages-component-state
+                    (if (or (empty? (imsg-state-upinv-con (informative-messages-component-state
                                                              (viz-state-informative-messages a-vs))))
+                            (empty? prev))
                         (imsg-state-upci (informative-messages-component-state
                                           (viz-state-informative-messages a-vs)))
                         (remove-similarities (append (imsg-state-pci (informative-messages-component-state
                                                                        (viz-state-informative-messages a-vs)))
                                                       (imsg-state-upci (informative-messages-component-state
                                                                         (viz-state-informative-messages a-vs))))
-                                              (second (first (first (imsg-state-upinv-con (informative-messages-component-state
-                                                                                           (viz-state-informative-messages a-vs))))))
+                                              (second (first (first prev)))
                                               '()))]
                    
                    [pci
-                    (if (empty? (imsg-state-upinv-con (informative-messages-component-state
+                    (if (or (empty? (imsg-state-upinv-con (informative-messages-component-state
                                                              (viz-state-informative-messages a-vs))))
+                            (empty? prev))
                         (imsg-state-pci (informative-messages-component-state
                                          (viz-state-informative-messages a-vs)))
-                        (second (first (first (imsg-state-upinv-con (informative-messages-component-state
-                                                                                           (viz-state-informative-messages a-vs)))))))]
-                   [upinv-con (if (empty? (imsg-state-upinv-con (informative-messages-component-state
-                                                             (viz-state-informative-messages a-vs))))
-                                  (imsg-state-upinv-con (informative-messages-component-state
-                                                             (viz-state-informative-messages a-vs)))
-                                  (rest (imsg-state-upinv-con (informative-messages-component-state
-                                                             (viz-state-informative-messages a-vs)))))]
-                   [pinv-con (if (empty? (imsg-state-upinv-con (informative-messages-component-state
+                        (second (first (first prev))))]
+                  
+                   [upinv-con (cond [(or (empty? (imsg-state-upinv-con (informative-messages-component-state
+                                                                  (viz-state-informative-messages a-vs))))
+                                      (empty? prev))
+                                    (imsg-state-upinv-con (informative-messages-component-state
+                                                           (viz-state-informative-messages a-vs)))]
+                                    [(< (length (imsg-state-upinv-con (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs))))
+                                                (add1 (length (second (first (first prev)))))))
+                                     '()]
+                                    [else (drop (imsg-state-upinv-con (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs)))
+                                                  (add1 (length (second (first (first prev))))))])]
+                     
+                   [pinv-con (cond [(or (empty? (imsg-state-upinv-con (informative-messages-component-state
                                                  (viz-state-informative-messages a-vs))))
+                                     (empty? prev))
                                  (imsg-state-pinv-con (informative-messages-component-state
-                                                 (viz-state-informative-messages a-vs)))
-                                 (append (imsg-state-pinv-con (informative-messages-component-state
-                                                               (viz-state-informative-messages a-vs)))
-                                         (list (first (imsg-state-upinv-con (informative-messages-component-state
-                                                                             (viz-state-informative-messages a-vs)))))))])])]))
+                                                 (viz-state-informative-messages a-vs)))]
+                                   [(< (length (imsg-state-upinv-con (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs)))
+                                                (add1 (length (second (first (first prev)))))))
+                                     (append (imsg-state-pinv-con (informative-messages-component-state
+                                                                         (viz-state-informative-messages a-vs)))
+                                         (take (imsg-state-upinv-con (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs)))
+                                                  (add1 (length (second (first (first prev)))))))]
+                                 [else (append (imsg-state-pinv-con (informative-messages-component-state
+                                                                         (viz-state-informative-messages a-vs)))
+                                         (take (imsg-state-upinv-con (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs)))
+                                                  (add1 (length (second (first (first prev)))))))])])])])))
 
 ;;machine -> machine
 ;;Purpose: Produces an equivalent machine with the addition of the dead state and rules to the dead state
@@ -2946,7 +2951,28 @@
           (list 'B B-INV)
           (list 'C C-INV)
           (list 'H H-INV)))
+(define (S-INV1 ci)
+  (empty? ci))
 
-;(ndfa-viz AT-LEAST-ONE-MISSING '(c c c c b b b b c b a))
-;(ndfa-viz AT-LEAST-ONE-MISSING '(c c c c b b b b c b a a a) #:add-dead #t)
-;(ndfa-viz p2-ndfa '(a b a b a b a b a b b b b b) (list 'S s-inv) (list 'A a-inv) (list 'B b-inv) (list 'C c-inv) (list 'D d-inv) (list 'E e-inv))
+;; word -> Boolean
+;; Purpose: To determine whether ci = aa*
+(define (A-INV1 ci)
+  (and (not (empty? ci))
+       (andmap (λ (el) (eq? el 'a)) ci)))
+
+;; word -> Boolean
+;; Purpose: To determine whether ci = ab*
+(define (B-INV1 ci)
+  (and (not (empty? ci))
+       (eq? (first ci) 'a)
+       (andmap (λ (el) (eq? el 'b)) ci)))
+
+;;word -> Boolean
+;;Purpose: To determine whether ci = emp
+(define (F-INV1 ci)
+  (empty? ci))
+
+
+;(ndfa-viz aa-ab '(a a a a b a))
+;(ndfa-viz aa-ab '(a a a a b a) #:add-dead #t)
+(ndfa-viz aa-ab '(a a a a a a a) (list 'S S-INV1) (list 'A A-INV1) (list 'B B-INV1) (list 'F F-INV1))
