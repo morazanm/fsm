@@ -516,6 +516,24 @@
     (let ((test-words (generate-words number-tests (pda-getalphabet p1) null)))
       (map (lambda (w) (list w (apply-pda p1 w))) test-words)))
 
-  
+  ;;;;;;;;;;;;;;;;;;;;;
+#|
+  (define wcw^r (make-unchecked-ndpda '(S P Q F)
+                                      '(a b c)
+                                      '(a b)
+                                      'S
+                                      '(F)
+                                      `(((S ,EMP ,EMP) (P ,EMP))
+                                        ((P a ,EMP) (P (a)))
+                                        ((P b ,EMP) (P (b)))
+                                        ((P c ,EMP) (Q ,EMP))
+                                        ((Q a (a)) (Q ,EMP))
+                                        ((Q b (b)) (Q ,EMP))
+                                        ((Q ,EMP ,EMP) (F ,EMP)))))
+
+  (define G (pda->cfg wcw^r))
+
+  (cfg-derive G '(a b c b a))
+|#
   ); closes module
 
