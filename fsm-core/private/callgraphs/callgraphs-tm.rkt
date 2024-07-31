@@ -61,20 +61,17 @@
      (if (empty? to-visit)
          '()
          (let* [(new-stucis (add-to-stucis-helper edges (first to-visit)))]
-           (if (empty? new-stucis)
+           (if (or (empty? new-stucis)
+                   (ormap (lambda (s) 
+                            (ormap (lambda (s2) (tm-stucis-equal? s s2)) 
+                                   new-stucis))
+                          visited))
                (add-to-stucis edges (rest to-visit) visited)
-               (append (filter-non-member new-stucis visited)
+               (append new-stucis
                        (add-to-stucis edges (rest to-visit)
                                       (append new-stucis
                                               visited))))))
-     threshold))
-  ;; (listof stuci) (listof stuci) -> (listof stuci)
-  ;; Purpose: Filter out stucis already visited
-  (define (filter-non-member s v)
-    (cond ((empty? s) '())
-          ((ormap (lambda (x) (tm-stucis-equal? (car s) x)) v)
-           (filter-non-member (cdr s) v))
-          (else (cons (car s) (filter-non-member (cdr s) v)))))
+     threshold)) 
   ;; tm-stuci -> (listof tm-Edge)
   ;; Purpose: Given a tm-stuci, creates all possible edges for that
   ;;          tm-stuci
@@ -236,11 +233,11 @@
   ;; Purpose: Given a list of tm-stucis and a threshold, filters out tm-stucis that reach given threshold
   (define (cut-off stucis threshold)
     (filter (lambda (s) (< (tm-stuci-cl s) threshold)) stucis))
-  (mk-cg-edges-function
-   tm-computation-tree->cg-edges
-   (tm-stuci (sm-start M) (create-tape word) head 0)
-   tm-remove-redundant-edges-on-accept
-   tm-remove-duplicate-Edges))
+   (mk-cg-edges-function
+     tm-computation-tree->cg-edges
+    (tm-stuci (sm-start M) (create-tape word) head 0)
+     tm-remove-redundant-edges-on-accept
+     tm-remove-duplicate-Edges))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; dot-nodes-tm
@@ -254,7 +251,7 @@
 (define (dot-nodes-tm M word new-rules color-blindness)
   (let* [(start-state (sm-start M))
          (edge-states (remove-duplicates (append (map (lambda (r) (tm-Edge-fromst r)) new-rules)
-                                                 (map (lambda (r) (tm-Edge-tost r)) new-rules))))
+                                                (map (lambda (r) (tm-Edge-tost r)) new-rules))))
          (all-states
           (if (empty? edge-states)
               (list (sm-start M))
@@ -388,37 +385,31 @@
                 (member (second optargs) COLOR-LIST))
            (second optargs)]
           [else DEFAULT-COLOR]))
-  ;; word -> word
-  ;; Purpose: If neccessary, adds a left-end marker
-  (define (add-LM w)
-    (cond [(null? w) '(@)]
-          [(eq? LM (car w)) w]
-          [else (cons LM w)]))
   (let* [(new-rules (make-tm-cg-edges M word head threshold))]
     ;; image
     ;; Purpose: Stores a computation graph image 
     (define cgraph (create-graph 'cgraph #:atb (hash 'rankdir "LR" 'label (cond [(and (eq? (sm-type M) 'tm)
                                                                                       (not (empty? (append (filter tm-cutoff-edge? new-rules)
                                                                                                            (filter tm-cutoff-spedge? new-rules)))))
-                                                                                 (format "All computations on '~a cut off at threshold ~a" (add-LM word) threshold)]
+                                                                                 (format "All computations on '~a cut off at threshold ~a" word threshold)]
                                                                                 [(and (eq? (sm-type M) 'tm-language-recognizer)
                                                                                       (not (empty? (append (filter tm-cutoff-edge? new-rules)
                                                                                                            (filter tm-cutoff-spedge? new-rules)))))
-                                                                                 (format "All computations on '~a cut off at threshold ~a" (add-LM word) threshold)]
+                                                                                 (format "All computations on '~a cut off at threshold ~a" word threshold)]
                                                                                 [(and (eq? (sm-type M) 'tm)
                                                                                       (ormap (lambda (e) (member (tm-Edge-tost e) (sm-finals M)))
                                                                                              (append (filter tm-spedge? new-rules)
                                                                                                      (filter tm-cutoff-spedge? new-rules))))
-                                                                                 (format "Machine reaches a halting state on: '~a" (add-LM word))]
+                                                                                 (format "Machine reaches a halting state on: '~a" word)]
                                                                                 [(eq? (sm-type M) 'tm)
-                                                                                 (format "Machine fails to reach a halting state on: '~a" (add-LM word))]
+                                                                                 (format "Machine fails to reach a halting state on: '~a" word)]
                                                                                 [(and (eq? (sm-type M) 'tm-language-recognizer)
                                                                                       (ormap (lambda (r) (eq? (tm-Edge-tost r) (sm-accept M)))
                                                                                              (append (filter tm-spedge? new-rules)
                                                                                                      (filter tm-cutoff-spedge? new-rules))))
-                                                                                 (format "Machine accepts on: '~a" (add-LM word))]
+                                                                                 (format "Machine accepts on: '~a" word)]
                                                                                 [else
-                                                                                 (format "Machine rejects on: '~a" (add-LM word))])
+                                                                                 (format "Machine rejects on: '~a" word)])
                                                      'fontsize 13)
                                  #:fmtrs (formatters (hash) (hash) (hash 'label one-rule-per-line)))) 
     (begin
@@ -446,7 +437,7 @@
              cgraph
              (dot-trans-tm new-rules)))
       (let [(res (graph->bitmap cgraph))] 
-        res))))
+          res))))
 
 ;.................................................
 

@@ -129,7 +129,12 @@
   (define (mttm-get-accept M) (M 'get-accept))
   (define (mttm-apply M w . t1pos) ((M 'apply) (if (empty? w) `(,BLANK) w) (if (null? t1pos) 0 (car t1pos))))
   (define (mttm-show-transitions M w . t1pos)
-    ((M 'show-transitions) (if (empty? w) `(,BLANK) w) (if (null? t1pos) 0 (car t1pos))))
+    ((M 'show-transitions) (if (empty? w)
+                               `(,LM ,BLANK) ;; T0 only has only a blank (empty may be given as input for simulating dfa/ndfa/ndpda)
+                               w)
+                           (cond [(empty? w) 1] ;; T0 head on blank
+                                 [(null? t1pos) 0] ;; Default T0 head position
+                                 [else (car t1pos)]))) ;; Given T0 head position
 
   
   ) ; closes module

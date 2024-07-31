@@ -1,7 +1,7 @@
-#lang racket
+#lang fsm
 (require eopl)
 (require 2htdp/image)
-(require "../../../fsm-gviz/private/lib.rkt" "../tm.rkt" "cg-defs.rkt")
+(require "../lib.rkt" "../../../fsm-core/private/callgraphs/cg-defs.rkt")
 (provide computation-edges transition-diagram-ctm dot-nodes dot-edges clean-list parse-program)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; datatype
@@ -32,26 +32,6 @@
   (cases expression exp
     (tm-exp (s i n) #t)
     (else #f)))
-
-(define (var-exp? exp)
-  (cases expression exp
-    (var-exp (v t) #t)
-    (else #f)))
-
-(define (branch-exp? exp)
-  (cases expression exp
-    (branch-exp (b) #t)
-    (else #f)))
-
-(define (label-exp? exp)
-  (cases expression exp
-    (label-exp (b) #t)
-    (else #f)))
-
-(define (branch-list exp)
-  (cases expression exp
-    (branch-exp (l) l)
-    (else (error "not a branch"))))
 
 ;; any -> throws error
 ;; Purpose: Throw an error in case of invalid syntax
@@ -102,7 +82,7 @@
                                      (car (cdr (car branch)))
                                      (car branch)))))
     (list fromst tost
-          `((label ,a-label) (style "dashed") (color "black") (headlabel "")))))
+          `((label ,a-label) (style "dashed")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; parser
@@ -152,8 +132,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-;; exp integer -> (listof node)
+;; exp -> (listof node)
 ;; Purpose: Create one node
 (define (node exp first-int)
   (cases expression exp
@@ -161,8 +140,7 @@
             (let* [(a-node
                     (string-append (symbol->string sym) (number->string int)))
                    (a-color
-                    (cond [(and (integer? first-int)
-                                (= int first-int)) "forestgreen"]
+                    (cond [(= int first-int) "forestgreen"]
                           [(pair? (car next-tm)) "goldenrod1"]                           
                           [else "black"]))
                    (a-shape
@@ -171,8 +149,6 @@
                    (a-label
                     (symbol->string sym))]
               (list a-node `((color ,a-color) (shape ,a-shape) (label ,a-label)))))
-    #;(var-exp (v tm)
-             (list tm `((color "black") (shape "rectangle") (label ,(string-append tm "\n" (format "var=~a" v))))))
     (else '())))
 
 ;.................................................
@@ -198,10 +174,10 @@
                           (a-label "")
                           (a-style "solid")]
                      (list fromst tost
-                           `((label ,a-label) (style ,a-style) (color "black") (headlabel "")))))))
-    (var-exp (var tm)
+                           `((label ,a-label) (style ,a-style)))))))
+    #;(var-exp (var tm)
              (list tm tm
-                   `((label "") (style "solid") (color "white") (headlabel ,(format "var=~a" var)))))
+                   `((label ,(format "var=~a" var)) (style "solid"))))
     (else '())))
     
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -209,11 +185,9 @@
 
 ;; list -> list
 ;; Purpose: Filter given list to not include 'list or 'cons or ()
-(define (filter-list l)  
+(define (filter-list l)
   (cond ((null? l)
          '())
-        ((and (pair? (car l))
-              (equal? (car (car l)) 'quote)) (cons (car (cdr (car l))) (filter-list (cdr l))))
         ((pair? (car l))
          (cons (filter-list (car l)) (filter-list (cdr l))))
         ((or (equal? (car l) 'list)
@@ -231,7 +205,7 @@
          (cons (list (car (car l)) (cadr (car l)))
                (append (adjust-var (cdr (car l)))
                        (adjust-var (cdr l)))))
-        (else (cons (car l) (adjust-var (cdr l)))))) 
+        (else (cons (car l) (adjust-var (cdr l))))))
 
 ;; list list -> list
 ;; Purpose: Create a list of consecutive integers matching the ctmd list length
@@ -247,14 +221,7 @@
   (if (tm-exp? (car l))
       int
       (find-first-int (cdr l) (add1 int))))
-
-;; list -> exp
-;; Purpose: Find the first exp that is not a label
-(define (first-elem l)
-  (cond ((empty? l) (error "invalid ctm syntax: add machines to syntax"))
-        ((label-exp? (car l)) (first-elem (cdr l)))
-        (else (car l))))
-  
+     
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; ctmd -> program
@@ -275,10 +242,7 @@
 (define (dot-nodes exp)
   (cases expression exp
     (ctmd-exp (l)
-              (if (branch-exp? (first-elem l))
-                  (append (list (list "dummy" '((color "forestgreen") (shape "diamond") (label ""))))
-                          (map (lambda (x) (node x "branch-start")) l))
-                  (map (lambda (x) (node x (find-first-int l 0))) l)))
+              (map (lambda (x) (node x (find-first-int l 0))) l))
     (else '())))
 
 ;; expression -> list
@@ -286,10 +250,7 @@
 (define (dot-edges exp)
   (cases expression exp
     (ctmd-exp (l)
-              (if (branch-exp? (first-elem l))
-                  (append (map (lambda (x) (branch-edges "dummy" x l l)) (branch-list (first-elem l)))   
-                          (map (lambda (x) (edge x l l)) l))
-              (map (lambda (x) (edge x l l)) l)))
+              (map (lambda (x) (edge x l l)) l))
     (else '())))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -333,15 +294,11 @@
            (lambda (a-trans a-graph)
              (let* [(state1 (string->symbol (first a-trans)))
                     (state2 (string->symbol (second a-trans)))
-                    (label (cond ((equal? "_" (second (first (third a-trans)))) "BLANK")
-                                 ((symbol? (second (first (third a-trans))))
-                                  (symbol->string (second (first (third a-trans)))))
-                                 (else 
-                                  (second (first (third a-trans))))))
-                    (style (second (second (third a-trans))))
-                    (color (second (third (third a-trans))))
-                    (headlabel (second (fourth (third a-trans))))] 
-               (add-edge a-graph label state1 state2 #:atb (hash 'style style 'color color 'headlabel headlabel))))
+                    (label (if (symbol? (second (first (third a-trans))))
+                               (symbol->string (second (first (third a-trans))))
+                               (second (first (third a-trans)))))
+                    (style (second (second (third a-trans))))] 
+               (add-edge a-graph label state1 state2 #:atb (hash 'style style))))
            cgraph
            (clean-list (dot-edges (parse-program ctm)))))
     (let [(res (graph->bitmap cgraph))]
@@ -350,17 +307,17 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; examples
 
-#|(define COPYL2
+(define COPYL2
   '(list FBL
          0
          R
-         (cons BRANCH (list (list _ (list GOTO 2)) (list 'a (list GOTO 1)) (list 'b (list GOTO 1))))
+         (cons BRANCH (list (list _ (list GOTO 2)) (list 'a (list GOTO 1)) (list 'b (list GOTO 1)) (list 'd (list GOTO 1))))
          1
          (list (list VAR k) WB FBR FBR k FBL FBL k (list GOTO 0))
          2
          FBR
          L
-         (cons BRANCH (list (list _ (list GOTO 3)) (list 'a (list GOTO 4)) (list 'b (list GOTO 4))))
+         (cons BRANCH (list (list _ (list GOTO 3)) (list 'a (list GOTO 4)) (list 'b (list GOTO 4)) (list 'd (list GOTO 4))))
          3
          RR
          (list GOTO 5)
@@ -481,12 +438,12 @@
                      'j)))
    '(a b)))
 
-(define SWAPL (list (list (list VAR 'i)
-                             'R
+(define SWAPL '(list (list (list VAR 'i)
+                             R
                              (list (list VAR 'j)
-                                   'i
-                                   'L
-                                   'j)))) |#
+                                   i
+                                   L
+                                   j))))
 
 #|
 (transition-diagram-ctm COPYL2)
@@ -539,57 +496,16 @@
                (equal? 'BRANCH (car (car trace)))
                (equal? 'VAR (car (car trace))))
            (follow-trace (cdr trace) edges stored-val)]))
-  (follow-trace (cdr (ctm-apply ctm tape head #t))
-                (filter (lambda (x) (not (equal? "white" (cadr (caddr (caddr x)))))) (clean-list (dot-edges (parse-program ctmlist))))
-                (car (car (clean-list (dot-edges (parse-program ctmlist)))))))
+  (follow-trace (cdr (ctm-run ctm tape head #:trace #t)) (clean-list (dot-edges (parse-program ctmlist))) (car (car (clean-list (dot-edges (parse-program ctmlist)))))))
 
 
-;(transition-diagram-ctm COPYL2)
-;(transition-diagram-ctm SWAPL)
 
 
-#|(define C
-  '(list 7 8 (cons BRANCH (list (list _ (list GOTO 2)) (list 'a (list GOTO 1)) (list 'b (list GOTO 1))))
-         1
-         (list (list VAR k) WB FBR FBR k FBL FBL k (list GOTO 0))
-         2
-         FBR
-         L
-         (cons BRANCH (list (list _ (list GOTO 3)) (list 'a (list GOTO 4)) (list 'b (list GOTO 4))))
-         3
-         RR
-         (list GOTO 5)
-         4
-         R
-         (list GOTO 5)
-         5))
-
-(define A '(1 2 3))
 
 
-(define ADDL '(list FBL2
-                    SHIFTL
-                    LFT
-                    (cons BRANCH (list (list BLANK (list GOTO 20))
-                                       (list i (list GOTO 5))))
-                    5
-                    RGHT
-                    20))
 
-(define Cwrong
-  '(list 7 8 (cons BRANCH (list (list _ (list GOTO 2)) (list 'a (list GOTO 1)) (list 'b (list GOTO 1))))
-         1
-         (list (list VAR k) WB FBR FBR 'k FBL FBL 'k (list GOTO 0))
-         2
-         FBR
-         L
-         (cons BRANCH (list (list _ (list GOTO 3)) (list 'a (list GOTO 4)) (list 'b (list GOTO 4))))
-         3
-         RR
-         (list GOTO 5)
-         4
-         R
-         (list GOTO 5)
-         5))
 
-;(transition-diagram-ctm Cwrong) |#
+
+
+
+

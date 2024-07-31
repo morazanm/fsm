@@ -51,7 +51,7 @@
            (read (cadr (car l)))
            (action (cadr (cadr l)))
            (labell (string-append "[(" (list->string2 read) ")(" (list->string2 action) ")]")))
-      (list fromst tost `((fontsize 15) (label ,labell)))))
+      (list fromst tost `((fontsize 8) (label ,labell)))))
   (map edge (sm-rules M)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -66,7 +66,7 @@
     (string-join rules "\n"))
   ;; image
   ;; Purpose: Store a graph image 
-  (define cgraph (create-graph 'cgraph #:atb (hash 'rankdir "LR" 'fontsize 13)
+  (define cgraph (create-graph 'cgraph #:atb (hash 'rankdir "LR" 'fontsize 8)
                                #:fmtrs (formatters (hash) (hash) (hash 'label one-rule-per-line))))
   (begin
     (set! cgraph
