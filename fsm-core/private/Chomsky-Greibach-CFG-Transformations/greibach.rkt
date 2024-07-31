@@ -134,8 +134,10 @@
     (let* ((new-nt (string->symbol (string-append "B-" (number->string (config-n (get-config A-to-sub As))))))
            (new-n #f)
            (new-rep (string->symbol (string-append "B-" (number->string (config-n (get-config A-to-sub As))))))
-           (new-rules (cons (append rest-rules (list new-rep))
-                            (list rest-rules))))
+           (new-rules (filter (lambda (x) (or (< (length x) 2)
+                                              (not (equal? new-rep (last (drop-right x 1))))))
+                              (cons (append rest-rules (list new-rep))
+                                    (list rest-rules)))))
       (list (config new-nt new-n new-rep new-rules))))
 
   (if (empty? rules)
@@ -166,7 +168,9 @@
                (let ((new-rep (list (string->symbol (string-append "B-" (number->string (config-n A)))))))
                  (surgery-on-A cfg
                                A
-                               (append (cdr rules) (map (lambda (x) (append x new-rep)) (append (cdr rules) new-rules)))
+                               (filter (lambda (x) (or (< (length x) 2)
+                                                       (not (equal? (car new-rep) (last (drop-right x 1))))))
+                                       (append (cdr rules) (map (lambda (x) (append x new-rep)) (append (cdr rules) new-rules))))
                                new-rules
                                (append (introduce-new-configs (car (car rules)) (cdr (car rules))) new-A)
                                As)))))))
@@ -263,16 +267,16 @@
 ;; cfg (listof config) -> cfg
 ;; Purpose: Convert a list of configs to a cfg
 (define (configs->cfg cfg configs)
-  (let* ((new-nts (map config-nt configs))
+  (let* ((new-nts (remove-duplicates (map config-nt configs)))
          (new-rules
           (remove-duplicates
            (append-map (lambda (conf)
                          (map (lambda (rule) `(,(config-nt conf) -> ,(list->symbol rule))) (config-rules conf)))
                        configs))))
     (make-unchecked-cfg new-nts
-              (grammar-sigma cfg)
-              new-rules
-              (grammar-start cfg))))
+                        (grammar-sigma cfg)
+                        new-rules
+                        (grammar-start cfg))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -290,11 +294,6 @@
                                                     As))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-
-
-
 
 
 
