@@ -296,18 +296,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-(define numb>numa (make-unchecked-cfg '(S A)
-                      '(a b)
-                      `((S ,ARROW b)
-                        (S ,ARROW AbA)
-                        (A ,ARROW ,EMP)
-                        (A ,ARROW AbAaA)
-                        (A ,ARROW AaAbA)
-                        (A ,ARROW bA))
-                        'S))
 
-(define G (greibach numb>numa))
-(cfg-derive G '(b b b b))
 
 
 
