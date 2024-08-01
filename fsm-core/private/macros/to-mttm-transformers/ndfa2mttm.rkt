@@ -2,7 +2,8 @@
 
 (require "mtape-tm.rkt")
 
-
+;; ndfa --> mttm
+;; Purpose: Convert given ndfa into an mttm
 (define (ndfa->mttm M)
   (let* [(sts (sm-states M))
          (sigma (sm-sigma M))

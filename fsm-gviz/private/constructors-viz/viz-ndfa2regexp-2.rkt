@@ -1,16 +1,14 @@
-#lang racket
+#lang fsm
 
-(require "../fsm-gviz/private/lib.rkt"
+(require "../lib.rkt"
          2htdp/universe
          rackunit
          (rename-in racket/gui/base
                     [make-color loc-make-color]
                     [make-pen loc-make-pen])
          2htdp/image
-         "definitions-viz.rkt"
-         "run-viz.rkt"
-         "../fsm-core/interface.rkt"
-         "../sm-graph.rkt")
+         "definitions-viz-2.rkt"
+         "run-viz-2.rkt")
 (provide ndfa2regexp-viz)
 
 (define FNAME "fsm")
@@ -206,28 +204,6 @@
 
 (define E-SCENE (empty-scene 1250 600))
 
-(define E-SCENE-TOOLS (overlay (above (above (triangle 30 'solid 'black)
-                                             (rectangle 10 30 'solid 'black))
-                                      (square 20 'solid 'white)
-                                      (text "Restart the visualization" 20 'black)
-                                      (square 60 'solid 'white)
-                                      (beside (rectangle 30 10 'solid 'black)
-                                              (rotate 270 (triangle 30 'solid 'black)))
-                                      (square 20 'solid 'white)
-                                      (text "Move one step forward" 20 'black)
-                                      (square 60 'solid 'white)
-                                      (beside (rotate 90 (triangle 30 'solid 'black))
-                                              (rectangle 30 10 'solid 'black))
-                                      (square 20 'solid 'white)
-                                      (text "Move one step backward" 20 'black)
-                                      (square 60 'solid 'white)
-                                      (above (rectangle 10 30 'solid 'black)
-                                             (rotate 180 (triangle 30 'solid 'black)))
-                                      (square 20 'solid 'white)
-                                      (text "Complete the visualization" 20 'black)
-                                      )
-                               (empty-scene 250 600)))
-
 
 ;; img is the graph image
 ;; state is the state being ripped
@@ -239,7 +215,7 @@
 ;;          using the given ns and nf as, respectively, the new
 ;;          start and final states.
 (define (create-nodes graph los ns nf)
-  (let [(states-only (remove-duplicates (append (list ns nf) los)))]
+  (let [(states-only (append (list ns nf) los))]
     (foldl (λ (state result)
              (add-node
               result
@@ -415,7 +391,7 @@
     (image-struct (create-graph-img-special
                    (if (not (member DEAD (sm-states M)))
                        (sm-states M)
-                       (cons DEAD (sm-states M)))
+                       (cons DEAD (remove DEAD (sm-states M))))
                    (make-dgraph-unions changed-rules) 
                    new-start
                    new-final)
@@ -458,9 +434,9 @@
         (height (image-height graph-img))]
     (if (or (> width (image-width E-SCENE))
             (> height (image-height E-SCENE)))
-        (beside E-SCENE-TOOLS (overlay (resize-image graph-img (image-width E-SCENE) (image-height E-SCENE))
-                                       E-SCENE))
-        (beside E-SCENE-TOOLS (overlay graph-img E-SCENE)))))
+        (overlay (resize-image graph-img (image-width E-SCENE) (image-height E-SCENE))
+                 E-SCENE)
+        (overlay graph-img E-SCENE))))
 
 
 

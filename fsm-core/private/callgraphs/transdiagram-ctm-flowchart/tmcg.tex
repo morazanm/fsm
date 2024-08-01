@@ -1,0 +1,95 @@
+\documentclass{eptcs}
+\providecommand{\event}{TFPIE 2024}
+
+\usepackage{trfrac}
+\usepackage{subcaption}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage{alltt}
+\usepackage{tikz}
+\usetikzlibrary{automata, positioning, arrows}
+\usepackage{float}
+\floatstyle{ruled}
+\restylefloat{figure}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage{mathtools}
+\usepackage{pifont}
+\usepackage{cancel}
+\usepackage{enumitem}
+
+%\usepackage{hyphenat}
+%\tolerance=3000
+
+\tikzset{->, % makes the edges directed
+         >=stealth, % makes the arrow heads bold
+         node distance=3cm, % specifies the minimum distance between two nodes. Change if necessary.
+         every state/.style={thick}, % sets the properties for each ’state’ node
+         initial text=$ $, % sets the text that appears on the start arrow
+}
+
+\newcommand{\racket}{\texttt{Racket}}
+\newcommand{\drr}{\texttt{DrRacket}}
+\newcommand{\fsm}{\texttt{FSM}}
+%\newcommand{\dfa}{\texttt{dfa}}
+\newcommand{\ndfa}{\texttt{ndfa}}
+\newcommand{\pda}{\texttt{pda}}
+\newcommand{\tm}{\texttt{tm}}
+\newcommand{\sig}{\texttt{\(\Sigma\)}}
+\newcommand{\sigsig}{\texttt{\(\Sigma\) = \{a b\}}}
+\newcommand{\delt}{\texttt{\(\delta\)}}
+\newcommand{\lamb}{\texttt{$\lambda$}}
+\newcommand{\quot}{\texttt{\textquotesingle{}}}
+\newcommand{\dotss}{\(\ldots\)}
+\newcommand{\step}{\texttt{$\vdash$}}
+\newcommand{\steps}{\texttt{$\vdash^*$}}
+\newcommand{\elist}{\texttt{\textquotesingle{()}}}
+\newcommand{\qquot}{\texttt{\textasciigrave{}}}
+\newcommand{\accept}{\texttt{\textquotesingle{}accept}}
+\newcommand{\reject}{\texttt{\textquotesingle{}reject}}
+\newcommand{\ci}{\texttt{ci}}
+\newcommand{\arrow}{\(\rightarrow\)}
+\newcommand{\ets}{\texttt{$\epsilon$}-transitions}
+\newcommand{\et}{\texttt{$\epsilon$}-transition}
+\newcommand{\flatt}{\texttt{FLAT}}
+\newcommand{\gviz}{\texttt{Graphviz}}
+
+\title{Computation Graphs for State-Based Machines}
+
+\author{Marco T. Moraz\'an
+%\orcid{0000-0003-4670-6116}
+\institute{Seton Hall University}
+\email{morazanm@shu.edu}
+\and
+Oliwia Kempinski
+\institute{Seton Hall University}
+\email{kempinol@shu.edu}
+}
+\def\titlerunning{Computation Graphs for State-Based Machines}
+\def\authorrunning{Moraz\'an and Kempinski}
+
+
+\begin{document}
+
+\begin{figure}
+\centering
+\begin{tikzpicture}[scale=0.9, transform shape, state/.append style={rectangle}]
+  \node [state] (Q1) at (0,2) {parse-prog};
+  \node [state] (Q2) at (-2,0) {dot-nodes};
+  \node [state] (Q3) at (2,0) {dot-edges};
+  \node [state] (Q4) at (0,-2) {clean-dots};
+  \node [state] (Q5) at (0,-4) {add-to-graph};
+
+  \draw (Q1) edge[left] node{} (Q2);
+  \draw (Q1) edge[above] node{} (Q3);
+  \draw (Q3) edge[right] node{} (Q4);
+  \draw (Q2) edge[right] node{} (Q4);
+  \draw (Q4) edge[right] node{} (Q5);
+\end{tikzpicture}
+\caption{The \texttt{Gidayu} computation graph on \texttt{bb}.} \label{gidayu-cgraph}
+\caption{Flowchart.}
+\end{figure}
+
+\end{document}

@@ -12,10 +12,13 @@
 ;  4. A kleenestar-regexp
 
 (module regexp racket
-  (require "constants.rkt")
+  (require "constants.rkt"
+           "macros/error-formatting.rkt")
   (provide null-regexp null-regexp? 
-           empty-regexp empty-regexp? 
-           make-unchecked-singleton singleton-regexp? singleton-regexp-a
+           empty-regexp empty-regexp?
+           (contract-out
+            [struct singleton-regexp ((a valid-singleton/c))])
+           make-unchecked-singleton
            make-unchecked-concat concat-regexp? concat-regexp-r1 concat-regexp-r2
            make-unchecked-union union-regexp? union-regexp-r1 union-regexp-r2
            make-unchecked-kleenestar kleenestar-regexp? kleenestar-regexp-r1
@@ -38,6 +41,23 @@
   
   ; single character string --> singleton-regexp
   (struct singleton-regexp (a) #:transparent)
+  ;; (flat-contract: any --> string)
+  ;; Purpose: Constructs a flat-contract whose predicate determines if the given
+  ;;          input is a valid singleton regexp, meaning it is a lower-case
+  ;;          Roman alphabet character. Raises a blame error if it's not.
+  (define valid-singleton/c
+    (make-flat-contract
+     #:name 'singleton-regexp?
+     #:projection (lambda (blame)
+                    (lambda (x)
+                      (current-blame-format format-error)
+                      (if (and (string? x)
+                               (not (not (regexp-match (regexp "^[a-z]$") x))))
+                          x
+                          (raise-blame-error
+                           blame
+                           x
+                           (format "A singleton regular expression must be a single lower-case Roman alphabet character, but found")))))))
   (define (make-unchecked-singleton a)
     (singleton-regexp a)
     )

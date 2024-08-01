@@ -136,7 +136,8 @@ The following starting state, B, is not in the given list of states: (A S)"))
                           (A ,ARROW bS))
                         'S
                         #:accepts 'aaa)
-               (format "The expected accepts is not a list of words: aaa"))
+               (format "Step two of the design recipe has not been successfully completed.
+The expected accepts is not a list of words: aaa"))
 
   (check-error (make-rg '(A S)
                         '(a b)
@@ -145,7 +146,7 @@ The following starting state, B, is not in the given list of states: (A S)"))
                           (A ,ARROW bS))
                         'S
                         #:accepts '((a c d)))
-               (format "Step six of the design recipe has not been successfully completed.
+               (format "Step two of the design recipe has not been successfully completed.
 The following words in the accepts list contain symbols not included in sigma: ((a c d))"))
   (check-error (make-rg '(A S)
                         '(a b)

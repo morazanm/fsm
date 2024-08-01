@@ -1,15 +1,14 @@
-#lang racket
-(require "../fsm-gviz/private/lib.rkt"
-         2htdp/universe rackunit
+#lang fsm
+
+(require "../lib.rkt" 2htdp/universe
+         rackunit
          (rename-in racket/gui/base
                     [make-color loc-make-color]
                     [make-pen loc-make-pen])
          2htdp/image
-         "definitions-viz.rkt"
-         "run-viz.rkt"
-         "../fsm-core/interface.rkt")
-
-(provide union-viz)
+         "definitions-viz-2.rkt"
+         "run-viz-2.rkt")
+(provide concat-viz)
 
 (define FNAME "fsm")
 
@@ -58,31 +57,12 @@
                        (D b D))
                      'no-dead))
 
-;; UNION VISUALIZATION
+;; CONCATENATION VISUALIZATION
+
+
 
 (define E-SCENE (empty-scene 1250 600))
 
-(define E-SCENE-TOOLS (overlay (above (above (triangle 30 'solid 'black)
-                                             (rectangle 10 30 'solid 'black))
-                                      (square 20 'solid 'white)
-                                      (text "Restart the visualization" 20 'black)
-                                      (square 60 'solid 'white)
-                                      (beside (rectangle 30 10 'solid 'black)
-                                              (rotate 270 (triangle 30 'solid 'black)))
-                                      (square 20 'solid 'white)
-                                      (text "Move one step forward" 20 'black)
-                                      (square 60 'solid 'white)
-                                      (beside (rotate 90 (triangle 30 'solid 'black))
-                                              (rectangle 30 10 'solid 'black))
-                                      (square 20 'solid 'white)
-                                      (text "Move one step backward" 20 'black)
-                                      (square 60 'solid 'white)
-                                      (above (rectangle 10 30 'solid 'black)
-                                             (rotate 180 (triangle 30 'solid 'black)))
-                                      (square 20 'solid 'white)
-                                      (text "Complete the visualization" 20 'black)
-                                      )
-                               (empty-scene 250 600)))
 
 ;; make-node-graph
 ;; graph los start final -> graph
@@ -108,7 +88,7 @@
 ;; make-edge-graph
 ;; graph ndfa ndfa -> graph
 ;; Purpose: To make an edge graph
-(define (make-edge-graph graph M N ns)
+(define (make-edge-graph graph M N)
   (foldl (λ (rule result) (add-edge result
                                     (second rule)
                                     (if (equal? (first rule) '())
@@ -128,10 +108,8 @@
                                                              [else
                                                               'orange]))))
          graph
-         (append (list (list ns EMP (sm-start M))
-                       (list ns EMP (sm-start N)))
-                 (sm-rules M)
-                 (sm-rules N))))
+         (append (sm-rules M) (sm-rules N) (map (λ (f) (list f EMP (sm-start N)))
+                                                (sm-finals M)))))
 
 ;; make-init-edge-graph
 ;; graph ndfa ndfa -> graph
@@ -178,19 +156,18 @@
 ;; Purpose: To create a graph image for the union
 ;; Assume: The intersection of the states of the given machines is empty
 (define (create-graph-img M N)
-  (let* [(new-start (generate-symbol 'S (append (sm-states M) (sm-states N))))
-         (new-states (cons new-start
-                           (append (sm-states M) (sm-states N))))
-         (added-edges (list (list new-start EMP (sm-start M))
-                            (list new-start EMP (sm-start N))))
-         (new-finals (append (sm-finals M) (sm-finals N)))]
+  (let* [(new-start (sm-start M))
+         (edge-added (map (λ (f) (list f EMP (sm-start N)))
+                          (sm-finals M)))
+         (new-states (append (sm-states M) (sm-states N)))
+         (new-finals (sm-finals N))]
     (overlay (above (graph->bitmap (make-edge-graph (make-node-graph
                                                      (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                     new-states new-start new-finals) M N new-start))
-                    (text "Union of the ndfas \n" 20 'black)
-                    (text (format "Generated edges: ~a \n" added-edges) 20 'black)
-                    (text (format "Final states: ~a \n" new-finals) 20 'black)
-                    (text (format "Starting state: ~a \n" new-start) 20 'black))
+                                                     new-states new-start new-finals) M N))
+                    (text "Concatenation of the ndfas \n" 20 'black)
+                    (text (format "Starting state: ~a \n" new-start) 20 'black)
+                    (text (format "Final state(s): ~a \n" new-finals) 20 'black)
+                    (text (format "Generated edge: ~a \n" edge-added) 20 'black))
              E-SCENE)))
      
 ;; make-init-grph-img
@@ -198,20 +175,19 @@
 ;; Purpose: To draw the graph of the initial ndfa's
 (define (make-init-grph-img M N)
   (overlay (above (text "First ndfa:" 20 'black)
-                  (graph->bitmap (make-first-edge-graph (make-node-graph
-                                                         (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                         (sm-states N)
-                                                         (sm-start N)
-                                                         (sm-finals N))
-                                                        N (sm-start N)))
-                  (text " " 20 'white)
-                  (text "Second ndfa:" 20 'black)
                   (graph->bitmap (make-second-edge-graph (make-node-graph
                                                           (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
                                                           (sm-states M)
                                                           (sm-start M)
                                                           (sm-finals M))
-                                                         M (sm-start M))))
+                                                         M (sm-start M)))
+                  (text "Second ndfa:" 20 'black)
+                  (graph->bitmap (make-first-edge-graph (make-node-graph
+                                                         (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                                         (sm-states N)
+                                                         (sm-start N)
+                                                         (sm-finals N))
+                                                        N (sm-start N))))
            E-SCENE))
      
 
@@ -223,26 +199,14 @@
         (height (image-height (first (viz-state-pimgs a-vs))))]
     (if (or (> width (image-width E-SCENE))
             (> height (image-height E-SCENE)))
-        (beside E-SCENE-TOOLS (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE)))               
-        (beside E-SCENE-TOOLS (first (viz-state-pimgs a-vs))))))
+        (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE))
+        (first (viz-state-pimgs a-vs)))))
 
-;; union-viz
+;; concat-viz
 ;; fsa fsa -> void
-(define (union-viz M N)
+(define (concat-viz M N)
   (let [(renamed-machine (if (ormap (λ (x) (member x (sm-states M))) (sm-states N))
                              (sm-rename-states (sm-states M) N)
                              N))]
-    (run-viz (viz-state (list (create-graph-img M renamed-machine)) (list (make-init-grph-img M N))) draw-world 'union-viz)))
-
-
-
-
-
-
-
-
-
-
-
-
+    (run-viz (viz-state (list (create-graph-img M renamed-machine)) (list (make-init-grph-img M N))) draw-world 'concat-viz)))
 

@@ -1,15 +1,14 @@
-#lang racket
+#lang fsm
 
-(require "../fsm-gviz/private/lib.rkt"
+(require "../lib.rkt"
          2htdp/universe
          rackunit
          (rename-in racket/gui/base
                     [make-color loc-make-color]
                     [make-pen loc-make-pen])
          2htdp/image
-         "definitions-viz.rkt"
-         "run-viz.rkt"
-         "../fsm-core/interface.rkt")
+         "definitions-viz-2.rkt"
+         "run-viz-2.rkt")
 
 (provide ndfa2dfa-viz)
 
@@ -223,27 +222,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define E-SCENE (empty-scene 1250 600))
-(define E-SCENE-TOOLS (overlay (above (above (triangle 30 'solid 'black)
-                                             (rectangle 10 30 'solid 'black))
-                                      (square 20 'solid 'white)
-                                      (text "Restart the visualization" 20 'black)
-                                      (square 60 'solid 'white)
-                                      (beside (rectangle 30 10 'solid 'black)
-                                              (rotate 270 (triangle 30 'solid 'black)))
-                                      (square 20 'solid 'white)
-                                      (text "Move one step forward" 20 'black)
-                                      (square 60 'solid 'white)
-                                      (beside (rotate 90 (triangle 30 'solid 'black))
-                                              (rectangle 30 10 'solid 'black))
-                                      (square 20 'solid 'white)
-                                      (text "Move one step backward" 20 'black)
-                                      (square 60 'solid 'white)
-                                      (above (rectangle 10 30 'solid 'black)
-                                             (rotate 180 (triangle 30 'solid 'black)))
-                                      (square 20 'solid 'white)
-                                      (text "Complete the visualization" 20 'black)
-                                      )
-                               (empty-scene 250 600)))
 
 ;; etc (edges-to-track) is a structure that consists of
 ;; up-edges - unprocessed edges, edges that are yet to be drawn
@@ -581,8 +559,8 @@
 ;; Purpose: To draw a etc image
 (define (draw-etc a-etc)
   (if (empty? (viz-state-pimgs a-etc))
-      (beside E-SCENE-TOOLS (first (viz-state-upimgs a-etc)))
-      (beside E-SCENE-TOOLS (first (viz-state-pimgs a-etc)))))
+      (first (viz-state-upimgs a-etc))
+      (first (viz-state-pimgs a-etc))))
 
 
 ;; contains-final-state-run?

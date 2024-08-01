@@ -1,15 +1,13 @@
-#lang racket
-(require "../fsm-gviz/private/lib.rkt"
+#lang fsm
+(require "../lib.rkt"
          2htdp/universe
          rackunit
          (rename-in racket/gui/base
                     [make-color loc-make-color]
                     [make-pen loc-make-pen])
          2htdp/image
-         "definitions-viz.rkt"
-         "run-viz.rkt"
-         "../fsm-core/interface.rkt")
-
+         "definitions-viz-2.rkt"
+         "run-viz-2.rkt")
 (provide intersection-viz)
 
 (define FNAME "fsm")
@@ -129,27 +127,6 @@
 
 
 (define E-SCENE (empty-scene 1250 600))
-(define E-SCENE-TOOLS (overlay (above (above (triangle 30 'solid 'black)
-                                             (rectangle 10 30 'solid 'black))
-                                      (square 20 'solid 'white)
-                                      (text "Restart the visualization" 20 'black)
-                                      (square 60 'solid 'white)
-                                      (beside (rectangle 30 10 'solid 'black)
-                                              (rotate 270 (triangle 30 'solid 'black)))
-                                      (square 20 'solid 'white)
-                                      (text "Move one step forward" 20 'black)
-                                      (square 60 'solid 'white)
-                                      (beside (rotate 90 (triangle 30 'solid 'black))
-                                              (rectangle 30 10 'solid 'black))
-                                      (square 20 'solid 'white)
-                                      (text "Move one step backward" 20 'black)
-                                      (square 60 'solid 'white)
-                                      (above (rectangle 10 30 'solid 'black)
-                                             (rotate 180 (triangle 30 'solid 'black)))
-                                      (square 20 'solid 'white)
-                                      (text "Complete the visualization" 20 'black)
-                                      )
-                               (empty-scene 250 600)))
 
 
 ;; create-node-graph
@@ -363,10 +340,10 @@
         (height (image-height (first (viz-state-pimgs a-vs))))]
     (if (or (> width (image-width E-SCENE))
             (> height (image-height E-SCENE)))
-        (beside E-SCENE-TOOLS (overlay (resize-image (first (viz-state-pimgs a-vs)) (- (image-width E-SCENE) 5)
-                                                     (- (image-height E-SCENE) 5))
-                                       E-SCENE))
-        (beside E-SCENE-TOOLS (overlay (first (viz-state-pimgs a-vs)) E-SCENE)))))
+        (overlay (resize-image (first (viz-state-pimgs a-vs)) (- (image-width E-SCENE) 5)
+                               (- (image-height E-SCENE) 5))
+                 E-SCENE)
+        (overlay (first (viz-state-pimgs a-vs)) E-SCENE))))
 
 
 ;; intersection-viz
