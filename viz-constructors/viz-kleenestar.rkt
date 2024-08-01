@@ -6,30 +6,88 @@
                     [make-color loc-make-color]
                     [make-pen loc-make-pen])
          2htdp/image
-         "definitions-viz.rkt"
-         "run-viz.rkt"
-         "../fsm-core/interface.rkt")
+         "../visualizations/viz-lib/resize-sm-image.rkt"
+         ;"definitions-viz.rkt"
+         ;"run-viz.rkt"
+         "../fsm-core/private/fsa.rkt"
+         "../fsm-core/private/constants.rkt"
+         "../fsm-core/private/sm-getters.rkt"
+         "../fsm-core/private/misc.rkt"
+         "../visualizations/viz-lib/viz-constants.rkt"
+         "../visualizations/viz-lib/viz-state.rkt"
+         "../visualizations/viz-lib/viz-imgs/keyboard_bitmaps.rkt"
+         "../visualizations/viz-lib/viz-macros.rkt"
+         "../visualizations/viz-lib/default-viz-function-generators.rkt"
+         "../visualizations/viz-lib/viz.rkt"
+         "../visualizations/viz-lib/bounding-limits.rkt"
+         )
+
+
+;(define test (go-next a-vs))
 
 (provide kleenestar-viz)
 
 (define FNAME "fsm")
 
+
+
+#;(define E-SCENE-TOOLS
+  (let [(ARROW (above (triangle 30 'solid 'black) (rectangle 10 30 'solid 'black)))]
+    (beside/align "bottom"
+                  (above ARROW-UP-KEY
+                         (square HEIGHT-BUFFER 'solid 'white)
+                         (text "Restart" (- FONT-SIZE 2) 'black))
+                  (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
+                  (above ARROW-RIGHT-KEY
+                         (square HEIGHT-BUFFER 'solid 'white)
+                         (text "Forward" (- FONT-SIZE 2) 'black))
+                  (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
+                  (above ARROW-LEFT-KEY
+                         (square HEIGHT-BUFFER 'solid 'white)
+                         (text "Backward" (- FONT-SIZE 2) 'black))
+                  (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
+                  (above ARROW-DOWN-KEY
+                         (square HEIGHT-BUFFER 'solid 'white)
+                         (text "Finish" (- FONT-SIZE 2) 'black))
+                  (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
+                  (above cursor
+                         (square HEIGHT-BUFFER 'solid 'white)
+                         (text "Hold to drag" (- FONT-SIZE 2) 'black))
+                  (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
+                  (beside (above/align "middle" W-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Zoom in" (- FONT-SIZE 2) 'black))
+                          (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
+                          
+                          (above/align "middle"  S-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Zoom out" (- FONT-SIZE 2) 'black))
+                          (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
+                          
+                          (above/align "middle" R-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Min zoom" (- FONT-SIZE 2) 'black))
+                          (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
+                          
+                          (above/align "middle" E-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Mid zoom" (- FONT-SIZE 2) 'black))
+                          (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
+                          
+                          (above/align "middle" F-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Max zoom" (- FONT-SIZE 2) 'black))
+                          )
+                  )
+    )
+  )
+
 ;; L = nl
-(define nl (make-ndfa '(S)
+(define nl (make-unchecked-ndfa '(S)
                       '(a b)
                       'S
                       '()
                       '()))
 
 ;; L = ab*
-(define ab* (make-ndfa '(S A)
+(define ab* (make-unchecked-ndfa '(S A)
                        '(a b)
                        'S
                        '(A)
                        '((S a A)
                          (A b A))))
 ;; L = a(a U ab)b*
-(define a-aUb-b* (make-ndfa '(Z H B C D F)
+(define a-aUb-b* (make-unchecked-ndfa '(Z H B C D F)
                             '(a b)
                             'Z
                             '(F)
@@ -41,7 +99,7 @@
                               (C b F)
                               (F b F))))
 ;; L = aab*
-(define aab* (make-ndfa '(W X Y)
+(define aab* (make-unchecked-ndfa '(W X Y)
                         '(a b)
                         'W
                         '(Y)
@@ -49,7 +107,7 @@
                           (X a Y)
                           (Y b Y))))
 ;; L = a*
-(define a* (make-dfa '(S D)
+(define a* (make-unchecked-dfa '(S D)
                      '(a b)
                      'S
                      '(S)
@@ -152,6 +210,38 @@
          graph
          (sm-rules M)))
 
+
+
+(define (create-graph-struct M)
+   (let* [(new-start (generate-symbol 'K (sm-states M)))
+         (new-states (cons new-start (sm-states M)))
+         (new-finals (cons new-start (sm-finals M)))]
+     (make-edge-graph (make-node-graph
+                       (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                       new-states
+                       new-start
+                       new-finals)
+                      M new-start)
+     )
+  )
+
+(define (create-init-graph-struct M)
+  (make-init-edge-graph (make-node-graph
+                         (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                         (sm-states M)
+                         (sm-start M)
+                         (sm-finals M))
+                        M (sm-start M))
+  )
+
+(struct imsg-state (start added-edges))
+
+;; imsg-state -> image
+(define (draw-imsg a-imsg-state)
+  (above (text "Kleenestar of the ndfa \n" 20 'black)
+         (text (format "Generated starting state: ~a \n" (imsg-state-start a-imsg-state)) 20 'black)
+         (text (format "Added edges: ~a \n" (imsg-state-added-edges a-imsg-state)) 20 'black)))
+
 ;; create-graph-imgs
 ;; ndfa ndfa -> img
 ;; Purpose: To create a graph image for the union
@@ -162,17 +252,14 @@
          (new-finals (cons new-start (sm-finals M)))
          (added-edges (list (list new-start EMP (sm-start M))
                             (map (λ (f) (list f EMP new-start))
-                                 (sm-finals M)))) ]
-    (overlay (above (graph->bitmap (make-edge-graph (make-node-graph
-                                                     (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                     new-states
-                                                     new-start
-                                                     new-finals)
-                                                    M new-start))
+                                 (sm-finals M))))]
+    (overlay (above (void)
                     (text "Kleenestar of the ndfa \n" 20 'black)
                     (text (format "Generated starting state: ~a \n" new-start) 20 'black)
                     (text (format "Added edges: ~a \n" added-edges) 20 'black))
-             E-SCENE)))
+             E-SCENE)
+    )
+  )
      
 ;; make-init-grph-img
 ;; ndfa ndfa -> img
@@ -189,7 +276,7 @@
     (if (or (> width (image-width E-SCENE))
             (> height (image-height E-SCENE)))
         (above
-         (resize-image graph (image-width E-SCENE) (image-height E-SCENE))
+         (resize-sm-image graph (image-width E-SCENE) (image-height E-SCENE))
          (text "Starting ndfa \n" 20 'black))
         (above
          graph
@@ -201,7 +288,7 @@
 ;; draw-world
 ;; viz-state -> img
 ;; Purpose: To render the given viz-state
-(define (draw-world a-vs)
+#;(define (draw-world a-vs)
   (let [(width (image-width (first (viz-state-pimgs a-vs))))
         (height (image-height (first (viz-state-pimgs a-vs))))]
     (if (or (> width (image-width E-SCENE))
@@ -209,7 +296,61 @@
         (above (overlay (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE)) E-SCENE) E-SCENE-TOOLS)
         (above (overlay (first (viz-state-pimgs a-vs)) E-SCENE) E-SCENE-TOOLS))))
 
+(define (viz-go-next go-next)
+
 ;;kleenestar-viz
 ;; fsa -> void
 (define (kleenestar-viz M)
-  (run-viz (viz-state (list (create-graph-img M)) (list (make-init-grph-img M))) draw-world 'kleenestar-viz))
+  (run-viz (list (create-init-graph-struct M) (create-graph-struct M))
+           (make-init-grph-img M)
+           MIDDLE-E-SCENE
+           DEFAULT-ZOOM
+           DEFAULT-ZOOM-CAP
+           DEFAULT-ZOOM-FLOOR
+           (informative-messages draw-imsg
+                                 (let ([new-start (generate-symbol 'K (sm-states M))])
+                                       (imsg-state new-start
+                                             (list (list new-start EMP (sm-start M))
+                                                   (map (λ (f) (list f EMP new-start))
+                                                        (sm-finals M)))
+                                             )
+                                       )
+                                 (bounding-limits 0 0 0 0)
+                                 )
+           (instructions-graphic
+            E-SCENE-TOOLS
+            (bounding-limits 0 0 0 0))
+           (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
+           (create-viz-process-key (list (list "right" go-next right-key-pressed)
+                                           (list "left" go-prev left-key-pressed)
+                                           (list "up" go-to-begin up-key-pressed)
+                                           (list "down" go-to-end down-key-pressed)
+                                           (list "w" zoom-in identity)
+                                           (list "s" zoom-out identity)
+                                           (list "r" max-zoom-out identity)
+                                           (list "f" max-zoom-in identity)
+                                           (list "e" reset-zoom identity)
+                                           (list "wheel-down" zoom-in identity)
+                                           (list "wheel-up" zoom-out identity)
+                                           )
+                                   )
+           (create-viz-process-tick E-SCENE-BOUNDING-LIMITS NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT
+                                            CLICK-BUFFER-SECONDS
+                                            (list)
+                                            (list (list ARROW-UP-KEY-DIMS go-to-begin up-key-pressed)
+                                                  (list ARROW-DOWN-KEY-DIMS go-to-end down-key-pressed)
+                                                  (list ARROW-LEFT-KEY-DIMS go-prev left-key-pressed)
+                                                  (list ARROW-RIGHT-KEY-DIMS go-next right-key-pressed)
+                                                  (list W-KEY-DIMS zoom-in identity)
+                                                  (list S-KEY-DIMS zoom-out identity)
+                                                  (list R-KEY-DIMS max-zoom-out identity)
+                                                  (list E-KEY-DIMS reset-zoom identity)
+                                                  (list F-KEY-DIMS max-zoom-in identity)
+                                                  (list A-KEY-DIMS identity a-key-pressed)
+                                                  (list D-KEY-DIMS identity d-key-pressed)))
+           )
+  )
+  #;(run-viz (viz-state (list (create-graph-img M))
+                      (list (make-init-grph-img M)))
+           draw-world
+           'kleenestar-viz)

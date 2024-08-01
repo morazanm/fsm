@@ -247,6 +247,7 @@
                                             (rectangle E-SCENE-WIDTH E-SCENE-HEIGHT 'outline 'white)
                                             ))]
            (above PARSE-TREE-IMG
-                  ((informative-messages-draw-component (viz-state-informative-messages a-vs)) (informative-messages-component-state (viz-state-informative-messages a-vs)))
+                  ((informative-messages-draw-component (viz-state-informative-messages a-vs))
+                   (informative-messages-component-state (viz-state-informative-messages a-vs)))
                   (square INS-TOOLS-BUFFER 'solid 'white)
                   (instructions-graphic-img (viz-state-instructions-graphic a-vs)))))]))
