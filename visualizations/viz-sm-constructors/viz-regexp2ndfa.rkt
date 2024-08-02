@@ -1,47 +1,61 @@
 #lang racket
-(require "../fsm-gviz/private/lib.rkt" 
-         2htdp/universe rackunit
+(require "../../fsm-gviz/private/lib.rkt"
+         2htdp/universe
+         rackunit
          (rename-in racket/gui/base
                     [make-color loc-make-color]
                     [make-pen loc-make-pen])
          2htdp/image
-         "definitions-viz.rkt"
-         "run-viz.rkt"
-         "../fsm-core/interface.rkt")
+         "../viz-lib/resize-sm-image.rkt"
+         ;"definitions-viz.rkt"
+         ;"run-viz.rkt"
+         "../../fsm-core/private/fsa.rkt"
+         "../../fsm-core/private/constants.rkt"
+         "../../fsm-core/private/sm-getters.rkt"
+         "../../fsm-core/private/misc.rkt"
+         "../viz-lib/viz-constants.rkt"
+         "../viz-lib/viz-state.rkt"
+         "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
+         "../viz-lib/viz-macros.rkt"
+         "../viz-lib/default-viz-function-generators.rkt"
+         "../viz-lib/viz.rkt"
+         "../viz-lib/bounding-limits.rkt"
+         "../../fsm-core/private/regexp.rkt"
+         "../viz-lib/zipper.rkt")
 (provide regexp2ndfa-viz)
 
 (define FNAME "fsm")
 
-(define R0 (union-regexp (singleton-regexp "a")
-                         (null-regexp)))
+(define R0 (make-unchecked-union (make-unchecked-singleton "a")
+                                 (null-regexp)))
 
-(define R1 (kleenestar-regexp (union-regexp (singleton-regexp "a")
-                                            (singleton-regexp "b"))))
-(define R11 (kleenestar-regexp (union-regexp (singleton-regexp "b")
-                                             (singleton-regexp "c"))))
-(define R12 (kleenestar-regexp (union-regexp (singleton-regexp "a")
-                                             (singleton-regexp "c"))))
+(define R1 (make-unchecked-kleenestar (make-unchecked-union (make-unchecked-singleton "a")
+                                                            (make-unchecked-singleton "b"))))
+(define R11 (make-unchecked-kleenestar (make-unchecked-union (make-unchecked-singleton "b")
+                                                             (make-unchecked-singleton "c"))))
+(define R12 (make-unchecked-kleenestar (make-unchecked-union (make-unchecked-singleton "a")
+                                                             (make-unchecked-singleton "c"))))
 
-(define R13 (union-regexp (union-regexp R1 R11) R12))
-(define R8 (concat-regexp (singleton-regexp "a")
-                          (singleton-regexp "b")))
+(define R13 (make-unchecked-union (make-unchecked-union R1 R11) R12))
+(define R8 (make-unchecked-concat (make-unchecked-singleton "a")
+                                  (make-unchecked-singleton "b")))
 
-(define R9 (concat-regexp (singleton-regexp "b")
-                          (singleton-regexp "a")))
+(define R9 (make-unchecked-concat (make-unchecked-singleton "b")
+                                  (make-unchecked-singleton "a")))
 
-(define R10 (union-regexp (kleenestar-regexp R8) (kleenestar-regexp R9)))
+(define R10 (make-unchecked-union (make-unchecked-kleenestar R8) (make-unchecked-kleenestar R9)))
 
-(define R2 (concat-regexp (singleton-regexp "m") R1))
+(define R2 (make-unchecked-concat (make-unchecked-singleton "m") R1))
 
-(define R3 (kleenestar-regexp R2))
+(define R3 (make-unchecked-kleenestar R2))
 
-(define R4 (kleenestar-regexp (union-regexp R3 R2)))
+(define R4 (make-unchecked-kleenestar (make-unchecked-union R3 R2)))
 
-(define R5 (concat-regexp (singleton-regexp "m") R0))
+(define R5 (make-unchecked-concat (make-unchecked-singleton "m") R0))
 
-(define R6 (kleenestar-regexp R5))
+(define R6 (make-unchecked-kleenestar R5))
 
-(define R7 (union-regexp R0 R5))
+(define R7 (make-unchecked-union R0 R5))
 
 (define E-SCENE (empty-scene 1250 600))
 
@@ -205,33 +219,40 @@
 ;; graph edge -> img
 ;; Purpose: To create a graph img for the given dgraph
 ;; with the labeled edge that has been expanded
-(define (create-graph-img dgraph edge)
-  (above
-   (graph->bitmap
-    (create-edges
-     (create-nodes
-      (create-graph 'dgraph #:atb (hash 'rankdir "LR"
-                                        'font "Sans"))
-      dgraph
-      edge)
-     dgraph))
-   (cond [(empty? edge) (text "Starting NDFA" 24 'black)]
-         [(void? edge) (text "Simplified initial regexp" 24 'black)]
-         [else (beside (text (format "Expanded regexp: ~a on edge from state" (printable-regexp (second edge))) 24 'black)
-                       (text (format " ~a" (first edge)) 24 'violet)
-                       (text (format " to state ") 24 'black)
-                       (text (format "~a" (third edge)) 24 'violet))])))
+(define (create-graph dgraph edge)
+  (create-edges
+   (create-nodes
+    (create-graph 'dgraph #:atb (hash 'rankdir "LR"
+                                      'font "Sans"))
+    dgraph
+    edge)
+   dgraph))
+
+
+;; imsg
+(struct imsg-state (edge))
+
+
+;; draw-imsg
+;; imsg -> img
+(define (draw-imsg a-imsg)
+  (cond [(empty? (imsg-state-edge a-imsg) (text "Starting NDFA" 24 'black))]
+        [(void? (imsg-state-edge a-imsg)) (text "Simplified initial regexp" 24 'black)]
+        [else (beside (text (format "Expanded regexp: ~a on edge from state" (printable-regexp (second (imsg-state-edge a-imsg)))) 24 'black)
+                      (text (format " ~a" (first (imsg-state-edge a-imsg))) 24 'violet)
+                      (text (format " to state ") 24 'black)
+                      (text (format "~a" (third edge)) 24 'violet))]))
 
 
 ;; create-graph-imgs
 ;; (listof gedges) -> (listof image)
 ;; Purpose: To create a list of graph images
-(define (create-graph-imgs gedges)
+(define (create-graphs gedges)
   (if (empty? gedges)
       empty
-      (cons (create-graph-img (gedge-grph (first gedges))
-                              (gedge-edge (first gedges)))
-            (create-graph-imgs (rest gedges)))))
+      (cons (create-graph (gedge-grph (first gedges))
+                          (gedge-edge (first gedges)))
+            (create-graphs (rest gedges)))))
 
 
 ;; create-init-nodes
@@ -271,37 +292,33 @@
 ;; list -> img
 ;; Purpose: To create an initial graph image
 (define (create-init-graph a-list)
-  (above
-   (graph->bitmap
-    (create-init-edges
-     (create-init-nodes
-      (create-graph 'dgraph #:atb (hash 'rankdir "LR"
-                                        'font "Sans")))
-     a-list))
-   (text "Starting NDFA" 24 'black)))
+  (create-init-edges
+   (create-init-nodes
+    (create-graph 'dgraph #:atb (hash 'rankdir "LR"
+                                      'font "Sans")))
+   a-list))
+
+
 
 
 
 ;; draw-world
 ;; viz-state -> img
 ;; Purpose: To render the given viz-state
-(define (draw-world a-vs)
-  (let [(width (image-width (first (viz-state-pimgs a-vs))))
-        (height (image-height (first (viz-state-pimgs a-vs))))]
-    (if (or (> width (image-width E-SCENE))
-            (> height (image-height E-SCENE)))
-        (above (overlay (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE))
-                        E-SCENE) E-SCENE-TOOLS)
-        (above (overlay (first (viz-state-pimgs a-vs)) E-SCENE) E-SCENE-TOOLS))))
+#;(define (draw-world a-vs)
+    (let [(width (image-width (first (viz-state-pimgs a-vs))))
+          (height (image-height (first (viz-state-pimgs a-vs))))]
+      (if (or (> width (image-width E-SCENE))
+              (> height (image-height E-SCENE)))
+          (above (overlay (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE))
+                          E-SCENE) E-SCENE-TOOLS)
+          (above (overlay (first (viz-state-pimgs a-vs)) E-SCENE) E-SCENE-TOOLS))))
 
 ;; regexp2ndfa-viz
 ;; regexp -> void
 (define (regexp2ndfa-viz regexp)
   (let* [(logedges (append
                     (list
-                     #;(last (dgraph2logedges
-                              (list (list 'S regexp 'F)) 
-                              '()))
                      (last (dgraph2logedges
                             (list (list 'S (simplify-regexp regexp) 'F)) 
                             '()
@@ -309,8 +326,55 @@
                     (rest (reverse (dgraph2logedges
                                     (list (list 'S (simplify-regexp regexp) 'F))
                                     '())))))
-         (loimgs (create-graph-imgs logedges))]
-    (run-viz (viz-state loimgs (list (create-init-graph (list 'S regexp 'F)))) draw-world 'regexp2ndfa)))
+         (graphs (create-graphs logedges))]
+    (run-viz (list (create-init-graph (list 'S regexp 'F)) graphs)
+             (graph->bitmap (create-init-graph (list 'S regexp 'F)))
+             MIDDLE-E-SCENE
+             DEFAULT-ZOOM
+             DEFAULT-ZOOM-CAP
+             DEFAULT-ZOOM-FLOOR
+             (informative-messages draw-imsg
+                                   (imsg-state (list->zipper (gedge-edge logedges)))
+                                   (bounding-limits 0 0 0 0)
+                                   )
+             (instructions-graphic
+              E-SCENE-TOOLS
+              (bounding-limits 0 0 0 0))
+             (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
+             (create-viz-process-key (list (list "right" go-next right-key-pressed)
+                                           (list "left" go-prev left-key-pressed)
+                                           (list "up" go-to-begin up-key-pressed)
+                                           (list "down" go-to-end down-key-pressed)
+                                           (list "w" zoom-in identity)
+                                           (list "s" zoom-out identity)
+                                           (list "r" max-zoom-out identity)
+                                           (list "f" max-zoom-in identity)
+                                           (list "e" reset-zoom identity)
+                                           (list "wheel-down" zoom-in identity)
+                                           (list "wheel-up" zoom-out identity)
+                                           )
+                                     )
+             (create-viz-process-tick E-SCENE-BOUNDING-LIMITS NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT
+                                      CLICK-BUFFER-SECONDS
+                                      (list)
+                                      (list (list ARROW-UP-KEY-DIMS go-to-begin up-key-pressed)
+                                            (list ARROW-DOWN-KEY-DIMS go-to-end down-key-pressed)
+                                            (list ARROW-LEFT-KEY-DIMS go-prev left-key-pressed)
+                                            (list ARROW-RIGHT-KEY-DIMS go-next right-key-pressed)
+                                            (list W-KEY-DIMS zoom-in identity)
+                                            (list S-KEY-DIMS zoom-out identity)
+                                            (list R-KEY-DIMS max-zoom-out identity)
+                                            (list E-KEY-DIMS reset-zoom identity)
+                                            (list F-KEY-DIMS max-zoom-in identity)
+                                            (list A-KEY-DIMS identity a-key-pressed)
+                                            (list D-KEY-DIMS identity d-key-pressed)))
+             )))
+
+
+
+
+    
+#; (run-viz (viz-state loimgs (list (create-init-graph (list 'S regexp 'F)))) draw-world 'regexp2ndfa)
 
 
 
