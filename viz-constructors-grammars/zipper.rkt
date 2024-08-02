@@ -1,7 +1,7 @@
 #lang racket
 
-(provide zipper zipper-next zipper-prev zipper-set zipper-to-begin zipper-to-end zipper-to-idx list->zipper zipper->list zipper-processed zipper-current zipper-unprocessed
-         zipper-at-end? zipper-at-begin?)
+(provide zipper zipper-next zipper-prev zipper-set zipper-to-begin zipper-to-end zipper-to-idx list->zipper zipper->list
+         zipper-processed zipper-current zipper-unprocessed zipper-at-end? zipper-at-begin? zipper-idx)
 
 ;; A zipper is a data structure that allows for a "text cursor" of sorts through other data structures
 ;; In this case it is a cursor through a given list, allowing for persistent bidirectional movement through
@@ -42,14 +42,18 @@
 (define (zipper-to-begin zip) (struct-copy zipper zip
                                             [processed '()]
                                             [current (last (zipper-processed zip))]
-                                            [unprocessed (append (rest (reverse (zipper-processed zip))) (list (zipper-current zip)) (zipper-unprocessed zip))]
+                                            [unprocessed (append (rest (reverse (zipper-processed zip)))
+                                                                 (list (zipper-current zip))
+                                                                 (zipper-unprocessed zip))]
                                             [idx 0]
                                             )
   )
 
 ;; zipper -> zipper
 ;; Jumps to the end of the original input list
-(define (zipper-to-end zip) (let ([new-processed (append (rest (reverse (zipper-unprocessed zip))) (list (zipper-current zip)) (zipper-processed zip))])
+(define (zipper-to-end zip) (let ([new-processed (append (rest (reverse (zipper-unprocessed zip)))
+                                                         (list (zipper-current zip))
+                                                         (zipper-processed zip))])
                               (struct-copy zipper zip
                                          [processed new-processed]
                                          [current (last (zipper-unprocessed zip))]
