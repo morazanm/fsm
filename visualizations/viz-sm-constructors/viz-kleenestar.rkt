@@ -19,31 +19,12 @@
          "../viz-lib/viz-macros.rkt"
          "../viz-lib/default-viz-function-generators.rkt"
          "../viz-lib/viz.rkt"
-         "../viz-lib/bounding-limits.rkt")
+         "../viz-lib/bounding-limits.rkt"
+         "../viz-lib/viz-imgs/cursor.rkt"
+         )
+(provide kleenestar-viz)
 
 (define E-SCENE (empty-scene 1250 600))
-
-(define E-SCENE-TOOLS (overlay (beside (above (above (triangle 30 'solid 'black)
-                                                     (rectangle 10 30 'solid 'black))
-                                              (square 20 'solid 'white)
-                                              (text "Restart the visualization" 18 'black))
-                                       (square 40 'solid 'white)
-                                       (above (beside (rectangle 30 10 'solid 'black)
-                                                      (rotate 270 (triangle 30 'solid 'black)))
-                                              (square 20 'solid 'white)
-                                              (text "Move one step forward" 18 'black))
-                                       (square 40 'solid 'white)
-                                       (above (beside (rotate 90 (triangle 30 'solid 'black))
-                                                      (rectangle 30 10 'solid 'black))
-                                              (square 20 'solid 'white)
-                                              (text "Move one step backward" 18 'black))
-                                       (square 40 'solid 'white)
-                                       (above (above (rectangle 10 30 'solid 'black)
-                                                     (rotate 180 (triangle 30 'solid 'black)))
-                                              (square 20 'solid 'white)
-                                              (text "Complete the visualization" 18 'black))
-                                       )
-                               (empty-scene 1250 100)))
 
 (define S-KEY (bitmap/file "../../visualizations/viz-lib/viz-imgs/keyboard_key_s.png"))
 
@@ -67,7 +48,46 @@
 
 (define ARROW-DOWN-KEY (bitmap/file "../../visualizations/viz-lib/viz-imgs/keyboard_key_down.png"))
 
-(provide kleenestar-viz)
+(define E-SCENE-TOOLS
+  (let [(ARROW (above (triangle 30 'solid 'black) (rectangle 10 30 'solid 'black)))]
+    (beside/align "bottom"
+                  (above ARROW-UP-KEY
+                         (square HEIGHT-BUFFER 'solid 'white)
+                         (text "Restart" (- FONT-SIZE 2) 'black))
+                  (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
+                  (above ARROW-RIGHT-KEY
+                         (square HEIGHT-BUFFER 'solid 'white)
+                         (text "Forward" (- FONT-SIZE 2) 'black))
+                  (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
+                  (above ARROW-LEFT-KEY
+                         (square HEIGHT-BUFFER 'solid 'white)
+                         (text "Backward" (- FONT-SIZE 2) 'black))
+                  (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
+                  (above ARROW-DOWN-KEY
+                         (square HEIGHT-BUFFER 'solid 'white)
+                         (text "Finish" (- FONT-SIZE 2) 'black))
+                  (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
+                  (above cursor
+                         (square HEIGHT-BUFFER 'solid 'white)
+                         (text "Hold to drag" (- FONT-SIZE 2) 'black))
+                  (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
+                  (beside (above/align "middle" W-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Zoom in" (- FONT-SIZE 2) 'black))
+                          (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
+                          
+                          (above/align "middle"  S-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Zoom out" (- FONT-SIZE 2) 'black))
+                          (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
+                          
+                          (above/align "middle" R-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Min zoom" (- FONT-SIZE 2) 'black))
+                          (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
+                          
+                          (above/align "middle" E-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Mid zoom" (- FONT-SIZE 2) 'black))
+                          (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
+                          
+                          (above/align "middle" F-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Max zoom" (- FONT-SIZE 2) 'black))
+                          )
+                  )
+    )
+  )
 
 (define FNAME "fsm")
 
@@ -392,47 +412,6 @@
                       INS-TOOLS-BUFFER
                       (image-height F-KEY))))
 
-#;(define E-SCENE-TOOLS
-  (let [(ARROW (above (triangle 30 'solid 'black) (rectangle 10 30 'solid 'black)))]
-    (beside/align "bottom"
-                  (above ARROW-UP-KEY
-                         (square HEIGHT-BUFFER 'solid 'white)
-                         (text "Restart" (- FONT-SIZE 2) 'black))
-                  (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
-                  (above ARROW-RIGHT-KEY
-                         (square HEIGHT-BUFFER 'solid 'white)
-                         (text "Forward" (- FONT-SIZE 2) 'black))
-                  (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
-                  (above ARROW-LEFT-KEY
-                         (square HEIGHT-BUFFER 'solid 'white)
-                         (text "Backward" (- FONT-SIZE 2) 'black))
-                  (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
-                  (above ARROW-DOWN-KEY
-                         (square HEIGHT-BUFFER 'solid 'white)
-                         (text "Finish" (- FONT-SIZE 2) 'black))
-                  (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
-                  (above cursor
-                         (square HEIGHT-BUFFER 'solid 'white)
-                         (text "Hold to drag" (- FONT-SIZE 2) 'black))
-                  (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
-                  (beside (above/align "middle" W-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Zoom in" (- FONT-SIZE 2) 'black))
-                          (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
-                          
-                          (above/align "middle"  S-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Zoom out" (- FONT-SIZE 2) 'black))
-                          (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
-                          
-                          (above/align "middle" R-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Min zoom" (- FONT-SIZE 2) 'black))
-                          (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
-                          
-                          (above/align "middle" E-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Mid zoom" (- FONT-SIZE 2) 'black))
-                          (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
-                          
-                          (above/align "middle" F-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Max zoom" (- FONT-SIZE 2) 'black))
-                          )
-                  )
-    )
-  )
-
 ;; L = nl
 (define nl (make-unchecked-ndfa '(S)
                       '(a b)
@@ -611,12 +590,12 @@
          (height (image-height graph))]
     (if (or (> width (image-width E-SCENE))
             (> height (image-height E-SCENE)))
-        (above
+        (resize-sm-image graph (image-width E-SCENE) (image-height E-SCENE))#;(above
          (resize-sm-image graph (image-width E-SCENE) (image-height E-SCENE))
-         (text "Starting ndfa \n" 20 'black))
-        (above
+         #;(text "Starting ndfa \n" 20 'black))
+        graph #;(above
          graph
-         (text "Starting ndfa \n" 20 'black))
+         #;(text "Starting ndfa \n" 20 'black))
 
         )))
      
@@ -632,15 +611,15 @@
         (above (overlay (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE)) E-SCENE) E-SCENE-TOOLS)
         (above (overlay (first (viz-state-pimgs a-vs)) E-SCENE) E-SCENE-TOOLS))))
 
-(define (viz-go-next a-vs) (go-next))
-(define (viz-go-prev a-vs) (go-prev))
-(define (viz-go-to-begin a-vs) (go-to-begin))
-(define (viz-go-to-end a-vs) (go-to-end))
-(define (viz-zoom-in a-vs) (zoom-in))
-(define (viz-zoom-out a-vs) (zoom-out))
-(define (viz-max-zoom-out a-vs) (max-zoom-out))
-(define (viz-max-zoom-in a-vs) (max-zoom-in))
-(define (viz-reset-zoom a-vs) (reset-zoom))
+(define viz-go-next (go-next))
+(define viz-go-prev (go-prev))
+(define viz-go-to-begin (go-to-begin))
+(define viz-go-to-end (go-to-end))
+(define viz-zoom-in (zoom-in))
+(define viz-zoom-out (zoom-out))
+(define viz-max-zoom-out (max-zoom-out))
+(define viz-max-zoom-in (max-zoom-in))
+(define viz-reset-zoom (reset-zoom))
 
 
 
