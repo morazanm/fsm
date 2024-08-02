@@ -7,59 +7,12 @@
          math/matrix
          "bounding-limits.rkt"
          2htdp/image
-         "resize-viz-image.rkt"
-         "viz-constants.rkt"
          )
 
 (provide (all-defined-out))
 
-(define (reposition-out-of-bounds-img a-vs viewport-lims new-img new-scale)
-  (cond [(outside-west-side-bounding-limits? viewport-lims (viz-state-image-posn a-vs))
-         (struct-copy viz-state a-vs
-                      [curr-image new-img]
-                      [image-posn (posn (bounding-limits-min-x viewport-lims) (posn-y (viz-state-image-posn a-vs)))]
-                      [scale-factor new-scale])]
-        [(outside-east-side-bounding-limits? viewport-lims (viz-state-image-posn a-vs))
-         (struct-copy viz-state a-vs
-                      [curr-image new-img]
-                      [image-posn (posn (bounding-limits-max-x viewport-lims) (posn-y (viz-state-image-posn a-vs)))]
-                      [scale-factor new-scale])]
-        [(outside-north-side-bounding-limits? viewport-lims (viz-state-image-posn a-vs))
-         (struct-copy viz-state a-vs
-                      [curr-image new-img]
-                      [image-posn (posn (posn-x (viz-state-image-posn a-vs)) (bounding-limits-min-y viewport-lims))]
-                      [scale-factor new-scale])]
-        [(outside-south-side-bounding-limits? viewport-lims (viz-state-image-posn a-vs))
-         (struct-copy viz-state a-vs
-                      [curr-image new-img]
-                      [image-posn (posn (posn-x (viz-state-image-posn a-vs)) (bounding-limits-max-y viewport-lims))]
-                      [scale-factor new-scale])]
-        [(outside-west-north-sides-bounding-limits? viewport-lims (viz-state-image-posn a-vs))
-         (struct-copy viz-state a-vs
-                      [curr-image new-img]
-                      [image-posn (posn (bounding-limits-min-x viewport-lims) (bounding-limits-min-y viewport-lims))]
-                      [scale-factor new-scale])]
-        [(outside-west-south-sides-bounding-limits? viewport-lims (viz-state-image-posn a-vs))
-         (struct-copy viz-state a-vs
-                      [curr-image new-img]
-                      [image-posn (posn (bounding-limits-min-x viewport-lims) (bounding-limits-max-y viewport-lims))]
-                      [scale-factor new-scale])]
-        [(outside-east-north-sides-bounding-limits? viewport-lims (viz-state-image-posn a-vs))
-         (struct-copy viz-state a-vs
-                      [curr-image new-img]
-                      [image-posn (posn (bounding-limits-max-x viewport-lims) (bounding-limits-min-y viewport-lims))]
-                      [scale-factor new-scale])]
-        [(outside-east-south-sides-bounding-limits? viewport-lims (viz-state-image-posn a-vs))
-         (struct-copy viz-state a-vs
-                      [curr-image new-img]
-                      [image-posn (posn (bounding-limits-max-x viewport-lims) (bounding-limits-max-y viewport-lims))]
-                      [scale-factor new-scale])]
-        [(within-bounding-limits? viewport-lims (viz-state-image-posn a-vs))
-         (struct-copy viz-state a-vs
-                      [curr-image new-img]
-                      [scale-factor new-scale])]))
-
-
+;; image int int -> image
+;; Scales a image to the given dimentions
 (define (resize-image img max-width max-height)
   (define src-width (image-width img))
   (define src-height (image-height img))
@@ -106,26 +59,6 @@
                 img)
                (/ scaled-width src-width)
                (/ scaled-height src-height))]))
-
-;; num num num num boolean num num num (matrix [ [x] [y] [1] ]) -> (matrix [ [transformed-x] [transformed-y] [1] ])
-;; Transforms a given point matrix based on the arguments provided
-(define (affine-transform #:x-translate [x-translate 0]
-                          #:y-translate [y-translate 0]
-                          #:x-scale [x-scale 1]
-                          #:y-scale [y-scale 1]
-                          #:reflect [reflect #f]
-                          #:rotate [rotate 0]
-                          #:x-shear [x-shear 0]
-                          #:y-shear [y-shear 0]
-                          #:point point)
-  (let* [(reflection (if reflect
-                         -1
-                         1))
-         (result (matrix* (matrix [[(* reflection x-scale (cos rotate)) (* x-shear (* -1 (sin rotate))) x-translate ]
-                                   [(* (sin rotate) y-shear) (* y-scale (cos rotate)) y-translate]
-                                   [0 0 1]])
-                          point))]
-    result))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -206,11 +139,12 @@
                             [(eq? factor ZOOM-DECREASE) (< (viz-state-scale-factor-floor a-vs) new-scale)]))]
       (if scalable?
           (let* [(scaled-image (scale new-scale (viz-state-curr-image a-vs)))
-                 (viewport-lims (calculate-viewport-limits scaled-image new-scale))
+                 (viewport-lims (calculate-viewport-limits scaled-image new-scale NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT))
                  (scale-increase (/ new-scale (viz-state-scale-factor a-vs)))
                  (affine-matrix (zoom-affine-transform (scale (viz-state-scale-factor a-vs) (viz-state-curr-image a-vs))
                                                               (viz-state-image-posn a-vs)
-                                                              scale-increase))]
+                                                              scale-increase
+                                                              E-SCENE-WIDTH E-SCENE-HEIGHT))]
             (reposition-out-of-bounds-img (struct-copy viz-state a-vs
                                                        [image-posn (posn (+ (posn-x (viz-state-image-posn a-vs))
                                                                             (matrix-ref affine-matrix 0 0))
@@ -351,7 +285,7 @@
 (define-syntax (go-prev stx)
   ;E-SCENE-WIDTH E-SCENE-HEIGHT PERCENT-BORDER-GAP DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR NODE-SIZE)
   (syntax-parse stx
-    [(_)
+    [()
      (with-syntax ([E-SCENE-WIDTH (datum->syntax stx 'E-SCENE-WIDTH)]
                    [E-SCENE-HEIGHT (datum->syntax stx 'E-SCENE-HEIGHT)]
                    [NODE-SIZE (datum->syntax stx 'NODE-SIZE)]
@@ -429,7 +363,7 @@
 (define-syntax (go-to-begin stx)
   ;E-SCENE-WIDTH E-SCENE-HEIGHT PERCENT-BORDER-GAP DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR NODE-SIZE)
   (syntax-parse stx
-    [(_)
+    [()
     (with-syntax ([E-SCENE-WIDTH (datum->syntax stx 'E-SCENE-WIDTH)]
                    [E-SCENE-HEIGHT (datum->syntax stx 'E-SCENE-HEIGHT)]
                    [NODE-SIZE (datum->syntax stx 'NODE-SIZE)]
@@ -517,7 +451,7 @@
 (define-syntax (go-to-end stx)
   ;E-SCENE-WIDTH E-SCENE-HEIGHT PERCENT-BORDER-GAP DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR NODE-SIZE)
   (syntax-parse stx
-      [(_)
+      [()
        (with-syntax ([E-SCENE-WIDTH (datum->syntax stx 'E-SCENE-WIDTH)]
                    [E-SCENE-HEIGHT (datum->syntax stx 'E-SCENE-HEIGHT)]
                    [NODE-SIZE (datum->syntax stx 'NODE-SIZE)]
@@ -603,7 +537,7 @@
 (define-syntax (zoom-in stx)
   ;ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT)
   (syntax-parse stx
-    [(_)
+    [()
      (with-syntax  ([E-SCENE-WIDTH (datum->syntax stx 'E-SCENE-WIDTH)]
                    [E-SCENE-HEIGHT (datum->syntax stx 'E-SCENE-HEIGHT)]
 
@@ -619,7 +553,7 @@
 ;; Purpose: Zooms out the visualization
 (define-syntax (zoom-out stx)
   (syntax-parse stx
-    [(_)
+    [()
      (with-syntax ([E-SCENE-WIDTH (datum->syntax stx 'E-SCENE-WIDTH)]
                    [E-SCENE-HEIGHT (datum->syntax stx 'E-SCENE-HEIGHT)]
 
@@ -634,7 +568,7 @@
 (define-syntax (max-zoom-in stx)
   (syntax-parse stx
     ;ZOOM-INCREASE ZOOM-DECREASE DEFAULT-ZOOM-CAP NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT)
-  [(_) (with-syntax ([E-SCENE-WIDTH (datum->syntax stx 'E-SCENE-WIDTH)]
+  [ () (with-syntax ([E-SCENE-WIDTH (datum->syntax stx 'E-SCENE-WIDTH)]
                    [E-SCENE-HEIGHT (datum->syntax stx 'E-SCENE-HEIGHT)]
                    [DEFAULT-ZOOM-CAP (datum->syntax stx 'DEFAULT-ZOOM-CAP)]
                    [ZOOM-INCREASE (datum->syntax stx 'ZOOM-INCREASE)]
@@ -651,7 +585,7 @@
 (define-syntax (reset-zoom stx)
   ;ZOOM-INCREASE ZOOM-DECREASE DEFAULT-ZOOM-CAP NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT)
   (syntax-parse stx
-    [(_)
+    [()
      (with-syntax ([E-SCENE-WIDTH (datum->syntax stx 'E-SCENE-WIDTH)]
                    [E-SCENE-HEIGHT (datum->syntax stx 'E-SCENE-HEIGHT)]
                    [DEFAULT-ZOOM-CAP (datum->syntax stx 'DEFAULT-ZOOM-CAP)]
@@ -666,7 +600,7 @@
 (define-syntax (max-zoom-out stx)
   ;;E-SCENE-WIDTH E-SCENE-HEIGHT PERCENT-BORDER-GAP ZOOM-INCREASE ZOOM-DECREASE DEFAULT-ZOOM NODE-SIZE)
   (syntax-parse stx
-    [(_) (with-syntax ([E-SCENE-WIDTH (datum->syntax stx 'E-SCENE-WIDTH)]
+    [() (with-syntax ([E-SCENE-WIDTH (datum->syntax stx 'E-SCENE-WIDTH)]
                    [E-SCENE-HEIGHT (datum->syntax stx 'E-SCENE-HEIGHT)]
                    [DEFAULT-ZOOM-CAP (datum->syntax stx 'DEFAULT-ZOOM-CAP)]
                    [ZOOM-INCREASE (datum->syntax stx 'ZOOM-INCREASE)]
