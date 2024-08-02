@@ -306,7 +306,10 @@
     (parallel-dots->pngs list-dot-files cpu-cores)
     (pngs->bitmap-thunks 0 (length graphs))
     )
-  )#lang racket
+  )
+
+#|
+#lang racket
 (require "lib.rkt"
          2htdp/image
          "dot.rkt")
@@ -582,3 +585,4 @@
                                                                                                  (pngs->bitmap-thunks 0 (length graphs))
                                                                                                  )
   )
+|#
