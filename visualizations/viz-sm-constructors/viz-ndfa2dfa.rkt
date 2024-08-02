@@ -1,16 +1,26 @@
 #lang racket
 
-(require "../fsm-gviz/private/lib.rkt"
-         "../fsm-gviz/private/parallel.rkt"
+(require "../../fsm-gviz/private/lib.rkt"
          2htdp/universe
          rackunit
          (rename-in racket/gui/base
                     [make-color loc-make-color]
                     [make-pen loc-make-pen])
          2htdp/image
-         "definitions-viz.rkt"
-         "run-viz.rkt"
-         "../fsm-core/interface.rkt")
+         "../viz-lib/resize-sm-image.rkt"
+         ;"definitions-viz.rkt"
+         ;"run-viz.rkt"
+         "../../fsm-core/private/fsa.rkt"
+         "../../fsm-core/private/constants.rkt"
+         "../../fsm-core/private/sm-getters.rkt"
+         "../../fsm-core/private/misc.rkt"
+         "../viz-lib/viz-constants.rkt"
+         "../viz-lib/viz-state.rkt"
+         "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
+         "../viz-lib/viz-macros.rkt"
+         "../viz-lib/default-viz-function-generators.rkt"
+         "../viz-lib/viz.rkt"
+         "../viz-lib/bounding-limits.rkt")
 
 (provide ndfa2dfa-viz)
 
@@ -547,9 +557,9 @@
           (w (image-width img))
           (h (image-height img))]
       (cond [(and (> w e-scn-w) (> h (/ e-scn-h 2)))
-             (resize-image img e-scn-w (/ e-scn-h 2))]
-            [(> w e-scn-w) (resize-image img e-scn-w h)]
-            [(> h (/ e-scn-h 2)) (resize-image img w (/ e-scn-h 2))]
+             (resize-sm-image img e-scn-w (/ e-scn-h 2))]
+            [(> w e-scn-w) (resize-sm-image img e-scn-w h)]
+            [(> h (/ e-scn-h 2)) (resize-sm-image img w (/ e-scn-h 2))]
             [else img])))
       (let* [(ndfa-graph (overlay (resize-img
                                    (beside (text "NDFA    " 24 'darkgreen)

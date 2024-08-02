@@ -1,22 +1,35 @@
 #lang racket
 
-(require "../fsm-gviz/private/lib.rkt"
+(require "../../fsm-gviz/private/lib.rkt"
          2htdp/universe
          rackunit
          (rename-in racket/gui/base
                     [make-color loc-make-color]
                     [make-pen loc-make-pen])
          2htdp/image
-         "definitions-viz.rkt"
-         "run-viz.rkt"
-         "../fsm-core/interface.rkt"
-         "../sm-graph.rkt")
+         "../viz-lib/resize-sm-image.rkt"
+         ;"definitions-viz.rkt"
+         ;"run-viz.rkt"
+         "../../fsm-core/private/fsa.rkt"
+         "../../fsm-core/private/constants.rkt"
+         "../../fsm-core/private/sm-getters.rkt"
+         "../../fsm-core/private/misc.rkt"
+         "../viz-lib/viz-constants.rkt"
+         "../viz-lib/viz-state.rkt"
+         "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
+         "../viz-lib/viz-macros.rkt"
+         "../viz-lib/default-viz-function-generators.rkt"
+         "../viz-lib/viz.rkt"
+         "../viz-lib/bounding-limits.rkt"
+         "../../fsm-core/private/regexp.rkt"
+         "../viz-lib/zipper.rkt"
+         )
 (provide ndfa2regexp-viz)
 
 (define FNAME "fsm")
 
 ;; L = ab*
-(define nl (make-ndfa '(S)
+#| (define nl (make-ndfa '(S)
                       '(a b)
                       'S
                       '()
@@ -87,16 +100,19 @@
                                           (C a C)
                                           (C b C))))
 
+|#
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 
 ;; (listof edge) → regexp
 ;; Purpose: Collapse the given edges into a regexp
-(define (collapse-edges loe) (cond [(empty? loe) '()]
-                                   [(empty? (rest loe)) (second (first loe))]
-                                   [else (union-regexp (second (first loe))
-                                                       (collapse-edges (rest loe)))]))
+(define (collapse-edges loe)
+  (cond [(empty? loe) '()]
+        [(empty? (rest loe)) (second (first loe))]
+        [else (make-unchecked-union (second (first loe))
+                                    (collapse-edges (rest loe)))]))
 
 
 ;; dgraph → dgraph
@@ -137,10 +153,10 @@
                     (λ (into-edge)
                       (map (λ (outof-edge)
                              (list (first into-edge)
-                                   (concat-regexp
+                                   (make-unchecked-concat
                                     (second into-edge)
-                                    (concat-regexp
-                                     (kleenestar-regexp (second self-edge))
+                                    (make-unchecked-concat
+                                     (make-unchecked-kleenestar (second self-edge))
                                      (second outof-edge)))
                                    (third outof-edge)))
                            outof-n))
@@ -148,8 +164,8 @@
                  (append-map (λ (into-edge)
                                (map (λ (outof-edge)
                                       (list (first into-edge)
-                                            (concat-regexp (second into-edge)
-                                                           (second outof-edge))
+                                            (make-unchecked-concat (second into-edge)
+                                                                   (second outof-edge))
                                             (third outof-edge)))
                                     outof-n))
                              into-n))))))
@@ -231,9 +247,9 @@
                                (empty-scene 1250 100)))
 
 
-;; img is the graph image
-;; state is the state being ripped
-(struct image-struct (img state))
+;; grph is the graph 
+;; inf is the corresponding informative message
+(struct graph-struct (grph inf))
 
 ;; create-nodes
 ;; graph (listof state) state state -> graph
@@ -296,15 +312,14 @@
 ;; (listof state) dgraph state state -> img
 ;; Purpose: To create a graph img for the given dgraph using
 ;;          news as the start state and newf as the final state
-(define (create-graph-img-special los loe news newf)
-  (graph->bitmap
-   (create-edges-special
-    (create-nodes
-     (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-     los
-     news
-     newf)
-    loe)))
+(define (create-graph-special los loe news newf)
+  (create-edges-special
+   (create-nodes
+    (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+    los
+    news
+    newf)
+   loe))
 
 
 ;; create-graph-img
@@ -312,21 +327,20 @@
 ;; Purpose: To create a graph img for the given dgraph using
 ;;          news as the start state and newf as the final state
 (define (create-graph-img los loe news newf)
-  (graph->bitmap
-   (create-edges
-    (create-nodes
-     (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-     los
-     news
-     newf)
-    loe)))
+  (create-edges
+   (create-nodes
+    (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+    los
+    news
+    newf)
+   loe))
 
 
 ;; create-graph-imgs
 ;; ndfa -> (listof img)
 ;; Purpose: To create a list of images of graphs that build a regular
 ;; expression from the  given ndfa
-(define (create-graph-imgs M)
+(define (create-graphs M)
   (define new-start (gen-state (sm-states M)))
   (define new-final (gen-state (cons new-start(sm-states M))))
   (define new-rules (cons (list new-start EMP (sm-start M))
@@ -334,22 +348,22 @@
                                (sm-finals M))))
   (define (grp-seq to-rip g gseq)
     (if (null? to-rip)
-        (cons (image-struct (create-graph-img
+        (cons (graph-struct (create-graphs
                              (append (list new-start new-final) to-rip)
                              g
                              new-start
                              new-final)
-                            '())
+                            (text "Added starting and final state" 20 'black))
               gseq)
         (let [(new-g (rip-out-node (first to-rip) g))]
           (grp-seq (rest to-rip)
                    new-g
-                   (cons (image-struct (create-graph-img
+                   (cons (graph-struct (create-graphs
                                         (append (list new-start new-final) to-rip)
                                         g
                                         new-start
                                         new-final)
-                                       (first to-rip))
+                                       (text (format "Ripped node: ~a" (first to-rip)) 20 'black))
                          gseq)))))
 
   (reverse (grp-seq (if (not (member DEAD (sm-states M)))
@@ -407,73 +421,116 @@
 ;; make-init-graph-img
 ;; ndfa -> img
 ;; Purpose: To create the image of the initial ndfa graph
-(define (make-init-graph-img M)
+(define (make-init-graph M)
   (let* [(new-start (gen-state (sm-states M)))
          (new-final (gen-state (cons new-start (sm-states M))))
          (new-rules (cons (list new-start EMP (sm-start M))
                           (map (λ (fst) (list fst EMP new-final))
                                (sm-finals M))))
          (changed-rules (to-union (append (sm-rules M) new-rules)))]
-    (image-struct (create-graph-img-special
+    (graph-struct (create-graph-special
                    (if (not (member DEAD (sm-states M)))
                        (sm-states M)
                        (cons DEAD (sm-states M)))
                    (make-dgraph-unions changed-rules) 
                    new-start
                    new-final)
-                  (if (not (member DEAD (sm-states M)))
-                      (sm-states M)
-                      DEAD))))
+                  "Starting ndfa")))
+
+;; imsg-state 
+(struct imsg-state (infs))
 
 
 ;; draw-img
 ;; viz-state -> img
 ;; Purpose: To render the given viz-state
-(define (draw-world a-vs)
-  (define graph-img (cond [(empty? (viz-state-pimgs a-vs))
-                           (above
-                            (image-struct-img (first (viz-state-upimgs a-vs)))
-                            (text (format "Starting ndfa") 20 'black))]
-                          [(= 1 (length (viz-state-pimgs a-vs)))
-                           (above
-                            (image-struct-img (first (viz-state-pimgs a-vs)))
-                            (text (format "Starting ndfa") 20 'black))]
-                          [(= 2 (length (viz-state-pimgs a-vs)))
-                           (above
-                            (image-struct-img (first (viz-state-pimgs a-vs)))
-                            (text (format "Added starting and final state") 20 'black))]
-                          [(= 3 (length (viz-state-pimgs a-vs)))
-                           (above
-                            (image-struct-img (first (viz-state-pimgs a-vs)))
-                            (text (format "Ripped node: ~s" (first (image-struct-state
-                                                                    (first (rest (viz-state-pimgs a-vs))))))
-                                  20
-                                  'black))]
-                          [else
-                           (above
-                            (image-struct-img (first (viz-state-pimgs a-vs)))
-                            (text (format "Ripped node: ~a" (image-struct-state
-                                                             (first (rest (viz-state-pimgs a-vs)))))
-                                  20
-                                  'black))]))
-  (let [(width (image-width graph-img))
-        (height (image-height graph-img))]
-    (if (or (> width (image-width E-SCENE))
-            (> height (image-height E-SCENE)))
-        (above (overlay (resize-image graph-img (image-width E-SCENE) (image-height E-SCENE))
-                        E-SCENE) E-SCENE-TOOLS)
-        (above (overlay graph-img E-SCENE) E-SCENE-TOOLS))))
+#;(define (draw-world a-vs)
+    (define graph-img (cond [(empty? (viz-state-pimgs a-vs))
+                             (above
+                              (image-struct-img (first (viz-state-upimgs a-vs)))
+                              (text (format "Starting ndfa") 20 'black))]
+                            [(= 1 (length (viz-state-pimgs a-vs)))
+                             (above
+                              (image-struct-img (first (viz-state-pimgs a-vs)))
+                              (text (format "Starting ndfa") 20 'black))]
+                            [(= 2 (length (viz-state-pimgs a-vs)))
+                             (above
+                              (image-struct-img (first (viz-state-pimgs a-vs)))
+                              (text (format "Added starting and final state") 20 'black))]
+                            [(= 3 (length (viz-state-pimgs a-vs)))
+                             (above
+                              (image-struct-img (first (viz-state-pimgs a-vs)))
+                              (text (format "Ripped node: ~s" (first (image-struct-state
+                                                                      (first (rest (viz-state-pimgs a-vs))))))
+                                    20
+                                    'black))]
+                            [else
+                             (above
+                              (image-struct-img (first (viz-state-pimgs a-vs)))
+                              (text (format "Ripped node: ~a" (image-struct-state
+                                                               (first (rest (viz-state-pimgs a-vs)))))
+                                    20
+                                    'black))]))
+    (let [(width (image-width graph-img))
+          (height (image-height graph-img))]
+      (if (or (> width (image-width E-SCENE))
+              (> height (image-height E-SCENE)))
+          (above (overlay (resize-image graph-img (image-width E-SCENE) (image-height E-SCENE))
+                          E-SCENE) E-SCENE-TOOLS)
+          (above (overlay graph-img E-SCENE) E-SCENE-TOOLS))))
 
+;; draw-imsg
+;; imsg -> img
+(define (draw-imsg a-imsg)
+  (zipper-current (imsg-state-infs a-imsg)))
 
 
 ;; ndfa2regexp-viz
 ;; ndfa --> (void)
 (define (ndfa2regexp-viz M)
-  (run-viz (viz-state (cons (make-init-graph-img M) (rest (create-graph-imgs M)))
-                      (list (image-struct (sm-graph M) '())))
-           draw-world
-           'ndfa2regexp))
-
+  (run-viz (list (graph-struct-grph (make-init-graph M)) (graph-struct-grph (create-graphs M)))
+           (graph->bitmap (graph-struct (make-init-graph M)))
+           MIDDLE-E-SCENE
+           DEFAULT-ZOOM
+           DEFAULT-ZOOM-CAP
+           DEFAULT-ZOOM-FLOOR
+           (informative-messages draw-imsg
+                                 (imsg-state (list->zipper (list (graph-struct-inf (make-init-graph M))
+                                                                 (graph-struct-inf (create-graphs M)))))
+                                 (bounding-limits 0 0 0 0)
+                                 )
+           (instructions-graphic
+            E-SCENE-TOOLS
+            (bounding-limits 0 0 0 0))
+           (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
+           (create-viz-process-key (list (list "right" go-next right-key-pressed)
+                                         (list "left" go-prev left-key-pressed)
+                                         (list "up" go-to-begin up-key-pressed)
+                                         (list "down" go-to-end down-key-pressed)
+                                         (list "w" zoom-in identity)
+                                         (list "s" zoom-out identity)
+                                         (list "r" max-zoom-out identity)
+                                         (list "f" max-zoom-in identity)
+                                         (list "e" reset-zoom identity)
+                                         (list "wheel-down" zoom-in identity)
+                                         (list "wheel-up" zoom-out identity)
+                                         )
+                                   )
+           (create-viz-process-tick E-SCENE-BOUNDING-LIMITS NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT
+                                    CLICK-BUFFER-SECONDS
+                                    (list)
+                                    (list (list ARROW-UP-KEY-DIMS go-to-begin up-key-pressed)
+                                          (list ARROW-DOWN-KEY-DIMS go-to-end down-key-pressed)
+                                          (list ARROW-LEFT-KEY-DIMS go-prev left-key-pressed)
+                                          (list ARROW-RIGHT-KEY-DIMS go-next right-key-pressed)
+                                          (list W-KEY-DIMS zoom-in identity)
+                                          (list S-KEY-DIMS zoom-out identity)
+                                          (list R-KEY-DIMS max-zoom-out identity)
+                                          (list E-KEY-DIMS reset-zoom identity)
+                                          (list F-KEY-DIMS max-zoom-in identity)
+                                          (list A-KEY-DIMS identity a-key-pressed)
+                                          (list D-KEY-DIMS identity d-key-pressed)))
+           ))
 
 (define aa-ab
   (make-ndfa 
