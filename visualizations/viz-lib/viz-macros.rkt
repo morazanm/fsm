@@ -241,7 +241,7 @@
     #:literals (list)
     [(_ E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
      #'(lambda (a-vs)
-         (let [(PARSE-TREE-IMG (place-image (scale (viz-state-scale-factor a-vs) (viz-state-curr-image a-vs)) 
+         (let [(PARSE-TREE-IMG (place-image (scale (viz-state-scale-factor a-vs) (viz-state-curr-image a-vs))
                                             (posn-x (viz-state-image-posn a-vs))
                                             (posn-y (viz-state-image-posn a-vs))
                                             (rectangle E-SCENE-WIDTH E-SCENE-HEIGHT 'outline 'white)
