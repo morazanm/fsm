@@ -623,12 +623,14 @@
 ;; draw-imsg
 ;; imsg -> img
 (define (draw-imsg a-imsg)
-  (cond [(empty? (imsg-state-edge a-imsg)) (text "Starting NDFA" 24 'black)]
-        [(void? (imsg-state-edge a-imsg)) (text "Simplified initial regexp" 24 'black)]
-        [else (beside (text (format "Expanded regexp: ~a on edge from state" (printable-regexp (zipper-current (zipper-to-idx (imsg-state-edge a-imsg) 1)))) 24 'black)
-                      (text (format " ~a" (printable-regexp (zipper-current (imsg-state-edge a-imsg)))) 24 'violet)
+  (cond [(empty? (zipper-current (imsg-state-edge a-imsg))) (text "Starting NDFA" 24 'black)]
+        [(void? (zipper-current (imsg-state-edge a-imsg))) (text "Simplified initial regexp" 24 'black)]
+        [else (beside (text (format "Expanded regexp: ~a on edge from state" (printable-regexp (second (zipper-current (imsg-state-edge a-imsg)))  #;(zipper-current (zipper-to-idx (imsg-state-edge a-imsg) 1)))) 24 'black)
+                      (text (format " ~a" (first (zipper-current (imsg-state-edge a-imsg)))  #;(printable-regexp (zipper-current (imsg-state-edge a-imsg)))) 24 'violet)
                       (text (format " to state ") 24 'black)
-                      (text (format "~a" (printable-regexp (zipper-current (zipper-to-idx (imsg-state-edge a-imsg) 2)))) 24 'violet))]))
+                      (text (format "~a" (third (zipper-current (imsg-state-edge a-imsg))) #;(printable-regexp (zipper-current (zipper-to-idx (imsg-state-edge a-imsg) 2)))) 24 'violet))
+                
+              ]))
 
 
 ;; create-graph-imgs
