@@ -1,67 +1,83 @@
 #lang racket
 
-(require "../fsm-gviz/private/lib.rkt"
+(require "../../fsm-gviz/private/lib.rkt"
          2htdp/universe
          rackunit
          (rename-in racket/gui/base
                     [make-color loc-make-color]
                     [make-pen loc-make-pen])
          2htdp/image
-         "definitions-viz.rkt"
-         "run-viz.rkt"
-         "../fsm-core/interface.rkt")
+         "../viz-lib/resize-sm-image.rkt"
+         ;"definitions-viz.rkt"
+         ;"run-viz.rkt"
+         "../../fsm-core/private/fsa.rkt"
+         "../../fsm-core/private/constants.rkt"
+         "../../fsm-core/private/sm-getters.rkt"
+         "../../fsm-core/private/misc.rkt"
+         "../viz-lib/viz-constants.rkt"
+         "../viz-lib/viz-state.rkt"
+         ;"../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
+         "../viz-lib/viz-macros.rkt"
+         "../viz-lib/default-viz-function-generators.rkt"
+         "../viz-lib/viz.rkt"
+         "../viz-lib/bounding-limits.rkt"
+         "../../fsm-core/private/regexp.rkt"
+         "../viz-lib/viz-imgs/cursor.rkt"
+         "../viz-lib/zipper.rkt")
 (provide concat-viz)
 
 (define FNAME "fsm")
 
 ;; L = nl
-(define nl (make-ndfa '(S)
-                      '(a b)
-                      'S
-                      '()
-                      '()))
+(define nl (make-unchecked-ndfa '(S)
+                                '(a b)
+                                'S
+                                '()
+                                '()))
 
 ;; L = ab*
-(define ab* (make-ndfa '(S A)
-                       '(a b)
-                       'S
-                       '(A)
-                       '((S a A)
-                         (A b A))))
+(define ab* (make-unchecked-ndfa '(S A)
+                                 '(a b)
+                                 'S
+                                 '(A)
+                                 '((S a A)
+                                   (A b A))))
 ;; L = a(a U ab)b*
-(define a-aUb-b* (make-ndfa '(Z H B C D F)
-                            '(a b)
-                            'Z
-                            '(F)
-                            `((Z a H)
-                              (Z a B)
-                              (H a D)
-                              (D ,EMP F)
-                              (B a C)
-                              (C b F)
-                              (F b F))))
+(define a-aUb-b* (make-unchecked-ndfa '(Z H B C D F)
+                                      '(a b)
+                                      'Z
+                                      '(F)
+                                      `((Z a H)
+                                        (Z a B)
+                                        (H a D)
+                                        (D ,EMP F)
+                                        (B a C)
+                                        (C b F)
+                                        (F b F))))
 ;; L = aab*
-(define aab* (make-ndfa '(W X Y)
-                        '(a b)
-                        'W
-                        '(Y)
-                        '((W a X)
-                          (X a Y)
-                          (Y b Y))))
+(define aab* (make-unchecked-ndfa '(W X Y)
+                                  '(a b)
+                                  'W
+                                  '(Y)
+                                  '((W a X)
+                                    (X a Y)
+                                    (Y b Y))))
 ;; L = a*
-(define a* (make-dfa '(S D)
-                     '(a b)
-                     'S
-                     '(S)
-                     '((S a S)
-                       (S b D)
-                       (D a D)
-                       (D b D))
-                     'no-dead))
+(define a* (make-unchecked-ndfa '(S D)
+                                '(a b)
+                                'S
+                                '(S)
+                                '((S a S)
+                                  (S b D)
+                                  (D a D)
+                                  (D b D))
+                                'no-dead))
 
 ;; CONCATENATION VISUALIZATION
 
 
+;; graph-struct
+(struct graph-struct (grph inf))
 
 (define E-SCENE (empty-scene 1250 600))
 
@@ -185,13 +201,13 @@
                           (sm-finals M)))
          (new-states (append (sm-states M) (sm-states N)))
          (new-finals (sm-finals N))]
-    (above (graph->bitmap (make-edge-graph (make-node-graph
-                                            (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                            new-states new-start new-finals) M N))
-           (text "Concatenation of the ndfas \n" 20 'black)
-           (text (format "Starting state: ~a \n" new-start) 20 'black)
-           (text (format "Final state(s): ~a \n" new-finals) 20 'black)
-           (text (format "Generated edges: ~a \n" edge-added) 20 'black))))
+    (graph-struct (list (make-edge-graph (make-node-graph
+                                          (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                          new-states new-start new-finals) M N))
+                  (list (text "Concatenation of the ndfas \n" 20 'black)
+                        (text (format "Starting state: ~a \n" new-start) 20 'black)
+                        (text (format "Final state(s): ~a \n" new-finals) 20 'black)
+                        (text (format "Generated edges: ~a \n" edge-added) 20 'black)))))
      
 ;; make-init-grph-img
 ;; ndfa ndfa -> img
@@ -209,41 +225,70 @@
                                                         (sm-start N)
                                                         (sm-finals N))
                                                        N (sm-start N))))
-         (width1 (image-width graph1))
-         (height1 (image-height graph1))
-         (width2 (image-width graph2))
-         (height2 (image-height graph2))]
-    (beside (beside (text "First ndfa:" 20 'black)
-                    (square 20 'solid 'white)
-                    (if (or (> width1 (image-width E-SCENE))
-                            (> height1 (image-height E-SCENE)))
-                        (resize-image graph1 (image-width E-SCENE) (image-height E-SCENE))
-                        graph1))
-            (square 40 'solid 'white)
-            (beside (text "Second ndfa:" 20 'black)
-                    (square 20 'solid 'white)
-                    (if (or (> width2 (image-width E-SCENE))
-                            (> height2 (image-height E-SCENE)))
-                        (resize-image graph2 (image-width E-SCENE) (image-height E-SCENE))
-                        graph2)))))
-     
+         ]
+    (graph-struct (list graph1 graph2) (list (text "First ndfa:" 20 'black) (text "Second ndfa:" 20 'black)))))
+
+
+;; draw-imsg
+;; imsg -> img
+(define (draw-imsg a-imsg)
+  (zipper-current (graph-struct-inf a-imsg)))
 
 ;; draw-world
 ;; viz-state -> img
 ;; Purpose: To render the given viz-state
-(define (draw-world a-vs)
-  (let [(width (image-width (first (viz-state-pimgs a-vs))))
-        (height (image-height (first (viz-state-pimgs a-vs))))]
-    (if (or (> width (image-width E-SCENE))
-            (> height (image-height E-SCENE)))
-        (above (overlay (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE)) E-SCENE) E-SCENE-TOOLS)
-        (above (overlay (first (viz-state-pimgs a-vs)) E-SCENE) E-SCENE-TOOLS))))
+#;(define (draw-world a-vs)
+    (let [(width (image-width (first (viz-state-pimgs a-vs))))
+          (height (image-height (first (viz-state-pimgs a-vs))))]
+      (if (or (> width (image-width E-SCENE))
+              (> height (image-height E-SCENE)))
+          (above (overlay (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE)) E-SCENE) E-SCENE-TOOLS)
+          (above (overlay (first (viz-state-pimgs a-vs)) E-SCENE) E-SCENE-TOOLS))))
 
 ;; concat-viz
 ;; fsa fsa -> void
 (define (concat-viz M N)
   (let [(renamed-machine (if (ormap (λ (x) (member x (sm-states M))) (sm-states N))
-                             (sm-rename-states (sm-states M) N)
+                             (rename-states-fsa (sm-states M) N)
                              N))]
-    (run-viz (viz-state (list (create-graph-img M renamed-machine)) (list (make-init-grph-img M N))) draw-world 'concat-viz)))
+    (run-viz (list* (map graph-struct-grph (cons (make-init-grph-img M N) (create-graph-img M N))))
+             (lambda () (graph->bitmap (graph-struct-grph (list 'S regexp 'F))))
+             MIDDLE-E-SCENE
+             DEFAULT-ZOOM
+             DEFAULT-ZOOM-CAP
+             DEFAULT-ZOOM-FLOOR
+             (informative-messages draw-imsg
+                                   (graph-struct-inf (list->zipper (list* (map graph-struct-inf (cons (make-init-grph-img (list 'S regexp 'F)) (create-graph-img M N))))))
+                                   (bounding-limits 0 0 0 0)
+                                   )
+             (instructions-graphic
+              E-SCENE-TOOLS
+              (bounding-limits 0 0 0 0))
+             (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
+             (create-viz-process-key (list (list "right" viz-go-next right-key-pressed)
+                                           (list "left" viz-go-prev left-key-pressed)
+                                           (list "up" viz-go-to-begin up-key-pressed)
+                                           (list "down" viz-go-to-end down-key-pressed)
+                                           (list "w" viz-zoom-in identity)
+                                           (list "s" viz-zoom-out identity)
+                                           (list "r" viz-max-zoom-out identity)
+                                           (list "f" viz-max-zoom-in identity)
+                                           (list "e" viz-reset-zoom identity)
+                                           (list "wheel-down" viz-zoom-in identity)
+                                           (list "wheel-up" viz-zoom-out identity)
+                                           )
+                                     )
+             (create-viz-process-tick E-SCENE-BOUNDING-LIMITS NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT
+                                      CLICK-BUFFER-SECONDS
+                                      (list)
+                                      (list (list ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed)
+                                            (list ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed)
+                                            (list ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed)
+                                            (list ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed)
+                                            (list W-KEY-DIMS viz-zoom-in identity)
+                                            (list S-KEY-DIMS viz-zoom-out identity)
+                                            (list R-KEY-DIMS viz-max-zoom-out identity)
+                                            (list E-KEY-DIMS viz-reset-zoom identity)
+                                            (list F-KEY-DIMS viz-max-zoom-in identity)))
+             )))
 
