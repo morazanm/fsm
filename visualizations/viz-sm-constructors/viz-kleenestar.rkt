@@ -91,9 +91,9 @@
 
 (define FNAME "fsm")
 
-(define imsg-img (above (text "Kleenestar of the ndfa \n" 20 'black)
-         (text (format "Generated starting state: \n") 20 'black)
-         (text (format "Added edges: \n") 20 'black)))
+(define imsg-img (above (text "Kleenestar of the ndfa" FONT-SIZE 'black)
+                        (text (format "Generated starting state:") FONT-SIZE 'black)
+                        (text (format "Added edges:") FONT-SIZE 'black)))
 (define RULE-YIELD-DIMS (bounding-limits 0
                                          (image-width imsg-img)
                                          E-SCENE-HEIGHT
@@ -549,13 +549,17 @@
                         M (sm-start M))
   )
 
-(struct imsg-state (start added-edges))
+(struct imsg-state (phase start added-edges))
 
 ;; imsg-state -> image
 (define (draw-imsg a-imsg-state)
-  (above (text "Kleenestar of the ndfa \n" 20 'black)
-         (text (format "Generated starting state: ~a \n" (imsg-state-start a-imsg-state)) 20 'black)
-         (text (format "Added edges: ~a \n" (imsg-state-added-edges a-imsg-state)) 20 'black)))
+  (overlay
+   (if (= (imsg-state-phase a-imsg-state) 0)
+      (text "Starting ndfa" FONT-SIZE 'black)
+      (scale 1 (above (text "Kleenestar of the ndfa" 15 'black)
+                       (text (format "Generated starting state: ~a" (imsg-state-start a-imsg-state)) 15 'black)
+                       (text (format "Added edges: ~a" (imsg-state-added-edges a-imsg-state)) 15 'black))))
+   (rectangle 1250 50 'solid 'white)))
 
 ;; create-graph-imgs
 ;; ndfa ndfa -> img
@@ -569,9 +573,9 @@
                             (map (λ (f) (list f EMP new-start))
                                  (sm-finals M))))]
     (overlay (above (void)
-                    (text "Kleenestar of the ndfa \n" 20 'black)
-                    (text (format "Generated starting state: ~a \n" new-start) 20 'black)
-                    (text (format "Added edges: ~a \n" added-edges) 20 'black))
+                    (text "Kleenestar of the ndfa" FONT-SIZE 'black)
+                    (text (format "Generated starting state: ~a" new-start) FONT-SIZE 'black)
+                    (text (format "Added edges: ~a" added-edges) FONT-SIZE 'black))
              E-SCENE)
     )
   )
@@ -621,7 +625,93 @@
 (define viz-max-zoom-in (max-zoom-in))
 (define viz-reset-zoom (reset-zoom))
 
+(define (right-key-pressed a-vs)
+  (struct-copy
+   viz-state
+   a-vs
+   [informative-messages
+    (struct-copy
+     informative-messages
+     (viz-state-informative-messages a-vs)
+     [component-state
+      (struct-copy imsg-state
+                   (informative-messages-component-state
+                    (viz-state-informative-messages a-vs))
+                   [phase (if (= (imsg-state-phase (informative-messages-component-state
+                                                    (viz-state-informative-messages a-vs))) 0)
+                              1
+                              (imsg-state-phase (informative-messages-component-state
+                                                    (viz-state-informative-messages a-vs))))]
+                   [start (imsg-state-start (informative-messages-component-state
+                                             (viz-state-informative-messages a-vs)))]
+                   [added-edges (imsg-state-added-edges (informative-messages-component-state
+                                                         (viz-state-informative-messages a-vs)))])])]))
 
+(define (left-key-pressed a-vs)
+  (struct-copy
+   viz-state
+   a-vs
+   [informative-messages
+    (struct-copy
+     informative-messages
+     (viz-state-informative-messages a-vs)
+     [component-state
+      (struct-copy imsg-state
+                   (informative-messages-component-state
+                    (viz-state-informative-messages a-vs))
+                   [phase (if (= (imsg-state-phase (informative-messages-component-state
+                                                    (viz-state-informative-messages a-vs))) 1)
+                              0
+                              (imsg-state-phase (informative-messages-component-state
+                                                    (viz-state-informative-messages a-vs))))]
+                   [start (imsg-state-start (informative-messages-component-state
+                                             (viz-state-informative-messages a-vs)))]
+                   [added-edges (imsg-state-added-edges (informative-messages-component-state
+                                                         (viz-state-informative-messages a-vs)))])])]))
+
+(define (down-key-pressed a-vs)
+  (struct-copy
+   viz-state
+   a-vs
+   [informative-messages
+    (struct-copy
+     informative-messages
+     (viz-state-informative-messages a-vs)
+     [component-state
+      (struct-copy imsg-state
+                   (informative-messages-component-state
+                    (viz-state-informative-messages a-vs))
+                   [phase (if (= (imsg-state-phase (informative-messages-component-state
+                                                    (viz-state-informative-messages a-vs))) 0)
+                              1
+                              (imsg-state-phase (informative-messages-component-state
+                                                    (viz-state-informative-messages a-vs))))]
+                   [start (imsg-state-start (informative-messages-component-state
+                                             (viz-state-informative-messages a-vs)))]
+                   [added-edges (imsg-state-added-edges (informative-messages-component-state
+                                                         (viz-state-informative-messages a-vs)))])])]))
+
+(define (up-key-pressed a-vs)
+  (struct-copy
+   viz-state
+   a-vs
+   [informative-messages
+    (struct-copy
+     informative-messages
+     (viz-state-informative-messages a-vs)
+     [component-state
+      (struct-copy imsg-state
+                   (informative-messages-component-state
+                    (viz-state-informative-messages a-vs))
+                   [phase (if (= (imsg-state-phase (informative-messages-component-state
+                                                    (viz-state-informative-messages a-vs))) 1)
+                              0
+                              (imsg-state-phase (informative-messages-component-state
+                                                    (viz-state-informative-messages a-vs))))]
+                   [start (imsg-state-start (informative-messages-component-state
+                                             (viz-state-informative-messages a-vs)))]
+                   [added-edges (imsg-state-added-edges (informative-messages-component-state
+                                                         (viz-state-informative-messages a-vs)))])])]))
 
 
 
@@ -637,19 +727,23 @@
            DEFAULT-ZOOM-FLOOR
            (informative-messages draw-imsg
                                  (let ([new-start (generate-symbol 'K (sm-states M))])
-                                       (imsg-state new-start
-                                             (list (list new-start EMP (sm-start M))
-                                                   (map (λ (f) (list f EMP new-start))
-                                                        (sm-finals M)))))
-                                 (bounding-limits 0 0 0 0))
+                                   (imsg-state 0
+                                               new-start
+                                               (list (list new-start EMP (sm-start M))
+                                                     (map (λ (f) (list f EMP new-start))
+                                                          (sm-finals M)))))
+                                 RULE-YIELD-DIMS)
            (instructions-graphic
             E-SCENE-TOOLS
-            (bounding-limits 0 0 0 0))
+            (bounding-limits 0
+                             (image-width imsg-img)
+                             E-SCENE-HEIGHT
+                             (+ E-SCENE-HEIGHT (image-height imsg-img))))
            (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
-           (create-viz-process-key (list (list "right" viz-go-next identity);;right-key-pressed)
-                                           (list "left" viz-go-prev identity);;left-key-pressed)
-                                           (list "up" viz-go-to-begin identity);;up-key-pressed)
-                                           (list "down" viz-go-to-end identity);;down-key-pressed)
+           (create-viz-process-key (list (list "right" viz-go-next right-key-pressed);;right-key-pressed)
+                                           (list "left" viz-go-prev left-key-pressed);;left-key-pressed)
+                                           (list "up" viz-go-to-begin up-key-pressed);;up-key-pressed)
+                                           (list "down" viz-go-to-end down-key-pressed);;down-key-pressed)
                                            (list "w" viz-zoom-in identity)
                                            (list "s" viz-zoom-out identity)
                                            (list "r" viz-max-zoom-out identity)
@@ -660,10 +754,10 @@
            (create-viz-process-tick E-SCENE-BOUNDING-LIMITS NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT
                                             CLICK-BUFFER-SECONDS
                                             (list)
-                                            (list (list ARROW-UP-KEY-DIMS viz-go-to-begin identity);;up-key-pressed)
-                                                  (list ARROW-DOWN-KEY-DIMS viz-go-to-end identity);;down-key-pressed)
-                                                  (list ARROW-LEFT-KEY-DIMS viz-go-prev identity);;left-key-pressed)
-                                                  (list ARROW-RIGHT-KEY-DIMS viz-go-next identity);;right-key-pressed)
+                                            (list (list ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed);;up-key-pressed)
+                                                  (list ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed);;down-key-pressed)
+                                                  (list ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed);;left-key-pressed)
+                                                  (list ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed);;right-key-pressed)
                                                   (list W-KEY-DIMS viz-zoom-in identity)
                                                   (list S-KEY-DIMS viz-zoom-out identity)
                                                   (list R-KEY-DIMS viz-max-zoom-out identity)

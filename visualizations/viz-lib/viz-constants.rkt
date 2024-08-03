@@ -3,7 +3,7 @@
 (provide (all-defined-out))
 
 (define E-SCENE-WIDTH 1250)
-(define E-SCENE-HEIGHT 500)
+(define E-SCENE-HEIGHT 550)
 (define E-SCENE-BOUNDING-LIMITS (bounding-limits 0 E-SCENE-WIDTH 0 E-SCENE-HEIGHT))
 (define FONT-SIZE 20)
 (define TAPE-SIZE 42)
@@ -13,7 +13,7 @@
 (define HEIGHT-BUFFER 20)
 (define LETTER-KEY-WIDTH-BUFFER 20)
 (define ARROW-KEY-WIDTH-BUFFER 40)
-(define INS-TOOLS-BUFFER 30)
+(define INS-TOOLS-BUFFER 1)
 (define EXTRA-HEIGHT-FROM-CURSOR 4)
 (define NODE-SIZE 50)
 (define MIDDLE-E-SCENE (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2)))
