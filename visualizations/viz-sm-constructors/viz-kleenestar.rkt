@@ -625,6 +625,9 @@
 (define viz-max-zoom-in (max-zoom-in))
 (define viz-reset-zoom (reset-zoom))
 
+;;right-key-pressed
+;;viz-state -> viz-state
+;;Purpose: Steps the visualization forward once
 (define (right-key-pressed a-vs)
   (struct-copy
    viz-state
@@ -647,6 +650,9 @@
                    [added-edges (imsg-state-added-edges (informative-messages-component-state
                                                          (viz-state-informative-messages a-vs)))])])]))
 
+;;left-key-pressed
+;;viz-state -> viz-state
+;;Purpose: Steps the visualization backword once
 (define (left-key-pressed a-vs)
   (struct-copy
    viz-state
@@ -668,7 +674,9 @@
                                              (viz-state-informative-messages a-vs)))]
                    [added-edges (imsg-state-added-edges (informative-messages-component-state
                                                          (viz-state-informative-messages a-vs)))])])]))
-
+;;down-key-pressed
+;;viz-state -> viz-state
+;;Purpose: Finishes the visualization
 (define (down-key-pressed a-vs)
   (struct-copy
    viz-state
@@ -691,6 +699,9 @@
                    [added-edges (imsg-state-added-edges (informative-messages-component-state
                                                          (viz-state-informative-messages a-vs)))])])]))
 
+;;up-key-pressed
+;;viz-state -> viz-state
+;;Purpose: Restarts the visualization
 (define (up-key-pressed a-vs)
   (struct-copy
    viz-state
@@ -712,8 +723,6 @@
                                              (viz-state-informative-messages a-vs)))]
                    [added-edges (imsg-state-added-edges (informative-messages-component-state
                                                          (viz-state-informative-messages a-vs)))])])]))
-
-
 
 
 ;;kleenestar-viz
