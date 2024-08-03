@@ -326,7 +326,7 @@
 ;; (listof state) dgraph state state -> img
 ;; Purpose: To create a graph img for the given dgraph using
 ;;          news as the start state and newf as the final state
-(define (create-graph-img los loe news newf)
+(define (create-graph los loe news newf)
   (create-edges
    (create-nodes
     (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
@@ -348,7 +348,7 @@
                                (sm-finals M))))
   (define (grp-seq to-rip g gseq)
     (if (null? to-rip)
-        (cons (graph-struct (create-graphs
+        (cons (graph-struct (create-graph
                              (append (list new-start new-final) to-rip)
                              g
                              new-start
@@ -358,7 +358,7 @@
         (let [(new-g (rip-out-node (first to-rip) g))]
           (grp-seq (rest to-rip)
                    new-g
-                   (cons (graph-struct (create-graphs
+                   (cons (graph-struct (create-graph
                                         (append (list new-start new-final) to-rip)
                                         g
                                         new-start
