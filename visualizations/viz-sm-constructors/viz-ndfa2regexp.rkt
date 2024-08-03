@@ -996,15 +996,11 @@
            DEFAULT-ZOOM
            DEFAULT-ZOOM-CAP
            DEFAULT-ZOOM-FLOOR
-           (begin
-             ;(displayln (map graph-struct-inf (create-graphs M)))
-             ;(displayln (graph->bitmap (graph-struct-grph (make-init-graph M))))
-             (displayln (fsa->graph M 0))
              (informative-messages draw-imsg
                                  (imsg-state (list->zipper (list* (text "Starting NDFA" FONT-SIZE 'black)
                                                                  (map graph-struct-inf (create-graphs M)))))
                                  (bounding-limits 0 0 0 0)
-                                 ))
+                                 )
            (instructions-graphic
             E-SCENE-TOOLS
             (bounding-limits 0 0 0 0))
@@ -1048,7 +1044,7 @@
      (B b B)
      (S ,EMP F))))
 
-(ndfa2regexp-viz aa-ab)
+;(ndfa2regexp-viz aa-ab)
 
 ;(run AT-LEAST-ONE-MISSING)
 
