@@ -1,73 +1,89 @@
 #lang racket
-(require "../fsm-gviz/private/lib.rkt"
+(require "../../fsm-gviz/interface.rkt"
          2htdp/universe
          rackunit
          (rename-in racket/gui/base
                     [make-color loc-make-color]
                     [make-pen loc-make-pen])
          2htdp/image
-         "definitions-viz.rkt"
-         "run-viz.rkt"
-         "../fsm-core/interface.rkt")
+         "../viz-lib/resize-sm-image.rkt"
+         ;"definitions-viz.rkt"
+         ;"run-viz.rkt"
+         "../../fsm-core/private/fsa.rkt"
+         "../../fsm-core/private/constants.rkt"
+         "../../fsm-core/private/sm-getters.rkt"
+         "../../fsm-core/private/misc.rkt"
+         "../viz-lib/viz-constants.rkt"
+         "../viz-lib/viz-state.rkt"
+         ;"../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
+         "../viz-lib/viz-macros.rkt"
+         "../viz-lib/default-viz-function-generators.rkt"
+         "../viz-lib/viz.rkt"
+         "../viz-lib/bounding-limits.rkt"
+         "../../fsm-core/private/regexp.rkt"
+         "../viz-lib/viz-imgs/cursor.rkt"
+         "../viz-lib/zipper.rkt")
 
 (provide intersection-viz)
 
 (define FNAME "fsm")
 
 ;; L = nl
-(define nl (make-ndfa '(S)
-                      '(a b)
-                      'S
-                      '()
-                      '()))
+(define nl (make-unchecked-ndfa '(S)
+                                '(a b)
+                                'S
+                                '()
+                                '()))
 
 ;; L = ab*
-(define ab* (make-ndfa '(S A)
-                       '(a b)
-                       'S
-                       '(A)
-                       '((S a A)
-                         (A b A))))
+(define ab* (make-unchecked-ndfa '(S A)
+                                 '(a b)
+                                 'S
+                                 '(A)
+                                 '((S a A)
+                                   (A b A))))
 ;; L = a(a U ab)b*
-(define a-aUb-b* (make-ndfa '(Z H B C D F)
-                            '(a b)
-                            'Z
-                            '(F)
-                            `((Z a H)
-                              (Z a B)
-                              (H a D)
-                              (D ,EMP F)
-                              (B a C)
-                              (C b F)
-                              (F b F))))
+(define a-aUb-b* (make-unchecked-ndfa '(Z H B C D F)
+                                      '(a b)
+                                      'Z
+                                      '(F)
+                                      `((Z a H)
+                                        (Z a B)
+                                        (H a D)
+                                        (D ,EMP F)
+                                        (B a C)
+                                        (C b F)
+                                        (F b F))))
 ;; L = aab*
-(define aab* (make-ndfa '(W X Y)
-                        '(a b)
-                        'W
-                        '(Y)
-                        '((W a X)
-                          (X a Y)
-                          (Y b Y))))
+(define aab* (make-unchecked-ndfa '(W X Y)
+                                  '(a b)
+                                  'W
+                                  '(Y)
+                                  '((W a X)
+                                    (X a Y)
+                                    (Y b Y))))
 ;; L = a*
-(define a* (make-dfa '(S D)
-                     '(a b)
-                     'S
-                     '(S)
-                     '((S a S)
-                       (S b D)
-                       (D a D)
-                       (D b D))
-                     'no-dead))
+(define a* (make-unchecked-ndfa '(S D)
+                                '(a b)
+                                'S
+                                '(S)
+                                '((S a S)
+                                  (S b D)
+                                  (D a D)
+                                  (D b D))
+                                'no-dead))
 
 ;; L = ab*
-(define ab*-deter (make-dfa '(S A)
-                            '(a b)
-                            'S
-                            '(A)
-                            '((S a A)
-                              (A b A))))
+(define ab*-deter (make-unchecked-ndfa '(S A)
+                                       '(a b)
+                                       'S
+                                       '(A)
+                                       '((S a A)
+                                         (A b A))))
 
 ;; INTERSECTION VISUALIZATION
+
+
 
 ;; make-node-union
 ;; graph los start final -> graph
@@ -127,6 +143,8 @@
                     
 
 
+;; graph-struct
+(struct graph-struct (grph inf))
 
 (define E-SCENE (empty-scene 1250 600))
 (define E-SCENE-TOOLS (overlay (beside (above (above (triangle 30 'solid 'black)
@@ -263,36 +281,36 @@
 (define (create-graph-imgs M N)
   (define (complement-fsa ndfa)
     (let* [(new-finals (filter (λ (s) (not (member s (sm-finals ndfa)))) (sm-states ndfa)))]
-      (make-dfa (sm-states ndfa)
-                (sm-sigma ndfa)
-                (sm-start ndfa)
-                new-finals (sm-rules ndfa) 'no-dead)))
+      (make-unchecked-dfa (sm-states ndfa)
+                          (sm-sigma ndfa)
+                          (sm-start ndfa)
+                          new-finals (sm-rules ndfa) 'no-dead)))
   (let* [(Mdfa (ndfa->dfa M))
-         (dfaM (above (graph->bitmap (create-edge-graph-m
-                                      (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                         Mdfa)
-                                      Mdfa))
-                      (text "M-dfa: M converted to a dfa" 20 'black)))
+         (dfaM (graph-struct (create-edge-graph-m
+                              (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                                 Mdfa)
+                              Mdfa)
+                             (text "M-dfa: M converted to a dfa" 20 'black)))
          (Ndfa (ndfa->dfa N))
-         (dfaN (above (graph->bitmap (create-edge-graph-n
-                                      (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                         Ndfa)
-                                      Ndfa))
-                      (text "N-dfa: N converted to a dfa" 20 'black)))
-         (Mcomplement (sm-complement (ndfa->dfa M)))
-         (cmplM (above (graph->bitmap (create-edge-graph-m
-                                       (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                          Mcomplement)
-                                       Mcomplement))
-                       (text "CM-dfa: Complement of M-dfa" 20 'black)))
-         (Ncomplement (sm-complement (ndfa->dfa N)))
-         (cmplN (above (graph->bitmap (create-edge-graph-n
-                                       (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                          Ncomplement)
-                                       Ncomplement))
-                       (text "CN-dfa: Complement of N-dfa" 20 'black)))
-         (nM (sm-rename-states (list DEAD) (sm-complement (ndfa->dfa M))))
-         (nN (sm-rename-states (sm-states nM) (sm-complement (ndfa->dfa N))))
+         (dfaN (graph-struct (create-edge-graph-n
+                              (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                                 Ndfa)
+                              Ndfa)
+                             (text "N-dfa: N converted to a dfa" 20 'black)))
+         (Mcomplement (complement-fsa (ndfa->dfa M)))
+         (cmplM (graph-struct (create-edge-graph-m
+                               (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                                  Mcomplement)
+                               Mcomplement)
+                              (text "CM-dfa: Complement of M-dfa" 20 'black)))
+         (Ncomplement (complement-fsa (ndfa->dfa N)))
+         (cmplN (graph-struct (create-edge-graph-n
+                               (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                                  Ncomplement)
+                               Ncomplement)
+                              (text "CN-dfa: Complement of N-dfa" 20 'black)))
+         (nM (rename-states-fsa (list DEAD) (complement-fsa (ndfa->dfa M))))
+         (nN (rename-states-fsa (sm-states nM) (complement-fsa (ndfa->dfa N))))
          (notM (create-edge-graph-m
                 (create-node-graph
                  (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
@@ -301,24 +319,23 @@
          (notN (create-edge-graph-n (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
                                                        nN)
                                     nN))
-         (notMimg (above (graph->bitmap notM) (text "CM-dfa States Renamed" 20 'black)))
-         (notNimg (above (graph->bitmap notN) (text "CN-dfa States Renamed" 20 'black)))
-         (notM-U-notN (sm-union nM nN))
+         (notMimg (graph-struct  notM (text "CM-dfa States Renamed" 20 'black)))
+         (notNimg (graph-struct notN (text "CN-dfa States Renamed" 20 'black)))
+         (notM-U-notN (make-unchecked-union nM nN))
          (ndfa-un (ndfa->dfa notM-U-notN))
          (comp-un (complement-fsa ndfa-un))
-         (unionMN (above (graph->bitmap
-                          (create-edge-graph-union (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                                       notM-U-notN)
-                                                   notM-U-notN nM nN))
-                         (text "U-CM-dfa-CN-dfa: Union of CM-dfa and CN-dfa" 20 'black)))
-         (dfaMN (above (graph->bitmap (create-edge-graph (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                                            ndfa-un)
-                                                         ndfa-un))
-                       (text "DU-CM-dfa-CN-dfa: U-CM-dfa-CN-dfa converted to a dfa" 20 'black)))
-         (final-graph (above (graph->bitmap (create-edge-graph (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                                                  comp-un)
-                                                               comp-un))
-                             (text "Intersection of M and N: Complement of DU-CM-dfa-CN-dfa" 20 'black)))]
+         (unionMN (graph-struct(create-edge-graph-union (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                                                           notM-U-notN)
+                                                        notM-U-notN nM nN)
+                               (text "U-CM-dfa-CN-dfa: Union of CM-dfa and CN-dfa" 20 'black)))
+         (dfaMN (graph-struct (create-edge-graph (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                                                    ndfa-un)
+                                                 ndfa-un)
+                              (text "DU-CM-dfa-CN-dfa: U-CM-dfa-CN-dfa converted to a dfa" 20 'black)))
+         (final-graph (graph-struct (create-edge-graph (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                                                          comp-un)
+                                                       comp-un)
+                                    (text "Intersection of M and N: Complement of DU-CM-dfa-CN-dfa" 20 'black)))]
     (cond [(and (eq? (sm-type M) 'dfa)
                 (eq? (sm-type N) 'ndfa))
            (list dfaN cmplM cmplN notMimg notNimg unionMN dfaMN final-graph)]
@@ -339,41 +356,95 @@
 ;; ndfa ndfa -> img
 ;; Purpose: To draw the graph of the initial ndfa's
 (define (make-init-grph-img M N)
-  (above (text (if (eq? (sm-type M) 'ndfa)
-                   " M is an ndfa and needs to be converted to a dfa"
-                   " M is a dfa") 20 'black)
-         (graph->bitmap (create-edge-graph-m
-                         (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                            M)
-                         M))
-         (text (if (eq? (sm-type N) 'ndfa)
-                   "\n\n\n N is an ndfa and needs to be converted to a dfa"
-                   "\n\n\n N is a dfa") 20 'black)
-         (graph->bitmap (create-edge-graph-n
-                         (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                            N)
-                         N))))
+  (graph-struct (list
+                 (create-edge-graph-m
+                  (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                     M)
+                  M)
+                 (create-edge-graph-n
+                  (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                     N)
+                  N))
+                (list (text (if (eq? (sm-type N) 'ndfa)
+                                "\n\n\n N is an ndfa and needs to be converted to a dfa"
+                                "\n\n\n N is a dfa") 20 'black)
+                      (text (if (eq? (sm-type M) 'ndfa)
+                                " M is an ndfa and needs to be converted to a dfa"
+                                " M is a dfa") 20 'black))
+                ))
+
+;; draw-imsg
+;; imsg -> img
+(define (draw-imsg a-imsg)
+  (zipper-current (graph-struct-inf a-imsg)))
      
 
 ;; draw-world
 ;; viz-state -> img
 ;; Purpose: To render the given viz-state
-(define (draw-world a-vs)
-  (let [(width (image-width (first (viz-state-pimgs a-vs))))
-        (height (image-height (first (viz-state-pimgs a-vs))))]
-    (if (or (> width (image-width E-SCENE))
-            (> height (image-height E-SCENE)))
-        (above (overlay (resize-image (first (viz-state-pimgs a-vs)) (- (image-width E-SCENE) 5)
-                                                     (- (image-height E-SCENE) 5))
-                                       E-SCENE) E-SCENE-TOOLS)
-        (above (overlay (first (viz-state-pimgs a-vs)) E-SCENE) E-SCENE-TOOLS))))
+#;(define (draw-world a-vs)
+    (let [(width (image-width (first (viz-state-pimgs a-vs))))
+          (height (image-height (first (viz-state-pimgs a-vs))))]
+      (if (or (> width (image-width E-SCENE))
+              (> height (image-height E-SCENE)))
+          (above (overlay (resize-image (first (viz-state-pimgs a-vs)) (- (image-width E-SCENE) 5)
+                                        (- (image-height E-SCENE) 5))
+                          E-SCENE) E-SCENE-TOOLS)
+          (above (overlay (first (viz-state-pimgs a-vs)) E-SCENE) E-SCENE-TOOLS))))
 
 
 ;; intersection-viz
 ;; fsa fsa -> void
 (define (intersection-viz M N)
   (let* [(imgs (create-graph-imgs M N))]
-    (run-viz (viz-state imgs (list (make-init-grph-img M N))) draw-world 'intersection-viz)))
+    (run-viz (list (make-init-grph-img M) (create-graph-imgs M))
+             (lambda () (make-init-grph-img M))
+             MIDDLE-E-SCENE
+             DEFAULT-ZOOM
+             DEFAULT-ZOOM-CAP
+             DEFAULT-ZOOM-FLOOR
+             (informative-messages draw-imsg
+                                   (let ([new-start (generate-symbol 'K (sm-states M))])
+                                     (graph-struct-inf
+                                      0
+                                      new-start
+                                      (list (list new-start EMP (sm-start M))
+                                            (map (λ (f) (list f EMP new-start))
+                                                 (sm-finals M)))))
+                                   RULE-YIELD-DIMS)
+             (instructions-graphic
+              E-SCENE-TOOLS
+              (bounding-limits 0
+                               (image-width imsg-img)
+                               E-SCENE-HEIGHT
+                               (+ E-SCENE-HEIGHT (image-height imsg-img))))
+             (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
+             (create-viz-process-key (list (list "right" viz-go-next right-key-pressed);;right-key-pressed)
+                                           (list "left" viz-go-prev left-key-pressed);;left-key-pressed)
+                                           (list "up" viz-go-to-begin up-key-pressed);;up-key-pressed)
+                                           (list "down" viz-go-to-end down-key-pressed);;down-key-pressed)
+                                           (list "w" viz-zoom-in identity)
+                                           (list "s" viz-zoom-out identity)
+                                           (list "r" viz-max-zoom-out identity)
+                                           (list "f" viz-max-zoom-in identity)
+                                           (list "e" viz-reset-zoom identity)
+                                           (list "wheel-down" viz-zoom-in identity)
+                                           (list "wheel-up" viz-zoom-out identity)))
+             (create-viz-process-tick E-SCENE-BOUNDING-LIMITS NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT
+                                      CLICK-BUFFER-SECONDS
+                                      (list)
+                                      (list (list ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed);;up-key-pressed)
+                                            (list ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed);;down-key-pressed)
+                                            (list ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed);;left-key-pressed)
+                                            (list ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed);;right-key-pressed)
+                                            (list W-KEY-DIMS viz-zoom-in identity)
+                                            (list S-KEY-DIMS viz-zoom-out identity)
+                                            (list R-KEY-DIMS viz-max-zoom-out identity)
+                                            (list E-KEY-DIMS viz-reset-zoom identity)
+                                            (list F-KEY-DIMS viz-max-zoom-in identity)
+                                            ;(list A-KEY-DIMS identity a-key-pressed)
+                                            #;(list D-KEY-DIMS identity d-key-pressed)))
+             )))
 
 (define no-one-el (make-dfa '(S A B C D E F G)
                             '(a b c)

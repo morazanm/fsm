@@ -202,7 +202,7 @@
   (define (complement-viz M)
     (if (eq? (sm-type M) 'dfa)
         (run-viz (list* (map graph-struct-grph (list (make-init-grph-img M) (create-graph-img M))))
-                 (lambda () (graph->bitmap (create-graph-img M)))
+                 (lambda () (graph->bitmap (make-init-grph-img M)))
                  MIDDLE-E-SCENE
                  DEFAULT-ZOOM
                  DEFAULT-ZOOM-CAP
