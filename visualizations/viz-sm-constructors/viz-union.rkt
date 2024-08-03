@@ -146,9 +146,9 @@
 
 
 (define RULE-YIELD-DIMS (bounding-limits 0
-                                         (image-width imsg-img)
+                                         (image-width graph-struct-inf)
                                          E-SCENE-HEIGHT
-                                         (+ E-SCENE-HEIGHT (image-height imsg-img))))
+                                         (+ E-SCENE-HEIGHT (image-height graph-struct-inf))))
 
 (define ARROW-UP-KEY-DIMS
   (bounding-limits (+ (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
@@ -648,19 +648,19 @@
 ;; draw-imsg
 ;; imsg -> img
 (define (draw-imsg a-imsg)
-  (zipper-current (imsg-state-infs a-imsg)))
+  (zipper-current (graph-struct-inf a-imsg)))
      
 
 ;; draw-world
 ;; viz-state -> img
 ;; Purpose: To render the given viz-state
-(define (draw-world a-vs)
-  (let [(width (image-width (first (viz-state-pimgs a-vs))))
-        (height (image-height (first (viz-state-pimgs a-vs))))]
-    (if (or (> width (image-width E-SCENE))
-            (> height (image-height E-SCENE)))
-        (above (overlay (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE)) E-SCENE) E-SCENE-TOOLS)               
-        (above (overlay (first (viz-state-pimgs a-vs)) E-SCENE) E-SCENE-TOOLS))))
+#;(define (draw-world a-vs)
+    (let [(width (image-width (first (viz-state-pimgs a-vs))))
+          (height (image-height (first (viz-state-pimgs a-vs))))]
+      (if (or (> width (image-width E-SCENE))
+              (> height (image-height E-SCENE)))
+          (above (overlay (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE)) E-SCENE) E-SCENE-TOOLS)               
+          (above (overlay (first (viz-state-pimgs a-vs)) E-SCENE) E-SCENE-TOOLS))))
 
 
 
@@ -677,16 +677,16 @@
 ;; fsa fsa -> void
 (define (union-viz M N)
   (let [(renamed-machine (if (ormap (λ (x) (member x (sm-states M))) (sm-states N))
-                             (sm-rename-states (sm-states M) N)
+                             (rename-states-fsa (sm-states M) N)
                              N))]
-    (run-viz (list* (map graph-struct-grph (cons (create-init-graph (list 'S regexp 'F)) graphs)))
-             (lambda () (graph->bitmap (create-init-graph (list 'S regexp 'F))))
+    (run-viz (list* (map graph-struct-grph (cons (make-init-grph-img (list 'S regexp 'F)) (create-graph-img M N))))
+             (lambda () (graph->bitmap (graph-struct-grph (list 'S regexp 'F))))
              MIDDLE-E-SCENE
              DEFAULT-ZOOM
              DEFAULT-ZOOM-CAP
              DEFAULT-ZOOM-FLOOR
              (informative-messages draw-imsg
-                                   (imsg-state (list->zipper (list* (map graph-struct-inf (cons (create-init-graph (list 'S regexp 'F)) graphs)))))
+                                   (graph-struct-inf (list->zipper (list* (map graph-struct-inf (cons (make-init-grph-img (list 'S regexp 'F)) (create-graph-img M N))))))
                                    (bounding-limits 0 0 0 0)
                                    )
              (instructions-graphic
