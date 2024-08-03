@@ -664,6 +664,95 @@
 
 
 
+
+(define (right-key-pressed a-vs)
+  (let ([a-graph-struct (informative-messages-component-state
+                       (viz-state-informative-messages a-vs))])
+    (if (zipper-at-end? (graph-struct-inf a-graph-struct))
+        a-vs
+  (struct-copy viz-state a-vs
+               [informative-messages
+                (struct-copy informative-messages
+                             (viz-state-informative-messages a-vs)
+                             [component-state
+                              (struct-copy graph-struct
+                                           a-graph-struct
+                                           [inf (zipper-next
+                                                  (graph-struct-inf
+                                                   a-graph-struct)
+                                                  )
+                                                 ]
+                                           )])]))
+    )
+  )
+
+(define (left-key-pressed a-vs)
+  (let ([a-graph-struct (informative-messages-component-state
+                       (viz-state-informative-messages a-vs))])
+    (if (zipper-at-begin? (graph-struct-inf a-graph-struct))
+        a-vs
+  (struct-copy viz-state a-vs
+               [informative-messages
+                (struct-copy informative-messages
+                             (viz-state-informative-messages a-vs)
+                             [component-state
+                              (struct-copy graph-struct
+                                           a-graph-struct
+                                           [inf (zipper-prev
+                                                  (graph-struct-inf
+                                                   a-graph-struct)
+                                                  )
+                                                 ]
+                                           )])]))
+    )
+  )
+
+(define (up-key-pressed a-vs)
+  (let ([a-graph-struct (informative-messages-component-state
+                       (viz-state-informative-messages a-vs))])
+    (if (zipper-at-begin? (graph-struct-inf a-graph-struct))
+        a-vs
+  (struct-copy viz-state a-vs
+               [informative-messages
+                (struct-copy informative-messages
+                             (viz-state-informative-messages a-vs)
+                             [component-state
+                              (struct-copy graph-struct
+                                           a-graph-struct
+                                           [inf (zipper-to-begin
+                                                  (graph-struct-inf
+                                                   a-graph-struct)
+                                                  )
+                                                 ]
+                                           )])]))
+    )
+  )
+
+(define (down-key-pressed a-vs)
+  (let ([a-graph-struct (informative-messages-component-state
+                       (viz-state-informative-messages a-vs))])
+    (if (zipper-at-end? (graph-struct-inf a-graph-struct))
+        a-vs
+  (struct-copy viz-state a-vs
+               [informative-messages
+                (struct-copy informative-messages
+                             (viz-state-informative-messages a-vs)
+                             [component-state
+                              (struct-copy graph-struct
+                                           a-graph-struct
+                                           [inf (zipper-to-end
+                                                  (graph-struct-inf
+                                                   a-graph-struct)
+                                                  )
+                                                 ]
+                                           )])]))
+    )
+  )
+
+
+
+
+
 (define viz-go-next (go-next))
 (define viz-go-prev (go-prev))
 (define viz-go-to-begin (go-to-begin))
@@ -673,6 +762,8 @@
 (define viz-max-zoom-out (max-zoom-out))
 (define viz-max-zoom-in (max-zoom-in))
 (define viz-reset-zoom (reset-zoom))
+
+
 ;; union-viz
 ;; fsa fsa -> void
 (define (union-viz M N)
@@ -703,9 +794,7 @@
                                            (list "f" viz-max-zoom-in identity)
                                            (list "e" viz-reset-zoom identity)
                                            (list "wheel-down" viz-zoom-in identity)
-                                           (list "wheel-up" viz-zoom-out identity)
-                                           )
-                                     )
+                                           (list "wheel-up" viz-zoom-out identity)))
              (create-viz-process-tick E-SCENE-BOUNDING-LIMITS NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT
                                       CLICK-BUFFER-SECONDS
                                       (list)

@@ -280,7 +280,11 @@
             (if (zipper-at-end? (viz-state-imgs a-vs))
         a-vs
         (let* [(new-imgs (zipper-next (viz-state-imgs a-vs)))
-               (new-curr-img ((zipper-current new-imgs)))
+               (new-curr-img (if (list? (zipper-current new-imgs))
+                                 (apply beside (map (lambda (img) ((img))) (zipper-current new-imgs)))
+                                 ((zipper-current new-imgs))
+                                 )
+                             )
                (curr-pimgs-img ((zipper-current (viz-state-imgs a-vs))))
                (img-resize (resize-image new-curr-img (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))
                (growth-x (- (/ (image-width (scale (viz-state-scale-factor a-vs) new-curr-img)) 2)

@@ -689,7 +689,7 @@
   (define (complement-viz M)
     (if (eq? (sm-type M) 'dfa)
         (run-viz (map graph-struct-grph (list (make-init-grph-img M) (create-graph-img M)))
-                 (lambda () (graph->bitmap (graph-struct-grph (create-graph-img M))))
+                 (lambda () (graph->bitmap (graph-struct-grph (make-init-grph-img M))))
                  MIDDLE-E-SCENE
                  DEFAULT-ZOOM
                  DEFAULT-ZOOM-CAP
@@ -808,8 +808,8 @@
                                 (G b G)
                                 (G c G))
                               'no-dead))
-
-(complement-viz aab*)
+(complement-viz no-one-el)
+;(complement-viz aab*)
 
   )
 #;(viz-state (if (eq? (sm-type M) 'dfa)
