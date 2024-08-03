@@ -137,28 +137,13 @@
 
 ;; num num -> Listof Thunk
 ;; Creates a list of functions which when called will load its respective graph img from disk
-#;(define (pngs->bitmap-thunks accum cap)
+(define (pngs->bitmap-thunks accum cap)
   (if (>= accum cap)
       '()
       (cons (thunk (bitmap/file (string->path (format "~adot~s.png" SAVE-DIR accum))))
             (pngs->bitmap-thunks (add1 accum) cap)
             )
       )
-  )
-(define (pngs->bitmap-thunks enumerated-graphs)
-  (for/list ([i enumerated-graphs])
-    (if (list? (second i))
-        (for/list ([j (second i)])
-          (thunk (bitmap/file (string->path (format "~adot~s_~s.png" SAVE-DIR (first i) j)))))
-        (thunk (bitmap/file (string->path (format "~adot~s.png" SAVE-DIR (first i)))))
-        )
-    )
-  )
-
-(define (make-pairs lst0 lst1) (if (empty? lst0)
-                                   '()
-                                   (cons (list (first lst0) (first lst1)) (make-pairs (rest lst0) (rest lst1)))
-                                   )
   )
 
 (define (find-number-of-cores) (let [
@@ -275,17 +260,7 @@
 
 ;; Listof graph -> Num
 ;; Creates all of the dotfiles based on the graph structs given
-(define (graphs->dots graphs) (foldl (lambda (value accum) (begin (if (list? value)
-                                                                      (foldl (lambda (val acc) (begin
-                                                                                                 (graph->dot val SAVE-DIR (format "dot~s_~s" accum acc))
-                                                                                                 (add1 acc)
-                                                                                                 ))
-                                                                             0
-                                                                             value
-                                                                               )
-                                                                                                 
-                                                                      (graph->dot value SAVE-DIR (format "dot~s" accum))
-                                                                      )
+(define (graphs->dots graphs) (foldl (lambda (value accum) (begin (graph->dot value SAVE-DIR (format "dot~s" accum))
                                                                   (add1 accum)
                                                                   )
                                        )
@@ -298,18 +273,12 @@
 ;; Creates all the graph images needed in parallel, and returns a list of thunks that will load them from disk
 (define (parallel-graphs->bitmap-thunks graphs #:cpu-cores [cpu-cores (quotient (find-number-of-cores) 2)])
   (begin
-    (define enumerated-graphs (make-pairs (range 0 (length graphs)) graphs))
-    (define list-dot-files (for/list ([i enumerated-graphs])
-                             (if (list? (second i))
-                                 (for/list ([j (range 0 (length (second i)))])
-                                   (format "~adot~s_~s" SAVE-DIR i j)
-                                   )
-                                 (format "~adot~s" SAVE-DIR i)
-                                 )
+    (define list-dot-files (for/list ([i (range 0 (length graphs))])
+                             (format "~adot~s" SAVE-DIR i)
                              )
       )
     (graphs->dots graphs)
-    (parallel-dots->pngs (flatten list-dot-files) cpu-cores)
+    (parallel-dots->pngs list-dot-files cpu-cores)
     (pngs->bitmap-thunks 0 (length graphs))
     )
   )
@@ -382,6 +351,13 @@
     (unsafe-parallel-dots->pngs list-dot-files)
     (pngs->bitmap-thunks 0 (length graphs))
     
+  )
+
+
+(define (make-pairs lst0 lst1) (if (empty? lst0)
+                                   '()
+                                   (cons (list (first lst0) (first lst1)) (make-pairs (rest lst0) (rest lst1)))
+                                   )
   )
 
 ;; Listof graph -> Num
