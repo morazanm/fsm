@@ -21,7 +21,7 @@
          "../viz-lib/viz.rkt"
          "../viz-lib/bounding-limits.rkt"
          "../../fsm-core/private/regexp.rkt"
-          "../viz-lib/viz-imgs/cursor.rkt"
+         "../viz-lib/viz-imgs/cursor.rkt"
          "../viz-lib/zipper.rkt")
 
 (provide union-viz)
@@ -463,26 +463,30 @@
                       INS-TOOLS-BUFFER
                       (image-height F-KEY))))
 #;(define E-SCENE-TOOLS (overlay (beside (above (above (triangle 30 'solid 'black)
-                                                     (rectangle 10 30 'solid 'black))
-                                              (square 20 'solid 'white)
-                                              (text "Restart the visualization" 18 'black))
-                                       (square 40 'solid 'white)
-                                       (above (beside (rectangle 30 10 'solid 'black)
-                                                      (rotate 270 (triangle 30 'solid 'black)))
-                                              (square 20 'solid 'white)
-                                              (text "Move one step forward" 18 'black))
-                                       (square 40 'solid 'white)
-                                       (above (beside (rotate 90 (triangle 30 'solid 'black))
-                                                      (rectangle 30 10 'solid 'black))
-                                              (square 20 'solid 'white)
-                                              (text "Move one step backward" 18 'black))
-                                       (square 40 'solid 'white)
-                                       (above (above (rectangle 10 30 'solid 'black)
-                                                     (rotate 180 (triangle 30 'solid 'black)))
-                                              (square 20 'solid 'white)
-                                              (text "Complete the visualization" 18 'black))
-                                       )
-                               (empty-scene 1250 100)))
+                                                       (rectangle 10 30 'solid 'black))
+                                                (square 20 'solid 'white)
+                                                (text "Restart the visualization" 18 'black))
+                                         (square 40 'solid 'white)
+                                         (above (beside (rectangle 30 10 'solid 'black)
+                                                        (rotate 270 (triangle 30 'solid 'black)))
+                                                (square 20 'solid 'white)
+                                                (text "Move one step forward" 18 'black))
+                                         (square 40 'solid 'white)
+                                         (above (beside (rotate 90 (triangle 30 'solid 'black))
+                                                        (rectangle 30 10 'solid 'black))
+                                                (square 20 'solid 'white)
+                                                (text "Move one step backward" 18 'black))
+                                         (square 40 'solid 'white)
+                                         (above (above (rectangle 10 30 'solid 'black)
+                                                       (rotate 180 (triangle 30 'solid 'black)))
+                                                (square 20 'solid 'white)
+                                                (text "Complete the visualization" 18 'black))
+                                         )
+                                 (empty-scene 1250 100)))
+
+
+;; graph-struct
+(struct graph-struct (grph inf))
 
 ;; (listof state) --> state
 ;; Purpose: To generate a state name not in the given list of states
@@ -610,59 +614,41 @@
          (graph (graph->bitmap (make-edge-graph (make-node-graph
                                                  (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
                                                  new-states new-start new-finals) M N new-start)))
-         (width (image-width graph))
-         (height (image-height graph))]
-    (if (or (> width (image-width E-SCENE))
-            (> height (image-height E-SCENE)))
-        (above (resize-image graph
-                             (image-width E-SCENE) (image-height E-SCENE))
-               (text "Union of the ndfas \n" 20 'black)
-               (text (format "Generated edges: ~a \n" added-edges) 20 'black)
-               (text (format "Final states: ~a \n" new-finals) 20 'black)
-               (text (format "Starting state: ~a \n" new-start) 20 'black))
-        (above graph
-               (text "Union of the ndfas \n" 20 'black)
-               (text (format "Generated edges: ~a \n" added-edges) 20 'black)
-               (text (format "Final state(s): ~a \n" new-finals) 20 'black)
-               (text (format "Starting state: ~a \n" new-start) 20 'black)))))
+         #;(width (image-width graph))
+         #;(height (image-height graph))]
+    (graph-struct (list graph) (list  (text "Union of the ndfas \n" 20 'black)
+                                      (text (format "Generated edges: ~a \n" added-edges) 20 'black)
+                                      (text (format "Final states: ~a \n" new-finals) 20 'black)
+                                      (text (format "Starting state: ~a \n" new-start) 20 'black)))))
      
 ;; make-init-grph-img
 ;; ndfa ndfa -> img
 ;; Purpose: To draw the graph of the initial ndfa's
 (define (make-init-grph-img M N)
-  (let* [(graph1 (graph->bitmap (make-first-edge-graph (make-node-graph
-                                                        (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                        (sm-states N)
-                                                        (sm-start N)
-                                                        (sm-finals N))
-                                                       N (sm-start N))))
-         (graph2 (graph->bitmap (make-second-edge-graph (make-node-graph
-                                                         (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                         (sm-states M)
-                                                         (sm-start M)
-                                                         (sm-finals M))
-                                                        M (sm-start M))))
-         (width1 (image-width graph1))
-         (height1 (image-height graph1))
-         (width2 (image-width graph2))
-         (height2 (image-height graph2))]
-    (overlay (beside (beside (text "First ndfa:" 20 'black)
-                             (square 20 'solid 'white)
-                             (if (or (> width1 (image-width E-SCENE))
-                                     (> height1 (image-height E-SCENE)))
-                                 (resize-image graph1 (image-width E-SCENE) (image-height E-SCENE))
-                                 graph1)
-                             )
-                  
-                     (square 50 'solid 'white)
-                     (beside (text "Second ndfa:" 20 'black)
-                             (square 20 'solid 'white)
-                             (if (or (> width2 (image-width E-SCENE))
-                                     (> height2 (image-height E-SCENE)))
-                                 (resize-image graph2 (image-width E-SCENE) (image-height E-SCENE))
-                                 graph2))
-                     )
-             E-SCENE)))
+  (let* [(graph-one (graph->bitmap (make-first-edge-graph (make-node-graph
+                                                           (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                                           (sm-states N)
+                                                           (sm-start N)
+                                                           (sm-finals N))
+                                                          N (sm-start N))))
+         (graph-two (graph->bitmap (make-second-edge-graph (make-node-graph
+                                                            (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                                            (sm-states M)
+                                                            (sm-start M)
+                                                            (sm-finals M))
+                                                           M (sm-start M))))
+         #;(width1 (image-width graph1))
+         #;(height1 (image-height graph1))
+         #;(width2 (image-width graph2))
+         #;(height2 (image-height graph2))]
+
+    (graph-struct (list graph-one graph-two) (list (text "First ndfa:" 20 'black) (text "Second ndfa:" 20 'black)))
+    ))
+
+;; draw-imsg
+;; imsg -> img
+(define (draw-imsg a-imsg)
+  (zipper-current (imsg-state-infs a-imsg)))
      
 
 ;; draw-world
@@ -693,14 +679,14 @@
   (let [(renamed-machine (if (ormap (λ (x) (member x (sm-states M))) (sm-states N))
                              (sm-rename-states (sm-states M) N)
                              N))]
-    (run-viz (cons (create-init-graph (list 'S regexp 'F)) graphs)
+    (run-viz (list* (map graph-struct-grph (cons (create-init-graph (list 'S regexp 'F)) graphs)))
              (lambda () (graph->bitmap (create-init-graph (list 'S regexp 'F))))
              MIDDLE-E-SCENE
              DEFAULT-ZOOM
              DEFAULT-ZOOM-CAP
              DEFAULT-ZOOM-FLOOR
-               (informative-messages draw-imsg
-                                   (imsg-state (list->zipper ))
+             (informative-messages draw-imsg
+                                   (imsg-state (list->zipper (list* (map graph-struct-inf (cons (create-init-graph (list 'S regexp 'F)) graphs)))))
                                    (bounding-limits 0 0 0 0)
                                    )
              (instructions-graphic
@@ -738,7 +724,12 @@
 
 
 
-
+#;(above (resize-image graph
+                       (image-width E-SCENE) (image-height E-SCENE))
+         (text "Union of the ndfas \n" 20 'black)
+         (text (format "Generated edges: ~a \n" added-edges) 20 'black)
+         (text (format "Final states: ~a \n" new-finals) 20 'black)
+         (text (format "Starting state: ~a \n" new-start) 20 'black))
 
 
 

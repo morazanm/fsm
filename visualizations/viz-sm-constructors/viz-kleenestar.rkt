@@ -414,48 +414,48 @@
 
 ;; L = nl
 (define nl (make-unchecked-ndfa '(S)
-                      '(a b)
-                      'S
-                      '()
-                      '()))
+                                '(a b)
+                                'S
+                                '()
+                                '()))
 
 ;; L = ab*
 (define ab* (make-unchecked-ndfa '(S A)
-                       '(a b)
-                       'S
-                       '(A)
-                       '((S a A)
-                         (A b A))))
+                                 '(a b)
+                                 'S
+                                 '(A)
+                                 '((S a A)
+                                   (A b A))))
 ;; L = a(a U ab)b*
 (define a-aUb-b* (make-unchecked-ndfa '(Z H B C D F)
-                            '(a b)
-                            'Z
-                            '(F)
-                            `((Z a H)
-                              (Z a B)
-                              (H a D)
-                              (D ,EMP F)
-                              (B a C)
-                              (C b F)
-                              (F b F))))
+                                      '(a b)
+                                      'Z
+                                      '(F)
+                                      `((Z a H)
+                                        (Z a B)
+                                        (H a D)
+                                        (D ,EMP F)
+                                        (B a C)
+                                        (C b F)
+                                        (F b F))))
 ;; L = aab*
 (define aab* (make-unchecked-ndfa '(W X Y)
-                        '(a b)
-                        'W
-                        '(Y)
-                        '((W a X)
-                          (X a Y)
-                          (Y b Y))))
+                                  '(a b)
+                                  'W
+                                  '(Y)
+                                  '((W a X)
+                                    (X a Y)
+                                    (Y b Y))))
 ;; L = a*
 (define a* (make-unchecked-dfa '(S D)
-                     '(a b)
-                     'S
-                     '(S)
-                     '((S a S)
-                       (S b D)
-                       (D a D)
-                       (D b D))
-                     'no-dead))
+                               '(a b)
+                               'S
+                               '(S)
+                               '((S a S)
+                                 (S b D)
+                                 (D a D)
+                                 (D b D))
+                               'no-dead))
 
 
 ;; KLEENESTAR VISUZALIZATION
@@ -528,16 +528,16 @@
 
 
 (define (create-graph-struct M)
-   (let* [(new-start (generate-symbol 'K (sm-states M)))
+  (let* [(new-start (generate-symbol 'K (sm-states M)))
          (new-states (cons new-start (sm-states M)))
          (new-finals (cons new-start (sm-finals M)))]
-     (make-edge-graph (make-node-graph
-                       (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                       new-states
-                       new-start
-                       new-finals)
-                      M new-start)
-     )
+    (make-edge-graph (make-node-graph
+                      (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                      new-states
+                      new-start
+                      new-finals)
+                     M new-start)
+    )
   )
 
 (define (create-init-graph-struct M)
@@ -555,8 +555,8 @@
 (define (draw-imsg a-imsg-state)
   (overlay
    (if (= (imsg-state-phase a-imsg-state) 0)
-      (text "Starting ndfa" FONT-SIZE 'black)
-      (scale 1 (above (text "Kleenestar of the ndfa" 15 'black)
+       (text "Starting ndfa" FONT-SIZE 'black)
+       (scale 1 (above (text "Kleenestar of the ndfa" 15 'black)
                        (text (format "Generated starting state: ~a" (imsg-state-start a-imsg-state)) 15 'black)
                        (text (format "Added edges: ~a" (imsg-state-added-edges a-imsg-state)) 15 'black))))
    (rectangle 1250 50 'solid 'white)))
@@ -581,39 +581,40 @@
   )
      
 ;; make-init-grph-img
-;; ndfa ndfa -> img
+;; ndfa ndfa -> dgraph
 ;; Purpose: To draw the graph of the initial ndfa's
 (define (make-init-grph-img M)
-  (let* [(graph (graph->bitmap (make-init-edge-graph (make-node-graph
-                                                      (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                      (sm-states M)
-                                                      (sm-start M)
-                                                      (sm-finals M))
-                                                     M (sm-start M))))
+  (let* [(graph (make-init-edge-graph (make-node-graph
+                                       (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                       (sm-states M)
+                                       (sm-start M)
+                                       (sm-finals M))
+                                      M (sm-start M)))
          (width (image-width graph))
          (height (image-height graph))]
-    (if (or (> width (image-width E-SCENE))
-            (> height (image-height E-SCENE)))
-        (resize-sm-image graph (image-width E-SCENE) (image-height E-SCENE))#;(above
-         (resize-sm-image graph (image-width E-SCENE) (image-height E-SCENE))
-         #;(text "Starting ndfa \n" 20 'black))
-        graph #;(above
-         graph
-         #;(text "Starting ndfa \n" 20 'black))
+    ;    (if (or (> width (image-width E-SCENE))
+    ;            (> height (image-height E-SCENE)))
+    ;        (resize-sm-image graph (image-width E-SCENE) (image-height E-SCENE))
+    #;(above
+       (resize-sm-image graph (image-width E-SCENE) (image-height E-SCENE))
+       #;(text "Starting ndfa \n" 20 'black))
+    graph #;(above
+             graph
+             (text "Starting ndfa \n" 20 'black))
 
-        )))
+    ))
      
 
 ;; draw-world
 ;; viz-state -> img
 ;; Purpose: To render the given viz-state
 #;(define (draw-world a-vs)
-  (let [(width (image-width (first (viz-state-pimgs a-vs))))
-        (height (image-height (first (viz-state-pimgs a-vs))))]
-    (if (or (> width (image-width E-SCENE))
-            (> height (image-height E-SCENE)))
-        (above (overlay (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE)) E-SCENE) E-SCENE-TOOLS)
-        (above (overlay (first (viz-state-pimgs a-vs)) E-SCENE) E-SCENE-TOOLS))))
+    (let [(width (image-width (first (viz-state-pimgs a-vs))))
+          (height (image-height (first (viz-state-pimgs a-vs))))]
+      (if (or (> width (image-width E-SCENE))
+              (> height (image-height E-SCENE)))
+          (above (overlay (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE)) E-SCENE) E-SCENE-TOOLS)
+          (above (overlay (first (viz-state-pimgs a-vs)) E-SCENE) E-SCENE-TOOLS))))
 
 (define viz-go-next (go-next))
 (define viz-go-prev (go-prev))
@@ -644,7 +645,7 @@
                                                     (viz-state-informative-messages a-vs))) 0)
                               1
                               (imsg-state-phase (informative-messages-component-state
-                                                    (viz-state-informative-messages a-vs))))]
+                                                 (viz-state-informative-messages a-vs))))]
                    [start (imsg-state-start (informative-messages-component-state
                                              (viz-state-informative-messages a-vs)))]
                    [added-edges (imsg-state-added-edges (informative-messages-component-state
@@ -669,7 +670,7 @@
                                                     (viz-state-informative-messages a-vs))) 1)
                               0
                               (imsg-state-phase (informative-messages-component-state
-                                                    (viz-state-informative-messages a-vs))))]
+                                                 (viz-state-informative-messages a-vs))))]
                    [start (imsg-state-start (informative-messages-component-state
                                              (viz-state-informative-messages a-vs)))]
                    [added-edges (imsg-state-added-edges (informative-messages-component-state
@@ -693,7 +694,7 @@
                                                     (viz-state-informative-messages a-vs))) 0)
                               1
                               (imsg-state-phase (informative-messages-component-state
-                                                    (viz-state-informative-messages a-vs))))]
+                                                 (viz-state-informative-messages a-vs))))]
                    [start (imsg-state-start (informative-messages-component-state
                                              (viz-state-informative-messages a-vs)))]
                    [added-edges (imsg-state-added-edges (informative-messages-component-state
@@ -718,7 +719,7 @@
                                                     (viz-state-informative-messages a-vs))) 1)
                               0
                               (imsg-state-phase (informative-messages-component-state
-                                                    (viz-state-informative-messages a-vs))))]
+                                                 (viz-state-informative-messages a-vs))))]
                    [start (imsg-state-start (informative-messages-component-state
                                              (viz-state-informative-messages a-vs)))]
                    [added-edges (imsg-state-added-edges (informative-messages-component-state
@@ -750,36 +751,36 @@
                              (+ E-SCENE-HEIGHT (image-height imsg-img))))
            (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
            (create-viz-process-key (list (list "right" viz-go-next right-key-pressed);;right-key-pressed)
-                                           (list "left" viz-go-prev left-key-pressed);;left-key-pressed)
-                                           (list "up" viz-go-to-begin up-key-pressed);;up-key-pressed)
-                                           (list "down" viz-go-to-end down-key-pressed);;down-key-pressed)
-                                           (list "w" viz-zoom-in identity)
-                                           (list "s" viz-zoom-out identity)
-                                           (list "r" viz-max-zoom-out identity)
-                                           (list "f" viz-max-zoom-in identity)
-                                           (list "e" viz-reset-zoom identity)
-                                           (list "wheel-down" viz-zoom-in identity)
-                                           (list "wheel-up" viz-zoom-out identity)))
+                                         (list "left" viz-go-prev left-key-pressed);;left-key-pressed)
+                                         (list "up" viz-go-to-begin up-key-pressed);;up-key-pressed)
+                                         (list "down" viz-go-to-end down-key-pressed);;down-key-pressed)
+                                         (list "w" viz-zoom-in identity)
+                                         (list "s" viz-zoom-out identity)
+                                         (list "r" viz-max-zoom-out identity)
+                                         (list "f" viz-max-zoom-in identity)
+                                         (list "e" viz-reset-zoom identity)
+                                         (list "wheel-down" viz-zoom-in identity)
+                                         (list "wheel-up" viz-zoom-out identity)))
            (create-viz-process-tick E-SCENE-BOUNDING-LIMITS NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT
-                                            CLICK-BUFFER-SECONDS
-                                            (list)
-                                            (list (list ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed);;up-key-pressed)
-                                                  (list ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed);;down-key-pressed)
-                                                  (list ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed);;left-key-pressed)
-                                                  (list ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed);;right-key-pressed)
-                                                  (list W-KEY-DIMS viz-zoom-in identity)
-                                                  (list S-KEY-DIMS viz-zoom-out identity)
-                                                  (list R-KEY-DIMS viz-max-zoom-out identity)
-                                                  (list E-KEY-DIMS viz-reset-zoom identity)
-                                                  (list F-KEY-DIMS viz-max-zoom-in identity)
-                                                  ;(list A-KEY-DIMS identity a-key-pressed)
-                                                  #;(list D-KEY-DIMS identity d-key-pressed)))
+                                    CLICK-BUFFER-SECONDS
+                                    (list)
+                                    (list (list ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed);;up-key-pressed)
+                                          (list ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed);;down-key-pressed)
+                                          (list ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed);;left-key-pressed)
+                                          (list ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed);;right-key-pressed)
+                                          (list W-KEY-DIMS viz-zoom-in identity)
+                                          (list S-KEY-DIMS viz-zoom-out identity)
+                                          (list R-KEY-DIMS viz-max-zoom-out identity)
+                                          (list E-KEY-DIMS viz-reset-zoom identity)
+                                          (list F-KEY-DIMS viz-max-zoom-in identity)
+                                          ;(list A-KEY-DIMS identity a-key-pressed)
+                                          #;(list D-KEY-DIMS identity d-key-pressed)))
            )
   )
 
 
 (kleenestar-viz ab*)
-  #;(run-viz (viz-state (list (create-graph-img M))
+#;(run-viz (viz-state (list (create-graph-img M))
                       (list (make-init-grph-img M)))
            draw-world
            'kleenestar-viz)
