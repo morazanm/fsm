@@ -22,7 +22,7 @@
          "../viz-lib/bounding-limits.rkt"
          "../../fsm-core/private/regexp.rkt"
          
-          "../viz-lib/viz-imgs/cursor.rkt"
+         "../viz-lib/viz-imgs/cursor.rkt"
          "../viz-lib/zipper.rkt")
 (provide regexp2ndfa-viz)
 
@@ -447,26 +447,26 @@
 (define E-SCENE (empty-scene 1250 600))
 
 #;(define E-SCENE-TOOLS (overlay (beside (above (above (triangle 30 'solid 'black)
-                                                     (rectangle 10 30 'solid 'black))
-                                              (square 20 'solid 'white)
-                                              (text "Restart the visualization" 18 'black))
-                                       (square 40 'solid 'white)
-                                       (above (beside (rectangle 30 10 'solid 'black)
-                                                      (rotate 270 (triangle 30 'solid 'black)))
-                                              (square 20 'solid 'white)
-                                              (text "Move one step forward" 18 'black))
-                                       (square 40 'solid 'white)
-                                       (above (beside (rotate 90 (triangle 30 'solid 'black))
-                                                      (rectangle 30 10 'solid 'black))
-                                              (square 20 'solid 'white)
-                                              (text "Move one step backward" 18 'black))
-                                       (square 40 'solid 'white)
-                                       (above (above (rectangle 10 30 'solid 'black)
-                                                     (rotate 180 (triangle 30 'solid 'black)))
-                                              (square 20 'solid 'white)
-                                              (text "Complete the visualization" 18 'black))
-                                       )
-                               (empty-scene 1250 100)))
+                                                       (rectangle 10 30 'solid 'black))
+                                                (square 20 'solid 'white)
+                                                (text "Restart the visualization" 18 'black))
+                                         (square 40 'solid 'white)
+                                         (above (beside (rectangle 30 10 'solid 'black)
+                                                        (rotate 270 (triangle 30 'solid 'black)))
+                                                (square 20 'solid 'white)
+                                                (text "Move one step forward" 18 'black))
+                                         (square 40 'solid 'white)
+                                         (above (beside (rotate 90 (triangle 30 'solid 'black))
+                                                        (rectangle 30 10 'solid 'black))
+                                                (square 20 'solid 'white)
+                                                (text "Move one step backward" 18 'black))
+                                         (square 40 'solid 'white)
+                                         (above (above (rectangle 10 30 'solid 'black)
+                                                       (rotate 180 (triangle 30 'solid 'black)))
+                                                (square 20 'solid 'white)
+                                                (text "Complete the visualization" 18 'black))
+                                         )
+                                 (empty-scene 1250 100)))
 
 ;; grph is a (listof img) of graphs used to build an ndfa from regexp
 ;; edge is an edge that has been expanded to build an ndfa from regexp
@@ -502,7 +502,7 @@
     (cond [(only-simple-edges? grph) (cons (gedge grph edge) acc)]
           [(and (not (null? issimp?))
                 (first issimp?))
-           (cons (gedge grph (void)) acc)]
+           (cons (gedge grph void) acc)]
           [else 
            (let* [(next-edge (extract-first-nonsimple grph))
                   (fromst (first next-edge))
@@ -560,13 +560,13 @@
             state
             #:atb (hash 'color (cond [(eq? state 'S)
                                       (if (and (not (empty? edge))
-                                               (not (void? edge))
+                                               (not (equal? void edge))
                                                (eq? (first edge) 'S))
                                           'violet
                                           'darkgreen)]
                                      [(eq? state 'F)
                                       (if (and (not (empty? edge))
-                                               (not (void? edge))
+                                               (not (equal? void edge))
                                                (eq? (third edge) 'F))
                                           'violet
                                           'black)]
@@ -623,8 +623,8 @@
 ;; draw-imsg
 ;; imsg -> img
 (define (draw-imsg a-imsg)
-  (cond [(empty? (zipper-current (imsg-state-edge a-imsg))) (text "Starting NDFA" 24 'black)]
-        [(void? (zipper-current (imsg-state-edge a-imsg))) (text "Simplified initial regexp" 24 'black)]
+  (cond [(zipper-at-begin? (imsg-state-edge a-imsg)) (text "Starting NDFA" 24 'black)]
+        [(= (zipper-idx (imsg-state-edge a-imsg)) 1) (text "Simplified initial regexp" 24 'black)]
         [else (beside (text (format "Expanded regexp: ~a on edge from state" (printable-regexp (second (zipper-current (imsg-state-edge a-imsg)))  #;(zipper-current (zipper-to-idx (imsg-state-edge a-imsg) 1)))) 24 'black)
                       (text (format " ~a" (first (zipper-current (imsg-state-edge a-imsg)))  #;(printable-regexp (zipper-current (imsg-state-edge a-imsg)))) 24 'violet)
                       (text (format " to state ") 24 'black)
@@ -640,7 +640,7 @@
   (if (empty? gedges)
       empty
       (cons (create-graphic (gedge-grph (first gedges))
-                          (gedge-edge (first gedges)))
+                            (gedge-edge (first gedges)))
             (create-graphs (rest gedges)))))
 
 
@@ -710,19 +710,19 @@
                        (viz-state-informative-messages a-vs))])
     (if (zipper-at-end? (imsg-state-edge a-imsg-state))
         a-vs
-  (struct-copy viz-state a-vs
-               [informative-messages
-                (struct-copy informative-messages
-                             (viz-state-informative-messages a-vs)
-                             [component-state
-                              (struct-copy imsg-state
-                                           a-imsg-state
-                                           [edge (zipper-next
-                                                  (imsg-state-edge
-                                                   a-imsg-state)
-                                                  )
-                                                 ]
-                                           )])]))
+        (struct-copy viz-state a-vs
+                     [informative-messages
+                      (struct-copy informative-messages
+                                   (viz-state-informative-messages a-vs)
+                                   [component-state
+                                    (struct-copy imsg-state
+                                                 a-imsg-state
+                                                 [edge (zipper-next
+                                                        (imsg-state-edge
+                                                         a-imsg-state)
+                                                        )
+                                                       ]
+                                                 )])]))
     )
   )
 
@@ -731,19 +731,19 @@
                        (viz-state-informative-messages a-vs))])
     (if (zipper-at-begin? (imsg-state-edge a-imsg-state))
         a-vs
-  (struct-copy viz-state a-vs
-               [informative-messages
-                (struct-copy informative-messages
-                             (viz-state-informative-messages a-vs)
-                             [component-state
-                              (struct-copy imsg-state
-                                           a-imsg-state
-                                           [edge (zipper-prev
-                                                  (imsg-state-edge
-                                                   a-imsg-state)
-                                                  )
-                                                 ]
-                                           )])]))
+        (struct-copy viz-state a-vs
+                     [informative-messages
+                      (struct-copy informative-messages
+                                   (viz-state-informative-messages a-vs)
+                                   [component-state
+                                    (struct-copy imsg-state
+                                                 a-imsg-state
+                                                 [edge (zipper-prev
+                                                        (imsg-state-edge
+                                                         a-imsg-state)
+                                                        )
+                                                       ]
+                                                 )])]))
     )
   )
 
@@ -752,19 +752,19 @@
                        (viz-state-informative-messages a-vs))])
     (if (zipper-at-begin? (imsg-state-edge a-imsg-state))
         a-vs
-  (struct-copy viz-state a-vs
-               [informative-messages
-                (struct-copy informative-messages
-                             (viz-state-informative-messages a-vs)
-                             [component-state
-                              (struct-copy imsg-state
-                                           a-imsg-state
-                                           [edge (zipper-to-begin
-                                                  (imsg-state-edge
-                                                   a-imsg-state)
-                                                  )
-                                                 ]
-                                           )])]))
+        (struct-copy viz-state a-vs
+                     [informative-messages
+                      (struct-copy informative-messages
+                                   (viz-state-informative-messages a-vs)
+                                   [component-state
+                                    (struct-copy imsg-state
+                                                 a-imsg-state
+                                                 [edge (zipper-to-begin
+                                                        (imsg-state-edge
+                                                         a-imsg-state)
+                                                        )
+                                                       ]
+                                                 )])]))
     )
   )
 
@@ -773,19 +773,19 @@
                        (viz-state-informative-messages a-vs))])
     (if (zipper-at-end? (imsg-state-edge a-imsg-state))
         a-vs
-  (struct-copy viz-state a-vs
-               [informative-messages
-                (struct-copy informative-messages
-                             (viz-state-informative-messages a-vs)
-                             [component-state
-                              (struct-copy imsg-state
-                                           a-imsg-state
-                                           [edge (zipper-to-end
-                                                  (imsg-state-edge
-                                                   a-imsg-state)
-                                                  )
-                                                 ]
-                                           )])]))
+        (struct-copy viz-state a-vs
+                     [informative-messages
+                      (struct-copy informative-messages
+                                   (viz-state-informative-messages a-vs)
+                                   [component-state
+                                    (struct-copy imsg-state
+                                                 a-imsg-state
+                                                 [edge (zipper-to-end
+                                                        (imsg-state-edge
+                                                         a-imsg-state)
+                                                        )
+                                                       ]
+                                                 )])]))
     )
   )
 
@@ -813,7 +813,8 @@
                     (rest (reverse (dgraph2logedges
                                     (list (list 'S (simplify-regexp regexp) 'F))
                                     '())))))
-         (graphs (create-graphs logedges))]
+         (graphs (create-graphs logedges))
+         ]
     (run-viz (cons (create-init-graph (list 'S regexp 'F)) graphs)
              (lambda () (graph->bitmap (create-init-graph (list 'S regexp 'F))))
              MIDDLE-E-SCENE
@@ -821,7 +822,7 @@
              DEFAULT-ZOOM-CAP
              DEFAULT-ZOOM-FLOOR
              (informative-messages draw-imsg
-                                   (imsg-state (list->zipper (map gedge-edge logedges)))
+                                   (imsg-state (list->zipper (cons (text "Starting NDFA" 24 'black) (map gedge-edge logedges))))
                                    (bounding-limits 0 0 0 0)
                                    )
              (instructions-graphic
@@ -829,35 +830,35 @@
               (bounding-limits 0 0 0 0))
              (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
              (create-viz-process-key (list (list "right" viz-go-next right-key-pressed)
-                                         (list "left" viz-go-prev left-key-pressed)
-                                         (list "up" viz-go-to-begin up-key-pressed)
-                                         (list "down" viz-go-to-end down-key-pressed)
-                                         (list "w" viz-zoom-in identity)
-                                         (list "s" viz-zoom-out identity)
-                                         (list "r" viz-max-zoom-out identity)
-                                         (list "f" viz-max-zoom-in identity)
-                                         (list "e" viz-reset-zoom identity)
-                                         (list "wheel-down" viz-zoom-in identity)
-                                         (list "wheel-up" viz-zoom-out identity)
-                                         )
-                                   )
-           (create-viz-process-tick E-SCENE-BOUNDING-LIMITS NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT
-                                    CLICK-BUFFER-SECONDS
-                                    (list)
-                                    (list (list ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed)
-                                          (list ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed)
-                                          (list ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed)
-                                          (list ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed)
-                                          (list W-KEY-DIMS viz-zoom-in identity)
-                                          (list S-KEY-DIMS viz-zoom-out identity)
-                                          (list R-KEY-DIMS viz-max-zoom-out identity)
-                                          (list E-KEY-DIMS viz-reset-zoom identity)
-                                          (list F-KEY-DIMS viz-max-zoom-in identity)))
-           )))
+                                           (list "left" viz-go-prev left-key-pressed)
+                                           (list "up" viz-go-to-begin up-key-pressed)
+                                           (list "down" viz-go-to-end down-key-pressed)
+                                           (list "w" viz-zoom-in identity)
+                                           (list "s" viz-zoom-out identity)
+                                           (list "r" viz-max-zoom-out identity)
+                                           (list "f" viz-max-zoom-in identity)
+                                           (list "e" viz-reset-zoom identity)
+                                           (list "wheel-down" viz-zoom-in identity)
+                                           (list "wheel-up" viz-zoom-out identity)
+                                           )
+                                     )
+             (create-viz-process-tick E-SCENE-BOUNDING-LIMITS NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT
+                                      CLICK-BUFFER-SECONDS
+                                      (list)
+                                      (list (list ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed)
+                                            (list ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed)
+                                            (list ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed)
+                                            (list ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed)
+                                            (list W-KEY-DIMS viz-zoom-in identity)
+                                            (list S-KEY-DIMS viz-zoom-out identity)
+                                            (list R-KEY-DIMS viz-max-zoom-out identity)
+                                            (list E-KEY-DIMS viz-reset-zoom identity)
+                                            (list F-KEY-DIMS viz-max-zoom-in identity)))
+             )))
 
 
 
-(regexp2ndfa-viz R1)
+;(regexp2ndfa-viz R5)
     
 #; (run-viz (viz-state loimgs (list (create-init-graph (list 'S regexp 'F)))) draw-world 'regexp2ndfa)
 
