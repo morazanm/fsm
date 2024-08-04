@@ -1,15 +1,9 @@
 #lang racket
 
 (require "../../fsm-gviz/private/lib.rkt"
-         2htdp/universe
          rackunit
-         (rename-in racket/gui/base
-                    [make-color loc-make-color]
-                    [make-pen loc-make-pen])
          2htdp/image
          "../viz-lib/resize-sm-image.rkt"
-         ;"definitions-viz.rkt"
-         ;"run-viz.rkt"
          "../../fsm-core/private/fsa.rkt"
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/sm-getters.rkt"
@@ -598,27 +592,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define E-SCENE (empty-scene 1250 600))
-#;(define E-SCENE-TOOLS (overlay (beside (above (above (triangle 30 'solid 'black)
-                                                     (rectangle 10 30 'solid 'black))
-                                              (square 20 'solid 'white)
-                                              (text "Restart the visualization" 18 'black))
-                                       (square 40 'solid 'white)
-                                       (above (beside (rectangle 30 10 'solid 'black)
-                                                      (rotate 270 (triangle 30 'solid 'black)))
-                                              (square 20 'solid 'white)
-                                              (text "Move one step forward" 18 'black))
-                                       (square 40 'solid 'white)
-                                       (above (beside (rotate 90 (triangle 30 'solid 'black))
-                                                      (rectangle 30 10 'solid 'black))
-                                              (square 20 'solid 'white)
-                                              (text "Move one step backward" 18 'black))
-                                       (square 40 'solid 'white)
-                                       (above (above (rectangle 10 30 'solid 'black)
-                                                     (rotate 180 (triangle 30 'solid 'black)))
-                                              (square 20 'solid 'white)
-                                              (text "Complete the visualization" 18 'black))
-                                       )
-                               (empty-scene 1250 100)))
 
 ;; etc (edges-to-track) is a structure that consists of
 ;; up-edges - unprocessed edges, edges that are yet to be drawn
@@ -971,30 +944,6 @@
         )    
   )
 
-
-
-
-
-
-;; draw-etc
-;; etc -> img
-;; Purpose: To draw a etc image
-#;(define (draw-etc a-etc)
-  (if (empty? (viz-state-pimgs a-etc))
-      #;(above (above ((first (first (viz-state-upimgs a-etc)))) ((second (first (viz-state-upimgs a-etc))))) E-SCENE-TOOLS)
-      (above
-       (create-img (first (first (viz-state-upimgs a-etc)))
-                   (second (first (viz-state-upimgs a-etc)))
-                   (first (viz-state-up-low a-etc)))
-       E-SCENE-TOOLS)
-      #;(above (above ((first (first (viz-state-pimgs a-etc)))) ((second (first (viz-state-pimgs a-etc))))) E-SCENE-TOOLS)
-      (above (create-img (first (first (viz-state-pimgs a-etc)))
-                         (second (first (viz-state-pimgs a-etc)))
-                         (first (viz-state-p-low a-etc)))
-             E-SCENE-TOOLS)
-      )
-  )
-
 (define (draw-imsg a-imsg-state)
       (let* [(new-edge (if (empty? (etc-ad-edges (zipper-current (imsg-state-infs a-imsg-state))))
                                    '()
@@ -1059,10 +1008,6 @@
 (define viz-reset-zoom (reset-zoom))
 
 
-;; draw-imsg
-;; imsg -> img
-#;(define (draw-imsg a-imsg)
-  (zipper-current (imsg-state-infs a-imsg)))
 
 
 (define (right-key-pressed a-vs)
@@ -1170,15 +1115,10 @@
                                                             (etc-incl-nodes world)
                                                             (ndfa2dfa-finals-only (etc-M world)))) low))
          (grphs (combine-lists ndfa-dgrphs dfa-dgrphs))
-         ;(test (displayln (format "grphs: ~s" grphs)))
-         ;(ndfa-graph-thunks (take grph-thunks (length ndfa-dgrphs)))
-         ;(dfa-graph-thunks (drop grph-thunks (length ndfa-dgrphs)))
-         ;(grph-thunks (parallel-graphs->bitmap-thunks (append ndfa-dgrphs dfa-dgrphs)))
-         
-         ;(imgs (combine-lists ndfa-graph-thunks dfa-graph-thunks))
+        
          ]
     (run-viz grphs
-           (lambda () (beside (graph->bitmap (first (first grphs))) (graph->bitmap (second (first grphs))))) #;(lambda () (above ((first (first grph-thunks))) ((second (first grph-thunks)))))
+           (lambda () (beside (graph->bitmap (first (first grphs))) (graph->bitmap (second (first grphs)))))
            MIDDLE-E-SCENE
            DEFAULT-ZOOM
            DEFAULT-ZOOM-CAP
@@ -1217,9 +1157,6 @@
                                           (list E-KEY-DIMS viz-reset-zoom identity)
                                           (list F-KEY-DIMS viz-max-zoom-in identity)))
            )
-    #;(run-viz (viz-state (rest imgs) (list (first imgs)) (rest low) (list (first low)))
-             draw-etc
-             'ndfa2dfa-viz)
     ))
 
 

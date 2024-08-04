@@ -1,15 +1,6 @@
 #lang racket
 
-(require "../../fsm-gviz/private/lib.rkt"
-         2htdp/universe
-         rackunit
-         (rename-in racket/gui/base
-                    [make-color loc-make-color]
-                    [make-pen loc-make-pen])
-         2htdp/image
-         "../viz-lib/resize-sm-image.rkt"
-         ;"definitions-viz.rkt"
-         ;"run-viz.rkt"
+(require 2htdp/image
          "../../fsm-core/private/fsa.rkt"
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/sm-getters.rkt"
@@ -568,8 +559,7 @@
 ;; Assume: The transition diagram of the given machine is a connected
 ;;         directed graph
 (define (ndfa2regexp m)
-  (let* [;(new-start (generate-symbol 'S (sm-states m)))
-         ;(new-final (generate-symbol 'F (sm-states m)))
+  (let* [
          (new-start (gen-state (sm-states m)))
          (new-final (gen-state (cons new-start (sm-states m))))
          (init-dgraph (make-dgraph
@@ -586,28 +576,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define E-SCENE (empty-scene 1250 600))
-
-#;(define E-SCENE-TOOLS (overlay (beside (above (above (triangle 30 'solid 'black)
-                                                     (rectangle 10 30 'solid 'black))
-                                              (square 20 'solid 'white)
-                                              (text "Restart the visualization" 18 'black))
-                                       (square 40 'solid 'white)
-                                       (above (beside (rectangle 30 10 'solid 'black)
-                                                      (rotate 270 (triangle 30 'solid 'black)))
-                                              (square 20 'solid 'white)
-                                              (text "Move one step forward" 18 'black))
-                                       (square 40 'solid 'white)
-                                       (above (beside (rotate 90 (triangle 30 'solid 'black))
-                                                      (rectangle 30 10 'solid 'black))
-                                              (square 20 'solid 'white)
-                                              (text "Move one step backward" 18 'black))
-                                       (square 40 'solid 'white)
-                                       (above (above (rectangle 10 30 'solid 'black)
-                                                     (rotate 180 (triangle 30 'solid 'black)))
-                                              (square 20 'solid 'white)
-                                              (text "Complete the visualization" 18 'black))
-                                       )
-                               (empty-scene 1250 100)))
 
 
 ;; grph is the graph 
@@ -712,13 +680,7 @@
   (define (create-graphs-helper M)
   (define (grp-seq to-rip g gseq)
     (if (null? to-rip)
-        gseq #;(cons (graph-struct (create-graphic
-                             (append (list new-start new-final) to-rip)
-                             g
-                             new-start
-                             new-final)
-                            (text "Added starting and final state" 20 'black))
-              gseq)
+        gseq 
         (let [(new-g (rip-out-node (first to-rip) g))]
           (grp-seq (rest to-rip)
                    new-g
@@ -730,18 +692,13 @@
                                        (text (format "Ripped node: ~a" (first to-rip)) 20 'black))
                          gseq)))
         ))
-  #;(grp-seq (if (not (member DEAD (sm-states M)))
-                        (sm-states M)
-                        (cons DEAD (remove DEAD (sm-states M))))
-                    (make-dgraph (append (sm-rules M) new-rules)) '())
   (reverse (grp-seq (if (not (member DEAD (sm-states M)))
                         (sm-states M)
                         (cons DEAD (remove DEAD (sm-states M))))
                     (make-dgraph (append (sm-rules M) new-rules)) '()))
     )
   (cons (graph-struct (create-graphic
-                       (append #;(list new-start new-final)
-                               (if (not (member DEAD (sm-states M)))
+                       (append (if (not (member DEAD (sm-states M)))
                                    (sm-states M)
                                    (cons DEAD (remove DEAD (sm-states M)))))
                              (make-dgraph (append (sm-rules M) new-rules))
@@ -829,43 +786,6 @@
 (define viz-max-zoom-out (max-zoom-out))
 (define viz-max-zoom-in (max-zoom-in))
 (define viz-reset-zoom (reset-zoom))
-;; draw-img
-;; viz-state -> img
-;; Purpose: To render the given viz-state
-#;(define (draw-world a-vs)
-    (define graph-img (cond [(empty? (viz-state-pimgs a-vs))
-                             (above
-                              (image-struct-img (first (viz-state-upimgs a-vs)))
-                              (text (format "Starting ndfa") 20 'black))]
-                            [(= 1 (length (viz-state-pimgs a-vs)))
-                             (above
-                              (image-struct-img (first (viz-state-pimgs a-vs)))
-                              (text (format "Starting ndfa") 20 'black))]
-                            [(= 2 (length (viz-state-pimgs a-vs)))
-                             (above
-                              (image-struct-img (first (viz-state-pimgs a-vs)))
-                              (text (format "Added starting and final state") 20 'black))]
-                            [(= 3 (length (viz-state-pimgs a-vs)))
-                             (above
-                              (image-struct-img (first (viz-state-pimgs a-vs)))
-                              (text (format "Ripped node: ~s" (first (image-struct-state
-                                                                      (first (rest (viz-state-pimgs a-vs))))))
-                                    20
-                                    'black))]
-                            [else
-                             (above
-                              (image-struct-img (first (viz-state-pimgs a-vs)))
-                              (text (format "Ripped node: ~a" (image-struct-state
-                                                               (first (rest (viz-state-pimgs a-vs)))))
-                                    20
-                                    'black))]))
-    (let [(width (image-width graph-img))
-          (height (image-height graph-img))]
-      (if (or (> width (image-width E-SCENE))
-              (> height (image-height E-SCENE)))
-          (above (overlay (resize-image graph-img (image-width E-SCENE) (image-height E-SCENE))
-                          E-SCENE) E-SCENE-TOOLS)
-          (above (overlay graph-img E-SCENE) E-SCENE-TOOLS))))
 
 ;; draw-imsg
 ;; imsg -> img

@@ -1,17 +1,6 @@
 #lang racket
 (require "../../fsm-gviz/private/lib.rkt"
-         2htdp/universe
-         rackunit
-         (rename-in racket/gui/base
-                    [make-color loc-make-color]
-                    [make-pen loc-make-pen])
          2htdp/image
-         "../viz-lib/resize-sm-image.rkt"
-         ;"definitions-viz.rkt"
-         ;"run-viz.rkt"
-         "../../fsm-core/private/fsa.rkt"
-         "../../fsm-core/private/constants.rkt"
-         "../../fsm-core/private/sm-getters.rkt"
          "../../fsm-core/private/misc.rkt"
          "../viz-lib/viz-constants.rkt"
          "../viz-lib/viz-state.rkt"
@@ -422,28 +411,6 @@
 
 (define E-SCENE (empty-scene 1250 600))
 
-#;(define E-SCENE-TOOLS (overlay (beside (above (above (triangle 30 'solid 'black)
-                                                       (rectangle 10 30 'solid 'black))
-                                                (square 20 'solid 'white)
-                                                (text "Restart the visualization" 18 'black))
-                                         (square 40 'solid 'white)
-                                         (above (beside (rectangle 30 10 'solid 'black)
-                                                        (rotate 270 (triangle 30 'solid 'black)))
-                                                (square 20 'solid 'white)
-                                                (text "Move one step forward" 18 'black))
-                                         (square 40 'solid 'white)
-                                         (above (beside (rotate 90 (triangle 30 'solid 'black))
-                                                        (rectangle 30 10 'solid 'black))
-                                                (square 20 'solid 'white)
-                                                (text "Move one step backward" 18 'black))
-                                         (square 40 'solid 'white)
-                                         (above (above (rectangle 10 30 'solid 'black)
-                                                       (rotate 180 (triangle 30 'solid 'black)))
-                                                (square 20 'solid 'white)
-                                                (text "Complete the visualization" 18 'black))
-                                         )
-                                 (empty-scene 1250 100)))
-
 ;; grph is a (listof img) of graphs used to build an ndfa from regexp
 ;; edge is an edge that has been expanded to build an ndfa from regexp
 (struct gedge (grph edge))
@@ -601,10 +568,10 @@
 (define (draw-imsg a-imsg)
   (cond [(zipper-at-begin? (imsg-state-edge a-imsg)) (text "Starting NDFA" 24 'black)]
         [(= (zipper-idx (imsg-state-edge a-imsg)) 1) (text "Simplified initial regexp" 24 'black)]
-        [else (beside (text (format "Expanded regexp: ~a on edge from state" (printable-regexp (second (zipper-current (imsg-state-edge a-imsg)))  #;(zipper-current (zipper-to-idx (imsg-state-edge a-imsg) 1)))) 24 'black)
-                      (text (format " ~a" (first (zipper-current (imsg-state-edge a-imsg)))  #;(printable-regexp (zipper-current (imsg-state-edge a-imsg)))) 24 'violet)
+        [else (beside (text (format "Expanded regexp: ~a on edge from state" (printable-regexp (second (zipper-current (imsg-state-edge a-imsg))))) 24 'black)
+                      (text (format " ~a" (first (zipper-current (imsg-state-edge a-imsg)))  ) 24 'violet)
                       (text (format " to state ") 24 'black)
-                      (text (format "~a" (third (zipper-current (imsg-state-edge a-imsg))) #;(printable-regexp (zipper-current (zipper-to-idx (imsg-state-edge a-imsg) 2)))) 24 'violet))
+                      (text (format "~a" (third (zipper-current (imsg-state-edge a-imsg))) ) 24 'violet))
                 
               ]))
 
@@ -662,22 +629,6 @@
     (create-graph 'dgraph #:atb (hash 'rankdir "LR"
                                       'font "Sans")))
    a-list))
-
-
-
-
-
-;; draw-world
-;; viz-state -> img
-;; Purpose: To render the given viz-state
-#;(define (draw-world a-vs)
-    (let [(width (image-width (first (viz-state-pimgs a-vs))))
-          (height (image-height (first (viz-state-pimgs a-vs))))]
-      (if (or (> width (image-width E-SCENE))
-              (> height (image-height E-SCENE)))
-          (above (overlay (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE))
-                          E-SCENE) E-SCENE-TOOLS)
-          (above (overlay (first (viz-state-pimgs a-vs)) E-SCENE) E-SCENE-TOOLS))))
 
 
 

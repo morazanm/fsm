@@ -2,21 +2,11 @@
 
 (module viz-complement racket
   
-  (require "../../fsm-gviz/private/lib.rkt"
-           "../../fsm-gviz/interface.rkt"
-           2htdp/universe
-           rackunit
-           (rename-in racket/gui/base
-                      [make-color loc-make-color]
-                      [make-pen loc-make-pen])
+  (require "../../fsm-gviz/interface.rkt"
            2htdp/image
-           "../viz-lib/resize-sm-image.rkt"
-           ;"definitions-viz.rkt"
-           ;"run-viz.rkt"
            "../../fsm-core/private/fsa.rkt"
            "../../fsm-core/private/constants.rkt"
            "../../fsm-core/private/sm-getters.rkt"
-           "../../fsm-core/private/misc.rkt"
            "../viz-lib/viz-constants.rkt"
            "../viz-lib/viz-state.rkt"
            "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
@@ -24,9 +14,7 @@
            "../viz-lib/default-viz-function-generators.rkt"
            "../viz-lib/viz.rkt"
            "../viz-lib/bounding-limits.rkt"
-           "../../fsm-core/private/regexp.rkt"
            "../viz-lib/viz-imgs/cursor.rkt"
-           "../../sm-graph.rkt"
            "../viz-lib/zipper.rkt")
   (provide complement-viz)
 
@@ -449,28 +437,6 @@
 
   (define E-SCENE (empty-scene 1250 600))
 
-  #;(define E-SCENE-TOOLS (overlay (beside (above (above (triangle 30 'solid 'black)
-                                                       (rectangle 10 30 'solid 'black))
-                                                (square 20 'solid 'white)
-                                                (text "Restart the visualization" 18 'black))
-                                         (square 40 'solid 'white)
-                                         (above (beside (rectangle 30 10 'solid 'black)
-                                                        (rotate 270 (triangle 30 'solid 'black)))
-                                                (square 20 'solid 'white)
-                                                (text "Move one step forward" 18 'black))
-                                         (square 40 'solid 'white)
-                                         (above (beside (rotate 90 (triangle 30 'solid 'black))
-                                                        (rectangle 30 10 'solid 'black))
-                                                (square 20 'solid 'white)
-                                                (text "Move one step backward" 18 'black))
-                                         (square 40 'solid 'white)
-                                         (above (above (rectangle 10 30 'solid 'black)
-                                                       (rotate 180 (triangle 30 'solid 'black)))
-                                                (square 20 'solid 'white)
-                                                (text "Complete the visualization" 18 'black))
-                                         )
-                                 (empty-scene 1250 100)))
-
   ;; make-node-graph
   ;; graph los start final -> graph
   ;; Purpose: To make a node graph
@@ -546,21 +512,6 @@
   ;; draw-imsg
   ;; imsg -> img
   (define (draw-imsg a-imsg) (zipper-current (graph-struct-inf a-imsg)))
-     
-
-  ;; draw-world
-  ;; viz-state -> img
-  ;; Purpose: To render the given viz-state
-  #;(define (draw-world a-vs)
-      (let [(width (image-width (first (viz-state-pimgs a-vs))))
-            (height (image-height (first (viz-state-pimgs a-vs))))]
-        (if (or (> width (image-width E-SCENE))
-                (> height (image-height E-SCENE)))
-            (above (overlay (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE))
-                            E-SCENE) E-SCENE-TOOLS)
-            (above (overlay (first (viz-state-pimgs a-vs)) E-SCENE) E-SCENE-TOOLS))))
-
-
 
 
 (define (right-key-pressed a-vs)
@@ -709,7 +660,7 @@
                  )
         (let [(machine (ndfa->dfa M))]
           (run-viz (list (graph-struct-grph (make-init-grph-img M)) (fsa->graph machine 0) (graph-struct-grph (create-graph-img machine)))
-                   (lambda () (graph->bitmap (graph-struct-grph (make-init-grph-img M))))#;(lambda () (graph->bitmap (make-init-grph-img M)))
+                   (lambda () (graph->bitmap (graph-struct-grph (make-init-grph-img M))))
                    MIDDLE-E-SCENE
                    DEFAULT-ZOOM
                    DEFAULT-ZOOM-CAP
@@ -720,9 +671,9 @@
                                                                            (text "Starting NDFA" FONT-SIZE 'black)
                                                                            (graph-struct-inf (create-graph-img machine))
                                                                            ))
-                                                     #;(list->zipper (map (lambda (x) (graph-struct-inf x)) (list (make-init-grph-img M) (create-graph-img M))))
+                                                     
                                                      )
-                                         #;(graph-struct-inf (list->zipper (list* (map graph-struct-inf (list (make-init-grph-img M) (fsa->graph machine) (create-graph-img machine))))))
+                                         
                                          (bounding-limits 0 0 0 0)
                                          )
                    (instructions-graphic

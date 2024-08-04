@@ -1,14 +1,6 @@
 #lang racket
 (require "../../fsm-gviz/private/lib.rkt"
-         2htdp/universe
-         rackunit
-         (rename-in racket/gui/base
-                    [make-color loc-make-color]
-                    [make-pen loc-make-pen])
          2htdp/image
-         "../viz-lib/resize-sm-image.rkt"
-         ;"definitions-viz.rkt"
-         ;"run-viz.rkt"
          "../../fsm-core/private/fsa.rkt"
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/sm-getters.rkt"
@@ -570,29 +562,11 @@
                                       M (sm-start M)))
          (width (image-width graph))
          (height (image-height graph))]
-    ;    (if (or (> width (image-width E-SCENE))
-    ;            (> height (image-height E-SCENE)))
-    ;        (resize-sm-image graph (image-width E-SCENE) (image-height E-SCENE))
-    #;(above
-       (resize-sm-image graph (image-width E-SCENE) (image-height E-SCENE))
-       #;(text "Starting ndfa \n" 20 'black))
-    graph #;(above
-             graph
-             (text "Starting ndfa \n" 20 'black))
+    
+    graph 
 
     ))
      
-
-;; draw-world
-;; viz-state -> img
-;; Purpose: To render the given viz-state
-#;(define (draw-world a-vs)
-    (let [(width (image-width (first (viz-state-pimgs a-vs))))
-          (height (image-height (first (viz-state-pimgs a-vs))))]
-      (if (or (> width (image-width E-SCENE))
-              (> height (image-height E-SCENE)))
-          (above (overlay (resize-image (first (viz-state-pimgs a-vs)) (image-width E-SCENE) (image-height E-SCENE)) E-SCENE) E-SCENE-TOOLS)
-          (above (overlay (first (viz-state-pimgs a-vs)) E-SCENE) E-SCENE-TOOLS))))
 
 (define viz-go-next (go-next))
 (define viz-go-prev (go-prev))
@@ -751,8 +725,8 @@
                                           (list R-KEY-DIMS viz-max-zoom-out identity)
                                           (list E-KEY-DIMS viz-reset-zoom identity)
                                           (list F-KEY-DIMS viz-max-zoom-in identity)
-                                          ;(list A-KEY-DIMS identity a-key-pressed)
-                                          #;(list D-KEY-DIMS identity d-key-pressed)))
+                                          
+                                          ))
            )
   )
 
