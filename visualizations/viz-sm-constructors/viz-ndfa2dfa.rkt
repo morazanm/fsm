@@ -1021,7 +1021,7 @@
 (define (draw-imsg a-imsg-state)
       (let* [(new-edge (if (empty? (etc-ad-edges (zipper-current (imsg-state-infs a-imsg-state))))
                                    '()
-                                   (first (zipper-current (imsg-state-infs a-imsg-state)))))
+                                   (first (etc-ad-edges (zipper-current (imsg-state-infs a-imsg-state))))))
                      (edge-str (cond [(empty? new-edge)
                                       "Starting Super State"]
                                      [(or (empty? (third new-edge))
@@ -1193,7 +1193,7 @@
                                                             (etc-incl-nodes world)
                                                             (ndfa2dfa-finals-only (etc-M world)))) low))
          (grphs (combine-lists ndfa-dgrphs dfa-dgrphs))
-         
+         ;(test (displayln (format "grphs: ~s" grphs)))
          ;(ndfa-graph-thunks (take grph-thunks (length ndfa-dgrphs)))
          ;(dfa-graph-thunks (drop grph-thunks (length ndfa-dgrphs)))
          ;(grph-thunks (parallel-graphs->bitmap-thunks (append ndfa-dgrphs dfa-dgrphs)))
@@ -1201,7 +1201,7 @@
          ;(imgs (combine-lists ndfa-graph-thunks dfa-graph-thunks))
          ]
     (run-viz grphs
-           (lambda () (above (graph->bitmap (first (first grphs))) (graph->bitmap (second (first grphs))))) #;(lambda () (above ((first (first grph-thunks))) ((second (first grph-thunks)))))
+           (lambda () (beside (graph->bitmap (first (first grphs))) (graph->bitmap (second (first grphs))))) #;(lambda () (above ((first (first grph-thunks))) ((second (first grph-thunks)))))
            MIDDLE-E-SCENE
            DEFAULT-ZOOM
            DEFAULT-ZOOM-CAP
@@ -1270,5 +1270,5 @@
                                           (C a C)
                                           (C b C))))
 
-;(ndfa2dfa-viz aa-ab)
+(ndfa2dfa-viz aa-ab)
 ;(ndfa2dfa-viz AT-LEAST-ONE-MISSING)
