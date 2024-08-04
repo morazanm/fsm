@@ -281,7 +281,7 @@
         a-vs
         (let* [(new-imgs (zipper-next (viz-state-imgs a-vs)))
                (new-curr-img (if (list? (zipper-current new-imgs))
-                                   (apply beside (map (lambda (img) (img)) (zipper-current new-imgs)))
+                                   (apply above (map (lambda (img) (img)) (zipper-current new-imgs)))
                                    
                                  ((zipper-current new-imgs))
                                  )

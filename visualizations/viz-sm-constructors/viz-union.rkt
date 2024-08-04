@@ -27,21 +27,22 @@
 (provide union-viz)
 
 (define FNAME "fsm")
-#|
+
 ;; L = nl
-(define nl (make-ndfa '(S)
+(define nl (make-unchecked-ndfa '(S)
                       '(a b)
                       'S
                       '()
                       '()))
 
 ;; L = ab*
-(define ab* (make-ndfa '(S A)
+(define ab* (make-unchecked-ndfa '(S A)
                        '(a b)
                        'S
                        '(A)
                        '((S a A)
                          (A b A))))
+#|
 ;; L = a(a U ab)b*
 (define a-aUb-b* (make-ndfa '(Z H B C D F)
                             '(a b)
@@ -146,9 +147,15 @@
 
 
 (define RULE-YIELD-DIMS (bounding-limits 0
-                                         (image-width graph-struct-inf)
+                                         (image-width (above  (text "Union of the ndfas" 20 'black)
+                                                              (text (format "Generated edges:") 20 'black)
+                                                              (text (format "Final states:") 20 'black)
+                                                              (text (format "Starting state:") 20 'black)))
                                          E-SCENE-HEIGHT
-                                         (+ E-SCENE-HEIGHT (image-height graph-struct-inf))))
+                                         (+ E-SCENE-HEIGHT (image-height (above  (text "Union of the ndfas" 20 'black)
+                                                                                 (text (format "Generated edges:") 20 'black)
+                                                                                 (text (format "Final states:") 20 'black)
+                                                                                 (text (format "Starting state:") 20 'black))))))
 
 (define ARROW-UP-KEY-DIMS
   (bounding-limits (+ (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
@@ -611,38 +618,38 @@
          (added-edges (list (list new-start EMP (sm-start M))
                             (list new-start EMP (sm-start N))))
          (new-finals (append (sm-finals M) (sm-finals N)))
-         (graph (graph->bitmap (make-edge-graph (make-node-graph
+         (graph (make-edge-graph (make-node-graph
                                                  (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                 new-states new-start new-finals) M N new-start)))
+                                                 new-states new-start new-finals) M N new-start))
          #;(width (image-width graph))
          #;(height (image-height graph))]
-    (graph-struct (list graph) (list  (text "Union of the ndfas \n" 20 'black)
-                                      (text (format "Generated edges: ~a \n" added-edges) 20 'black)
-                                      (text (format "Final states: ~a \n" new-finals) 20 'black)
-                                      (text (format "Starting state: ~a \n" new-start) 20 'black)))))
+    (graph-struct graph (above  (text "Union of the ndfas" 20 'black)
+                                      (text (format "Generated edges: ~a" added-edges) 20 'black)
+                                      (text (format "Final states: ~a" new-finals) 20 'black)
+                                      (text (format "Starting state: ~a" new-start) 20 'black)))))
      
 ;; make-init-grph-img
 ;; ndfa ndfa -> img
 ;; Purpose: To draw the graph of the initial ndfa's
 (define (make-init-grph-img M N)
-  (let* [(graph-one (graph->bitmap (make-first-edge-graph (make-node-graph
+  (let* [(graph-one (make-first-edge-graph (make-node-graph
                                                            (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
                                                            (sm-states N)
                                                            (sm-start N)
                                                            (sm-finals N))
-                                                          N (sm-start N))))
-         (graph-two (graph->bitmap (make-second-edge-graph (make-node-graph
+                                                          N (sm-start N)))
+         (graph-two (make-second-edge-graph (make-node-graph
                                                             (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
                                                             (sm-states M)
                                                             (sm-start M)
                                                             (sm-finals M))
-                                                           M (sm-start M))))
+                                                           M (sm-start M)))
          #;(width1 (image-width graph1))
          #;(height1 (image-height graph1))
          #;(width2 (image-width graph2))
          #;(height2 (image-height graph2))]
 
-    (graph-struct (list graph-one graph-two) (list (text "First ndfa:" 20 'black) (text "Second ndfa:" 20 'black)))
+    (graph-struct (list graph-one graph-two) (above (text "First ndfa:" 20 'black) (text "Second ndfa:" 20 'black)))
     ))
 
 ;; draw-imsg
@@ -673,20 +680,114 @@
 (define viz-max-zoom-out (max-zoom-out))
 (define viz-max-zoom-in (max-zoom-in))
 (define viz-reset-zoom (reset-zoom))
+
+
+
+
+
+
+(define (right-key-pressed a-vs)
+  (let ([a-graph-struct (informative-messages-component-state
+                       (viz-state-informative-messages a-vs))])
+    (if (zipper-at-end? (graph-struct-inf a-graph-struct))
+        a-vs
+  (struct-copy viz-state a-vs
+               [informative-messages
+                (struct-copy informative-messages
+                             (viz-state-informative-messages a-vs)
+                             [component-state
+                              (struct-copy graph-struct
+                                           a-graph-struct
+                                           [inf (zipper-next
+                                                  (graph-struct-inf
+                                                   a-graph-struct)
+                                                  )
+                                                 ]
+                                           )])]))
+    )
+  )
+
+(define (left-key-pressed a-vs)
+  (let ([a-graph-struct (informative-messages-component-state
+                       (viz-state-informative-messages a-vs))])
+    (if (zipper-at-begin? (graph-struct-inf a-graph-struct))
+        a-vs
+  (struct-copy viz-state a-vs
+               [informative-messages
+                (struct-copy informative-messages
+                             (viz-state-informative-messages a-vs)
+                             [component-state
+                              (struct-copy graph-struct
+                                           a-graph-struct
+                                           [inf (zipper-prev
+                                                  (graph-struct-inf
+                                                   a-graph-struct)
+                                                  )
+                                                 ]
+                                           )])]))
+    )
+  )
+
+(define (up-key-pressed a-vs)
+  (let ([a-graph-struct (informative-messages-component-state
+                       (viz-state-informative-messages a-vs))])
+    (if (zipper-at-begin? (graph-struct-inf a-graph-struct))
+        a-vs
+  (struct-copy viz-state a-vs
+               [informative-messages
+                (struct-copy informative-messages
+                             (viz-state-informative-messages a-vs)
+                             [component-state
+                              (struct-copy graph-struct
+                                           a-graph-struct
+                                           [inf (zipper-to-begin
+                                                  (graph-struct-inf
+                                                   a-graph-struct)
+                                                  )
+                                                 ]
+                                           )])]))
+    )
+  )
+
+(define (down-key-pressed a-vs)
+  (let ([a-graph-struct (informative-messages-component-state
+                       (viz-state-informative-messages a-vs))])
+    (if (zipper-at-end? (graph-struct-inf a-graph-struct))
+        a-vs
+  (struct-copy viz-state a-vs
+               [informative-messages
+                (struct-copy informative-messages
+                             (viz-state-informative-messages a-vs)
+                             [component-state
+                              (struct-copy graph-struct
+                                           a-graph-struct
+                                           [inf (zipper-to-end
+                                                  (graph-struct-inf
+                                                   a-graph-struct)
+                                                  )
+                                                 ]
+                                           )])]))
+    )
+  )
+
+
 ;; union-viz
 ;; fsa fsa -> void
 (define (union-viz M N)
   (let [(renamed-machine (if (ormap (λ (x) (member x (sm-states M))) (sm-states N))
                              (rename-states-fsa (sm-states M) N)
                              N))]
-    (run-viz (list* (map graph-struct-grph (cons (make-init-grph-img (list 'S regexp 'F)) (create-graph-img M N))))
-             (lambda () (graph->bitmap (graph-struct-grph (list 'S regexp 'F))))
+    (run-viz (map graph-struct-grph (list (make-init-grph-img M N) (create-graph-img M renamed-machine)))
+             (lambda () (apply above (map graph->bitmap (graph-struct-grph (make-init-grph-img M N)))))
              MIDDLE-E-SCENE
              DEFAULT-ZOOM
              DEFAULT-ZOOM-CAP
              DEFAULT-ZOOM-FLOOR
              (informative-messages draw-imsg
-                                   (graph-struct-inf (list->zipper (list* (map graph-struct-inf (cons (make-init-grph-img (list 'S regexp 'F)) (create-graph-img M N))))))
+                                   (graph-struct '() (list->zipper (map graph-struct-inf (list (make-init-grph-img M N) (create-graph-img M renamed-machine)))))
+                                                      #;(graph-struct-inf (list->zipper (list* (map graph-struct-inf
+                                                                                                    (cons (make-init-grph-img (list 'S regexp 'F))
+                                                                                                          (create-graph-img M N))))))
                                    (bounding-limits 0 0 0 0)
                                    )
              (instructions-graphic
@@ -721,7 +822,7 @@
              )))
 
 
-
+(union-viz nl ab*)
 
 
 #;(above (resize-image graph
