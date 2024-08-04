@@ -1,24 +1,28 @@
 #lang racket
-(require 2htdp/image)
+(require 2htdp/image
+         racket/runtime-path)
 (provide (all-defined-out))
-(define S-KEY (bitmap/file "keyboard_key_s.png"))
 
-(define W-KEY (bitmap/file "keyboard_key_w.png"))
+(define-runtime-path S-KEY-PATH "keyboard_key_s.png")
+(define-runtime-path W-KEY-PATH "keyboard_key_w.png")
+(define-runtime-path R-KEY-PATH "keyboard_key_r.png")
+(define-runtime-path F-KEY-PATH "keyboard_key_f.png")
+(define-runtime-path E-KEY-PATH "keyboard_key_e.png")
+(define-runtime-path A-KEY-PATH "keyboard_key_a.png")
+(define-runtime-path D-KEY-PATH "keyboard_key_d.png")
+(define-runtime-path ARROW-RIGHT-KEY-PATH "keyboard_key_right.png")
+(define-runtime-path ARROW-LEFT-KEY-PATH "keyboard_key_left.png")
+(define-runtime-path ARROW-UP-KEY-PATH "keyboard_key_up.png")
+(define-runtime-path ARROW-DOWN-KEY-PATH "keyboard_key_down.png")
 
-(define R-KEY (bitmap/file "keyboard_key_r.png"))
-
-(define F-KEY (bitmap/file "keyboard_key_f.png"))
-
-(define E-KEY (bitmap/file "keyboard_key_e.png"))
-
-(define A-KEY (bitmap/file "keyboard_key_a.png"))
-
-(define D-KEY (bitmap/file "keyboard_key_d.png"))
-
-(define ARROW-RIGHT-KEY (bitmap/file "keyboard_key_right.png"))
-
-(define ARROW-LEFT-KEY (bitmap/file "keyboard_key_left.png"))
-
-(define ARROW-UP-KEY (bitmap/file "keyboard_key_up.png"))
-
-(define ARROW-DOWN-KEY (bitmap/file "keyboard_key_down.png"))
+(define S-KEY (bitmap/file S-KEY-PATH))
+(define W-KEY (bitmap/file W-KEY-PATH))
+(define R-KEY (bitmap/file R-KEY-PATH))
+(define F-KEY (bitmap/file F-KEY-PATH))
+(define E-KEY (bitmap/file E-KEY-PATH))
+(define A-KEY (bitmap/file A-KEY-PATH))
+(define D-KEY (bitmap/file D-KEY-PATH))
+(define ARROW-RIGHT-KEY (bitmap/file ARROW-RIGHT-KEY-PATH))
+(define ARROW-LEFT-KEY (bitmap/file ARROW-LEFT-KEY-PATH))
+(define ARROW-UP-KEY (bitmap/file ARROW-UP-KEY-PATH))
+(define ARROW-DOWN-KEY (bitmap/file ARROW-DOWN-KEY-PATH))

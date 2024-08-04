@@ -16,7 +16,7 @@
          "../../fsm-core/private/misc.rkt"
          "../viz-lib/viz-constants.rkt"
          "../viz-lib/viz-state.rkt"
-         ;"../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
+         "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "../viz-lib/viz-macros.rkt"
          "../viz-lib/default-viz-function-generators.rkt"
          "../viz-lib/viz.rkt"
@@ -27,33 +27,6 @@
 (provide concat-viz)
 
 (define FNAME "fsm")
-
-
-
-
-
-
-(define S-KEY (bitmap/file "../../visualizations/viz-lib/viz-imgs/keyboard_key_s.png"))
-
-(define W-KEY (bitmap/file "../../visualizations/viz-lib/viz-imgs/keyboard_key_w.png"))
-
-(define R-KEY (bitmap/file "../../visualizations/viz-lib/viz-imgs/keyboard_key_r.png"))
-
-(define F-KEY (bitmap/file "../../visualizations/viz-lib/viz-imgs/keyboard_key_f.png"))
-
-(define E-KEY (bitmap/file "../../visualizations/viz-lib/viz-imgs/keyboard_key_e.png"))
-
-(define A-KEY (bitmap/file "../../visualizations/viz-lib/viz-imgs/keyboard_key_a.png"))
-
-(define D-KEY (bitmap/file "../../visualizations/viz-lib/viz-imgs/keyboard_key_d.png"))
-
-(define ARROW-RIGHT-KEY (bitmap/file "../../visualizations/viz-lib/viz-imgs/keyboard_key_right.png"))
-
-(define ARROW-LEFT-KEY (bitmap/file "../../visualizations/viz-lib/viz-imgs/keyboard_key_left.png"))
-
-(define ARROW-UP-KEY (bitmap/file "../../visualizations/viz-lib/viz-imgs/keyboard_key_up.png"))
-
-(define ARROW-DOWN-KEY (bitmap/file "../../visualizations/viz-lib/viz-imgs/keyboard_key_down.png"))
 
 (define E-SCENE-TOOLS
   (let [(ARROW (above (triangle 30 'solid 'black) (rectangle 10 30 'solid 'black)))]
