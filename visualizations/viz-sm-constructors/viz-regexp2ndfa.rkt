@@ -858,7 +858,7 @@
 
 
 
-;(regexp2ndfa-viz R5)
+(regexp2ndfa-viz R5)
     
 #; (run-viz (viz-state loimgs (list (create-init-graph (list 'S regexp 'F)))) draw-world 'regexp2ndfa)
 

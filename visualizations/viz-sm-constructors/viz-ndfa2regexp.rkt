@@ -1044,7 +1044,7 @@
      (B b B)
      (S ,EMP F))))
 
-;(ndfa2regexp-viz aa-ab)
+(ndfa2regexp-viz aa-ab)
 
 ;(run AT-LEAST-ONE-MISSING)
 
