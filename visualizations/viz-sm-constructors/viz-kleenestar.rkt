@@ -496,29 +496,6 @@
          (sm-rules M)))
 
 
-
-(define (create-graph-struct M)
-  (let* [(new-start (generate-symbol 'K (sm-states M)))
-         (new-states (cons new-start (sm-states M)))
-         (new-finals (cons new-start (sm-finals M)))]
-    (make-edge-graph (make-node-graph
-                      (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                      new-states
-                      new-start
-                      new-finals)
-                     M new-start)
-    )
-  )
-
-(define (create-init-graph-struct M)
-  (make-init-edge-graph (make-node-graph
-                         (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                         (sm-states M)
-                         (sm-start M)
-                         (sm-finals M))
-                        M (sm-start M))
-  )
-
 (struct imsg-state (phase start added-edges))
 
 ;; imsg-state -> image
@@ -531,21 +508,19 @@
                        (text (format "Added edges: ~a" (imsg-state-added-edges a-imsg-state)) 15 'black))))
    (rectangle 1250 50 'solid 'white)))
 
-;; create-graph-imgs
-;; ndfa ndfa -> img
+;; create-graph-struct
+;; ndfa ndfa -> graph
 ;; Purpose: To create a graph structure for the kleene star
-(define (create-graph-structure M)
+(define (create-graph-struct M)
   (let* [(new-start (generate-symbol 'K (sm-states M)))
          (new-states (cons new-start (sm-states M)))
-         (new-finals (cons new-start (sm-finals M)))
-         (added-edges (list (list new-start EMP (sm-start M))
-                            (map (λ (f) (list f EMP new-start))
-                                 (sm-finals M))))]
-    (overlay (above (void)
-                    (text "Kleenestar of the ndfa" FONT-SIZE 'black)
-                    (text (format "Generated starting state: ~a" new-start) FONT-SIZE 'black)
-                    (text (format "Added edges: ~a" added-edges) FONT-SIZE 'black))
-             E-SCENE)
+         (new-finals (cons new-start (sm-finals M)))]
+    (make-edge-graph (make-node-graph
+                      (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                      new-states
+                      new-start
+                      new-finals)
+                     M new-start)
     )
   )
      
@@ -565,6 +540,15 @@
 
     ))
      
+(define (create-init-graph-struct M)
+  (make-init-edge-graph (make-node-graph
+                         (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
+                         (sm-states M)
+                         (sm-start M)
+                         (sm-finals M))
+                        M (sm-start M))
+  )
+
 
 (define viz-go-next (go-next))
 (define viz-go-prev (go-prev))

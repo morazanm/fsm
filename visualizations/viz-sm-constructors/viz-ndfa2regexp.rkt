@@ -555,9 +555,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define E-SCENE (empty-scene 1250 600))
 
-
+;; graph-struct
 ;; grph is the graph 
 ;; inf is the corresponding informative message
 (struct graph-struct (grph inf))
@@ -619,9 +618,9 @@
          graph
          loe))
 
-;; create-graph-img-special
-;; (listof state) dgraph state state -> img
-;; Purpose: To create a graph img for the given dgraph using
+;; create-graph-special
+;; (listof state) dgraph state state -> graph
+;; Purpose: To create a graph structure for the given dgraph using
 ;;          news as the start state and newf as the final state
 (define (create-graph-special los loe news newf)
   (create-edges-special
@@ -633,9 +632,9 @@
    loe))
 
 
-;; create-graph-img
-;; (listof state) dgraph state state -> img
-;; Purpose: To create a graph img for the given dgraph using
+;; create-graphic
+;; (listof state) dgraph state state -> graph
+;; Purpose: To create a graph structure for the given dgraph using
 ;;          news as the start state and newf as the final state
 (define (create-graphic los loe news newf)
   (create-edges
@@ -647,9 +646,9 @@
    loe))
 
 
-;; create-graph-imgs
-;; ndfa -> (listof img)
-;; Purpose: To create a list of images of graphs that build a regular
+;; create-graphs
+;; ndfa -> (listof graph)
+;; Purpose: To create a list of graph structures that build a regular
 ;; expression from the  given ndfa
 (define (create-graphs M)
   (define new-start (gen-state (sm-states M)))
@@ -735,7 +734,7 @@
          hash-l)))
                  
 
-;; make-init-graph-img
+;; make-init-graph
 ;; ndfa -> img
 ;; Purpose: To create the structure of the initial ndfa graph
 (define (make-init-graph M)
@@ -754,7 +753,8 @@
                    new-final)
                   (text "Starting ndfa" FONT-SIZE 'black))))
 
-;; imsg-state 
+;; imsg-state
+;; infs - state of the informative messages
 (struct imsg-state (infs))
 
 (define viz-go-next (go-next))

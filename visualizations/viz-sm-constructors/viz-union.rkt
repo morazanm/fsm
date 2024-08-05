@@ -67,7 +67,6 @@
 
 ;; UNION VISUALIZATION
 
-(define E-SCENE (empty-scene 1250 600))
 (define E-SCENE-TOOLS
   (let [(ARROW (above (triangle 30 'solid 'black) (rectangle 10 30 'solid 'black)))]
     (beside/align "bottom"
@@ -436,6 +435,8 @@
 
 
 ;; graph-struct
+;; grph - graph structure
+;; inf - informative message
 (struct graph-struct (grph inf))
 
 ;; (listof state) --> state
@@ -550,11 +551,11 @@
          graph
          (sm-rules M)))
 
-;; create-graph-imgs
-;; ndfa ndfa -> img
-;; Purpose: To create a graph image for the union
+;; create-graph-structures
+;; ndfa ndfa -> graph
+;; Purpose: To create a graph structure for the union
 ;; Assume: The intersection of the states of the given machines is empty
-(define (create-graph-img M N)
+(define (create-graph-structures M N)
   (let* [(new-start (gen-state (append (sm-states M) (sm-states N))))
          (new-states (cons new-start
                            (append (sm-states M) (sm-states N))))
@@ -563,18 +564,16 @@
          (new-finals (append (sm-finals M) (sm-finals N)))
          (graph (make-edge-graph (make-node-graph
                                                  (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                                 new-states new-start new-finals) M N new-start))
-         #;(width (image-width graph))
-         #;(height (image-height graph))]
+                                                 new-states new-start new-finals) M N new-start))]
     (graph-struct graph (above  (text "Union of the ndfas" 20 'black)
                                       (text (format "Generated edges: ~a" added-edges) 20 'black)
                                       (text (format "Final states: ~a" new-finals) 20 'black)
                                       (text (format "Starting state: ~a" new-start) 20 'black)))))
      
-;; make-init-grph-img
-;; ndfa ndfa -> img
+;; make-init-grph-structure
+;; ndfa ndfa -> graph
 ;; Purpose: To draw the graph of the initial ndfa's
-(define (make-init-grph-img M N)
+(define (make-init-grph-structure M N)
   (let* [(graph-one (make-first-edge-graph (make-node-graph
                                                            (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
                                                            (sm-states N)
@@ -593,6 +592,7 @@
 
 ;; draw-imsg
 ;; imsg -> img
+;; Purpose: To draw informative messages
 (define (draw-imsg a-imsg)
   (zipper-current (graph-struct-inf a-imsg)))
      
@@ -706,14 +706,14 @@
   (let [(renamed-machine (if (ormap (λ (x) (member x (sm-states M))) (sm-states N))
                              (rename-states-fsa (sm-states M) N)
                              N))]
-    (run-viz (map graph-struct-grph (list (make-init-grph-img M N) (create-graph-img M renamed-machine)))
-             (lambda () (apply above (map graph->bitmap (graph-struct-grph (make-init-grph-img M N)))))
+    (run-viz (map graph-struct-grph (list (make-init-grph-structure M N) (create-graph-structures M renamed-machine)))
+             (lambda () (apply above (map graph->bitmap (graph-struct-grph (make-init-grph-structure M N)))))
              MIDDLE-E-SCENE
              DEFAULT-ZOOM
              DEFAULT-ZOOM-CAP
              DEFAULT-ZOOM-FLOOR
              (informative-messages draw-imsg
-                                   (graph-struct '() (list->zipper (map graph-struct-inf (list (make-init-grph-img M N) (create-graph-img M renamed-machine)))))
+                                   (graph-struct '() (list->zipper (map graph-struct-inf (list (make-init-grph-structure M N) (create-graph-structures M renamed-machine)))))
                                                       
                                    (bounding-limits 0 0 0 0)
                                    )
@@ -751,13 +751,6 @@
 
 (union-viz nl ab*)
 
-
-#;(above (resize-image graph
-                       (image-width E-SCENE) (image-height E-SCENE))
-         (text "Union of the ndfas \n" 20 'black)
-         (text (format "Generated edges: ~a \n" added-edges) 20 'black)
-         (text (format "Final states: ~a \n" new-finals) 20 'black)
-         (text (format "Starting state: ~a \n" new-start) 20 'black))
 
 
 

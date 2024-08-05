@@ -528,8 +528,8 @@
          (sm-rules M)))
 
 ;; create-graph-structs
-;; ndfa ndfa -> img
-;; Purpose: To create a graph structure for the union
+;; ndfa ndfa -> graph
+;; Purpose: To create a graph structure for the concatenation
 ;; Assume: The intersection of the states of the given machines is empty
 (define (create-graph-structs M N)
   (let* [(new-start (sm-start M))
@@ -546,7 +546,7 @@
                         (text (format "Generated edges: ~a" edge-added) 20 'black)))))
      
 ;; make-init-grph-struct
-;; ndfa ndfa -> img
+;; ndfa ndfa -> graph
 ;; Purpose: To make the graph structure of the initial ndfa's
 (define (make-init-grph-struct M N)
   (let* [(graph1 (make-second-edge-graph (make-node-graph

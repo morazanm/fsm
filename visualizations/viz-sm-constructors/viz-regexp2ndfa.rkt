@@ -560,6 +560,7 @@
 
 
 ;; imsg
+;; edge - edge to expand in the graph structure
 (struct imsg-state (edge))
 
 
@@ -577,9 +578,9 @@
               ]))
 
 
-;; create-graph-imgs
-;; (listof gedges) -> (listof image)
-;; Purpose: To create a list of graph images
+;; create-graphs
+;; (listof gedges) -> (listof graph)
+;; Purpose: To create a list of graph structures
 (define (create-graphs gedges)
   (if (empty? gedges)
       empty

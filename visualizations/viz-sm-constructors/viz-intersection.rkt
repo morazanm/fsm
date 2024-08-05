@@ -652,6 +652,7 @@
 
 ;; draw-imsg
 ;; imsg -> img
+;; Purpose: To draw informative messages
 (define (draw-imsg a-imsg)
   (zipper-current (graph-struct-inf a-imsg)))
      
