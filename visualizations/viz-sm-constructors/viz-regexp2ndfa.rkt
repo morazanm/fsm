@@ -545,9 +545,9 @@
          dgraph))
 
 
-;; create-graph-img
-;; graph edge -> img
-;; Purpose: To create a graph img for the given dgraph
+;; create-graphic
+;; graph edge -> struct
+;; Purpose: To create a graph structure for the given dgraph
 ;; with the labeled edge that has been expanded
 (define (create-graphic dgraph edge)
   (create-edges
@@ -565,6 +565,7 @@
 
 ;; draw-imsg
 ;; imsg -> img
+;; Purpose: To draw informative messages
 (define (draw-imsg a-imsg)
   (cond [(zipper-at-begin? (imsg-state-edge a-imsg)) (text "Starting NDFA" 24 'black)]
         [(= (zipper-idx (imsg-state-edge a-imsg)) 1) (text "Simplified initial regexp" 24 'black)]
@@ -621,8 +622,8 @@
 
 
 ;; create-init-graph
-;; list -> img
-;; Purpose: To create an initial graph image
+;; list -> graph
+;; Purpose: To create an initial graph structure
 (define (create-init-graph a-list)
   (create-init-edges
    (create-init-nodes
@@ -786,8 +787,6 @@
 
 
 (regexp2ndfa-viz R5)
-    
-#; (run-viz (viz-state loimgs (list (create-init-graph (list 'S regexp 'F)))) draw-world 'regexp2ndfa)
 
 
 

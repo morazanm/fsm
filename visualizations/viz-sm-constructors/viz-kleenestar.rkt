@@ -533,9 +533,8 @@
 
 ;; create-graph-imgs
 ;; ndfa ndfa -> img
-;; Purpose: To create a graph image for the union
-;; Assume: The intersection of the states of the given machines is empty
-(define (create-graph-img M)
+;; Purpose: To create a graph structure for the kleene star
+(define (create-graph-structure M)
   (let* [(new-start (generate-symbol 'K (sm-states M)))
          (new-states (cons new-start (sm-states M)))
          (new-finals (cons new-start (sm-finals M)))
@@ -550,10 +549,10 @@
     )
   )
      
-;; make-init-grph-img
+;; make-init-grph-structure
 ;; ndfa ndfa -> dgraph
 ;; Purpose: To draw the graph of the initial ndfa's
-(define (make-init-grph-img M)
+(define (make-init-grph-structure M)
   (let* [(graph (make-init-edge-graph (make-node-graph
                                        (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
                                        (sm-states M)
@@ -682,7 +681,7 @@
 ;; fsa -> void
 (define (kleenestar-viz M)
   (run-viz (list (create-init-graph-struct M) (create-graph-struct M))
-           (lambda () (make-init-grph-img M))
+           (lambda () (make-init-grph-structure M))
            MIDDLE-E-SCENE
            DEFAULT-ZOOM
            DEFAULT-ZOOM-CAP
@@ -732,7 +731,3 @@
 
 
 (kleenestar-viz ab*)
-#;(run-viz (viz-state (list (create-graph-img M))
-                      (list (make-init-grph-img M)))
-           draw-world
-           'kleenestar-viz)

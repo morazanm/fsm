@@ -59,6 +59,9 @@
     )
   )
 
+
+;; imsg-img
+;; Image representing the informative messages
 (define imsg-img (above (text "Concatenation of the ndfas" 20 'black)
                         (text (format "Starting state:") 20 'black)
                         (text (format "Final state(s):") 20 'black)
@@ -432,9 +435,9 @@
 
 
 ;; graph-struct
+;; grph - graph structure
+;; inf - informative message
 (struct graph-struct (grph inf))
-
-(define E-SCENE (empty-scene 1250 600))
 
 
 ;; make-node-graph
@@ -524,11 +527,11 @@
          graph
          (sm-rules M)))
 
-;; create-graph-imgs
+;; create-graph-structs
 ;; ndfa ndfa -> img
-;; Purpose: To create a graph image for the union
+;; Purpose: To create a graph structure for the union
 ;; Assume: The intersection of the states of the given machines is empty
-(define (create-graph-img M N)
+(define (create-graph-structs M N)
   (let* [(new-start (sm-start M))
          (edge-added (map (λ (f) (list f EMP (sm-start N)))
                           (sm-finals M)))
@@ -542,10 +545,10 @@
                         (text (format "Final state(s): ~a" new-finals) 20 'black)
                         (text (format "Generated edges: ~a" edge-added) 20 'black)))))
      
-;; make-init-grph-img
+;; make-init-grph-struct
 ;; ndfa ndfa -> img
-;; Purpose: To draw the graph of the initial ndfa's
-(define (make-init-grph-img M N)
+;; Purpose: To make the graph structure of the initial ndfa's
+(define (make-init-grph-struct M N)
   (let* [(graph1 (make-second-edge-graph (make-node-graph
                                                          (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
                                                          (sm-states M)
@@ -564,9 +567,12 @@
 
 ;; draw-imsg
 ;; imsg -> img
+;; Purpose: To draw the informative message
 (define (draw-imsg a-imsg)
   (zipper-current (graph-struct-inf a-imsg)))
 
+
+;; 
 (define (right-key-pressed a-vs)
   (let ([a-graph-struct (informative-messages-component-state
                        (viz-state-informative-messages a-vs))])
@@ -588,6 +594,7 @@
     )
   )
 
+;;
 (define (left-key-pressed a-vs)
   (let ([a-graph-struct (informative-messages-component-state
                        (viz-state-informative-messages a-vs))])
@@ -609,6 +616,7 @@
     )
   )
 
+;;
 (define (up-key-pressed a-vs)
   (let ([a-graph-struct (informative-messages-component-state
                        (viz-state-informative-messages a-vs))])
@@ -630,6 +638,7 @@
     )
   )
 
+;;
 (define (down-key-pressed a-vs)
   (let ([a-graph-struct (informative-messages-component-state
                        (viz-state-informative-messages a-vs))])
@@ -668,16 +677,16 @@
   (let [(renamed-machine (if (ormap (λ (x) (member x (sm-states M))) (sm-states N))
                              (rename-states-fsa (sm-states M) N)
                              N))]
-    (run-viz (map graph-struct-grph (list (make-init-grph-img M N) (create-graph-img M N)))
-             (lambda () (apply above (map graph->bitmap (graph-struct-grph (make-init-grph-img M N)))))
+    (run-viz (map graph-struct-grph (list (make-init-grph-struct M N) (create-graph-structs M N)))
+             (lambda () (apply above (map graph->bitmap (graph-struct-grph (make-init-grph-struct M N)))))
              MIDDLE-E-SCENE
              DEFAULT-ZOOM
              DEFAULT-ZOOM-CAP
              DEFAULT-ZOOM-FLOOR
              (informative-messages draw-imsg
                                    (graph-struct
-                                    (list->zipper (map (lambda (x) '()) (list (make-init-grph-img M N) (create-graph-img M N))))
-                                    (list->zipper  (map graph-struct-inf (list (make-init-grph-img M N) (create-graph-img M N)))
+                                    (list->zipper (map (lambda (x) '()) (list (make-init-grph-struct M N) (create-graph-structs M N))))
+                                    (list->zipper  (map graph-struct-inf (list (make-init-grph-struct M N) (create-graph-structs M N)))
                                                   ))
                                    (bounding-limits 0 0 0 0)
                                    )
@@ -712,7 +721,3 @@
                                             (list F-KEY-DIMS viz-max-zoom-in identity)))
              )))
 
-
-
-
-(concat-viz ab* a-aUb-b*)

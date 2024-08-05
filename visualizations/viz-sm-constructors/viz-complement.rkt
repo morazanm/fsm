@@ -63,6 +63,7 @@
     )
   )
 
+
 (define imsg-img (text "Starting ndfa" FONT-SIZE 'black))
 
 (define RULE-YIELD-DIMS (bounding-limits 0
@@ -432,10 +433,9 @@
   ;; COMPLEMENT VISUZALIZATION
 
   ;; graph-struct
+  ;; grph - graph structure
+  ;; inf - informative message
   (struct graph-struct (grph inf))
-
-
-  (define E-SCENE (empty-scene 1250 600))
 
   ;; make-node-graph
   ;; graph los start final -> graph
@@ -482,10 +482,10 @@
              (sm-rules (ndfa->dfa M)))))
 
 
-  ;; create-graph-img
-  ;; ndfa -> img
-  ;; Purpose: To create a graph image for complement
-  (define (create-graph-img M)
+  ;; create-graph-structure
+  ;; ndfa -> graph
+  ;; Purpose: To create a graph structures for complement
+  (define (create-graph-structure M)
     (let* [(new-finals (filter (λ (s) (not (member s (sm-finals M)))) (sm-states M)))]
       (graph-struct (make-edge-graph (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
                                                             (sm-states M) 
@@ -499,10 +499,10 @@
 
 
      
-  ;; make-init-grph-img
-  ;; ndfa ndfa -> img
-  ;; Purpose: To draw the graph of the initial ndfa's
-  (define (make-init-grph-img M)
+  ;; make-init-grph-structure
+  ;; ndfa ndfa -> graph
+  ;; Purpose: To make the graph structure of the initial ndfa's
+  (define (make-init-grph-structure M)
     (graph-struct
      (fsa->graph M 0)
      (if (eq? (sm-type M) 'dfa)
@@ -616,15 +616,15 @@
   ;; fsa -> void
   (define (complement-viz M)
     (if (eq? (sm-type M) 'dfa)
-        (run-viz (map graph-struct-grph (list (make-init-grph-img M) (create-graph-img M)))
-                 (lambda () (graph->bitmap (graph-struct-grph (create-graph-img M))))
+        (run-viz (map graph-struct-grph (list (make-init-grph-structure M) (create-graph-structure M)))
+                 (lambda () (graph->bitmap (graph-struct-grph (create-graph-structure M))))
                  MIDDLE-E-SCENE
                  DEFAULT-ZOOM
                  DEFAULT-ZOOM-CAP
                  DEFAULT-ZOOM-FLOOR
                  (informative-messages draw-imsg
-                                       (graph-struct (list->zipper (map (lambda (x) '()) (list (make-init-grph-img M) (create-graph-img M))))
-                                                     (list->zipper (map (lambda (x) (graph-struct-inf x)) (list (make-init-grph-img M) (create-graph-img M))))
+                                       (graph-struct (list->zipper (map (lambda (x) '()) (list (make-init-grph-structure M) (create-graph-structure M))))
+                                                     (list->zipper (map (lambda (x) (graph-struct-inf x)) (list (make-init-grph-structure M) (create-graph-structure M))))
                                                      )
                                        (bounding-limits 0 0 0 0)
                                        )
@@ -659,17 +659,17 @@
                                           (list F-KEY-DIMS viz-max-zoom-in identity)))
                  )
         (let [(machine (ndfa->dfa M))]
-          (run-viz (list (graph-struct-grph (make-init-grph-img M)) (fsa->graph machine 0) (graph-struct-grph (create-graph-img machine)))
-                   (lambda () (graph->bitmap (graph-struct-grph (make-init-grph-img M))))
+          (run-viz (list (graph-struct-grph (make-init-grph-structure M)) (fsa->graph machine 0) (graph-struct-grph (create-graph-structure machine)))
+                   (lambda () (graph->bitmap (graph-struct-grph (make-init-grph-structure M))))
                    MIDDLE-E-SCENE
                    DEFAULT-ZOOM
                    DEFAULT-ZOOM-CAP
                    DEFAULT-ZOOM-FLOOR
                    (informative-messages draw-imsg
-                                         (graph-struct (list->zipper (map (lambda (x) '()) (list (make-init-grph-img M) (create-graph-img M))))
-                                                       (list->zipper (list (graph-struct-inf (make-init-grph-img M))
+                                         (graph-struct (list->zipper (map (lambda (x) '()) (list (make-init-grph-structure M) (create-graph-structure M))))
+                                                       (list->zipper (list (graph-struct-inf (make-init-grph-structure M))
                                                                            (text "Starting NDFA" FONT-SIZE 'black)
-                                                                           (graph-struct-inf (create-graph-img machine))
+                                                                           (graph-struct-inf (create-graph-structure machine))
                                                                            ))
                                                      
                                                      )
@@ -740,12 +740,5 @@
 (complement-viz aab*)
 
   )
-#;(viz-state (if (eq? (sm-type M) 'dfa)
-                 (list (create-graph-img M))
-                 (let [(machine (ndfa->dfa M))]
-                   (list (above (sm-graph machine)
-                                (text "MD: M converted to a dfa" 20 'black))
-                         (create-graph-img machine))))
-             (list (make-init-grph-img M)))
 
     

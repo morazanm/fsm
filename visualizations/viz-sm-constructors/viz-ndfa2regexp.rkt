@@ -553,26 +553,6 @@
        lor))
 
 
-
-;; ndfa → regexp
-;; Purpose: Create a regexp from the given ndfa
-;; Assume: The transition diagram of the given machine is a connected
-;;         directed graph
-(define (ndfa2regexp m)
-  (let* [
-         (new-start (gen-state (sm-states m)))
-         (new-final (gen-state (cons new-start (sm-states m))))
-         (init-dgraph (make-dgraph
-                       (cons (list new-start EMP (sm-start m))
-                             (append (map (λ (f) (list f EMP new-final))
-                                          (sm-finals m))
-                                     (sm-rules m)))))
-         (collapsed-dgraph
-          (rip-out-nodes (sm-states m) (remove-multiple-edges init-dgraph)))]
-    (if (empty? collapsed-dgraph)
-        (null-regexp)
-        (simplify-regexp (second (first collapsed-dgraph))))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define E-SCENE (empty-scene 1250 600))
@@ -757,7 +737,7 @@
 
 ;; make-init-graph-img
 ;; ndfa -> img
-;; Purpose: To create the image of the initial ndfa graph
+;; Purpose: To create the structure of the initial ndfa graph
 (define (make-init-graph M)
   (let* [(new-start (gen-state (sm-states M)))
          (new-final (gen-state (cons new-start (sm-states M))))

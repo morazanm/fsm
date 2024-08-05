@@ -20,8 +20,6 @@
 (define FNAME "fsm")
 
 
-;"U-CM-dfa-CN-dfa: Union of CM-dfa and CN-dfa"
-
 (define E-SCENE-TOOLS
   (let [(ARROW (above (triangle 30 'solid 'black) (rectangle 10 30 'solid 'black)))]
     (beside/align "bottom"
@@ -63,6 +61,9 @@
     )
   )
 
+
+;; imsg-img
+;; Informative message image
 (define imsg-img (above (text "N is an ndfa and needs to be converted to a dfa" 20 'black)
                         (text "M is an ndfa and needs to be converted to a dfa" 20 'black)))
 
@@ -440,69 +441,10 @@
 ;; INTERSECTION VISUALIZATION
 
 
-
-;; make-node-union
-;; graph los start final -> graph
-;; Purpose: To make a node graph
-(define (make-node-union graph los s f)
-  (foldl (λ (state result)
-           (add-node
-            result
-            state
-            #:atb (hash 'color (cond [(eq? state s) 'green]
-                                     [else 'black])
-                        'shape (if (member state f)
-                                   'doublecircle
-                                   'circle)
-                        'label (if (equal? state '())
-                                   'ds  
-                                   state)
-                        'fontcolor 'black
-                        'font "Sans")))
-         graph
-         los))
-
-;; make-edge-graph
-;; graph ndfa ndfa -> graph
-;; Purpose: To make an edge graph
-(define (make-edge-union graph M N ns)
-  (foldl (λ (rule result) (add-edge result
-                                    (second rule)
-                                    (if (equal? (first rule) '())
-                                        'ds
-                                        (first rule))
-                                    (if (equal? (third rule) '())
-                                        'ds
-                                        (third rule))
-                                    #:atb (hash 'fontsize 20
-                                                'style 'solid)))
-         graph
-         (append (list (list ns EMP (sm-start M))
-                       (list ns EMP (sm-start N)))
-                 (sm-rules M)
-                 (sm-rules N))))
-
-;; create-union-graph
-;; ndfa ndfa -> dgraph
-;; Purpose: To create a graph image for the union
-;; Assume: The intersection of the states of the given machines is empty
-(define (create-union-graph M N)
-  (let* [(new-start (generate-symbol 'S (append (sm-states M) (sm-states N))))
-         (new-states (cons new-start
-                           (append (sm-states M) (sm-states N))))
-         (added-edges (list (list new-start EMP (sm-start M))
-                            (list new-start EMP (sm-start N))))
-         (new-finals (append (sm-finals M) (sm-finals N)))]
-    (make-edge-union (make-node-union
-                      (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                      new-states new-start new-finals) M N new-start)))
-                    
-
-
 ;; graph-struct
+;; grph - graph structure
+;; inf - informative message
 (struct graph-struct (grph inf))
-
-(define E-SCENE (empty-scene 1250 600))
 
 
 ;; create-node-graph
@@ -610,10 +552,10 @@
          (sm-rules union)))
 
 
-;; create-graph-img
-;; ndfa ndfa -> img
-;; Purpose: To create a graph image for the intersection
-(define (create-graph-imgs M N)
+;; create-graph-structures
+;; ndfa ndfa -> graph
+;; Purpose: To create graph structures for the intersection
+(define (create-graph-structures M N)
   (define (complement-fsa ndfa)
     (let* [(new-finals (filter (λ (s) (not (member s (sm-finals ndfa)))) (sm-states ndfa)))]
       (make-unchecked-dfa (sm-states ndfa)
@@ -687,10 +629,10 @@
     
                     
      
-;; make-init-grph-img
-;; ndfa ndfa -> img
-;; Purpose: To draw the graph of the initial ndfa's
-(define (make-init-grph-img M N)
+;; make-init-grph-structure
+;; ndfa ndfa -> graph
+;; Purpose: To create the graph structure of the initial ndfa's
+(define (make-init-grph-structure M N)
   (graph-struct (list
                  (create-edge-graph-m
                   (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
@@ -812,17 +754,17 @@
 ;; intersection-viz
 ;; fsa fsa -> void
 (define (intersection-viz M N)
-  (let* [(imgs (create-graph-imgs M N))]
-    (run-viz (map graph-struct-grph (cons (make-init-grph-img M N) (create-graph-imgs M N)))
-             (lambda () (apply above (map graph->bitmap (graph-struct-grph (make-init-grph-img M N)))))
+  (let* [(imgs (create-graph-structures M N))]
+    (run-viz (map graph-struct-grph (cons (make-init-grph-structure M N) (create-graph-structures M N)))
+             (lambda () (apply above (map graph->bitmap (graph-struct-grph (make-init-grph-structure M N)))))
              MIDDLE-E-SCENE
              DEFAULT-ZOOM
              DEFAULT-ZOOM-CAP
              DEFAULT-ZOOM-FLOOR
              (informative-messages draw-imsg
                                    (let ([new-start (generate-symbol 'K (sm-states M))])
-                                     (graph-struct (list->zipper (map (lambda (x) '()) (cons (make-init-grph-img M N) (create-graph-imgs M N))))
-                                                   (list->zipper (map graph-struct-inf (cons (make-init-grph-img M N) (create-graph-imgs M N))))
+                                     (graph-struct (list->zipper (map (lambda (x) '()) (cons (make-init-grph-structure M N) (create-graph-structures M N))))
+                                                   (list->zipper (map graph-struct-inf (cons (make-init-grph-structure M N) (create-graph-structures M N))))
                                       ))
                                    RULE-YIELD-DIMS)
              (instructions-graphic
@@ -859,35 +801,6 @@
                                           (list F-KEY-DIMS viz-max-zoom-in identity)))
              )))
 
-#;(define no-one-el (make-unchecked-dfa '(S A B C D E F G)
-                            '(a b c)
-                            'S
-                            '(D E F)
-                            '((S a A)
-                              (S b B)
-                              (S c C)
-                              (A a A)
-                              (A b D)
-                              (A c F)
-                              (B a D)
-                              (B b B)
-                              (B c E)
-                              (C a F)
-                              (C b E)
-                              (C c C)
-                              (D a D)
-                              (D b D)
-                              (D c G)
-                              (E a G)
-                              (E b E)
-                              (E c E)
-                              (F a F)
-                              (F b G)
-                              (F c F)
-                              (G a G)
-                              (G b G)
-                              (G c G))
-                            'no-dead))
 
 
 (intersection-viz ab* a-aUb-b*)
