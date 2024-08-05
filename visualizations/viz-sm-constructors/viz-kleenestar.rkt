@@ -559,8 +559,7 @@
                                        (sm-start M)
                                        (sm-finals M))
                                       M (sm-start M)))
-         (width (image-width graph))
-         (height (image-height graph))]
+         ]
     
     graph 
 
@@ -681,7 +680,7 @@
 ;; fsa -> void
 (define (kleenestar-viz M)
   (run-viz (list (create-init-graph-struct M) (create-graph-struct M))
-           (lambda () (make-init-grph-structure M))
+           (lambda () (graph->bitmap (make-init-grph-structure M)))
            MIDDLE-E-SCENE
            DEFAULT-ZOOM
            DEFAULT-ZOOM-CAP
