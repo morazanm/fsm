@@ -711,7 +711,7 @@
                                           (list F-KEY-DIMS viz-max-zoom-in identity)
                                           
                                           ))
-           )
+           'kleenestar-viz)
   )
 
 

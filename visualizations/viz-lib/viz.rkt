@@ -105,7 +105,7 @@
 ;; rank-node-lst - List of list of symbols that are in a specific order so that they are forced to be
 ;; in said order and positioned at the same level
 (define (run-viz graphs first-img first-img-coord DEFAULT-ZOOM DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR
-                 imsg-struct instructions-struct draw-world process-key process-tick
+                 imsg-struct instructions-struct draw-world process-key process-tick name
                  
                 #:cpu-cores [cpu-cores #f] #:special-graphs? [special-graphs? #f] #:rank-node-lst [rank-node-lst '()])
   (let* [(imgs (cond [(eq? special-graphs? 'cfg) (cons first-img (rest (create-cfg-graph-imgs graphs #:cpu-cores cpu-cores #:rank-node-lst rank-node-lst)))]
@@ -123,7 +123,7 @@
                     0
                     imsg-struct
                     instructions-struct)
-         draw-world process-key process-tick 'grammar-viz)))
+         draw-world process-key process-tick name)))
 #;(key-functions process-key mouse-functions process-tick draw-component component-state bounding-limits)
 
 
