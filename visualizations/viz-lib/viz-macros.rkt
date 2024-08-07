@@ -1,7 +1,8 @@
 #lang racket
 (require (for-syntax syntax/parse
                      racket/base
-                     "viz-state.rkt")
+                     "viz-state.rkt"
+                     racket/struct-info)
          2htdp/universe
          2htdp/image
          "viz-state.rkt"
@@ -18,14 +19,14 @@
     [(_ '((key viz-func imsg-func)...))
      #'(lambda (a-vs key-pressed)
          (cond [(key=? key key-pressed)
-                ((compose1 viz-func imsg-func) a-vs)#;(viz-func (imsg-func a-vs))]
+                ((compose1 viz-func imsg-func) a-vs)]
                ...
                [else a-vs]))]
     [(_ (list (~or* '(key viz-func imsg-func)
                     (list key viz-func imsg-func))...))
      #'(lambda (a-vs key-pressed)
          (cond [(key=? key key-pressed)
-                ((compose1 viz-func imsg-func) a-vs)#;(viz-func (imsg-func a-vs))]
+                ((compose1 viz-func imsg-func) a-vs)]
                ...
                [else a-vs]))])
   )
@@ -241,13 +242,23 @@
     #:literals (list)
     [(_ E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
      #'(lambda (a-vs)
-         (let [(PARSE-TREE-IMG (place-image (scale (viz-state-scale-factor a-vs) (viz-state-curr-image a-vs))
+         (let* [(PARSE-TREE-IMG (place-image (scale (viz-state-scale-factor a-vs) (viz-state-curr-image a-vs))
                                             (posn-x (viz-state-image-posn a-vs))
                                             (posn-y (viz-state-image-posn a-vs))
                                             (rectangle E-SCENE-WIDTH E-SCENE-HEIGHT 'outline 'white)
-                                            ))]
-           (above PARSE-TREE-IMG
+                                            ))
+               (INFORMATIVE-MESSAGES ((informative-messages-draw-component (viz-state-informative-messages a-vs))
+                   (informative-messages-component-state (viz-state-informative-messages a-vs))))
+               (INSTRUCTIONS-GRAPHIC (instructions-graphic-img (viz-state-instructions-graphic a-vs)))
+               (WINDOW-FRAME (empty-scene 1250 700)#;(empty-scene E-SCENE-WIDTH (+ E-SCENE-HEIGHT (image-height INFORMATIVE-MESSAGES) (image-height INSTRUCTIONS-GRAPHIC))))
+               ]
+           (place-image
+            (above PARSE-TREE-IMG
                   ((informative-messages-draw-component (viz-state-informative-messages a-vs))
                    (informative-messages-component-state (viz-state-informative-messages a-vs)))
                   (square INS-TOOLS-BUFFER 'solid 'white)
-                  (instructions-graphic-img (viz-state-instructions-graphic a-vs)))))]))
+                  (instructions-graphic-img (viz-state-instructions-graphic a-vs)))
+            (/ (image-width WINDOW-FRAME) 2)
+            (/ (image-height WINDOW-FRAME) 2)
+            WINDOW-FRAME)
+            ))]))

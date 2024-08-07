@@ -18,6 +18,8 @@
 
 (define FNAME "fsm")
 
+(define E-SCENE-HEIGHT 300)
+
 ;; L = nl
 (define nl (make-unchecked-ndfa '(S)
                       '(a b)
@@ -600,16 +602,21 @@
 
 
 
-(define viz-go-next (go-next))
-(define viz-go-prev (go-prev))
-(define viz-go-to-begin (go-to-begin))
-(define viz-go-to-end (go-to-end))
-(define viz-zoom-in (zoom-in))
-(define viz-zoom-out (zoom-out))
-(define viz-max-zoom-out (max-zoom-out))
-(define viz-max-zoom-in (max-zoom-in))
-(define viz-reset-zoom (reset-zoom))
+(define viz-go-next (go-next E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR PERCENT-BORDER-GAP))
+(define viz-go-prev (go-prev E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR PERCENT-BORDER-GAP))
+(define viz-go-to-begin (go-to-begin E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR PERCENT-BORDER-GAP))
+(define viz-go-to-end (go-to-end E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR PERCENT-BORDER-GAP))
 
+
+(define viz-zoom-in (zoom-in E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE PERCENT-BORDER-GAP DEFAULT-ZOOM-CAP DEFAULT-ZOOM))
+(define viz-zoom-out (zoom-out E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE PERCENT-BORDER-GAP DEFAULT-ZOOM-CAP DEFAULT-ZOOM))
+(define viz-max-zoom-out (max-zoom-out E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE PERCENT-BORDER-GAP DEFAULT-ZOOM-CAP DEFAULT-ZOOM))
+(define viz-max-zoom-in (max-zoom-in E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE PERCENT-BORDER-GAP DEFAULT-ZOOM-CAP DEFAULT-ZOOM))
+(define viz-reset-zoom (reset-zoom E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE PERCENT-BORDER-GAP DEFAULT-ZOOM-CAP DEFAULT-ZOOM))
+
+
+
+;(create-default-functions E-SCENE-WIDTH E-SCENE-HEIGHT DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR PERCENT-BORDER-GAP NODE-SIZE)
 
 
 
@@ -725,6 +732,7 @@
                                            (list "left" viz-go-prev left-key-pressed)
                                            (list "up" viz-go-to-begin up-key-pressed)
                                            (list "down" viz-go-to-end down-key-pressed)
+                                           
                                            (list "w" viz-zoom-in identity)
                                            (list "s" viz-zoom-out identity)
                                            (list "r" viz-max-zoom-out identity)
@@ -732,6 +740,7 @@
                                            (list "e" viz-reset-zoom identity)
                                            (list "wheel-down" viz-zoom-in identity)
                                            (list "wheel-up" viz-zoom-out identity)
+                                           
                                            )
                                      )
              (create-viz-process-tick E-SCENE-BOUNDING-LIMITS NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT
@@ -741,20 +750,15 @@
                                             (list ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed)
                                             (list ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed)
                                             (list ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed)
+                                            
                                             (list W-KEY-DIMS viz-zoom-in identity)
                                             (list S-KEY-DIMS viz-zoom-out identity)
                                             (list R-KEY-DIMS viz-max-zoom-out identity)
                                             (list E-KEY-DIMS viz-reset-zoom identity)
-                                            (list F-KEY-DIMS viz-max-zoom-in identity)))
+                                            (list F-KEY-DIMS viz-max-zoom-in identity)
+                                            
+                                            )
+                                      )
              )))
 
-
-(union-viz nl ab*)
-
-
-
-
-
-
-
-
+(union-viz ab* nl)

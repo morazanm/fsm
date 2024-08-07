@@ -34,3 +34,7 @@
 ;; img - The static image to be rendered as the instructions
 ;; bounding-limits - A struct that contains the bounding coordinates of the instructions graphics
 (struct instructions-graphic (img bounding-limits))
+
+;; zipper - A structure whose fields are all zippers that will be traversed in lockstep with the main visualization graphic
+;; state - A structure whose fields are all other variables needed for a given informative message (that do not get automatically manipulated)
+(struct imsg-component-state (zippers state))
