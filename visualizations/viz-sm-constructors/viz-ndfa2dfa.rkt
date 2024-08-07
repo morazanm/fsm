@@ -22,6 +22,7 @@
 
 (define FNAME "fsm")
 
+(define E-SCENE-HEIGHT 560)
 (define E-SCENE-TOOLS
   (let [(ARROW (above (triangle 30 'solid 'black) (rectangle 10 30 'solid 'black)))]
     (beside/align "bottom"
@@ -887,7 +888,7 @@
 ;; create-img
 ;; dgrph dgrph etc -> img
 ;; Purpose: Creates a graph image to display on screen
-(define (create-img ndfa-grph dfa-grph world)
+#;(define (create-img ndfa-grph dfa-grph world)
   (define (resize-img img)
     (let [(e-scn-w (- (image-width E-SCENE) 10))
           (e-scn-h (- (image-height E-SCENE) 10))
@@ -1120,7 +1121,7 @@
         
          ]
     (run-viz grphs
-           (lambda () (beside (graph->bitmap (first (first grphs))) (graph->bitmap (second (first grphs)))))
+           (lambda () (above (graph->bitmap (first (first grphs))) (graph->bitmap (second (first grphs)))))
            MIDDLE-E-SCENE
            DEFAULT-ZOOM
            DEFAULT-ZOOM-CAP

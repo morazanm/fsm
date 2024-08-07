@@ -250,15 +250,15 @@
                (INFORMATIVE-MESSAGES ((informative-messages-draw-component (viz-state-informative-messages a-vs))
                    (informative-messages-component-state (viz-state-informative-messages a-vs))))
                (INSTRUCTIONS-GRAPHIC (instructions-graphic-img (viz-state-instructions-graphic a-vs)))
-               (WINDOW-FRAME (empty-scene 1250 700)#;(empty-scene E-SCENE-WIDTH (+ E-SCENE-HEIGHT (image-height INFORMATIVE-MESSAGES) (image-height INSTRUCTIONS-GRAPHIC))))
+               (WINDOW-FRAME #;(empty-scene 1250 700) (rectangle 1250 700 'outline 'white))
                ]
-           (place-image
+           (overlay/align
+            "middle"
+            "bottom"
             (above PARSE-TREE-IMG
                   ((informative-messages-draw-component (viz-state-informative-messages a-vs))
                    (informative-messages-component-state (viz-state-informative-messages a-vs)))
                   (square INS-TOOLS-BUFFER 'solid 'white)
                   (instructions-graphic-img (viz-state-instructions-graphic a-vs)))
-            (/ (image-width WINDOW-FRAME) 2)
-            (/ (image-height WINDOW-FRAME) 2)
             WINDOW-FRAME)
             ))]))

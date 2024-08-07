@@ -16,7 +16,7 @@
          )
 (provide kleenestar-viz)
 
-(define E-SCENE (empty-scene 1250 600))
+(define E-SCENE-HEIGHT 510)
 
 (define E-SCENE-TOOLS
   (let [(ARROW (above (triangle 30 'solid 'black) (rectangle 10 30 'solid 'black)))]
@@ -503,9 +503,9 @@
   (overlay
    (if (= (imsg-state-phase a-imsg-state) 0)
        (text "Starting ndfa" FONT-SIZE 'black)
-       (scale 1 (above (text "Kleenestar of the ndfa" 15 'black)
-                       (text (format "Generated starting state: ~a" (imsg-state-start a-imsg-state)) 15 'black)
-                       (text (format "Added edges: ~a" (imsg-state-added-edges a-imsg-state)) 15 'black))))
+       (above (text "Kleenestar of the ndfa" FONT-SIZE 'black)
+              (text (format "Generated starting state: ~a" (imsg-state-start a-imsg-state)) FONT-SIZE 'black)
+              (text (format "Added edges: ~a" (imsg-state-added-edges a-imsg-state)) FONT-SIZE 'black)))
    (rectangle 1250 50 'solid 'white)))
 
 ;; create-graph-struct

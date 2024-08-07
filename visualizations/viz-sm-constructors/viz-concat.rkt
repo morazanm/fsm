@@ -18,6 +18,8 @@
 
 (define FNAME "fsm")
 
+(define E-SCENE-HEIGHT 510)
+
 (define E-SCENE-TOOLS
   (let [(ARROW (above (triangle 30 'solid 'black) (rectangle 10 30 'solid 'black)))]
     (beside/align "bottom"
@@ -679,7 +681,7 @@
   (let [(renamed-machine (if (ormap (λ (x) (member x (sm-states M))) (sm-states N))
                              (rename-states-fsa (sm-states M) N)
                              N))]
-    (run-viz (map graph-struct-grph (list (make-init-grph-struct M N) (create-graph-structs M N)))
+    (run-viz (map graph-struct-grph (list (make-init-grph-struct M N) (create-graph-structs M renamed-machine)))
              (lambda () (apply above (map graph->bitmap (graph-struct-grph (make-init-grph-struct M N)))))
              MIDDLE-E-SCENE
              DEFAULT-ZOOM
@@ -687,8 +689,8 @@
              DEFAULT-ZOOM-FLOOR
              (informative-messages draw-imsg
                                    (graph-struct
-                                    (list->zipper (map (lambda (x) '()) (list (make-init-grph-struct M N) (create-graph-structs M N))))
-                                    (list->zipper  (map graph-struct-inf (list (make-init-grph-struct M N) (create-graph-structs M N)))
+                                    (list->zipper (map (lambda (x) '()) (list (make-init-grph-struct M N) (create-graph-structs M renamed-machine))))
+                                    (list->zipper  (map graph-struct-inf (list (make-init-grph-struct M N) (create-graph-structs M renamed-machine)))
                                                   ))
                                    (bounding-limits 0 0 0 0)
                                    )
@@ -722,4 +724,4 @@
                                             (list E-KEY-DIMS viz-reset-zoom identity)
                                             (list F-KEY-DIMS viz-max-zoom-in identity)))
              )))
-
+(concat-viz nl ab*)

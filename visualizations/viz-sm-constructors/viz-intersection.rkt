@@ -757,17 +757,19 @@
 ;; intersection-viz
 ;; fsa fsa -> void
 (define (intersection-viz M N)
-  (let* [(imgs (create-graph-structures M N))]
-    (run-viz (map graph-struct-grph (cons (make-init-grph-structure M N) (create-graph-structures M N)))
-             (lambda () (apply above (map graph->bitmap (graph-struct-grph (make-init-grph-structure M N)))))
+  (let [(renamed-machine (if (ormap (λ (x) (member x (sm-states M))) (sm-states N))
+                             (rename-states-fsa (sm-states M) N)
+                             N))]
+    (run-viz (map graph-struct-grph (cons (make-init-grph-structure M N) (create-graph-structures M renamed-machine)))
+             (lambda () (apply above (map graph->bitmap (graph-struct-grph (make-init-grph-structure M renamed-machine)))))
              MIDDLE-E-SCENE
              DEFAULT-ZOOM
              DEFAULT-ZOOM-CAP
              DEFAULT-ZOOM-FLOOR
              (informative-messages draw-imsg
                                    (let ([new-start (generate-symbol 'K (sm-states M))])
-                                     (graph-struct (list->zipper (map (lambda (x) '()) (cons (make-init-grph-structure M N) (create-graph-structures M N))))
-                                                   (list->zipper (map graph-struct-inf (cons (make-init-grph-structure M N) (create-graph-structures M N))))
+                                     (graph-struct (list->zipper (map (lambda (x) '()) (cons (make-init-grph-structure M N) (create-graph-structures M renamed-machine))))
+                                                   (list->zipper (map graph-struct-inf (cons (make-init-grph-structure M N) (create-graph-structures M renamed-machine))))
                                       ))
                                    RULE-YIELD-DIMS)
              (instructions-graphic
