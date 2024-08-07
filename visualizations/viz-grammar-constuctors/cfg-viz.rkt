@@ -1146,7 +1146,7 @@
             )
         )
   )
-
+#|
 (define (parallelism-test word num-trials)
   (define cfg (make-cfg '(S A B)
                            '(a b c d)
@@ -1214,7 +1214,7 @@
         )
   )
 
-
+|#
 
 (define testing-cfg (make-cfg '(S A B)
                               '(a b c d)

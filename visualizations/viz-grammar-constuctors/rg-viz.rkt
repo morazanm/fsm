@@ -464,7 +464,7 @@
                    )
   )
 
-(rg-viz even-bs-odd-as '(b b a b b b b b b b b b b b b a b b b b b b b b b b b b b b a b b b b b b b b b b b b b b b b a b b b b b b b b b b a) (list 'S (lambda (x) #f)))
+;(rg-viz even-bs-odd-as '(b b a b b b b b b b b b b b b a b b b b b b b b b b b b b b a b b b b b b b b b b b b b b b b a b b b b b b b b b b a) (list 'S (lambda (x) #f)))
 
 ;(grammar-derive G '(a a a))
 ;(rg-viz G '(a a a))
