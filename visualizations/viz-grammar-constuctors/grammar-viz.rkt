@@ -1358,6 +1358,7 @@
                                                   (list F-KEY-DIMS max-zoom-in identity)
                                                   (list A-KEY-DIMS identity a-key-pressed)
                                                   (list D-KEY-DIMS identity d-key-pressed)))
+             'grammar-viz
              #:cpu-cores cpu-cores
              #:special-graphs? special-graphs?
              #:rank-node-lst rank-node-lst)))

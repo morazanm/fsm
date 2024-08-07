@@ -1159,7 +1159,7 @@
                                           (list R-KEY-DIMS viz-max-zoom-out identity)
                                           (list E-KEY-DIMS viz-reset-zoom identity)
                                           (list F-KEY-DIMS viz-max-zoom-in identity)))
-           )
+           'ndfa2dfa-viz)
     ))
 
 
