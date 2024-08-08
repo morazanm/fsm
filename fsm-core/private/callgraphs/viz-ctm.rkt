@@ -124,9 +124,9 @@
              (let* [(new-utape (rest (tapelist-utape (viz-state-tapelist a-vs))))
                     (new-ptape (cons (first (tapelist-utape (viz-state-tapelist a-vs)))
                                      (tapelist-ptape (viz-state-tapelist a-vs))))
-                    (message (above (make-tape-img (first (first new-ptape))
-                                                   (second (first new-ptape))
-                                                   (third (first new-ptape)))
+                    (message (above (draw-imsg (first (first new-ptape))
+                                               (second (first new-ptape))
+                                               (third (first new-ptape)))
                                     (square 30 'solid 'white)
                                     (text "The machine halts" 20 'purple)))
                     (new-uvar (rest (var-uvar (viz-state-var a-vs))))
@@ -149,9 +149,9 @@
                                            (graph-pimgs (viz-state-graph a-vs))))
                               (tapelist new-utape
                                         new-ptape)
-                              (above (make-tape-img (first (first new-ptape))
-                                                    (second (first new-ptape))
-                                                    (third (first new-ptape)))
+                              (above (draw-imsg (first (first new-ptape))
+                                                (second (first new-ptape))
+                                                (third (first new-ptape)))
                                      (square 30 'solid 'white)
                                      (first new-pvar)
                                      ) 
@@ -174,9 +174,9 @@
                                  (rest (graph-pimgs (viz-state-graph a-vs))))
                           (tapelist new-utape
                                     new-ptape)
-                          (above (make-tape-img (first (first new-ptape))
-                                                (second (first new-ptape))
-                                                (third (first new-ptape)))
+                          (above (draw-imsg (first (first new-ptape))
+                                            (second (first new-ptape))
+                                            (third (first new-ptape)))
                                  (square 30 'solid 'white)
                                  (first new-pvar)
                                  )
@@ -195,9 +195,9 @@
                                          (graph-pimgs (viz-state-graph a-vs))))
                           (tapelist new-utape
                                     new-ptape)
-                          (above (make-tape-img (first (first new-ptape))
-                                                (second (first new-ptape))
-                                                (third (first new-ptape)))
+                          (above (draw-imsg (first (first new-ptape))
+                                            (second (first new-ptape))
+                                            (third (first new-ptape)))
                                  (square 30 'solid 'white)
                                  (text "The machine halts" 20 'purple))
                           (var (list (first (append (reverse (var-uvar (viz-state-var a-vs)))
@@ -217,9 +217,9 @@
                                                       (graph-upimgs (viz-state-graph a-vs))))))
                           (tapelist new-utape
                                     new-ptape)
-                          (above (make-tape-img (first (first new-ptape))
-                                                (second (first new-ptape))
-                                                (third (first new-ptape)))
+                          (above (draw-imsg (first (first new-ptape))
+                                            (second (first new-ptape))
+                                            (third (first new-ptape)))
                                  (square 30 'solid 'white)
                                  (first (var-pvar (viz-state-var a-vs)))
                                  )
@@ -237,9 +237,9 @@
                     (new-ptape (cons new-tape (rest (tapelist-ptape (viz-state-tapelist a-vs)))))
                     (new-tapelist (tapelist (tapelist-utape (viz-state-tapelist a-vs))
                                             new-ptape))
-                    (message (above (make-tape-img (first (first new-ptape))
-                                                   (second (first new-ptape))
-                                                   (third (first new-ptape)))
+                    (message (above (draw-imsg (first (first new-ptape))
+                                               (second (first new-ptape))
+                                               (third (first new-ptape)))
                                     (square 30 'solid 'white)
                                     (text "The machine halts" 20 'purple)))
                     ]
@@ -263,14 +263,14 @@
                (viz-state (viz-state-graph a-vs)
                           new-tapelist
                           (if (empty? (graph-upimgs (viz-state-graph a-vs)))
-                              (above (make-tape-img (first (first (tapelist-ptape new-tapelist)))
-                                                    (second (first (tapelist-ptape new-tapelist)))
-                                                    (third (first (tapelist-ptape new-tapelist))))
+                              (above (draw-imsg (first (first (tapelist-ptape new-tapelist)))
+                                                (second (first (tapelist-ptape new-tapelist)))
+                                                (third (first (tapelist-ptape new-tapelist))))
                                      (square 30 'solid 'white)
                                      (text "The machine halts" 20 'purple))
-                              (above (make-tape-img (first (first (tapelist-ptape (viz-state-tapelist a-vs))))
-                                                    (sub1 (second (first (tapelist-ptape (viz-state-tapelist a-vs)))))
-                                                    (third (first (tapelist-ptape (viz-state-tapelist a-vs)))))
+                              (above (draw-imsg (first (first (tapelist-ptape (viz-state-tapelist a-vs))))
+                                                (sub1 (second (first (tapelist-ptape (viz-state-tapelist a-vs)))))
+                                                (third (first (tapelist-ptape (viz-state-tapelist a-vs)))))
                                      (square 30 'solid 'white)
                                      (second (first (var-pvar (viz-state-var a-vs))))
                                      ))
@@ -288,10 +288,10 @@
                        (rectangle 36 40 'outline 'black))
               (list2string (rest a-list)))))
 
-;; make-tape
-;; list number number -> image
-;; Purpose: To make a tape
-(define (make-tape-img tape start-index head-pos)
+;; draw-imsg
+;; list number number var -> image
+;; Purpose: To make a informative message image
+(define (draw-imsg tape start-index head-pos var)
   (define (make-tape-img loi start-index)
     (if (empty? (rest loi))
         (above (first loi)
@@ -312,22 +312,22 @@
                                                               (square (add1 50) 'solid 'black)))
                                             (overlay (square 50 'solid 'white)
                                                      (square (add1 50) 'solid 'black))))))]
-    (make-tape-img letter-imgs start-index)))
+    (above (make-tape-img letter-imgs start-index)
+           (square 30 'solid 'white)
+           var)))
 
 
 ;; create-graph-img
 ;; (listof edge) (listof node) edge -> img
 ;; Purpose: To create a graph img for the given dgraph
 ;; with the labeled edge that has been expanded
-(define (create-graph-img loe lon edge)
-  (graph->bitmap
-   (create-edges
-    (create-nodes
-     (create-graph 'dgraph #:atb (hash 'rankdir "LR"
-                                       'font "Sans"))
-     lon edge)
-    loe edge))
-  )
+(define (create-graphic loe lon edge)
+  (create-edges
+   (create-nodes
+    (create-graph 'dgraph #:atb (hash 'rankdir "LR"
+                                      'font "Sans"))
+    lon edge)
+   loe edge))
 
 
 ;; create-tape
@@ -346,11 +346,11 @@
 ;; create-graph-imgs
 ;; (listof edge) (listof node) (listof edge) -> (listof image)
 ;; Purpose: To create a list of transition diagram images
-(define (create-graph-imgs loe lon comp-edges)
+(define (create-graphics loe lon comp-edges)
   (if (empty? comp-edges)
       empty
-      (cons (create-graph-img loe lon (first comp-edges))
-            (create-graph-imgs loe lon (rest comp-edges)))))
+      (cons (create-graphic loe lon (first comp-edges))
+            (create-graphics loe lon (rest comp-edges)))))
 
 ;; resize-image :: image -> int -> int -> image
 ;; Scales a image to the given dimentions. This solution was adapted from
@@ -473,15 +473,54 @@
                                             (text "" 20 'black)
                                             (text (format "~a = ~a" (second var)(third var)) 20 'black))) tmconf-clean)))
                                     
-         (loimgs (create-graph-imgs loedges lonodes comp-edges))
+         (lographs (create-graphics loedges lonodes comp-edges))
          (tapes (create-tape tmconfigs))
          (lovars (extract-labels comp-edges))
-         (tapeimg (above (make-tape-img (first (first tapes)) (second (first tapes)) (third (first tapes)))
-                         (square 30 'solid 'white)
-                         (first varimgs)
-                         ))
+         (tapeimg  (draw-imsg (first (first tapes)) (second (first tapes)) (third (first tapes)) (first varimgs))
+                   )
          ]
-    (run-viz (viz-state (graph (rest loimgs) (list (first loimgs)))
+    #;(run-viz lographs
+               (lambda () (graph->bitmap (first lographs)))
+               MIDDLE-E-SCENE
+               DEFAULT-ZOOM
+               DEFAULT-ZOOM-CAP
+               DEFAULT-ZOOM-FLOOR
+               (informative-messages draw-imsg
+                                     (imsg-state (list->zipper (list* (text "Starting NDFA" FONT-SIZE 'black)
+                                                                      (map graph-struct-inf (create-graphs M)))))
+                                     (bounding-limits 0 0 0 0)
+                                     )
+               (instructions-graphic
+                E-SCENE-TOOLS
+                (bounding-limits 0 0 0 0))
+               (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
+               (create-viz-process-key (list (list "right" viz-go-next right-key-pressed)
+                                             (list "left" viz-go-prev left-key-pressed)
+                                             (list "up" viz-go-to-begin up-key-pressed)
+                                             (list "down" viz-go-to-end down-key-pressed)
+                                             (list "w" viz-zoom-in identity)
+                                             (list "s" viz-zoom-out identity)
+                                             (list "r" viz-max-zoom-out identity)
+                                             (list "f" viz-max-zoom-in identity)
+                                             (list "e" viz-reset-zoom identity)
+                                             (list "wheel-down" viz-zoom-in identity)
+                                             (list "wheel-up" viz-zoom-out identity)
+                                             )
+                                       )
+               (create-viz-process-tick E-SCENE-BOUNDING-LIMITS NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT
+                                        CLICK-BUFFER-SECONDS
+                                        (list)
+                                        (list (list ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed)
+                                              (list ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed)
+                                              (list ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed)
+                                              (list ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed)
+                                              (list W-KEY-DIMS viz-zoom-in identity)
+                                              (list S-KEY-DIMS viz-zoom-out identity)
+                                              (list R-KEY-DIMS viz-max-zoom-out identity)
+                                              (list E-KEY-DIMS viz-reset-zoom identity)
+                                              (list F-KEY-DIMS viz-max-zoom-in identity)))
+               'ctm-viz)
+    (run-viz (viz-state (graph (rest lographs) (list (first lographs)))
                         (tapelist (rest tapes) (list (first tapes)))
                         tapeimg
                         (var (rest varimgs) (list (first varimgs))))

@@ -1301,7 +1301,7 @@
 
 
 
- ;(cfg-viz numb>numa '(b b b b b b a a) 'level-left (list 'S S-INV) (list 'A A-INV))
+ (cfg-viz numb>numa '(b b b b b b a a) 'level-left (list 'S S-INV) (list 'A A-INV))
 #;(cfg-viz testcfg '(a a b b c c c d d d) 'left)
 #;
 (time (cfg-derive-queue-and-hash testcfg
