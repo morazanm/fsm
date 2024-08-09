@@ -66,6 +66,12 @@
                           (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
                           
                           (above/align "middle" F-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Max zoom" (- FONT-SIZE 2) 'black))
+                          (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
+
+                          (above/align "middle" A-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Max zoom" (- FONT-SIZE 2) 'black))
+                          (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
+
+                          (above/align "middle" D-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Max zoom" (- FONT-SIZE 2) 'black))
                           )
                   )
     )
