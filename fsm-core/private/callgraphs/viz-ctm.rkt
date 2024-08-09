@@ -291,30 +291,34 @@
 ;; draw-imsg
 ;; list number number var -> image
 ;; Purpose: To make a informative message image
-(define (draw-imsg tape start-index head-pos var)
-  (define (make-tape-img loi start-index)
-    (if (empty? (rest loi))
-        (above (first loi)
-               (square 5 'solid 'white)
-               (text (number->string start-index) 10 'black))
-        (beside (above (first loi)
-                       (square 5 'solid 'white)
-                       (text (number->string start-index) 10 'black))
-                (make-tape-img (rest loi) (add1 start-index)))))
-  (let [(letter-imgs (build-list TAPE-SIZE
-                                 (λ (i) (if (< (+ start-index i) (length tape))
-                                            (overlay (text (symbol->string (list-ref tape (+ start-index i)))
-                                                           24
-                                                           (if (= i (- head-pos start-index))
-                                                               'red
-                                                               'black))
-                                                     (overlay (square 50 'solid 'white)
-                                                              (square (add1 50) 'solid 'black)))
-                                            (overlay (square 50 'solid 'white)
-                                                     (square (add1 50) 'solid 'black))))))]
-    (above (make-tape-img letter-imgs start-index)
-           (square 30 'solid 'white)
-           var)))
+(define (draw-imsg a-tape)
+  (let* [(tape (first (zipper-current (imsg-struct-tapes a-tape))))
+         (start-index (second (zipper-current (imsg-struct-tapes a-tape))))
+         (head-pos (third (zipper-current (imsg-struct-tapes a-tape))))
+         (var (zipper-current (imsg-struct-vars a-tape)))]
+    (define (make-tape-img loi start-index)
+      (if (empty? (rest loi))
+          (above (first loi)
+                 (square 5 'solid 'white)
+                 (text (number->string start-index) 10 'black))
+          (beside (above (first loi)
+                         (square 5 'solid 'white)
+                         (text (number->string start-index) 10 'black))
+                  (make-tape-img (rest loi) (add1 start-index)))))
+    (let [(letter-imgs (build-list TAPE-SIZE
+                                   (λ (i) (if (< (+ start-index i) (length tape))
+                                              (overlay (text (symbol->string (list-ref tape (+ start-index i)))
+                                                             24
+                                                             (if (= i (- head-pos start-index))
+                                                                 'red
+                                                                 'black))
+                                                       (overlay (square 50 'solid 'white)
+                                                                (square (add1 50) 'solid 'black)))
+                                              (overlay (square 50 'solid 'white)
+                                                       (square (add1 50) 'solid 'black))))))]
+      (above (make-tape-img letter-imgs start-index)
+             (square 30 'solid 'white)
+             var))))
 
 
 ;; create-graph-img
@@ -447,6 +451,9 @@
               E-SCENE)
              E-SCENE-TOOLS)))
 
+;; imsg-struct
+(struct imsg-struct (tapes vars))  
+
 ;; ctm-viz
 ;; ctm a-list (listof symbol) number -> void
 (define (ctm-viz ctm ctm-list tape head)
@@ -474,57 +481,50 @@
                                             (text (format "~a = ~a" (second var)(third var)) 20 'black))) tmconf-clean)))
                                     
          (lographs (create-graphics loedges lonodes comp-edges))
-         (tapes (create-tape tmconfigs))
+         (tapes (imsg-struct (list->zipper (create-tape tmconfigs)) (list->zipper varimgs)))
          (lovars (extract-labels comp-edges))
-         (tapeimg  (draw-imsg (first (first tapes)) (second (first tapes)) (third (first tapes)) (first varimgs))
-                   )
          ]
-    #;(run-viz lographs
-               (lambda () (graph->bitmap (first lographs)))
-               MIDDLE-E-SCENE
-               DEFAULT-ZOOM
-               DEFAULT-ZOOM-CAP
-               DEFAULT-ZOOM-FLOOR
-               (informative-messages draw-imsg
-                                     (imsg-state (list->zipper (list* (text "Starting NDFA" FONT-SIZE 'black)
-                                                                      (map graph-struct-inf (create-graphs M)))))
-                                     (bounding-limits 0 0 0 0)
+    (run-viz lographs
+             (lambda () (graph->bitmap (first lographs)))
+             MIDDLE-E-SCENE
+             DEFAULT-ZOOM
+             DEFAULT-ZOOM-CAP
+             DEFAULT-ZOOM-FLOOR
+             (informative-messages draw-imsg
+                                   (imsg-struct (list->zipper (create-tape tmconfigs)) (list->zipper varimgs))
+                                   (bounding-limits 0 0 0 0)
+                                   )
+             (instructions-graphic
+              E-SCENE-TOOLS
+              (bounding-limits 0 0 0 0))
+             (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
+             (create-viz-process-key (list (list "right" viz-go-next right-key-pressed)
+                                           (list "left" viz-go-prev left-key-pressed)
+                                           (list "up" viz-go-to-begin up-key-pressed)
+                                           (list "down" viz-go-to-end down-key-pressed)
+                                           (list "w" viz-zoom-in identity)
+                                           (list "s" viz-zoom-out identity)
+                                           (list "r" viz-max-zoom-out identity)
+                                           (list "f" viz-max-zoom-in identity)
+                                           (list "e" viz-reset-zoom identity)
+                                           (list "wheel-down" viz-zoom-in identity)
+                                           (list "wheel-up" viz-zoom-out identity)
+                                           )
                                      )
-               (instructions-graphic
-                E-SCENE-TOOLS
-                (bounding-limits 0 0 0 0))
-               (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
-               (create-viz-process-key (list (list "right" viz-go-next right-key-pressed)
-                                             (list "left" viz-go-prev left-key-pressed)
-                                             (list "up" viz-go-to-begin up-key-pressed)
-                                             (list "down" viz-go-to-end down-key-pressed)
-                                             (list "w" viz-zoom-in identity)
-                                             (list "s" viz-zoom-out identity)
-                                             (list "r" viz-max-zoom-out identity)
-                                             (list "f" viz-max-zoom-in identity)
-                                             (list "e" viz-reset-zoom identity)
-                                             (list "wheel-down" viz-zoom-in identity)
-                                             (list "wheel-up" viz-zoom-out identity)
-                                             )
-                                       )
-               (create-viz-process-tick E-SCENE-BOUNDING-LIMITS NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT
-                                        CLICK-BUFFER-SECONDS
-                                        (list)
-                                        (list (list ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed)
-                                              (list ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed)
-                                              (list ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed)
-                                              (list ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed)
-                                              (list W-KEY-DIMS viz-zoom-in identity)
-                                              (list S-KEY-DIMS viz-zoom-out identity)
-                                              (list R-KEY-DIMS viz-max-zoom-out identity)
-                                              (list E-KEY-DIMS viz-reset-zoom identity)
-                                              (list F-KEY-DIMS viz-max-zoom-in identity)))
-               'ctm-viz)
-    (run-viz (viz-state (graph (rest lographs) (list (first lographs)))
-                        (tapelist (rest tapes) (list (first tapes)))
-                        tapeimg
-                        (var (rest varimgs) (list (first varimgs))))
-             draw-world 'viz-ctm)))
+             (create-viz-process-tick E-SCENE-BOUNDING-LIMITS NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT
+                                      CLICK-BUFFER-SECONDS
+                                      (list)
+                                      (list (list ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed)
+                                            (list ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed)
+                                            (list ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed)
+                                            (list ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed)
+                                            (list W-KEY-DIMS viz-zoom-in identity)
+                                            (list S-KEY-DIMS viz-zoom-out identity)
+                                            (list R-KEY-DIMS viz-max-zoom-out identity)
+                                            (list E-KEY-DIMS viz-reset-zoom identity)
+                                            (list F-KEY-DIMS viz-max-zoom-in identity)))
+             'ctm-viz)
+    ))
 
 
 
