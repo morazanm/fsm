@@ -10,7 +10,17 @@
                     [make-color loc-make-color]
                     [make-pen loc-make-pen])
          2htdp/image
-         "transdiagram-ctm6.rkt")
+         "transdiagram-ctm6.rkt"
+         "../../../visualizations/viz-lib/zipper.rkt"
+         "../../../visualizations/viz-lib/viz-constants.rkt"
+         "../../../visualizations/viz-lib/viz-imgs/keyboard_bitmaps.rkt"
+         "../../../visualizations/viz-lib/viz-imgs/cursor.rkt"
+         "../../../visualizations/viz-lib/bounding-limits.rkt"
+         "../../../visualizations/viz-lib/default-viz-function-generators.rkt"
+         "../../../visualizations/viz-lib/viz-macros.rkt"
+         "../../../visualizations/viz-lib/viz-state.rkt"
+         "../../../visualizations/viz-lib/viz.rkt"
+         )
 
 (provide ctm-viz)
 
@@ -20,9 +30,484 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define E-SCENE-TOOLS
+  (let [(ARROW (above (triangle 30 'solid 'black) (rectangle 10 30 'solid 'black)))]
+    (beside/align "bottom"
+                  (above ARROW-UP-KEY
+                         (square HEIGHT-BUFFER 'solid 'white)
+                         (text "Restart" (- FONT-SIZE 2) 'black))
+                  (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
+                  (above ARROW-RIGHT-KEY
+                         (square HEIGHT-BUFFER 'solid 'white)
+                         (text "Forward" (- FONT-SIZE 2) 'black))
+                  (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
+                  (above ARROW-LEFT-KEY
+                         (square HEIGHT-BUFFER 'solid 'white)
+                         (text "Backward" (- FONT-SIZE 2) 'black))
+                  (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
+                  (above ARROW-DOWN-KEY
+                         (square HEIGHT-BUFFER 'solid 'white)
+                         (text "Finish" (- FONT-SIZE 2) 'black))
+                  (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
+                  (above cursor
+                         (square HEIGHT-BUFFER 'solid 'white)
+                         (text "Hold to drag" (- FONT-SIZE 2) 'black))
+                  (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
+                  (beside (above/align "middle" W-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Zoom in" (- FONT-SIZE 2) 'black))
+                          (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
+                          
+                          (above/align "middle"  S-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Zoom out" (- FONT-SIZE 2) 'black))
+                          (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
+                          
+                          (above/align "middle" R-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Min zoom" (- FONT-SIZE 2) 'black))
+                          (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
+                          
+                          (above/align "middle" E-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Mid zoom" (- FONT-SIZE 2) 'black))
+                          (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
+                          
+                          (above/align "middle" F-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Max zoom" (- FONT-SIZE 2) 'black))
+                          )
+                  )
+    )
+  )
+
+(define RULE-YIELD-DIMS (bounding-limits 0
+                                         1250
+                                         E-SCENE-HEIGHT
+                                         (+ E-SCENE-HEIGHT 120)))
+
+(define ARROW-UP-KEY-DIMS
+  (bounding-limits (+ (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+                      (/ (- (image-width (text "Restart" (- FONT-SIZE 2) 'black)) (image-width ARROW-UP-KEY)) 2))
+                   (+ (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+                      (/ (- (image-width (text "Restart" (- FONT-SIZE 2) 'black)) (image-width ARROW-UP-KEY)) 2)
+                      (image-width ARROW-UP-KEY))
+                   (+ EXTRA-HEIGHT-FROM-CURSOR
+                      E-SCENE-HEIGHT
+                      (bounding-limits-height RULE-YIELD-DIMS)
+                      INS-TOOLS-BUFFER)
+                   (+ EXTRA-HEIGHT-FROM-CURSOR
+                      E-SCENE-HEIGHT
+                      (bounding-limits-height RULE-YIELD-DIMS)
+                      INS-TOOLS-BUFFER
+                      (image-height ARROW-UP-KEY))))
+
+(define ARROW-RIGHT-KEY-DIMS
+  (bounding-limits (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+                      (/ (- (image-width (text "Forward" (- FONT-SIZE 2) 'black)) (image-width ARROW-RIGHT-KEY)) 2))
+                   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+                      (/ (- (image-width (text "Forward" (- FONT-SIZE 2) 'black)) (image-width ARROW-RIGHT-KEY)) 2)
+                      (image-width ARROW-RIGHT-KEY))
+                   (+ EXTRA-HEIGHT-FROM-CURSOR
+                      E-SCENE-HEIGHT
+                      (bounding-limits-height RULE-YIELD-DIMS)
+                      INS-TOOLS-BUFFER)
+                   (+ EXTRA-HEIGHT-FROM-CURSOR
+                      E-SCENE-HEIGHT
+                      (bounding-limits-height RULE-YIELD-DIMS)
+                      INS-TOOLS-BUFFER
+                      (image-height ARROW-RIGHT-KEY))))
+
+(define ARROW-LEFT-KEY-DIMS
+  (bounding-limits (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+                      (/ (- (image-width (text "Backward" (- FONT-SIZE 2) 'black)) (image-width ARROW-LEFT-KEY)) 2))
+                   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+                      (/ (- (image-width (text "Backward" (- FONT-SIZE 2) 'black)) (image-width ARROW-LEFT-KEY)) 2)
+                      (image-width ARROW-LEFT-KEY))
+                   (+ EXTRA-HEIGHT-FROM-CURSOR
+                      E-SCENE-HEIGHT
+                      (bounding-limits-height RULE-YIELD-DIMS)
+                      INS-TOOLS-BUFFER)
+                   (+ EXTRA-HEIGHT-FROM-CURSOR
+                      E-SCENE-HEIGHT
+                      (bounding-limits-height RULE-YIELD-DIMS)
+                      INS-TOOLS-BUFFER
+                      (image-height ARROW-LEFT-KEY))))
+
+(define ARROW-DOWN-KEY-DIMS
+  (bounding-limits (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+                      (/ (- (image-width (text "Finish" 18 'black)) (image-width ARROW-DOWN-KEY)) 2))
+                   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+                      (/ (- (image-width (text "Finish" (- FONT-SIZE 2) 'black)) (image-width ARROW-DOWN-KEY)) 2)
+                      (image-width ARROW-DOWN-KEY))
+                   (+ EXTRA-HEIGHT-FROM-CURSOR
+                      E-SCENE-HEIGHT
+                      (bounding-limits-height RULE-YIELD-DIMS)
+                      INS-TOOLS-BUFFER)
+                   (+ EXTRA-HEIGHT-FROM-CURSOR
+                      E-SCENE-HEIGHT
+                      (bounding-limits-height RULE-YIELD-DIMS)
+                      INS-TOOLS-BUFFER
+                      (image-height ARROW-DOWN-KEY))))
+
+(define W-KEY-DIMS
+  (bounding-limits (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+                      (/ (- (image-width (text "Zoom in" (- FONT-SIZE 2) 'black)) (image-width W-KEY)) 2))
+                   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+                      (/ (- (image-width (text "Zoom in" (- FONT-SIZE 2) 'black)) (image-width W-KEY)) 2)
+                      (image-width W-KEY))
+                   (+ EXTRA-HEIGHT-FROM-CURSOR
+                      E-SCENE-HEIGHT
+                      (bounding-limits-height RULE-YIELD-DIMS)
+                      INS-TOOLS-BUFFER)
+                   (+ EXTRA-HEIGHT-FROM-CURSOR
+                      E-SCENE-HEIGHT
+                      (bounding-limits-height RULE-YIELD-DIMS)
+                      INS-TOOLS-BUFFER
+                      (image-height W-KEY))))
+
+(define S-KEY-DIMS
+  (bounding-limits (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+                      (/ (- (image-width (text "Zoom out" (- FONT-SIZE 2) 'black)) (image-width S-KEY)) 2))
+                   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+                      (/ (- (image-width (text "Zoom out" (- FONT-SIZE 2) 'black)) (image-width S-KEY)) 2)
+                      (image-width S-KEY))
+                   (+ EXTRA-HEIGHT-FROM-CURSOR
+                      E-SCENE-HEIGHT
+                      (bounding-limits-height RULE-YIELD-DIMS)
+                      INS-TOOLS-BUFFER)
+                   (+ EXTRA-HEIGHT-FROM-CURSOR
+                      E-SCENE-HEIGHT
+                      (bounding-limits-height RULE-YIELD-DIMS)
+                      INS-TOOLS-BUFFER
+                      (image-height S-KEY))))
+
+(define R-KEY-DIMS
+  (bounding-limits (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      
+                      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+                      (/ (- (image-width (text "Min zoom" (- FONT-SIZE 2) 'black)) (image-width R-KEY)) 2))
+                   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      
+                      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+                      (/ (- (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black)) (image-width R-KEY)) 2)
+                      (image-width R-KEY))
+                   (+ EXTRA-HEIGHT-FROM-CURSOR
+                      E-SCENE-HEIGHT
+                      (bounding-limits-height RULE-YIELD-DIMS)
+                      INS-TOOLS-BUFFER)
+                   (+ EXTRA-HEIGHT-FROM-CURSOR
+                      E-SCENE-HEIGHT
+                      (bounding-limits-height RULE-YIELD-DIMS)
+                      INS-TOOLS-BUFFER
+                      (image-height R-KEY))))
+
+(define E-KEY-DIMS
+  (bounding-limits (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+                      (/ (- (image-width (text "Mid zoom" (- FONT-SIZE 2) 'black)) (image-width E-KEY)) 2))
+                   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      
+                      (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+                      (/ (- (image-width (text "Mid Zoom" (- FONT-SIZE 2) 'black)) (image-width E-KEY)) 2)
+                      (image-width E-KEY))
+                   (+ EXTRA-HEIGHT-FROM-CURSOR
+                      E-SCENE-HEIGHT
+                      (bounding-limits-height RULE-YIELD-DIMS)
+                      INS-TOOLS-BUFFER)
+                   (+ EXTRA-HEIGHT-FROM-CURSOR
+                      E-SCENE-HEIGHT
+                      (bounding-limits-height RULE-YIELD-DIMS)
+                      INS-TOOLS-BUFFER
+                      (image-height E-KEY))))
+
+(define F-KEY-DIMS
+  (bounding-limits (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      
+                      (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Mid Zoom" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+                      (/ (- (image-width (text "Max zoom" (- FONT-SIZE 2) 'black)) (image-width F-KEY)) 2))
+                   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      
+                      (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Mid Zoom" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+                      (/ (- (image-width (text "Max Zoom" (- FONT-SIZE 2) 'black)) (image-width F-KEY)) 2)
+                      (image-width F-KEY))
+                   (+ EXTRA-HEIGHT-FROM-CURSOR
+                      E-SCENE-HEIGHT
+                      (bounding-limits-height RULE-YIELD-DIMS)
+                      INS-TOOLS-BUFFER)
+                   (+ EXTRA-HEIGHT-FROM-CURSOR
+                      E-SCENE-HEIGHT
+                      (bounding-limits-height RULE-YIELD-DIMS)
+                      INS-TOOLS-BUFFER
+                      (image-height F-KEY))))
+(define A-KEY-DIMS
+  (bounding-limits (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Mid Zoom" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Max Zoom" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+                      (/ (- (image-width (text "Word start" (- FONT-SIZE 2) 'black)) (image-width A-KEY)) 2))
+                   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Mid Zoom" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Max Zoom" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+                      (/ (- (image-width (text "Word start" (- FONT-SIZE 2) 'black)) (image-width A-KEY)) 2)
+                      (image-width A-KEY))
+                   (+ EXTRA-HEIGHT-FROM-CURSOR
+                      E-SCENE-HEIGHT
+                      (bounding-limits-height RULE-YIELD-DIMS)
+                      INS-TOOLS-BUFFER)
+                   (+ EXTRA-HEIGHT-FROM-CURSOR
+                      E-SCENE-HEIGHT
+                      (bounding-limits-height RULE-YIELD-DIMS)
+                      INS-TOOLS-BUFFER
+                      (image-height A-KEY))))
+(define D-KEY-DIMS
+  (bounding-limits (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Mid Zoom" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Max Zoom" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Word start" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+                      (/ (- (image-width (text "Word end" (- FONT-SIZE 2) 'black)) (image-width D-KEY)) 2))
+                   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
+                      ARROW-KEY-WIDTH-BUFFER
+                      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Mid Zoom" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Max Zoom" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (image-width (text "Word start" (- FONT-SIZE 2) 'black))
+                      LETTER-KEY-WIDTH-BUFFER
+                      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+                      (/ (- (image-width (text "Word end" (- FONT-SIZE 2) 'black)) (image-width D-KEY)) 2)
+                      (image-width D-KEY))
+                   (+ EXTRA-HEIGHT-FROM-CURSOR
+                      E-SCENE-HEIGHT
+                      (bounding-limits-height RULE-YIELD-DIMS)
+                      INS-TOOLS-BUFFER)
+                   (+ EXTRA-HEIGHT-FROM-CURSOR
+                      E-SCENE-HEIGHT
+                      (bounding-limits-height RULE-YIELD-DIMS)
+                      INS-TOOLS-BUFFER
+                      (image-height D-KEY))))
+
+;; imsg-struct
+(struct imsg-struct (tapes vars))
 (define E-SCENE (empty-scene 1250 600))
 (define TAPE-SIZE 20)
-(define E-SCENE-TOOLS (overlay (beside (above (above (triangle 30 'solid 'black)
+#;(define E-SCENE-TOOLS (overlay (beside (above (above (triangle 30 'solid 'black)
                                                      (rectangle 10 30 'solid 'black))
                                               (square 20 'solid 'white)
                                               (text "Restart the visualization" 18 'black))
@@ -69,7 +554,7 @@
 ;; tape which is a list that contains all elements
 ;; needed to create a tape image
 ;; tapeimg is the image of the current tape
-(struct viz-state (graph tapelist tapeimg var))
+;(struct viz-state (graph tapelist tapeimg var))
 
 ;; create-nodes
 ;; graph (listof node) -> graph
@@ -113,170 +598,177 @@
          dgraph
          loe))
 
+
+(define (right-key-pressed a-vs)
+   (struct-copy viz-state
+                a-vs
+                [informative-messages
+                 (struct-copy informative-messages
+                              (viz-state-informative-messages a-vs)
+                              [component-state
+                               (struct-copy imsg-struct
+                                            (informative-messages-component-state (viz-state-informative-messages a-vs))
+                                            [tapes (if (zipper-at-end? (imsg-struct-tapes
+                                                                       (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs))))
+                                                      (imsg-struct-tapes
+                                                                       (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs)))
+                                                      (zipper-next (imsg-struct-tapes
+                                                                    (informative-messages-component-state
+                                                                     (viz-state-informative-messages a-vs))))
+                                                      )
+                                             ]
+                                            [vars (if (zipper-at-end? (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs))))
+                                                      (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs)))
+                                                      (zipper-next (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs))))
+                                                      )
+                                                  ]
+                                            )])]))
+
+(define (left-key-pressed a-vs)
+  (struct-copy viz-state
+                a-vs
+                [informative-messages
+                 (struct-copy informative-messages
+                              (viz-state-informative-messages a-vs)
+                              [component-state
+                               (struct-copy imsg-struct
+                                            (informative-messages-component-state (viz-state-informative-messages a-vs))
+                                            [tapes (if (zipper-at-begin? (imsg-struct-tapes
+                                                                       (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs))))
+                                                      (imsg-struct-tapes
+                                                                       (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs)))
+                                                      (zipper-prev (imsg-struct-tapes
+                                                                    (informative-messages-component-state
+                                                                     (viz-state-informative-messages a-vs))))
+                                                      )
+                                             ]
+                                            [vars (if (zipper-at-begin? (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs))))
+                                                      (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs)))
+                                                      (zipper-prev (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs))))
+                                                      )
+                                                  ]
+                                            )])]))
+
+(define (up-key-pressed a-vs)
+  (struct-copy viz-state
+                a-vs
+                [informative-messages
+                 (struct-copy informative-messages
+                              (viz-state-informative-messages a-vs)
+                              [component-state
+                               (struct-copy imsg-struct
+                                            (informative-messages-component-state (viz-state-informative-messages a-vs))
+                                            [tapes (if (zipper-at-begin? (imsg-struct-tapes
+                                                                       (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs))))
+                                                      (imsg-struct-tapes
+                                                                       (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs)))
+                                                      (zipper-to-begin (imsg-struct-tapes
+                                                                    (informative-messages-component-state
+                                                                     (viz-state-informative-messages a-vs))))
+                                                      )
+                                             ]
+                                            [vars (if (zipper-at-begin? (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs))))
+                                                      (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs)))
+                                                      (zipper-to-begin (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs))))
+                                                      )
+                                                  ]
+                                            )])]))
+
+
+(define (down-key-pressed a-vs)
+  (struct-copy viz-state
+                a-vs
+                [informative-messages
+                 (struct-copy informative-messages
+                              (viz-state-informative-messages a-vs)
+                              [component-state
+                               (struct-copy imsg-struct
+                                            (informative-messages-component-state (viz-state-informative-messages a-vs))
+                                            [tapes (if (zipper-at-end? (imsg-struct-tapes
+                                                                       (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs))))
+                                                      (imsg-struct-tapes
+                                                                       (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs)))
+                                                      (zipper-to-end (imsg-struct-tapes
+                                                                    (informative-messages-component-state
+                                                                     (viz-state-informative-messages a-vs))))
+                                                      )
+                                             ]
+                                            [vars (if (zipper-at-end? (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs))))
+                                                      (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs)))
+                                                      (zipper-to-end (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs))))
+                                                      )
+                                                  ]
+                                            )])]))
+
+
+(define (d-key-pressed a-vs)
+  (struct-copy viz-state
+                a-vs
+                [informative-messages
+                 (struct-copy informative-messages
+                              (viz-state-informative-messages a-vs)
+                              [component-state
+                               (struct-copy imsg-struct
+                                            (informative-messages-component-state (viz-state-informative-messages a-vs))
+                                            [tapes (zipper-set (imsg-struct-tapes
+                                                                       (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs)))
+                                                               (list (first (zipper-current (imsg-struct-tapes
+                                                                       (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs)))))
+                                                         (add1 (second (zipper-current (imsg-struct-tapes
+                                                                       (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs))))))
+                                                         (third (zipper-current (imsg-struct-tapes
+                                                                       (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs))))))
+                                                               )
+                                             ]
+                                            )])]))
+
+(define (a-key-pressed a-vs)
+  (struct-copy viz-state
+                a-vs
+                [informative-messages
+                 (struct-copy informative-messages
+                              (viz-state-informative-messages a-vs)
+                              [component-state
+                               (struct-copy imsg-struct
+                                            (informative-messages-component-state (viz-state-informative-messages a-vs))
+                                            [tapes (zipper-set (imsg-struct-tapes
+                                                                       (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs)))
+                                                               (list (first (zipper-current (imsg-struct-tapes
+                                                                       (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs)))))
+                                                         (if (< 0 (second (zipper-current (imsg-struct-tapes
+                                                                       (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs))))))
+                                                             (sub1 (second (zipper-current (imsg-struct-tapes
+                                                                       (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs))))))
+                                                             (second (zipper-current (imsg-struct-tapes
+                                                                       (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs))))))
+                                                         (third (zipper-current (imsg-struct-tapes
+                                                                       (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs)))))))
+                                             ]
+                                            )])]))
+
 ;; process-key
 ;; viz-state key --> viz-state
 ;; Purpose: Move the visualization on step forward, one step
 ;;          backwards, or to the end.
-(define (process-key a-vs a-key)
-  (cond [(key=? "right" a-key)
-         (if (empty? (graph-upimgs (viz-state-graph a-vs)))
-             a-vs
-             (let* [(new-utape (rest (tapelist-utape (viz-state-tapelist a-vs))))
-                    (new-ptape (cons (first (tapelist-utape (viz-state-tapelist a-vs)))
-                                     (tapelist-ptape (viz-state-tapelist a-vs))))
-                    (message (above (draw-imsg (first (first new-ptape))
-                                               (second (first new-ptape))
-                                               (third (first new-ptape)))
-                                    (square 30 'solid 'white)
-                                    (text "The machine halts" 20 'purple)))
-                    (new-uvar (rest (var-uvar (viz-state-var a-vs))))
-                    (new-pvar (cons (first (var-uvar (viz-state-var a-vs)))
-                                    (var-pvar (viz-state-var a-vs))))]
-               (if (= 1 (length (graph-upimgs (viz-state-graph a-vs))))
-                   (viz-state (graph (rest (graph-upimgs (viz-state-graph a-vs)))
-                                     (cons (first (graph-upimgs (viz-state-graph a-vs)))
-                                           (graph-pimgs (viz-state-graph a-vs))))
-                              (tapelist new-utape
-                                        new-ptape)
-                              message
-                              (if (empty? (var-uvar (viz-state-var a-vs)))
-                                  (viz-state-var a-vs)                                  
-                                  (var (rest (var-uvar (viz-state-var a-vs)))
-                                       (cons (first (var-uvar (viz-state-var a-vs)))
-                                             (var-pvar (viz-state-var a-vs))))))
-                   (viz-state (graph (rest (graph-upimgs (viz-state-graph a-vs)))
-                                     (cons (first (graph-upimgs (viz-state-graph a-vs)))
-                                           (graph-pimgs (viz-state-graph a-vs))))
-                              (tapelist new-utape
-                                        new-ptape)
-                              (above (draw-imsg (first (first new-ptape))
-                                                (second (first new-ptape))
-                                                (third (first new-ptape)))
-                                     (square 30 'solid 'white)
-                                     (first new-pvar)
-                                     ) 
-                              (if (empty? (var-uvar (viz-state-var a-vs)))
-                                  (viz-state-var a-vs) 
-                                  (var new-uvar
-                                       new-pvar))))
-               ))]
-        [(key=? "left" a-key)
-         (if (= (length (graph-pimgs (viz-state-graph a-vs))) 1)
-             a-vs
-             (let* [(new-utape (cons (first (tapelist-ptape (viz-state-tapelist a-vs)))
-                                     (tapelist-utape (viz-state-tapelist a-vs))))
-                    (new-ptape (rest (tapelist-ptape (viz-state-tapelist a-vs))))
-                    (new-pvar (rest (var-pvar (viz-state-var a-vs))))
-                    (new-uvar (cons (first (var-pvar (viz-state-var a-vs)))
-                                    (var-uvar (viz-state-var a-vs))))]
-               (viz-state (graph (cons (first (graph-pimgs (viz-state-graph a-vs)))
-                                       (graph-upimgs (viz-state-graph a-vs)))                             
-                                 (rest (graph-pimgs (viz-state-graph a-vs))))
-                          (tapelist new-utape
-                                    new-ptape)
-                          (above (draw-imsg (first (first new-ptape))
-                                            (second (first new-ptape))
-                                            (third (first new-ptape)))
-                                 (square 30 'solid 'white)
-                                 (first new-pvar)
-                                 )
-                          (if (= 1 (length (var-pvar (viz-state-var a-vs))))
-                              (viz-state-var a-vs) 
-                              (var new-uvar                             
-                                   new-pvar)))))]
-        [(key=? "down" a-key)
-         (if (empty? (graph-upimgs (viz-state-graph a-vs)))
-             a-vs
-             (let* [(new-utape '())
-                    (new-ptape (append (reverse (tapelist-utape (viz-state-tapelist a-vs)))
-                                       (tapelist-ptape (viz-state-tapelist a-vs))))]
-               (viz-state (graph '()
-                                 (append (reverse (graph-upimgs (viz-state-graph a-vs)))
-                                         (graph-pimgs (viz-state-graph a-vs))))
-                          (tapelist new-utape
-                                    new-ptape)
-                          (above (draw-imsg (first (first new-ptape))
-                                            (second (first new-ptape))
-                                            (third (first new-ptape)))
-                                 (square 30 'solid 'white)
-                                 (text "The machine halts" 20 'purple))
-                          (var (list (first (append (reverse (var-uvar (viz-state-var a-vs)))
-                                                    (var-pvar (viz-state-var a-vs)))))
-                               (rest (append (reverse (var-uvar (viz-state-var a-vs)))
-                                             (var-pvar (viz-state-var a-vs))))))))]
-        [(key=? "up" a-key)
-         (if (= (length (graph-pimgs (viz-state-graph a-vs))) 1)
-             a-vs
-             (let* [(new-utape (rest (append (reverse (tapelist-ptape (viz-state-tapelist a-vs)))
-                                             (tapelist-utape (viz-state-tapelist a-vs)))))
-                    (new-ptape (list (first (append (reverse (tapelist-ptape (viz-state-tapelist a-vs)))
-                                                    (tapelist-utape (viz-state-tapelist a-vs))))))]
-               (viz-state (graph (rest (append (reverse (graph-pimgs (viz-state-graph a-vs)))
-                                               (graph-upimgs (viz-state-graph a-vs))))
-                                 (list (first (append (reverse (graph-pimgs (viz-state-graph a-vs)))
-                                                      (graph-upimgs (viz-state-graph a-vs))))))
-                          (tapelist new-utape
-                                    new-ptape)
-                          (above (draw-imsg (first (first new-ptape))
-                                            (second (first new-ptape))
-                                            (third (first new-ptape)))
-                                 (square 30 'solid 'white)
-                                 (first (var-pvar (viz-state-var a-vs)))
-                                 )
-                          (var (rest (append (reverse (var-pvar (viz-state-var a-vs)))
-                                             (var-uvar (viz-state-var a-vs))))
-                               (list (first (append (reverse (var-pvar (viz-state-var a-vs)))
-                                                    (var-uvar (viz-state-var a-vs)))))))))]
-        [(key=? "d" a-key)
-         (if (and (> (length (first (first (tapelist-ptape (viz-state-tapelist a-vs))))) TAPE-SIZE)
-                  (not (= (+ (second (first (tapelist-ptape (viz-state-tapelist a-vs)))) TAPE-SIZE)
-                          (length (first (first (tapelist-ptape (viz-state-tapelist a-vs))))))))           
-             (let* [(new-tape (list (first (first (tapelist-ptape (viz-state-tapelist a-vs))))
-                                    (add1 (second (first (tapelist-ptape (viz-state-tapelist a-vs)))))
-                                    (third (first (tapelist-ptape (viz-state-tapelist a-vs))))))
-                    (new-ptape (cons new-tape (rest (tapelist-ptape (viz-state-tapelist a-vs)))))
-                    (new-tapelist (tapelist (tapelist-utape (viz-state-tapelist a-vs))
-                                            new-ptape))
-                    (message (above (draw-imsg (first (first new-ptape))
-                                               (second (first new-ptape))
-                                               (third (first new-ptape)))
-                                    (square 30 'solid 'white)
-                                    (text "The machine halts" 20 'purple)))
-                    ]
-               (viz-state (viz-state-graph a-vs)
-                          new-tapelist
-                          message
-                          (viz-state-var a-vs)
-                          ))
-             a-vs)]
-        
-        [(key=? "s" a-key)
-         (if (= (second (first (tapelist-ptape (viz-state-tapelist a-vs)))) 0)
-             a-vs
-             (let* [(new-tape (list (first (first (tapelist-ptape (viz-state-tapelist a-vs))))
-                                    (sub1 (second (first (tapelist-ptape (viz-state-tapelist a-vs)))))
-                                    (third (first (tapelist-ptape (viz-state-tapelist a-vs))))))
-                    (new-ptape (cons new-tape (rest (tapelist-ptape (viz-state-tapelist a-vs)))))
-                    (new-tapelist (tapelist (tapelist-utape (viz-state-tapelist a-vs))
-                                            new-ptape))
-                    ]
-               (viz-state (viz-state-graph a-vs)
-                          new-tapelist
-                          (if (empty? (graph-upimgs (viz-state-graph a-vs)))
-                              (above (draw-imsg (first (first (tapelist-ptape new-tapelist)))
-                                                (second (first (tapelist-ptape new-tapelist)))
-                                                (third (first (tapelist-ptape new-tapelist))))
-                                     (square 30 'solid 'white)
-                                     (text "The machine halts" 20 'purple))
-                              (above (draw-imsg (first (first (tapelist-ptape (viz-state-tapelist a-vs))))
-                                                (sub1 (second (first (tapelist-ptape (viz-state-tapelist a-vs)))))
-                                                (third (first (tapelist-ptape (viz-state-tapelist a-vs)))))
-                                     (square 30 'solid 'white)
-                                     (second (first (var-pvar (viz-state-var a-vs))))
-                                     ))
-                          (viz-state-var a-vs))))]
-        
-        [else a-vs]))
+
 
 ;; list2string
 ;; list -> string
@@ -316,9 +808,15 @@
                                                                 (square (add1 50) 'solid 'black)))
                                               (overlay (square 50 'solid 'white)
                                                        (square (add1 50) 'solid 'black))))))]
-      (above (make-tape-img letter-imgs start-index)
+      (if (zipper-at-end? (imsg-struct-tapes a-tape))
+       (above (make-tape-img letter-imgs start-index)
              (square 30 'solid 'white)
-             var))))
+             (text "The machine halts" 20 'purple))
+       (above (make-tape-img letter-imgs start-index)
+             (square 30 'solid 'white)
+             var)
+       )
+      )))
 
 
 ;; create-graph-img
@@ -431,7 +929,7 @@
 ;; draw-img
 ;; viz-state -> img
 ;; Purpose: To render the given viz-state
-(define (draw-world a-vs)
+#;(define (draw-world a-vs)
   (if (or (> (image-width (first (graph-pimgs (viz-state-graph a-vs))))
              (- (image-width E-SCENE) 50))
           (> (image-height (first (graph-pimgs (viz-state-graph a-vs))))
@@ -451,8 +949,17 @@
               E-SCENE)
              E-SCENE-TOOLS)))
 
-;; imsg-struct
-(struct imsg-struct (tapes vars))  
+(define viz-go-next (go-next E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR PERCENT-BORDER-GAP))
+(define viz-go-prev (go-prev E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR PERCENT-BORDER-GAP))
+(define viz-go-to-begin (go-to-begin E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR PERCENT-BORDER-GAP))
+(define viz-go-to-end (go-to-end E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR PERCENT-BORDER-GAP))
+
+
+(define viz-zoom-in (zoom-in E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE PERCENT-BORDER-GAP DEFAULT-ZOOM-CAP DEFAULT-ZOOM))
+(define viz-zoom-out (zoom-out E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE PERCENT-BORDER-GAP DEFAULT-ZOOM-CAP DEFAULT-ZOOM))
+(define viz-max-zoom-out (max-zoom-out E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE PERCENT-BORDER-GAP DEFAULT-ZOOM-CAP DEFAULT-ZOOM))
+(define viz-max-zoom-in (max-zoom-in E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE PERCENT-BORDER-GAP DEFAULT-ZOOM-CAP DEFAULT-ZOOM))
+(define viz-reset-zoom (reset-zoom E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE PERCENT-BORDER-GAP DEFAULT-ZOOM-CAP DEFAULT-ZOOM))
 
 ;; ctm-viz
 ;; ctm a-list (listof symbol) number -> void
@@ -509,6 +1016,8 @@
                                            (list "e" viz-reset-zoom identity)
                                            (list "wheel-down" viz-zoom-in identity)
                                            (list "wheel-up" viz-zoom-out identity)
+                                           (list "a" identity a-key-pressed)
+                                           (list "d" identity d-key-pressed)
                                            )
                                      )
              (create-viz-process-tick E-SCENE-BOUNDING-LIMITS NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT
@@ -522,14 +1031,19 @@
                                             (list S-KEY-DIMS viz-zoom-out identity)
                                             (list R-KEY-DIMS viz-max-zoom-out identity)
                                             (list E-KEY-DIMS viz-reset-zoom identity)
-                                            (list F-KEY-DIMS viz-max-zoom-in identity)))
+                                            (list F-KEY-DIMS viz-max-zoom-in identity)
+                                            (list A-KEY-DIMS identity a-key-pressed)
+                                            (list D-KEY-DIMS identity d-key-pressed)
+                                            )
+                                      )
+             
              'ctm-viz)
     ))
 
 
 
 ;; vst --> void
-(define (run-viz a-vs draw-etc a-name)
+#;(define (run-viz a-vs draw-etc a-name)
   (begin
     (big-bang
         a-vs                
