@@ -20,12 +20,6 @@
 (define (treelist-insert-list tl i lst)
   (if (empty? lst) tl (treelist-insert-list (treelist-insert tl i (first lst)) (add1 i) (rest lst))))
 
-;; yield is a structure that has
-;; pr - processed part of the word
-;; nt - nonterminal
-;; up - unprocessed part of the word
-#;(struct yield (state up) #:transparent)
-
 (define (cfg-derive-level-leftmost g w)
   (define alphabet-ht
     (foldr (lambda (val accum)
@@ -222,11 +216,6 @@
    '(a b c d)
    `((S ,ARROW ,EMP) (S ,ARROW AB) (A ,ARROW aSb) (B ,ARROW cBd) (A ,ARROW ,EMP) (B ,ARROW ,EMP))
    'S))
-
-;; (listof symbol) (listof yield) -> w-der
-;; Purpose: Converts a yield derivation into the form of a word derivation that the viz expects
-#;(define (convert-yield-deriv-to-word-deriv input-word yield-deriv)
-    (remove-duplicates (map (lambda (x) (get-current-state (first x))) yield-deriv)))
 
 ;(cfg-derive-level-leftmost testcfg '(a a b b c c c d d d))
 ;(time (cfg-derive-level-leftmost testcfg '(a a a a a a a a a a a a a a a a b b b b b b b b b b b b b b b b c c c c c c c c c c c c c c c c d d d d d d d d d d d d d d d d)))

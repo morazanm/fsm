@@ -1,6 +1,5 @@
 #lang racket
-(require racket/fixnum
-         racket/treelist
+(require racket/treelist
          "../../fsm-core/private/cfg.rkt"
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/misc.rkt"
@@ -29,7 +28,7 @@
 
   (define treelist-w (list->treelist w))
   (define (get-last-nt-helper st i)
-    (if (fx= i -1)
+    (if (= i -1)
         #f
         (if (not (hash-ref alphabet-ht (treelist-ref st i) #f))
             (treelist-ref st i)
@@ -54,7 +53,7 @@
   ;; (listof symbol) (listof symbol) -> (listof symbol)
   ;; Purpose: Replaces the rightmost nonterminal with a righthand side of a rule
   (define (subst-last-nt-helper st rght i)
-    (if (fx= i -1)
+    (if (= i -1)
         (treelist-insert-list (treelist-delete st 0) 0 rght)
         (if (not (member (treelist-ref st i) (cfg-get-alphabet g)))
             (if (eq? (first rght) EMP)
@@ -72,25 +71,25 @@
   (define (get-starting-terminals-rightmost st)
     (define st-length (treelist-length st))
     (define (get-starting-terminals-rightmost-helper st i)
-      (if (fx= i st-length)
+      (if (= i st-length)
           st
-          (if (not (member (treelist-ref st (fx- (sub1 (treelist-length st)) i))
+          (if (not (member (treelist-ref st (- (sub1 (treelist-length st)) i))
                            (cfg-get-alphabet g)))
-              (if (fx= i 0)
+              (if (= i 0)
                   (treelist)
-                  (treelist-sublist st (fx- (treelist-length st) i) (treelist-length st)))
+                  (treelist-sublist st (- (treelist-length st) i) (treelist-length st)))
 
               (get-starting-terminals-rightmost-helper st (add1 i)))))
     (get-starting-terminals-rightmost-helper st 0))
 
   (define (get-last-n-terms w n)
-    (if (fx= n 0) (treelist) (treelist-sublist w (fx- (treelist-length w) n) (treelist-length w))))
+    (if (= n 0) (treelist) (treelist-sublist w (- (treelist-length w) n) (treelist-length w))))
 
   ; (list (listof symbol)) --> boolean
   (define (check-terminals? st)
     (let* ([start-terms-st (get-starting-terminals-rightmost st)]
 
-           [start-terms-w (if (fx> (treelist-length start-terms-st) (treelist-length treelist-w))
+           [start-terms-w (if (> (treelist-length start-terms-st) (treelist-length treelist-w))
                               #f
                               (get-last-n-terms treelist-w (treelist-length start-terms-st)))])
       (cond
@@ -98,7 +97,7 @@
         [else (equal? start-terms-st start-terms-w)])))
 
   (define (treelist-filter-helper pred tl i)
-    (if (fx= i -1)
+    (if (= i -1)
         tl
         (if (pred (treelist-ref tl i))
             (treelist-filter-helper pred tl (sub1 i))
@@ -124,8 +123,8 @@
     (cond
       [(qempty? derivs) (format "~s is not in L(G)." w)]
       [(or (and chomsky
-                (fx> (length (first (first (qpeek derivs)))) (fx+ 2 (treelist-length treelist-w))))
-           (fx> (count-terminals (first (first (qpeek derivs))) (cfg-get-alphabet g))
+                (> (length (first (first (qpeek derivs)))) (+ 2 (treelist-length treelist-w))))
+           (> (count-terminals (first (first (qpeek derivs))) (cfg-get-alphabet g))
                 (treelist-length treelist-w)))
        (make-deriv visited (dequeue! derivs) g chomsky)]
       [else

@@ -681,26 +681,16 @@
   (let [(renamed-machine (if (ormap (λ (x) (member x (sm-states M))) (sm-states N))
                              (rename-states-fsa (sm-states M) N)
                              N))]
-<<<<<<< HEAD
     (run-viz (map graph-struct-grph (list (make-init-grph-struct M N) (create-graph-structs M renamed-machine)))
              (lambda () (apply above (map graph->bitmap (graph-struct-grph (make-init-grph-struct M N)))))
-=======
-    (run-viz (map graph-struct-grph (list (make-init-grph-struct M renamed-machine) (create-graph-structs M renamed-machine)))
-             (lambda () (apply above (map graph->bitmap (graph-struct-grph (make-init-grph-struct M renamed-machine)))))
->>>>>>> 953fad504e99d8f1c8345d7d88940ba901008ec2
              MIDDLE-E-SCENE
              DEFAULT-ZOOM
              DEFAULT-ZOOM-CAP
              DEFAULT-ZOOM-FLOOR
              (informative-messages draw-imsg
                                    (graph-struct
-<<<<<<< HEAD
                                     (list->zipper (map (lambda (x) '()) (list (make-init-grph-struct M N) (create-graph-structs M renamed-machine))))
                                     (list->zipper  (map graph-struct-inf (list (make-init-grph-struct M N) (create-graph-structs M renamed-machine)))
-=======
-                                    (list->zipper (map (lambda (x) '()) (list (make-init-grph-struct M renamed-machine) (create-graph-structs M renamed-machine))))
-                                    (list->zipper  (map graph-struct-inf (list (make-init-grph-struct M renamed-machine) (create-graph-structs M renamed-machine)))
->>>>>>> 953fad504e99d8f1c8345d7d88940ba901008ec2
                                                   ))
                                    (bounding-limits 0 0 0 0)
                                    )
@@ -735,3 +725,4 @@
                                             (list F-KEY-DIMS viz-max-zoom-in identity)))
              'concat-viz)))
 
+(concat-viz nl ab*)
