@@ -8,6 +8,7 @@
          "../viz-lib/viz-state.rkt"
          "../../fsm-gviz/private/lib.rkt"
          "../viz-lib/viz-constants.rkt"
+         "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          math/matrix)
 
 
@@ -39,6 +40,7 @@
 
 (struct imsg-state (rules yield input-word word-img-offset word-img-offset-cap
                           scroll-accum broken-invariants))
+#|
 
 (define S-KEY (bitmap/file "../viz-lib/viz-imgs/keyboard_key_s.png"))
 
@@ -61,6 +63,7 @@
 (define ARROW-UP-KEY (bitmap/file "../viz-lib/viz-imgs/keyboard_key_up.png"))
 
 (define ARROW-DOWN-KEY (bitmap/file "../viz-lib/viz-imgs/keyboard_key_down.png"))
+|#
 
 ;; Listof Symbol natnum -> Image
 ;; Returns an image of a tape of symbols, capable of sliding when its start-index is varied
@@ -1121,9 +1124,11 @@
                                 (text (format " ~a" (substring (zipper-current (imsg-state-rules a-imsgs)) 1)) FONT-SIZE HEDGE-COLOR))))
                   ;(define INVARIANT-MSG (text "Invariant: " FONT-SIZE 'black))
                   (define INVARIANT-STATE
-                    (if (empty? (zipper-current (imsg-state-broken-invariants a-imsgs)))
+                    (if (equal? 'NO-INV (imsg-state-broken-invariants a-imsgs))
+                        (text "All invariants hold." FONT-SIZE 'white)
+                        (if (empty? (zipper-current (imsg-state-broken-invariants a-imsgs)))
                         (text "All invariants hold." FONT-SIZE 'black)
-                        (text (format "~a invariant does not hold." (first (zipper-current (imsg-state-broken-invariants a-imsgs)))) FONT-SIZE 'black)))
+                        (text (format "~a invariant does not hold." (first (zipper-current (imsg-state-broken-invariants a-imsgs)))) FONT-SIZE 'black))))
                   (define spacer
                     (rectangle (- E-SCENE-WIDTH
                                   (image-width RULE-USED)
@@ -1187,9 +1192,11 @@
                                                  [yield (if (zipper-at-end? (imsg-state-yield a-imsgs))
                                                             (imsg-state-yield a-imsgs)
                                                             (zipper-next (imsg-state-yield a-imsgs)))]
-                                                 [broken-invariants (if (zipper-at-end? (imsg-state-broken-invariants a-imsgs))
+                                                 [broken-invariants (if (equal? 'NO-INV (imsg-state-broken-invariants a-imsgs))
+                                                                        'NO-INV
+                                                                        (if (zipper-at-end? (imsg-state-broken-invariants a-imsgs))
                                                                         (imsg-state-broken-invariants a-imsgs)
-                                                                        (zipper-next (imsg-state-broken-invariants a-imsgs)))]))])])))
+                                                                        (zipper-next (imsg-state-broken-invariants a-imsgs))))]))])])))
 
 ;; viz-state -> viz-state
 ;; Updates the informative message so it displays the beginning state
@@ -1204,7 +1211,9 @@
                                     (struct-copy imsg-state a-imsgs
                                                  [rules (zipper-to-begin (imsg-state-rules a-imsgs))]
                                                  [yield (zipper-to-begin (imsg-state-yield a-imsgs))]
-                                                 [broken-invariants (zipper-to-begin (imsg-state-broken-invariants a-imsgs))]))])])))
+                                                 [broken-invariants (if (equal? 'NO-INV (imsg-state-broken-invariants a-imsgs))
+                                                                        'NO-INV
+                                                                        (zipper-to-begin (imsg-state-broken-invariants a-imsgs)))]))])])))
 
 ;; viz-state -> viz-state
 ;; Updates the informative message so it displays the previous rule yield
@@ -1223,9 +1232,11 @@
                                                  [rules (if (zipper-at-begin? (imsg-state-rules a-imsgs))
                                                             (imsg-state-rules a-imsgs)
                                                             (zipper-prev (imsg-state-rules a-imsgs)))]
-                                                 [broken-invariants (if (zipper-at-begin? (imsg-state-broken-invariants a-imsgs))
+                                                 [broken-invariants (if (equal? 'NO-INV (imsg-state-broken-invariants a-imsgs))
+                                                                        'NO-INV
+                                                                        (if (zipper-at-begin? (imsg-state-broken-invariants a-imsgs))
                                                                         (imsg-state-broken-invariants a-imsgs)
-                                                                        (zipper-prev (imsg-state-broken-invariants a-imsgs)))]))])])))
+                                                                        (zipper-prev (imsg-state-broken-invariants a-imsgs))))]))])])))
 
 ;; viz-state -> viz-state
 ;; Updates the informative message so it displays the ending rule yield
@@ -1240,7 +1251,9 @@
                                     (struct-copy imsg-state a-imsgs
                                                  [rules (zipper-to-end (imsg-state-rules a-imsgs))]
                                                  [yield (zipper-to-end (imsg-state-yield a-imsgs))]
-                                                 [broken-invariants (zipper-to-end (imsg-state-broken-invariants a-imsgs))]))])])))
+                                                 [broken-invariants (if (equal? 'NO-INV (imsg-state-broken-invariants a-imsgs))
+                                                                        'NO-INV
+                                                                        (zipper-to-end (imsg-state-broken-invariants a-imsgs)))]))])])))
 
 ;; viz-state -> viz-state
 ;; Purpose: Moves the deriving and current yield to the beginning of their current words

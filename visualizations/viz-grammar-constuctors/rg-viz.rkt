@@ -439,13 +439,15 @@
              (yield-trees (map create-yield-tree (map reverse (create-list-of-levels loe-without-empty))))
              (dgraph (dgrph loe '() '() '() (rest rules) (list (first rules)) (reverse yield-trees) (list (tree (grammar-start rg) '()))))
              (lod (reverse (create-dgrphs dgraph '())))
-             (broken-invariants (list->zipper (map (lambda (a-dgrph) (remove-duplicates
+             (broken-invariants (if (empty? invariants)
+                                    'NO-INV
+                                    (list->zipper (map (lambda (a-dgrph) (remove-duplicates
                                                                       (map undo-renaming (create-invariant-nodes a-dgrph invariants (grammar-start rg)))))
-                                                   lod)))
+                                                   lod))))
              (graphs (map (lambda (dgrph) (create-graph-structs dgrph invariants (grammar-start rg))) lod))]
         (init-viz rg word w-der rules graphs broken-invariants))))
 
-;(rg-viz even-bs-odd-as '(a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a))
+(rg-viz even-bs-odd-as '(a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a))
  
 
 ;(time

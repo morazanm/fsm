@@ -805,12 +805,16 @@
                    [ordered-nodes
                     (reverse (map (if (eq? derv-type 'left) get-leftmost-order get-rightmost-order)
                                   yield-trees))]
-                   [broken-invariants (list->zipper (cons '()
+                   [broken-invariants (if (empty? invariants)
+                                          'NO-INV
+                                          (list->zipper (cons '()
                                                           (map (lambda (lst) (map undo-renaming lst))
                                                                (map reverse
                                                                     (rest (get-ordered-invariant-nodes
                                                                            ordered-nodes
-                                                                           invar-nodes))))))]
+                                                                           invar-nodes))))))
+                                          )
+                                      ]
                    [graphs (map (lambda (dgrph node-lvls)
                                   (create-graph-structs dgrph
                                                         invariants
@@ -885,12 +889,14 @@
                                                     get-level-leftmost-order
                                                     get-level-rightmost-order)
                                                 yield-trees))]
-                   [broken-invariants (list->zipper (cons '()
+                   [broken-invariants (if (empty? invariants)
+                                          'NO-INV
+                                          (list->zipper (cons '()
                                                           (map (lambda (lst) (map undo-renaming lst))
                                                                (map reverse
                                                                     (rest (get-ordered-invariant-nodes
                                                                            ordered-nodes
-                                                                           invar-nodes))))))]
+                                                                           invar-nodes)))))))]
                    [rank-node-lvls (cons (list (list 'S))
                                          (accumulate-previous-ranks
                                           (map (lambda (x) (map (lambda (y) (second y)) x)) renamed)
@@ -960,10 +966,6 @@
    '(a b c d)
    `((S ,ARROW ,EMP) (S ,ARROW AB) (A ,ARROW aSb) (B ,ARROW cBd) (A ,ARROW ,EMP) (B ,ARROW ,EMP))
    'S))
-
-
-
-
 
  (cfg-viz numb>numa '(b b b b b b a a) 'level-left (list 'S S-INV) (list 'A A-INV))
 #;(cfg-viz testcfg '(a a b b c c c d d d) 'left)
