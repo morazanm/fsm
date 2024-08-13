@@ -818,10 +818,12 @@
        (above (text "The machine halts" 20 'purple)
               (square 30 'solid 'white)
               (make-tape-img letter-imgs start-index)
+              (square 30 'solid 'white)
              )
        (above var
               (square 30 'solid 'white)
               (make-tape-img letter-imgs start-index)
+              (square 30 'solid 'white)
              )
        )
       )))
