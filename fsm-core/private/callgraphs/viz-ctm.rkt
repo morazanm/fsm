@@ -68,10 +68,10 @@
                           (above/align "middle" F-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Max zoom" (- FONT-SIZE 2) 'black))
                           (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
 
-                          (above/align "middle" A-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Max zoom" (- FONT-SIZE 2) 'black))
+                          (above/align "middle" A-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Tape left" (- FONT-SIZE 2) 'black))
                           (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
 
-                          (above/align "middle" D-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Max zoom" (- FONT-SIZE 2) 'black))
+                          (above/align "middle" D-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Tape right" (- FONT-SIZE 2) 'black))
                           )
                   )
     )
@@ -815,12 +815,14 @@
                                               (overlay (square 50 'solid 'white)
                                                        (square (add1 50) 'solid 'black))))))]
       (if (zipper-at-end? (imsg-struct-tapes a-tape))
-       (above (make-tape-img letter-imgs start-index)
-             (square 30 'solid 'white)
-             (text "The machine halts" 20 'purple))
-       (above (make-tape-img letter-imgs start-index)
-             (square 30 'solid 'white)
-             var)
+       (above (text "The machine halts" 20 'purple)
+              (square 30 'solid 'white)
+              (make-tape-img letter-imgs start-index)
+             )
+       (above var
+              (square 30 'solid 'white)
+              (make-tape-img letter-imgs start-index)
+             )
        )
       )))
 
