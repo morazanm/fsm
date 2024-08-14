@@ -349,7 +349,7 @@
         a-vs
         (let* [(new-imgs (zipper-prev (viz-state-imgs a-vs)))
                (new-pimgs-img (if (list? (zipper-current new-imgs))
-                                   (apply beside (map (lambda (img) (img)) (zipper-current new-imgs)))
+                                   (apply above (map (lambda (img) (img)) (zipper-current new-imgs)))
                                    
                                  ((zipper-current new-imgs))
                                  )
@@ -431,7 +431,7 @@
         a-vs
         (let* [(new-imgs (zipper-to-begin (viz-state-imgs a-vs)))
                (new-pimgs-img (if (list? (zipper-current new-imgs))
-                                   (apply beside (map (lambda (img) (img)) (zipper-current new-imgs)))
+                                   (apply above (map (lambda (img) (img)) (zipper-current new-imgs)))
                                    
                                  ((zipper-current new-imgs))
                                  )
@@ -520,7 +520,7 @@
         a-vs
         (let* [(new-imgs (zipper-to-end (viz-state-imgs a-vs)))
                (new-pimgs-img (if (list? (zipper-current new-imgs))
-                                   (apply beside (map (lambda (img) (img)) (zipper-current new-imgs)))
+                                   (apply above (map (lambda (img) (img)) (zipper-current new-imgs)))
                                    
                                  ((zipper-current new-imgs))
                                  )
