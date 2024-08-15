@@ -110,9 +110,9 @@
     )
   )
 (define imsg-img (above  (text "Union of the ndfas" 20 'black)
-                                                              (text (format "Generated edges:") 20 'black)
-                                                              (text (format "Final states:") 20 'black)
-                                                              (text (format "Starting state:") 20 'black)))
+                         (text (format "Generated edges:") 20 'black)
+                         (text (format "Final states:") 20 'black)
+                         (text (format "Starting state:") 20 'black)))
 
 (define RULE-YIELD-DIMS (bounding-limits 0
                                          (image-width imsg-img)
@@ -612,16 +612,11 @@
 (define viz-reset-zoom (reset-zoom E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE PERCENT-BORDER-GAP DEFAULT-ZOOM-CAP DEFAULT-ZOOM))
 
 
-
-;(create-default-functions E-SCENE-WIDTH E-SCENE-HEIGHT DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR PERCENT-BORDER-GAP NODE-SIZE)
-
-
-
-
-
+;; viz-state -> viz-state
+;; Updates the informative messages to the next stage of the seqeuence
 (define (right-key-pressed a-vs)
   (let ([a-graph-struct (informative-messages-component-state
-                       (viz-state-informative-messages a-vs))])
+                         (viz-state-informative-messages a-vs))])
     (if (zipper-at-end? (graph-struct-inf a-graph-struct))
         a-vs
   (struct-copy viz-state a-vs
@@ -640,6 +635,8 @@
     )
   )
 
+;; viz-state -> viz-state
+;; Updates the informative messages to the previous stage of the seqeuence
 (define (left-key-pressed a-vs)
   (let ([a-graph-struct (informative-messages-component-state
                        (viz-state-informative-messages a-vs))])
@@ -661,6 +658,8 @@
     )
   )
 
+;; viz-state -> viz-state
+;; Updates the informative messages to the beginning of the seqeuence
 (define (up-key-pressed a-vs)
   (let ([a-graph-struct (informative-messages-component-state
                        (viz-state-informative-messages a-vs))])
@@ -682,6 +681,8 @@
     )
   )
 
+;; viz-state -> viz-state
+;; Updates the informative messages to the end of the seqeuence
 (define (down-key-pressed a-vs)
   (let ([a-graph-struct (informative-messages-component-state
                        (viz-state-informative-messages a-vs))])
@@ -760,5 +761,3 @@
                                             )
                                       )
              'union-viz)))
-
-(union-viz ab* nl)

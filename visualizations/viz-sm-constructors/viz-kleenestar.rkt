@@ -525,7 +525,7 @@
   )
      
 ;; make-init-grph-structure
-;; ndfa ndfa -> dgraph
+;; ndfa -> dgraph
 ;; Purpose: To draw the graph of the initial ndfa's
 (define (make-init-grph-structure M)
   (let* [(graph (make-init-edge-graph (make-node-graph
@@ -539,7 +539,9 @@
     graph 
 
     ))
-     
+
+;; ndfa -> graph
+;; Creates the graph structure used to create the initially displayed graphic
 (define (create-init-graph-struct M)
   (make-init-edge-graph (make-node-graph
                          (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
@@ -686,10 +688,10 @@
                              E-SCENE-HEIGHT
                              (+ E-SCENE-HEIGHT (image-height imsg-img))))
            (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
-           (create-viz-process-key (list (list "right" viz-go-next right-key-pressed);;right-key-pressed)
-                                         (list "left" viz-go-prev left-key-pressed);;left-key-pressed)
-                                         (list "up" viz-go-to-begin up-key-pressed);;up-key-pressed)
-                                         (list "down" viz-go-to-end down-key-pressed);;down-key-pressed)
+           (create-viz-process-key (list (list "right" viz-go-next right-key-pressed)
+                                         (list "left" viz-go-prev left-key-pressed)
+                                         (list "up" viz-go-to-begin up-key-pressed)
+                                         (list "down" viz-go-to-end down-key-pressed)
                                          (list "w" viz-zoom-in identity)
                                          (list "s" viz-zoom-out identity)
                                          (list "r" viz-max-zoom-out identity)
@@ -700,10 +702,10 @@
            (create-viz-process-tick E-SCENE-BOUNDING-LIMITS NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT
                                     CLICK-BUFFER-SECONDS
                                     (list)
-                                    (list (list ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed);;up-key-pressed)
-                                          (list ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed);;down-key-pressed)
-                                          (list ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed);;left-key-pressed)
-                                          (list ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed);;right-key-pressed)
+                                    (list (list ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed)
+                                          (list ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed)
+                                          (list ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed)
+                                          (list ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed)
                                           (list W-KEY-DIMS viz-zoom-in identity)
                                           (list S-KEY-DIMS viz-zoom-out identity)
                                           (list R-KEY-DIMS viz-max-zoom-out identity)
@@ -715,4 +717,4 @@
   )
 
 
-(kleenestar-viz ab*)
+;(kleenestar-viz ab*)

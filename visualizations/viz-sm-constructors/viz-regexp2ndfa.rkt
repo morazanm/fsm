@@ -635,7 +635,8 @@
    a-list))
 
 
-
+;; viz-state -> viz-state
+;; Updates the informative messages to the next stage of the seqeuence
 (define (right-key-pressed a-vs)
   (let ([a-imsg-state (informative-messages-component-state
                        (viz-state-informative-messages a-vs))])
@@ -657,6 +658,8 @@
     )
   )
 
+;; viz-state -> viz-state
+;; Updates the informative messages to the previous stage of the seqeuence
 (define (left-key-pressed a-vs)
   (let ([a-imsg-state (informative-messages-component-state
                        (viz-state-informative-messages a-vs))])
@@ -678,6 +681,8 @@
     )
   )
 
+;; viz-state -> viz-state
+;; Updates the informative messages to the beginning of the seqeuence
 (define (up-key-pressed a-vs)
   (let ([a-imsg-state (informative-messages-component-state
                        (viz-state-informative-messages a-vs))])
@@ -699,6 +704,8 @@
     )
   )
 
+;; viz-state -> viz-state
+;; Updates the informative messages to the end of the seqeuence
 (define (down-key-pressed a-vs)
   (let ([a-imsg-state (informative-messages-component-state
                        (viz-state-informative-messages a-vs))])
@@ -795,7 +802,7 @@
 
 
 
-(regexp2ndfa-viz R5)
+;(regexp2ndfa-viz R5)
 
 
 

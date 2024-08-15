@@ -670,6 +670,8 @@
 (define viz-reset-zoom (reset-zoom E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE PERCENT-BORDER-GAP DEFAULT-ZOOM-CAP DEFAULT-ZOOM))
 
 
+;; viz-state -> viz-state
+;; Updates the informative messages to the next stage of the seqeuence
 (define (right-key-pressed a-vs)
   (let ([a-graph-struct (informative-messages-component-state
                        (viz-state-informative-messages a-vs))])
@@ -691,6 +693,8 @@
     )
   )
 
+;; viz-state -> viz-state
+;; Updates the informative messages to the previous stage of the seqeuence
 (define (left-key-pressed a-vs)
   (let ([a-graph-struct (informative-messages-component-state
                        (viz-state-informative-messages a-vs))])
@@ -712,6 +716,8 @@
     )
   )
 
+;; viz-state -> viz-state
+;; Updates the informative messages to the beginning of the seqeuence
 (define (up-key-pressed a-vs)
   (let ([a-graph-struct (informative-messages-component-state
                        (viz-state-informative-messages a-vs))])
@@ -733,6 +739,8 @@
     )
   )
 
+;; viz-state -> viz-state
+;; Updates the informative messages to the end of the seqeuence
 (define (down-key-pressed a-vs)
   (let ([a-graph-struct (informative-messages-component-state
                        (viz-state-informative-messages a-vs))])
@@ -808,5 +816,5 @@
 
 
 
-(intersection-viz ab* a-aUb-b*)
+;(intersection-viz ab* a-aUb-b*)
 

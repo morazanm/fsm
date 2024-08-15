@@ -515,7 +515,8 @@
   ;; imsg -> img
   (define (draw-imsg a-imsg) (zipper-current (graph-struct-inf a-imsg)))
 
-
+;; viz-state -> viz-state
+;; Updates the informative messages to the next stage of the seqeuence
   (define (right-key-pressed a-vs)
     (let ([a-graph-struct (informative-messages-component-state
                            (viz-state-informative-messages a-vs))])
@@ -537,6 +538,8 @@
       )
     )
 
+  ;; viz-state -> viz-state
+;; Updates the informative messages to the previous stage of the seqeuence
   (define (left-key-pressed a-vs)
     (let ([a-graph-struct (informative-messages-component-state
                            (viz-state-informative-messages a-vs))])
@@ -558,6 +561,8 @@
       )
     )
 
+  ;; viz-state -> viz-state
+;; Updates the informative messages to the beginning of the seqeuence
   (define (up-key-pressed a-vs)
     (let ([a-graph-struct (informative-messages-component-state
                            (viz-state-informative-messages a-vs))])
@@ -579,6 +584,8 @@
       )
     )
 
+  ;; viz-state -> viz-state
+;; Updates the informative messages to the end of the seqeuence
   (define (down-key-pressed a-vs)
     (let ([a-graph-struct (informative-messages-component-state
                            (viz-state-informative-messages a-vs))])
@@ -635,7 +642,7 @@
                  (instructions-graphic
                   E-SCENE-TOOLS
                   RULE-YIELD-DIMS
-                  #;(bounding-limits 0 0 0 0))
+                  )
                  (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
                  (create-viz-process-key (list (list "right" viz-go-next right-key-pressed)
                                                (list "left" viz-go-prev left-key-pressed)
@@ -694,7 +701,7 @@
                                   (bounding-limits-height RULE-YIELD-DIMS)
                                   INS-TOOLS-BUFFER
                                   (image-height ARROW-UP-KEY)))
-                    #;(bounding-limits 0 0 0 0))
+                    )
                    (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
                    (create-viz-process-key (list (list "right" viz-go-next right-key-pressed)
                                                  (list "left" viz-go-prev left-key-pressed)
@@ -754,7 +761,7 @@
                                           (G c G))
                                         'no-dead))
 
-  (complement-viz aab*)
+  ;(complement-viz aab*)
 
   )
 
