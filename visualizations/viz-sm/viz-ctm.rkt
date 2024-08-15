@@ -1,26 +1,26 @@
 #lang racket
 
-(require "../../../fsm-gviz/private/lib.rkt"
-         ;"../../../main.rkt"
-         "../tm.rkt"
-         "../constants.rkt"
-         "../../../fsm-core/private/configuration.rkt"
+(require "../../fsm-gviz/private/lib.rkt"
+         "../../fsm-core/private/tm.rkt"
+         "../../fsm-core/private/constants.rkt"
+         "../../fsm-core/private/configuration.rkt"
          2htdp/universe rackunit
          (rename-in racket/gui/base
                     [make-color loc-make-color]
                     [make-pen loc-make-pen])
          2htdp/image
-         "transdiagram-ctm6.rkt"
-         "../../../visualizations/viz-lib/zipper.rkt"
-         "../../../visualizations/viz-lib/viz-constants.rkt"
-         "../../../visualizations/viz-lib/viz-imgs/keyboard_bitmaps.rkt"
-         "../../../visualizations/viz-lib/viz-imgs/cursor.rkt"
-         "../../../visualizations/viz-lib/bounding-limits.rkt"
-         "../../../visualizations/viz-lib/default-viz-function-generators.rkt"
-         "../../../visualizations/viz-lib/viz-macros.rkt"
-         "../../../visualizations/viz-lib/viz-state.rkt"
-         "../../../visualizations/viz-lib/viz.rkt"
+         "../../fsm-core/private/callgraphs/transdiagram-ctm6.rkt"
+         "../../visualizations/viz-lib/zipper.rkt"
+         "../../visualizations/viz-lib/viz-constants.rkt"
+         "../../visualizations/viz-lib/viz-imgs/keyboard_bitmaps.rkt"
+         "../../visualizations/viz-lib/viz-imgs/cursor.rkt"
+         "../../visualizations/viz-lib/bounding-limits.rkt"
+         "../../visualizations/viz-lib/default-viz-function-generators.rkt"
+         "../../visualizations/viz-lib/viz-macros.rkt"
+         "../../visualizations/viz-lib/viz-state.rkt"
+         "../../visualizations/viz-lib/viz.rkt"
          )
+
 
 (provide ctm-viz)
 
@@ -513,31 +513,6 @@
 (struct imsg-struct (tapes vars))
 (define E-SCENE (empty-scene 1250 600))
 (define TAPE-SIZE 20)
-#;(define E-SCENE-TOOLS (overlay (beside (above (above (triangle 30 'solid 'black)
-                                                     (rectangle 10 30 'solid 'black))
-                                              (square 20 'solid 'white)
-                                              (text "Restart the visualization" 18 'black))
-                                       (square 40 'solid 'white)
-                                       (above (beside (rectangle 30 10 'solid 'black)
-                                                      (rotate 270 (triangle 30 'solid 'black)))
-                                              (square 20 'solid 'white)
-                                              (text "Move one step forward" 18 'black))
-                                       (square 40 'solid 'white)
-                                       (above (beside (rotate 90 (triangle 30 'solid 'black))
-                                                      (rectangle 30 10 'solid 'black))
-                                              (square 20 'solid 'white)
-                                              (text "Move one step backward" 18 'black))
-                                       (square 40 'solid 'white)
-                                       (above (above (rectangle 10 30 'solid 'black)
-                                                     (rotate 180 (triangle 30 'solid 'black)))
-                                              (square 20 'solid 'white)
-                                              (text "Complete the visualization" 18 'black))
-                                       (square 40 'solid 'white)
-                                       (above (text "S - scroll tape left one space" 18 'black)
-                                              (square 10 'solid 'white)
-                                              (text "D - scroll tape right one space" 18 'black))
-                                       )
-                               (empty-scene 1250 100)))
 
 
 ;; graph is a structure that has
@@ -935,30 +910,6 @@
       configs
       (remove (list-ref configs (first refs)) (remove-configs (rest refs) configs))))
 
-
-;; draw-img
-;; viz-state -> img
-;; Purpose: To render the given viz-state
-#;(define (draw-world a-vs)
-  (if (or (> (image-width (first (graph-pimgs (viz-state-graph a-vs))))
-             (- (image-width E-SCENE) 50))
-          (> (image-height (first (graph-pimgs (viz-state-graph a-vs))))
-             (- (image-height E-SCENE) 50)))
-      (above (overlay
-              (above (resize-image (first (graph-pimgs (viz-state-graph a-vs)))
-                                   (- (- (image-width E-SCENE) 50) 20)
-                                   (- (- (image-height E-SCENE) 50) 20))
-                     (square 20 'solid 'white)
-                     (viz-state-tapeimg a-vs))
-              E-SCENE)
-             E-SCENE-TOOLS)  
-      (above (overlay
-              (above (first (graph-pimgs (viz-state-graph a-vs)))
-                     (square 20 'solid 'white)
-                     (viz-state-tapeimg a-vs))
-              E-SCENE)
-             E-SCENE-TOOLS)))
-
 (define viz-go-next (go-next E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR PERCENT-BORDER-GAP))
 (define viz-go-prev (go-prev E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR PERCENT-BORDER-GAP))
 (define viz-go-to-begin (go-to-begin E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR PERCENT-BORDER-GAP))
@@ -1049,17 +1000,5 @@
              
              'ctm-viz)
     ))
-
-
-
-;; vst --> void
-#;(define (run-viz a-vs draw-etc a-name)
-  (begin
-    (big-bang
-        a-vs                
-      [on-draw draw-etc]
-      [on-key process-key]
-      [name a-name]))
-  (void))
 
 
