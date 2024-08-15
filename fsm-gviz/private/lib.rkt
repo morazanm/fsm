@@ -629,7 +629,7 @@
 
 
 
-  (displayln
+  #;(displayln
    (graph 'dgraph
           (list (node 'S0 (make-hash '(['color . 'violet]
                                        ['font . 'Sans]
