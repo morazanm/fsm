@@ -4,7 +4,6 @@
          "dot.rkt")
 
 (provide parallel-graphs->bitmap-thunks
-         ;unsafe-parallel-graphs->bitmap-thunks
          parallel-special-graphs->bitmap-thunks
          parallel-cfg-graphs->bitmap-thunks
          find-number-of-cores)
@@ -137,14 +136,6 @@
 
 ;; num num -> Listof Thunk
 ;; Creates a list of functions which when called will load its respective graph img from disk
-#;(define (pngs->bitmap-thunks accum cap)
-  (if (>= accum cap)
-      '()
-      (cons (thunk (bitmap/file (string->path (format "~adot~s.png" SAVE-DIR accum))))
-            (pngs->bitmap-thunks (add1 accum) cap)
-            )
-      )
-  )
 (define (pngs->bitmap-thunks enumerated-graphs)
   (for/list ([i enumerated-graphs])
     (if (list? (second i))
@@ -156,55 +147,60 @@
     )
   )
 
+;; (listof any) (listof any) -> (listof (list any any))
+;; Combines two lists into a list of pairs
 (define (make-pairs lst0 lst1) (if (empty? lst0)
                                    '()
                                    (cons (list (first lst0) (first lst1)) (make-pairs (rest lst0) (rest lst1)))
                                    )
   )
 
-(define (find-number-of-cores) (let [
-                                     (system-os (system-type 'os))
-                                     ]
-                                 (cond [(eq? system-os 'unix) (begin
-                                                                (define p (process "grep -c '^processor' /proc/cpuinfo"))
-                                                                (define event-result (string->number (sync (read-line-evt (first p)))))
-                                                                (close-input-port (first p))
-                                                                (close-output-port (second p))
-                                                                (close-input-port (fourth p))
-                                                                event-result
-                                                                )
-                                                              ]
-                                       [(eq? system-os 'windows) (begin
-                                                                   (define p (process "echo %NUMBER_OF_PROCESSORS%"))
-                                                                   ;; Have to change read-line-evt mode since windows returns a carriage return rather than a linebreak
-                                                                   (define event-result (string->number (sync (read-line-evt (first p) 'any))))
-                                                                   (close-input-port (first p))
-                                                                   (close-output-port (second p))
-                                                                   (close-input-port (fourth p))
-                                                                   event-result
-                                                                   )
-                                                                 ]
-                                       [(eq? system-os 'macos) (begin
-                                                                 (define p (process "sysctl -n hw.ncpu"))
-                                                                 (define event-result (string->number (sync (read-line-evt (first p)))))
-                                                                 (close-input-port (first p))
-                                                                 (close-output-port (second p))
-                                                                 (close-input-port (fourth p))
-                                                                 event-result
-                                                                 )
-                                                               ]
-                                       [(eq? system-os 'macosx) (begin
-                                                                  (define p (process "sysctl -n hw.ncpu"))
-                                                                  (define event-result (string->number (sync (read-line-evt (first p)))))
-                                                                  (close-input-port (first p))
-                                                                  (close-output-port (second p))
-                                                                  (close-input-port (fourth p))
-                                                                  event-result
-                                                                  )
-                                                                ]
-                                       [else (error "Unknown system type, unable to intialize GraphViz in system shell")]
+;; -> nat
+;; Produces the number of cpus cores on the system
+(define (find-number-of-cores) (processor-count)
+  #;(let [
+          (system-os (system-type 'os))
+          ]
+      (cond [(eq? system-os 'unix) (begin
+                                     (define p (process "grep -c '^processor' /proc/cpuinfo"))
+                                     (define event-result (string->number (sync (read-line-evt (first p)))))
+                                     (close-input-port (first p))
+                                     (close-output-port (second p))
+                                     (close-input-port (fourth p))
+                                     event-result
+                                     )
+                                   ]
+            [(eq? system-os 'windows) (begin
+                                        (define p (process "echo %NUMBER_OF_PROCESSORS%"))
+                                        ;; Have to change read-line-evt mode since windows returns a carriage return rather than a linebreak
+                                        (define event-result (string->number (sync (read-line-evt (first p) 'any))))
+                                        (close-input-port (first p))
+                                        (close-output-port (second p))
+                                        (close-input-port (fourth p))
+                                        event-result
+                                        )
+                                      ]
+            [(eq? system-os 'macos) (begin
+                                      (define p (process "sysctl -n hw.ncpu"))
+                                      (define event-result (string->number (sync (read-line-evt (first p)))))
+                                      (close-input-port (first p))
+                                      (close-output-port (second p))
+                                      (close-input-port (fourth p))
+                                      event-result
+                                      )
+                                    ]
+            [(eq? system-os 'macosx) (begin
+                                       (define p (process "sysctl -n hw.ncpu"))
+                                       (define event-result (string->number (sync (read-line-evt (first p)))))
+                                       (close-input-port (first p))
+                                       (close-output-port (second p))
+                                       (close-input-port (fourth p))
+                                       event-result
                                        )
-                                 )
+                                     ]
+            [else (error "Unknown system type, unable to intialize GraphViz in system shell")]
+            )
+      )
   )
 
 ;; Procedure Listof Any -> Void
@@ -302,7 +298,6 @@
                                  )
                              )
       )
-    ;(displayln (format "list-dot-files: ~s" (flatten list-dot-files)))
     (graphs->dots enumerated-graphs)
     (parallel-dots->pngs (flatten list-dot-files) cpu-cores)
     (pngs->bitmap-thunks enumerated-graphs)
@@ -322,13 +317,6 @@
         (special-graph->dot (second i) z SAVE-DIR (format "dot~s" (first i)))
         )
     )
-  #;(foldl (lambda (value accum) (begin (special-graph->dot (first value) (second value) SAVE-DIR (format "dot~s" accum))
-                                                                  (add1 accum)
-                                                                  )
-                                       )
-                                     0
-                                     (make-pairs graphs rank-node-lst)
-                                     )
   )
 
 ;; Listof graph -> Num
@@ -344,18 +332,11 @@
         (cfg-graph->dot (second i) z SAVE-DIR (format "dot~s" (first i)))
         )
     )
-  #;(foldl (lambda (value accum)
-           (begin (cfg-graph->dot (first value) (second value) SAVE-DIR (format "dot~s" accum))
-                                                                  (add1 accum)
-                                                                  )
-                                       )
-                                     0
-                                     (make-pairs graphs rank-node-lst)
-                                     )
   )
 
 
-
+;; (listof graph) (listof (listof symbol)) nat -> (listof thunk)
+;; Creates all the graph images needed in parallel, and returns a list of thunks that will load them from disk
 (define (parallel-special-graphs->bitmap-thunks graphs rank-node-lst #:cpu-cores [cpu-cores (quotient (find-number-of-cores) 2)])
   (begin
     (define enumerated-graphs (make-pairs (range 0 (length graphs)) graphs))
@@ -374,6 +355,8 @@
     )
   )
 
+;; (listof graph) (listof (listof symbol)) nat -> (listof thunk)
+;; Creates all the graph images needed in parallel, and returns a list of thunks that will load them from disk
 (define (parallel-cfg-graphs->bitmap-thunks graphs rank-node-lst #:cpu-cores [cpu-cores (quotient (find-number-of-cores) 2)])
   (begin
     (define enumerated-graphs (make-pairs (range 0 (length graphs)) graphs))
@@ -387,25 +370,6 @@
                              )
       )
     (cfg-graphs->dots enumerated-graphs rank-node-lst)
-    (parallel-dots->pngs (flatten list-dot-files) cpu-cores)
-    (pngs->bitmap-thunks enumerated-graphs)
-    )
-  )
-
-#;(define (parallel-graphs->bitmap-thunks graphs #:cpu-cores [cpu-cores (quotient (find-number-of-cores) 2)])
-  (begin
-    (define enumerated-graphs (make-pairs (range 0 (length graphs)) graphs))
-    (define list-dot-files (for/list ([i enumerated-graphs])
-                             (if (list? (second i))
-                                 (for/list ([j (range 0 (length (second i)))])
-                                   (format "~adot~s_~s" SAVE-DIR (first i) j)
-                                   )
-                                 (format "~adot~s" SAVE-DIR (first i))
-                                 )
-                             )
-      )
-    ;(displayln (format "list-dot-files: ~s" (flatten list-dot-files)))
-    (graphs->dots enumerated-graphs)
     (parallel-dots->pngs (flatten list-dot-files) cpu-cores)
     (pngs->bitmap-thunks enumerated-graphs)
     )

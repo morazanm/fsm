@@ -171,7 +171,8 @@
    "}"))
 
 
-
+;; graph -> string
+;; Returns graphviz representation of a graph containing a context sensitive graph as a string
 (define (special-graph->str g rank-node-lst)
   (define name (format "digraph ~s {\n" (graph-name g)))
   (define fmtrs (graph-fmtrs g))
@@ -191,10 +192,11 @@
    "}")
   )
 
+;; graph -> string
+;; Returns graphviz representation of a graph containing a context free graph as a string
 (define (cfg-graph->str g rank-node-lst)
   (define name (format "digraph ~s {\n" (graph-name g)))
   (define fmtrs (graph-fmtrs g))
-  ;(define test (displayln rank-node-lst))
   (string-append
    name
    (format "    ~a;\n" (hash->str (graph-atb g) (formatters-graph fmtrs) ";\n    "))
@@ -208,7 +210,6 @@
           ""
           (graph-subgraph-list g))
    (foldr (lambda (lvl accum)
-            ;(displayln lvl)
             (string-append (format "    {rank=same;~a};\n" (foldr (lambda (val accum) (string-append (symbol->string val) ";" accum)) "" lvl)) accum))
           ""
           rank-node-lst)
@@ -420,6 +421,8 @@
       (displayln (graph->str graph) out)))
   dot-path)
 
+;; graph path string -> path
+;; Writes graph containing context sensitive grammar to the specified file
 (define (special-graph->dot graph rank-node-lst save-dir filename)
   (define dot-path (build-path save-dir (format "~a.dot" filename)))
   (call-with-output-file dot-path
@@ -428,6 +431,8 @@
       (displayln (special-graph->str graph rank-node-lst) out)))
   dot-path)
 
+;; graph path string -> path
+;; Writes graph containing context sensitive grammar to the specified file
 (define (cfg-graph->dot graph rank-node-lst save-dir filename)
   (define dot-path (build-path save-dir (format "~a.dot" filename)))
   (call-with-output-file dot-path
@@ -621,5 +626,26 @@
    (lambda ()
      (define sg (create-subgraph #:name 'A))
      (add-subgraph (add-nodes (create-graph 'test) '(A B C D)) sg)))
+
+
+
+  (displayln
+   (graph 'dgraph
+          (list (node 'S0 (make-hash '(['color . 'violet]
+                                       ['font . 'Sans]
+                                       ['fontcolor . 'black]
+                                       ['label . 'S]
+                                       ['shape . 'hexagon]))))
+          (list (edge 'A2 'a2 (make-hash '(['arrowhead . 'none]
+                                           ['label . '()]
+                                           ['style . 'invisible])))
+                (edge 'S2 'A2 (make-hash '(['color . 'red]
+                                           ['fontsize . 12]
+                                           ['label . '()]
+                                           ['style . 'solid]))))
+          '()
+          DEFAULT-FORMATTERS
+          (hash))
+   )
 
   ) ;; end module+ test
