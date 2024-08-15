@@ -1,7 +1,6 @@
 #lang racket
 (require "../../fsm-gviz/private/lib.rkt"
          "../../fsm-core/private/cfg.rkt"
-         "../../fsm-core/interface.rkt"
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/misc.rkt"
          "circular-queue-treelist.rkt"
@@ -19,7 +18,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define even-bs-odd-as
-  (make-cfg '(S A B C)
+  (make-unchecked-cfg '(S A B C)
             '(a b)
             `((S ,ARROW aA) (S ,ARROW bB)
                             (S ,ARROW a)
@@ -795,11 +794,11 @@
                                   (rest rules)
                                   (list (first rules))
                                   (reverse yield-trees)
-                                  (list (tree (grammar-start cfg) '())))]
+                                  (list (tree (cfg-get-start cfg) '())))]
                    [lod (reverse (create-dgrphs dgraph '()))]
                    [invar-nodes
                     (map (lambda (a-dgrph)
-                           (create-invariant-nodes a-dgrph invariants (grammar-start cfg) derv-type))
+                           (create-invariant-nodes a-dgrph invariants (cfg-get-start cfg) derv-type))
                          lod)]
                    [ordered-nodes
                     (reverse (map (if (eq? derv-type 'left) get-leftmost-order get-rightmost-order)
@@ -817,7 +816,7 @@
                                   (create-graph-structs dgrph
                                                         invariants
                                                         derv-type
-                                                        (grammar-start cfg)
+                                                        (cfg-get-start cfg)
                                                         node-lvls))
                                 lod
                                 rank-node-lvls)])
@@ -849,7 +848,7 @@
                                 rules))
                      1)]
                    [renamed (if (equal? derv-type 'level-left)
-                                (generate-levels-bfs-leftmost (yield (treelist (grammar-start cfg)) 0)
+                                (generate-levels-bfs-leftmost (yield (treelist (cfg-get-start cfg)) 0)
                                                               rules
                                                               (make-hash)
                                                               (foldr (lambda (val accum)
@@ -858,7 +857,7 @@
                                                                          accum))
                                                                      (make-hash)
                                                                      (cfg-get-alphabet cfg)))
-                                (generate-levels-bfs-rightmost (yield (treelist (grammar-start cfg))
+                                (generate-levels-bfs-rightmost (yield (treelist (cfg-get-start cfg))
                                                                       0)
                                                                rules
                                                                (make-hash)
@@ -877,11 +876,11 @@
                                   (append (rest rules) (list "" ""))
                                   (list (first rules))
                                   (reverse yield-trees)
-                                  (list (tree (grammar-start cfg) '())))]
+                                  (list (tree (cfg-get-start cfg) '())))]
                    [lod (reverse (create-dgrphs dgraph '()))]
                    [invar-nodes
                     (map (lambda (a-dgrph)
-                           (create-invariant-nodes a-dgrph invariants (grammar-start cfg) derv-type))
+                           (create-invariant-nodes a-dgrph invariants (cfg-get-start cfg) derv-type))
                          lod)]
                    [ordered-nodes (reverse (map (if (eq? derv-type 'level-left)
                                                     get-level-leftmost-order
@@ -904,7 +903,7 @@
                                   (create-graph-structs dgrph
                                                         invariants
                                                         derv-type
-                                                        (grammar-start cfg)
+                                                        (cfg-get-start cfg)
                                                         node-lvls))
                                 lod
                                 rank-node-lvls)])
@@ -918,14 +917,14 @@
                         #:rank-node-lst rank-node-lvls))))))
 
 (define numb>numa
-  (make-cfg
+  (make-unchecked-cfg
    '(S A)
    '(a b)
    `((S ,ARROW b) (S ,ARROW AbA) (A ,ARROW AaAbA) (A ,ARROW AbAaA) (A ,ARROW ,EMP) (A ,ARROW bA))
    'S))
 
 (define buggy-numb>numa
-  (make-cfg
+  (make-unchecked-cfg
    '(S A)
    '(a b)
    `((S ,ARROW b) (S ,ARROW AbA) (A ,ARROW AaAbA) (A ,ARROW AbAaA) (A ,ARROW a) (A ,ARROW bA))
@@ -950,21 +949,21 @@
     (> (length bs) (length as))))
 
 (define test-cfg
-  (make-cfg
+  (make-unchecked-cfg
    '(S A B)
    '(a b c d)
    `((S ,ARROW ,EMP) (S ,ARROW AB) (A ,ARROW aAb) (B ,ARROW cBd) (A ,ARROW ,EMP) (B ,ARROW ,EMP))
    'S))
 
 (define testcfg
-  (make-cfg
+  (make-unchecked-cfg
    '(S A B)
    '(a b c d)
    `((S ,ARROW ,EMP) (S ,ARROW AB) (A ,ARROW aSb) (B ,ARROW cBd) (A ,ARROW ,EMP) (B ,ARROW ,EMP))
    'S))
 
 ;(cfg-viz numb>numa '(b b b b b b a a) 'level-left (list 'S S-INV) (list 'A A-INV))
-#;(cfg-viz testcfg '(a a b b c c c d d d) 'left)
+(cfg-viz testcfg '(a a b b c c c d d d) 'left)
 #;
 (time (cfg-derive-queue-and-hash testcfg
                                  '(a a a a a a a a b b b b b b b b b c c c c c c c c d d d d d d d d)
