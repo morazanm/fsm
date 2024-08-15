@@ -15,7 +15,6 @@
          "yield-struct.rkt"
          "../../fsm-gviz/private/parallel.rkt")
 
-
 (provide cfg-viz)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -107,14 +106,14 @@
                        [else (append yield (get-yield-helper node))]))
                    '()
                    (tree-subtrees subtree)))]
-    (filter (lambda (node) (lower? node))
-            (foldl (lambda (node yield)
-                     (cond
-                       [(equal? (undo-renaming (tree-value node)) EMP) yield]
-                       [(empty? (tree-subtrees node)) (append yield (list (tree-value node)))]
-                       [else (append yield (get-yield-helper node))]))
-                   '()
-                   (tree-subtrees subtree)))))
+         (filter (lambda (node) (lower? node))
+                 (foldl (lambda (node yield)
+                          (cond
+                            [(equal? (undo-renaming (tree-value node)) EMP) yield]
+                            [(empty? (tree-subtrees node)) (append yield (list (tree-value node)))]
+                            [else (append yield (get-yield-helper node))]))
+                        '()
+                        (tree-subtrees subtree)))))
 
 ;; tree invariant-function -> (U boolean Symbol)
 ;; Evaluates the invariant function given to us by the user on the current yield
@@ -140,9 +139,9 @@
                               (check-all-invariant-nodes (rest nonterminals)
                                                          invar-func
                                                          (cons (first nonterminals) broken-nodes)))))]
-              (check-all-invariant-nodes (find-all-invariant-nodes nonterminals-to-check)
-                                         invariant-func
-                                         '())))
+                   (check-all-invariant-nodes (find-all-invariant-nodes nonterminals-to-check)
+                                              invariant-func
+                                              '())))
           (define (check-all-invariants-helper nonterminals-to-check invariants broken-nodes)
             (if (empty? invariants)
                 (if (empty? broken-nodes) '() broken-nodes)
@@ -155,7 +154,7 @@
                       (check-all-invariants-helper nonterminals-to-check
                                                    (rest invariants)
                                                    broken-nodes)))))]
-    (check-all-invariants-helper nonterminals-to-check invariants '())))
+         (check-all-invariants-helper nonterminals-to-check invariants '())))
 
 ;; levels -> (listof levels)
 ;; Purpose: creates a list containing the levels used for each graph generated
@@ -164,7 +163,7 @@
           ;; Purpose: creates a list containing the levels used for each graph generated in reverse
           (define (create-list-of-levels-helper lvls)
             (if (empty? lvls) '() (cons lvls (create-list-of-levels-helper (rest lvls)))))]
-    (create-list-of-levels-helper (reverse levels))))
+         (create-list-of-levels-helper (reverse levels))))
 
 ;; nonterminal?
 ;; symbol -> Boolean
@@ -440,21 +439,21 @@
                                                used-names
                                                find-nt-func)))
             (local
-              [;; Just sticks a number after the symbol itself, uses a hash table to keep track of what numbers
-               ;; were already used for a specific symbol
-               (define renamed-states (map (lambda (st) (rename-symb used-names st)) (first rules)))
-               ;; Creates a new level by taking the current rule that is meant to be applied at this point of
-               ;; the derivation
-               ;; and creating an edge between each of the elements within and the current nonterminal being
-               ;;processed
-               (define (new-level start)
-                 (map (lambda (st) (list start st)) renamed-states))]
-              (cons (new-level current-nt)
-                    (generate-levels-list-helper renamed-states
-                                                 (rest rules)
-                                                 (cons current-state prev-states)
-                                                 used-names
-                                                 find-nt-func)))))))
+             [;; Just sticks a number after the symbol itself, uses a hash table to keep track of what numbers
+              ;; were already used for a specific symbol
+              (define renamed-states (map (lambda (st) (rename-symb used-names st)) (first rules)))
+              ;; Creates a new level by taking the current rule that is meant to be applied at this point of
+              ;; the derivation
+              ;; and creating an edge between each of the elements within and the current nonterminal being
+              ;;processed
+              (define (new-level start)
+                (map (lambda (st) (list start st)) renamed-states))]
+             (cons (new-level current-nt)
+                   (generate-levels-list-helper renamed-states
+                                                (rest rules)
+                                                (cons current-state prev-states)
+                                                used-names
+                                                find-nt-func)))))))
 
 ;; list any -> list
 ;; Purpose: Returns the list up until and excluding the value given
@@ -504,23 +503,23 @@
                                              find-nt-func
                                              derv-type)
             (local
-              [(define renamed-states (map (lambda (st) (rename-symb used-names st)) (first rules)))
-               (define (new-level start)
-                 (map (lambda (st) (list start st)) renamed-states))]
-              (cons (new-level current-nt)
-                    (generate-levels-bfs-list-helper
-                     (if (eq? derv-type 'level-left)
-                         (rest (member current-nt unprocessed-yield))
-                         (take-until unprocessed-yield current-nt))
-                     (if (eq? derv-type 'level-left)
-                         (append (if (list? processed-yield) processed-yield (list processed-yield))
-                                 (if (list? renamed-states) renamed-states (list renamed-states)))
-                         (append (if (list? renamed-states) renamed-states (list renamed-states))
-                                 (if (list? processed-yield) processed-yield (list processed-yield))))
-                     (rest rules)
-                     used-names
-                     find-nt-func
-                     derv-type)))))))
+             [(define renamed-states (map (lambda (st) (rename-symb used-names st)) (first rules)))
+              (define (new-level start)
+                (map (lambda (st) (list start st)) renamed-states))]
+             (cons (new-level current-nt)
+                   (generate-levels-bfs-list-helper
+                    (if (eq? derv-type 'level-left)
+                        (rest (member current-nt unprocessed-yield))
+                        (take-until unprocessed-yield current-nt))
+                    (if (eq? derv-type 'level-left)
+                        (append (if (list? processed-yield) processed-yield (list processed-yield))
+                                (if (list? renamed-states) renamed-states (list renamed-states)))
+                        (append (if (list? renamed-states) renamed-states (list renamed-states))
+                                (if (list? processed-yield) processed-yield (list processed-yield))))
+                    (rest rules)
+                    used-names
+                    find-nt-func
+                    derv-type)))))))
 
 (define (treelist-insert-list tl i lst)
   (if (empty? lst) tl (treelist-insert-list (treelist-insert tl i (first lst)) (add1 i) (rest lst))))
@@ -805,16 +804,15 @@
                    [ordered-nodes
                     (reverse (map (if (eq? derv-type 'left) get-leftmost-order get-rightmost-order)
                                   yield-trees))]
-                   [broken-invariants (if (empty? invariants)
-                                          'NO-INV
-                                          (list->zipper (cons '()
-                                                          (map (lambda (lst) (map undo-renaming lst))
-                                                               (map reverse
-                                                                    (rest (get-ordered-invariant-nodes
-                                                                           ordered-nodes
-                                                                           invar-nodes))))))
-                                          )
-                                      ]
+                   [broken-invariants
+                    (if (empty? invariants)
+                        'NO-INV
+                        (list->zipper (cons '()
+                                            (map (lambda (lst) (map undo-renaming lst))
+                                                 (map reverse
+                                                      (rest (get-ordered-invariant-nodes
+                                                             ordered-nodes
+                                                             invar-nodes)))))))]
                    [graphs (map (lambda (dgrph node-lvls)
                                   (create-graph-structs dgrph
                                                         invariants
@@ -889,14 +887,15 @@
                                                     get-level-leftmost-order
                                                     get-level-rightmost-order)
                                                 yield-trees))]
-                   [broken-invariants (if (empty? invariants)
-                                          'NO-INV
-                                          (list->zipper (cons '()
-                                                          (map (lambda (lst) (map undo-renaming lst))
-                                                               (map reverse
-                                                                    (rest (get-ordered-invariant-nodes
-                                                                           ordered-nodes
-                                                                           invar-nodes)))))))]
+                   [broken-invariants
+                    (if (empty? invariants)
+                        'NO-INV
+                        (list->zipper (cons '()
+                                            (map (lambda (lst) (map undo-renaming lst))
+                                                 (map reverse
+                                                      (rest (get-ordered-invariant-nodes
+                                                             ordered-nodes
+                                                             invar-nodes)))))))]
                    [rank-node-lvls (cons (list (list 'S))
                                          (accumulate-previous-ranks
                                           (map (lambda (x) (map (lambda (y) (second y)) x)) renamed)
@@ -918,15 +917,12 @@
                         #:special-graphs? 'cfg
                         #:rank-node-lst rank-node-lvls))))))
 
-(define numb>numa (make-cfg '(S A)
-                            '(a b)
-                            `((S ,ARROW b)
-                              (S ,ARROW AbA)
-                              (A ,ARROW AaAbA)
-                              (A ,ARROW AbAaA)
-                              (A ,ARROW ,EMP)
-                              (A ,ARROW bA))
-                            'S))
+(define numb>numa
+  (make-cfg
+   '(S A)
+   '(a b)
+   `((S ,ARROW b) (S ,ARROW AbA) (A ,ARROW AaAbA) (A ,ARROW AbAaA) (A ,ARROW ,EMP) (A ,ARROW bA))
+   'S))
 
 (define buggy-numb>numa
   (make-cfg
@@ -967,7 +963,7 @@
    `((S ,ARROW ,EMP) (S ,ARROW AB) (A ,ARROW aSb) (B ,ARROW cBd) (A ,ARROW ,EMP) (B ,ARROW ,EMP))
    'S))
 
- (cfg-viz numb>numa '(b b b b b b a a) 'level-left (list 'S S-INV) (list 'A A-INV))
+;(cfg-viz numb>numa '(b b b b b b a a) 'level-left (list 'S S-INV) (list 'A A-INV))
 #;(cfg-viz testcfg '(a a b b c c c d d d) 'left)
 #;
 (time (cfg-derive-queue-and-hash testcfg

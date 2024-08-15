@@ -4,21 +4,10 @@
          "../../fsm-core/private/constants.rkt"
          "circular-queue-treelist.rkt"
          racket/treelist
-         "yield-struct.rkt")
+         "yield-struct.rkt"
+         "../viz-lib/treelist-helper-functions.rkt")
 
 (provide cfg-derive-level-leftmost)
-
-(define (treelist-filter-helper pred tl i)
-  (if (= i -1)
-      tl
-      (if (pred (treelist-ref tl i))
-          (treelist-filter-helper pred tl (sub1 i))
-          (treelist-filter-helper pred (treelist-delete tl i) (sub1 i)))))
-(define (treelist-filter pred tl)
-  (treelist-filter-helper pred tl (sub1 (treelist-length tl))))
-
-(define (treelist-insert-list tl i lst)
-  (if (empty? lst) tl (treelist-insert-list (treelist-insert tl i (first lst)) (add1 i) (rest lst))))
 
 (define (cfg-derive-level-leftmost g w)
   (define alphabet-ht

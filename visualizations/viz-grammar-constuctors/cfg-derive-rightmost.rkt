@@ -3,7 +3,8 @@
          "../../fsm-core/private/cfg.rkt"
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/misc.rkt"
-         "circular-queue-treelist.rkt")
+         "circular-queue-treelist.rkt"
+         "../viz-lib/treelist-helper-functions.rkt")
 
 (provide cfg-derive-rightmost)
 
@@ -73,8 +74,7 @@
     (define (get-starting-terminals-rightmost-helper st i)
       (if (= i st-length)
           st
-          (if (not (member (treelist-ref st (- (sub1 (treelist-length st)) i))
-                           (cfg-get-alphabet g)))
+          (if (not (member (treelist-ref st (- (sub1 (treelist-length st)) i)) (cfg-get-alphabet g)))
               (if (= i 0)
                   (treelist)
                   (treelist-sublist st (- (treelist-length st) i) (treelist-length st)))
@@ -96,15 +96,6 @@
         [(false? start-terms-w) #f]
         [else (equal? start-terms-st start-terms-w)])))
 
-  (define (treelist-filter-helper pred tl i)
-    (if (= i -1)
-        tl
-        (if (pred (treelist-ref tl i))
-            (treelist-filter-helper pred tl (sub1 i))
-            (treelist-filter-helper pred (treelist-delete tl i) (sub1 i)))))
-  (define (treelist-filter pred tl)
-    (treelist-filter-helper pred tl (sub1 (treelist-length tl))))
-
   (define (tlos->symbol l)
     (define (tlostr->string l)
       (cond
@@ -125,7 +116,7 @@
       [(or (and chomsky
                 (> (length (first (first (qpeek derivs)))) (+ 2 (treelist-length treelist-w))))
            (> (count-terminals (first (first (qpeek derivs))) (cfg-get-alphabet g))
-                (treelist-length treelist-w)))
+              (treelist-length treelist-w)))
        (make-deriv visited (dequeue! derivs) g chomsky)]
       [else
        (let* ([fderiv (qpeek derivs)] [state (car fderiv)] [fnt (get-last-nt (first state))])
