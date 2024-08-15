@@ -760,7 +760,10 @@
                                    )
              (instructions-graphic
               E-SCENE-TOOLS
-              (bounding-limits 0 0 0 0))
+              (bounding-limits 0
+                             (image-width imsg-img)
+                             E-SCENE-HEIGHT
+                             (+ E-SCENE-HEIGHT (image-height imsg-img))))
              (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
              (create-viz-process-key (list (list "right" viz-go-next right-key-pressed)
                                            (list "left" viz-go-prev left-key-pressed)
@@ -787,6 +790,7 @@
                                             (list R-KEY-DIMS viz-max-zoom-out identity)
                                             (list E-KEY-DIMS viz-reset-zoom identity)
                                             (list F-KEY-DIMS viz-max-zoom-in identity)))
+             'regexp2ndfa
              )))
 
 

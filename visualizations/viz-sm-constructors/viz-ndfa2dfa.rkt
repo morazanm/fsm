@@ -885,66 +885,6 @@
                    new-bledges)
          (cons a-etc low)))))
 
-;; create-img
-;; dgrph dgrph etc -> img
-;; Purpose: Creates a graph image to display on screen
-#;(define (create-img ndfa-grph dfa-grph world)
-  (define (resize-img img)
-    (let [(e-scn-w (- (image-width E-SCENE) 10))
-          (e-scn-h (- (image-height E-SCENE) 10))
-          (w (image-width img))
-          (h (image-height img))]
-      (cond [(and (> w e-scn-w) (> h (/ e-scn-h 2)))
-             (resize-sm-image img e-scn-w (/ e-scn-h 2))]
-            [(> w e-scn-w) (resize-sm-image img e-scn-w h)]
-            [(> h (/ e-scn-h 2)) (resize-sm-image img w (/ e-scn-h 2))]
-            [else img])))
-      (let* [(ndfa-graph (overlay (resize-img
-                                   (beside (text "NDFA    " 24 'darkgreen)
-                                           (ndfa-grph)))
-                                  (empty-scene (image-width E-SCENE)
-                                               (/ (image-height E-SCENE) 2))))
-             (dfa-graph
-              (let* [(new-edge (if (empty? (etc-ad-edges world))
-                                   '()
-                                   (first (etc-ad-edges world))))
-                     (edge-str (cond [(empty? new-edge)
-                                      "Starting Super State"]
-                                     [(or (empty? (third new-edge))
-                                          (empty? (first new-edge)))
-                                      (string-append "SS Edge Added: "
-                                                     "("
-                                                     (symbol->string (if (empty? (first new-edge))
-                                                                         DEAD
-                                                                         (los->symbol (first new-edge))))
-                                                     " "
-                                                     (symbol->string (second new-edge))
-                                                     " "
-                                                     (symbol->string (if (empty? (third new-edge))
-                                                                         DEAD
-                                                                         (los->symbol (third new-edge))))
-                                                     ") - no corresponding ndfa transition.")]                                     
-                                     [else (string-append "SS Edge Added: "
-                                                          "("
-                                                          (symbol->string (los->symbol (first new-edge)))
-                                                          " "
-                                                          (symbol->string (second new-edge))
-                                                          " "
-                                                          (symbol->string (los->symbol (third new-edge)))
-                                                          ")")]))
-                     (edge-msg-img (text edge-str 24 'violet))]          
-                (overlay (resize-img
-                          (above
-                           (dfa-grph)
-                           edge-msg-img))
-                         (empty-scene (image-width E-SCENE)
-                                      (/ (image-height E-SCENE) 2)))))]
-        (above ndfa-graph
-                    dfa-graph)
-              
-        )    
-  )
-
 (define (draw-imsg a-imsg-state)
       (let* [(new-edge (if (empty? (etc-ad-edges (zipper-current (imsg-state-infs a-imsg-state))))
                                    '()
@@ -1132,7 +1072,10 @@
                                  )
            (instructions-graphic
             E-SCENE-TOOLS
-            (bounding-limits 0 0 0 0))
+            (bounding-limits 0
+                             (image-width imsg-img)
+                             E-SCENE-HEIGHT
+                             (+ E-SCENE-HEIGHT (image-height imsg-img))))
            (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
            (create-viz-process-key (list (list "right" viz-go-next right-key-pressed)
                                          (list "left" viz-go-prev left-key-pressed)

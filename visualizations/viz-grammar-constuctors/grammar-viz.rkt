@@ -40,30 +40,6 @@
 
 (struct imsg-state (rules yield input-word word-img-offset word-img-offset-cap
                           scroll-accum broken-invariants))
-#|
-
-(define S-KEY (bitmap/file "../viz-lib/viz-imgs/keyboard_key_s.png"))
-
-(define W-KEY (bitmap/file "../viz-lib/viz-imgs/keyboard_key_w.png"))
-
-(define R-KEY (bitmap/file "../viz-lib/viz-imgs/keyboard_key_r.png"))
-
-(define F-KEY (bitmap/file "../viz-lib/viz-imgs/keyboard_key_f.png"))
-
-(define E-KEY (bitmap/file "../viz-lib/viz-imgs/keyboard_key_e.png"))
-
-(define A-KEY (bitmap/file "../viz-lib/viz-imgs/keyboard_key_a.png"))
-
-(define D-KEY (bitmap/file "../viz-lib/viz-imgs/keyboard_key_d.png"))
-
-(define ARROW-RIGHT-KEY (bitmap/file "../viz-lib/viz-imgs/keyboard_key_right.png"))
-
-(define ARROW-LEFT-KEY (bitmap/file "../viz-lib/viz-imgs/keyboard_key_left.png"))
-
-(define ARROW-UP-KEY (bitmap/file "../viz-lib/viz-imgs/keyboard_key_up.png"))
-
-(define ARROW-DOWN-KEY (bitmap/file "../viz-lib/viz-imgs/keyboard_key_down.png"))
-|#
 
 ;; Listof Symbol natnum -> Image
 ;; Returns an image of a tape of symbols, capable of sliding when its start-index is varied

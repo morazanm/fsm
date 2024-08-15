@@ -64,7 +64,9 @@
     )
 
 
-  (define imsg-img (text "Starting ndfa" FONT-SIZE 'black))
+  (define imsg-img (above  (text "Complement of MD" 20 'black)
+                            (text (format "New final states:" ) 20 'black)
+                            (text (format "Starting state:") 20 'black)))
 
   (define RULE-YIELD-DIMS (bounding-limits 0
                                            (image-width imsg-img)
@@ -632,7 +634,8 @@
                                        )
                  (instructions-graphic
                   E-SCENE-TOOLS
-                  (bounding-limits 0 0 0 0))
+                  RULE-YIELD-DIMS
+                  #;(bounding-limits 0 0 0 0))
                  (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
                  (create-viz-process-key (list (list "right" viz-go-next right-key-pressed)
                                                (list "left" viz-go-prev left-key-pressed)
@@ -680,7 +683,18 @@
                                          )
                    (instructions-graphic
                     E-SCENE-TOOLS
-                    (bounding-limits 0 0 0 0))
+                    (bounding-limits 0
+                               (image-width E-SCENE-TOOLS)
+                               (+ EXTRA-HEIGHT-FROM-CURSOR
+                                  E-SCENE-HEIGHT
+                                  (bounding-limits-height RULE-YIELD-DIMS)
+                                  INS-TOOLS-BUFFER)
+                               (+ EXTRA-HEIGHT-FROM-CURSOR
+                                  E-SCENE-HEIGHT
+                                  (bounding-limits-height RULE-YIELD-DIMS)
+                                  INS-TOOLS-BUFFER
+                                  (image-height ARROW-UP-KEY)))
+                    #;(bounding-limits 0 0 0 0))
                    (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
                    (create-viz-process-key (list (list "right" viz-go-next right-key-pressed)
                                                  (list "left" viz-go-prev left-key-pressed)

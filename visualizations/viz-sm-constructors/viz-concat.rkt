@@ -18,7 +18,7 @@
 
 (define FNAME "fsm")
 
-(define E-SCENE-HEIGHT 510)
+(define E-SCENE-HEIGHT 480)
 
 (define E-SCENE-TOOLS
   (let [(ARROW (above (triangle 30 'solid 'black) (rectangle 10 30 'solid 'black)))]
@@ -60,7 +60,6 @@
                   )
     )
   )
-
 
 ;; imsg-img
 ;; Image representing the informative messages
@@ -696,7 +695,18 @@
                                    )
              (instructions-graphic
               E-SCENE-TOOLS
-              (bounding-limits 0 0 0 0))
+              (bounding-limits 0
+                               (image-width E-SCENE-TOOLS)
+                               (+ EXTRA-HEIGHT-FROM-CURSOR
+                                  E-SCENE-HEIGHT
+                                  (bounding-limits-height RULE-YIELD-DIMS)
+                                  INS-TOOLS-BUFFER)
+                               (+ EXTRA-HEIGHT-FROM-CURSOR
+                                  E-SCENE-HEIGHT
+                                  (bounding-limits-height RULE-YIELD-DIMS)
+                                  INS-TOOLS-BUFFER
+                                  (image-height ARROW-UP-KEY)))
+              #;(bounding-limits 0 0 0 0))
              (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
              (create-viz-process-key (list (list "right" viz-go-next right-key-pressed)
                                            (list "left" viz-go-prev left-key-pressed)

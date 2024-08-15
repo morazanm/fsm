@@ -109,18 +109,15 @@
                   )
     )
   )
-
-
-(define RULE-YIELD-DIMS (bounding-limits 0
-                                         (image-width (above  (text "Union of the ndfas" 20 'black)
+(define imsg-img (above  (text "Union of the ndfas" 20 'black)
                                                               (text (format "Generated edges:") 20 'black)
                                                               (text (format "Final states:") 20 'black)
                                                               (text (format "Starting state:") 20 'black)))
+
+(define RULE-YIELD-DIMS (bounding-limits 0
+                                         (image-width imsg-img)
                                          E-SCENE-HEIGHT
-                                         (+ E-SCENE-HEIGHT (image-height (above  (text "Union of the ndfas" 20 'black)
-                                                                                 (text (format "Generated edges:") 20 'black)
-                                                                                 (text (format "Final states:") 20 'black)
-                                                                                 (text (format "Starting state:") 20 'black))))))
+                                         (+ E-SCENE-HEIGHT (image-height imsg-img))))
 
 (define ARROW-UP-KEY-DIMS
   (bounding-limits (+ (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
@@ -726,7 +723,10 @@
                                    )
              (instructions-graphic
               E-SCENE-TOOLS
-              (bounding-limits 0 0 0 0))
+              (bounding-limits 0
+                             (image-width imsg-img)
+                             E-SCENE-HEIGHT
+                             (+ E-SCENE-HEIGHT (image-height imsg-img))))
              (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
              (create-viz-process-key (list (list "right" viz-go-next right-key-pressed)
                                            (list "left" viz-go-prev left-key-pressed)
