@@ -775,5 +775,5 @@
                                   (G c G))
                         'no-dead))
 
-  (complement-viz aab*)
+  ;(complement-viz aab*)
   )
