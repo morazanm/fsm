@@ -1,6 +1,8 @@
 #lang racket
 
 (require 2htdp/image
+         "../../fsm-gviz/private/lib.rkt"
+         "../../fsm-gviz/interface.rkt"
          "../../fsm-core/private/fsa.rkt"
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/sm-getters.rkt"

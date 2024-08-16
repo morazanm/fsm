@@ -31,7 +31,7 @@
   "private/callgraphs/callgraphs-tm.rkt"
   "private/callgraphs/callgraphs-mttm.rkt"
   "private/callgraphs/transdiagram-mttm.rkt"
-  "private/callgraphs/viz-ctm.rkt"
+  "../visualizations/viz-sm/viz-ctm.rkt"
   "private/Chomsky-Greibach-CFG-Transformations/chomsky.rkt"
   "private/Chomsky-Greibach-CFG-Transformations/greibach.rkt")
   
