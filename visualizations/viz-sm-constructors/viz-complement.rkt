@@ -15,7 +15,8 @@
            "../viz-lib/viz.rkt"
            "../viz-lib/bounding-limits.rkt"
            "../viz-lib/viz-imgs/cursor.rkt"
-           "../viz-lib/zipper.rkt")
+           "../viz-lib/zipper.rkt"
+           "../../sm-graph.rkt")
   (provide complement-viz)
 
   (define FNAME "fsm")

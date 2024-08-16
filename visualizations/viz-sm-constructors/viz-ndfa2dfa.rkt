@@ -1078,5 +1078,5 @@
    '(A B C)
    `((S ,EMP A) (S ,EMP B) (S ,EMP C) (A b A) (A c A) (B a B) (B c B) (C a C) (C b C))))
 
-;(ndfa2dfa-viz aa-ab)
+(ndfa2dfa-viz aa-ab)
 ;(ndfa2dfa-viz AT-LEAST-ONE-MISSING)

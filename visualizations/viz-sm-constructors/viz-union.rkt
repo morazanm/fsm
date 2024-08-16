@@ -590,7 +590,7 @@
                      (sm-start M))])
 
     (graph-struct (list graph-one graph-two)
-                  (above (text "First ndfa:" 20 'black) (text "Second ndfa:" 20 'black)))))
+                  (above (text "Initial ndfas" 20 'black) (text "" 20 'black)))))
 
 ;; draw-imsg
 ;; imsg -> img

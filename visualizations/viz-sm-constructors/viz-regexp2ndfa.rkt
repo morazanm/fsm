@@ -800,6 +800,3 @@
                                             (list E-KEY-DIMS viz-reset-zoom identity)
                                             (list F-KEY-DIMS viz-max-zoom-in identity)))
              'regexp2ndfa)))
-
-;(regexp2ndfa-viz R5)
-;; ggg

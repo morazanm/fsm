@@ -546,7 +546,7 @@
                   N
                   (sm-start N))])
     (graph-struct (list graph1 graph2)
-                  (above (text "First ndfa:" 20 'black) (text "Second ndfa:" 20 'black)))))
+                  (above (text "Initial ndfas" 20 'black) (text "" 20 'black)))))
 
 ;; draw-imsg
 ;; imsg -> img
@@ -760,5 +760,3 @@
                                             (list E-KEY-DIMS viz-reset-zoom identity)
                                             (list F-KEY-DIMS viz-max-zoom-in identity)))
              'concat-viz)))
-
-;(concat-viz nl ab*)
