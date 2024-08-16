@@ -10,9 +10,9 @@
          "../viz-lib/viz.rkt"
          "../viz-lib/bounding-limits.rkt"
          "../../fsm-core/private/regexp.rkt"
-
          "../viz-lib/viz-imgs/cursor.rkt"
          "../viz-lib/zipper.rkt")
+
 (provide regexp2ndfa-viz)
 
 (define FNAME "fsm")

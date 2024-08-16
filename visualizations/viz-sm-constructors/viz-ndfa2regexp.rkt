@@ -15,8 +15,8 @@
          "../../fsm-core/private/regexp.rkt"
          "../viz-lib/zipper.rkt"
          "../viz-lib/viz-imgs/cursor.rkt"
-         "../../sm-graph.rkt"
-         "../../fsm-gviz/interface.rkt")
+         "../../sm-graph.rkt")
+
 (provide ndfa2regexp-viz)
 
 (define FNAME "fsm")
