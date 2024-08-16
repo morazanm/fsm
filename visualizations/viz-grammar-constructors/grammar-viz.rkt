@@ -1171,6 +1171,10 @@
                       (if (> (length (imsg-state-input-word a-imsgs)) TAPE-SIZE)
                           (imsg-state-word-img-offset a-imsgs)
                           0)))
+     (define (find-arrow used-rule acc)
+       (cond [(> acc (sub1 (string-length used-rule))) 1]
+             [(equal? (string-ref used-rule acc) #\→) acc]
+             [(find-arrow used-rule (add1 acc))]))
      (define YIELD-WORD
        (let ([normalized-p-yield (if (list? (zipper-current (imsg-state-yield a-imsgs)))
                                      (zipper-current (imsg-state-yield a-imsgs))
@@ -1184,14 +1188,15 @@
            (text "The rule used: " FONT-SIZE 'white)
            (text "The rule used: " FONT-SIZE 'black)))
      (define RULE-USED-WORD
-       (if (equal? "" (zipper-current (imsg-state-rules a-imsgs)))
+       (let ([arrow-place (find-arrow (zipper-current (imsg-state-rules a-imsgs)) 0)])
+         (if (equal? "" (zipper-current (imsg-state-rules a-imsgs)))
            (text "" FONT-SIZE 'white)
-           (beside (text (format "~a" (substring (zipper-current (imsg-state-rules a-imsgs)) 0 1))
+           (beside (text (format "~a" (substring (zipper-current (imsg-state-rules a-imsgs)) 0 (sub1 arrow-place)))
+                           FONT-SIZE
+                           YIELD-COLOR)
+                   (text (format " ~a" (substring (zipper-current (imsg-state-rules a-imsgs)) arrow-place))
                          FONT-SIZE
-                         YIELD-COLOR)
-                   (text (format " ~a" (substring (zipper-current (imsg-state-rules a-imsgs)) 1))
-                         FONT-SIZE
-                         HEDGE-COLOR))))
+                         HEDGE-COLOR)))))
      ;(define INVARIANT-MSG (text "Invariant: " FONT-SIZE 'black))
      (define INVARIANT-STATE
        (if (equal? 'NO-INV (imsg-state-broken-invariants a-imsgs))
