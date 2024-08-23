@@ -85,15 +85,15 @@
    (+ (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
       (/ (- (image-width (text "Restart" (- FONT-SIZE 2) 'black)) (image-width ARROW-UP-KEY)) 2)
       (image-width ARROW-UP-KEY))
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER)
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER
-      (image-height ARROW-UP-KEY))))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Restart" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         (image-height ARROW-UP-KEY)
+         ))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Restart" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         ))))
 
 (define ARROW-RIGHT-KEY-DIMS
   (bounding-limits
@@ -106,15 +106,15 @@
       (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
       (/ (- (image-width (text "Forward" (- FONT-SIZE 2) 'black)) (image-width ARROW-RIGHT-KEY)) 2)
       (image-width ARROW-RIGHT-KEY))
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER)
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER
-      (image-height ARROW-RIGHT-KEY))))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Forward" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         (image-height ARROW-RIGHT-KEY)
+         ))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Forward" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         ))))
 
 (define ARROW-LEFT-KEY-DIMS
   (bounding-limits
@@ -131,15 +131,15 @@
       (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
       (/ (- (image-width (text "Backward" (- FONT-SIZE 2) 'black)) (image-width ARROW-LEFT-KEY)) 2)
       (image-width ARROW-LEFT-KEY))
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER)
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER
-      (image-height ARROW-LEFT-KEY))))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Backward" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         (image-height ARROW-LEFT-KEY)
+         ))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Backward" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         ))))
 
 (define ARROW-DOWN-KEY-DIMS
   (bounding-limits
@@ -160,15 +160,15 @@
       (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
       (/ (- (image-width (text "Finish" (- FONT-SIZE 2) 'black)) (image-width ARROW-DOWN-KEY)) 2)
       (image-width ARROW-DOWN-KEY))
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER)
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER
-      (image-height ARROW-DOWN-KEY))))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Finish" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         (image-height ARROW-DOWN-KEY)
+         ))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Finish" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         ))))
 
 (define W-KEY-DIMS
   (bounding-limits
@@ -197,15 +197,15 @@
       (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
       (/ (- (image-width (text "Zoom in" (- FONT-SIZE 2) 'black)) (image-width W-KEY)) 2)
       (image-width W-KEY))
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER)
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER
-      (image-height W-KEY))))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Zoom in" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         (image-height ARROW-DOWN-KEY)
+         ))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Zoom in" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         ))))
 
 (define S-KEY-DIMS
   (bounding-limits
@@ -238,15 +238,15 @@
       (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
       (/ (- (image-width (text "Zoom out" (- FONT-SIZE 2) 'black)) (image-width S-KEY)) 2)
       (image-width S-KEY))
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER)
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER
-      (image-height S-KEY))))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Zoom out" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         (image-height ARROW-DOWN-KEY)
+         ))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Zoom out" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         ))))
 
 (define R-KEY-DIMS
   (bounding-limits
@@ -283,15 +283,15 @@
       (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
       (/ (- (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black)) (image-width R-KEY)) 2)
       (image-width R-KEY))
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER)
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER
-      (image-height R-KEY))))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Mid Zoom" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         (image-height ARROW-DOWN-KEY)
+         ))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Mid Zoom" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         ))))
 
 (define E-KEY-DIMS
   (bounding-limits
@@ -332,15 +332,15 @@
       (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
       (/ (- (image-width (text "Mid Zoom" (- FONT-SIZE 2) 'black)) (image-width E-KEY)) 2)
       (image-width E-KEY))
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER)
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER
-      (image-height E-KEY))))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Min Zoom" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         (image-height ARROW-DOWN-KEY)
+         ))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Min Zoom" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         ))))
 
 (define F-KEY-DIMS
   (bounding-limits
@@ -385,15 +385,16 @@
       (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
       (/ (- (image-width (text "Max Zoom" (- FONT-SIZE 2) 'black)) (image-width F-KEY)) 2)
       (image-width F-KEY))
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER)
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER
-      (image-height F-KEY))))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Max Zoom" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         (image-height ARROW-DOWN-KEY)
+         ))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Max Zoom" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         ))))
+
 ;; L = ab*
 #| (define nl (make-ndfa '(S)
                       '(a b)
