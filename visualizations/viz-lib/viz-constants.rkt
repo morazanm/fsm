@@ -26,3 +26,4 @@
 
 (define TICK-RATE 1/60)
 (define CLICK-BUFFER-SECONDS (/ (/ 1 TICK-RATE) 2))
+(define VIZ-FRAME-HEIGHT 700)
