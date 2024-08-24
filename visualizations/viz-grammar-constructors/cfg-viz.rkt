@@ -89,7 +89,7 @@
                                         (string->list (symbol->string symb))))))
 
 ;; tree -> listof Symbol
-;; Accumulates all of the leave nodes in order (producing the yield of the tree)
+;; Accumulates all of the leaf nodes in order (producing the yield of the tree)
 (define (get-yield subtree)
   (local [;; lower?
           ;; symbol -> Boolean
@@ -133,14 +133,18 @@
                     (define (check-all-invariant-nodes nonterminals invar-func broken-nodes)
                       (if (empty? nonterminals)
                           (if (empty? broken-nodes) #t broken-nodes)
-                          (if (invariant-holds? (dfs tree (first nonterminals)) invar-func)
+                          (begin
+                            (displayln (get-yield (dfs tree (first nonterminals))))
+                            (if (invariant-holds? (dfs tree (first nonterminals)) invar-func)
                               (check-all-invariant-nodes (rest nonterminals) invar-func broken-nodes)
                               (check-all-invariant-nodes (rest nonterminals)
                                                          invar-func
-                                                         (cons (first nonterminals) broken-nodes)))))]
-                   (check-all-invariant-nodes (find-all-invariant-nodes nonterminals-to-check)
-                                              invariant-func
-                                              '())))
+                                                         (cons (first nonterminals) broken-nodes)))
+                            )
+                          ))]
+              (check-all-invariant-nodes (find-all-invariant-nodes nonterminals-to-check)
+                                         invariant-func
+                                         '())))
           (define (check-all-invariants-helper nonterminals-to-check invariants broken-nodes)
             (if (empty? invariants)
                 (if (empty? broken-nodes) '() broken-nodes)
@@ -153,7 +157,7 @@
                       (check-all-invariants-helper nonterminals-to-check
                                                    (rest invariants)
                                                    broken-nodes)))))]
-         (check-all-invariants-helper nonterminals-to-check invariants '())))
+    (check-all-invariants-helper nonterminals-to-check invariants '())))
 
 ;; levels -> (listof levels)
 ;; Purpose: creates a list containing the levels used for each graph generated
@@ -162,7 +166,7 @@
           ;; Purpose: creates a list containing the levels used for each graph generated in reverse
           (define (create-list-of-levels-helper lvls)
             (if (empty? lvls) '() (cons lvls (create-list-of-levels-helper (rest lvls)))))]
-         (create-list-of-levels-helper (reverse levels))))
+    (create-list-of-levels-helper (reverse levels))))
 
 ;; nonterminal?
 ;; symbol -> Boolean
@@ -301,7 +305,7 @@
 ;; create-graph-structs
 ;; dgprh -> img
 ;; Purpose: Creates the final graph structure that will be used to create the images in graphviz
-(define (create-graph-structs a-dgrph invariants derv-order root-node rank-node-lvls)
+(define (create-graph-structs a-dgrph invariants derv-order root-node rank-node-lvls )
   (let* ([nodes (dgrph-nodes a-dgrph)]
          [levels (map reverse (dgrph-ad-levels a-dgrph))]
          [reversed-levels (reverse levels)]
@@ -787,18 +791,22 @@
                                           (map (lambda (x) (map (lambda (y) (second y)) x)) renamed)
                                           (list (list 'S))))]
                    [yield-trees (map create-yield-tree (map reverse (create-list-of-levels renamed)))]
+                   [test0 (displayln yield-trees)]
                    [dgraph (dgrph renamed
                                   '()
                                   '()
                                   '()
                                   (rest rules)
                                   (list (first rules))
-                                  (reverse yield-trees)
+                                  (map (lambda (x) (first yield-trees)) yield-trees) #;(reverse yield-trees)
                                   (list (tree (cfg-get-start cfg) '())))]
                    [lod (reverse (create-dgrphs dgraph '()))]
+                   #;[test0 (displayln (map (lambda (a-dgrph)
+                           (create-invariant-nodes a-dgrph invariants (cfg-get-start cfg) derv-type))
+                         lod))]
                    [invar-nodes
                     (map (lambda (a-dgrph)
-                           (create-invariant-nodes a-dgrph invariants (cfg-get-start cfg) derv-type))
+                           (create-invariant-nodes (last lod) invariants (cfg-get-start cfg) derv-type))
                          lod)]
                    [ordered-nodes
                     (reverse (map (if (eq? derv-type 'left) get-leftmost-order get-rightmost-order)
@@ -875,7 +883,7 @@
                                   '()
                                   (append (rest rules) (list "" ""))
                                   (list (first rules))
-                                  (reverse yield-trees)
+                                  (map (lambda (x) (last yield-trees)) yield-trees) #;(reverse yield-trees)
                                   (list (tree (cfg-get-start cfg) '())))]
                    [lod (reverse (create-dgrphs dgraph '()))]
                    [invar-nodes
@@ -916,6 +924,22 @@
                         #:special-graphs? 'cfg
                         #:rank-node-lst rank-node-lvls))))))
 
+
+#;(#(struct:tree S (#(struct:tree A0
+                                (#(struct:tree a0 ())))
+                  #(struct:tree b0 ())
+                  #(struct:tree A1 (#(struct:tree a1 ())))
+                  ))
+ #(struct:tree S (#(struct:tree A0
+                                (#(struct:tree a0 ())))
+                  #(struct:tree b0 ())
+                  #(struct:tree A1 ())))
+ 
+ #(struct:tree S (#(struct:tree A0 ())
+                  #(struct:tree b0 ())
+                  #(struct:tree A1 ())))
+ )
+
 (define numb>numa
   (make-unchecked-cfg
    '(S A)
@@ -927,7 +951,13 @@
   (make-unchecked-cfg
    '(S A)
    '(a b)
-   `((S ,ARROW b) (S ,ARROW AbA) (A ,ARROW AaAbA) (A ,ARROW AbAaA) (A ,ARROW a) (A ,ARROW bA))
+   `((S ,ARROW b)
+     (S ,ARROW AbA)
+     (A ,ARROW AaAbA)
+     (A ,ARROW AbAaA)
+     (A ,ARROW a)
+     (A ,ARROW bA)
+     )
    'S))
 
 #;(grammar-derive buggy-numb>numa '(a b a))
@@ -945,8 +975,11 @@
     (>= (length bs) (length as))))
 
 (define (S-INV w)
-  (let ([as (filter (lambda (symb) (eq? symb 'a)) w)] [bs (filter (lambda (symb) (eq? symb 'b)) w)])
-    (> (length bs) (length as))))
+  (let ([as (filter (lambda (symb) (eq? symb 'a)) w)]
+        [bs (filter (lambda (symb) (eq? symb 'b)) w)]
+        [As (filter (lambda (symb) (eq? symb 'A)) w)])
+    (> (length bs) (length as))
+    ))
 
 (define test-cfg
   (make-unchecked-cfg
@@ -962,7 +995,7 @@
    `((S ,ARROW ,EMP) (S ,ARROW AB) (A ,ARROW aSb) (B ,ARROW cBd) (A ,ARROW ,EMP) (B ,ARROW ,EMP))
    'S))
 
-(cfg-viz buggy-numb>numa '(a b a) 'level-left (list 'S S-INV) (list 'A A-INV))
+(cfg-viz buggy-numb>numa '(a b a) 'left (list 'S S-INV) (list 'A A-INV))
 ;(cfg-viz testcfg '(a a b b c c c d d d) 'left)
 #;
 (time (cfg-derive-queue-and-hash testcfg

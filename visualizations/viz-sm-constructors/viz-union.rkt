@@ -25,6 +25,7 @@
 
 ;; L = ab*
 (define ab* (make-unchecked-ndfa '(S A) '(a b) 'S '(A) '((S a A) (A b A))))
+
 #|
 ;; L = a(a U ab)b*
 (define a-aUb-b* (make-ndfa '(Z H B C D F)
