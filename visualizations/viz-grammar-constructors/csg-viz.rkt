@@ -17,8 +17,8 @@
    (list (list 'S ARROW 'AaB) (list 'AaA ARROW 'aSb) (list 'AaA ARROW EMP) (list 'B ARROW 'A))
    'S))
 
-(define HEDGE-COLOR 'red)
-(define YIELD-COLOR 'orange)
+(define HEDGE-COLOR 'orange)
+(define YIELD-COLOR 'violet)
 (define FONT-SIZE 12)
 (define HEXAGON-COLOR 'violet)
 
@@ -259,9 +259,9 @@
                      state
                      #:atb (hash 'color
                                  (cond
-                                   [(member state hedge-nodes) HEDGE-COLOR]
                                    [(member state yield-node) YIELD-COLOR]
-                                   [(member state hex-nodes) HEXAGON-COLOR]
+                                   [(member state hedge-nodes) HEDGE-COLOR]
+                                   ;[(member state hex-nodes) HEXAGON-COLOR]
                                    [else 'black])
                                  'shape
                                  (cond
@@ -304,12 +304,11 @@
 ;; create-dgraphs
 ;; dgrph (listof dgrph) boolean -> (listof dgrph)
 ;; Purpose: To create all the dgrphs for graph imgs
-(define (create-dgrphs a-dgrph lod hex?)
+#;(define (create-dgrphs a-dgrph lod hex?)
   (if (empty? (dgrph-up-levels a-dgrph))
       (cons a-dgrph lod)
       (let* ([new-up-levels (rest (dgrph-up-levels a-dgrph))]
              [new-ad-levels (cons (first (dgrph-up-levels a-dgrph)) (dgrph-p-levels a-dgrph))]
-
              [new-nodes (extract-nodes (first (dgrph-up-levels a-dgrph)))]
              [new-up-hex-nodes (rest (dgrph-up-hex-nodes a-dgrph))]
              [new-p-hex-nodes (cons (first (dgrph-up-hex-nodes a-dgrph)) (dgrph-p-hex-nodes a-dgrph))]
@@ -318,8 +317,54 @@
                                       (dgrph-p-yield-nodes a-dgrph))]
              [new-up-hedges (rest (dgrph-up-hedges a-dgrph))]
              [new-p-hedges (cons (first (dgrph-up-hedges a-dgrph)) (dgrph-p-hedges a-dgrph))]
-             [new-up-rules (dgrph-up-rules a-dgrph)]
-             [new-p-rules (dgrph-p-rules a-dgrph)])
+             #;[new-up-rules (dgrph-up-rules a-dgrph)]
+             #;[new-p-rules (dgrph-p-rules a-dgrph)])
+        (if hex?
+            (let ([new-up-rules (rest (dgrph-up-rules a-dgrph))]
+                  [new-p-rules (cons (first (dgrph-up-rules a-dgrph)) (dgrph-p-rules a-dgrph))])
+              (create-dgrphs (dgrph new-up-levels
+                                    new-ad-levels
+                                    new-nodes
+                                    new-up-hex-nodes
+                                    new-p-hex-nodes
+                                    new-up-yield-nodes
+                                    new-p-yield-nodes
+                                    new-up-hedges
+                                    new-p-hedges
+                                    new-up-rules
+                                    new-p-rules)
+                             (cons a-dgrph lod)
+                             #t))
+            (let ([new-up-rules (dgrph-up-rules a-dgrph)] [new-p-rules (dgrph-p-rules a-dgrph)])
+              (create-dgrphs (dgrph new-up-levels
+                                    new-ad-levels
+                                    new-nodes
+                                    new-up-hex-nodes
+                                    new-p-hex-nodes
+                                    new-up-yield-nodes
+                                    new-p-yield-nodes
+                                    new-up-hedges
+                                    new-p-hedges
+                                    new-up-rules
+                                    new-p-rules)
+                             (cons a-dgrph lod)
+                             #f))))))
+
+(define (create-dgrphs a-dgrph lod hex?)
+  (if (empty? (dgrph-up-levels a-dgrph))
+      (cons a-dgrph lod)
+      (let* ([new-up-levels (rest (dgrph-up-levels a-dgrph))]
+             [new-ad-levels (cons (first (dgrph-up-levels a-dgrph)) (dgrph-p-levels a-dgrph))]
+             [new-nodes (extract-nodes (first (dgrph-up-levels a-dgrph)))]
+             [new-up-hex-nodes (rest (dgrph-up-hex-nodes a-dgrph))]
+             [new-p-hex-nodes (cons (first (dgrph-up-hex-nodes a-dgrph)) (dgrph-p-hex-nodes a-dgrph))]
+             [new-up-yield-nodes (rest (dgrph-up-yield-nodes a-dgrph))]
+             [new-p-yield-nodes (cons (first (dgrph-up-yield-nodes a-dgrph))
+                                      (dgrph-p-yield-nodes a-dgrph))]
+             [new-up-hedges (rest (dgrph-up-hedges a-dgrph))]
+             [new-p-hedges (cons (first (dgrph-up-hedges a-dgrph)) (dgrph-p-hedges a-dgrph))]
+             #;[new-up-rules (dgrph-up-rules a-dgrph)]
+             #;[new-p-rules (dgrph-p-rules a-dgrph)])
         (if hex?
             (let ([new-up-rules (rest (dgrph-up-rules a-dgrph))]
                   [new-p-rules (cons (first (dgrph-up-rules a-dgrph)) (dgrph-p-rules a-dgrph))])
@@ -424,4 +469,4 @@
                    #:rank-node-lst (second renamed))
          ;(run-viz g w w-derv rules graphs #:special-graphs? #t #:rank-node-lst (second renamed))
          ))
-;(csg-viz anbn '(a a b b))
+(csg-viz anbn '(a a b b))
