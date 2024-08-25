@@ -133,14 +133,11 @@
                     (define (check-all-invariant-nodes nonterminals invar-func broken-nodes)
                       (if (empty? nonterminals)
                           (if (empty? broken-nodes) #t broken-nodes)
-                          (begin
-                            ;(displayln (get-yield (dfs tree (first nonterminals))))
                             (if (invariant-holds? (dfs tree (first nonterminals)) invar-func)
                               (check-all-invariant-nodes (rest nonterminals) invar-func broken-nodes)
                               (check-all-invariant-nodes (rest nonterminals)
                                                          invar-func
                                                          (cons (first nonterminals) broken-nodes)))
-                            )
                           ))]
               (check-all-invariant-nodes (find-all-invariant-nodes nonterminals-to-check)
                                          invariant-func
@@ -784,35 +781,27 @@
                              '()
                              (make-hash)
                              derv-type)]
-
-                   ;(rank-node-lvls (cons (list 'S) (map (lambda (x) (map (lambda (y) (second y)) x)) renamed)))
                    [rank-node-lvls (cons (list (list 'S))
                                          (accumulate-previous-ranks
                                           (map (lambda (x) (map (lambda (y) (second y)) x)) renamed)
                                           (list (list 'S))))]
                    [yield-trees (map create-yield-tree (map reverse (create-list-of-levels renamed)))]
-                   ;[test0 (displayln yield-trees)]
                    [dgraph (dgrph renamed
                                   '()
                                   '()
                                   '()
                                   (rest rules)
                                   (list (first rules))
-                                  (map (lambda (x) (first yield-trees)) yield-trees) #;(reverse yield-trees)
+                                  (map (lambda (x) (first yield-trees)) yield-trees)
                                   (list (tree (cfg-get-start cfg) '())))]
                    [lod (reverse (create-dgrphs dgraph '()))]
-                   #;[test0 (displayln (map (lambda (a-dgrph)
-                           (create-invariant-nodes a-dgrph invariants (cfg-get-start cfg) derv-type))
-                         lod))]
                    [invar-nodes
                     (map (lambda (a-dgrph)
                            (create-invariant-nodes a-dgrph invariants (cfg-get-start cfg) derv-type))
                          lod)]
-                   [test0 (displayln invar-nodes)]
                    [ordered-nodes
                     (reverse (map (if (eq? derv-type 'left) get-leftmost-order get-rightmost-order)
                                   yield-trees))]
-                   [test0 (displayln ordered-nodes)]
                    [broken-invariants
                     (if (empty? invariants)
                         'NO-INV
@@ -822,9 +811,6 @@
                                                       (rest (get-ordered-invariant-nodes
                                                              (cons (list (cfg-get-start cfg)) ordered-nodes)
                                                              invar-nodes)))))))]
-                   [test0 (displayln (get-ordered-invariant-nodes
-                                                             (cons (list (cfg-get-start cfg)) ordered-nodes)
-                                                             invar-nodes))]
                    [graphs (map (lambda (dgrph node-lvls)
                                   (create-graph-structs dgrph
                                                         invariants
