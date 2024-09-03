@@ -30,7 +30,7 @@
 
 (define FONT-SIZE 20)
 (define HEDGE-COLOR 'violet)
-(define YIELD-COLOR 'orange)
+(define YIELD-COLOR 'skyblue)
 (define INVARIANT-HOLDS-COLOR 'green)
 (define INVARIANT-BROKEN-COLOR 'red)
 
@@ -474,5 +474,5 @@
                           lod)])
         (init-viz rg word w-der rules graphs broken-invariants))))
 
-;(rg-viz even-bs-odd-as '(a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a))
+(rg-viz even-bs-odd-as '(a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a))
 (define G (make-rg '(S) '(a b) `((S ,ARROW ,EMP) (S ,ARROW aS)) 'S))
