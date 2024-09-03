@@ -17,7 +17,7 @@
    (list (list 'S ARROW 'AaB) (list 'AaA ARROW 'aSb) (list 'AaA ARROW EMP) (list 'B ARROW 'A))
    'S))
 
-(define HEDGE-COLOR 'orange)
+(define HEDGE-COLOR 'skyblue)
 (define YIELD-COLOR 'violet)
 (define FONT-SIZE 12)
 (define HEXAGON-COLOR 'violet)
