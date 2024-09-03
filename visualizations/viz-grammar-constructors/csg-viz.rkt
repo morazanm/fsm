@@ -458,13 +458,14 @@
                    (rest rules)
                    (list (first rules))))
           (define lod (reverse (create-dgrphs dgraph '() #f)))
-          (define graphs (map create-graph-structs lod))]
+          (define graphs (map create-graph-structs lod))
+          ]
          (init-viz g
                    w
                    w-derv
                    rules
                    graphs
-                   (list->zipper (map (lambda (x) '()) lod))
+                   'NO-INV
                    #:special-graphs? 'csg
                    #:rank-node-lst (second renamed))
          ;(run-viz g w w-derv rules graphs #:special-graphs? #t #:rank-node-lst (second renamed))

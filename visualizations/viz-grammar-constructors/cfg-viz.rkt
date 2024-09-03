@@ -260,7 +260,12 @@
                                  'fontcolor
                                  'black
                                  'font
-                                 "Sans")))
+                                 "Sans"
+                                 'penwidth
+                                 (cond
+                                   [(member state hedge-nodes) 2.5]
+                                   [(member state yield-node) 2.5]
+                                   [else 1.0]))))
          graph
          (reverse lon)))
 
