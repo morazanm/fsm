@@ -18,7 +18,7 @@
 (define FONT-SIZE 20)
 (define TAPE-SIZE 42)
 (define HEDGE-COLOR 'violet)
-(define YIELD-COLOR 'orange)
+(define YIELD-COLOR 'skyblue)
 (define PERCENT-BORDER-GAP 0.9)
 (define HEIGHT-BUFFER 20)
 (define LETTER-KEY-WIDTH-BUFFER 20)

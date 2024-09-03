@@ -34,9 +34,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define HEDGE-COLOR 'violet)
-(define YIELD-COLOR 'orange)
-(define INVARIANT-HOLDS-COLOR 'green)
-(define INVARIANT-BROKEN-COLOR 'red)
+(define YIELD-COLOR 'skyblue)
+(define INVARIANT-HOLDS-COLOR 'chartreuse4)
+(define INVARIANT-BROKEN-COLOR 'red2)
 (define FONT-SIZE 20)
 (define TAPE-SIZE 42)
 
@@ -263,8 +263,8 @@
                                  "Sans"
                                  'penwidth
                                  (cond
-                                   [(member state hedge-nodes) 2.5]
-                                   [(member state yield-node) 2.5]
+                                   [(member state hedge-nodes) 3.0]
+                                   [(member state yield-node) 3.0]
                                    [else 1.0]))))
          graph
          (reverse lon)))
