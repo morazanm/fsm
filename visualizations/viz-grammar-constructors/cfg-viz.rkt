@@ -19,17 +19,17 @@
 
 (define even-bs-odd-as
   (make-unchecked-cfg '(S A B C)
-            '(a b)
-            `((S ,ARROW aA) (S ,ARROW bB)
-                            (S ,ARROW a)
-                            (A ,ARROW aS)
-                            (A ,ARROW bC)
-                            (B ,ARROW aC)
-                            (B ,ARROW bS)
-                            (C ,ARROW aB)
-                            (C ,ARROW bA)
-                            (C ,ARROW b))
-            'S))
+                      '(a b)
+                      `((S ,ARROW aA) (S ,ARROW bB)
+                                      (S ,ARROW a)
+                                      (A ,ARROW aS)
+                                      (A ,ARROW bC)
+                                      (B ,ARROW aC)
+                                      (B ,ARROW bS)
+                                      (C ,ARROW aB)
+                                      (C ,ARROW bA)
+                                      (C ,ARROW b))
+                      'S))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -63,13 +63,13 @@
 
 ;; levels -> tree
 ;; Creates a tree structure from the levels
-(define (create-yield-tree levels)
+(define (create-yield-tree levels g-start)
   (foldl (lambda (val accum)
            (begin
              (set-tree-subtrees! (dfs accum (first (first val)))
                                  (map (lambda (edge) (tree (second edge) '())) val))
              accum))
-         (tree 'S '())
+         (tree g-start '())
          levels))
 
 ;; Symbol -> Symbol
@@ -105,14 +105,14 @@
                        [else (append yield (get-yield-helper node))]))
                    '()
                    (tree-subtrees subtree)))]
-         (filter (lambda (node) (lower? node))
-                 (foldl (lambda (node yield)
-                          (cond
-                            [(equal? (undo-renaming (tree-value node)) EMP) yield]
-                            [(empty? (tree-subtrees node)) (append yield (list (tree-value node)))]
-                            [else (append yield (get-yield-helper node))]))
-                        '()
-                        (tree-subtrees subtree)))))
+    (filter (lambda (node) (lower? node))
+            (foldl (lambda (node yield)
+                     (cond
+                       [(equal? (undo-renaming (tree-value node)) EMP) yield]
+                       [(empty? (tree-subtrees node)) (append yield (list (tree-value node)))]
+                       [else (append yield (get-yield-helper node))]))
+                   '()
+                   (tree-subtrees subtree)))))
 
 ;; tree invariant-function -> (U boolean Symbol)
 ;; Evaluates the invariant function given to us by the user on the current yield
@@ -133,7 +133,7 @@
                     (define (check-all-invariant-nodes nonterminals invar-func broken-nodes)
                       (if (empty? nonterminals)
                           (if (empty? broken-nodes) #t broken-nodes)
-                            (if (invariant-holds? (dfs tree (first nonterminals)) invar-func)
+                          (if (invariant-holds? (dfs tree (first nonterminals)) invar-func)
                               (check-all-invariant-nodes (rest nonterminals) invar-func broken-nodes)
                               (check-all-invariant-nodes (rest nonterminals)
                                                          invar-func
@@ -444,21 +444,21 @@
                                                used-names
                                                find-nt-func)))
             (local
-             [;; Just sticks a number after the symbol itself, uses a hash table to keep track of what numbers
-              ;; were already used for a specific symbol
-              (define renamed-states (map (lambda (st) (rename-symb used-names st)) (first rules)))
-              ;; Creates a new level by taking the current rule that is meant to be applied at this point of
-              ;; the derivation
-              ;; and creating an edge between each of the elements within and the current nonterminal being
-              ;;processed
-              (define (new-level start)
-                (map (lambda (st) (list start st)) renamed-states))]
-             (cons (new-level current-nt)
-                   (generate-levels-list-helper renamed-states
-                                                (rest rules)
-                                                (cons current-state prev-states)
-                                                used-names
-                                                find-nt-func)))))))
+              [;; Just sticks a number after the symbol itself, uses a hash table to keep track of what numbers
+               ;; were already used for a specific symbol
+               (define renamed-states (map (lambda (st) (rename-symb used-names st)) (first rules)))
+               ;; Creates a new level by taking the current rule that is meant to be applied at this point of
+               ;; the derivation
+               ;; and creating an edge between each of the elements within and the current nonterminal being
+               ;;processed
+               (define (new-level start)
+                 (map (lambda (st) (list start st)) renamed-states))]
+              (cons (new-level current-nt)
+                    (generate-levels-list-helper renamed-states
+                                                 (rest rules)
+                                                 (cons current-state prev-states)
+                                                 used-names
+                                                 find-nt-func)))))))
 
 ;; list any -> list
 ;; Purpose: Returns the list up until and excluding the value given
@@ -508,23 +508,23 @@
                                              find-nt-func
                                              derv-type)
             (local
-             [(define renamed-states (map (lambda (st) (rename-symb used-names st)) (first rules)))
-              (define (new-level start)
-                (map (lambda (st) (list start st)) renamed-states))]
-             (cons (new-level current-nt)
-                   (generate-levels-bfs-list-helper
-                    (if (eq? derv-type 'level-left)
-                        (rest (member current-nt unprocessed-yield))
-                        (take-until unprocessed-yield current-nt))
-                    (if (eq? derv-type 'level-left)
-                        (append (if (list? processed-yield) processed-yield (list processed-yield))
-                                (if (list? renamed-states) renamed-states (list renamed-states)))
-                        (append (if (list? renamed-states) renamed-states (list renamed-states))
-                                (if (list? processed-yield) processed-yield (list processed-yield))))
-                    (rest rules)
-                    used-names
-                    find-nt-func
-                    derv-type)))))))
+              [(define renamed-states (map (lambda (st) (rename-symb used-names st)) (first rules)))
+               (define (new-level start)
+                 (map (lambda (st) (list start st)) renamed-states))]
+              (cons (new-level current-nt)
+                    (generate-levels-bfs-list-helper
+                     (if (eq? derv-type 'level-left)
+                         (rest (member current-nt unprocessed-yield))
+                         (take-until unprocessed-yield current-nt))
+                     (if (eq? derv-type 'level-left)
+                         (append (if (list? processed-yield) processed-yield (list processed-yield))
+                                 (if (list? renamed-states) renamed-states (list renamed-states)))
+                         (append (if (list? renamed-states) renamed-states (list renamed-states))
+                                 (if (list? processed-yield) processed-yield (list processed-yield))))
+                     (rest rules)
+                     used-names
+                     find-nt-func
+                     derv-type)))))))
 
 (define (treelist-insert-list tl i lst)
   (if (empty? lst) tl (treelist-insert-list (treelist-insert tl i (first lst)) (add1 i) (rest lst))))
@@ -786,11 +786,11 @@
                              '()
                              (make-hash)
                              derv-type)]
-                   [rank-node-lvls (cons (list (list 'S))
+                   [rank-node-lvls (cons (list (list (cfg-get-start cfg)))
                                          (accumulate-previous-ranks
                                           (map (lambda (x) (map (lambda (y) (second y)) x)) renamed)
-                                          (list (list 'S))))]
-                   [yield-trees (map create-yield-tree (map reverse (create-list-of-levels renamed)))]
+                                          (list (list (cfg-get-start cfg)))))]
+                   [yield-trees (map (lambda (x) (create-yield-tree x (cfg-get-start cfg))) (map reverse (create-list-of-levels renamed)))]
                    [dgraph (dgrph renamed
                                   '()
                                   '()
@@ -872,7 +872,7 @@
                                                                       (make-hash)
                                                                       (cfg-get-alphabet cfg))))]
                    [w-der (convert-yield-deriv-to-word-deriv word derivation)]
-                   [yield-trees (map create-yield-tree (map reverse (create-list-of-levels renamed)))]
+                   [yield-trees (map (lambda (x) (create-yield-tree x (cfg-get-start cfg))) (map reverse (create-list-of-levels renamed)))]
                    [dgraph (dgrph renamed
                                   '()
                                   '()
@@ -899,10 +899,10 @@
                                                       (rest (get-ordered-invariant-nodes
                                                              ordered-nodes
                                                              invar-nodes)))))))]
-                   [rank-node-lvls (cons (list (list 'S))
+                   [rank-node-lvls (cons (list (list (cfg-get-start cfg)))
                                          (accumulate-previous-ranks
                                           (map (lambda (x) (map (lambda (y) (second y)) x)) renamed)
-                                          (list (list 'S))))]
+                                          (list (list (cfg-get-start cfg)))))]
                    [graphs (map (lambda (dgrph node-lvls)
                                   (create-graph-structs dgrph
                                                         invariants
@@ -919,22 +919,6 @@
                         broken-invariants
                         #:special-graphs? 'cfg
                         #:rank-node-lst rank-node-lvls))))))
-
-
-#;(#(struct:tree S (#(struct:tree A0
-                                (#(struct:tree a0 ())))
-                  #(struct:tree b0 ())
-                  #(struct:tree A1 (#(struct:tree a1 ())))
-                  ))
- #(struct:tree S (#(struct:tree A0
-                                (#(struct:tree a0 ())))
-                  #(struct:tree b0 ())
-                  #(struct:tree A1 ())))
- 
- #(struct:tree S (#(struct:tree A0 ())
-                  #(struct:tree b0 ())
-                  #(struct:tree A1 ())))
- )
 
 (define numb>numa
   (make-unchecked-cfg
@@ -956,15 +940,11 @@
      )
    'S))
 
-#;(grammar-derive buggy-numb>numa '(a b a))
-
 (define palindrome
   (make-unchecked-cfg '(S A)
                       '(a b)
                       '((S -> ε) (S -> aSa) (S -> bSb) (S -> aAa) (S -> bAb) (A -> aS) (A -> bS))
                       'S))
-
-;(cfg-viz palindrome '(a b a a b b a b a) 'left)
 
 (define (A-INV w)
   (let ([as (filter (lambda (symb) (eq? symb 'a)) w)] [bs (filter (lambda (symb) (eq? symb 'b)) w)])
@@ -991,77 +971,91 @@
    `((S ,ARROW ,EMP) (S ,ARROW AB) (A ,ARROW aSb) (B ,ARROW cBd) (A ,ARROW ,EMP) (B ,ARROW ,EMP))
    'S))
 
-(cfg-viz buggy-numb>numa '(a b a) 'left (list 'S S-INV) (list 'A A-INV))
+#;(cfg-viz buggy-numb>numa '(a b a) 'left (list 'S S-INV) (list 'A A-INV))
 ;(cfg-viz testcfg '(a a b b c c c d d d) 'left)
 #;
 (time (cfg-derive-queue-and-hash testcfg
                                  '(a a a a a a a a b b b b b b b b b c c c c c c c c d d d d d d d d)
                                  'left))
+(define lang3-grammar (make-unchecked-cfg
+                       '(P E)
+                       '(n t f i m o c z)
+                       `((P ,ARROW E)
+                         (E ,ARROW n)
+                         (E ,ARROW t)
+                         (E ,ARROW f)
+                         (E ,ARROW i)
+                         (E ,ARROW moEcEo)
+                         (E ,ARROW zoEo)
+                         )
+                       'P))
+(cfg-viz lang3-grammar '(m o n c n o))
+;(cfg-viz lang3-grammar '(- op num cm num cp))
 #;(cfg-viz testcfg
-           '(a a
-               a
-               a
-               a
-               a
-               a
-               a
-               a
-               a
-               a
-               a
-               a
-               a
-               a
-               a
-               b
-               b
-               b
-               b
-               b
-               b
-               b
-               b
-               b
-               b
-               b
-               b
-               b
-               b
-               b
-               b
-               c
-               c
-               c
-               c
-               c
-               c
-               c
-               c
-               c
-               c
-               c
-               c
-               c
-               c
-               c
-               c
-               d
-               d
-               d
-               d
-               d
-               d
-               d
-               d
-               d
-               d
-               d
-               d
-               d
-               d
-               d
-               d)
-           'right)
+         '(a a
+             a
+             a
+             a
+             a
+             a
+             a
+             a
+             a
+             a
+             a
+             a
+             a
+             a
+             a
+             b
+             b
+             b
+             b
+             b
+             b
+             b
+             b
+             b
+             b
+             b
+             b
+             b
+             b
+             b
+             b
+             c
+             c
+             c
+             c
+             c
+             c
+             c
+             c
+             c
+             c
+             c
+             c
+             c
+             c
+             c
+             c
+             d
+             d
+             d
+             d
+             d
+             d
+             d
+             d
+             d
+             d
+             d
+             d
+             d
+             d
+             d
+             d)
+         'right)
 ;(grammar-derive numb>numa '(a b b a a b b a b b b))
 
 #;(define G (make-cfg '(S) '(a b) `((S ,ARROW ,EMP) (S ,ARROW aS)) 'S))

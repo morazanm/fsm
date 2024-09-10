@@ -2,7 +2,7 @@
 (require 2htdp/universe
          "../../fsm-gviz/private/parallel.rkt"
          "../../fsm-gviz/private/lib.rkt"
-         "zipper.rkt"
+         "vector-zipper.rkt"
          "bounding-limits.rkt"
          "viz-state.rkt")
 
@@ -13,12 +13,12 @@
 ;; create-graph-imgs
 ;; (listof dgraph) -> (listof image)
 ;; Purpose: To create a list of graph images built level by level
-(define (create-graph-imgs graphs #:cpu-cores [cpu-cores #f])
+(define (create-graph-imgs graphs #:graph-type [graph-type 'rg] #:rank-node-lst [rank-node-lst '()] #:cpu-cores [cpu-cores #f])
   (if (empty? graphs)
       '()
       (if (not cpu-cores)
-          (parallel-graphs->bitmap-thunks graphs)
-          (parallel-graphs->bitmap-thunks graphs #:cpu-cores cpu-cores)
+          (streaming-parallel-graphs->bitmap-thunks graphs #:graph-type graph-type #:rank-node-lst rank-node-lst)
+          (streaming-parallel-graphs->bitmap-thunks graphs #:graph-type graph-type #:rank-node-lst rank-node-lst #:cpu-cores cpu-cores)
           )))
 
 ;; create-graph-imgs
@@ -108,11 +108,22 @@
                  imsg-struct instructions-struct draw-world process-key process-tick name
                  
                 #:cpu-cores [cpu-cores #f] #:special-graphs? [special-graphs? #f] #:rank-node-lst [rank-node-lst '()])
-  (let* [(imgs (cond [(eq? special-graphs? 'cfg) (cons first-img (rest (create-cfg-graph-imgs graphs #:cpu-cores cpu-cores #:rank-node-lst rank-node-lst)))]
-                     [(eq? special-graphs? 'csg) (cons first-img (rest (create-special-graph-imgs graphs #:cpu-cores cpu-cores #:rank-node-lst rank-node-lst)))]
-                     [else (cons first-img (rest (create-graph-imgs graphs #:cpu-cores cpu-cores)))]))]
-    (viz (viz-state (list->zipper imgs)
-                    ((first imgs))
+  (let* [(imgs (cond [(eq? special-graphs? 'cfg) (let ([res (create-graph-imgs graphs #:rank-node-lst rank-node-lst #:graph-type 'cfg #:cpu-cores cpu-cores)])
+                                                   (vector-set! res 0 first-img)
+                                                   res
+                                                   )
+                                                 #;(cons first-img (rest (create-cfg-graph-imgs graphs #:cpu-cores cpu-cores #:rank-node-lst rank-node-lst)))]
+                     [(eq? special-graphs? 'csg) (let ([res (create-graph-imgs graphs #:rank-node-lst rank-node-lst #:graph-type 'csg #:cpu-cores cpu-cores)])
+                                                   (vector-set! res 0 first-img)
+                                                   res
+                                                   )
+                                                 #;(cons first-img (rest (create-special-graph-imgs graphs #:cpu-cores cpu-cores #:rank-node-lst rank-node-lst)))]
+                     [else (let ([res (create-graph-imgs graphs #:cpu-cores cpu-cores)])
+                             (vector-set! res 0 first-img)
+                             res
+                             )]))]
+    (viz (viz-state (vector->vector-zipper imgs)
+                    ((vector-ref imgs 0))
                     first-img-coord
                     DEFAULT-ZOOM
                     DEFAULT-ZOOM-CAP
