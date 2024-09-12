@@ -1044,9 +1044,9 @@
                                                                        )))
             )
               
-          (displayln "results")
+          ;(displayln "64")
           (displayln (vector->list cpu-1-core))
-              
+           
           )
         )
     )
@@ -1136,6 +1136,120 @@
                 d
                 d)
               'right) #:preview? #t #:svg-path "flamegraph2.svg")
+
+
+(displayln "16")
+(test-cfg-viz testcfg
+              '(a
+                a
+                a
+                a
+                a
+                b
+                b
+                b
+                b
+                b
+                c
+                c
+                c
+                d
+                d
+                d)
+              200)
+
+
+(displayln "32")
+(test-cfg-viz testcfg
+              '(a
+                a
+                a
+                a
+                a
+                a
+                a
+                a
+                a
+                b
+                b
+                b
+                b
+                b
+                b
+                b
+                b
+                b
+                c
+                c
+                c
+                c
+                c
+                c
+                c
+                d
+                d
+                d
+                d
+                d
+                d
+                d)
+              200)
+
+
+
+(displayln "48")
+(test-cfg-viz testcfg
+              '(a
+                a
+                a
+                a
+                a
+                a
+                a
+                a
+                a
+                a
+                a
+                a
+                a
+                b
+                b
+                b
+                b
+                b
+                b
+                b
+                b
+                b
+                b
+                b
+                b
+                b
+                c
+                c
+                c
+                c
+                c
+                c
+                c
+                c
+                c
+                c
+                c
+                d
+                d
+                d
+                d
+                d
+                d
+                d
+                d
+                d
+                d
+                d)
+              200)
+
+(displayln "64")
 (test-cfg-viz testcfg
               '(a
                 a
