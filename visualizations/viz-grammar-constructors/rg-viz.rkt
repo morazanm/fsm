@@ -7,7 +7,7 @@
          "../viz-lib/viz.rkt"
          "../viz-lib/zipper.rkt"
          "grammar-viz.rkt"
-         profile-flame-graph)
+         )
 
 (define FNAME "fsm")
 
