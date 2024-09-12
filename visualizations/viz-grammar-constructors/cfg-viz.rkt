@@ -12,7 +12,8 @@
          "cfg-derive-level-leftmost.rkt"
          racket/treelist
          "yield-struct.rkt"
-         "../../fsm-gviz/private/parallel.rkt")
+         "../../fsm-gviz/private/parallel.rkt"
+         )
 
 (provide cfg-viz)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -918,7 +919,8 @@
                         graphs
                         broken-invariants
                         #:special-graphs? 'cfg
-                        #:rank-node-lst rank-node-lvls))))))
+                        #:rank-node-lst rank-node-lvls)))))
+  )
 
 (define numb>numa
   (make-unchecked-cfg
@@ -977,6 +979,83 @@
 (time (cfg-derive-queue-and-hash testcfg
                                  '(a a a a a a a a b b b b b b b b b c c c c c c c c d d d d d d d d)
                                  'left))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(define (test-cfg-viz cfg word num-trials)
+  (let [(derivation (cfg-derive-leftmost cfg word))]
+    (if (string? derivation)
+        derivation
+        (let* [(der-with-rules (w-der-with-rules derivation))
+               (rules (cons "" (create-rules-leftmost (move-rule-applications-in-list der-with-rules))))
+               (w-der (list-of-states der-with-rules))
+               (renamed (generate-levels-list (first (first (first der-with-rules)))
+                                              (list-of-rules (move-rule-applications-in-list der-with-rules))
+                                              '()
+                                              (make-hash)
+                                              'left))
+               (yield-trees (map (lambda (x) (create-yield-tree x (cfg-get-start cfg))) (map reverse (create-list-of-levels renamed))))
+               (dgraph (dgrph renamed '() '() '() (rest rules) (list (first rules)) (reverse yield-trees) (list (tree (cfg-get-start cfg) '()))))
+               (lod (reverse (create-dgrphs dgraph '())))]
+              
+          (define normal-graph-times (make-vector num-trials '()))
+          (define parallel-graph-times (make-vector num-trials '()))
+              
+          (define num-cores (find-number-of-cores))
+          (define cpu-1-core (make-vector num-trials '()))
+              
+          (define gstructs (map (lambda (dgrph node-lvl) (create-graph-structs dgrph '() 'left (cfg-get-start cfg) node-lvl)) lod (cons (list (list 'S))
+                                                                                                                                        (accumulate-previous-ranks
+                                                                                                                                         (map (lambda (x) (map (lambda (y) (second y)) x)) renamed)
+                                                                                                                                         (list (list 'S))))))
+
+          (define thrd-box (make-vector 1 '()))
+          (for ([i (range num-trials)])
+            (vector-set! cpu-1-core i
+                         (third (match/values (time-apply (lambda (lod) (vector-set! thrd-box 0 (testing-streaming-parallel-graphs->bitmap-thunks gstructs))) (list lod))
+                                              [(cpu-1-core-results (? number? cpu-time)
+                                                                   (? number? real-time)
+                                                                   (? number? gc-time))
+                                               (list cpu-1-core-results cpu-time real-time gc-time)])))
+            (thread-wait (vector-ref thrd-box 0))
+
+            #;(vector-set! normal-graph-times i (third (match/values (time-apply (lambda (lod) (parallel-graphs->bitmap-thunks gstructs #:cpu-cores 1)) (list lod))
+                                                                     [(ng-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list ng-results cpu-time real-time gc-time)]
+                                                                     )))
+            #;(vector-set! parallel-graph-times i (third (match/values (time-apply (lambda (lod) (parallel-graphs->bitmap-thunks gstructs)) (list lod))
+                                                                       [(cpufull-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpufull-results cpu-time real-time gc-time)]
+                                                                       )))
+            )
+              
+          (displayln "results")
+          (displayln (vector->list cpu-1-core))
+              
+          )
+        )
+    )
+  )
+
+;(test-cfg-viz 10)
+
+
+
 (define lang3-grammar (make-unchecked-cfg
                        '(P E)
                        '(n t f i m o c z)
@@ -989,73 +1068,140 @@
                          (E ,ARROW zoEo)
                          )
                        'P))
-(cfg-viz lang3-grammar '(m o n c n o))
+#;(test-cfg-viz lang3-grammar '(m o n c n o) 10)
 ;(cfg-viz lang3-grammar '(- op num cm num cp))
-#;(cfg-viz testcfg
-         '(a a
-             a
-             a
-             a
-             a
-             a
-             a
-             a
-             a
-             a
-             a
-             a
-             a
-             a
-             a
-             b
-             b
-             b
-             b
-             b
-             b
-             b
-             b
-             b
-             b
-             b
-             b
-             b
-             b
-             b
-             b
-             c
-             c
-             c
-             c
-             c
-             c
-             c
-             c
-             c
-             c
-             c
-             c
-             c
-             c
-             c
-             c
-             d
-             d
-             d
-             d
-             d
-             d
-             d
-             d
-             d
-             d
-             d
-             d
-             d
-             d
-             d
-             d)
-         'right)
+#;(profile (cfg-viz testcfg
+              '(a
+                a
+                a
+                a
+                a
+                a
+                a
+                a
+                a
+                a
+                a
+                a
+                a
+                a
+                a
+                a
+                b
+                b
+                b
+                b
+                b
+                b
+                b
+                b
+                b
+                b
+                b
+                b
+                b
+                b
+                b
+                b
+                c
+                c
+                c
+                c
+                c
+                c
+                c
+                c
+                c
+                c
+                c
+                c
+                c
+                c
+                c
+                c
+                d
+                d
+                d
+                d
+                d
+                d
+                d
+                d
+                d
+                d
+                d
+                d
+                d
+                d
+                d
+                d)
+              'right) #:preview? #t #:svg-path "flamegraph2.svg")
+(test-cfg-viz testcfg
+              '(a
+                a
+                a
+                a
+                a
+                a
+                a
+                a
+                a
+                a
+                a
+                a
+                a
+                a
+                a
+                a
+                b
+                b
+                b
+                b
+                b
+                b
+                b
+                b
+                b
+                b
+                b
+                b
+                b
+                b
+                b
+                b
+                c
+                c
+                c
+                c
+                c
+                c
+                c
+                c
+                c
+                c
+                c
+                c
+                c
+                c
+                c
+                c
+                d
+                d
+                d
+                d
+                d
+                d
+                d
+                d
+                d
+                d
+                d
+                d
+                d
+                d
+                d
+                d)
+              200)
 ;(grammar-derive numb>numa '(a b b a a b b a b b b))
 
 #;(define G (make-cfg '(S) '(a b) `((S ,ARROW ,EMP) (S ,ARROW aS)) 'S))

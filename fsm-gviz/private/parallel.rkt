@@ -259,78 +259,116 @@
     )
   )
 
-;; Listof graph -> Listof Thunk
-;; Creates all the graph images needed in parallel, and returns a list of thunks that will load them from disk
-(define (streaming-parallel-graphs->bitmap-thunks graphs #:rank-node-lst [rank-node-lst '()] #:graph-type [graph-type 'rg] #:cpu-cores [cpu-cores (quotient (find-number-of-cores) 2)])
-  ;; Procedure Listof Any -> Void
-  ;; Runs a given function in parallel based on information gathered from the system
-  (define (streaming-parallel-shell func args min-idx max-idx cpu-cores)
-    (let [
-          (cpu-cores-avail (make-semaphore cpu-cores))
-          (system-os (system-type 'os))
-          ]
-      (define (make-thread a)
-        (delay/sync (begin
-                 (semaphore-wait cpu-cores-avail)
-                 (let ([shell-process (func a)])
-                   (displayln a)
-                   (let [
-                         (result (sync (if (eq? system-os 'windows)
-                                           (read-line-evt (first shell-process) 'any)
-                                           (read-line-evt (first shell-process))
-                                           )
-                                       )
-                                 )
-                         ]
-                     (if (= 0 (string->number result))
-                         ;; This is thrown away, just doing this for the error check
-                         result
-                         (error (format "Graphviz produced an error while compiling the graphs: ~a" result))
-                         )
-                     )
-                   (close-input-port (first shell-process))
-                   (close-output-port (second shell-process))
-                   (close-input-port (fourth shell-process))
-                   (semaphore-post cpu-cores-avail)
-                   (thunk (bitmap/file (string->path (format "~a.png" a))))
-                   )
-                 )
-               )
-        )
-      (for ([i (in-range min-idx max-idx)])
-        (let ([cache (vector-ref args i)])
-          (vector-set! args i (make-thread cache))
-          )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+;; Procedure Listof Any -> Void
+;; Runs a given function in parallel based on information gathered from the system
+(define (streaming-parallel-shell func args min-idx max-idx cpu-cores system-os)
+  (let [
+        (cpu-cores-avail (make-semaphore cpu-cores))
+        ]
+    (define (make-thread a)
+      (delay/sync (begin
+                    (semaphore-wait cpu-cores-avail)
+                    (let ([shell-process (func a)])
+                      ;(displayln a)
+                      (let [
+                            (result (sync (if (eq? system-os 'windows)
+                                              (read-line-evt (first shell-process) 'any)
+                                              (read-line-evt (first shell-process)))))
+                            ]
+                        (when (not (string=? "0" result))
+                          (error (format "Graphviz produced an error while compiling the graphs: ~a" result)))
+                        )
+                      (close-input-port (first shell-process))
+                      (close-output-port (second shell-process))
+                      (close-input-port (fourth shell-process))
+                      (semaphore-post cpu-cores-avail)
+                      (thunk (bitmap/file (string->path (format "~a.png" a))))
+                      )
+                    )
+                  )
+      )
+    (for ([i (in-range min-idx max-idx)])
+      (let ([cache (vector-ref args i)])
+        (vector-set! args i (make-thread cache))
         )
       )
     )
-  ;; Listof String -> Void
-  ;; Creates all the graphviz images
-  (define (streaming-parallel-dots->pngs dot-files min-idx max-idx cpu-cores)
-    (define dot-executable-path (find-dot))
-    ;; On Mac/Linux we can bypass having to look at the systems PATH by instead
-    ;; using the absolute path to the executable. For unknown reasons this does not
-    ;; work on Windows so we will still use the PATH to call the dot executable
-    ;; Additionally, we need to use a different shell command for windows systems in order to get a status code back 
-    (define (make-process file-path) (process (if (equal? (system-type) 'windows)
-                                                  (format "~a -T~s ~s -o ~s & echo %errorlevel%"
-                                                          "dot"
-                                                          'png
-                                                          (string-append file-path ".dot")
-                                                          (string-append file-path ".png")
-                                                          )
-                                                  (format "~a -T~s ~s -o ~s; echo $?"
-                                                          (path->string dot-executable-path)
-                                                          'png
-                                                          (string-append file-path ".dot")
-                                                          (string-append file-path ".png")
-                                                          )
-                                                  )
-                                              )
-      )
-    (if (path? dot-executable-path)
-        (streaming-parallel-shell make-process dot-files min-idx max-idx cpu-cores)
-        (error "Error caused when creating png file. This was probably due to the dot environment variable not existing on the path")))
+  )
+
+
+;; Listof String -> Void
+;; Creates all the graphviz images
+(define (streaming-parallel-dots->pngs dot-files min-idx max-idx cpu-cores)
+  (define dot-executable-path (find-dot))
+  (define dot-executable-path-string (path->string dot-executable-path))
+  (define system-os (system-type))
+  ;; On Mac/Linux we can bypass having to look at the systems PATH by instead
+  ;; using the absolute path to the executable. For unknown reasons this does not
+  ;; work on Windows so we will still use the PATH to call the dot executable
+  ;; Additionally, we need to use a different shell command for windows systems in order to get a status code back 
+  (define (make-process file-path) (process (if (eq? system-os 'windows)
+                                                (format "~a -T~s ~s -o ~s & echo %errorlevel%"
+                                                        "dot"
+                                                        'png
+                                                        (string-append file-path ".dot")
+                                                        (string-append file-path ".png")
+                                                        )
+                                                (format "~a -T~s ~s -o ~s; echo $?"
+                                                        dot-executable-path-string
+                                                        'png
+                                                        (string-append file-path ".dot")
+                                                        (string-append file-path ".png")
+                                                        )
+                                                )
+                                            )
+    )
+  (if (path? dot-executable-path)
+      (streaming-parallel-shell make-process dot-files min-idx max-idx cpu-cores system-os)
+      (error "Error caused when creating png file. This was probably due to the dot environment variable not existing on the path")))
+
+(define (force-promises vec min-idx max-idx)
+  (for ([i (in-range min-idx max-idx)])
+            (force (vector-ref vec i))))
+
+;; Listof graph -> Listof Thunk
+;; Creates all the graph images needed in parallel, and returns a list of thunks that will load them from disk
+(define (streaming-parallel-graphs->bitmap-thunks graphs #:rank-node-lst [rank-node-lst '()] #:graph-type [graph-type 'rg] #:cpu-cores [cpu-cores (quotient (find-number-of-cores) 2)])
+  
+  
+  
+  
   
   (begin
     (define enumerated-graphs (make-pairs (range 0 (length graphs)) graphs))
@@ -348,9 +386,11 @@
     (if (> (vector-length flattened-list-dot-files) (* NUM-PRELOAD 2))
         (begin
           (streaming-parallel-dots->pngs flattened-list-dot-files 0 (vector-length flattened-list-dot-files) cpu-cores)
-          (for ([i (in-range 0 NUM-PRELOAD)])
+          (force-promises flattened-list-dot-files 0 NUM-PRELOAD)
+          #;(for ([i (in-range 0 NUM-PRELOAD)])
             (force (vector-ref flattened-list-dot-files i)))
-          (for ([i (in-range (- (vector-length flattened-list-dot-files) NUM-PRELOAD) (vector-length flattened-list-dot-files))])
+          (force-promises flattened-list-dot-files (- (vector-length flattened-list-dot-files) NUM-PRELOAD) (vector-length flattened-list-dot-files))
+          #;(for ([i (in-range (- (vector-length flattened-list-dot-files) NUM-PRELOAD) (vector-length flattened-list-dot-files))])
             (force (vector-ref flattened-list-dot-files i)))
 
           (thread (thunk (for ([i (in-range NUM-PRELOAD (- (vector-length flattened-list-dot-files) NUM-PRELOAD))])
@@ -361,6 +401,69 @@
             (force (vector-ref flattened-list-dot-files i)))
           ))
     flattened-list-dot-files))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -421,6 +524,7 @@
   ;; Creates all the graphviz images
   (define (streaming-parallel-dots->pngs dot-files min-idx max-idx cpu-cores)
     (define dot-executable-path (find-dot))
+    (define dot-executable-path-string (path->string dot-executable-path))
     ;; On Mac/Linux we can bypass having to look at the systems PATH by instead
     ;; using the absolute path to the executable. For unknown reasons this does not
     ;; work on Windows so we will still use the PATH to call the dot executable
@@ -433,7 +537,7 @@
                                                           (string-append file-path ".png")
                                                           )
                                                   (format "~a -T~s ~s -o ~s; echo $?"
-                                                          (path->string dot-executable-path)
+                                                          dot-executable-path-string
                                                           'png
                                                           (string-append file-path ".dot")
                                                           (string-append file-path ".png")
@@ -467,7 +571,7 @@
             (force (vector-ref flattened-list-dot-files i)))
 
           (vector-set! thrd-box 0 (thread (thunk (for ([i (in-range NUM-PRELOAD (- (vector-length flattened-list-dot-files) NUM-PRELOAD))])
-                           (force (vector-ref flattened-list-dot-files i)))))))
+                                                   (force (vector-ref flattened-list-dot-files i)))))))
         (begin
           (streaming-parallel-dots->pngs flattened-list-dot-files 0 (vector-length flattened-list-dot-files) cpu-cores)
           (for ([i (in-range 0 (vector-length flattened-list-dot-files))])
