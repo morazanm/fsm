@@ -346,7 +346,7 @@
          (if (vector-zipper-at-begin? (viz-state-imgs a-vs))
              a-vs
              (let* [(new-imgs (vector-zipper-prev (viz-state-imgs a-vs)))
-                    (new-pimgs-img (if (list? (vector-zipper-current new-imgs))
+                    (new-pimgs-img (if (list? (force (vector-zipper-current new-imgs)))
                                       (apply above (map (lambda (img) (img)) (force (vector-zipper-current new-imgs))))
                                       ((force (vector-zipper-current new-imgs)))
                                       )

@@ -6,7 +6,8 @@
          "../../fsm-core/private/regular-grammar.rkt"
          "../viz-lib/viz.rkt"
          "../viz-lib/zipper.rkt"
-         "grammar-viz.rkt")
+         "grammar-viz.rkt"
+         profile-flame-graph)
 
 (define FNAME "fsm")
 
@@ -472,7 +473,11 @@
                         lod)))]
              [graphs (map (lambda (dgrph) (create-graph-structs dgrph invariants (grammar-start rg)))
                           lod)])
-        (init-viz rg word w-der rules graphs broken-invariants))))
-
+        (init-viz rg word w-der rules graphs broken-invariants)
+        )))
 (rg-viz even-bs-odd-as '(a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a))
+
+#;(profile (rg-viz even-bs-odd-as '(a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a))
+         #:svg-path "profile.svg"
+         #:preview? #t)
 (define G (make-rg '(S) '(a b) `((S ,ARROW ,EMP) (S ,ARROW aS)) 'S))

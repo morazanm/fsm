@@ -5,11 +5,8 @@
          future-visualizer
          future-visualizer/trace)
 (provide (all-defined-out))
-#;(provide parallel-graphs->bitmap-thunks
-           parallel-special-graphs->bitmap-thunks
-           parallel-cfg-graphs->bitmap-thunks
-           find-number-of-cores)
 
+(define NUM-PRELOAD 2)
 (define SAVE-DIR (find-tmp-dir))
 
 
@@ -159,51 +156,7 @@
 
 ;; -> nat
 ;; Produces the number of cpus cores on the system
-(define (find-number-of-cores) (processor-count)
-  #;(let [
-          (system-os (system-type 'os))
-          ]
-      (cond [(eq? system-os 'unix) (begin
-                                     (define p (process "grep -c '^processor' /proc/cpuinfo"))
-                                     (define event-result (string->number (sync (read-line-evt (first p)))))
-                                     (close-input-port (first p))
-                                     (close-output-port (second p))
-                                     (close-input-port (fourth p))
-                                     event-result
-                                     )
-                                   ]
-            [(eq? system-os 'windows) (begin
-                                        (define p (process "echo %NUMBER_OF_PROCESSORS%"))
-                                        ;; Have to change read-line-evt mode since windows returns a carriage return rather than a linebreak
-                                        (define event-result (string->number (sync (read-line-evt (first p) 'any))))
-                                        (close-input-port (first p))
-                                        (close-output-port (second p))
-                                        (close-input-port (fourth p))
-                                        event-result
-                                        )
-                                      ]
-            [(eq? system-os 'macos) (begin
-                                      (define p (process "sysctl -n hw.ncpu"))
-                                      (define event-result (string->number (sync (read-line-evt (first p)))))
-                                      (close-input-port (first p))
-                                      (close-output-port (second p))
-                                      (close-input-port (fourth p))
-                                      event-result
-                                      )
-                                    ]
-            [(eq? system-os 'macosx) (begin
-                                       (define p (process "sysctl -n hw.ncpu"))
-                                       (define event-result (string->number (sync (read-line-evt (first p)))))
-                                       (close-input-port (first p))
-                                       (close-output-port (second p))
-                                       (close-input-port (fourth p))
-                                       event-result
-                                       )
-                                     ]
-            [else (error "Unknown system type, unable to intialize GraphViz in system shell")]
-            )
-      )
-  )
+(define (find-number-of-cores) (processor-count))
 
 ;; Procedure Listof Any -> Void
 ;; Runs a given function in parallel based on information gathered from the system
@@ -306,8 +259,6 @@
     )
   )
 
-(define NUM-PRELOAD 2)
-
 ;; Listof graph -> Listof Thunk
 ;; Creates all the graph images needed in parallel, and returns a list of thunks that will load them from disk
 (define (streaming-parallel-graphs->bitmap-thunks graphs #:rank-node-lst [rank-node-lst '()] #:graph-type [graph-type 'rg] #:cpu-cores [cpu-cores (quotient (find-number-of-cores) 2)])
@@ -319,34 +270,36 @@
           (system-os (system-type 'os))
           ]
       (define (make-thread a)
-        (semaphore-wait cpu-cores-avail)
-        (define shell-process (func a))
-        (delay/thread (let [
-                            (result (sync (if (eq? system-os 'windows)
-                                              (read-line-evt (first shell-process) 'any)
-                                              (read-line-evt (first shell-process))
-                                              )
-                                          )
-                                    )
-                            ]
-                        (if (= 0 (string->number result))
-                            ;; This is thrown away, just doing this for the error check
-                            result
-                            (error (format "Graphviz produced an error while compiling the graphs: ~a" result))
-                            )
-                        )
-                      (close-input-port (first shell-process))
-                      (close-output-port (second shell-process))
-                      (close-input-port (fourth shell-process))
-                      (semaphore-post cpu-cores-avail)
-                      (thunk (bitmap/file (string->path (format "~a.png" a))))
-                        
-                      )
+        (delay/sync (begin
+                 (semaphore-wait cpu-cores-avail)
+                 (let ([shell-process (func a)])
+                   (displayln a)
+                   (let [
+                         (result (sync (if (eq? system-os 'windows)
+                                           (read-line-evt (first shell-process) 'any)
+                                           (read-line-evt (first shell-process))
+                                           )
+                                       )
+                                 )
+                         ]
+                     (if (= 0 (string->number result))
+                         ;; This is thrown away, just doing this for the error check
+                         result
+                         (error (format "Graphviz produced an error while compiling the graphs: ~a" result))
+                         )
+                     )
+                   (close-input-port (first shell-process))
+                   (close-output-port (second shell-process))
+                   (close-input-port (fourth shell-process))
+                   (semaphore-post cpu-cores-avail)
+                   (thunk (bitmap/file (string->path (format "~a.png" a))))
+                   )
+                 )
+               )
         )
-      (for ([i (range min-idx max-idx)])
-        (let ([cache (vector-ref args i)]
-              [test0 (displayln (vector-ref args i))])
-          (vector-set! args i (force (make-thread cache)))
+      (for ([i (in-range min-idx max-idx)])
+        (let ([cache (vector-ref args i)])
+          (vector-set! args i (make-thread cache))
           )
         )
       )
@@ -377,47 +330,181 @@
       )
     (if (path? dot-executable-path)
         (streaming-parallel-shell make-process dot-files min-idx max-idx cpu-cores)
-        (error "Error caused when creating png file. This was probably due to the dot environment variable not existing on the path")
-        )
-                                          
-    )
+        (error "Error caused when creating png file. This was probably due to the dot environment variable not existing on the path")))
   
   (begin
     (define enumerated-graphs (make-pairs (range 0 (length graphs)) graphs))
     (define list-dot-files (for/list ([i enumerated-graphs])
                              (if (list? (second i))
-                                 (for/list ([j (range 0 (length (second i)))])
-                                   (format "~adot~s_~s" SAVE-DIR (first i) j)
-                                   )
-                                 (format "~adot~s" SAVE-DIR (first i))
-                                 )
-                             )
-      )
+                                 (for/list ([j (in-range 0 (length (second i)))])
+                                   (format "~adot~s_~s" SAVE-DIR (first i) j))
+                                 (format "~adot~s" SAVE-DIR (first i)))))
     (cond [(eq? 'rg graph-type) (graphs->dots enumerated-graphs)]
           [(eq? 'cfg graph-type) (cfg-graphs->dots enumerated-graphs rank-node-lst)]
           [(eq? 'csg graph-type) (special-graphs->dots enumerated-graphs rank-node-lst)]
-          [else (error "invalid graph type")]
-          )
+          [else (error "invalid graph type")])
     (define flattened-list-dot-files (list->vector (flatten list-dot-files)))
-    
+
     (if (> (vector-length flattened-list-dot-files) (* NUM-PRELOAD 2))
-        (begin (streaming-parallel-dots->pngs flattened-list-dot-files 0 NUM-PRELOAD cpu-cores)
-               (streaming-parallel-dots->pngs flattened-list-dot-files
-                                              (- (vector-length flattened-list-dot-files) NUM-PRELOAD)
-                                              (vector-length flattened-list-dot-files)
-                                              cpu-cores)
-               
-               (thread (lambda () (streaming-parallel-dots->pngs flattened-list-dot-files
-                                                                 NUM-PRELOAD
-                                                                 (- (vector-length flattened-list-dot-files) NUM-PRELOAD) cpu-cores)
+        (begin
+          (streaming-parallel-dots->pngs flattened-list-dot-files 0 (vector-length flattened-list-dot-files) cpu-cores)
+          (for ([i (in-range 0 NUM-PRELOAD)])
+            (force (vector-ref flattened-list-dot-files i)))
+          (for ([i (in-range (- (vector-length flattened-list-dot-files) NUM-PRELOAD) (vector-length flattened-list-dot-files))])
+            (force (vector-ref flattened-list-dot-files i)))
+
+          (thread (thunk (for ([i (in-range NUM-PRELOAD (- (vector-length flattened-list-dot-files) NUM-PRELOAD))])
+                           (force (vector-ref flattened-list-dot-files i))))))
+        (begin
+          (streaming-parallel-dots->pngs flattened-list-dot-files 0 (vector-length flattened-list-dot-files) cpu-cores)
+          (for ([i (in-range 0 (vector-length flattened-list-dot-files))])
+            (force (vector-ref flattened-list-dot-files i)))
+          ))
+    flattened-list-dot-files))
+
+
+
+
+
+
+
+
+
+
+
+
+
+(define (testing-streaming-parallel-graphs->bitmap-thunks graphs #:rank-node-lst [rank-node-lst '()] #:graph-type [graph-type 'rg] #:cpu-cores [cpu-cores (quotient (find-number-of-cores) 2)])
+  ;; Procedure Listof Any -> Void
+  ;; Runs a given function in parallel based on information gathered from the system
+  (define (streaming-parallel-shell func args min-idx max-idx cpu-cores)
+    (let [
+          (cpu-cores-avail (make-semaphore cpu-cores))
+          (system-os (system-type 'os))
+          ]
+      (define (make-thread a)
+        (delay (begin
+                 (semaphore-wait cpu-cores-avail)
+                 (let ([shell-process (func a)])
+                   ;(displayln a)
+                   (let [
+                         (result (sync (if (eq? system-os 'windows)
+                                           (read-line-evt (first shell-process) 'any)
+                                           (read-line-evt (first shell-process))
+                                           )
+                                       )
+                                 )
+                         ]
+                     (if (= 0 (string->number result))
+                         ;; This is thrown away, just doing this for the error check
+                         result
+                         (error (format "Graphviz produced an error while compiling the graphs: ~a" result))
                          )
-                       )
+                     )
+                   (close-input-port (first shell-process))
+                   (close-output-port (second shell-process))
+                   (close-input-port (fourth shell-process))
+                   (semaphore-post cpu-cores-avail)
+                   (thunk (bitmap/file (string->path (format "~a.png" a))))
+                   )
+                 )
                )
-        (streaming-parallel-dots->pngs flattened-list-dot-files 0 (vector-length flattened-list-dot-files) cpu-cores)
         )
-    flattened-list-dot-files
+      (for ([i (in-range min-idx max-idx)])
+        (let ([cache (vector-ref args i)])
+          (vector-set! args i (make-thread cache))
+          )
+        )
+      )
     )
-  )
+  ;; Listof String -> Void
+  ;; Creates all the graphviz images
+  (define (streaming-parallel-dots->pngs dot-files min-idx max-idx cpu-cores)
+    (define dot-executable-path (find-dot))
+    ;; On Mac/Linux we can bypass having to look at the systems PATH by instead
+    ;; using the absolute path to the executable. For unknown reasons this does not
+    ;; work on Windows so we will still use the PATH to call the dot executable
+    ;; Additionally, we need to use a different shell command for windows systems in order to get a status code back 
+    (define (make-process file-path) (process (if (equal? (system-type) 'windows)
+                                                  (format "~a -T~s ~s -o ~s & echo %errorlevel%"
+                                                          "dot"
+                                                          'png
+                                                          (string-append file-path ".dot")
+                                                          (string-append file-path ".png")
+                                                          )
+                                                  (format "~a -T~s ~s -o ~s; echo $?"
+                                                          (path->string dot-executable-path)
+                                                          'png
+                                                          (string-append file-path ".dot")
+                                                          (string-append file-path ".png")
+                                                          )
+                                                  )
+                                              )
+      )
+    (if (path? dot-executable-path)
+        (streaming-parallel-shell make-process dot-files min-idx max-idx cpu-cores)
+        (error "Error caused when creating png file. This was probably due to the dot environment variable not existing on the path")))
+  
+  (begin
+    (define enumerated-graphs (make-pairs (range 0 (length graphs)) graphs))
+    (define list-dot-files (for/list ([i enumerated-graphs])
+                             (if (list? (second i))
+                                 (for/list ([j (in-range 0 (length (second i)))])
+                                   (format "~adot~s_~s" SAVE-DIR (first i) j))
+                                 (format "~adot~s" SAVE-DIR (first i)))))
+    (cond [(eq? 'rg graph-type) (graphs->dots enumerated-graphs)]
+          [(eq? 'cfg graph-type) (cfg-graphs->dots enumerated-graphs rank-node-lst)]
+          [(eq? 'csg graph-type) (special-graphs->dots enumerated-graphs rank-node-lst)]
+          [else (error "invalid graph type")])
+    (define flattened-list-dot-files (list->vector (flatten list-dot-files)))
+    (define thrd-box (make-vector 1 '()))
+    (if (> (vector-length flattened-list-dot-files) (* NUM-PRELOAD 2))
+        (begin
+          (streaming-parallel-dots->pngs flattened-list-dot-files 0 (vector-length flattened-list-dot-files) cpu-cores)
+          (for ([i (in-range 0 NUM-PRELOAD)])
+            (force (vector-ref flattened-list-dot-files i)))
+          (for ([i (in-range (- (vector-length flattened-list-dot-files) NUM-PRELOAD) (vector-length flattened-list-dot-files))])
+            (force (vector-ref flattened-list-dot-files i)))
+
+          (vector-set! thrd-box 0 (thread (thunk (for ([i (in-range NUM-PRELOAD (- (vector-length flattened-list-dot-files) NUM-PRELOAD))])
+                           (force (vector-ref flattened-list-dot-files i)))))))
+        (begin
+          (streaming-parallel-dots->pngs flattened-list-dot-files 0 (vector-length flattened-list-dot-files) cpu-cores)
+          (for ([i (in-range 0 (vector-length flattened-list-dot-files))])
+            (force (vector-ref flattened-list-dot-files i)))
+          ))
+    (vector-ref thrd-box 0)))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ;; Listof graph -> Num
 ;; Creates all of the dotfiles based on the graph structs given

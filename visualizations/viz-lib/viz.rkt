@@ -88,6 +88,7 @@
 ;; vst --> void
 (define (viz a-vs draw-world process-key process-tick a-name)
   (begin
+    (displayln "hello")
     (big-bang
         a-vs                
       [on-draw draw-world]
