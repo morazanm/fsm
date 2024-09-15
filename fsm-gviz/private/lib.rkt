@@ -1,5 +1,8 @@
 #lang racket
 (require 2htdp/image racket/hash "dot.rkt")
+
+(provide hash->str)
+
 #| This file handles converting graphs to the dot file equivalent |#
 
 ;; custom contract for a graph type. A graph type is either a 
