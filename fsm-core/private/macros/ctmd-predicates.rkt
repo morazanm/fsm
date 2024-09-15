@@ -160,46 +160,56 @@
 
   ;;valid-list-case: takes the first portion of a ctmd, if that portion is a list
   ;;it must either be
-  ;;    a valid GOTO expression
-  ;;    a valid BRANCH expression
+  ;;    a valid GOTO expression (not occuring after a label)
+  ;;    a valid BRANCH expression (not occuring after a label)
   ;;    a valid VAR declaration followed by a valid CTMD
   ;;    a full valid ctmd or valid tm
-  (define (valid-list-case? input labels sigma variables)
-    (cond [(equal? GOTO (car input)) (if (not (= (length input) 2)) "A GOTO expression must be of length 2"
-                                         (if (in-labels? (cadr input) labels) #t
-                                             "The second part of GOTO must be a label that exists in your machine"))] ;;; must be an existing label
-          [(equal? BRANCH (car input)) (if (not (>= (length input) 2)) "A BRANCH expression must be of at least length 2"
-                                           (let [(all-invalid-branches (invalid-branches (cdr input) labels sigma))]
-                                             (if (empty? all-invalid-branches) (duplicate-branches (cdr input))
-                                                 (format "The following branches have errors: ~a" all-invalid-branches))))]
+  (define (valid-list-case? input labels sigma variables after-label)
+    (cond [(equal? GOTO (car input)) ;; GOTO sub-expression
+           (cond [(not (= (length input) 2)) "A GOTO expression must be of length 2"]
+                 [(not (in-labels? (cadr input) labels)) "The second part of GOTO must be a label that exists in your machine"] ;;; must be an existing label
+                 [(equal? after-label #t) "A GOTO expression must not occur directly after a label"]
+                 [else #t])]
+          [(equal? BRANCH (car input)) ;; BRANCH sub-expression
+           (cond [(not (>= (length input) 2)) "A BRANCH expression must be of at least length 2"]
+                 [(equal? after-label #t) "A BRANCH expression must not occur directly after a label"]
+                 [else (let [(all-invalid-branches (invalid-branches (cdr input) labels sigma))]
+                         (if (empty? all-invalid-branches) (duplicate-branches (cdr input))
+                             (format "The following branches have errors: ~a" all-invalid-branches)))])]
           [(and (list? (car input))
-                (equal? (car (car input)) VAR)) (if (not (= (length (car input)) 2))
-                                                    "A VAR declaration must be of length 2"
-                                                    (if (not (symbol? (cadr (car input))))
-                                                        "The second part of a VAR declaration must be a symbol"
-                                                        (valid-ctmd? (cdr input) labels sigma (cons (cadr (car input)) variables))))]
-          [else (valid-ctmd? input labels sigma variables)]
+                (equal? (car (car input)) VAR)) ;; VAR sub-expression
+           (if (not (= (length (car input)) 2))
+               "A VAR declaration must be of length 2"
+               (if (not (symbol? (cadr (car input))))
+                   "The second part of a VAR declaration must be a symbol"
+                   (valid-ctmd? (cdr input) labels sigma (cons (cadr (car input)) variables) #f)))]
+          [else (valid-ctmd? input labels sigma variables #f)] ;; Another CTMD
           ))
 
-  (check-expect (valid-list-case? `(,GOTO 10) '(10) '() '()) #t)
-  (check-expect (valid-list-case? `(,GOTO 20 30) '(20) '() '()) "A GOTO expression must be of length 2")
-  (check-expect (valid-list-case? `(,GOTO 'a) '() '() '()) "The second part of GOTO must be a label that exists in your machine")
+  (check-expect (valid-list-case? `(,GOTO 10) '(10) '() '() #f) #t)
+  (check-expect (valid-list-case? `(,GOTO 20 30) '(20) '() '() #f) "A GOTO expression must be of length 2")
+  (check-expect (valid-list-case? `(,GOTO 'a) '() '() '() #f) "The second part of GOTO must be a label that exists in your machine")
+  (check-expect (valid-list-case? `(,GOTO 10) '(10) '() '() #t) "A GOTO expression must not occur directly after a label")
 
   (check-expect (valid-list-case? `(,BRANCH
                                     (a (,GOTO 10))
-                                    (b (,GOTO 20))) '(10 20) '(a b) '())
+                                    (b (,GOTO 20))) '(10 20) '(a b) '() #f)
                 #t)
   (check-expect (valid-list-case? `(,BRANCH
                                     (a (,GOTO 10))
-                                    (b (,GOTO 20))) '(10 20) '(a b) '())
+                                    (b (,GOTO 20))) '(10 20) '(a b) '() #f)
                 #t)
-  (check-expect (valid-list-case? `(,BRANCH a) '() '(a) '())
+  (check-expect (valid-list-case? `(,BRANCH
+                                    (a (,GOTO 10))
+                                    (b (,GOTO 20))) '(10 20) '(a b) '() #t)
+                "A BRANCH expression must not occur directly after a label")
+  (check-expect (valid-list-case? `(,BRANCH a) '() '(a) '() #f)
                 "The following branches have errors: (a)")
   (check-expect (valid-list-case? `(,BRANCH
                                     (a (,GOTO a))
-                                    (b (,GOTO 20))) '(20) '(a b) '())
+                                    (b (,GOTO 20))) '(20) '(a b) '() #f)
                 "The following branches have errors: ((a (GOTO a)))")
-  (check-expect (valid-list-case? `((,VAR a) (b)) '() '() '())
+  (check-expect (valid-list-case? `((,VAR a) (b)) '() '() '() #f)
                 "The variable being referenced is not defined in this scope.")
 
   ; valid-variable?: symbol (list of symbols) -> boolean
@@ -207,36 +217,40 @@
   (define (valid-variable? variable variables)
     (if (member variable variables) #t #f))
 
-  ;; may need accumulator for variables defined in scope
-  (define (valid-ctmd? input labels sigma variables)
+  ;; valid-ctmd: s-exp (list of symbol) (list of symbol) (list of symbol) boolean -> boolean
+  ;; Purpose: Returns true if the given input represents a valid CTMD, and false otherwise.
+  ;; after-label is a boolean representing if the given input is a sub-CTMD occuring directly
+  ;; after a label. This is important because labels should not be directly succeeded
+  ;; by GOTO or BRANCH expressions.
+  (define (valid-ctmd? input labels sigma variables after-label)
     (cond [(empty? input) #t]
-          [(list? (car input)) (let [(list-case (valid-list-case? (car input) labels sigma variables))]
+          [(list? (car input)) (let [(list-case (valid-list-case? (car input) labels sigma variables after-label))]
                                  (if (string? list-case) list-case
-                                     (valid-ctmd? (cdr input) labels sigma variables)))]
-          [(number? (car input)) (valid-ctmd? (cdr input) labels sigma variables)]
+                                     (valid-ctmd? (cdr input) labels sigma variables false)))]
+          [(number? (car input)) (valid-ctmd? (cdr input) labels sigma variables true)] ; labels are numbers, so the sub-CTMD should take into account
           [(symbol? (car input)) (if (not (valid-variable? (car input) variables))
                                      "The variable being referenced is not defined in this scope."
-                                     (valid-ctmd? (cdr input) labels sigma variables))] ;; is symbol in accumulated list
+                                     (valid-ctmd? (cdr input) labels sigma variables false))] ;; is symbol in accumulated list
           [(procedure? (car input)) (if (or (equal? (sm-type (car input)) 'tm)
                                             (equal? (sm-type (car input)) 'tm-language-recognizer)
                                             (equal? (sm-type (car input)) 'ctm))
-                                        (valid-ctmd? (cdr input) labels sigma variables)
+                                        (valid-ctmd? (cdr input) labels sigma variables false)
                                         "Only machines allowed are turing machines")]
           )
     )
 
-  (check-expect (valid-ctmd? '() '() '() '()) #t)
-  (check-expect (valid-ctmd? '(5) '(5) '() '()) #t) ;; Rest of ctmd is empty, which is valid
-  (check-expect (valid-ctmd? '(sym) '() '() '(sym)) #t) ;; Rest of ctmd is empty, which is valid
-  (check-expect (valid-ctmd? `((,GOTO 5) s) '(5) '() '(s)) #t)
+  (check-expect (valid-ctmd? '() '() '() '() #f) #t)
+  (check-expect (valid-ctmd? '(5) '(5) '() '() #f) #t) ;; Rest of ctmd is empty, which is valid
+  (check-expect (valid-ctmd? '(sym) '() '() '(sym) #f) #t) ;; Rest of ctmd is empty, which is valid
+  (check-expect (valid-ctmd? `((,GOTO 5) s) '(5) '() '(s) #f) #t)
   (check-expect (valid-ctmd? `((,BRANCH
                                 (a (,GOTO 10))
-                                (b (,GOTO 20))) d) '(10 20) '(a b d) '(d)) #t)
+                                (b (,GOTO 20))) d) '(10 20) '(a b d) '(d) #f) #t)
   (check-expect (valid-ctmd? `((,BRANCH
                                 (a (,GOTO a))
-                                (b (,GOTO 20))) 'd) '(20) '(a b d) '())
+                                (b (,GOTO 20))) 'd) '(20) '(a b d) '() #f)
                 "The following branches have errors: ((a (GOTO a)))")
-  (check-expect (valid-ctmd? `(s) '() '() '()) "The variable being referenced is not defined in this scope.")
+  (check-expect (valid-ctmd? `(s) '() '() '() #f) "The variable being referenced is not defined in this scope.")
 
   ; check-ctmd: any (list of symbol) -> true or string
   ; Purpose: Parses the given input. If the input is an s-exp representing a valid
@@ -244,7 +258,7 @@
   (define (check-ctmd input sigma)
     (let [(labels (gather-labels input))
           (initial-variables '())]
-      (valid-ctmd? input labels (append (list BLANK L R) sigma) initial-variables)))
+      (valid-ctmd? input labels (append (list BLANK L R) sigma) initial-variables false)))
 
   (check-expect (check-ctmd `(((,VAR a) a)) '()) #t)
   (check-expect (check-ctmd `(((,VAR a) b)) '()) "The variable being referenced is not defined in this scope.")
@@ -288,5 +302,5 @@
                           (list GOTO 5)
                           5))
 
-  (check-ctmd copy-ctmd '(a b))
+  ;(check-ctmd copy-ctmd '(a b))
   )
