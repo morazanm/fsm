@@ -311,7 +311,7 @@
                                  (if (or (member state hedge-nodes)
                                          (member state yield-node))
                                      'dashed
-                                     'filled)
+                                     'solid)
                                  'fillcolor
                                  (cond
                                    [(not (member (undo-renaming state) has-invariant)) 'white]
@@ -330,8 +330,8 @@
                                  'circle
                                  'label
                                  (string->symbol (string (string-ref (symbol->string state) 0)))
-                                 'penwidth
-                                 (cond
+                                 #;'penwidth
+                                 #;(cond
                                    [(member state hedge-nodes) 3.0]
                                    [(member state yield-node) 3.0]
                                    [else 1.0])
@@ -357,7 +357,9 @@
                                 #:atb (hash 'fontsize
                                             FONT-SIZE
                                             'style
-                                            'solid
+                                            (if (member (first rule) hedges)
+                                                'dashed
+                                                'solid)
                                             'color
                                             (if (member (first rule) hedges) HEDGE-COLOR 'black)))))
                 graph
@@ -372,7 +374,9 @@
                            #:atb (hash 'fontsize
                                        20
                                        'style
-                                       'solid
+                                       (if (member (first rule) hedges)
+                                                'dashed
+                                                'solid)
                                        'color
                                        (if (member (first rule) hedges) HEDGE-COLOR 'black)))))
            first-foldr

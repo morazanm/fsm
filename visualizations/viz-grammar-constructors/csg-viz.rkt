@@ -267,22 +267,22 @@
                                  (if (or (member state hedge-nodes)
                                          (member state yield-node))
                                      'dashed
-                                     'filled)
+                                     'solid)
                                  'shape
                                  (cond
                                    [(member state hex-nodes) 'hexagon]
                                    [else 'circle])
                                  'label
                                  (undo-renaming state)
-                                 'penwidth
-                                 (cond
+                                 #;'penwidth
+                                 #;(cond
                                    [(member state hedge-nodes) 3.0]
                                    [(member state yield-node) 3.0]
                                    [else 1.0])
                                  'fontcolor
                                  'black
                                  'font
-                                 "Sans")))
+                                 "Sans"))) 
          graph
          lon))
 
@@ -307,7 +307,10 @@
       (first rule)
       (second rule)
       #:atb
-      (hash 'fontsize FONT-SIZE 'style 'solid 'color (if (member rule hedges) HEDGE-COLOR 'black))))
+      (hash 'fontsize FONT-SIZE 'style (if (member rule hedges)
+                                                'dashed
+                                                'solid)
+            'color (if (member rule hedges) HEDGE-COLOR 'black))))
    graph
    (reverse loe)))
 

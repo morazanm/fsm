@@ -265,8 +265,8 @@
                                  'black
                                  'font
                                  "Sans"
-                                 'penwidth
-                                 (cond
+                                 #;'penwidth
+                                 #;(cond
                                    [(member state hedge-nodes) 3.0]
                                    [(member state yield-node) 3.0]
                                    [else 1.0]))))
@@ -300,7 +300,9 @@
                                   #:atb (hash 'fontsize
                                               FONT-SIZE
                                               'style
-                                              'solid
+                                              (if (member rule hedges)
+                                                'dashed
+                                                'solid)
                                               'color
                                               (if (member rule hedges) HEDGE-COLOR 'black))))
                       result
