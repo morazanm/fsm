@@ -265,7 +265,7 @@
                                    [else 'black])
                                  'style
                                  (if (or (member state hedge-nodes)
-                                         (member state yield-node))
+                                         #;(member state yield-node))
                                      'dashed
                                      'solid)
                                  'shape
