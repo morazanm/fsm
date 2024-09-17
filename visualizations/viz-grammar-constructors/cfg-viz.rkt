@@ -239,7 +239,10 @@
                                    [(member state yield-node) YIELD-COLOR]
                                    [else 'black])
                                  'style
-                                 'filled
+                                 (if (or (member state hedge-nodes)
+                                         (member state yield-node))
+                                     'dashed
+                                     'filled)
                                  'fillcolor
                                  (cond
                                    [(not (member (undo-renaming state) has-invariant)) 'white]
@@ -1070,7 +1073,7 @@
                        'P))
 #;(test-cfg-viz lang3-grammar '(m o n c n o) 10)
 ;(cfg-viz lang3-grammar '(- op num cm num cp))
-#;(profile (cfg-viz testcfg
+(cfg-viz testcfg
               '(a
                 a
                 a
@@ -1135,10 +1138,10 @@
                 d
                 d
                 d)
-              'right) #:preview? #t #:svg-path "flamegraph2.svg")
+              'right)
 
-
-(displayln "16")
+#|
+( #:preview? #t #:svg-path "flamegraph2.svg")displayln "16")
 (test-cfg-viz testcfg
               '(a
                 a
@@ -1316,6 +1319,7 @@
                 d
                 d)
               200)
+|#
 ;(grammar-derive numb>numa '(a b b a a b b a b b b))
 
 #;(define G (make-cfg '(S) '(a b) `((S ,ARROW ,EMP) (S ,ARROW aS)) 'S))

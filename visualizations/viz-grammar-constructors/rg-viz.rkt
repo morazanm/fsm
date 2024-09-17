@@ -308,7 +308,10 @@
                                    [(member state yield-node) YIELD-COLOR]
                                    [else 'black])
                                  'style
-                                 'filled
+                                 (if (or (member state hedge-nodes)
+                                         (member state yield-node))
+                                     'dashed
+                                     'filled)
                                  'fillcolor
                                  (cond
                                    [(not (member (undo-renaming state) has-invariant)) 'white]
@@ -327,6 +330,11 @@
                                  'circle
                                  'label
                                  (string->symbol (string (string-ref (symbol->string state) 0)))
+                                 'penwidth
+                                 (cond
+                                   [(member state hedge-nodes) 3.0]
+                                   [(member state yield-node) 3.0]
+                                   [else 1.0])
                                  'fontcolor
                                  'black
                                  'font

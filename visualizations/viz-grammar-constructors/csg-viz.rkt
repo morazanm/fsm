@@ -263,12 +263,22 @@
                                    [(member state hedge-nodes) HEDGE-COLOR]
                                    ;[(member state hex-nodes) HEXAGON-COLOR]
                                    [else 'black])
+                                 'style
+                                 (if (or (member state hedge-nodes)
+                                         (member state yield-node))
+                                     'dashed
+                                     'filled)
                                  'shape
                                  (cond
                                    [(member state hex-nodes) 'hexagon]
                                    [else 'circle])
                                  'label
                                  (undo-renaming state)
+                                 'penwidth
+                                 (cond
+                                   [(member state hedge-nodes) 3.0]
+                                   [(member state yield-node) 3.0]
+                                   [else 1.0])
                                  'fontcolor
                                  'black
                                  'font
