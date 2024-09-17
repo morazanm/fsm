@@ -17,10 +17,13 @@
    (list (list 'S ARROW 'AaB) (list 'AaA ARROW 'aSb) (list 'AaA ARROW EMP) (list 'B ARROW 'A))
    'S))
 
-(define HEDGE-COLOR 'skyblue)
-(define YIELD-COLOR 'violet)
+#;(define HEDGE-COLOR 'skyblue)
+(define HEDGE-COLOR 'black)
+#;(define YIELD-COLOR 'violet)
+(define YIELD-COLOR 'black)
 (define FONT-SIZE 12)
-(define HEXAGON-COLOR 'violet)
+#;(define HEXAGON-COLOR 'violet)
+(define HEXAGON-COLOR 'black)
 
 ;; csg word -> Derivation with rules
 ;; Creates a derivation with the rule applied besides each step
@@ -156,7 +159,7 @@
                  [before-replacement-removed (drop curr-state idx-of-replaced)]
                  [removed (take before-replacement-removed replaced-str-length)]
                  #;[test0 (displayln (format "removed: ~s" removed))]
-                 [test1 (displayln (format "curr-rule: ~s" curr-rule))]
+                 #;[test1 (displayln (format "curr-rule: ~s" curr-rule))]
                  [removed-combined-symbol (rename-symbols (first curr-rule) used-names)]
                  [replacement-symbols (map (lambda (x) (rename-symbols x used-names))
                                            (symbol->fsmlos (second curr-rule)))]
@@ -179,10 +182,10 @@
                                              (cons (list val removed-combined-symbol) accum))
                                            '()
                                            removed)]
-                    [test0 (displayln (format "before-replace: ~s" before-replace))]
+                    #;[test0 (displayln (format "before-replace: ~s" before-replace))]
                     [not-replaced-edges (filter (lambda (edge) (not (member (second edge) removed)))
                                                 (if (empty? levels) '() (first levels)))]
-                    [test1 (displayln (format "not-replaced-edges: ~s" not-replaced-edges))]
+                    #;[test1 (displayln (format "not-replaced-edges: ~s" not-replaced-edges))]
                     [replaced-edges (if (empty? levels)
                                         '()
                                         (remove-duplicates
@@ -190,7 +193,7 @@
                                                 (list (first edge) removed-combined-symbol))
                                               (filter (lambda (edge) (member (second edge) removed))
                                                       (first levels)))))]
-                    [test2 (displayln (format "replaced-edges: ~s" replaced-edges))]
+                    #;[test2 (displayln (format "replaced-edges: ~s" replaced-edges))]
                     [after-replace
                      (cons (append (foldr (lambda (val accum)
                                             (cons (list removed-combined-symbol val) accum))
@@ -200,7 +203,7 @@
                                    not-replaced-edges)
                            (cons (append before-replace (if (empty? levels) '() (first levels)))
                                  levels))]
-                    [test3 (displayln (format "after-replace: ~s \n\n\n" after-replace))]
+                    #;[test3 (displayln (format "after-replace: ~s \n\n\n" after-replace))]
                     )
                after-replace)
              (let* ([before-replace (cons (foldr (lambda (val accum)
@@ -271,7 +274,8 @@
                                    ;[(member state hex-nodes) HEXAGON-COLOR]
                                    [else 'black])
                                  'style
-                                 (if (or (member state hedge-nodes)
+                                 'solid
+                                 #;(if (or (member state hedge-nodes)
                                          #;(member state yield-node))
                                      'dashed
                                      'solid)
@@ -281,10 +285,10 @@
                                    [else 'circle])
                                  'label
                                  (undo-renaming state)
-                                 #;'penwidth
-                                 #;(cond
+                                 'penwidth
+                                 (cond
                                    [(member state hedge-nodes) 3.0]
-                                   [(member state yield-node) 3.0]
+                                   #;[(member state yield-node) 3.0]
                                    [else 1.0])
                                  'fontcolor
                                  'black
@@ -314,9 +318,13 @@
       (first rule)
       (second rule)
       #:atb
-      (hash 'fontsize FONT-SIZE 'style (if (member rule hedges)
+      (hash 'fontsize FONT-SIZE 'style 'solid #;(if (member rule hedges)
                                                 'dashed
                                                 'solid)
+            'penwidth (cond
+                        [(member rule hedges) 3.0]
+                        #;[(member state yield-node) 3.0]
+                        [else 1.0])
             'color (if (member rule hedges) HEDGE-COLOR 'black))))
    graph
    (reverse loe)))
@@ -499,10 +507,13 @@
                    (list (first test-rules))))
           (define lod (reverse (create-dgrphs dgraph '() #f)))
           (define graphs (map create-graph-structs lod))
+          (define test-w-derv (copy w-derv))
           ]
          (init-viz g
                    w
-                   w-derv
+                   (let ([frst (first test-w-derv)]
+                         [fourth (fourth test-w-derv)])
+                         (cons frst (cons fourth (drop test-w-derv 4))))
                    (let ([frst (first test-rules)]
                          [fourth (fourth test-rules)])
                          (cons frst (cons fourth (drop test-rules 4))))
