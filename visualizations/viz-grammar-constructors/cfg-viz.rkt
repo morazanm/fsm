@@ -92,28 +92,28 @@
 ;; tree -> listof Symbol
 ;; Accumulates all of the leaf nodes in order (producing the yield of the tree)
 (define (get-yield subtree)
-  (local [;; lower?
-          ;; symbol -> Boolean
-          ;; Purpose: Determines if a symbol is down case
-          (define (lower? symbol)
-            (not (char-upper-case? (string-ref (symbol->string symbol) 0))))
-          (define subtree-copy (struct-copy tree subtree))
-          (define (get-yield-helper subtree)
-            (foldl (lambda (node yield)
-                     (cond
-                       [(equal? (undo-renaming (tree-value node)) EMP) yield]
-                       [(empty? (tree-subtrees node)) (append yield (list (tree-value node)))]
-                       [else (append yield (get-yield-helper node))]))
-                   '()
-                   (tree-subtrees subtree)))]
-    (filter (lambda (node) (lower? node))
-            (foldl (lambda (node yield)
-                     (cond
-                       [(equal? (undo-renaming (tree-value node)) EMP) yield]
-                       [(empty? (tree-subtrees node)) (append yield (list (tree-value node)))]
-                       [else (append yield (get-yield-helper node))]))
-                   '()
-                   (tree-subtrees subtree)))))
+  ;; lower?
+  ;; symbol -> Boolean
+  ;; Purpose: Determines if a symbol is down case
+  (define (lower? symbol)
+    (not (char-upper-case? (string-ref (symbol->string symbol) 0))))
+  #;(define subtree-copy (struct-copy tree subtree))
+  (define (get-yield-helper subtree)
+    (foldl (lambda (node yield)
+             (cond
+               [(equal? (undo-renaming (tree-value node)) EMP) yield]
+               [(empty? (tree-subtrees node)) (append yield (list (tree-value node)))]
+               [else (append yield (get-yield-helper node))]))
+           '()
+           (tree-subtrees subtree)))
+  (filter (lambda (node) (lower? node))
+          (foldl (lambda (node yield)
+                   (cond
+                     [(equal? (undo-renaming (tree-value node)) EMP) yield]
+                     [(empty? (tree-subtrees node)) (append yield (list (tree-value node)))]
+                     [else (append yield (get-yield-helper node))]))
+                 '()
+                 (tree-subtrees subtree))))
 
 ;; tree invariant-function -> (U boolean Symbol)
 ;; Evaluates the invariant function given to us by the user on the current yield
@@ -134,7 +134,9 @@
                     (define (check-all-invariant-nodes nonterminals invar-func broken-nodes)
                       (if (empty? nonterminals)
                           (if (empty? broken-nodes) #t broken-nodes)
-                          (if (invariant-holds? (dfs tree (first nonterminals)) invar-func)
+                          (if (invariant-holds? (begin #;(displayln (format "tree:~s \n first nts: ~s \n\n\n" tree (first nonterminals)))
+                                                       (dfs tree (first nonterminals))
+                                                       ) invar-func)
                               (check-all-invariant-nodes (rest nonterminals) invar-func broken-nodes)
                               (check-all-invariant-nodes (rest nonterminals)
                                                          invar-func
@@ -314,13 +316,15 @@
 ;; create-graph-structs
 ;; dgprh -> img
 ;; Purpose: Creates the final graph structure that will be used to create the images in graphviz
-(define (create-graph-structs a-dgrph invariants derv-order root-node rank-node-lvls )
+(define (create-graph-structs a-dgrph invariants derv-order root-node rank-node-lvls)
   (let* ([nodes (dgrph-nodes a-dgrph)]
          [levels (map reverse (dgrph-ad-levels a-dgrph))]
          [reversed-levels (reverse levels)]
          [hedges (dgrph-hedges a-dgrph)]
          [invariant-nts (map first invariants)]
          [producing-nodes (map (lambda (edge) (first edge)) (append* levels))]
+         
+         
          [invariant-nodes
           (cons root-node
                 (append-map
@@ -355,6 +359,7 @@
   (let* ([nodes (dgrph-nodes a-dgrph)]
          [levels (map reverse (dgrph-ad-levels a-dgrph))]
          [producing-nodes (map (lambda (edge) (first edge)) (append* levels))]
+         #;[test0 (displayln (format "nodes:~s" nodes))]
          [invariant-nodes
           (let ([all-but-starting-nt
                  (append-map
@@ -370,6 +375,7 @@
             (if (member root-node producing-nodes)
                 (cons root-node all-but-starting-nt)
                 all-but-starting-nt))]
+         #;[test1 (displayln (format "invar-nodes: ~s" invariant-nodes))]
          [broken-invariants
           (check-all-invariants (first (dgrph-p-yield-trees a-dgrph)) invariant-nodes invariants)])
     broken-invariants))
@@ -881,13 +887,14 @@
                                                                       (cfg-get-alphabet cfg))))]
                    [w-der (convert-yield-deriv-to-word-deriv word derivation)]
                    [yield-trees (map (lambda (x) (create-yield-tree x (cfg-get-start cfg))) (map reverse (create-list-of-levels renamed)))]
+                   #;[test9 (displayln (format "yield-trees: ~s" yield-trees))]
                    [dgraph (dgrph renamed
                                   '()
                                   '()
                                   '()
                                   (append (rest rules) (list "" ""))
                                   (list (first rules))
-                                  (map (lambda (x) (last yield-trees)) yield-trees) #;(reverse yield-trees)
+                                  (map (lambda (x) (first yield-trees)) yield-trees) #;(reverse yield-trees)
                                   (list (tree (cfg-get-start cfg) '())))]
                    [lod (reverse (create-dgrphs dgraph '()))]
                    [invar-nodes
@@ -1000,6 +1007,20 @@
 
 
 
+#;'(
+  #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 (#(struct:tree ε1 ()))))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 (#(struct:tree b4 ()) #(struct:tree A7 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()) #(struct:tree A4 (#(struct:tree A8 (#(struct:tree ε3 ()))) #(struct:tree b5 ()) #(struct:tree A9 (#(struct:tree ε4 ()))) #(struct:tree a1 ()) #(struct:tree A10 (#(struct:tree ε5 ()))))) #(struct:tree a0 ()) #(struct:tree A5 (#(struct:tree ε0 ())))))))
+  #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 (#(struct:tree ε1 ()))))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 (#(struct:tree b4 ()) #(struct:tree A7 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()) #(struct:tree A4 (#(struct:tree A8 (#(struct:tree ε3 ()))) #(struct:tree b5 ()) #(struct:tree A9 (#(struct:tree ε4 ()))) #(struct:tree a1 ()) #(struct:tree A10 ()))) #(struct:tree a0 ()) #(struct:tree A5 (#(struct:tree ε0 ())))))))
+  #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 (#(struct:tree ε1 ()))))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 (#(struct:tree b4 ()) #(struct:tree A7 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()) #(struct:tree A4 (#(struct:tree A8 (#(struct:tree ε3 ()))) #(struct:tree b5 ()) #(struct:tree A9 ()) #(struct:tree a1 ()) #(struct:tree A10 ()))) #(struct:tree a0 ()) #(struct:tree A5 (#(struct:tree ε0 ())))))))
+  #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 (#(struct:tree ε1 ()))))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 (#(struct:tree b4 ()) #(struct:tree A7 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()) #(struct:tree A4 (#(struct:tree A8 ()) #(struct:tree b5 ()) #(struct:tree A9 ()) #(struct:tree a1 ()) #(struct:tree A10 ()))) #(struct:tree a0 ()) #(struct:tree A5 (#(struct:tree ε0 ())))))))
+  #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 (#(struct:tree ε1 ()))))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 (#(struct:tree b4 ()) #(struct:tree A7 ()))) #(struct:tree b2 ()) #(struct:tree A4 (#(struct:tree A8 ()) #(struct:tree b5 ()) #(struct:tree A9 ()) #(struct:tree a1 ()) #(struct:tree A10 ()))) #(struct:tree a0 ()) #(struct:tree A5 (#(struct:tree ε0 ())))))))
+  #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 ()))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 (#(struct:tree b4 ()) #(struct:tree A7 ()))) #(struct:tree b2 ()) #(struct:tree A4 (#(struct:tree A8 ()) #(struct:tree b5 ()) #(struct:tree A9 ()) #(struct:tree a1 ()) #(struct:tree A10 ()))) #(struct:tree a0 ()) #(struct:tree A5 (#(struct:tree ε0 ())))))))
+  #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 ()))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 (#(struct:tree b4 ()) #(struct:tree A7 ()))) #(struct:tree b2 ()) #(struct:tree A4 (#(struct:tree A8 ()) #(struct:tree b5 ()) #(struct:tree A9 ()) #(struct:tree a1 ()) #(struct:tree A10 ()))) #(struct:tree a0 ()) #(struct:tree A5 ())))))
+  #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 ()))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 (#(struct:tree b4 ()) #(struct:tree A7 ()))) #(struct:tree b2 ()) #(struct:tree A4 ()) #(struct:tree a0 ()) #(struct:tree A5 ())))))
+  #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 ()))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 ()) #(struct:tree b2 ()) #(struct:tree A4 ()) #(struct:tree a0 ()) #(struct:tree A5 ())))))
+  #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 ()))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 ()) #(struct:tree b2 ()) #(struct:tree A4 ()) #(struct:tree a0 ()) #(struct:tree A5 ())))))
+  #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 ()))) #(struct:tree b0 ()) #(struct:tree A1 ())))
+  #(struct:tree S (#(struct:tree A0 ()) #(struct:tree b0 ()) #(struct:tree A1 ())))
+  )
 
 
 
@@ -1064,7 +1085,7 @@
 ;(test-cfg-viz 10)
 
 
-
+(cfg-viz numb>numa '(b b b b b b a a) 'level-left (list 'S S-INV) (list 'A A-INV))
 (define lang3-grammar (make-unchecked-cfg
                        '(P E)
                        '(n t f i m o c z)
