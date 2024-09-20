@@ -789,32 +789,32 @@
                                             E-SCENE-HEIGHT
                                             (+ E-SCENE-HEIGHT (image-height imsg-img))))
      (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
-     (create-viz-process-key (list (list "right" viz-go-next right-key-pressed)
-                                   (list "left" viz-go-prev left-key-pressed)
-                                   (list "up" viz-go-to-begin up-key-pressed)
-                                   (list "down" viz-go-to-end down-key-pressed)
-                                   (list "w" viz-zoom-in identity)
-                                   (list "s" viz-zoom-out identity)
-                                   (list "r" viz-max-zoom-out identity)
-                                   (list "f" viz-max-zoom-in identity)
-                                   (list "e" viz-reset-zoom identity)
-                                   (list "wheel-down" viz-zoom-in identity)
-                                   (list "wheel-up" viz-zoom-out identity)))
+     (create-viz-process-key ["right" viz-go-next right-key-pressed]
+                             ["left" viz-go-prev left-key-pressed]
+                             ["up" viz-go-to-begin up-key-pressed]
+                             ["down" viz-go-to-end down-key-pressed]
+                             ["w" viz-zoom-in identity]
+                             ["s" viz-zoom-out identity]
+                             ["r" viz-max-zoom-out identity]
+                             ["f" viz-max-zoom-in identity]
+                             ["e" viz-reset-zoom identity]
+                             ["wheel-down" viz-zoom-in identity]
+                             ["wheel-up" viz-zoom-out identity])
      (create-viz-process-tick E-SCENE-BOUNDING-LIMITS
                               NODE-SIZE
                               E-SCENE-WIDTH
                               E-SCENE-HEIGHT
                               CLICK-BUFFER-SECONDS
-                              (list)
-                              (list (list ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed)
-                                    (list ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed)
-                                    (list ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed)
-                                    (list ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed)
-                                    (list W-KEY-DIMS viz-zoom-in identity)
-                                    (list S-KEY-DIMS viz-zoom-out identity)
-                                    (list R-KEY-DIMS viz-max-zoom-out identity)
-                                    (list E-KEY-DIMS viz-reset-zoom identity)
-                                    (list F-KEY-DIMS viz-max-zoom-in identity)))
+                              ()
+                              ([ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed]
+                               [ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed]
+                               [ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed]
+                               [ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed]
+                               [W-KEY-DIMS viz-zoom-in identity]
+                               [S-KEY-DIMS viz-zoom-out identity]
+                               [R-KEY-DIMS viz-max-zoom-out identity]
+                               [E-KEY-DIMS viz-reset-zoom identity]
+                               [F-KEY-DIMS viz-max-zoom-in identity]))
      'intersection-viz)))
 
 (intersection-viz ab* a-aUb-b*)
