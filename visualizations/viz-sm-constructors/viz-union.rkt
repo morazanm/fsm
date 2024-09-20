@@ -26,9 +26,9 @@
 ;; L = ab*
 (define ab* (make-unchecked-ndfa '(S A) '(a b) 'S '(A) '((S a A) (A b A))))
 
-#|
+
 ;; L = a(a U ab)b*
-(define a-aUb-b* (make-ndfa '(Z H B C D F)
+(define a-aUb-b* (make-unchecked-ndfa '(Z H B C D F)
                             '(a b)
                             'Z
                             '(F)
@@ -40,7 +40,7 @@
                               (C b F)
                               (F b F))))
 ;; L = aab*
-(define aab* (make-ndfa '(W X Y)
+(define aab* (make-unchecked-ndfa '(W X Y)
                         '(a b)
                         'W
                         '(Y)
@@ -48,7 +48,7 @@
                           (X a Y)
                           (Y b Y))))
 ;; L = a*
-(define a* (make-dfa '(S D)
+(define a* (make-unchecked-dfa '(S D)
                      '(a b)
                      'S
                      '(S)
@@ -57,7 +57,7 @@
                        (D a D)
                        (D b D))
                      'no-dead))
-|#
+
 
 ;; UNION VISUALIZATION
 (define FONT-SIZE 20)
@@ -748,8 +748,12 @@
   (let ([renamed-machine (if (ormap (λ (x) (member x (sm-states M))) (sm-states N))
                              (rename-states-fsa (sm-states M) N)
                              N)])
-    (run-viz (map graph-struct-grph
+    (run-viz (begin
+               #;(map (lambda (x) (displayln (format "~s \n\n" x))) (map graph-struct-grph
+                  (list (make-init-grph-structure M N) (create-graph-structures M renamed-machine))))
+               (map graph-struct-grph
                   (list (make-init-grph-structure M N) (create-graph-structures M renamed-machine)))
+                    )
              (lambda ()
                (apply above (map graph->bitmap (graph-struct-grph (make-init-grph-structure M N)))))
              MIDDLE-E-SCENE
