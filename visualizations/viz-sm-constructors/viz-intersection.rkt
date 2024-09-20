@@ -1,6 +1,8 @@
 #lang racket
 (require "../../fsm-gviz/interface.rkt"
          2htdp/image
+         "../../fsm-core/private/state.rkt"
+         "../../fsm-core/private/rules.rkt"         
          "../../fsm-core/private/fsa.rkt"
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/sm-getters.rkt"
@@ -415,6 +417,27 @@
 
 ;; INTERSECTION VISUALIZATION
 
+; ndfa ndfa --> ndfa
+(define (union-special m1 m)
+  (let* ((nm1 m1)
+         (nm2 m))
+    (let* ((new-start (gen-state (append (fsa-getstates nm1) 
+                                         (fsa-getstates nm2))))
+           (new-states (cons new-start
+                             (append (fsa-getstates nm1) 
+                                     (fsa-getstates nm2)))) ; nm1 & nm2 & s have no common state names
+           (alphabet (remove-duplicates (append (fsa-getalphabet nm1) (fsa-getalphabet nm2))))
+           (new-finals (union-states (fsa-getfinals nm1) (fsa-getfinals nm2)))
+           (new-rules (cons (mk-fsarule new-start EMP (fsa-getstart nm1)) 
+                            (cons (mk-fsarule new-start EMP (fsa-getstart nm2)) 
+                                  (append (nm1 null 'get-deltas) 
+                                          (nm2 null 'get-deltas))))))
+      (make-unchecked-ndfa new-states
+                           alphabet
+                           new-start
+                           new-finals
+                           new-rules))))
+
 ;; graph-struct
 ;; grph - graph structure
 ;; inf - informative message
@@ -532,22 +555,22 @@
                                     Ndfa)
                  Ndfa)
                 (text "N-dfa: N converted to a dfa" 20 'black))]
-         [Mcomplement (complement-fsa (ndfa->dfa M))]
+         [Mcomplement (complement-fsa Mdfa)]
          [cmplM (graph-struct
                  (create-edge-graph-m
                   (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
                                      Mcomplement)
                   Mcomplement)
                  (text "CM-dfa: Complement of M-dfa" 20 'black))]
-         [Ncomplement (complement-fsa (ndfa->dfa N))]
+         [Ncomplement (complement-fsa Ndfa)]
          [cmplN (graph-struct
                  (create-edge-graph-n
                   (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
                                      Ncomplement)
                   Ncomplement)
                  (text "CN-dfa: Complement of N-dfa" 20 'black))]
-         [nM (rename-states-fsa (list DEAD) (complement-fsa (ndfa->dfa M)))]
-         [nN (rename-states-fsa (sm-states nM) (complement-fsa (ndfa->dfa N)))]
+         [nM (rename-states-fsa (list DEAD) Mcomplement)]
+         [nN (rename-states-fsa (sm-states nM) Ncomplement)]
          [notM (create-edge-graph-m
                 (create-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans")) nM)
                 nM)]
@@ -556,7 +579,7 @@
                 nN)]
          [notMimg (graph-struct notM (text "CM-dfa States Renamed" 20 'black))]
          [notNimg (graph-struct notN (text "CN-dfa States Renamed" 20 'black))]
-         [notM-U-notN (union-fsa nM nN)]
+         [notM-U-notN (union-special nM nN)]
          [ndfa-un (ndfa->dfa notM-U-notN)]
          [comp-un (complement-fsa ndfa-un)]
          [unionMN (graph-struct
@@ -817,4 +840,4 @@
                                [F-KEY-DIMS viz-max-zoom-in identity]))
      'intersection-viz)))
 
-(intersection-viz ab* a-aUb-b*)
+
