@@ -703,7 +703,7 @@
                                              (list (make-init-grph-structure M)
                                                    (create-graph-structure M))))
                           (list->zipper (list (graph-struct-inf (make-init-grph-structure M))
-                                              (text "Starting NDFA" FONT-SIZE 'black)
+                                              (text "MD: M converted to a dfa" FONT-SIZE 'black)
                                               (graph-struct-inf (create-graph-structure machine)))))
             (bounding-limits 0 0 0 0))
            (instructions-graphic E-SCENE-TOOLS

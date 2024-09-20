@@ -816,5 +816,3 @@
                                [E-KEY-DIMS viz-reset-zoom identity]
                                [F-KEY-DIMS viz-max-zoom-in identity]))
      'intersection-viz)))
-
-(intersection-viz ab* a-aUb-b*)

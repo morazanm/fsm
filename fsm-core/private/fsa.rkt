@@ -344,8 +344,8 @@
   
   ; fsa fsa --> ndfa
   (define (union-fsa m1 m)
-    (let* ((nm1 m1 #;(rename-states-fsa (fsa-getstates m) m1))
-           (nm2 (rename-states-fsa (fsa-getstates nm1) m)))
+    (let* [(nm1 m1 #;(rename-states-fsa (fsa-getstates m) m1))
+           (nm2 m #;(rename-states-fsa (fsa-getstates nm1) m))]
       (let* ((new-start (gen-state (append (fsa-getstates nm1) 
                                            (fsa-getstates nm2))))
              (new-states (cons new-start

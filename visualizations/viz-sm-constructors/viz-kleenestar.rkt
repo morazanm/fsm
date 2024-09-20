@@ -403,6 +403,13 @@
                        'Z
                        '(F)
                        `((Z a H) (Z a B) (H a D) (D ,EMP F) (B a C) (C b F) (F b F))))
+
+(define aa-ab-e
+  (make-unchecked-ndfa '(S A B F)
+                       '(a b)
+                       'S
+                       '(A B F)
+                       `((S a A) (S a B) (S ,EMP F) (A a A) (B b B))))
 ;; L = aab*
 (define aab* (make-unchecked-ndfa '(W X Y) '(a b) 'W '(Y) '((W a X) (X a Y) (Y b Y))))
 ;; L = a*
