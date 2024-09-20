@@ -82,322 +82,322 @@
                      E-SCENE-HEIGHT
                      (+ E-SCENE-HEIGHT (image-height imsg-img))))
 
- (define ARROW-UP-KEY-DIMS
-  (bounding-limits
-   (+ (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Restart" (- FONT-SIZE 2) 'black)) (image-width ARROW-UP-KEY)) 2))
-   (+ (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Restart" (- FONT-SIZE 2) 'black)) (image-width ARROW-UP-KEY)) 2)
-      (image-width ARROW-UP-KEY))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Restart" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         (image-height ARROW-UP-KEY)
-         ))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Restart" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         ))))
+  (define ARROW-UP-KEY-DIMS
+    (bounding-limits
+     (+ (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+        (/ (- (image-width (text "Restart" (- FONT-SIZE 2) 'black)) (image-width ARROW-UP-KEY)) 2))
+     (+ (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+        (/ (- (image-width (text "Restart" (- FONT-SIZE 2) 'black)) (image-width ARROW-UP-KEY)) 2)
+        (image-width ARROW-UP-KEY))
+     (- VIZ-FRAME-HEIGHT
+        (+ (image-height (text "Restart" (- FONT-SIZE 2) 'black))
+           HEIGHT-BUFFER
+           (image-height ARROW-UP-KEY)
+           ))
+     (- VIZ-FRAME-HEIGHT
+        (+ (image-height (text "Restart" (- FONT-SIZE 2) 'black))
+           HEIGHT-BUFFER
+           ))))
 
-(define ARROW-RIGHT-KEY-DIMS
-  (bounding-limits
-   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Forward" (- FONT-SIZE 2) 'black)) (image-width ARROW-RIGHT-KEY)) 2))
-   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Forward" (- FONT-SIZE 2) 'black)) (image-width ARROW-RIGHT-KEY)) 2)
-      (image-width ARROW-RIGHT-KEY))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Forward" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         (image-height ARROW-RIGHT-KEY)
-         ))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Forward" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         ))))
+  (define ARROW-RIGHT-KEY-DIMS
+    (bounding-limits
+     (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+        (/ (- (image-width (text "Forward" (- FONT-SIZE 2) 'black)) (image-width ARROW-RIGHT-KEY)) 2))
+     (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+        (/ (- (image-width (text "Forward" (- FONT-SIZE 2) 'black)) (image-width ARROW-RIGHT-KEY)) 2)
+        (image-width ARROW-RIGHT-KEY))
+     (- VIZ-FRAME-HEIGHT
+        (+ (image-height (text "Forward" (- FONT-SIZE 2) 'black))
+           HEIGHT-BUFFER
+           (image-height ARROW-RIGHT-KEY)
+           ))
+     (- VIZ-FRAME-HEIGHT
+        (+ (image-height (text "Forward" (- FONT-SIZE 2) 'black))
+           HEIGHT-BUFFER
+           ))))
 
-(define ARROW-LEFT-KEY-DIMS
-  (bounding-limits
-   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Backward" (- FONT-SIZE 2) 'black)) (image-width ARROW-LEFT-KEY)) 2))
-   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Backward" (- FONT-SIZE 2) 'black)) (image-width ARROW-LEFT-KEY)) 2)
-      (image-width ARROW-LEFT-KEY))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Backward" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         (image-height ARROW-LEFT-KEY)
-         ))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Backward" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         ))))
+  (define ARROW-LEFT-KEY-DIMS
+    (bounding-limits
+     (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+        (/ (- (image-width (text "Backward" (- FONT-SIZE 2) 'black)) (image-width ARROW-LEFT-KEY)) 2))
+     (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+        (/ (- (image-width (text "Backward" (- FONT-SIZE 2) 'black)) (image-width ARROW-LEFT-KEY)) 2)
+        (image-width ARROW-LEFT-KEY))
+     (- VIZ-FRAME-HEIGHT
+        (+ (image-height (text "Backward" (- FONT-SIZE 2) 'black))
+           HEIGHT-BUFFER
+           (image-height ARROW-LEFT-KEY)
+           ))
+     (- VIZ-FRAME-HEIGHT
+        (+ (image-height (text "Backward" (- FONT-SIZE 2) 'black))
+           HEIGHT-BUFFER
+           ))))
 
-(define ARROW-DOWN-KEY-DIMS
-  (bounding-limits
-   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Finish" 18 'black)) (image-width ARROW-DOWN-KEY)) 2))
-   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Finish" (- FONT-SIZE 2) 'black)) (image-width ARROW-DOWN-KEY)) 2)
-      (image-width ARROW-DOWN-KEY))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Finish" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         (image-height ARROW-DOWN-KEY)
-         ))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Finish" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         ))))
+  (define ARROW-DOWN-KEY-DIMS
+    (bounding-limits
+     (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+        (/ (- (image-width (text "Finish" 18 'black)) (image-width ARROW-DOWN-KEY)) 2))
+     (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+        (/ (- (image-width (text "Finish" (- FONT-SIZE 2) 'black)) (image-width ARROW-DOWN-KEY)) 2)
+        (image-width ARROW-DOWN-KEY))
+     (- VIZ-FRAME-HEIGHT
+        (+ (image-height (text "Finish" (- FONT-SIZE 2) 'black))
+           HEIGHT-BUFFER
+           (image-height ARROW-DOWN-KEY)
+           ))
+     (- VIZ-FRAME-HEIGHT
+        (+ (image-height (text "Finish" (- FONT-SIZE 2) 'black))
+           HEIGHT-BUFFER
+           ))))
 
-(define W-KEY-DIMS
-  (bounding-limits
-   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Zoom in" (- FONT-SIZE 2) 'black)) (image-width W-KEY)) 2))
-   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Zoom in" (- FONT-SIZE 2) 'black)) (image-width W-KEY)) 2)
-      (image-width W-KEY))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Zoom in" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         (image-height ARROW-DOWN-KEY)
-         ))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Zoom in" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         ))))
+  (define W-KEY-DIMS
+    (bounding-limits
+     (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Finish" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+        (/ (- (image-width (text "Zoom in" (- FONT-SIZE 2) 'black)) (image-width W-KEY)) 2))
+     (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Finish" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+        (/ (- (image-width (text "Zoom in" (- FONT-SIZE 2) 'black)) (image-width W-KEY)) 2)
+        (image-width W-KEY))
+     (- VIZ-FRAME-HEIGHT
+        (+ (image-height (text "Zoom in" (- FONT-SIZE 2) 'black))
+           HEIGHT-BUFFER
+           (image-height ARROW-DOWN-KEY)
+           ))
+     (- VIZ-FRAME-HEIGHT
+        (+ (image-height (text "Zoom in" (- FONT-SIZE 2) 'black))
+           HEIGHT-BUFFER
+           ))))
 
-(define S-KEY-DIMS
-  (bounding-limits
-   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Zoom out" (- FONT-SIZE 2) 'black)) (image-width S-KEY)) 2))
-   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Zoom out" (- FONT-SIZE 2) 'black)) (image-width S-KEY)) 2)
-      (image-width S-KEY))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Zoom out" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         (image-height ARROW-DOWN-KEY)
-         ))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Zoom out" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         ))))
+  (define S-KEY-DIMS
+    (bounding-limits
+     (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Finish" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
+        LETTER-KEY-WIDTH-BUFFER
+        (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+        (/ (- (image-width (text "Zoom out" (- FONT-SIZE 2) 'black)) (image-width S-KEY)) 2))
+     (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Finish" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
+        LETTER-KEY-WIDTH-BUFFER
+        (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+        (/ (- (image-width (text "Zoom out" (- FONT-SIZE 2) 'black)) (image-width S-KEY)) 2)
+        (image-width S-KEY))
+     (- VIZ-FRAME-HEIGHT
+        (+ (image-height (text "Zoom out" (- FONT-SIZE 2) 'black))
+           HEIGHT-BUFFER
+           (image-height ARROW-DOWN-KEY)
+           ))
+     (- VIZ-FRAME-HEIGHT
+        (+ (image-height (text "Zoom out" (- FONT-SIZE 2) 'black))
+           HEIGHT-BUFFER
+           ))))
 
-(define R-KEY-DIMS
-  (bounding-limits
-   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Min zoom" (- FONT-SIZE 2) 'black)) (image-width R-KEY)) 2))
-   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black)) (image-width R-KEY)) 2)
-      (image-width R-KEY))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Mid Zoom" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         (image-height ARROW-DOWN-KEY)
-         ))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Mid Zoom" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         ))))
+  (define R-KEY-DIMS
+    (bounding-limits
+     (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Finish" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
+        LETTER-KEY-WIDTH-BUFFER
+        (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
+        LETTER-KEY-WIDTH-BUFFER
+        (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+        (/ (- (image-width (text "Min zoom" (- FONT-SIZE 2) 'black)) (image-width R-KEY)) 2))
+     (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Finish" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
+        LETTER-KEY-WIDTH-BUFFER
+        (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
+        LETTER-KEY-WIDTH-BUFFER
+        (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+        (/ (- (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black)) (image-width R-KEY)) 2)
+        (image-width R-KEY))
+     (- VIZ-FRAME-HEIGHT
+        (+ (image-height (text "Mid Zoom" (- FONT-SIZE 2) 'black))
+           HEIGHT-BUFFER
+           (image-height ARROW-DOWN-KEY)
+           ))
+     (- VIZ-FRAME-HEIGHT
+        (+ (image-height (text "Mid Zoom" (- FONT-SIZE 2) 'black))
+           HEIGHT-BUFFER
+           ))))
 
-(define E-KEY-DIMS
-  (bounding-limits
-   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Mid zoom" (- FONT-SIZE 2) 'black)) (image-width E-KEY)) 2))
-   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Mid Zoom" (- FONT-SIZE 2) 'black)) (image-width E-KEY)) 2)
-      (image-width E-KEY))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Min Zoom" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         (image-height ARROW-DOWN-KEY)
-         ))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Min Zoom" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         ))))
+  (define E-KEY-DIMS
+    (bounding-limits
+     (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Finish" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
+        LETTER-KEY-WIDTH-BUFFER
+        (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
+        LETTER-KEY-WIDTH-BUFFER
+        (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black))
+        LETTER-KEY-WIDTH-BUFFER
+        (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+        (/ (- (image-width (text "Mid zoom" (- FONT-SIZE 2) 'black)) (image-width E-KEY)) 2))
+     (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Finish" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
+        LETTER-KEY-WIDTH-BUFFER
+        (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
+        LETTER-KEY-WIDTH-BUFFER
+        (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black))
+        LETTER-KEY-WIDTH-BUFFER
+        (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+        (/ (- (image-width (text "Mid Zoom" (- FONT-SIZE 2) 'black)) (image-width E-KEY)) 2)
+        (image-width E-KEY))
+     (- VIZ-FRAME-HEIGHT
+        (+ (image-height (text "Min Zoom" (- FONT-SIZE 2) 'black))
+           HEIGHT-BUFFER
+           (image-height ARROW-DOWN-KEY)
+           ))
+     (- VIZ-FRAME-HEIGHT
+        (+ (image-height (text "Min Zoom" (- FONT-SIZE 2) 'black))
+           HEIGHT-BUFFER
+           ))))
 
-(define F-KEY-DIMS
-  (bounding-limits
-   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (image-width (text "Mid Zoom" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Max zoom" (- FONT-SIZE 2) 'black)) (image-width F-KEY)) 2))
-   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (image-width (text "Mid Zoom" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Max Zoom" (- FONT-SIZE 2) 'black)) (image-width F-KEY)) 2)
-      (image-width F-KEY))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Max Zoom" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         (image-height ARROW-DOWN-KEY)
-         ))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Max Zoom" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         ))))
+  (define F-KEY-DIMS
+    (bounding-limits
+     (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Finish" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
+        LETTER-KEY-WIDTH-BUFFER
+        (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
+        LETTER-KEY-WIDTH-BUFFER
+        (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black))
+        LETTER-KEY-WIDTH-BUFFER
+        (image-width (text "Mid Zoom" (- FONT-SIZE 2) 'black))
+        LETTER-KEY-WIDTH-BUFFER
+        (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+        (/ (- (image-width (text "Max zoom" (- FONT-SIZE 2) 'black)) (image-width F-KEY)) 2))
+     (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Forward" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Backward" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Finish" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
+        ARROW-KEY-WIDTH-BUFFER
+        (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
+        LETTER-KEY-WIDTH-BUFFER
+        (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
+        LETTER-KEY-WIDTH-BUFFER
+        (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black))
+        LETTER-KEY-WIDTH-BUFFER
+        (image-width (text "Mid Zoom" (- FONT-SIZE 2) 'black))
+        LETTER-KEY-WIDTH-BUFFER
+        (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
+        (/ (- (image-width (text "Max Zoom" (- FONT-SIZE 2) 'black)) (image-width F-KEY)) 2)
+        (image-width F-KEY))
+     (- VIZ-FRAME-HEIGHT
+        (+ (image-height (text "Max Zoom" (- FONT-SIZE 2) 'black))
+           HEIGHT-BUFFER
+           (image-height ARROW-DOWN-KEY)
+           ))
+     (- VIZ-FRAME-HEIGHT
+        (+ (image-height (text "Max Zoom" (- FONT-SIZE 2) 'black))
+           HEIGHT-BUFFER
+           ))))
 
   ;; L = nl
   (define nl (make-unchecked-ndfa '(S) '(a b) 'S '() '()))
@@ -718,32 +718,32 @@
                                                      INS-TOOLS-BUFFER
                                                      (image-height ARROW-UP-KEY))))
            (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
-           (create-viz-process-key (list (list "right" viz-go-next right-key-pressed)
-                                         (list "left" viz-go-prev left-key-pressed)
-                                         (list "up" viz-go-to-begin up-key-pressed)
-                                         (list "down" viz-go-to-end down-key-pressed)
-                                         (list "w" viz-zoom-in identity)
-                                         (list "s" viz-zoom-out identity)
-                                         (list "r" viz-max-zoom-out identity)
-                                         (list "f" viz-max-zoom-in identity)
-                                         (list "e" viz-reset-zoom identity)
-                                         (list "wheel-down" viz-zoom-in identity)
-                                         (list "wheel-up" viz-zoom-out identity)))
+           (create-viz-process-key ["right" viz-go-next right-key-pressed]
+                                   ["left" viz-go-prev left-key-pressed]
+                                   ["up" viz-go-to-begin up-key-pressed]
+                                   ["down" viz-go-to-end down-key-pressed]
+                                   ["w" viz-zoom-in identity]
+                                   ["s" viz-zoom-out identity]
+                                   ["r" viz-max-zoom-out identity]
+                                   ["f" viz-max-zoom-in identity]
+                                   ["e" viz-reset-zoom identity]
+                                   ["wheel-down" viz-zoom-in identity]
+                                   ["wheel-up" viz-zoom-out identity])
            (create-viz-process-tick E-SCENE-BOUNDING-LIMITS
                                     NODE-SIZE
                                     E-SCENE-WIDTH
                                     E-SCENE-HEIGHT
                                     CLICK-BUFFER-SECONDS
-                                    (list)
-                                    (list (list ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed)
-                                          (list ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed)
-                                          (list ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed)
-                                          (list ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed)
-                                          (list W-KEY-DIMS viz-zoom-in identity)
-                                          (list S-KEY-DIMS viz-zoom-out identity)
-                                          (list R-KEY-DIMS viz-max-zoom-out identity)
-                                          (list E-KEY-DIMS viz-reset-zoom identity)
-                                          (list F-KEY-DIMS viz-max-zoom-in identity)))
+                                    ()
+                                    ( [ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed]
+                                      [ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed]
+                                      [ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed]
+                                      [ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed]
+                                      [W-KEY-DIMS viz-zoom-in identity]
+                                      [S-KEY-DIMS viz-zoom-out identity]
+                                      [R-KEY-DIMS viz-max-zoom-out identity]
+                                      [E-KEY-DIMS viz-reset-zoom identity]
+                                      [F-KEY-DIMS viz-max-zoom-in identity]))
            'complement-viz))))
 
   (define no-one-el
