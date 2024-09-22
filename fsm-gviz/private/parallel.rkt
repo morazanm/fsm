@@ -241,6 +241,7 @@
     )
   )
 
+
 ;; Listof graph -> Listof Thunk
 ;; Creates all the graph images needed in parallel, and returns a list of thunks that will load them from disk
 (define (parallel-graphs->bitmap-thunks graphs #:cpu-cores [cpu-cores (quotient (find-number-of-cores) 2)])
@@ -323,7 +324,9 @@
       )
     (for ([i (in-range min-idx max-idx)])
       (let ([cache (vector-ref args i)])
-        (vector-set! args i (make-thread cache))
+        (vector-set! args i (if (list? cache)
+                                (map make-thread cache)
+                                (make-thread cache)))
         )
       )
     )
@@ -362,7 +365,9 @@
 
 (define (force-promises vec min-idx max-idx)
   (for ([i (in-range min-idx max-idx)])
-    (force (vector-ref vec i))))
+            (if (list? (vector-ref vec i))
+                (map force (vector-ref vec i))
+                (force (vector-ref vec i)))))
 
 ;; Listof graph -> Listof Thunk
 ;; Creates all the graph images needed in parallel, and returns a list of thunks that will load them from disk
@@ -386,7 +391,9 @@
                                         )]
           [(eq? 'csg graph-type) (special-graphs->dots enumerated-graphs rank-node-lst)]
           [else (error "invalid graph type")])
-    (define flattened-list-dot-files (list->vector (flatten list-dot-files)))
+
+    (define flattened-list-dot-files (list->vector list-dot-files))
+    #;(displayln (format "~s ~s" (length flattened-list-dot-files) (length (flatten graphs))))
 
     (if (> (vector-length flattened-list-dot-files) (* NUM-PRELOAD 2))
         (begin

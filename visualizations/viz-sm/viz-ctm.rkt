@@ -581,169 +581,169 @@
 
 
 (define (right-key-pressed a-vs)
-   (struct-copy viz-state
-                a-vs
-                [informative-messages
-                 (struct-copy informative-messages
-                              (viz-state-informative-messages a-vs)
-                              [component-state
-                               (struct-copy imsg-struct
-                                            (informative-messages-component-state (viz-state-informative-messages a-vs))
-                                            [tapes (if (zipper-at-end? (imsg-struct-tapes
+  (struct-copy viz-state
+               a-vs
+               [informative-messages
+                (struct-copy informative-messages
+                             (viz-state-informative-messages a-vs)
+                             [component-state
+                              (struct-copy imsg-struct
+                                           (informative-messages-component-state (viz-state-informative-messages a-vs))
+                                           [tapes (if (zipper-at-end? (imsg-struct-tapes
                                                                        (informative-messages-component-state
                                                                         (viz-state-informative-messages a-vs))))
                                                       (imsg-struct-tapes
-                                                                       (informative-messages-component-state
-                                                                        (viz-state-informative-messages a-vs)))
+                                                       (informative-messages-component-state
+                                                        (viz-state-informative-messages a-vs)))
                                                       (zipper-next (imsg-struct-tapes
                                                                     (informative-messages-component-state
                                                                      (viz-state-informative-messages a-vs))))
                                                       )
-                                             ]
-                                            [vars (if (zipper-at-end? (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs))))
-                                                      (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs)))
-                                                      (zipper-next (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs))))
-                                                      )
                                                   ]
-                                            )])]))
+                                           [vars (if (zipper-at-end? (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs))))
+                                                     (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs)))
+                                                     (zipper-next (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs))))
+                                                     )
+                                                 ]
+                                           )])]))
 
 (define (left-key-pressed a-vs)
   (struct-copy viz-state
-                a-vs
-                [informative-messages
-                 (struct-copy informative-messages
-                              (viz-state-informative-messages a-vs)
-                              [component-state
-                               (struct-copy imsg-struct
-                                            (informative-messages-component-state (viz-state-informative-messages a-vs))
-                                            [tapes (if (zipper-at-begin? (imsg-struct-tapes
-                                                                       (informative-messages-component-state
-                                                                        (viz-state-informative-messages a-vs))))
+               a-vs
+               [informative-messages
+                (struct-copy informative-messages
+                             (viz-state-informative-messages a-vs)
+                             [component-state
+                              (struct-copy imsg-struct
+                                           (informative-messages-component-state (viz-state-informative-messages a-vs))
+                                           [tapes (if (zipper-at-begin? (imsg-struct-tapes
+                                                                         (informative-messages-component-state
+                                                                          (viz-state-informative-messages a-vs))))
                                                       (imsg-struct-tapes
-                                                                       (informative-messages-component-state
-                                                                        (viz-state-informative-messages a-vs)))
+                                                       (informative-messages-component-state
+                                                        (viz-state-informative-messages a-vs)))
                                                       (zipper-prev (imsg-struct-tapes
                                                                     (informative-messages-component-state
                                                                      (viz-state-informative-messages a-vs))))
                                                       )
-                                             ]
-                                            [vars (if (zipper-at-begin? (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs))))
-                                                      (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs)))
-                                                      (zipper-prev (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs))))
-                                                      )
                                                   ]
-                                            )])]))
+                                           [vars (if (zipper-at-begin? (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs))))
+                                                     (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs)))
+                                                     (zipper-prev (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs))))
+                                                     )
+                                                 ]
+                                           )])]))
 
 (define (up-key-pressed a-vs)
   (struct-copy viz-state
-                a-vs
-                [informative-messages
-                 (struct-copy informative-messages
-                              (viz-state-informative-messages a-vs)
-                              [component-state
-                               (struct-copy imsg-struct
-                                            (informative-messages-component-state (viz-state-informative-messages a-vs))
-                                            [tapes (if (zipper-at-begin? (imsg-struct-tapes
-                                                                       (informative-messages-component-state
-                                                                        (viz-state-informative-messages a-vs))))
+               a-vs
+               [informative-messages
+                (struct-copy informative-messages
+                             (viz-state-informative-messages a-vs)
+                             [component-state
+                              (struct-copy imsg-struct
+                                           (informative-messages-component-state (viz-state-informative-messages a-vs))
+                                           [tapes (if (zipper-at-begin? (imsg-struct-tapes
+                                                                         (informative-messages-component-state
+                                                                          (viz-state-informative-messages a-vs))))
                                                       (imsg-struct-tapes
-                                                                       (informative-messages-component-state
-                                                                        (viz-state-informative-messages a-vs)))
+                                                       (informative-messages-component-state
+                                                        (viz-state-informative-messages a-vs)))
                                                       (zipper-to-begin (imsg-struct-tapes
-                                                                    (informative-messages-component-state
-                                                                     (viz-state-informative-messages a-vs))))
-                                                      )
-                                             ]
-                                            [vars (if (zipper-at-begin? (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs))))
-                                                      (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs)))
-                                                      (zipper-to-begin (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs))))
+                                                                        (informative-messages-component-state
+                                                                         (viz-state-informative-messages a-vs))))
                                                       )
                                                   ]
-                                            )])]))
+                                           [vars (if (zipper-at-begin? (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs))))
+                                                     (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs)))
+                                                     (zipper-to-begin (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs))))
+                                                     )
+                                                 ]
+                                           )])]))
 
 
 (define (down-key-pressed a-vs)
   (struct-copy viz-state
-                a-vs
-                [informative-messages
-                 (struct-copy informative-messages
-                              (viz-state-informative-messages a-vs)
-                              [component-state
-                               (struct-copy imsg-struct
-                                            (informative-messages-component-state (viz-state-informative-messages a-vs))
-                                            [tapes (if (zipper-at-end? (imsg-struct-tapes
+               a-vs
+               [informative-messages
+                (struct-copy informative-messages
+                             (viz-state-informative-messages a-vs)
+                             [component-state
+                              (struct-copy imsg-struct
+                                           (informative-messages-component-state (viz-state-informative-messages a-vs))
+                                           [tapes (if (zipper-at-end? (imsg-struct-tapes
                                                                        (informative-messages-component-state
                                                                         (viz-state-informative-messages a-vs))))
                                                       (imsg-struct-tapes
-                                                                       (informative-messages-component-state
-                                                                        (viz-state-informative-messages a-vs)))
+                                                       (informative-messages-component-state
+                                                        (viz-state-informative-messages a-vs)))
                                                       (zipper-to-end (imsg-struct-tapes
-                                                                    (informative-messages-component-state
-                                                                     (viz-state-informative-messages a-vs))))
-                                                      )
-                                             ]
-                                            [vars (if (zipper-at-end? (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs))))
-                                                      (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs)))
-                                                      (zipper-to-end (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs))))
+                                                                      (informative-messages-component-state
+                                                                       (viz-state-informative-messages a-vs))))
                                                       )
                                                   ]
-                                            )])]))
+                                           [vars (if (zipper-at-end? (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs))))
+                                                     (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs)))
+                                                     (zipper-to-end (imsg-struct-vars (informative-messages-component-state (viz-state-informative-messages a-vs))))
+                                                     )
+                                                 ]
+                                           )])]))
 
 
 (define (d-key-pressed a-vs)
   (struct-copy viz-state
-                a-vs
-                [informative-messages
-                 (struct-copy informative-messages
-                              (viz-state-informative-messages a-vs)
-                              [component-state
-                               (struct-copy imsg-struct
-                                            (informative-messages-component-state (viz-state-informative-messages a-vs))
-                                            [tapes (zipper-set (imsg-struct-tapes
-                                                                       (informative-messages-component-state
-                                                                        (viz-state-informative-messages a-vs)))
-                                                               (list (first (zipper-current (imsg-struct-tapes
-                                                                       (informative-messages-component-state
-                                                                        (viz-state-informative-messages a-vs)))))
-                                                         (add1 (second (zipper-current (imsg-struct-tapes
-                                                                       (informative-messages-component-state
-                                                                        (viz-state-informative-messages a-vs))))))
-                                                         (third (zipper-current (imsg-struct-tapes
-                                                                       (informative-messages-component-state
-                                                                        (viz-state-informative-messages a-vs))))))
-                                                               )
-                                             ]
-                                            )])]))
+               a-vs
+               [informative-messages
+                (struct-copy informative-messages
+                             (viz-state-informative-messages a-vs)
+                             [component-state
+                              (struct-copy imsg-struct
+                                           (informative-messages-component-state (viz-state-informative-messages a-vs))
+                                           [tapes (zipper-set (imsg-struct-tapes
+                                                               (informative-messages-component-state
+                                                                (viz-state-informative-messages a-vs)))
+                                                              (list (first (zipper-current (imsg-struct-tapes
+                                                                                            (informative-messages-component-state
+                                                                                             (viz-state-informative-messages a-vs)))))
+                                                                    (add1 (second (zipper-current (imsg-struct-tapes
+                                                                                                   (informative-messages-component-state
+                                                                                                    (viz-state-informative-messages a-vs))))))
+                                                                    (third (zipper-current (imsg-struct-tapes
+                                                                                            (informative-messages-component-state
+                                                                                             (viz-state-informative-messages a-vs))))))
+                                                              )
+                                                  ]
+                                           )])]))
 
 (define (a-key-pressed a-vs)
   (struct-copy viz-state
-                a-vs
-                [informative-messages
-                 (struct-copy informative-messages
-                              (viz-state-informative-messages a-vs)
-                              [component-state
-                               (struct-copy imsg-struct
-                                            (informative-messages-component-state (viz-state-informative-messages a-vs))
-                                            [tapes (zipper-set (imsg-struct-tapes
-                                                                       (informative-messages-component-state
-                                                                        (viz-state-informative-messages a-vs)))
-                                                               (list (first (zipper-current (imsg-struct-tapes
-                                                                       (informative-messages-component-state
-                                                                        (viz-state-informative-messages a-vs)))))
-                                                         (if (< 0 (second (zipper-current (imsg-struct-tapes
-                                                                       (informative-messages-component-state
-                                                                        (viz-state-informative-messages a-vs))))))
-                                                             (sub1 (second (zipper-current (imsg-struct-tapes
-                                                                       (informative-messages-component-state
-                                                                        (viz-state-informative-messages a-vs))))))
-                                                             (second (zipper-current (imsg-struct-tapes
-                                                                       (informative-messages-component-state
-                                                                        (viz-state-informative-messages a-vs))))))
-                                                         (third (zipper-current (imsg-struct-tapes
-                                                                       (informative-messages-component-state
-                                                                        (viz-state-informative-messages a-vs)))))))
-                                             ]
-                                            )])]))
+               a-vs
+               [informative-messages
+                (struct-copy informative-messages
+                             (viz-state-informative-messages a-vs)
+                             [component-state
+                              (struct-copy imsg-struct
+                                           (informative-messages-component-state (viz-state-informative-messages a-vs))
+                                           [tapes (zipper-set (imsg-struct-tapes
+                                                               (informative-messages-component-state
+                                                                (viz-state-informative-messages a-vs)))
+                                                              (list (first (zipper-current (imsg-struct-tapes
+                                                                                            (informative-messages-component-state
+                                                                                             (viz-state-informative-messages a-vs)))))
+                                                                    (if (< 0 (second (zipper-current (imsg-struct-tapes
+                                                                                                      (informative-messages-component-state
+                                                                                                       (viz-state-informative-messages a-vs))))))
+                                                                        (sub1 (second (zipper-current (imsg-struct-tapes
+                                                                                                       (informative-messages-component-state
+                                                                                                        (viz-state-informative-messages a-vs))))))
+                                                                        (second (zipper-current (imsg-struct-tapes
+                                                                                                 (informative-messages-component-state
+                                                                                                  (viz-state-informative-messages a-vs))))))
+                                                                    (third (zipper-current (imsg-struct-tapes
+                                                                                            (informative-messages-component-state
+                                                                                             (viz-state-informative-messages a-vs)))))))
+                                                  ]
+                                           )])]))
 
 ;; process-key
 ;; viz-state key --> viz-state
@@ -790,17 +790,17 @@
                                               (overlay (square 50 'solid 'white)
                                                        (square (add1 50) 'solid 'black))))))]
       (if (zipper-at-end? (imsg-struct-tapes a-tape))
-       (above (text "The machine halts" 20 'purple)
-              (square 30 'solid 'white)
-              (make-tape-img letter-imgs start-index)
-              (square 30 'solid 'white)
-             )
-       (above var
-              (square 30 'solid 'white)
-              (make-tape-img letter-imgs start-index)
-              (square 30 'solid 'white)
-             )
-       )
+          (above (text "The machine halts" 20 'purple)
+                 (square 30 'solid 'white)
+                 (make-tape-img letter-imgs start-index)
+                 (square 30 'solid 'white)
+                 )
+          (above var
+                 (square 30 'solid 'white)
+                 (make-tape-img letter-imgs start-index)
+                 (square 30 'solid 'white)
+                 )
+          )
       )))
 
 
@@ -966,36 +966,36 @@
               E-SCENE-TOOLS
               (bounding-limits 0 0 0 0))
              (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
-             (create-viz-process-key (list (list "right" viz-go-next right-key-pressed)
-                                           (list "left" viz-go-prev left-key-pressed)
-                                           (list "up" viz-go-to-begin up-key-pressed)
-                                           (list "down" viz-go-to-end down-key-pressed)
-                                           (list "w" viz-zoom-in identity)
-                                           (list "s" viz-zoom-out identity)
-                                           (list "r" viz-max-zoom-out identity)
-                                           (list "f" viz-max-zoom-in identity)
-                                           (list "e" viz-reset-zoom identity)
-                                           (list "wheel-down" viz-zoom-in identity)
-                                           (list "wheel-up" viz-zoom-out identity)
-                                           (list "a" identity a-key-pressed)
-                                           (list "d" identity d-key-pressed)
-                                           )
+             (create-viz-process-key ["right" viz-go-next right-key-pressed]
+                                     ["left" viz-go-prev left-key-pressed]
+                                     ["up" viz-go-to-begin up-key-pressed]
+                                     ["down" viz-go-to-end down-key-pressed]
+                                     ["w" viz-zoom-in identity]
+                                     ["s" viz-zoom-out identity]
+                                     ["r" viz-max-zoom-out identity]
+                                     ["f" viz-max-zoom-in identity]
+                                     ["e" viz-reset-zoom identity]
+                                     ["wheel-down" viz-zoom-in identity]
+                                     ["wheel-up" viz-zoom-out identity]
+                                     ["a" identity a-key-pressed]
+                                     ["d" identity d-key-pressed]
+                                           
                                      )
              (create-viz-process-tick E-SCENE-BOUNDING-LIMITS NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT
                                       CLICK-BUFFER-SECONDS
-                                      (list)
-                                      (list (list ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed)
-                                            (list ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed)
-                                            (list ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed)
-                                            (list ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed)
-                                            (list W-KEY-DIMS viz-zoom-in identity)
-                                            (list S-KEY-DIMS viz-zoom-out identity)
-                                            (list R-KEY-DIMS viz-max-zoom-out identity)
-                                            (list E-KEY-DIMS viz-reset-zoom identity)
-                                            (list F-KEY-DIMS viz-max-zoom-in identity)
-                                            (list A-KEY-DIMS identity a-key-pressed)
-                                            (list D-KEY-DIMS identity d-key-pressed)
-                                            )
+                                      ()
+                                      ( [ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed]
+                                        [ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed]
+                                        [ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed]
+                                        [ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed]
+                                        [W-KEY-DIMS viz-zoom-in identity]
+                                        [S-KEY-DIMS viz-zoom-out identity]
+                                        [R-KEY-DIMS viz-max-zoom-out identity]
+                                        [E-KEY-DIMS viz-reset-zoom identity]
+                                        [F-KEY-DIMS viz-max-zoom-in identity]
+                                        [A-KEY-DIMS identity a-key-pressed]
+                                        [D-KEY-DIMS identity d-key-pressed]
+                                        )
                                       )
              
              'ctm-viz)
