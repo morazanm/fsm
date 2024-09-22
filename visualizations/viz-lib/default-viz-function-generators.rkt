@@ -364,13 +364,13 @@
              a-vs
              (let* [(new-imgs (vector-zipper-prev (viz-state-imgs a-vs)))
                     (new-pimgs-img (if (image? (viz-state-prev-image a-vs))
-                                      (viz-state-prev-image a-vs)
-                                      (if (list? (viz-state-prev-image a-vs))
-                                          (apply above (map (lambda (img) (img)) (viz-state-prev-image a-vs)))
-                                          (let [(cache (force (viz-state-prev-image a-vs)))]
-                                            (if (list? cache)
-                                                (apply above (map (lambda (img) (img)) cache))
-                                                cache)))))
+                                       (viz-state-prev-image a-vs)
+                                       (if (list? (viz-state-prev-image a-vs))
+                                           (apply above (map (lambda (img) (img)) (viz-state-prev-image a-vs)))
+                                           (let [(cache (force (viz-state-prev-image a-vs)))]
+                                             (if (list? cache)
+                                                 (apply above (map (lambda (img) (img)) cache))
+                                                 cache)))))
                     (curr-pimgs-img (viz-state-curr-image a-vs))
                     (img-resize (resize-image new-pimgs-img (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))
                     (growth-x (- (/ (image-width (scale (viz-state-scale-factor a-vs) new-pimgs-img)) 2)
@@ -425,8 +425,8 @@
                                                                             [scale-factor-floor NEW-FLOOR]
                                                                             [prev-image
                                                                              (if (vector-zipper-at-begin? new-imgs)
-                                                                            'BEGIN
-                                                                            (load-image (vector-zipper-current (vector-zipper-prev new-imgs))))]
+                                                                                 'BEGIN
+                                                                                 (load-image (vector-zipper-current (vector-zipper-prev new-imgs))))]
                                                                             [next-image (viz-state-curr-image a-vs)])
                                                                (calculate-viewport-limits (scale (viz-state-scale-factor a-vs) new-pimgs-img)
                                                                                           (viz-state-scale-factor a-vs)
@@ -442,8 +442,8 @@
                                                               [scale-factor-floor DEFAULT-ZOOM-FLOOR]
                                                               [prev-image
                                                                (if (vector-zipper-at-begin? new-imgs)
-                                                                            'BEGIN
-                                                                            (load-image (vector-zipper-current (vector-zipper-prev new-imgs))))]
+                                                                   'BEGIN
+                                                                   (load-image (vector-zipper-current (vector-zipper-prev new-imgs))))]
                                                               [next-image (viz-state-curr-image a-vs)])
                                                  (calculate-viewport-limits (scale (viz-state-scale-factor a-vs) new-pimgs-img)
                                                                             (viz-state-scale-factor a-vs)
@@ -556,10 +556,10 @@
          (if (vector-zipper-at-end? (viz-state-imgs a-vs))
              a-vs
              (let* [(new-imgs (vector-zipper-to-end (viz-state-imgs a-vs)))
-                    (new-pimgs-img (time (if (list? (viz-state-end-image a-vs))
+                    (new-pimgs-img (if (list? (viz-state-end-image a-vs))
                                        (apply above (map (lambda (img) (img)) (viz-state-end-image a-vs)))
                                        (viz-state-end-image a-vs)
-                                       )))
+                                       ))
                     (curr-pimgs-img (viz-state-curr-image a-vs))
                     (img-resize (resize-image new-pimgs-img (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))
                     (growth-x (- (/ (image-width (scale (viz-state-scale-factor a-vs) new-pimgs-img)) 2)

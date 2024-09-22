@@ -105,7 +105,7 @@
       (force (delay/thread (thunk (apply above (map (lambda (img) (img)) (force new-img))) #;(async-channel-put chnnl (apply above (map (lambda (img) (img)) (force new-img))))
                                   )))
       (force (delay/thread ((force new-img)) #;(async-channel-put chnnl ((force new-img)))
-                                  ))
+                           ))
       )
   )
 
@@ -119,7 +119,7 @@
 (define (run-viz graphs first-img first-img-coord DEFAULT-ZOOM DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR
                  imsg-struct instructions-struct draw-world process-key process-tick name
                  
-                #:cpu-cores [cpu-cores #f] #:special-graphs? [special-graphs? #f] #:rank-node-lst [rank-node-lst '()])
+                 #:cpu-cores [cpu-cores #f] #:special-graphs? [special-graphs? #f] #:rank-node-lst [rank-node-lst '()])
   (let* [(imgs (cond [(eq? special-graphs? 'cfg) (let ([res (create-graph-imgs graphs #:rank-node-lst rank-node-lst #:graph-type 'cfg #:cpu-cores cpu-cores)])
                                                    (vector-set! res 0 first-img)
                                                    res

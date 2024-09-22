@@ -246,9 +246,9 @@
                                  'style
                                  'filled
                                  #;(if (or (member state hedge-nodes)
-                                         (member state yield-node))
-                                     'dashed
-                                     'filled)
+                                           (member state yield-node))
+                                       'dashed
+                                       'filled)
                                  'fillcolor
                                  (cond
                                    [(not (member (undo-renaming state) has-invariant)) 'white]
@@ -307,8 +307,8 @@
                                               FONT-SIZE
                                               'style
                                               (if (member rule hedges)
-                                                'dashed
-                                                'solid)
+                                                  'dashed
+                                                  'solid)
                                               'color
                                               (if (member rule hedges) HEDGE-COLOR 'black))))
                       result
@@ -1000,9 +1000,9 @@
 
 
 #;'(
-  ((S))
-  ((S) (A0 B0))
-  ((S) (A0 B0) (a0 S0 b0)) ((S) (A0 B0) (a0 S0 b0) (A1 B1)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3) (A4 B4)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3) (A4 B4) (a4 S4 b4)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3) (A4 B4) (a4 S4 b4) (ε0)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3) (A4 B4) (a4 S4 b4) (ε0) (ε1)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3) (A4 B4) (a4 S4 b4) (ε0) (ε1) (ε2)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3) (A4 B4) (a4 S4 b4) (ε0) (ε1) (ε2) (ε3)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3) (A4 B4) (a4 S4 b4) (ε0) (ε1) (ε2) (ε3) (ε4)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3) (A4 B4) (a4 S4 b4) (ε0) (ε1) (ε2) (ε3) (ε4) (c0 B5 d0)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3) (A4 B4) (a4 S4 b4) (ε0) (ε1) (ε2) (ε3) (ε4) (c0 B5 d0) (c1 B6 d1)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3) (A4 B4) (a4 S4 b4) (ε0) (ε1) (ε2) (ε3) (ε4) (c0 B5 d0) (c1 B6 d1) (c2 B7 d2)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3) (A4 B4) (a4 S4 b4) (ε0) (ε1) (ε2) (ε3) (ε4) (c0 B5 d0) (c1 B6 d1) (c2 B7 d2) (ε5)))
+    ((S))
+    ((S) (A0 B0))
+    ((S) (A0 B0) (a0 S0 b0)) ((S) (A0 B0) (a0 S0 b0) (A1 B1)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3) (A4 B4)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3) (A4 B4) (a4 S4 b4)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3) (A4 B4) (a4 S4 b4) (ε0)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3) (A4 B4) (a4 S4 b4) (ε0) (ε1)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3) (A4 B4) (a4 S4 b4) (ε0) (ε1) (ε2)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3) (A4 B4) (a4 S4 b4) (ε0) (ε1) (ε2) (ε3)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3) (A4 B4) (a4 S4 b4) (ε0) (ε1) (ε2) (ε3) (ε4)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3) (A4 B4) (a4 S4 b4) (ε0) (ε1) (ε2) (ε3) (ε4) (c0 B5 d0)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3) (A4 B4) (a4 S4 b4) (ε0) (ε1) (ε2) (ε3) (ε4) (c0 B5 d0) (c1 B6 d1)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3) (A4 B4) (a4 S4 b4) (ε0) (ε1) (ε2) (ε3) (ε4) (c0 B5 d0) (c1 B6 d1) (c2 B7 d2)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3) (A4 B4) (a4 S4 b4) (ε0) (ε1) (ε2) (ε3) (ε4) (c0 B5 d0) (c1 B6 d1) (c2 B7 d2) (ε5)))
 
 
 
@@ -1011,19 +1011,19 @@
 
 
 #;'(
-  #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 (#(struct:tree ε1 ()))))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 (#(struct:tree b4 ()) #(struct:tree A7 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()) #(struct:tree A4 (#(struct:tree A8 (#(struct:tree ε3 ()))) #(struct:tree b5 ()) #(struct:tree A9 (#(struct:tree ε4 ()))) #(struct:tree a1 ()) #(struct:tree A10 (#(struct:tree ε5 ()))))) #(struct:tree a0 ()) #(struct:tree A5 (#(struct:tree ε0 ())))))))
-  #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 (#(struct:tree ε1 ()))))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 (#(struct:tree b4 ()) #(struct:tree A7 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()) #(struct:tree A4 (#(struct:tree A8 (#(struct:tree ε3 ()))) #(struct:tree b5 ()) #(struct:tree A9 (#(struct:tree ε4 ()))) #(struct:tree a1 ()) #(struct:tree A10 ()))) #(struct:tree a0 ()) #(struct:tree A5 (#(struct:tree ε0 ())))))))
-  #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 (#(struct:tree ε1 ()))))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 (#(struct:tree b4 ()) #(struct:tree A7 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()) #(struct:tree A4 (#(struct:tree A8 (#(struct:tree ε3 ()))) #(struct:tree b5 ()) #(struct:tree A9 ()) #(struct:tree a1 ()) #(struct:tree A10 ()))) #(struct:tree a0 ()) #(struct:tree A5 (#(struct:tree ε0 ())))))))
-  #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 (#(struct:tree ε1 ()))))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 (#(struct:tree b4 ()) #(struct:tree A7 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()) #(struct:tree A4 (#(struct:tree A8 ()) #(struct:tree b5 ()) #(struct:tree A9 ()) #(struct:tree a1 ()) #(struct:tree A10 ()))) #(struct:tree a0 ()) #(struct:tree A5 (#(struct:tree ε0 ())))))))
-  #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 (#(struct:tree ε1 ()))))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 (#(struct:tree b4 ()) #(struct:tree A7 ()))) #(struct:tree b2 ()) #(struct:tree A4 (#(struct:tree A8 ()) #(struct:tree b5 ()) #(struct:tree A9 ()) #(struct:tree a1 ()) #(struct:tree A10 ()))) #(struct:tree a0 ()) #(struct:tree A5 (#(struct:tree ε0 ())))))))
-  #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 ()))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 (#(struct:tree b4 ()) #(struct:tree A7 ()))) #(struct:tree b2 ()) #(struct:tree A4 (#(struct:tree A8 ()) #(struct:tree b5 ()) #(struct:tree A9 ()) #(struct:tree a1 ()) #(struct:tree A10 ()))) #(struct:tree a0 ()) #(struct:tree A5 (#(struct:tree ε0 ())))))))
-  #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 ()))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 (#(struct:tree b4 ()) #(struct:tree A7 ()))) #(struct:tree b2 ()) #(struct:tree A4 (#(struct:tree A8 ()) #(struct:tree b5 ()) #(struct:tree A9 ()) #(struct:tree a1 ()) #(struct:tree A10 ()))) #(struct:tree a0 ()) #(struct:tree A5 ())))))
-  #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 ()))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 (#(struct:tree b4 ()) #(struct:tree A7 ()))) #(struct:tree b2 ()) #(struct:tree A4 ()) #(struct:tree a0 ()) #(struct:tree A5 ())))))
-  #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 ()))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 ()) #(struct:tree b2 ()) #(struct:tree A4 ()) #(struct:tree a0 ()) #(struct:tree A5 ())))))
-  #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 ()))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 ()) #(struct:tree b2 ()) #(struct:tree A4 ()) #(struct:tree a0 ()) #(struct:tree A5 ())))))
-  #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 ()))) #(struct:tree b0 ()) #(struct:tree A1 ())))
-  #(struct:tree S (#(struct:tree A0 ()) #(struct:tree b0 ()) #(struct:tree A1 ())))
-  )
+    #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 (#(struct:tree ε1 ()))))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 (#(struct:tree b4 ()) #(struct:tree A7 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()) #(struct:tree A4 (#(struct:tree A8 (#(struct:tree ε3 ()))) #(struct:tree b5 ()) #(struct:tree A9 (#(struct:tree ε4 ()))) #(struct:tree a1 ()) #(struct:tree A10 (#(struct:tree ε5 ()))))) #(struct:tree a0 ()) #(struct:tree A5 (#(struct:tree ε0 ())))))))
+    #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 (#(struct:tree ε1 ()))))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 (#(struct:tree b4 ()) #(struct:tree A7 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()) #(struct:tree A4 (#(struct:tree A8 (#(struct:tree ε3 ()))) #(struct:tree b5 ()) #(struct:tree A9 (#(struct:tree ε4 ()))) #(struct:tree a1 ()) #(struct:tree A10 ()))) #(struct:tree a0 ()) #(struct:tree A5 (#(struct:tree ε0 ())))))))
+    #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 (#(struct:tree ε1 ()))))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 (#(struct:tree b4 ()) #(struct:tree A7 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()) #(struct:tree A4 (#(struct:tree A8 (#(struct:tree ε3 ()))) #(struct:tree b5 ()) #(struct:tree A9 ()) #(struct:tree a1 ()) #(struct:tree A10 ()))) #(struct:tree a0 ()) #(struct:tree A5 (#(struct:tree ε0 ())))))))
+    #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 (#(struct:tree ε1 ()))))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 (#(struct:tree b4 ()) #(struct:tree A7 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()) #(struct:tree A4 (#(struct:tree A8 ()) #(struct:tree b5 ()) #(struct:tree A9 ()) #(struct:tree a1 ()) #(struct:tree A10 ()))) #(struct:tree a0 ()) #(struct:tree A5 (#(struct:tree ε0 ())))))))
+    #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 (#(struct:tree ε1 ()))))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 (#(struct:tree b4 ()) #(struct:tree A7 ()))) #(struct:tree b2 ()) #(struct:tree A4 (#(struct:tree A8 ()) #(struct:tree b5 ()) #(struct:tree A9 ()) #(struct:tree a1 ()) #(struct:tree A10 ()))) #(struct:tree a0 ()) #(struct:tree A5 (#(struct:tree ε0 ())))))))
+    #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 ()))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 (#(struct:tree b4 ()) #(struct:tree A7 ()))) #(struct:tree b2 ()) #(struct:tree A4 (#(struct:tree A8 ()) #(struct:tree b5 ()) #(struct:tree A9 ()) #(struct:tree a1 ()) #(struct:tree A10 ()))) #(struct:tree a0 ()) #(struct:tree A5 (#(struct:tree ε0 ())))))))
+    #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 ()))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 (#(struct:tree b4 ()) #(struct:tree A7 ()))) #(struct:tree b2 ()) #(struct:tree A4 (#(struct:tree A8 ()) #(struct:tree b5 ()) #(struct:tree A9 ()) #(struct:tree a1 ()) #(struct:tree A10 ()))) #(struct:tree a0 ()) #(struct:tree A5 ())))))
+    #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 ()))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 (#(struct:tree b4 ()) #(struct:tree A7 ()))) #(struct:tree b2 ()) #(struct:tree A4 ()) #(struct:tree a0 ()) #(struct:tree A5 ())))))
+    #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 ()))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 ()) #(struct:tree b2 ()) #(struct:tree A4 ()) #(struct:tree a0 ()) #(struct:tree A5 ())))))
+    #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 ()))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 ()) #(struct:tree b2 ()) #(struct:tree A4 ()) #(struct:tree a0 ()) #(struct:tree A5 ())))))
+    #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 ()))) #(struct:tree b0 ()) #(struct:tree A1 ())))
+    #(struct:tree S (#(struct:tree A0 ()) #(struct:tree b0 ()) #(struct:tree A1 ())))
+    )
 
 
 
@@ -1104,112 +1104,112 @@
 #;(test-cfg-viz lang3-grammar '(m o n c n o) 10)
 ;(cfg-viz lang3-grammar '(- op num cm num cp))
 (cfg-viz testcfg
-              '(a
-                a
-                a
-                a
-                a
-                a
-                a
-                a
-                a
-                a
-                a
-                a
-                a
-                a
-                a
-                a
-                b
-                b
-                b
-                b
-                b
-                b
-                b
-                b
-                b
-                b
-                b
-                b
-                b
-                b
-                b
-                b
-                c
-                c
-                c
-                c
-                c
-                c
-                c
-                c
-                c
-                c
-                c
-                c
-                c
-                c
-                c
-                c
-                d
-                d
-                d
-                d
-                d
-                d
-                d
-                d
-                d
-                d
-                d
-                d
-                d
-                d
-                d
-                d)
-              'left)
+         '(a
+           a
+           a
+           a
+           a
+           a
+           a
+           a
+           a
+           a
+           a
+           a
+           a
+           a
+           a
+           a
+           b
+           b
+           b
+           b
+           b
+           b
+           b
+           b
+           b
+           b
+           b
+           b
+           b
+           b
+           b
+           b
+           c
+           c
+           c
+           c
+           c
+           c
+           c
+           c
+           c
+           c
+           c
+           c
+           c
+           c
+           c
+           c
+           d
+           d
+           d
+           d
+           d
+           d
+           d
+           d
+           d
+           d
+           d
+           d
+           d
+           d
+           d
+           d)
+         'left)
 
 #;'(
-  #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 (#(struct:tree a4 ()) #(struct:tree S4 (#(struct:tree ε0 ()))) #(struct:tree b4 ()))) #(struct:tree B4 (#(struct:tree ε1 ()))))) #(struct:tree b3 ()))) #(struct:tree B3 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()))) #(struct:tree B2 (#(struct:tree ε3 ()))))) #(struct:tree b1 ()))) #(struct:tree B1 (#(struct:tree ε4 ()))))) #(struct:tree b0 ()))) #(struct:tree B0 (#(struct:tree c0 ()) #(struct:tree B5 (#(struct:tree c1 ()) #(struct:tree B6 (#(struct:tree c2 ()) #(struct:tree B7 (#(struct:tree ε5 ()))) #(struct:tree d2 ()))) #(struct:tree d1 ()))) #(struct:tree d0 ())))))
-  #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 (#(struct:tree a4 ()) #(struct:tree S4 (#(struct:tree ε0 ()))) #(struct:tree b4 ()))) #(struct:tree B4 (#(struct:tree ε1 ()))))) #(struct:tree b3 ()))) #(struct:tree B3 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()))) #(struct:tree B2 (#(struct:tree ε3 ()))))) #(struct:tree b1 ()))) #(struct:tree B1 (#(struct:tree ε4 ()))))) #(struct:tree b0 ()))) #(struct:tree B0 (#(struct:tree c0 ()) #(struct:tree B5 (#(struct:tree c1 ()) #(struct:tree B6 (#(struct:tree c2 ()) #(struct:tree B7 ()) #(struct:tree d2 ()))) #(struct:tree d1 ()))) #(struct:tree d0 ())))))
-  #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 (#(struct:tree a4 ()) #(struct:tree S4 (#(struct:tree ε0 ()))) #(struct:tree b4 ()))) #(struct:tree B4 (#(struct:tree ε1 ()))))) #(struct:tree b3 ()))) #(struct:tree B3 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()))) #(struct:tree B2 (#(struct:tree ε3 ()))))) #(struct:tree b1 ()))) #(struct:tree B1 (#(struct:tree ε4 ()))))) #(struct:tree b0 ()))) #(struct:tree B0 (#(struct:tree c0 ()) #(struct:tree B5 (#(struct:tree c1 ()) #(struct:tree B6 ()) #(struct:tree d1 ()))) #(struct:tree d0 ())))))
-  #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 (#(struct:tree a4 ()) #(struct:tree S4 (#(struct:tree ε0 ()))) #(struct:tree b4 ()))) #(struct:tree B4 (#(struct:tree ε1 ()))))) #(struct:tree b3 ()))) #(struct:tree B3 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()))) #(struct:tree B2 (#(struct:tree ε3 ()))))) #(struct:tree b1 ()))) #(struct:tree B1 (#(struct:tree ε4 ()))))) #(struct:tree b0 ()))) #(struct:tree B0 (#(struct:tree c0 ()) #(struct:tree B5 ()) #(struct:tree d0 ())))))
-  #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 (#(struct:tree a4 ()) #(struct:tree S4 (#(struct:tree ε0 ()))) #(struct:tree b4 ()))) #(struct:tree B4 (#(struct:tree ε1 ()))))) #(struct:tree b3 ()))) #(struct:tree B3 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()))) #(struct:tree B2 (#(struct:tree ε3 ()))))) #(struct:tree b1 ()))) #(struct:tree B1 (#(struct:tree ε4 ()))))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
-  #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 (#(struct:tree a4 ()) #(struct:tree S4 (#(struct:tree ε0 ()))) #(struct:tree b4 ()))) #(struct:tree B4 (#(struct:tree ε1 ()))))) #(struct:tree b3 ()))) #(struct:tree B3 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()))) #(struct:tree B2 (#(struct:tree ε3 ()))))) #(struct:tree b1 ()))) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
-  #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 (#(struct:tree a4 ()) #(struct:tree S4 (#(struct:tree ε0 ()))) #(struct:tree b4 ()))) #(struct:tree B4 (#(struct:tree ε1 ()))))) #(struct:tree b3 ()))) #(struct:tree B3 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()))) #(struct:tree B2 ()))) #(struct:tree b1 ()))) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
-  #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 (#(struct:tree a4 ()) #(struct:tree S4 (#(struct:tree ε0 ()))) #(struct:tree b4 ()))) #(struct:tree B4 (#(struct:tree ε1 ()))))) #(struct:tree b3 ()))) #(struct:tree B3 ()))) #(struct:tree b2 ()))) #(struct:tree B2 ()))) #(struct:tree b1 ()))) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
-  #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 (#(struct:tree a4 ()) #(struct:tree S4 (#(struct:tree ε0 ()))) #(struct:tree b4 ()))) #(struct:tree B4 ()))) #(struct:tree b3 ()))) #(struct:tree B3 ()))) #(struct:tree b2 ()))) #(struct:tree B2 ()))) #(struct:tree b1 ()))) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
-  #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 (#(struct:tree a4 ()) #(struct:tree S4 ()) #(struct:tree b4 ()))) #(struct:tree B4 ()))) #(struct:tree b3 ()))) #(struct:tree B3 ()))) #(struct:tree b2 ()))) #(struct:tree B2 ()))) #(struct:tree b1 ()))) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
-  #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 ()) #(struct:tree B4 ()))) #(struct:tree b3 ()))) #(struct:tree B3 ()))) #(struct:tree b2 ()))) #(struct:tree B2 ()))) #(struct:tree b1 ()))) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
-  #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 ()) #(struct:tree b3 ()))) #(struct:tree B3 ()))) #(struct:tree b2 ()))) #(struct:tree B2 ()))) #(struct:tree b1 ()))) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
-  #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 ()) #(struct:tree B3 ()))) #(struct:tree b2 ()))) #(struct:tree B2 ()))) #(struct:tree b1 ()))) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
-  #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 ()) #(struct:tree b2 ()))) #(struct:tree B2 ()))) #(struct:tree b1 ()))) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
-  #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 ()) #(struct:tree B2 ()))) #(struct:tree b1 ()))) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
-  #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 ()) #(struct:tree b1 ()))) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
-  #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 ()) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
-  #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 ()) #(struct:tree b0 ()))) #(struct:tree B0 ())))
-  #(struct:tree S (#(struct:tree A0 ()) #(struct:tree B0 ())))
-  )
+    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 (#(struct:tree a4 ()) #(struct:tree S4 (#(struct:tree ε0 ()))) #(struct:tree b4 ()))) #(struct:tree B4 (#(struct:tree ε1 ()))))) #(struct:tree b3 ()))) #(struct:tree B3 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()))) #(struct:tree B2 (#(struct:tree ε3 ()))))) #(struct:tree b1 ()))) #(struct:tree B1 (#(struct:tree ε4 ()))))) #(struct:tree b0 ()))) #(struct:tree B0 (#(struct:tree c0 ()) #(struct:tree B5 (#(struct:tree c1 ()) #(struct:tree B6 (#(struct:tree c2 ()) #(struct:tree B7 (#(struct:tree ε5 ()))) #(struct:tree d2 ()))) #(struct:tree d1 ()))) #(struct:tree d0 ())))))
+    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 (#(struct:tree a4 ()) #(struct:tree S4 (#(struct:tree ε0 ()))) #(struct:tree b4 ()))) #(struct:tree B4 (#(struct:tree ε1 ()))))) #(struct:tree b3 ()))) #(struct:tree B3 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()))) #(struct:tree B2 (#(struct:tree ε3 ()))))) #(struct:tree b1 ()))) #(struct:tree B1 (#(struct:tree ε4 ()))))) #(struct:tree b0 ()))) #(struct:tree B0 (#(struct:tree c0 ()) #(struct:tree B5 (#(struct:tree c1 ()) #(struct:tree B6 (#(struct:tree c2 ()) #(struct:tree B7 ()) #(struct:tree d2 ()))) #(struct:tree d1 ()))) #(struct:tree d0 ())))))
+    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 (#(struct:tree a4 ()) #(struct:tree S4 (#(struct:tree ε0 ()))) #(struct:tree b4 ()))) #(struct:tree B4 (#(struct:tree ε1 ()))))) #(struct:tree b3 ()))) #(struct:tree B3 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()))) #(struct:tree B2 (#(struct:tree ε3 ()))))) #(struct:tree b1 ()))) #(struct:tree B1 (#(struct:tree ε4 ()))))) #(struct:tree b0 ()))) #(struct:tree B0 (#(struct:tree c0 ()) #(struct:tree B5 (#(struct:tree c1 ()) #(struct:tree B6 ()) #(struct:tree d1 ()))) #(struct:tree d0 ())))))
+    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 (#(struct:tree a4 ()) #(struct:tree S4 (#(struct:tree ε0 ()))) #(struct:tree b4 ()))) #(struct:tree B4 (#(struct:tree ε1 ()))))) #(struct:tree b3 ()))) #(struct:tree B3 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()))) #(struct:tree B2 (#(struct:tree ε3 ()))))) #(struct:tree b1 ()))) #(struct:tree B1 (#(struct:tree ε4 ()))))) #(struct:tree b0 ()))) #(struct:tree B0 (#(struct:tree c0 ()) #(struct:tree B5 ()) #(struct:tree d0 ())))))
+    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 (#(struct:tree a4 ()) #(struct:tree S4 (#(struct:tree ε0 ()))) #(struct:tree b4 ()))) #(struct:tree B4 (#(struct:tree ε1 ()))))) #(struct:tree b3 ()))) #(struct:tree B3 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()))) #(struct:tree B2 (#(struct:tree ε3 ()))))) #(struct:tree b1 ()))) #(struct:tree B1 (#(struct:tree ε4 ()))))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
+    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 (#(struct:tree a4 ()) #(struct:tree S4 (#(struct:tree ε0 ()))) #(struct:tree b4 ()))) #(struct:tree B4 (#(struct:tree ε1 ()))))) #(struct:tree b3 ()))) #(struct:tree B3 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()))) #(struct:tree B2 (#(struct:tree ε3 ()))))) #(struct:tree b1 ()))) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
+    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 (#(struct:tree a4 ()) #(struct:tree S4 (#(struct:tree ε0 ()))) #(struct:tree b4 ()))) #(struct:tree B4 (#(struct:tree ε1 ()))))) #(struct:tree b3 ()))) #(struct:tree B3 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()))) #(struct:tree B2 ()))) #(struct:tree b1 ()))) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
+    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 (#(struct:tree a4 ()) #(struct:tree S4 (#(struct:tree ε0 ()))) #(struct:tree b4 ()))) #(struct:tree B4 (#(struct:tree ε1 ()))))) #(struct:tree b3 ()))) #(struct:tree B3 ()))) #(struct:tree b2 ()))) #(struct:tree B2 ()))) #(struct:tree b1 ()))) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
+    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 (#(struct:tree a4 ()) #(struct:tree S4 (#(struct:tree ε0 ()))) #(struct:tree b4 ()))) #(struct:tree B4 ()))) #(struct:tree b3 ()))) #(struct:tree B3 ()))) #(struct:tree b2 ()))) #(struct:tree B2 ()))) #(struct:tree b1 ()))) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
+    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 (#(struct:tree a4 ()) #(struct:tree S4 ()) #(struct:tree b4 ()))) #(struct:tree B4 ()))) #(struct:tree b3 ()))) #(struct:tree B3 ()))) #(struct:tree b2 ()))) #(struct:tree B2 ()))) #(struct:tree b1 ()))) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
+    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 ()) #(struct:tree B4 ()))) #(struct:tree b3 ()))) #(struct:tree B3 ()))) #(struct:tree b2 ()))) #(struct:tree B2 ()))) #(struct:tree b1 ()))) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
+    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 ()) #(struct:tree b3 ()))) #(struct:tree B3 ()))) #(struct:tree b2 ()))) #(struct:tree B2 ()))) #(struct:tree b1 ()))) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
+    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 ()) #(struct:tree B3 ()))) #(struct:tree b2 ()))) #(struct:tree B2 ()))) #(struct:tree b1 ()))) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
+    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 ()) #(struct:tree b2 ()))) #(struct:tree B2 ()))) #(struct:tree b1 ()))) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
+    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 ()) #(struct:tree B2 ()))) #(struct:tree b1 ()))) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
+    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 ()) #(struct:tree b1 ()))) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
+    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 ()) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
+    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 ()) #(struct:tree b0 ()))) #(struct:tree B0 ())))
+    #(struct:tree S (#(struct:tree A0 ()) #(struct:tree B0 ())))
+    )
 
 #;(cfg-viz testcfg
-              '(a
-                a
-                a
-                a
-                a
-                b
-                b
-                b
-                b
-                b
-                c
-                c
-                c
-                d
-                d
-                d)
-              'left)
+           '(a
+             a
+             a
+             a
+             a
+             b
+             b
+             b
+             b
+             b
+             c
+             c
+             c
+             d
+             d
+             d)
+           'left)
 
 #|
 ( #:preview? #t #:svg-path "flamegraph2.svg")displayln "16")

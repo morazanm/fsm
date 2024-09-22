@@ -365,9 +365,9 @@
 
 (define (force-promises vec min-idx max-idx)
   (for ([i (in-range min-idx max-idx)])
-            (if (list? (vector-ref vec i))
-                (map force (vector-ref vec i))
-                (force (vector-ref vec i)))))
+    (if (list? (vector-ref vec i))
+        (map force (vector-ref vec i))
+        (force (vector-ref vec i)))))
 
 ;; Listof graph -> Listof Thunk
 ;; Creates all the graph images needed in parallel, and returns a list of thunks that will load them from disk
@@ -385,10 +385,7 @@
                                    (format "~adot~s_~s" SAVE-DIR (first i) j))
                                  (format "~adot~s" SAVE-DIR (first i)))))
     (cond [(eq? 'rg graph-type) (graphs->dots enumerated-graphs)]
-          [(eq? 'cfg graph-type) (test-cfg-graphs->dots enumerated-graphs rank-node-lst)
-                                 #;(begin (time (cfg-graphs->dots enumerated-graphs rank-node-lst))
-                                        (time (test-cfg-graphs->dots enumerated-graphs rank-node-lst))
-                                        )]
+          [(eq? 'cfg graph-type) (test-cfg-graphs->dots enumerated-graphs rank-node-lst)]
           [(eq? 'csg graph-type) (special-graphs->dots enumerated-graphs rank-node-lst)]
           [else (error "invalid graph type")])
 
@@ -662,17 +659,17 @@
    
      )
   #;(visualize-futures
-   (for/async ([i enumerated-graphs]
-               [z rank-node-lst])
-     (if (list? (second i))
-         (for ([j (range 0 (length (second i)))]
-               [k (second i)])
-           (test-cfg-graph->str k z)
+     (for/async ([i enumerated-graphs]
+                 [z rank-node-lst])
+       (if (list? (second i))
+           (for ([j (range 0 (length (second i)))]
+                 [k (second i)])
+             (test-cfg-graph->str k z)
+             )
+           (test-cfg-graph->str (second i) z)
            )
-         (test-cfg-graph->str (second i) z)
-         )
+       )
      )
-   )
   (for/list/concurrent ([i enumerated-graphs]
                         [z rank-node-lst])
     (if (list? (second i))
