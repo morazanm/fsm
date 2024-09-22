@@ -2,9 +2,11 @@
 (require 2htdp/universe
          "../../fsm-gviz/private/parallel.rkt"
          "../../fsm-gviz/private/lib.rkt"
+         racket/async-channel
          "vector-zipper.rkt"
          "bounding-limits.rkt"
-         "viz-state.rkt")
+         "viz-state.rkt"
+         2htdp/image)
 
 (provide run-viz)
 
@@ -88,6 +90,7 @@
 ;; vst --> void
 (define (viz a-vs draw-world process-key process-tick a-name)
   (begin
+    (collect-garbage 'major)
     (big-bang
         a-vs                
       [on-draw draw-world]
@@ -96,6 +99,15 @@
       [on-tick process-tick TICK-RATE]
       [name a-name]))
   (void))
+
+(define (load-image new-img)
+  (if (list? new-img)
+      (force (delay/thread (thunk (apply above (map (lambda (img) (img)) (force new-img))) #;(async-channel-put chnnl (apply above (map (lambda (img) (img)) (force new-img))))
+                                  )))
+      (force (delay/thread ((force new-img)) #;(async-channel-put chnnl ((force new-img)))
+                                  ))
+      )
+  )
 
 ;; word rules (listof gviz-graph) (list Symbol (word -> Boolean))
 ;;   (U #f int) Boolean (listof (listof Symbol)) -> void
@@ -123,7 +135,11 @@
                              res
                              )]))]
     (viz (viz-state (vector->vector-zipper imgs)
+                    'BEGIN
                     ((vector-ref imgs 0))
+                    (load-image (vector-ref imgs 1))
+                    ((vector-ref imgs 0))
+                    ((force (vector-ref imgs (sub1 (vector-length imgs)))))
                     first-img-coord
                     DEFAULT-ZOOM
                     DEFAULT-ZOOM-CAP

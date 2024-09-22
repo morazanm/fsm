@@ -17,6 +17,24 @@
    (list (list 'S ARROW 'AaB) (list 'AaA ARROW 'aSb) (list 'AaA ARROW EMP) (list 'B ARROW 'A))
    'S))
 
+(define anbncn
+  (make-unchecked-csg
+   '(S A B C G H I)
+   '(a b c)
+   `((S ,ARROW ABCS)
+     (S ,ARROW G)
+     (BA ,ARROW AB)
+     (CA ,ARROW AC)
+     (CB ,ARROW BC)
+     (CG ,ARROW Gc)
+     (BG ,ARROW BH)
+     (BH ,ARROW Hb)
+     (AH ,ARROW AI)
+     (AI ,ARROW Ia)
+     (I ,ARROW ,EMP)
+     )
+   'S))
+
 #;(define HEDGE-COLOR 'skyblue)
 (define HEDGE-COLOR 'black)
 #;(define YIELD-COLOR 'violet)
@@ -468,7 +486,7 @@
      (make-edge-graph
       (make-node-graph
        (create-graph 'dgraph
-                     #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in" 'splines "polyline"))
+                     #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in" 'splines "polyline" 'overlap "scale"))
        nodes
        hedge-nodes
        hex-nodes
@@ -510,9 +528,6 @@
                          '()
                          moved-rules)))
           (define renamed (generate-levels (list (csg-getstart g)) moved-rules (make-hash)))
-          #;(define test (remove-every-second (third renamed)))
-          #;(define test0 (displayln (format "hope this works: ~s" test)))
-          #;(define test1 (displayln renamed))
           (define test-rules (copy rules))
           (define dgraph
             (dgrph (rest (third renamed))
@@ -538,14 +553,55 @@
                     [fourth (second graphs)])
                 (cons frst (cons fourth (remove-every-second (drop graphs 2)))))
               'NO-INV
-              #:special-graphs? 'csg
+              #:special-graphs? 'cfg
               #:rank-node-lst (let ([frst (first (second renamed))]
                                     [fourth (second (second renamed))])
-                                (cons frst (cons fourth (remove-every-second (drop (second renamed) 2))))))
+                                #;(displayln (cons frst (cons fourth (remove-every-second (drop (second renamed) 2)))))
+                                #;(displayln (map (lambda (x y) (cons (list x) (foldr (lambda (val accum) (cons (list val) accum))
+                                                                         '()
+                                                                         y)
+                                                                           #;(apply list y)))
+                                     (cons frst (cons fourth (remove-every-second (drop (second renamed) 2))))
+                                     (begin
+                                       #;(displayln (let ([res (append (dgrph-up-hex-nodes (first lod)) (dgrph-p-hex-nodes (first lod)))])
+                                         (cons (first res) (remove-every-second (rest res)))))
+                                       (let ([res (append (dgrph-up-hex-nodes (first lod)) (dgrph-p-hex-nodes (first lod)))])
+                                         (cons (first res) (remove-every-second (rest res))))
+                                       )
+                                     ))
+                                (map (lambda (x y) (cons x (foldr (lambda (val accum) (cons (list val) accum))
+                                                                         '()
+                                                                         y)
+                                                                           #;(apply list y)))
+                                     (cons frst (cons fourth (remove-every-second (drop (second renamed) 2))))
+                                     (begin
+                                       (displayln (let ([res (append (dgrph-up-hex-nodes (first lod)) (dgrph-p-hex-nodes (first lod)))])
+                                         (drop-right (cons '() (cons (first res) (remove-every-second res))) 1)))
+                                       (let ([res (append (dgrph-up-hex-nodes (first lod)) (dgrph-p-hex-nodes (first lod)))])
+                                         (drop-right (cons '() (cons (first res) (remove-every-second res))) 1))
+                                       )
+                                     )
+                                ))
     ;(run-viz g w w-derv rules graphs #:special-graphs? #t #:rank-node-lst (second renamed))
     ))
-(csg-viz anbn '(a a b b))
 
+(define anbncn-csg
+  (make-unchecked-csg '(S A B C G H I) 
+            '(a b c) 
+            `((S ,ARROW ABCS) 
+              (S ,ARROW G)
+              (BA ,ARROW AB) 
+              (CA ,ARROW AC) 
+              (CB ,ARROW BC)
+              (CG ,ARROW Gc) 
+              (G  ,ARROW H) 
+              (BH ,ARROW Hb) 
+              (H ,ARROW I)
+              (AI ,ARROW Ia) 
+              (I ,ARROW ,EMP)) 
+            'S))
+#;(csg-viz anbn '(a a b b))
+(csg-viz anbncn-csg '(a a b b c c))
 
 #;(define (remove-every-second lst)
     (if (empty? lst)

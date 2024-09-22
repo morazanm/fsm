@@ -1,9 +1,11 @@
 #lang racket
+
 (require "lib.rkt"
          2htdp/image
          "dot.rkt"
          future-visualizer
          future-visualizer/trace)
+
 (provide (all-defined-out))
 
 (define NUM-PRELOAD 2)
@@ -360,7 +362,7 @@
 
 (define (force-promises vec min-idx max-idx)
   (for ([i (in-range min-idx max-idx)])
-            (force (vector-ref vec i))))
+    (force (vector-ref vec i))))
 
 ;; Listof graph -> Listof Thunk
 ;; Creates all the graph images needed in parallel, and returns a list of thunks that will load them from disk
@@ -378,7 +380,10 @@
                                    (format "~adot~s_~s" SAVE-DIR (first i) j))
                                  (format "~adot~s" SAVE-DIR (first i)))))
     (cond [(eq? 'rg graph-type) (graphs->dots enumerated-graphs)]
-          [(eq? 'cfg graph-type) (cfg-graphs->dots enumerated-graphs rank-node-lst)]
+          [(eq? 'cfg graph-type) (test-cfg-graphs->dots enumerated-graphs rank-node-lst)
+                                 #;(begin (time (cfg-graphs->dots enumerated-graphs rank-node-lst))
+                                        (time (test-cfg-graphs->dots enumerated-graphs rank-node-lst))
+                                        )]
           [(eq? 'csg graph-type) (special-graphs->dots enumerated-graphs rank-node-lst)]
           [else (error "invalid graph type")])
     (define flattened-list-dot-files (list->vector (flatten list-dot-files)))
@@ -388,10 +393,10 @@
           (streaming-parallel-dots->pngs flattened-list-dot-files 0 (vector-length flattened-list-dot-files) cpu-cores)
           (force-promises flattened-list-dot-files 0 NUM-PRELOAD)
           #;(for ([i (in-range 0 NUM-PRELOAD)])
-            (force (vector-ref flattened-list-dot-files i)))
+              (force (vector-ref flattened-list-dot-files i)))
           (force-promises flattened-list-dot-files (- (vector-length flattened-list-dot-files) NUM-PRELOAD) (vector-length flattened-list-dot-files))
           #;(for ([i (in-range (- (vector-length flattened-list-dot-files) NUM-PRELOAD) (vector-length flattened-list-dot-files))])
-            (force (vector-ref flattened-list-dot-files i)))
+              (force (vector-ref flattened-list-dot-files i)))
 
           (thread (thunk (for ([i (in-range NUM-PRELOAD (- (vector-length flattened-list-dot-files) NUM-PRELOAD))])
                            (force (vector-ref flattened-list-dot-files i))))))
@@ -628,14 +633,47 @@
 ;; Listof graph -> Num
 ;; Creates all of the dotfiles based on the graph structs given
 (define (cfg-graphs->dots enumerated-graphs rank-node-lst) ;(displayln rank-node-lst)
-  (for ([i enumerated-graphs]
-        [z rank-node-lst])
+  (for/list/concurrent ([i enumerated-graphs]
+                        [z rank-node-lst])
     (if (list? (second i))
         (for ([j (range 0 (length (second i)))]
               [k (second i)])
           (cfg-graph->dot k z SAVE-DIR (format "dot~s_~s" (first i) j))
           )
         (cfg-graph->dot (second i) z SAVE-DIR (format "dot~s" (first i)))
+        )
+    )
+  )
+
+(define (test-cfg-graphs->dots enumerated-graphs rank-node-lst) ;(displayln rank-node-lst)
+  #;(visualize-futures
+     (let ([f0 (future (thunk (test-cfg-graph->str (second (first enumerated-graphs)) (first rank-node-lst))))]
+           [f1 (future (thunk (test-cfg-graph->str (second (second enumerated-graphs)) (second rank-node-lst))))])
+
+       (touch f0)
+       (touch f1))
+   
+     )
+  #;(visualize-futures
+   (for/async ([i enumerated-graphs]
+               [z rank-node-lst])
+     (if (list? (second i))
+         (for ([j (range 0 (length (second i)))]
+               [k (second i)])
+           (test-cfg-graph->str k z)
+           )
+         (test-cfg-graph->str (second i) z)
+         )
+     )
+   )
+  (for/list/concurrent ([i enumerated-graphs]
+                        [z rank-node-lst])
+    (if (list? (second i))
+        (for ([j (range 0 (length (second i)))]
+              [k (second i)])
+          (test-cfg-graph->dot k z SAVE-DIR (format "dot~s_~s" (first i) j))
+          )
+        (test-cfg-graph->dot (second i) z SAVE-DIR (format "dot~s" (first i)))
         )
     )
   )

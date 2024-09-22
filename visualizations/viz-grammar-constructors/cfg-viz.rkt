@@ -15,6 +15,9 @@
          "../../fsm-gviz/private/parallel.rkt"
          )
 
+
+
+
 (provide cfg-viz)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1085,7 +1088,7 @@
 ;(test-cfg-viz 10)
 
 
-(cfg-viz numb>numa '(b b b b b b a a) 'level-left (list 'S S-INV) (list 'A A-INV))
+#;(cfg-viz numb>numa '(b b b b b b a a) 'level-left (list 'S S-INV) (list 'A A-INV))
 (define lang3-grammar (make-unchecked-cfg
                        '(P E)
                        '(n t f i m o c z)
@@ -1100,7 +1103,7 @@
                        'P))
 #;(test-cfg-viz lang3-grammar '(m o n c n o) 10)
 ;(cfg-viz lang3-grammar '(- op num cm num cp))
-#;(cfg-viz testcfg
+(cfg-viz testcfg
               '(a
                 a
                 a

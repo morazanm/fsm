@@ -44,6 +44,7 @@
         CLICK-BUFFER-SECONDS ([imsg-b-limit imsg-process-tick-func]...)
         ([instruction-b-limit viz-key-func imsg-key-func]...))
      #'(lambda (a-vs)
+         (collect-garbage 'incremental)
          (if (viz-state-mouse-pressed a-vs)
              (let* [;; Determines the movement of the mouse that occured since the last tick
                     (x-diff (- (posn-x (viz-state-curr-mouse-posn a-vs)) (posn-x (viz-state-prev-mouse-posn a-vs))))
