@@ -35,10 +35,10 @@
      )
    'S))
 
-#;(define HEDGE-COLOR 'skyblue)
-(define HEDGE-COLOR 'black)
-#;(define YIELD-COLOR 'violet)
-(define YIELD-COLOR 'black)
+(define HEDGE-COLOR 'skyblue)
+
+(define YIELD-COLOR 'violet)
+
 (define FONT-SIZE 12)
 #;(define HEXAGON-COLOR 'violet)
 (define HEXAGON-COLOR 'black)
