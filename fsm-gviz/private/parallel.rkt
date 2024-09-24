@@ -403,7 +403,56 @@
               (force (vector-ref flattened-list-dot-files i)))
 
           (thread (thunk (for ([i (in-range NUM-PRELOAD (- (vector-length flattened-list-dot-files) NUM-PRELOAD))])
+                           (force (vector-ref flattened-list-dot-files i)))))
+          )
+        (begin
+          (streaming-parallel-dots->pngs flattened-list-dot-files 0 (vector-length flattened-list-dot-files) cpu-cores)
+          (for ([i (in-range 0 (vector-length flattened-list-dot-files))])
+            (force (vector-ref flattened-list-dot-files i)))
+          ))
+    flattened-list-dot-files))
+
+
+
+
+
+
+
+
+(define (testing-streaming-parallel-graphs->bitmap-thunks graphs thread-box #:rank-node-lst [rank-node-lst '()] #:graph-type [graph-type 'rg] #:cpu-cores [cpu-cores (quotient (find-number-of-cores) 2)])
+  
+  
+  
+  
+  
+  (begin
+    (define enumerated-graphs (make-pairs (range 0 (length graphs)) graphs))
+    (define list-dot-files (for/list ([i enumerated-graphs])
+                             (if (list? (second i))
+                                 (for/list ([j (in-range 0 (length (second i)))])
+                                   (format "~adot~s_~s" SAVE-DIR (first i) j))
+                                 (format "~adot~s" SAVE-DIR (first i)))))
+    (cond [(eq? 'rg graph-type) (graphs->dots enumerated-graphs)]
+          [(eq? 'cfg graph-type) (test-cfg-graphs->dots enumerated-graphs rank-node-lst)]
+          [(eq? 'csg graph-type) (special-graphs->dots enumerated-graphs rank-node-lst)]
+          [else (error "invalid graph type")])
+
+    (define flattened-list-dot-files (list->vector list-dot-files))
+    #;(displayln (format "~s ~s" (length flattened-list-dot-files) (length (flatten graphs))))
+
+    (if (> (vector-length flattened-list-dot-files) (* NUM-PRELOAD 2))
+        (begin
+          (streaming-parallel-dots->pngs flattened-list-dot-files 0 (vector-length flattened-list-dot-files) cpu-cores)
+          (force-promises flattened-list-dot-files 0 NUM-PRELOAD)
+          #;(for ([i (in-range 0 NUM-PRELOAD)])
+              (force (vector-ref flattened-list-dot-files i)))
+          (force-promises flattened-list-dot-files (- (vector-length flattened-list-dot-files) NUM-PRELOAD) (vector-length flattened-list-dot-files))
+          #;(for ([i (in-range (- (vector-length flattened-list-dot-files) NUM-PRELOAD) (vector-length flattened-list-dot-files))])
+              (force (vector-ref flattened-list-dot-files i)))
+
+          (vector-set! thread-box 0 (thread (thunk (for ([i (in-range NUM-PRELOAD (- (vector-length flattened-list-dot-files) NUM-PRELOAD))])
                            (force (vector-ref flattened-list-dot-files i))))))
+          )
         (begin
           (streaming-parallel-dots->pngs flattened-list-dot-files 0 (vector-length flattened-list-dot-files) cpu-cores)
           (for ([i (in-range 0 (vector-length flattened-list-dot-files))])
@@ -477,16 +526,7 @@
 
 
 
-
-
-
-
-
-
-
-
-
-(define (testing-streaming-parallel-graphs->bitmap-thunks graphs #:rank-node-lst [rank-node-lst '()] #:graph-type [graph-type 'rg] #:cpu-cores [cpu-cores (quotient (find-number-of-cores) 2)])
+#;(define (testing-streaming-parallel-graphs->bitmap-thunks graphs #:rank-node-lst [rank-node-lst '()] #:graph-type [graph-type 'rg] #:cpu-cores [cpu-cores (quotient (find-number-of-cores) 2)])
   ;; Procedure Listof Any -> Void
   ;; Runs a given function in parallel based on information gathered from the system
   (define (streaming-parallel-shell func args min-idx max-idx cpu-cores)

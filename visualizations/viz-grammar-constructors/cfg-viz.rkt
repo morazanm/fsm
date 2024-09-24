@@ -1033,11 +1033,76 @@
 
 
 
-(define (test-cfg-viz cfg word num-trials)
+(define (test-cfg-viz cfg word derv-type num-trials . invariants)
+  (define thrd-box (make-vector 1 '()))
   (let [(derivation (cfg-derive-leftmost cfg word))]
     (if (string? derivation)
         derivation
-        (let* [(der-with-rules (w-der-with-rules derivation))
+        (let* ([der-with-rules (w-der-with-rules derivation)]
+                   [rules
+                    (cons ""
+                          (cond
+                            [(eq? derv-type 'left)
+                             (create-rules-leftmost (move-rule-applications-in-list der-with-rules))]
+                            [(eq? derv-type 'right)
+                             (create-rules-rightmost (move-rule-applications-in-list
+                                                      der-with-rules))]))]
+                   [w-der (list-of-states der-with-rules)]
+                   [renamed (generate-levels-list
+                             (first (first (first der-with-rules)))
+                             (list-of-rules (move-rule-applications-in-list der-with-rules))
+                             '()
+                             (make-hash)
+                             derv-type)]
+                   [rank-node-lvls (cons (list (list (cfg-get-start cfg)))
+                                         (accumulate-previous-ranks
+                                          (map (lambda (x) (map (lambda (y) (second y)) x)) renamed)
+                                          (list (list (cfg-get-start cfg)))))]
+                   [yield-trees (map (lambda (x) (create-yield-tree x (cfg-get-start cfg))) (map reverse (create-list-of-levels renamed)))]
+                   
+                   [dgraph (dgrph renamed
+                                  '()
+                                  '()
+                                  '()
+                                  (rest rules)
+                                  (list (first rules))
+                                  (map (lambda (x) (first yield-trees)) yield-trees)
+                                  (list (tree (cfg-get-start cfg) '())))]
+                   [lod (reverse (create-dgrphs dgraph '()))]
+                   [invar-nodes
+                    (map (lambda (a-dgrph)
+                           (create-invariant-nodes a-dgrph invariants (cfg-get-start cfg) derv-type))
+                         lod)]
+                   [ordered-nodes
+                    (reverse (map (if (eq? derv-type 'left) get-leftmost-order get-rightmost-order)
+                                  yield-trees))]
+                   [broken-invariants
+                    (if (empty? invariants)
+                        'NO-INV
+                        (list->zipper (cons '()
+                                            (map (lambda (lst) (map undo-renaming lst))
+                                                 (map reverse
+                                                      (rest (get-ordered-invariant-nodes
+                                                             (cons (list (cfg-get-start cfg)) ordered-nodes)
+                                                             invar-nodes)))))))]
+                   [graphs (map (lambda (dgrph node-lvls)
+                                  (create-graph-structs dgrph
+                                                        invariants
+                                                        derv-type
+                                                        (cfg-get-start cfg)
+                                                        node-lvls))
+                                lod
+                                rank-node-lvls)])
+              (testing-init-viz cfg
+                        word
+                        w-der
+                        rules
+                        graphs
+                        broken-invariants
+                        thrd-box
+                        #:special-graphs? 'cfg
+                        #:rank-node-lst rank-node-lvls))
+        #;(let* [(der-with-rules (w-der-with-rules derivation))
                (rules (cons "" (create-rules-leftmost (move-rule-applications-in-list der-with-rules))))
                (w-der (list-of-states der-with-rules))
                (renamed (generate-levels-list (first (first (first der-with-rules)))
@@ -1103,7 +1168,7 @@
                        'P))
 #;(test-cfg-viz lang3-grammar '(m o n c n o) 10)
 ;(cfg-viz lang3-grammar '(- op num cm num cp))
-(cfg-viz testcfg
+(time (cfg-viz testcfg
          '(a
            a
            a
@@ -1168,7 +1233,7 @@
            d
            d
            d)
-         'left)
+         'left))
 
 #;'(
     #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 (#(struct:tree a4 ()) #(struct:tree S4 (#(struct:tree ε0 ()))) #(struct:tree b4 ()))) #(struct:tree B4 (#(struct:tree ε1 ()))))) #(struct:tree b3 ()))) #(struct:tree B3 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()))) #(struct:tree B2 (#(struct:tree ε3 ()))))) #(struct:tree b1 ()))) #(struct:tree B1 (#(struct:tree ε4 ()))))) #(struct:tree b0 ()))) #(struct:tree B0 (#(struct:tree c0 ()) #(struct:tree B5 (#(struct:tree c1 ()) #(struct:tree B6 (#(struct:tree c2 ()) #(struct:tree B7 (#(struct:tree ε5 ()))) #(struct:tree d2 ()))) #(struct:tree d1 ()))) #(struct:tree d0 ())))))

@@ -8,7 +8,7 @@
          "viz-state.rkt"
          2htdp/image)
 
-(provide run-viz)
+(provide run-viz testing-run-viz)
 
 (define TICK-RATE 1/60)
 
@@ -88,10 +88,11 @@
                                          'font "Sans")))))
 
 ;; vst --> void
-(define (viz a-vs draw-world process-key process-tick a-name)
+(define (viz a-vs draw-world process-key process-tick a-name thrd-box)
   (begin
     (collect-garbage 'major)
-    (big-bang
+    (thread-wait (vector-ref thrd-box 0))
+    #;(big-bang
         a-vs                
       [on-draw draw-world]
       [on-key process-key]
@@ -102,10 +103,8 @@
 
 (define (load-image new-img)
   (if (list? new-img)
-      (force (delay/thread (thunk (apply above (map (lambda (img) (img)) (force new-img))) #;(async-channel-put chnnl (apply above (map (lambda (img) (img)) (force new-img))))
-                                  )))
-      (force (delay/thread ((force new-img)) #;(async-channel-put chnnl ((force new-img)))
-                           ))
+      (force (delay/thread (thunk (apply above (map (lambda (img) (img)) (force new-img))))))
+      (force (delay/thread ((force new-img))))
       )
   )
 
@@ -119,8 +118,54 @@
 (define (run-viz graphs first-img first-img-coord DEFAULT-ZOOM DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR
                  imsg-struct instructions-struct draw-world process-key process-tick name
                  
-                 #:cpu-cores [cpu-cores #f] #:special-graphs? [special-graphs? #f] #:rank-node-lst [rank-node-lst '()])
-  (let* [(imgs (cond [(eq? special-graphs? 'cfg) (let ([res (create-graph-imgs graphs #:rank-node-lst rank-node-lst #:graph-type 'cfg #:cpu-cores cpu-cores)])
+                 #:cpu-cores [cpu-cores #f] #:special-graphs? [special-graphs? 'rg] #:rank-node-lst [rank-node-lst '()])
+  (let* [(imgs (let ([res (create-graph-imgs graphs #:rank-node-lst rank-node-lst #:graph-type special-graphs? #:cpu-cores cpu-cores)])
+                                                   (vector-set! res 0 first-img)
+                                                   res
+                                                   )
+               #;(cond [(eq? special-graphs? 'cfg) (let ([res (create-graph-imgs graphs #:rank-node-lst rank-node-lst #:graph-type 'cfg #:cpu-cores cpu-cores)])
+                                                   (vector-set! res 0 first-img)
+                                                   res
+                                                   )
+                                                 #;(cons first-img (rest (create-cfg-graph-imgs graphs #:cpu-cores cpu-cores #:rank-node-lst rank-node-lst)))]
+                     [(eq? special-graphs? 'csg) (let ([res (create-graph-imgs graphs #:rank-node-lst rank-node-lst #:graph-type 'csg #:cpu-cores cpu-cores)])
+                                                   (vector-set! res 0 first-img)
+                                                   res
+                                                   )
+                                                 #;(cons first-img (rest (create-special-graph-imgs graphs #:cpu-cores cpu-cores #:rank-node-lst rank-node-lst)))]
+                     [else (let ([res (create-graph-imgs graphs #:cpu-cores cpu-cores)])
+                             (vector-set! res 0 first-img)
+                             res
+                             )]))]
+    (viz (viz-state (vector->vector-zipper imgs)
+                    'BEGIN
+                    ((vector-ref imgs 0))
+                    (load-image (vector-ref imgs 1))
+                    ((vector-ref imgs 0))
+                    ((force (vector-ref imgs (sub1 (vector-length imgs)))))
+                    first-img-coord
+                    DEFAULT-ZOOM
+                    DEFAULT-ZOOM-CAP
+                    DEFAULT-ZOOM-FLOOR
+                    (posn 0 0)
+                    (posn 0 0)
+                    #f
+                    0
+                    imsg-struct
+                    instructions-struct)
+         draw-world process-key process-tick name)))
+
+
+
+(define (testing-run-viz thrd-box graphs first-img first-img-coord DEFAULT-ZOOM DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR
+                 imsg-struct instructions-struct draw-world process-key process-tick name
+                 
+                 #:cpu-cores [cpu-cores #f] #:special-graphs? [special-graphs? 'rg] #:rank-node-lst [rank-node-lst '()])
+  (let* [(imgs (let ([res (testing-streaming-parallel-graphs->bitmap-thunks graphs thrd-box #:rank-node-lst rank-node-lst #:graph-type special-graphs? #:cpu-cores cpu-cores)])
+                                                   (vector-set! res 0 first-img)
+                                                   res
+                                                   )
+               #;(cond [(eq? special-graphs? 'cfg) (let ([res (create-graph-imgs graphs #:rank-node-lst rank-node-lst #:graph-type 'cfg #:cpu-cores cpu-cores)])
                                                    (vector-set! res 0 first-img)
                                                    res
                                                    )
