@@ -1,4 +1,8 @@
-#lang fsm
+#lang racket
+(require "viz-ctm.rkt"
+         "../../../fsm-core/interface.rkt"
+         rackunit)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; tms
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -435,4 +439,6 @@
                     4
                     FBL
                     shiftr
-                    FBR)) 
+                    FBR))
+
+(ctm-viz COPY COPYL '(@ _ a a a a a a a a a a a a a a _) 16)
