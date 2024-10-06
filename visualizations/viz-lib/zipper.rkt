@@ -9,25 +9,31 @@
 ;; (listof Any) (listof Any) (listof Any) -> zipper
 (struct zipper (processed current unprocessed idx) #:transparent)
 
+(define (zipper-empty? zip) (and (empty? (zipper-current zip))
+                                 (empty? (zipper-processed zip))
+                                 (empty? (zipper-unprocessed zip))))
+
 ;; zipper -> zipper
 ;; Moves the cursor to the next item within the original input list
-(define (zipper-next zip) (struct-copy zipper zip
-                                       [processed (cons (zipper-current zip) (zipper-processed zip))]
-                                       [current (first (zipper-unprocessed zip))]
-                                       [unprocessed (rest (zipper-unprocessed zip))]
-                                       [idx (add1 (zipper-idx zip))]
-                                       )
-  )
+(define (zipper-next zip) (if (zipper-empty? zip)
+                              zip
+                              (struct-copy zipper zip
+                                           [processed (cons (zipper-current zip) (zipper-processed zip))]
+                                           [current (first (zipper-unprocessed zip))]
+                                           [unprocessed (rest (zipper-unprocessed zip))]
+                                           [idx (add1 (zipper-idx zip))]
+                                           )))
 
 ;; zipper -> zipper
 ;; Moves the cursor to the previous item within the original input list
-(define (zipper-prev zip) (struct-copy zipper zip
-                                       [processed (rest (zipper-processed zip))]
-                                       [current (first (zipper-processed zip))]
-                                       [unprocessed (cons (zipper-current zip) (zipper-unprocessed zip))]
-                                       [idx (sub1 (zipper-idx zip))]
-                                       )
-  )
+(define (zipper-prev zip) (if (zipper-empty? zip)
+                              zip
+                              (struct-copy zipper zip
+                                           [processed (rest (zipper-processed zip))]
+                                           [current (first (zipper-processed zip))]
+                                           [unprocessed (cons (zipper-current zip) (zipper-unprocessed zip))]
+                                           [idx (sub1 (zipper-idx zip))]
+                                           )))
 
 ;; zipper Any -> zipper
 ;; Updates the value of whatever was previously in this position of the list with val
@@ -38,25 +44,27 @@
 
 ;; zipper -> zipper
 ;; Jumps to the beginning of the original input list
-(define (zipper-to-begin zip) (struct-copy zipper zip
-                                           [processed '()]
-                                           [current (last (zipper-processed zip))]
-                                           [unprocessed (append (rest (reverse (zipper-processed zip))) (list (zipper-current zip)) (zipper-unprocessed zip))]
-                                           [idx 0]
-                                           )
-  )
+(define (zipper-to-begin zip) (if (zipper-empty? zip)
+                                  zip
+                                  (struct-copy zipper zip
+                                               [processed '()]
+                                               [current (last (zipper-processed zip))]
+                                               [unprocessed (append (rest (reverse (zipper-processed zip))) (list (zipper-current zip)) (zipper-unprocessed zip))]
+                                               [idx 0]
+                                               )))
 
 ;; zipper -> zipper
 ;; Jumps to the end of the original input list
-(define (zipper-to-end zip) (let ([new-processed (append (rest (reverse (zipper-unprocessed zip))) (list (zipper-current zip)) (zipper-processed zip))])
-                              (struct-copy zipper zip
-                                           [processed new-processed]
-                                           [current (last (zipper-unprocessed zip))]
-                                           [unprocessed '()]
-                                           [idx (length new-processed)]
-                                           )
-                              )
-  )
+(define (zipper-to-end zip) (if (zipper-empty? zip)
+                                zip
+                                (let ([new-processed (append (rest (reverse (zipper-unprocessed zip))) (list (zipper-current zip)) (zipper-processed zip))])
+                                  (struct-copy zipper zip
+                                               [processed new-processed]
+                                               [current (last (zipper-unprocessed zip))]
+                                               [unprocessed '()]
+                                               [idx (length new-processed)]
+                                               )
+                                  )))
 
 ;; zipper -> zipper
 ;; Jumps to specific element in zipper
@@ -85,7 +93,10 @@
 
 ;; (listof Any) -> zipper
 ;; Converts a list into a zipper
-(define (list->zipper lst) (zipper '() (first lst) (rest lst) 0))
+(define (list->zipper lst) (if (empty? lst)
+                               (zipper '() '() '() 0)
+                               (zipper '() (first lst) (rest lst) 0)
+                               ))
 
 ;; zipper -> (listof Any)
 ;; Converts a zipper into a list
