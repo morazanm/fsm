@@ -1,6 +1,7 @@
 #lang racket
 (require "../../fsm-core/interface.rkt"
-         rackunit)
+         rackunit
+         "viz-ctm.rkt")
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; tms
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

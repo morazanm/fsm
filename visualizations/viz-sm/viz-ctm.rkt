@@ -949,7 +949,13 @@
                                             (text (format "~a = ~a" (second var)(third var)) 20 'black))) tmconf-clean)))
                                     
          (lographs (create-graphics loedges lonodes comp-edges))
-         (tapes (imsg-struct (list->zipper (create-tape tmconfigs)) (list->zipper varimgs)))
+         (tapes (imsg-struct (list->zipper (drop-right (create-tape tmconfigs) 1)) (list->zipper (drop-right varimgs 1))))
+         (test0 (begin
+                  (displayln (format "lographs: ~a" (length lographs)))
+                  (displayln (format "tmconfigs: ~a" (length tmconfigs)))
+                  (displayln (format "varimgs: ~a" (length varimgs)))
+                  )
+                )
          (lovars (extract-labels comp-edges))
          ]
     (run-viz lographs
