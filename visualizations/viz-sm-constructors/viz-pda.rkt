@@ -775,6 +775,8 @@ pair is the second of the pda rule
 ;;Purpose: Determine if X is in the given list
 (define (member? x lst)
   (ormap (λ (L) (equal? x L)) lst))
+
+
 (struct config-fold-state (config a-word stack lor path limit visited) #:transparent)
 ;;(listof symbols) (listof rules) symbol -> (listof configurations)
 ;;Purpose: Returns all possible configurations from start that consume the given word
@@ -785,18 +787,24 @@ pair is the second of the pda rule
     ;(config a-word stack lor path limit)
     ;(displayln (format "actual lor: ~s" lor))
     (remove-duplicates
-     (let ([res (make-configs (list (config-fold-state
-                                     (first starting-configs)
-                                     a-word
-                                     (third (first starting-configs))
-                                     lor
+     (let* ([new-hash (make-custom-hash
+                       (λ (x y)
+                         (and (equal? (trace-config x) (trace-config y))
+                              (equal? (trace-rules x) (trace-rules y)))))]
+            [res (make-configs (list (config-fold-state
+                                      (trace (first starting-configs) '())
+                                      a-word
+                                      (third (first starting-configs))
+                                      lor
                           
-                                     (list (first starting-configs))
-                                     max-cmps
-                                     (hash (first starting-configs) 1)))
+                                      (list (first starting-configs))
+                                      max-cmps
+                                      (begin
+                                        (dict-set! new-hash (trace (first starting-configs) '()) 1)
+                                        new-hash)))
                               
-                              '()
-                              )])
+                               '()
+                               )])
        
        res)
      )))
@@ -815,8 +823,8 @@ pair is the second of the pda rule
                                          ;(displayln "here")
                                          ;(displayln (format "lor:~s" (config-fold-state-lor config)))
                                          (filter (λ (rule)
-                                                   (and (equal? (first (first rule)) (first (config-fold-state-config config)))
-                                                        (equal? (second (first rule)) (first (second (config-fold-state-config config))))))
+                                                   (and (equal? (first (first rule)) (first (trace-config (config-fold-state-config config))))
+                                                        (equal? (second (first rule)) (first (second (trace-config (config-fold-state-config config)))))))
                                                  (config-fold-state-lor config))
                                          )
                                        )]
@@ -841,20 +849,21 @@ pair is the second of the pda rule
              ;;Purpose: Creates the configurations using the connected-pop-rules and preliminary configurations
              [new-configs (begin
                             ;(displayln (format "prelim-cnfig:~s" prelim-config))
-                            (filter (λ (config0) (not (hash-ref (config-fold-state-visited config) config0 #f)) #;(not (member? config visited)))
+                            (filter (λ (config0) (not (dict-ref (config-fold-state-visited config) config0 #f)) #;(not (member? config visited)))
                                     (map (λ (rule config)
                                            (if (eq? (second (second rule)) EMP)
-                                               config
-                                               (append (list (first config))
+                                               (trace config rule)
+                                               (trace (append (list (first config))
                                                        (list (second config))
-                                                       (list (append (second (second rule)) (third config))))))
+                                                       (list (append (second (second rule)) (third config))))
+                                                      rule)))
                                          connected-pop-rules
                                          prelim-config))
                             )]
              ;;(listof rules)
              ;;Purpose: Holds all rules that consume no input for the given configurations
              [connected-read-E-rules (filter (λ (rule)
-                                               (and (equal? (first (first rule)) (first (config-fold-state-config config)))
+                                               (and (equal? (first (first rule)) (first (trace-config (config-fold-state-config config))))
                                                     (equal? (second (first rule)) EMP)))
                                              (config-fold-state-lor config))]
              ;;(listof rules)
@@ -873,13 +882,14 @@ pair is the second of the pda rule
                                    connected-pop-E-rules)]
              ;;(listof configurations)
              ;;Purpose: Creates the configurations using the connected-pop-rules and preliminary configurations
-             [new-E-configs (filter (λ (config0) (not (hash-ref (config-fold-state-visited config) config0 #f)))
+             [new-E-configs (filter (λ (config0) (not (dict-ref (config-fold-state-visited config) config0 #f)))
                                     (map (λ (rule config)
                                            (if (eq? (second (second rule)) EMP)
-                                               config
-                                               (append (list (first config))
+                                               (trace config '())
+                                               (trace (append (list (first config))
                                                        (list (second config))
-                                                       (list (append (second (second rule)) (third config))))))
+                                                       (list (append (second (second rule)) (third config))))
+                                                      rule)))
                                          connected-pop-E-rules
                                          prelim-E-config))])
         
@@ -889,10 +899,16 @@ pair is the second of the pda rule
               [(and (empty? new-configs) (not (empty? new-E-configs)))
                (make-configs (append (rest configs) (map (lambda (x) (struct-copy config-fold-state config
                                                                                   [config x]
-                                                                                  [stack (third x)]
+                                                                                  [stack (third (trace-config x))]
                                                                                   [path (append (config-fold-state-path config)
                                                                                                 (list x))]
-                                                                                  [visited (foldr (lambda (x visit) (hash-set visit x 1)) (config-fold-state-visited config) new-E-configs)]))
+                                                                                  [visited (foldr (lambda (x r visit)
+                                                                                                    (begin
+                                                                                                      (dict-set! visit (trace x r) 1)
+                                                                                                      visit))
+                                                                                                  (config-fold-state-visited config)
+                                                                                                  connected-pop-E-rules
+                                                                                                  new-E-configs)]))
                                                          new-E-configs))
                              
                              accum
@@ -901,11 +917,18 @@ pair is the second of the pda rule
               [(and (not (empty? new-configs)) (empty? new-E-configs))
                (make-configs (append (rest configs) (map (lambda (x) (struct-copy config-fold-state config
                                                                                   [config x]
-                                                                                  [stack (third x)]
+                                                                                  [stack (third (trace-config x))]
                                                                                   [a-word (rest (config-fold-state-a-word config))]
                                                                                   [path (append (config-fold-state-path config)
                                                                                                 (list x))]
-                                                                                  [visited (foldr (lambda (x visit) (hash-set visit x 1)) (config-fold-state-visited config) new-configs)])) new-configs))
+                                                                                  [visited (foldr (lambda (x r visit)
+                                                                                                    (begin
+                                                                                                      (dict-set! visit (trace x r) 1)
+                                                                                                      visit))
+                                                                                                  (config-fold-state-visited config)
+                                                                                                  connected-pop-rules
+                                                                                                  new-configs)]))
+                                                         new-configs))
                              
                              accum)
                ]
@@ -913,20 +936,30 @@ pair is the second of the pda rule
                (make-configs (append (rest configs)
                                      (map (lambda (x) (struct-copy config-fold-state config
                                                                    [config x]
-                                                                   [stack (third x)]
+                                                                   [stack (third (trace-config x))]
                                                                    [path (append (config-fold-state-path config)
                                                                                  (list x))]
-                                                                   [visited (foldr (lambda (x visit) (hash-set visit x 1)) (config-fold-state-visited config) new-E-configs)])) new-E-configs)
+                                                                   [visited (foldr (lambda (x r visit)
+                                                                                     (begin
+                                                                                                      (dict-set! visit (trace x r) 1)
+                                                                                                      visit))
+                                                                                   (config-fold-state-visited config)
+                                                                                   connected-pop-E-rules
+                                                                                   new-E-configs)]))
+                                          new-E-configs)
                                      (map (lambda (x) (struct-copy config-fold-state config
                                                                    [config x]
-                                                                   [stack (third x)]
+                                                                   [stack (third (trace-config x))]
                                                                    [a-word (rest (config-fold-state-a-word config))]
                                                                    [path (append (config-fold-state-path config)
                                                                                  (list x))]
                                                                    [visited
-                                                                    (foldr (lambda (x visit) (hash-set visit x 1))
+                                                                    (foldr (lambda (x r visit)
+                                                                             (begin
+                                                                                                      (dict-set! visit (trace x r) 1)
+                                                                                                      visit))
                                                                            (config-fold-state-visited config)
-                                    
+                                                                           connected-pop-rules
                                                                            new-configs)]
                                                                    )) new-configs)
                                      )
@@ -975,16 +1008,15 @@ pair is the second of the pda rule
              (empty? configs)) (reverse acc)]
         [(and (empty? acc)
               (not (equal? (second (first (first rules))) EMP)))
-         (let ([res (trace (first configs) '())])
+         (let* ([rle (rule (list EMP EMP EMP) (list EMP EMP))]
+               [res (trace (first configs) rle)])
            (make-trace (rest word) (rest configs) rules (cons res acc)))]
         [(empty? word)
          (let* ([rle (rule (first (first rules)) (second (first rules)))]
-                [res (trace (first configs)
-                            (list rle))])
+                [res (trace (first configs) rle)])
            (make-trace word (rest configs) (rest rules) (cons res acc)))]
         [else (let* ([rle (rule (first (first rules)) (second (first rules)))]
-                     [res (trace (first configs)
-                                 (list rle))])
+                     [res (trace (first configs) rle)])
                 (make-trace (rest word) (rest configs) (rest rules) (cons res acc)))]))
 
 
@@ -1228,7 +1260,7 @@ pair is the second of the pda rule
          ;;Purpose: Extracts the rules from the first of all configurations
          [r-config (if (empty? (building-viz-state-reject-configs a-vs))
                        (building-viz-state-reject-configs a-vs)
-                       (append-map (λ (configs) (trace-rules (first configs)))
+                       (map (λ (configs) (trace-rules (first configs)))
                                    (filter (λ (configs)
                                              (not (empty? configs))) (building-viz-state-reject-configs a-vs))))]
 
@@ -1245,7 +1277,7 @@ pair is the second of the pda rule
          ;;Purpose: Extracts the rules from the first of the accepting computations
          [a-configs (if (empty? (building-viz-state-accept-configs a-vs))
                         (building-viz-state-accept-configs a-vs)
-                        (append-map (λ (configs) (trace-rules (first configs))) (building-viz-state-accept-configs a-vs)))]
+                        (map (λ (configs) (trace-rules (first configs))) (building-viz-state-accept-configs a-vs)))]
          
          ;;(listof rules)
          ;;Purpose: Reconstructs the rules from rule-structs
@@ -1316,7 +1348,8 @@ pair is the second of the pda rule
          (reverse (cons (create-graph-thunk a-vs) acc))]
         [(> (length (building-viz-state-pci a-vs)) (sub1 (building-viz-state-max-cmps a-vs)))
          (reverse (cons (create-graph-thunk a-vs #:cut-off #t) acc))]
-        [(not (ormap (λ (config) (empty? (second (last config))))
+        [(not (ormap (λ (config) (and (empty? (second (trace-config (last config))))
+                                      (empty? (third (trace-config (last config))))))
                      (get-configs (building-viz-state-pci a-vs)
                                   (pda-getrules (building-viz-state-M a-vs))
                                   (pda-getstart (building-viz-state-M a-vs))
@@ -1340,7 +1373,11 @@ pair is the second of the pda rule
                                                                           (map rest (building-viz-state-accept-configs a-vs)))]
                                                   [reject-configs (filter (λ (configs)
                                                                             (not (empty? configs)))
-                                                                          (map rest (building-viz-state-reject-configs a-vs)))])
+                                                                          (map (λ (c)
+                                                                                 (if (empty? c)
+                                                                                     c
+                                                                                     (rest c)))
+                                                                                 (building-viz-state-reject-configs a-vs)))])
                                      (cons next-graph acc)))]))
 
 ;;image-state -> image
@@ -1348,7 +1385,8 @@ pair is the second of the pda rule
 (define (create-draw-informative-message imsg-st)
   (let* (;;boolean
          ;;Purpose: Determines if the pci can be can be fully consumed
-         [completed-config? (ormap (λ (config) (empty? (second (last config))))
+         [completed-config? (ormap (λ (config) (and (empty? (second (trace-config (last config))))
+                                                    (empty? (third (trace-config (last config))))))
                                    (get-configs (imsg-state-pci imsg-st)
                                                 (pda-getrules (imsg-state-M imsg-st))
                                                 (pda-getstart (imsg-state-M imsg-st))
@@ -2105,12 +2143,17 @@ pair is the second of the pda rule
       (error "The given machine must be a pda.")
       (let* ([new-M (if add-dead (make-new-M M) M)]
              [dead-state (if add-dead (last (pda-getstates new-M)) 'no-dead)]
-             [configs (get-configs a-word (pda-getrules new-M) (pda-getstart new-M) max-cmps)]
+             [configs (map rest (get-configs a-word (pda-getrules new-M) (pda-getstart new-M) max-cmps))]
+             [test-1 (displayln (format "accepting cmps: ~a" configs))]
+             [rc (map (λ (c) (map trace-config c)) configs)]
+             [test- (displayln "")]
+             [test-2 (displayln (format "accepting cmps: ~a" rc))]
+             [rtc (map (λ (c) (cons (list (pda-getstart new-M) (list a-word) '()) c)) rc)]
              [accept-config (filter (λ (config)
                                       (and (member? (first (last config)) (pda-getfinals new-M))
                                            (empty? (second (last config)))
                                            (empty? (third (last config)))))
-                                    configs)]
+                                    rtc)]
              [accept-rules (map (λ (configs)
                                   (attach-rules->configs configs a-word (pda-getrules new-M) '()))
                                 accept-config)]
@@ -2131,12 +2174,12 @@ pair is the second of the pda rule
              
              [reject-configs (filter (λ (config)
                                        (not (member? config accept-config)))
-                                     configs)]
+                                     rtc)]
              [reject-rules (map (λ (config)
                                   (attach-rules->configs config a-word (pda-getrules new-M) '()))
                                 reject-configs)]
              [rejecting-configs (map (λ (configs rules)
-                                       (make-acc-trace a-word configs rules '()))
+                                       (make-trace a-word configs rules '()))
                                      reject-configs
                                      reject-rules)]
              [cut-reject-configs (if (> (length a-word) max-cmps)
@@ -2161,7 +2204,7 @@ pair is the second of the pda rule
                                        ))]
              [building-state (building-viz-state a-word
                                                  '()
-                                                 configs
+                                                 rtc
                                                  stack
                                                  accept-cmps
                                                  reject-cmps
@@ -2176,7 +2219,7 @@ pair is the second of the pda rule
                                  (length (second (first con))))
                                (return-brk-inv-configs
                                 (get-inv-config-results
-                                 (make-inv-configs a-word configs)
+                                 (make-inv-configs a-word rtc)
                                  invs)
                                 a-word))])
         ;;ANCHOR
