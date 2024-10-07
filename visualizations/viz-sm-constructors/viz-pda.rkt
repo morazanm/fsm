@@ -2100,15 +2100,32 @@ pair is the second of the pda rule
   (let ([max-len (apply max (map length traces))])
     (map (lambda (x) (extend-lst x max-len)) traces)))
 
+(define (until-last-empty traces acc)
+  (if (rule-empty? (first traces))
+      (until-last-empty (rest traces) (add1 acc))
+      (lambda (x) (list-ref x acc))))
+
+(define (until-last-empty-idx traces acc)
+  (if (rule-empty? (first traces))
+      (until-last-empty-idx (rest traces) (add1 acc))
+      acc))
 (define (find-num-comps traces)
   (define max-len (apply max (map length traces)))
-  (define (find-num-comps-helper traces curr-len)
-    (if (= max-len curr-len)
+  (define (find-num-comps-helper traces)
+    (if (ormap empty? traces)
         '()
-        (cons (length (coallesce (map (lambda (x) (list-ref x curr-len)) traces))) (find-num-comps-helper traces (add1 curr-len)))
+        (cons (length (coallesce (map (lambda (x) (if (rule-empty? (trace-rule (first traces)))
+                                                      (until-last-empty (rest traces) 0)
+                                                      first)) #;(lambda (x) (list-ref x curr-len)) traces)))
+              (find-num-comps-helper (map (lambda (x) (if (rule-empty? (trace-rule (first traces)))
+                                                          (lambda (x) (drop x (until-last-empty-idx (rest x) 1)))
+                                                          rest
+                                                          ))
+                                          traces)
+                                          ))
         )
     )
- (find-num-comps-helper (form-traces traces) 0))
+ (find-num-comps-helper (form-traces traces)))
                                  
 
 (define (coallesce traces)
@@ -2126,6 +2143,7 @@ pair is the second of the pda rule
         (if (or (empty? (first traces))
                 (dict-ref visited (first traces) #f))
             (coallesce-helper (rest traces))
+            
             (begin
               (dict-set! visited (first traces) 1)
               (cons (first traces) (coallesce-helper (rest traces)))
