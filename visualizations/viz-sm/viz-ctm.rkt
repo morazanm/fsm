@@ -965,7 +965,7 @@
              DEFAULT-ZOOM-CAP
              DEFAULT-ZOOM-FLOOR
              (informative-messages draw-imsg
-                                   (imsg-struct (list->zipper (create-tape tmconfigs)) (list->zipper varimgs))
+                                   (imsg-struct (list->zipper (drop-right (create-tape tmconfigs) 1)) (list->zipper (drop-right varimgs 1)))
                                    (bounding-limits 0 0 0 0)
                                    )
              (instructions-graphic
