@@ -153,7 +153,8 @@
                     0
                     imsg-struct
                     instructions-struct)
-         draw-world process-key process-tick name)))
+         draw-world process-key process-tick name)
+    (void)))
 
 
 
