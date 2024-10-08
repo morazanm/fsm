@@ -3,8 +3,7 @@
 (require "lib.rkt"
          2htdp/image
          "dot.rkt"
-         future-visualizer
-         future-visualizer/trace)
+         )
 
 (provide (all-defined-out))
 

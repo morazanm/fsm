@@ -989,7 +989,7 @@
    '(a b c d)
    `((S ,ARROW ,EMP) (S ,ARROW AB) (A ,ARROW aSb) (B ,ARROW cBd) (A ,ARROW ,EMP) (B ,ARROW ,EMP))
    'S))
-
+(cfg-viz numb>numa '(b b b b b b a a) 'level-left)
 #;(cfg-viz buggy-numb>numa '(a b a) 'left (list 'S S-INV) (list 'A A-INV))
 ;(cfg-viz testcfg '(a a b b c c c d d d) 'left)
 #;
@@ -1168,7 +1168,7 @@
                        'P))
 #;(test-cfg-viz lang3-grammar '(m o n c n o) 10)
 ;(cfg-viz lang3-grammar '(- op num cm num cp))
-(time (cfg-viz testcfg
+(cfg-viz testcfg
          '(a
            a
            a
@@ -1233,7 +1233,7 @@
            d
            d
            d)
-         'left))
+         'left)
 
 #;'(
     #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 (#(struct:tree a4 ()) #(struct:tree S4 (#(struct:tree ε0 ()))) #(struct:tree b4 ()))) #(struct:tree B4 (#(struct:tree ε1 ()))))) #(struct:tree b3 ()))) #(struct:tree B3 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()))) #(struct:tree B2 (#(struct:tree ε3 ()))))) #(struct:tree b1 ()))) #(struct:tree B1 (#(struct:tree ε4 ()))))) #(struct:tree b0 ()))) #(struct:tree B0 (#(struct:tree c0 ()) #(struct:tree B5 (#(struct:tree c1 ()) #(struct:tree B6 (#(struct:tree c2 ()) #(struct:tree B7 (#(struct:tree ε5 ()))) #(struct:tree d2 ()))) #(struct:tree d1 ()))) #(struct:tree d0 ())))))

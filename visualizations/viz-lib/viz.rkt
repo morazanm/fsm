@@ -88,11 +88,11 @@
                                          'font "Sans")))))
 
 ;; vst --> void
-(define (viz a-vs draw-world process-key process-tick a-name thrd-box)
+(define (viz a-vs draw-world process-key process-tick a-name)
   (begin
     (collect-garbage 'major)
-    (thread-wait (vector-ref thrd-box 0))
-    #;(big-bang
+    #;(thread-wait (vector-ref thrd-box 0))
+    (big-bang
         a-vs                
       [on-draw draw-world]
       [on-key process-key]
