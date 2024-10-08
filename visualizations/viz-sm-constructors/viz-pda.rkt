@@ -910,7 +910,6 @@ pair is the second of the pda rule
                                                                                                   connected-pop-E-rules
                                                                                                   new-E-configs)]))
                                                          new-E-configs))
-                             
                              accum
                              )
                ]
@@ -1009,7 +1008,7 @@ pair is the second of the pda rule
         [(and (empty? acc)
               (not (equal? (second (first (first rules))) EMP)))
          (let* ([rle (rule (list EMP EMP EMP) (list EMP EMP))]
-               [res (trace (first configs) rle)])
+                [res (trace (first configs) rle)])
            (make-trace (rest word) (rest configs) rules (cons res acc)))]
         [(empty? word)
          (let* ([rle (rule (first (first rules)) (second (first rules)))]
@@ -1146,7 +1145,8 @@ pair is the second of the pda rule
                              (equal? (third rule) dead)))))
              lor)))
 
-
+(define (rule-empty? a-rule)
+  (equal? (second (rule-triple a-rule)) EMP))
 
 ;;(listof symbols) (listof configurations) boolean -> (listof configurations)
 ;;Purpose: Returns the configurations have the given word as unconsumed input
@@ -2101,31 +2101,42 @@ pair is the second of the pda rule
     (map (lambda (x) (extend-lst x max-len)) traces)))
 
 (define (until-last-empty traces acc)
-  (if (rule-empty? (first traces))
+  (if (empty? traces)
+      (lambda (x) (list-ref x acc))
+      (if (rule-empty? (trace-rules (first traces)))
       (until-last-empty (rest traces) (add1 acc))
-      (lambda (x) (list-ref x acc))))
+      (lambda (x) (list-ref x acc)))
+      ))
 
 (define (until-last-empty-idx traces acc)
-  (if (rule-empty? (first traces))
+  (if (empty? traces)
+      acc
+      (if (rule-empty? (trace-rules (first traces)))
       (until-last-empty-idx (rest traces) (add1 acc))
-      acc))
+      acc)))
 (define (find-num-comps traces)
   (define max-len (apply max (map length traces)))
   (define (find-num-comps-helper traces)
-    (if (ormap empty? traces)
+    (if (andmap empty? traces)
         '()
-        (cons (length (coallesce (map (lambda (x) (if (rule-empty? (trace-rule (first traces)))
-                                                      (until-last-empty (rest traces) 0)
-                                                      first)) #;(lambda (x) (list-ref x curr-len)) traces)))
-              (find-num-comps-helper (map (lambda (x) (if (rule-empty? (trace-rule (first traces)))
-                                                          (lambda (x) (drop x (until-last-empty-idx (rest x) 1)))
-                                                          rest
+        (cons (length (coallesce (map (lambda (x) (if (empty? x)
+                                                      '()
+                                                      (if (rule-empty? (trace-rules (first x)))
+                                                      ((until-last-empty (rest x) 0) x)
+                                                      (first x)))
+                                                      ) #;(lambda (x) (list-ref x curr-len)) traces)))
+              (find-num-comps-helper (map (lambda (x) (if (empty? x)
+                                                          '()
+                                                          (if (rule-empty? (trace-rules (first x)))
+                                                          ((lambda (x) (drop x (until-last-empty-idx (rest x) 1))) x)
+                                                          (rest x)
+                                                          )
                                                           ))
                                           traces)
                                           ))
         )
     )
- (find-num-comps-helper (form-traces traces)))
+ (find-num-comps-helper traces #;(form-traces traces)))
                                  
 
 (define (coallesce traces)
@@ -2156,16 +2167,16 @@ pair is the second of the pda rule
 ;;pda word [boolean] [natnum] . -> (void) Throws error
 ;;Purpose: Visualizes the given ndfa processing the given word
 ;;Assumption: The given machine is a ndfa or dfa
-(define (pda-viz M a-word #:add-dead [add-dead #f] #:max-cmps [max-cmps 100] . invs)
+(define (pda-viz M a-word #:add-dead [add-dead #f] #:max-cmps [max-cmps 20] . invs)
   (if (not (equal? (M 'whatami) 'pda))
       (error "The given machine must be a pda.")
       (let* ([new-M (if add-dead (make-new-M M) M)]
              [dead-state (if add-dead (last (pda-getstates new-M)) 'no-dead)]
              [configs (map rest (get-configs a-word (pda-getrules new-M) (pda-getstart new-M) max-cmps))]
-             [test-1 (displayln (format "accepting cmps: ~a" configs))]
+             ;[test-1 (displayln (format "accepting cmps: ~a" configs))]
              [rc (map (λ (c) (map trace-config c)) configs)]
-             [test- (displayln "")]
-             [test-2 (displayln (format "accepting cmps: ~a" rc))]
+             ;[test- (displayln "")]
+             ;[test-2 (displayln (format "accepting cmps: ~a" rc))]
              [rtc (map (λ (c) (cons (list (pda-getstart new-M) (list a-word) '()) c)) rc)]
              [accept-config (filter (λ (config)
                                       (and (member? (first (last config)) (pda-getfinals new-M))
@@ -2456,7 +2467,7 @@ pair is the second of the pda rule
                                               ((S ,EMP ,EMP) (A ,EMP))
                                               ((A b (a)) (A ,EMP))
                                               ((A ,EMP (a)) (A ,EMP)))))
-(pda-viz more-a-than-b '(a a a a a b b))
+#;(pda-viz more-a-than-b '(a a a a a b b))
 #;(pda-viz a* '(a a a a a)
            (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (= (length w) 3)) (empty? s)))))
 #;(pda-viz aa* '(a a)
@@ -2492,19 +2503,6 @@ pair is the second of the pda rule
                                                 ((S ,EMP ,EMP) (A ,EMP))
                                                 ((A b (a)) (A ,EMP))
                                                 ((A ,EMP (a)) (A ,EMP)))))
-#;(
-   ((S (a a a a a b b) ()) (A (a a a a a b b) ()))
-   ((S (a a a a a b b) ()) (S (a a a a b b) (a)) (A (a a a a b b) (a)) (A (a a a a b b) ()))
-   ((S (a a a a a b b) ()) (S (a a a a b b) (a)) (S (a a a b b) (a a)) (A (a a a b b) (a a)) (A (a a a b b) (a)) (A (a a a b b) ()))
-   ((S (a a a a a b b) ()) (S (a a a a b b) (a)) (S (a a a b b) (a a)) (S (a a b b) (a a a)) (A (a a b b) (a a a)) (A (a a b b) (a a)) (A (a a b b) (a)) (A (a a b b) ()))
-   ((S (a a a a a b b) ()) (S (a a a a b b) (a)) (S (a a a b b) (a a)) (S (a a b b) (a a a)) (S (a b b) (a a a a)) (S (b b) (a a a a a)) (A (b b) (a a a a a)) (A (b) (a a a a)) (A () (a a a)))
-   ((S (a a a a a b b) ()) (S (a a a a b b) (a)) (S (a a a b b) (a a)) (S (a a b b) (a a a)) (S (a b b) (a a a a)) (A (a b b) (a a a a)) (A (a b b) (a a a)) (A (a b b) (a a)) (A (a b b) (a)) (A (a b b) ()))
-   ((S (a a a a a b b) ()) (S (a a a a b b) (a)) (S (a a a b b) (a a)) (S (a a b b) (a a a)) (S (a b b) (a a a a)) (S (b b) (a a a a a)) (A (b b) (a a a a a)) (A (b b) (a a a a)) (A (b) (a a a)) (A () (a a)))
-   ((S (a a a a a b b) ()) (S (a a a a b b) (a)) (S (a a a b b) (a a)) (S (a a b b) (a a a)) (S (a b b) (a a a a)) (S (b b) (a a a a a)) (A (b b) (a a a a a)) (A (b b) (a a a a)) (A (b b) (a a a)) (A (b) (a a)) (A () (a)))
-   ((S (a a a a a b b) ()) (S (a a a a b b) (a)) (S (a a a b b) (a a)) (S (a a b b) (a a a)) (S (a b b) (a a a a)) (S (b b) (a a a a a)) (A (b b) (a a a a a)) (A (b b) (a a a a)) (A (b b) (a a a)) (A (b b) (a a)) (A (b b) (a)) (A (b b) ()))
-   ((S (a a a a a b b) ()) (S (a a a a b b) (a)) (S (a a a b b) (a a)) (S (a a b b) (a a a)) (S (a b b) (a a a a)) (S (b b) (a a a a a)) (A (b b) (a a a a a)) (A (b b) (a a a a)) (A (b b) (a a a)) (A (b b) (a a)) (A (b b) (a)) (A (b) ()))
-   ((S (a a a a a b b) ()) (S (a a a a b b) (a)) (S (a a a b b) (a a)) (S (a a b b) (a a a)) (S (a b b) (a a a a)) (S (b b) (a a a a a)) (A (b b) (a a a a a)) (A (b b) (a a a a)) (A (b b) (a a a)) (A (b b) (a a)) (A (b) (a)) (A () ()))
-   )
 (define (s-inv wrd stck)
   (and (empty? wrd)
        (empty? stck)))
@@ -2514,14 +2512,15 @@ pair is the second of the pda rule
       (not (= (length (filter (λ (w) (equal? w 'b)) wrd)) 2))))
 
         
-#;'((#(struct:trace (S (a a a a a b b) ()) ()) #(struct:trace (S (a a a a b b) (a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (a a a b b) (a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (a a b b) (a a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (a b b) (a a a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (b b) (a a a a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (A (b b) (a a a a a)) (#(struct:rule (S ε ε) (A ε)))) #(struct:trace (A (b b) (a a a a)) (#(struct:rule (A ε (a)) (A ε)))) #(struct:trace (A (b b) (a a a)) (#(struct:rule (A ε (a)) (A ε)))) #(struct:trace (A (b b) (a a)) (#(struct:rule (A ε (a)) (A ε)))) #(struct:trace (A (b) (a)) (#(struct:rule (A b (a)) (A ε)))) #(struct:trace (A () ()) (#(struct:rule (A b (a)) (A ε)))))
-  (#(struct:trace (S (a a a a a b b) ()) ()) #(struct:trace (S (a a a a b b) (a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (a a a b b) (a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (a a b b) (a a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (a b b) (a a a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (b b) (a a a a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (A (b b) (a a a a a)) (#(struct:rule (S ε ε) (A ε)))) #(struct:trace (A (b b) (a a a a)) (#(struct:rule (A ε (a)) (A ε)))) #(struct:trace (A (b b) (a a a)) (#(struct:rule (A ε (a)) (A ε)))) #(struct:trace (A (b) (a a)) (#(struct:rule (A b (a)) (A ε)))) #(struct:trace (A (b) (a)) (#(struct:rule (A ε (a)) (A ε)))) #(struct:trace (A () ()) (#(struct:rule (A b (a)) (A ε)))))
-  (#(struct:trace (S (a a a a a b b) ()) ()) #(struct:trace (S (a a a a b b) (a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (a a a b b) (a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (a a b b) (a a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (a b b) (a a a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (b b) (a a a a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (A (b b) (a a a a a)) (#(struct:rule (S ε ε) (A ε)))) #(struct:trace (A (b b) (a a a a)) (#(struct:rule (A ε (a)) (A ε)))) #(struct:trace (A (b b) (a a a)) (#(struct:rule (A ε (a)) (A ε)))) #(struct:trace (A (b) (a a)) (#(struct:rule (A b (a)) (A ε)))) #(struct:trace (A () (a)) (#(struct:rule (A b (a)) (A ε)))) #(struct:trace (A () ()) (#(struct:rule (A ε (a)) (A ε)))))
-  (#(struct:trace (S (a a a a a b b) ()) ()) #(struct:trace (S (a a a a b b) (a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (a a a b b) (a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (a a b b) (a a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (a b b) (a a a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (b b) (a a a a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (A (b b) (a a a a a)) (#(struct:rule (S ε ε) (A ε)))) #(struct:trace (A (b b) (a a a a)) (#(struct:rule (A ε (a)) (A ε)))) #(struct:trace (A (b) (a a a)) (#(struct:rule (A b (a)) (A ε)))) #(struct:trace (A (b) (a a)) (#(struct:rule (A ε (a)) (A ε)))) #(struct:trace (A (b) (a)) (#(struct:rule (A ε (a)) (A ε)))) #(struct:trace (A () ()) (#(struct:rule (A b (a)) (A ε)))))
-  (#(struct:trace (S (a a a a a b b) ()) ()) #(struct:trace (S (a a a a b b) (a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (a a a b b) (a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (a a b b) (a a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (a b b) (a a a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (b b) (a a a a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (A (b b) (a a a a a)) (#(struct:rule (S ε ε) (A ε)))) #(struct:trace (A (b b) (a a a a)) (#(struct:rule (A ε (a)) (A ε)))) #(struct:trace (A (b) (a a a)) (#(struct:rule (A b (a)) (A ε)))) #(struct:trace (A (b) (a a)) (#(struct:rule (A ε (a)) (A ε)))) #(struct:trace (A () (a)) (#(struct:rule (A b (a)) (A ε)))) #(struct:trace (A () ()) (#(struct:rule (A ε (a)) (A ε)))))
-  (#(struct:trace (S (a a a a a b b) ()) ()) #(struct:trace (S (a a a a b b) (a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (a a a b b) (a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (a a b b) (a a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (a b b) (a a a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (b b) (a a a a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (A (b b) (a a a a a)) (#(struct:rule (S ε ε) (A ε)))) #(struct:trace (A (b b) (a a a a)) (#(struct:rule (A ε (a)) (A ε)))) #(struct:trace (A (b) (a a a)) (#(struct:rule (A b (a)) (A ε)))) #(struct:trace (A () (a a)) (#(struct:rule (A b (a)) (A ε)))) #(struct:trace (A () (a)) (#(struct:rule (A ε (a)) (A ε)))) #(struct:trace (A () ()) (#(struct:rule (A ε (a)) (A ε)))))
-  (#(struct:trace (S (a a a a a b b) ()) ()) #(struct:trace (S (a a a a b b) (a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (a a a b b) (a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (a a b b) (a a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (a b b) (a a a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (b b) (a a a a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (A (b b) (a a a a a)) (#(struct:rule (S ε ε) (A ε)))) #(struct:trace (A (b) (a a a a)) (#(struct:rule (A b (a)) (A ε)))) #(struct:trace (A (b) (a a a)) (#(struct:rule (A ε (a)) (A ε)))) #(struct:trace (A (b) (a a)) (#(struct:rule (A ε (a)) (A ε)))) #(struct:trace (A (b) (a)) (#(struct:rule (A ε (a)) (A ε)))) #(struct:trace (A () ()) (#(struct:rule (A b (a)) (A ε)))))
-  (#(struct:trace (S (a a a a a b b) ()) ()) #(struct:trace (S (a a a a b b) (a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (a a a b b) (a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (a a b b) (a a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (a b b) (a a a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (b b) (a a a a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (A (b b) (a a a a a)) (#(struct:rule (S ε ε) (A ε)))) #(struct:trace (A (b) (a a a a)) (#(struct:rule (A b (a)) (A ε)))) #(struct:trace (A (b) (a a a)) (#(struct:rule (A ε (a)) (A ε)))) #(struct:trace (A (b) (a a)) (#(struct:rule (A ε (a)) (A ε)))) #(struct:trace (A () (a)) (#(struct:rule (A b (a)) (A ε)))) #(struct:trace (A () ()) (#(struct:rule (A ε (a)) (A ε)))))
-  (#(struct:trace (S (a a a a a b b) ()) ()) #(struct:trace (S (a a a a b b) (a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (a a a b b) (a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (a a b b) (a a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (a b b) (a a a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (b b) (a a a a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (A (b b) (a a a a a)) (#(struct:rule (S ε ε) (A ε)))) #(struct:trace (A (b) (a a a a)) (#(struct:rule (A b (a)) (A ε)))) #(struct:trace (A (b) (a a a)) (#(struct:rule (A ε (a)) (A ε)))) #(struct:trace (A () (a a)) (#(struct:rule (A b (a)) (A ε)))) #(struct:trace (A () (a)) (#(struct:rule (A ε (a)) (A ε)))) #(struct:trace (A () ()) (#(struct:rule (A ε (a)) (A ε)))))
-  (#(struct:trace (S (a a a a a b b) ()) ()) #(struct:trace (S (a a a a b b) (a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (a a a b b) (a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (a a b b) (a a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (a b b) (a a a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (S (b b) (a a a a a)) (#(struct:rule (S a ε) (S (a))))) #(struct:trace (A (b b) (a a a a a)) (#(struct:rule (S ε ε) (A ε)))) #(struct:trace (A (b) (a a a a)) (#(struct:rule (A b (a)) (A ε)))) #(struct:trace (A () (a a a)) (#(struct:rule (A b (a)) (A ε)))) #(struct:trace (A () (a a)) (#(struct:rule (A ε (a)) (A ε)))) #(struct:trace (A () (a)) (#(struct:rule (A ε (a)) (A ε)))) #(struct:trace (A () ()) (#(struct:rule (A ε (a)) (A ε)))))
+#;'(
+  (#(struct:trace (S ((a a a a a b b)) ()) #(struct:rule (ε ε ε) (ε ε))) #(struct:trace (S (a a a a b b) (a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (a a a b b) (a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (a a b b) (a a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (a b b) (a a a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (b b) (a a a a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (A (b b) (a a a a a)) #(struct:rule (S ε ε) (A ε))) #(struct:trace (A (b b) (a a a a)) #(struct:rule (A ε (a)) (A ε))) #(struct:trace (A (b b) (a a a)) #(struct:rule (A ε (a)) (A ε))) #(struct:trace (A (b b) (a a)) #(struct:rule (A ε (a)) (A ε))) #(struct:trace (A (b) (a)) #(struct:rule (A b (a)) (A ε))) #(struct:trace (A () ()) #(struct:rule (A b (a)) (A ε))))
+  (#(struct:trace (S ((a a a a a b b)) ()) #(struct:rule (ε ε ε) (ε ε))) #(struct:trace (S (a a a a b b) (a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (a a a b b) (a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (a a b b) (a a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (a b b) (a a a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (b b) (a a a a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (A (b b) (a a a a a)) #(struct:rule (S ε ε) (A ε))) #(struct:trace (A (b b) (a a a a)) #(struct:rule (A ε (a)) (A ε))) #(struct:trace (A (b b) (a a a)) #(struct:rule (A ε (a)) (A ε))) #(struct:trace (A (b) (a a)) #(struct:rule (A b (a)) (A ε))) #(struct:trace (A (b) (a)) #(struct:rule (A ε (a)) (A ε))) #(struct:trace (A () ()) #(struct:rule (A b (a)) (A ε))))
+  (#(struct:trace (S ((a a a a a b b)) ()) #(struct:rule (ε ε ε) (ε ε))) #(struct:trace (S (a a a a b b) (a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (a a a b b) (a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (a a b b) (a a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (a b b) (a a a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (b b) (a a a a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (A (b b) (a a a a a)) #(struct:rule (S ε ε) (A ε))) #(struct:trace (A (b b) (a a a a)) #(struct:rule (A ε (a)) (A ε))) #(struct:trace (A (b b) (a a a)) #(struct:rule (A ε (a)) (A ε))) #(struct:trace (A (b) (a a)) #(struct:rule (A b (a)) (A ε))) #(struct:trace (A () (a)) #(struct:rule (A b (a)) (A ε))) #(struct:trace (A () ()) #(struct:rule (A ε (a)) (A ε))))
+  (#(struct:trace (S ((a a a a a b b)) ()) #(struct:rule (ε ε ε) (ε ε))) #(struct:trace (S (a a a a b b) (a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (a a a b b) (a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (a a b b) (a a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (a b b) (a a a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (b b) (a a a a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (A (b b) (a a a a a)) #(struct:rule (S ε ε) (A ε))) #(struct:trace (A (b b) (a a a a)) #(struct:rule (A ε (a)) (A ε))) #(struct:trace (A (b) (a a a)) #(struct:rule (A b (a)) (A ε))) #(struct:trace (A (b) (a a)) #(struct:rule (A ε (a)) (A ε))) #(struct:trace (A (b) (a)) #(struct:rule (A ε (a)) (A ε))) #(struct:trace (A () ()) #(struct:rule (A b (a)) (A ε))))
+  (#(struct:trace (S ((a a a a a b b)) ()) #(struct:rule (ε ε ε) (ε ε))) #(struct:trace (S (a a a a b b) (a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (a a a b b) (a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (a a b b) (a a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (a b b) (a a a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (b b) (a a a a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (A (b b) (a a a a a)) #(struct:rule (S ε ε) (A ε))) #(struct:trace (A (b b) (a a a a)) #(struct:rule (A ε (a)) (A ε))) #(struct:trace (A (b) (a a a)) #(struct:rule (A b (a)) (A ε))) #(struct:trace (A (b) (a a)) #(struct:rule (A ε (a)) (A ε))) #(struct:trace (A () (a)) #(struct:rule (A b (a)) (A ε))) #(struct:trace (A () ()) #(struct:rule (A ε (a)) (A ε))))
+  (#(struct:trace (S ((a a a a a b b)) ()) #(struct:rule (ε ε ε) (ε ε))) #(struct:trace (S (a a a a b b) (a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (a a a b b) (a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (a a b b) (a a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (a b b) (a a a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (b b) (a a a a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (A (b b) (a a a a a)) #(struct:rule (S ε ε) (A ε))) #(struct:trace (A (b b) (a a a a)) #(struct:rule (A ε (a)) (A ε))) #(struct:trace (A (b) (a a a)) #(struct:rule (A b (a)) (A ε))) #(struct:trace (A () (a a)) #(struct:rule (A b (a)) (A ε))) #(struct:trace (A () (a)) #(struct:rule (A ε (a)) (A ε))) #(struct:trace (A () ()) #(struct:rule (A ε (a)) (A ε))))
+  (#(struct:trace (S ((a a a a a b b)) ()) #(struct:rule (ε ε ε) (ε ε))) #(struct:trace (S (a a a a b b) (a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (a a a b b) (a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (a a b b) (a a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (a b b) (a a a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (b b) (a a a a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (A (b b) (a a a a a)) #(struct:rule (S ε ε) (A ε))) #(struct:trace (A (b) (a a a a)) #(struct:rule (A b (a)) (A ε))) #(struct:trace (A (b) (a a a)) #(struct:rule (A ε (a)) (A ε))) #(struct:trace (A (b) (a a)) #(struct:rule (A ε (a)) (A ε))) #(struct:trace (A (b) (a)) #(struct:rule (A ε (a)) (A ε))) #(struct:trace (A () ()) #(struct:rule (A b (a)) (A ε))))
+  (#(struct:trace (S ((a a a a a b b)) ()) #(struct:rule (ε ε ε) (ε ε))) #(struct:trace (S (a a a a b b) (a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (a a a b b) (a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (a a b b) (a a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (a b b) (a a a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (b b) (a a a a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (A (b b) (a a a a a)) #(struct:rule (S ε ε) (A ε))) #(struct:trace (A (b) (a a a a)) #(struct:rule (A b (a)) (A ε))) #(struct:trace (A (b) (a a a)) #(struct:rule (A ε (a)) (A ε))) #(struct:trace (A (b) (a a)) #(struct:rule (A ε (a)) (A ε))) #(struct:trace (A () (a)) #(struct:rule (A b (a)) (A ε))) #(struct:trace (A () ()) #(struct:rule (A ε (a)) (A ε))))
+  (#(struct:trace (S ((a a a a a b b)) ()) #(struct:rule (ε ε ε) (ε ε))) #(struct:trace (S (a a a a b b) (a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (a a a b b) (a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (a a b b) (a a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (a b b) (a a a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (b b) (a a a a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (A (b b) (a a a a a)) #(struct:rule (S ε ε) (A ε))) #(struct:trace (A (b) (a a a a)) #(struct:rule (A b (a)) (A ε))) #(struct:trace (A (b) (a a a)) #(struct:rule (A ε (a)) (A ε))) #(struct:trace (A () (a a)) #(struct:rule (A b (a)) (A ε))) #(struct:trace (A () (a)) #(struct:rule (A ε (a)) (A ε))) #(struct:trace (A () ()) #(struct:rule (A ε (a)) (A ε))))
+  (#(struct:trace (S ((a a a a a b b)) ()) #(struct:rule (ε ε ε) (ε ε))) #(struct:trace (S (a a a a b b) (a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (a a a b b) (a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (a a b b) (a a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (a b b) (a a a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (S (b b) (a a a a a)) #(struct:rule (S a ε) (S (a)))) #(struct:trace (A (b b) (a a a a a)) #(struct:rule (S ε ε) (A ε))) #(struct:trace (A (b) (a a a a)) #(struct:rule (A b (a)) (A ε))) #(struct:trace (A () (a a a)) #(struct:rule (A b (a)) (A ε))) #(struct:trace (A () (a a)) #(struct:rule (A ε (a)) (A ε))) #(struct:trace (A () (a)) #(struct:rule (A ε (a)) (A ε))) #(struct:trace (A () ()) #(struct:rule (A ε (a)) (A ε))))
   )
