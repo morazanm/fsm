@@ -1026,7 +1026,7 @@ pair is the second of the pda rule
         (let ([new-config (list (first (config-state-config a-config))
                                 (second (config-state-config a-config))
                                 (append (second (rule-pair a-rule))
-                                        (list (third (config-state-config a-config)))))])
+                                        (third (config-state-config a-config))))])
           (struct-copy config-state a-config
                        [config new-config]
                        [stack (append (second (rule-pair a-rule)) (list (config-state-stack a-config)))]
@@ -1337,7 +1337,7 @@ pair is the second of the pda rule
 (define (last-fully-consumed a-word M max-cmps)
   (cond [(empty? a-word) '()]
         [(not (ormap (λ (config) (empty? (second (last config))))
-                     (get-configs a-word (sm-rules M) (sm-start M) max-cmps (sm-finals M))))
+                     (map config-state-path (get-configs a-word (sm-rules M) (sm-start M) max-cmps (sm-finals M)))))
          (last-fully-consumed (take a-word (sub1 (length a-word))) M max-cmps)]
         [a-word]))
 
@@ -1550,7 +1550,7 @@ pair is the second of the pda rule
                           ;(display (format "curr-a-config ~s \n" curr-a-config))
                           ;(display (format "current-a-rules ~s \n \n" current-a-rules))
                           ;(display (format "curr-r-config ~s \n" curr-r-config))
-                          ;(display (format "current-rules ~s \n \n \n" current-rules))
+                          (display (format "current-rules ~s \n \n \n" current-rules))
                           ;(display (format "current-config ~s \n" current-config))
                           ;(display (format "invs ~s \n" (building-viz-state-inv a-vs)))
                           ;(display (format "get-invs ~s \n" get-invs))
@@ -1584,13 +1584,12 @@ pair is the second of the pda rule
          (reverse (cons (create-graph-thunk a-vs) acc))]
         [(> (length (building-viz-state-pci a-vs)) (sub1 (building-viz-state-max-cmps a-vs)))
          (reverse (cons (create-graph-thunk a-vs #:cut-off #t) acc))]
-        [(not (ormap (λ (config) (accepting-config? config (sm-finals (building-viz-state-M a-vs))))
+        [(not (ormap (λ (config) (empty? (second (last config))) #;(sm-finals (building-viz-state-M a-vs)))
                      (map config-state-path (get-configs (building-viz-state-pci a-vs)
                                   (sm-rules (building-viz-state-M a-vs))
                                   (sm-start (building-viz-state-M a-vs))
                                   (building-viz-state-max-cmps a-vs)
-                                  (sm-finals (building-viz-state-M a-vs)))
-                          )))
+                                  (sm-finals (building-viz-state-M a-vs))))))
          (reverse (cons (create-graph-thunk a-vs) acc))]
         [else (let ([next-graph (create-graph-thunk a-vs)])
                 (create-graph-thunks (struct-copy building-viz-state
@@ -1619,11 +1618,11 @@ pair is the second of the pda rule
   (let* (;;boolean
          ;;Purpose: Determines if the pci can be can be fully consumed
          [completed-config? (ormap (λ (config) (empty? (second (last config))))
-                                   (get-configs (imsg-state-pci imsg-st)
+                                   (map config-state-path (get-configs (imsg-state-pci imsg-st)
                                                 (sm-rules (imsg-state-M imsg-st))
                                                 (sm-start (imsg-state-M imsg-st))
                                                 (imsg-state-max-cmps imsg-st)
-                                                (sm-finals (imsg-state-M imsg-st))))]
+                                                (sm-finals (imsg-state-M imsg-st)))))]
          
          ;;(listof symbols)
          ;;Purpose: The last word that could be fully consumed by the ndfa
@@ -1804,7 +1803,8 @@ pair is the second of the pda rule
          [completed-config? (ormap (λ (config)
                                      (and (empty? (second (last config)))
                                           (empty? (third (last config)))))
-                                   (get-configs (imsg-state-pci (informative-messages-component-state
+                                   (map config-state-path
+                                        (get-configs (imsg-state-pci (informative-messages-component-state
                                                                  (viz-state-informative-messages a-vs))) 
                                                 (sm-rules (imsg-state-M (informative-messages-component-state
                                                                          (viz-state-informative-messages a-vs))))
@@ -1813,7 +1813,7 @@ pair is the second of the pda rule
                                                 (imsg-state-max-cmps (informative-messages-component-state
                                                                       (viz-state-informative-messages a-vs)))
                                                 (sm-finals (imsg-state-M (informative-messages-component-state
-                                                                         (viz-state-informative-messages a-vs))))))]
+                                                                         (viz-state-informative-messages a-vs)))))))]
          [pci (if (empty? (imsg-state-upci (informative-messages-component-state
                                             (viz-state-informative-messages a-vs))))
                   
@@ -2512,7 +2512,11 @@ pair is the second of the pda rule
         ;reject-configs
         ;reject-rules
         ;rejecting-configs
-        
+        ;accept-cmps
+        ;accept-config
+        ;(list (first config) (second config))
+        ;;(length config)
+        ;reject-cmps
         (run-viz graphs
                  (lambda () (graph->bitmap (first graphs)))
                  (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2))
