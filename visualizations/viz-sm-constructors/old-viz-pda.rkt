@@ -986,16 +986,36 @@ pair is the second of the pda rule
 (define (member? x lst)
   (ormap (λ (L) (equal? x L)) lst))
 
+#|
+
+|#
 (struct config-state (config a-word stack lor path limit visited) #:transparent)
+
+#|
+
+|#
+(struct multi-config-state (config a-word rules stack lor path limit visited) #:transparent)
+
+;;rule -> boolean
+;;Purpose: Determines if the given rules is empty
+;; (a rule is empty when nothing is consumed, pushed, and popped) 
 (define (rule-empty? a-rule)
   (and (equal? (second (rule-triple a-rule)) EMP)
        (equal? (third (rule-triple a-rule)) EMP)
        (equal? (second (rule-pair a-rule)) EMP)))
 
+;;configs -> configs
+;;Purpose: Removes the most recent visited from the config
 (define (remove-visited configs)
   (filter (lambda (x) (not (member? (config-state-config x) (config-state-visited x)))) configs))
 
+;;config rule -> config
+;;Purpose: Applys the given rule to the given config and returns the updated config
+;;ASSUMPTION: The given rule can be applied to the config
 (define (apply-rule a-config a-rule)
+  ;;config -> config
+  ;;Purpose: Applys the read portion of given rule to the given config
+  ;;ASSUMPTION: The given rule can be applied to the config
   (define (apply-read a-config)
     (if (equal? (second (rule-triple a-rule)) EMP)
         (struct-copy config-state a-config
@@ -1007,6 +1027,9 @@ pair is the second of the pda rule
                                    (rest (second (config-state-config a-config)))
                                    (third (config-state-config a-config)))]
                      [a-word (rest (config-state-a-word a-config))])))
+  ;;config -> config
+  ;;Purpose: Applys the pop portion of given rule to the given config
+  ;;ASSUMPTION: The given rule can be applied to the config
   (define (apply-pop a-config)
     (if (equal? (third (rule-triple a-rule)) EMP)
         a-config
@@ -1016,6 +1039,9 @@ pair is the second of the pda rule
                                    (drop (third (config-state-config a-config))
                                          (length (third (rule-triple a-rule)))))]
                      [stack (drop (config-state-stack a-config) (length (third (rule-triple a-rule))))])))
+  ;;config -> config
+  ;;Purpose: Applys the push portion of given rule to the given config
+  ;;ASSUMPTION: The given rule can be applied to the config
   (define (apply-push a-config)
     (if (equal? (second (rule-pair a-rule)) EMP)
         (struct-copy config-state a-config
@@ -1034,71 +1060,95 @@ pair is the second of the pda rule
                        [visited (cons new-config (config-state-visited a-config))]))))
   (apply-push (apply-pop (apply-read a-config))))
 
+;;config (listof finals) -> boolean
+;; Purpose: Determines if the given config is an accepting config
 (define (accepting-config? a-config finals)
     (and (member? (first a-config) finals)
          (empty? (second a-config))
          (empty? (third a-config))))
 
+;;config (listof finals) -> (listof configs)
+;; Purpose: Makes the configs that the machine can take to consume the input 
 (define (new-make-configs configs finals)
-(define (new-make-configs-helper configs accum)
-  (define (accepting-config? a-config)
-    (and (member? (first (config-state-config a-config)) finals)
-         (empty? (second (config-state-config a-config)))
-         (empty? (third (config-state-config a-config)))))
+
+  ;;config (listof configs) -> (listof configs)
+  ;; Purpose: Makes the configs that the machine can take to consume the input 
+  (define (new-make-configs-helper configs accum)
+    ;;config -> boolean
+    ;; Purpose: Determines if the given config is an accepting config
+    (define (accepting-config? a-config)
+      (and (member? (first (config-state-config a-config)) finals)
+           (empty? (second (config-state-config a-config)))
+           (empty? (third (config-state-config a-config)))))
   
-  
-  (define (can-apply-rule? config rule)
-    (define (can-read? config rule)
-      (or (equal? EMP (second (rule-triple rule)))
-          (and (not (empty? (config-state-a-word config)))
-               (equal? (second (rule-triple rule)) (first (config-state-a-word config)))))
+    ;;config rule -> boolean
+    ;;Purpose: Determines if the given rule can be applied to the given config
+    (define (can-apply-rule? config rule)
+      ;;config rule -> boolean
+      ;; Purpose: Determines if the given rule's read portion can be applied to the given config
+      (define (can-read? config rule)
+        (or (equal? EMP (second (rule-triple rule)))
+            (and (not (empty? (config-state-a-word config)))
+                 (equal? (second (rule-triple rule)) (first (config-state-a-word config)))))
+        )
+      ;;config rule -> boolean
+      ;;Purpose: Determines if the given rule's pop portion can be applied to the given config
+      (define (can-pop? config rule)
+        (or (equal? EMP (third (rule-triple rule)))
+            (and (<= (length (third (rule-triple rule))) (length (config-state-stack config)))
+                 (equal? (third (rule-triple rule)) (take (config-state-stack config) (add1 (length (third (rule-triple rule)))))))
+            )
+        )
+      (and (can-read? config rule)
+           (can-pop? config rule)))
+
+    ;;config -> multi-config
+    ;;Purpose: Finds all the empties for the given config
+    (define (find-empties config)
+      (let* ([possibly-applicable-rules (filter (lambda (x) (equal? (first (rule-triple x)) (first (config-state-config config)))) (config-state-lor config))]
+             [empty-rules (filter (lambda (x) (rule-empty? x)) possibly-applicable-rules)]
+             [new-configs (filter (lambda (x) (not (empty? x))) (remove-visited (map (lambda (y) (struct-copy config-state y
+                                                                                                              [visited (rest (config-state-visited y))])) (map (lambda (x) (apply-rule config x)) empty-rules))))]
+             ;[test0 (displayln (format "new-configs: ~a" new-configs))]
+             ) ;;maybe we dont need map???
+        (map (λ (rules) (multi-config-state (config-state-config config)
+                                            (config-state-a-word config)
+                                            rules
+                                            (config-state-stack config)
+                                            (config-state-lor config)
+                                            (config-state-path config)
+                                            (config-state-limit config)
+                                            (config-state-visited config)))
+             (append-map (lambda (x) (find-empties x)) new-configs))
+        )
       )
-    (define (can-pop? config rule)
-      (or (equal? EMP (third (rule-triple rule)))
-          (and (<= (length (third (rule-triple rule))) (length (config-state-stack config)))
-               (equal? (third (rule-triple rule)) (take (config-state-stack config) (add1 (length (third (rule-triple rule)))))))
-          )
-      )
-    (and (can-read? config rule)
-         (can-pop? config rule)))
-  
-  (define (find-empties config)
-    (let* ([possibly-applicable-rules (filter (lambda (x) (equal? (first (rule-triple x)) (first (config-state-config config)))) (config-state-lor config))]
-           [empty-rules (filter (lambda (x) (rule-empty? x)) possibly-applicable-rules)]
-           [new-configs (filter (lambda (x) (not (empty? x))) (remove-visited (map (lambda (y) (struct-copy config-state y
-                                                                                                                        [visited (rest (config-state-visited y))])) (map (lambda (x) (apply-rule config x)) empty-rules))))]
-           ;[test0 (displayln (format "new-configs: ~a" new-configs))]
-           )
-      (append-map (lambda (x) (find-empties x)) new-configs)
-      )
-    )
-  (if (empty? configs)
-      accum
-      (if (> (length (config-state-path (first configs))) (config-state-limit (first configs)))
-          (new-make-configs-helper (rest configs) (append accum (list (first configs))) )
-      (if (accepting-config? (first configs))
-          (new-make-configs-helper (rest configs) (append accum (list (first configs))))
-          (let* ([config (first configs)]
-                 [rules (config-state-lor config)]
-                 ;[test0 (displayln (format "rules: ~a" rules))]
-                 [possibly-applicable-rules (filter (lambda (x) (equal? (first (rule-triple x)) (first (config-state-config config)))) rules)]
-                 [applicable-rules (filter (lambda (x) (can-apply-rule? config x)) possibly-applicable-rules)]
-                 
-                 [first-empties (filter (lambda (x) (rule-empty? x)) applicable-rules)]
-                 ;[test0 (displayln applicable-rules)]
-                 [extended-empties (append-map (lambda (x) (find-empties (apply-rule config x))) first-empties)]
-                 [new-configs (map (lambda (x) (apply-rule config x)) applicable-rules ) ]
-                 ;[test1 (displayln new-configs)]
-                 )
-            (if (empty? applicable-rules)
+    (if (empty? configs)
+        accum
+        (if (> (length (config-state-path (first configs))) (config-state-limit (first configs)))
+            (new-make-configs-helper (rest configs) (append accum (list (first configs))) )
+            (if (accepting-config? (first configs))
                 (new-make-configs-helper (rest configs) (append accum (list (first configs))))
-                (new-make-configs-helper (append (rest configs) new-configs) accum)
+                (let* ([config (first configs)]
+                       [rules (config-state-lor config)]
+                       ;[test0 (displayln (format "rules: ~a" rules))]
+                       [possibly-applicable-rules (filter (lambda (x) (equal? (first (rule-triple x)) (first (config-state-config config)))) rules)]
+                       [applicable-rules (filter (lambda (x) (can-apply-rule? config x)) possibly-applicable-rules)]
+                 
+                       [first-empties (filter (lambda (x) (rule-empty? x)) applicable-rules)]
+                       ;[test0 (displayln applicable-rules)]
+                       [extended-empties (append-map (lambda (x) (find-empties (apply-rule config x))) first-empties)]
+                       [new-configs (map (lambda (x) (apply-rule config x)) applicable-rules ) ]
+                       ;[test1 (displayln new-configs)]
+                       )
+                  (if (empty? applicable-rules)
+                      (new-make-configs-helper (rest configs) (append accum (list (first configs))))
+                      (new-make-configs-helper (append (rest configs) new-configs) accum)
+                      )
+                  )
                 )
             )
-          )
-      )
-      )
-  )
+        )
+    )
   (new-make-configs-helper configs '())
   )
 
@@ -1243,7 +1293,6 @@ pair is the second of the pda rule
 ;;(listof configurations) (listof rules) (listof configurations) -> (listof configurations)
 ;;Purpose: Returns a propers trace for the given (listof configurations) that accurately
 ;;         tracks each transition
-
 (define (make-trace word configs rules acc #:accept [accept #f])
   (cond [(or (empty? rules)
              (empty? configs)) (reverse acc)]
@@ -1379,11 +1428,12 @@ pair is the second of the pda rule
 (define (configs->rules curr-config)
   (make-rule-triples (remove-duplicates curr-config)))
 
-
+;;(zipperof words) word (f-on-zip) -> zip
+;;Purpose: Searches the zipper for the given word by applying the given function on the zipper
 (define (zipper-search zip word zip-func)
-  (cond [(equal? (second (zipper-current zip)) word) zip]
-        
-        [else (zipper-search (zip-func zip) word zip-func)]))
+  (if (equal? (second (zipper-current zip)) word)
+         zip
+         (zipper-search (zip-func zip) word zip-func)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2333,14 +2383,20 @@ pair is the second of the pda rule
   (let ([max-len (apply max (map length traces))])
     (map (lambda (x) (extend-lst x max-len)) traces)))
 
+;;(listof trace) number -> (f-on-list)
+;;Purpose: Finds the trace before the last empty
+;;acc =
 (define (until-last-empty traces acc)
   (if (empty? traces)
       (lambda (x) (list-ref x acc))
       (if (rule-empty? (trace-rules (first traces)))
-      (until-last-empty (rest traces) (add1 acc))
-      (lambda (x) (list-ref x acc)))
+          (until-last-empty (rest traces) (add1 acc))
+          (lambda (x) (list-ref x acc)))
       ))
 
+;;(listof trace) number -> number
+;;Purpose: Finds the index of the trace before the last empty
+;;acc = 
 (define (until-last-empty-idx traces acc)
   (if (empty? traces)
       acc
@@ -2514,7 +2570,7 @@ pair is the second of the pda rule
         ;rejecting-configs
         ;accept-cmps
         ;accept-config
-        ;(list (first config) (second config))
+        ;(list (first config) (second config) (third config) (fourth config))
         ;;(length config)
         ;reject-cmps
         (run-viz graphs
