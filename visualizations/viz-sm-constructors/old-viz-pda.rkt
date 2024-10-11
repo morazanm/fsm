@@ -44,33 +44,7 @@
 
 (define TICK-RATE 1/60)
 (define CLICK-BUFFER-SECONDS (/ (/ 1 TICK-RATE) 2))
-#|
-(define S-KEY (bitmap/file "../viz-constructors-grammars/keyboard_key_s.png"))
 
-(define W-KEY (bitmap/file "../viz-constructors-grammars/keyboard_key_w.png"))
-
-(define R-KEY (bitmap/file "../viz-constructors-grammars/keyboard_key_r.png"))
-
-(define F-KEY (bitmap/file "../viz-constructors-grammars/keyboard_key_f.png"))
-
-(define E-KEY (bitmap/file "../viz-constructors-grammars/keyboard_key_e.png"))
-
-(define A-KEY (bitmap/file "../viz-constructors-grammars/keyboard_key_a.png"))
-
-(define D-KEY (bitmap/file "../viz-constructors-grammars/keyboard_key_d.png"))
-
-(define L-KEY (bitmap/file "../viz-constructors-grammars/keyboard_key_l.png"))
-
-(define J-KEY (bitmap/file "../viz-constructors-grammars/keyboard_key_j.png"))
-
-(define ARROW-RIGHT-KEY (bitmap/file "../viz-constructors-grammars/keyboard_key_right.png"))
-
-(define ARROW-LEFT-KEY (bitmap/file "../viz-constructors-grammars/keyboard_key_left.png"))
-
-(define ARROW-UP-KEY (bitmap/file "../viz-constructors-grammars/keyboard_key_up.png"))
-
-(define ARROW-DOWN-KEY (bitmap/file "../viz-constructors-grammars/keyboard_key_down.png"))
-|#
 ;; (listof symbol) natnum (listof (list natnum symbol)) -> image
 ;; Returns an image of a tape of symbols, capable of sliding when its start-index is varied
 (define (make-tape-img tape start-index color-pair)
@@ -962,17 +936,6 @@
   (or (< E-SCENE-WIDTH (image-width img)) (< E-SCENE-HEIGHT (image-height img))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-#|
-A trace is a structure:
-(make-trace config rules)
-config is a single configuration
-rules are a (listof rule-structs)
-|#
-(struct trace (config rules) #:transparent)
-
-
-
 #|
 A rule is a structure:
 (make-rule triple pair)
@@ -980,6 +943,25 @@ triple is the first of the pda rule
 pair is the second of the pda rule
 |#
 (struct rule (triple pair) #:transparent)
+
+#|
+A trace is a structure:
+(make-trace config rules)
+config is a single configuration
+rule is a rule-struct
+|#
+(struct trace (config rule) #:transparent)
+
+
+
+#|
+A trace is a structure:
+(make-trace config rules)
+config is a single configuration
+rule are a  (listof rule-struct)
+|#
+(struct multi-step-trace (config rules) #:transparent)
+
 
 ;; X (listof X) -> boolean
 ;;Purpose: Determine if X is in the given list
@@ -1305,6 +1287,12 @@ pair is the second of the pda rule
          (let* ([rle (rule (first (first rules)) (second (first rules)))]
                 [res (trace (first configs) rle)])
            (make-trace word (rest configs) (rest rules) (cons res acc)))]
+        #;[(and (not (empty? acc))
+              (equal? (second (first (first rules))) EMP))
+         (let* ([rle (rule (first (first rules)) (second (first rules)))]
+                [res (struct-copy trace (first acc)
+                                  [rules (cons rle (trace-rules (first acc)))])])
+           (make-trace word configs (rest rules) (cons res (rest acc))))]
         [else (let* ([rle (rule (first (first rules)) (second (first rules)))]
                      [res (trace (first configs) rle)])
                 (make-trace (rest word) (rest configs) (rest rules) (cons res acc)))]))
@@ -1534,7 +1522,7 @@ pair is the second of the pda rule
                      ;(display (format "a-config ~v \n" (building-viz-state-accept-configs a-vs)))
                      (if (empty? (building-viz-state-reject-configs a-vs))
                          (building-viz-state-reject-configs a-vs)
-                         (map (λ (configs) (trace-rules (first configs)))
+                         (map (λ (configs) (trace-rule (first configs)))
                               (filter (λ (configs)
                                         (not (empty? configs))) (building-viz-state-reject-configs a-vs)))))]
 
@@ -1551,7 +1539,7 @@ pair is the second of the pda rule
          ;;Purpose: Extracts the rules from the first of the accepting computations
          [a-configs (if (empty? (building-viz-state-accept-configs a-vs))
                         (building-viz-state-accept-configs a-vs)
-                        (map (λ (configs) (trace-rules (first configs))) (building-viz-state-accept-configs a-vs)))]
+                        (map (λ (configs) (trace-rule (first configs))) (building-viz-state-accept-configs a-vs)))]
          
          ;;(listof rules)
          ;;Purpose: Reconstructs the rules from rule-structs
@@ -2389,7 +2377,7 @@ pair is the second of the pda rule
 (define (until-last-empty traces acc)
   (if (empty? traces)
       (lambda (x) (list-ref x acc))
-      (if (rule-empty? (trace-rules (first traces)))
+      (if (rule-empty? (trace-rule (first traces)))
           (until-last-empty (rest traces) (add1 acc))
           (lambda (x) (list-ref x acc)))
       ))
@@ -2400,7 +2388,7 @@ pair is the second of the pda rule
 (define (until-last-empty-idx traces acc)
   (if (empty? traces)
       acc
-      (if (rule-empty? (trace-rules (first traces)))
+      (if (rule-empty? (trace-rule (first traces)))
       (until-last-empty-idx (rest traces) (add1 acc))
       acc)))
 
@@ -2413,13 +2401,13 @@ pair is the second of the pda rule
         '()
         (cons (length (coallesce (map (lambda (x) (if (empty? x)
                                                       '()
-                                                      (if (rule-empty? (trace-rules (first x)))
+                                                      (if (rule-empty? (trace-rule (first x)))
                                                       ((until-last-empty (rest x) 0) x)
                                                       (first x)))
                                                       )  traces)))
               (find-num-comps-helper (map (lambda (x) (if (empty? x)
                                                           '()
-                                                          (if (rule-empty? (trace-rules (first x)))
+                                                          (if (rule-empty? (trace-rule (first x)))
                                                           ((lambda (x) (drop x (until-last-empty-idx (rest x) 1))) x)
                                                           (rest x)
                                                           )
@@ -2442,7 +2430,7 @@ pair is the second of the pda rule
              (equal? (rule-triple x) (rule-triple y))
              (equal? (rule-pair x) (rule-pair y)))))
   (define visited (make-custom-hash (lambda (x y) (and (equal? (trace-config x) (trace-config y))
-                                                       (rule-equal? (trace-rules x) (trace-rules y))))))
+                                                       (rule-equal? (trace-rule x) (trace-rule y))))))
   (define (coallesce-helper traces)
     (if (empty? traces)
         '()
@@ -2517,7 +2505,7 @@ pair is the second of the pda rule
                                    cut-reject-configs))]
              [accepting-rules (if (empty? accept-config)
                                   '()
-                                  (list->zipper (map trace-rules (first accepting-config))))]
+                                  (list->zipper (map trace-rule (first accepting-config))))]
              [stack (if (empty? accept-config)
                         '()
                         (list->zipper (first accept-config)))]
