@@ -754,187 +754,6 @@
       INS-TOOLS-BUFFER
       (image-height L-KEY))))
 
-;; num num num num boolean num num num (matrix [ [x] [y] [1] ]) -> (matrix [ [transformed-x] [transformed-y] [1] ])
-;; Transforms a given point matrix based on the arguments provided
-(define (affine-transform #:x-translate [x-translate 0]
-                          #:y-translate [y-translate 0]
-                          #:x-scale [x-scale 1]
-                          #:y-scale [y-scale 1]
-                          #:reflect [reflect #f]
-                          #:rotate [rotate 0]
-                          #:x-shear [x-shear 0]
-                          #:y-shear [y-shear 0]
-                          #:point point)
-  (let* ([reflection (if reflect -1 1)]
-         [result (matrix* (matrix [[(* reflection x-scale (cos rotate))
-                                    (* x-shear (* -1 (sin rotate)))
-                                    x-translate]
-                                   [(* (sin rotate) y-shear) (* y-scale (cos rotate)) y-translate]
-                                   [0 0 1]])
-                          point)])
-    result))
-
-;; img posn num>0 -> matrix x y 1
-;; Calculates the transform needed to zoom correctly
-(define (zoom-affine-transform img img-posn scale)
-  (let* ([transformed-x (* -1
-                           (+ (- (/ E-SCENE-WIDTH 2) (+ (posn-x img-posn) (/ (image-width img) 2)))
-                              (/ (image-width img) 2)))]
-         [transformed-y (* -1
-                           (+ (- (/ E-SCENE-HEIGHT 2) (+ (posn-y img-posn) (/ (image-height img) 2)))
-                              (/ (image-height img) 2)))])
-    (affine-transform #:x-translate (* -1 transformed-x)
-                      #:y-translate (* -1 transformed-y)
-                      #:point
-                      (affine-transform #:x-scale scale
-                                        #:y-scale scale
-                                        #:point (affine-transform #:x-translate transformed-x
-                                                                  #:y-translate transformed-y
-                                                                  #:point (matrix [[0] [0] [1]]))))))
-
-;; img num>0 -> viewport-limits
-;; Calculates the min and max values of x and y that keep the graph on the screen at all times
-(define (calculate-viewport-limits scaled-image scale)
-  (let* ([img-width-node-diff (- (/ (image-width scaled-image) 2) (* NODE-SIZE scale))]
-         [img-height-node-diff (- (/ (image-height scaled-image) 2) (* NODE-SIZE scale))]
-         [scaled-node-size (* NODE-SIZE scale)]
-         [MIN-X (if (< E-SCENE-WIDTH (/ (image-width scaled-image) 2))
-                    (- (* -1 (- (/ (image-width scaled-image) 2) E-SCENE-WIDTH))
-                       (- E-SCENE-WIDTH scaled-node-size))
-                    (* -1 img-width-node-diff))]
-         [MAX-X (if (< E-SCENE-WIDTH (/ (image-width scaled-image) 2))
-                    (+ (- (/ (image-width scaled-image) 2) E-SCENE-WIDTH)
-                       E-SCENE-WIDTH
-                       (- E-SCENE-WIDTH scaled-node-size))
-                    (+ E-SCENE-WIDTH img-width-node-diff))]
-         [MIN-Y (if (< E-SCENE-HEIGHT (/ (image-height scaled-image) 2))
-                    (- (* -1 (- (/ (image-height scaled-image) 2) E-SCENE-HEIGHT))
-                       (- E-SCENE-HEIGHT scaled-node-size))
-                    (* -1 img-height-node-diff))]
-         [MAX-Y (if (< E-SCENE-HEIGHT (/ (image-height scaled-image) 2))
-                    (+ (- (/ (image-height scaled-image) 2) E-SCENE-HEIGHT)
-                       E-SCENE-HEIGHT
-                       (- E-SCENE-HEIGHT scaled-node-size))
-                    (+ E-SCENE-HEIGHT img-height-node-diff))])
-    (bounding-limits MIN-X MAX-X MIN-Y MAX-Y)))
-
-;; viz-state viewport-limits img num>0 -> viz-state
-;; Returns a new viz-state where if the given image would be out of bounds of its viewport limits
-;; It is placed into a position inbounds
-(define (reposition-out-of-bounds-img a-vs viewport-lims new-img new-scale)
-  (cond
-    [(outside-west-side-bounding-limits? viewport-lims (viz-state-image-posn a-vs))
-     (struct-copy viz-state
-                  a-vs
-                  [curr-image new-img]
-                  [image-posn
-                   (posn (bounding-limits-min-x viewport-lims) (posn-y (viz-state-image-posn a-vs)))]
-                  [scale-factor new-scale])]
-    [(outside-east-side-bounding-limits? viewport-lims (viz-state-image-posn a-vs))
-     (struct-copy viz-state
-                  a-vs
-                  [curr-image new-img]
-                  [image-posn
-                   (posn (bounding-limits-max-x viewport-lims) (posn-y (viz-state-image-posn a-vs)))]
-                  [scale-factor new-scale])]
-    [(outside-north-side-bounding-limits? viewport-lims (viz-state-image-posn a-vs))
-     (struct-copy viz-state
-                  a-vs
-                  [curr-image new-img]
-                  [image-posn
-                   (posn (posn-x (viz-state-image-posn a-vs)) (bounding-limits-min-y viewport-lims))]
-                  [scale-factor new-scale])]
-    [(outside-south-side-bounding-limits? viewport-lims (viz-state-image-posn a-vs))
-     (struct-copy viz-state
-                  a-vs
-                  [curr-image new-img]
-                  [image-posn
-                   (posn (posn-x (viz-state-image-posn a-vs)) (bounding-limits-max-y viewport-lims))]
-                  [scale-factor new-scale])]
-    [(outside-west-north-sides-bounding-limits? viewport-lims (viz-state-image-posn a-vs))
-     (struct-copy viz-state
-                  a-vs
-                  [curr-image new-img]
-                  [image-posn
-                   (posn (bounding-limits-min-x viewport-lims) (bounding-limits-min-y viewport-lims))]
-                  [scale-factor new-scale])]
-    [(outside-west-south-sides-bounding-limits? viewport-lims (viz-state-image-posn a-vs))
-     (struct-copy viz-state
-                  a-vs
-                  [curr-image new-img]
-                  [image-posn
-                   (posn (bounding-limits-min-x viewport-lims) (bounding-limits-max-y viewport-lims))]
-                  [scale-factor new-scale])]
-    [(outside-east-north-sides-bounding-limits? viewport-lims (viz-state-image-posn a-vs))
-     (struct-copy viz-state
-                  a-vs
-                  [curr-image new-img]
-                  [image-posn
-                   (posn (bounding-limits-max-x viewport-lims) (bounding-limits-min-y viewport-lims))]
-                  [scale-factor new-scale])]
-    [(outside-east-south-sides-bounding-limits? viewport-lims (viz-state-image-posn a-vs))
-     (struct-copy viz-state
-                  a-vs
-                  [curr-image new-img]
-                  [image-posn
-                   (posn (bounding-limits-max-x viewport-lims) (bounding-limits-max-y viewport-lims))]
-                  [scale-factor new-scale])]
-    [(within-bounding-limits? viewport-lims (viz-state-image-posn a-vs))
-     (struct-copy viz-state a-vs [curr-image new-img] [scale-factor new-scale])]))
-
-;; viz-state real>0 -> viz-state
-;; Returns a a viz-state where zoomed in onto the current graph being displayed
-(define (zoom a-vs factor)
-  (let* ([new-scale (* factor (viz-state-scale-factor a-vs))]
-         [scalable? (cond
-                      [(eq? factor ZOOM-INCREASE)
-                       (> (viz-state-scale-factor-cap a-vs) new-scale)]
-                      [(eq? factor ZOOM-DECREASE)
-                       (< (viz-state-scale-factor-floor a-vs) new-scale)])])
-    (if scalable?
-        (let* ([scaled-image (scale new-scale (viz-state-curr-image a-vs))]
-               [viewport-lims (calculate-viewport-limits scaled-image new-scale)]
-               [scale-increase (/ new-scale (viz-state-scale-factor a-vs))]
-               [affine-matrix (zoom-affine-transform (scale (viz-state-scale-factor a-vs)
-                                                            (viz-state-curr-image a-vs))
-                                                     (viz-state-image-posn a-vs)
-                                                     scale-increase)])
-          (reposition-out-of-bounds-img (struct-copy viz-state
-                                                     a-vs
-                                                     [image-posn
-                                                      (posn (+ (posn-x (viz-state-image-posn a-vs))
-                                                               (matrix-ref affine-matrix 0 0))
-                                                            (+ (posn-y (viz-state-image-posn a-vs))
-                                                               (matrix-ref affine-matrix 1 0)))]
-                                                     [scale-factor new-scale])
-                                        viewport-lims
-                                        (viz-state-curr-image a-vs)
-                                        new-scale))
-        a-vs)))
-
-;; viz-state ( Any* -> viz-state) -> viz-state
-;; Purpose: Prevents holding down a left or right mouse click from spamming a function too fast
-(define (buffer-held-click a-vs func)
-  (if (= (viz-state-click-buffer a-vs) 0)
-      (func (struct-copy viz-state
-                         a-vs
-                         [click-buffer 1]
-                         [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)]))
-      (if (= (viz-state-click-buffer a-vs))
-          (struct-copy viz-state
-                       a-vs
-                       [click-buffer 0]
-                       [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])
-          (struct-copy viz-state
-                       a-vs
-                       [click-buffer (add1 (viz-state-click-buffer a-vs))]
-                       [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)]))))
-
-;; img -> boolean
-;; Checks to see if an image needs to be resized
-(define (does-img-need-resizing? img)
-  (or (< E-SCENE-WIDTH (image-width img)) (< E-SCENE-HEIGHT (image-height img))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 #|
 A rule is a structure:
@@ -989,7 +808,7 @@ rule are a  (listof rule-struct)
 ;;configs -> configs
 ;;Purpose: Removes the most recent visited from the config
 (define (remove-visited configs)
-  (filter (lambda (x) (not (member? (config-state-config x) (config-state-visited x)))) configs))
+  (filter (lambda (x) (not (member? x (config-state-visited x)))) configs))
 
 ;;config rule -> config
 ;;Purpose: Applys the given rule to the given config and returns the updated config
@@ -1087,10 +906,76 @@ rule are a  (listof rule-struct)
     ;;config -> multi-config
     ;;Purpose: Finds all the empties for the given config
     (define (find-empties config)
+      ;(struct find-empties-state (config-st emp-path accum))
+      (define (find-empties-helper configs accum)
+        (define (find-all-multi-steps config)
+          (define (find-all-multi-steps-helper configs visited accum)
+            (if (empty? configs)
+                accum
+                (if (or (accepting-config? (first configs))
+                        (= (length (config-state-path (first configs))) (config-state-limit (first configs))))
+                    (find-all-multi-steps-helper (rest configs) visited (append accum (list (first configs))))
+                    (let* ([config (first configs)]
+                           [possibly-applicable-rules (filter (lambda (x) (equal? (first (rule-triple x))
+                                                                                  (first (config-state-config config))))
+                                                              (config-state-lor config))]
+                           [empty-rules (filter (lambda (x) (rule-empty? x)) possibly-applicable-rules)]
+                           [applicable-empty-rules (filter (lambda (x) (not (member? x visited))) empty-rules)]
+                           [new-configs (filter (lambda (x) (not (empty? x)))
+                                                (remove-visited (map (lambda (y) (struct-copy config-state y
+                                                                                              [visited (rest (config-state-visited y))]))
+                                                                     (map (lambda (x) (apply-rule config x)) empty-rules))))]
+                           )
+                      (if (empty? applicable-empty-rules)
+                          (find-all-multi-steps-helper (rest configs)
+                                                       visited
+                                                       (append accum (list (first configs))))
+                          (find-all-multi-steps-helper (append (rest configs) new-configs)
+                                                       (append visited
+                                                               (map (lambda (x) (third (rule-triple x))) applicable-empty-rules))
+                                                       accum)
+                          )
+                      )
+                    )
+                )
+            )
+          (find-all-multi-steps-helper (list config) '() '())
+          )
+        (if (empty? configs)
+            accum
+            (if (accepting-config? (first configs))
+                (find-empties-helper (rest configs) (append accum (list (first configs))))
+                (if (= (length (config-state-path (first configs))) (config-state-limit (first configs)))
+                    (find-empties-helper (rest configs) (append accum (list (first configs))))
+                    (let* ([config (first configs)]
+                           [possibly-applicable-rules (filter (lambda (x) (equal? (first (rule-triple x))
+                                                                                  (first (config-state-config config))))
+                                                              (config-state-lor config))]
+                           [empty-rules (filter (lambda (x) (rule-empty? x)) possibly-applicable-rules)]
+                           [all-multi-steps (void)] ;;TODO
+                           [new-configs (filter (lambda (x) (not (empty? x)))
+                                                (remove-visited (map (lambda (y) (struct-copy config-state y
+                                                                                              [visited (rest (config-state-visited y))]))
+                                                                     (map (lambda (x) (apply-rule config x)) empty-rules))))]
+                           )
+                      (if (or (empty? empty-rules)
+                              (and (empty? all-multi-steps)
+                                   (empty? new-configs)))
+                          (find-empties-helper (rest configs) (append accum (list (first configs))))
+                          (find-empties-helper (append (rest configs) all-multi-steps new-configs) accum)
+                          )
+                      )
+                    )
+                )
+            )
+        (void)
+        )
       (let* ([possibly-applicable-rules (filter (lambda (x) (equal? (first (rule-triple x)) (first (config-state-config config)))) (config-state-lor config))]
              [empty-rules (filter (lambda (x) (rule-empty? x)) possibly-applicable-rules)]
-             [new-configs (filter (lambda (x) (not (empty? x))) (remove-visited (map (lambda (y) (struct-copy config-state y
-                                                                                                              [visited (rest (config-state-visited y))])) (map (lambda (x) (apply-rule config x)) empty-rules))))]
+             [new-configs (filter (lambda (x) (not (empty? x)))
+                                  (remove-visited (map (lambda (y) (struct-copy config-state y
+                                                                                [visited (rest (config-state-visited y))]))
+                                                       (map (lambda (x) (apply-rule config x)) empty-rules))))]
              ;[test0 (displayln (format "new-configs: ~a" new-configs))]
              ) ;;maybe we dont need map???
         (map (λ (rules) (multi-config-state (config-state-config config)
@@ -1106,8 +991,8 @@ rule are a  (listof rule-struct)
       )
     (if (empty? configs)
         accum
-        (if (> (length (config-state-path (first configs))) (config-state-limit (first configs)))
-            (new-make-configs-helper (rest configs) (append accum (list (first configs))) )
+        (if (= (length (config-state-path (first configs))) (config-state-limit (first configs)))
+            (new-make-configs-helper (rest configs) (append accum (list (first configs))))
             (if (accepting-config? (first configs))
                 (new-make-configs-helper (rest configs) (append accum (list (first configs))))
                 (let* ([config (first configs)]
