@@ -25,7 +25,7 @@
            csg-input/c
            )
 
-  (define (listof-words/c type)
+  (define (listof-words/c type step-number)
     (make-flat-contract
      #:name 'valid-list-of-words
      #:first-order (lambda (words) (listof-words? words))
@@ -35,7 +35,7 @@
                       (raise-blame-error
                        blame
                        words
-                       (format "Step two of the design recipe has not been successfully completed.\nThe expected ~a is not a list of words" type)
+                       (format "Step ~a of the design recipe has not been successfully completed.\nThe expected ~a is not a list of words" step-number type)
                      
                        )
                       )
@@ -60,7 +60,7 @@
      )
     )
 
-  (define (words-in-sigma/c sigma field)
+  (define (words-in-sigma/c sigma field step-number)
     (make-flat-contract
      #:name 'words-made-of-sigma-symbols
      #:first-order (lambda (words) (words-in-sigma? words sigma))
@@ -70,7 +70,7 @@
                       (raise-blame-error
                        blame
                        (invalid-words words sigma)
-                       (format "Step two of the design recipe has not been successfully completed.\nThe following words in the ~a list contain symbols not included in sigma" field)
+                       (format "Step ~a of the design recipe has not been successfully completed.\nThe following words in the ~a list contain symbols not included in sigma" step-number field)
                        )
                       )
                     )

@@ -13,16 +13,20 @@
    "a")
   (check-error
    (singleton-regexp "abc")
-   "The argument to singleton-regexp must be a single lowercase Roman alphabet character, but found: \"abc\"")
+   "Step five of the design recipe has not been successfully completed.
+The argument to singleton-regexp must be a single lowercase Roman alphabet character, but found: \"abc\"")
   (check-error
    (singleton-regexp 5)
-   "The argument to singleton-regexp must be a single lowercase Roman alphabet character, but found: 5")
+   "Step five of the design recipe has not been successfully completed.
+The argument to singleton-regexp must be a single lowercase Roman alphabet character, but found: 5")
   (check-error
    (singleton-regexp "A")
-   "The argument to singleton-regexp must be a single lowercase Roman alphabet character, but found: \"A\"")
+   "Step five of the design recipe has not been successfully completed.
+The argument to singleton-regexp must be a single lowercase Roman alphabet character, but found: \"A\"")
   (check-error
    (singleton-regexp "*")
-   "The argument to singleton-regexp must be a single lowercase Roman alphabet character, but found: \"*\"")
+   "Step five of the design recipe has not been successfully completed.
+The argument to singleton-regexp must be a single lowercase Roman alphabet character, but found: \"*\"")
 
   (define singleton-a (singleton-regexp "a"))
   (define singleton-b (singleton-regexp "b"))
@@ -37,10 +41,61 @@
    singleton-b)
   (check-error
    (concat-regexp "a" singleton-b)
-   "The first argument to concat-regexp must be a regular expression, but found: \"a\"")
+   "Step five of the design recipe has not been successfully completed.
+The first argument to concat-regexp must be a regular expression, but found: \"a\"")
   (check-error
    (concat-regexp singleton-a 7)
-   "The second argument to concat-regexp must be a regular expression, but found: 7")
+   "Step five of the design recipe has not been successfully completed.
+The second argument to concat-regexp must be a regular expression, but found: 7")
+  (check-error
+   (concat-regexp singleton-a singleton-b #:accepts '((a b) 5))
+   "Step four of the design recipe has not been successfully completed.
+The expected accepts is not a list of words: ((a b) 5)")
+  (check-error
+   (concat-regexp singleton-a singleton-b #:sigma 5)
+   "Step one of the design recipe has not been successfully completed.
+The given regexp alphabet must be a list: 5")
+  (check-error
+   (concat-regexp singleton-a singleton-b #:sigma '(a b b))
+   "Step one of the design recipe has not been successfully completed.
+The following values, (b), are duplicated in the given sigma: (a b b)")
+  (check-error
+   (concat-regexp singleton-a singleton-b #:sigma '(a B))
+   "Step one of the design recipe has not been successfully completed.
+The following: (B) are not valid lowercase alphabet letters in the given input alphabet: (a B)")
+  (check-error
+   (concat-regexp singleton-a singleton-b #:sigma '(a c))
+   "Step one of the design recipe has not been successfully completed.
+The following singltons: (b) are in the regexp, but not in the specified alphabet: (a c)")
+  (check-expect
+   (concat-regexp-r1 (concat-regexp singleton-a singleton-b #:sigma '(a b)))
+   (singleton-regexp "a"))
+  (check-error
+   (concat-regexp singleton-a singleton-b #:accepts '((a a) (a b)))
+   "Step six of the design recipe has not been successfully completed.
+The constructed concat-regexp does not accept the following words: ((a a))")
+  (check-error
+   (concat-regexp singleton-a singleton-b #:rejects '((a a) (a b)))
+   "Step six of the design recipe has not been successfully completed.
+The constructed concat-regexp does not reject the following words: ((a b))")
+  (check-expect
+   (concat-regexp-r1 (concat-regexp
+                      singleton-a
+                      singleton-b
+                      #:pred (lambda (word) (equal? word '(a b)))
+                      #:accepts '((a b))
+                      #:rejects '((a) (b))
+                      #:sigma '(a b)))
+   singleton-a)
+  (check-error
+   (concat-regexp singleton-a singleton-b #:pred (lambda (x) #f))
+   "Step three of the design recipe has not been successfully completed.
+The specified predicate determined the following words are not in the language of the regexp when they are: ((a b))")
+  (check-error
+   (concat-regexp singleton-a singleton-b #:pred (lambda (x) 5))
+   "Step three of the design recipe has not been successfully completed.
+The output to a regexp predicate should be a boolean, but found: 5")
+  
 
   (define concat-ab (concat-regexp singleton-a singleton-b))
 
@@ -53,10 +108,12 @@
    singleton-c)
   (check-error
    (union-regexp "ab" singleton-c)
-   "The first argument to union-regexp must be a regular expression, but found: \"ab\"")
+   "Step five of the design recipe has not been successfully completed.
+The first argument to union-regexp must be a regular expression, but found: \"ab\"")
   (check-error
    (union-regexp concat-ab 8)
-   "The second argument to union-regexp must be a regular expression, but found: 8")
+   "Step five of the design recipe has not been successfully completed.
+The second argument to union-regexp must be a regular expression, but found: 8")
 
   ;; kleenestar-regexp tests
   (check-expect
@@ -64,7 +121,8 @@
    singleton-a)
   (check-error
    (kleenestar-regexp (kleenestar-regexp "a"))
-   "The argument to kleenestar-regexp must be a regular expression, but found: \"a\"")
+   "Step five of the design recipe has not been successfully completed.
+The argument to kleenestar-regexp must be a regular expression, but found: \"a\"")
   
   (test)
 

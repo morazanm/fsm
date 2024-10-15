@@ -419,19 +419,19 @@
          (diffs (get-differences res1 res2 testlist)))
     (if (null? diffs) true diffs)))
 
-  ;; make-dfa: states alphabet state states rules (boolean) -> machine
-  ;; Purpose: Eventually, will construct a multi-tape turing-machine from the given
-  ;; DFA inputs, but for now just parses inputs and constructs an unchecked-dfa.
-  (define/contract (make-dfa states sigma start finals rules
-                              [add-dead '()]
-                              #:accepts [accepts '()]
-                              #:rejects [rejects '()])
-    make-dfa/c
-    (if (null? add-dead)
-        (make-unchecked-dfa states sigma start finals rules)
-        (make-unchecked-dfa states sigma start finals rules add-dead)
-        )
-    )
+;; make-dfa: states alphabet state states rules (boolean) -> machine
+;; Purpose: Eventually, will construct a multi-tape turing-machine from the given
+;; DFA inputs, but for now just parses inputs and constructs an unchecked-dfa.
+(define/contract (make-dfa states sigma start finals rules
+                           [add-dead '()]
+                           #:accepts [accepts '()]
+                           #:rejects [rejects '()])
+  make-dfa/c
+  (if (null? add-dead)
+      (make-unchecked-dfa states sigma start finals rules)
+      (make-unchecked-dfa states sigma start finals rules add-dead)
+      )
+  )
 
   
 
@@ -537,7 +537,13 @@
 ;; concat-regexp: regexp regexp --> concat-regexp
 ;; purpose: Constructs the regular expression whose language contains words
 ;;          that are the concatenation of one word from L(a) and a word from L(b).
-(define/contract (concat-regexp a b)
+(define/contract (concat-regexp
+                  a
+                  b
+                  #:pred [pred (lambda (x) #t)]
+                  #:accepts [accepts '()]
+                  #:rejects [rejects '()]
+                  #:sigma [sigma '()])
   concat-regexp/c
   (make-unchecked-concat a b))
 
