@@ -784,8 +784,8 @@ rule are a  (listof rule-struct)
 
 ;; X (listof X) -> boolean
 ;;Purpose: Determine if X is in the given list
-(define (member? x lst)
-  (ormap (λ (L) (equal? x L)) lst))
+(define (member? x lst eq-func)
+  (ormap (λ (L) (eq-func x L)) lst))
 
 #|
 
@@ -805,10 +805,28 @@ rule are a  (listof rule-struct)
        (equal? (third (rule-triple a-rule)) EMP)
        (equal? (second (rule-pair a-rule)) EMP)))
 
+(struct config-application (config rule) #:transparent)
+
+(define (unique-config-application? config rule)
+  (not (member? (config-application (config-state-config config) rule)
+                (config-state-visited config)
+                (lambda (x y) (and (equal? (config-application-config x)
+                                           (config-application-config y))
+                                   (equal? (config-application-rule x)
+                                           (config-application-rule y)))))))
+
 ;;configs -> configs
 ;;Purpose: Removes the most recent visited from the config
-(define (remove-visited configs)
-  (filter (lambda (x) (not (member? x (config-state-visited x)))) configs))
+(define (remove-visited config rule)
+  (if (unique-config-application? (struct-copy config-state
+                                               config
+                                               [visited (rest (config-state-visited config))]
+                                               )
+                                  rule)
+      config
+      '()
+      )
+  )
 
 ;;config rule -> config
 ;;Purpose: Applys the given rule to the given config and returns the updated config
@@ -846,10 +864,10 @@ rule are a  (listof rule-struct)
   (define (apply-push a-config)
     (if (equal? (second (rule-pair a-rule)) EMP)
         (struct-copy config-state a-config
-                       [path (append (config-state-path a-config)
-                                     (list (config-state-config a-config)))]
-                       [visited (cons (config-state-config a-config)
-                                      (config-state-visited a-config))])
+                     [path (append (config-state-path a-config)
+                                   (list (config-state-config a-config)))]
+                     [visited (cons (config-application (config-state-config a-config) a-rule)
+                                    (config-state-visited a-config))])
         (let ([new-config (list (first (config-state-config a-config))
                                 (second (config-state-config a-config))
                                 (append (second (rule-pair a-rule))
@@ -858,27 +876,27 @@ rule are a  (listof rule-struct)
                        [config new-config]
                        [stack (append (second (rule-pair a-rule)) (list (config-state-stack a-config)))]
                        [path (append (config-state-path a-config) (list new-config))]
-                       [visited (cons new-config (config-state-visited a-config))]))))
+                       [visited (cons (config-application new-config a-rule) (config-state-visited a-config))]))))
   (apply-push (apply-pop (apply-read a-config))))
 
 ;;config (listof finals) -> boolean
 ;; Purpose: Determines if the given config is an accepting config
 (define (accepting-config? a-config finals)
-    (and (member? (first a-config) finals)
-         (empty? (second a-config))
-         (empty? (third a-config))))
+  (and (member? (first a-config) finals)
+       (empty? (second a-config))
+       (empty? (third a-config))))
 
 ;;config (listof finals) -> (listof configs)
 ;; Purpose: Makes the configs that the machine can take to consume the input 
 (define (new-make-configs configs finals)
-
+  
   ;;config (listof configs) -> (listof configs)
   ;; Purpose: Makes the configs that the machine can take to consume the input 
-  (define (new-make-configs-helper configs accum)
+  (define (new-make-configs-helper configs accum paths-visited)
     ;;config -> boolean
     ;; Purpose: Determines if the given config is an accepting config
     (define (accepting-config? a-config)
-      (and (member? (first (config-state-config a-config)) finals)
+      (and (member? (first (config-state-config a-config)) finals equal?)
            (empty? (second (config-state-config a-config)))
            (empty? (third (config-state-config a-config)))))
   
@@ -902,6 +920,7 @@ rule are a  (listof rule-struct)
         )
       (and (can-read? config rule)
            (can-pop? config rule)))
+    
 
     ;;config -> multi-config
     ;;Purpose: Finds all the empties for the given config
@@ -913,18 +932,25 @@ rule are a  (listof rule-struct)
             (if (empty? configs)
                 accum
                 (if (or (accepting-config? (first configs))
-                        (= (length (config-state-path (first configs))) (config-state-limit (first configs))))
+                        (>= (length (config-state-path (first configs))) (config-state-limit (first configs))))
                     (find-all-multi-steps-helper (rest configs) visited (append accum (list (first configs))))
                     (let* ([config (first configs)]
                            [possibly-applicable-rules (filter (lambda (x) (equal? (first (rule-triple x))
                                                                                   (first (config-state-config config))))
                                                               (config-state-lor config))]
                            [empty-rules (filter (lambda (x) (rule-empty? x)) possibly-applicable-rules)]
-                           [applicable-empty-rules (filter (lambda (x) (not (member? x visited))) empty-rules)]
+                           [applicable-empty-rules (filter (lambda (x) (not (member? (third (rule-triple x)) visited equal?))) empty-rules)]
                            [new-configs (filter (lambda (x) (not (empty? x)))
-                                                (remove-visited (map (lambda (y) (struct-copy config-state y
-                                                                                              [visited (rest (config-state-visited y))]))
-                                                                     (map (lambda (x) (apply-rule config x)) empty-rules))))]
+                                                (map (lambda (x) (if (unique-config-application? (struct-copy config-state
+                                                                                                              (apply-rule config x)
+                                                                                                              [visited (rest (config-state-visited (apply-rule config x)))]
+                                                                                                              )
+                                                                                                 x)
+                                                                     (apply-rule config x)
+                                                                     '()
+                                                                     )
+                                                       ) applicable-empty-rules)
+                                                )]
                            )
                       (if (empty? applicable-empty-rules)
                           (find-all-multi-steps-helper (rest configs)
@@ -941,22 +967,32 @@ rule are a  (listof rule-struct)
             )
           (find-all-multi-steps-helper (list config) '() '())
           )
+
+        #;(displayln (format "empties-configs: ~a" (map (lambda (x) (config-state-path x)) configs)))
         (if (empty? configs)
             accum
             (if (accepting-config? (first configs))
                 (find-empties-helper (rest configs) (append accum (list (first configs))))
-                (if (= (length (config-state-path (first configs))) (config-state-limit (first configs)))
+                (if (>= (length (config-state-path (first configs))) (config-state-limit (first configs)))
                     (find-empties-helper (rest configs) (append accum (list (first configs))))
                     (let* ([config (first configs)]
                            [possibly-applicable-rules (filter (lambda (x) (equal? (first (rule-triple x))
                                                                                   (first (config-state-config config))))
                                                               (config-state-lor config))]
                            [empty-rules (filter (lambda (x) (rule-empty? x)) possibly-applicable-rules)]
-                           [all-multi-steps (void)] ;;TODO
+                           [all-multi-steps '() #;(find-all-multi-steps config)] ;;TODO
                            [new-configs (filter (lambda (x) (not (empty? x)))
-                                                (remove-visited (map (lambda (y) (struct-copy config-state y
-                                                                                              [visited (rest (config-state-visited y))]))
-                                                                     (map (lambda (x) (apply-rule config x)) empty-rules))))]
+                                                (map (lambda (x) (if (unique-config-application? (struct-copy config-state
+                                                                                                              (apply-rule config x)
+                                                                                                              [visited (rest (config-state-visited (apply-rule config x)))]
+                                                                                                              )
+                                                                                                 x)
+                                                                     (apply-rule config x)
+                                                                     '())
+                                                       ) empty-rules)
+                                                #;(remove-visited (map (lambda (x) (apply-rule config x)) empty-rules)))]
+                           
+                           #;[test0 (map (lambda (y) (displayln (format "new-configs: ~a" y))) (map (lambda (x) (config-state-path x)) new-configs))]
                            )
                       (if (or (empty? empty-rules)
                               (and (empty? all-multi-steps)
@@ -968,33 +1004,46 @@ rule are a  (listof rule-struct)
                     )
                 )
             )
-        (void)
         )
-      (let* ([possibly-applicable-rules (filter (lambda (x) (equal? (first (rule-triple x)) (first (config-state-config config)))) (config-state-lor config))]
-             [empty-rules (filter (lambda (x) (rule-empty? x)) possibly-applicable-rules)]
-             [new-configs (filter (lambda (x) (not (empty? x)))
-                                  (remove-visited (map (lambda (y) (struct-copy config-state y
-                                                                                [visited (rest (config-state-visited y))]))
-                                                       (map (lambda (x) (apply-rule config x)) empty-rules))))]
-             ;[test0 (displayln (format "new-configs: ~a" new-configs))]
-             ) ;;maybe we dont need map???
-        (map (λ (rules) (multi-config-state (config-state-config config)
-                                            (config-state-a-word config)
-                                            rules
-                                            (config-state-stack config)
-                                            (config-state-lor config)
-                                            (config-state-path config)
-                                            (config-state-limit config)
-                                            (config-state-visited config)))
-             (append-map (lambda (x) (find-empties x)) new-configs))
-        )
+      (find-empties-helper (list config) '())
+      #;(let* ([possibly-applicable-rules (filter (lambda (x) (equal? (first (rule-triple x)) (first (config-state-config config)))) (config-state-lor config))]
+               [empty-rules (filter (lambda (x) (rule-empty? x)) possibly-applicable-rules)]
+               [new-configs (filter (lambda (x) (not (empty? x)))
+                                    (remove-visited (map (lambda (y) (struct-copy config-state y
+                                                                                  [visited (rest (config-state-visited y))]))
+                                                         (map (lambda (x) (apply-rule config x)) empty-rules))))]
+               ;[test0 (displayln (format "new-configs: ~a" new-configs))]
+               ) ;;maybe we dont need map???
+          (map (λ (rules) (multi-config-state (config-state-config config)
+                                              (config-state-a-word config)
+                                              rules
+                                              (config-state-stack config)
+                                              (config-state-lor config)
+                                              (config-state-path config)
+                                              (config-state-limit config)
+                                              (config-state-visited config)))
+               (append-map (lambda (x) (find-empties x)) new-configs))
+          )
       )
+    #;(displayln (format "new-make-configs accum: ~s" accum))
+    ;(displayln (format "length of queue: ~a" (length configs)))
+    (displayln "new loop")
+    (map displayln (map config-state-path configs))
     (if (empty? configs)
-        accum
-        (if (= (length (config-state-path (first configs))) (config-state-limit (first configs)))
-            (new-make-configs-helper (rest configs) (append accum (list (first configs))))
+        (begin
+          #;(displayln "queue: ")
+          #;(map displayln (map (lambda (x) (config-state-path x)) configs))
+          (displayln "accum: ")
+          (map displayln (map (lambda (x) (config-state-path x)) accum))
+          accum
+          )
+        (if (>= (length (config-state-path (first configs))) (config-state-limit (first configs)))
+            (begin
+              #;(displayln "limit is working")
+              (new-make-configs-helper (rest configs) (append accum (list (first configs))) paths-visited)
+              )
             (if (accepting-config? (first configs))
-                (new-make-configs-helper (rest configs) (append accum (list (first configs))))
+                (new-make-configs-helper (rest configs) (append accum (list (first configs))) paths-visited)
                 (let* ([config (first configs)]
                        [rules (config-state-lor config)]
                        ;[test0 (displayln (format "rules: ~a" rules))]
@@ -1003,22 +1052,68 @@ rule are a  (listof rule-struct)
                  
                        [first-empties (filter (lambda (x) (rule-empty? x)) applicable-rules)]
                        ;[test0 (displayln applicable-rules)]
-                       [extended-empties (append-map (lambda (x) (find-empties (apply-rule config x))) first-empties)]
-                       [new-configs (map (lambda (x) (apply-rule config x)) applicable-rules ) ]
-                       ;[test1 (displayln new-configs)]
+                       [extended-empties (begin
+                                           #;(displayln "find-empties called")
+                                           #;(map displayln (map (lambda (x) (config-state-path x)) (find-empties config)))
+                                           (remove-duplicates
+                                            (filter
+                                             (lambda (x) (not (member? (config-state-path x)
+                                                                       paths-visited
+                                                                       equal?)))
+                                             (find-empties config)
+                                             )
+                                            
+                                            #:key config-state-path
+                                            )
+                                           )
+                                         #;(append-map (lambda (x) (find-empties x)) (list (first config)))
+                                         #;(append-map (lambda (x) (find-empties (apply-rule config x))) first-empties)]
+                       #;'(((X (a a b b b b) ()) (#(struct:config-application (X (a a b b b b) ()) #(struct:rule (S ε ε) (X ε))) #(struct:config-application (S (a a b b b b) ()) ()))))
+                       #;'(((S (a b b b b) (b b)) ((S (a b b b b) (b b)) #(struct:config-application (S (a a b b b b) ()) ()))))
+                       #;[test0 (displayln (format "extended-empties: ~a" (map (lambda (x) (config-state-config x)) extended-empties)))]
+                       [new-configs (remove-duplicates
+                                     (filter
+                                      (lambda (x) (not (member? (config-state-path x)
+                                                                paths-visited
+                                                                equal?)))
+                                      (filter (lambda (x) (not (empty? x)))
+                                              (map (lambda (x) (if (unique-config-application? (struct-copy config-state
+                                                                                                            (apply-rule config x)
+                                                                                                            [visited (rest (config-state-visited (apply-rule config x)))]
+                                                                                                            )
+                                                                                               x)
+                                                                   (apply-rule config x)
+                                                                   '())
+                                                     ) applicable-rules)
+                                              #;(remove-visited (map (lambda (x) (apply-rule config x)) empty-rules)))
+                                      )
+                                     #:key config-state-path
+                                     )
+                                    #;(map (lambda (x) (apply-rule config x)) applicable-rules ) ]
+                       [new-to-compute (remove-duplicates
+                                        (append new-configs extended-empties)
+                                        #:key config-state-path
+                                        )]
+                       #;[test1 (displayln (map (lambda (x) (config-state-path x)) extended-empties))]
                        )
-                  (if (empty? applicable-rules)
-                      (new-make-configs-helper (rest configs) (append accum (list (first configs))))
-                      (new-make-configs-helper (append (rest configs) new-configs) accum)
+                  (if (or (empty? applicable-rules)
+                          (empty? new-to-compute))
+                      (new-make-configs-helper (rest configs) (append accum (list (first configs))) paths-visited)
+                      (new-make-configs-helper (append (rest configs) new-to-compute) accum
+                                               (append paths-visited
+                                                       (map (lambda (x) (config-state-path x)) new-to-compute)
+                                                       ))
                       )
                   )
                 )
             )
         )
     )
-  (new-make-configs-helper configs '())
+  (new-make-configs-helper configs '() '())
   )
 
+'(((S (a a b b b b) ()) (S (a b b b b) (b b)) (S (b b b b) (b b b b)) (X (b b b b) (b b b b)))
+  ((S (a a b b b b) ()) (S (a b b b b) (b b)) (S (b b b b) (b b b b)) (A (b b b b) (b b b b)) (B (b b b b) (b b b b)) (A (b b b b) (b b b b))))
 
 ;(config a-word stack lor path limit visited)
 ;;(listof symbols) (listof rules) symbol -> (listof configurations)
@@ -1029,14 +1124,14 @@ rule are a  (listof rule-struct)
         [starting-configs (list (append (list start) (list a-word) (list '())))])
     
     (new-make-configs (list (config-state (first starting-configs)
-                  a-word
-                  (third (first starting-configs))
-                  (map (lambda (x) (rule (first x) (second x))) lor)
-                  (list (first starting-configs))
-                  max-cmps
-                  (first starting-configs)
+                                          a-word
+                                          (third (first starting-configs))
+                                          (map (lambda (x) (rule (first x) (second x))) lor)
+                                          (list (first starting-configs))
+                                          max-cmps
+                                          (list (config-application (first starting-configs) '()))
                   
-                  ))
+                                          ))
                       finals
                       )))
 
@@ -1044,89 +1139,89 @@ rule are a  (listof rule-struct)
 ;;Purpose: Explores all possible configurations using the given word, (listof rules), and visited
 ;;Visited = All configurations of the consumed the processed word
 ;;Path = The configurations that consumed the processed word
-(define (make-configs config a-word stack lor visited path limit)
-  (let* (;;(listof rules)
-         ;;Purpose: Holds all rules that consume a first letter in the given configurations
-         [connected-read-rules (if (empty? a-word)
-                                   '()
-                                   (filter (λ (rule)
-                                             (and (equal? (first (first rule)) (first config))
-                                                  (equal? (second (first rule)) (first (second config)))))
-                                           lor))]
-         ;;(listof rules)
-         ;;Purpose: Holds all rules that can pop what is in the stack
-         [connected-pop-rules (filter (λ (rule)
-                                        (or (equal? (third (first rule)) EMP)
-                                            (and (>= (length stack) (length (third (first rule))))
-                                                 (equal? (take stack (length (third (first rule)))) (third (first rule))))))
-                                      connected-read-rules)]
-         ;;(listof configurations)
-         ;;Purpose: Creates the preliminary configurations using the connected-pop-rules
-         [prelim-config (map (λ (rule)
-                               (append (list (first (second rule)))
-                                       (list (rest a-word))
-                                       (list (if (eq? (third (first rule)) EMP) stack (drop stack (length (third (first rule))))))))
-                             connected-pop-rules)]
-         ;;(listof configurations)
-         ;;Purpose: Creates the configurations using the connected-pop-rules and preliminary configurations
-         [new-configs (filter (λ (config) (not (member? config visited)))
-                              (map (λ (rule config)
-                                     (if (eq? (second (second rule)) EMP)
-                                         config
-                                         (append (list (first config))
-                                                 (list (second config))
-                                                 (list (append (second (second rule)) (third config))))))
-                                   connected-pop-rules
-                                   prelim-config))]
-         ;;(listof rules)
-         ;;Purpose: Holds all rules that consume no input for the given configurations
-         [connected-read-E-rules (filter (λ (rule)
-                                           (and (equal? (first (first rule)) (first config))
-                                                (equal? (second (first rule)) EMP)))
-                                         lor)]
-         ;;(listof rules)
-         ;;Purpose: Holds all rules that can pop what is in the stack
-         [connected-pop-E-rules (filter (λ (rule)
+#;(define (make-configs config a-word stack lor visited path limit)
+    (let* (;;(listof rules)
+           ;;Purpose: Holds all rules that consume a first letter in the given configurations
+           [connected-read-rules (if (empty? a-word)
+                                     '()
+                                     (filter (λ (rule)
+                                               (and (equal? (first (first rule)) (first config))
+                                                    (equal? (second (first rule)) (first (second config)))))
+                                             lor))]
+           ;;(listof rules)
+           ;;Purpose: Holds all rules that can pop what is in the stack
+           [connected-pop-rules (filter (λ (rule)
                                           (or (equal? (third (first rule)) EMP)
                                               (and (>= (length stack) (length (third (first rule))))
                                                    (equal? (take stack (length (third (first rule)))) (third (first rule))))))
-                                        connected-read-E-rules)]
-         ;;(listof configurations)
-         ;;Purpose: Creates the preliminary e-tran configurations using the connected-pop-E-rules
-         [prelim-E-config (map (λ (rule)
+                                        connected-read-rules)]
+           ;;(listof configurations)
+           ;;Purpose: Creates the preliminary configurations using the connected-pop-rules
+           [prelim-config (map (λ (rule)
                                  (append (list (first (second rule)))
-                                         (list a-word) 
+                                         (list (rest a-word))
                                          (list (if (eq? (third (first rule)) EMP) stack (drop stack (length (third (first rule))))))))
-                               connected-pop-E-rules)]
-         ;;(listof configurations)
-         ;;Purpose: Creates the configurations using the connected-pop-rules and preliminary configurations
-         [new-E-configs (filter (λ (config) (not (member? config visited)))
+                               connected-pop-rules)]
+           ;;(listof configurations)
+           ;;Purpose: Creates the configurations using the connected-pop-rules and preliminary configurations
+           [new-configs (filter (λ (config) (not (member? config visited)))
                                 (map (λ (rule config)
                                        (if (eq? (second (second rule)) EMP)
                                            config
                                            (append (list (first config))
                                                    (list (second config))
                                                    (list (append (second (second rule)) (third config))))))
-                                     connected-pop-E-rules
-                                     prelim-E-config))])
-    (cond [(or (> (length path) limit) (and (empty? new-configs) (empty? new-E-configs)))
-           (list path)]
-          [(and (empty? new-configs) (not (empty? new-E-configs)))
-           (make-configs-helper new-E-configs a-word lor (append new-E-configs visited) path limit)]
-          [(and (not (empty? new-configs)) (empty? new-E-configs))
-           (make-configs-helper new-configs (rest a-word) lor (append new-configs visited) path limit)]
-          [else (append (make-configs-helper new-E-configs a-word lor (append new-E-configs visited) path limit)
-                        (make-configs-helper new-configs (rest a-word) lor (append new-configs visited) path limit))])))
+                                     connected-pop-rules
+                                     prelim-config))]
+           ;;(listof rules)
+           ;;Purpose: Holds all rules that consume no input for the given configurations
+           [connected-read-E-rules (filter (λ (rule)
+                                             (and (equal? (first (first rule)) (first config))
+                                                  (equal? (second (first rule)) EMP)))
+                                           lor)]
+           ;;(listof rules)
+           ;;Purpose: Holds all rules that can pop what is in the stack
+           [connected-pop-E-rules (filter (λ (rule)
+                                            (or (equal? (third (first rule)) EMP)
+                                                (and (>= (length stack) (length (third (first rule))))
+                                                     (equal? (take stack (length (third (first rule)))) (third (first rule))))))
+                                          connected-read-E-rules)]
+           ;;(listof configurations)
+           ;;Purpose: Creates the preliminary e-tran configurations using the connected-pop-E-rules
+           [prelim-E-config (map (λ (rule)
+                                   (append (list (first (second rule)))
+                                           (list a-word) 
+                                           (list (if (eq? (third (first rule)) EMP) stack (drop stack (length (third (first rule))))))))
+                                 connected-pop-E-rules)]
+           ;;(listof configurations)
+           ;;Purpose: Creates the configurations using the connected-pop-rules and preliminary configurations
+           [new-E-configs (filter (λ (config) (not (member? config visited)))
+                                  (map (λ (rule config)
+                                         (if (eq? (second (second rule)) EMP)
+                                             config
+                                             (append (list (first config))
+                                                     (list (second config))
+                                                     (list (append (second (second rule)) (third config))))))
+                                       connected-pop-E-rules
+                                       prelim-E-config))])
+      (cond [(or (> (length path) limit) (and (empty? new-configs) (empty? new-E-configs)))
+             (list path)]
+            [(and (empty? new-configs) (not (empty? new-E-configs)))
+             (make-configs-helper new-E-configs a-word lor (append new-E-configs visited) path limit)]
+            [(and (not (empty? new-configs)) (empty? new-E-configs))
+             (make-configs-helper new-configs (rest a-word) lor (append new-configs visited) path limit)]
+            [else (append (make-configs-helper new-E-configs a-word lor (append new-E-configs visited) path limit)
+                          (make-configs-helper new-configs (rest a-word) lor (append new-configs visited) path limit))])))
 
 ;;(listof configurations) (listof symbols) (listof rule) (listof configurations) (listof configurations) -> (listof configurations)
 ;;Purpose: Ensures that all possible configurations are explored
 ;;Visited = All configurations that consumed the processed word
 ;;Path = The configurations that consumed the processed word
-(define (make-configs-helper configs a-word lor visited path limit)
-  (if (empty? configs)
-      '()
-      (append (make-configs (first configs) a-word (third (first configs)) lor visited (append path (list (first configs))) limit)
-              (make-configs-helper (rest configs) a-word lor visited path limit))))
+#;(define (make-configs-helper configs a-word lor visited path limit)
+    (if (empty? configs)
+        '()
+        (append (make-configs (first configs) a-word (third (first configs)) lor visited (append path (list (first configs))) limit)
+                (make-configs-helper (rest configs) a-word lor visited path limit))))
 
 ;;(listof configurations) (listof symbols) (listof rule) (listof rules) -> (listof rules)
 ;;Purpose: Attaches the transition rules used between configurations
@@ -1173,11 +1268,11 @@ rule are a  (listof rule-struct)
                 [res (trace (first configs) rle)])
            (make-trace word (rest configs) (rest rules) (cons res acc)))]
         #;[(and (not (empty? acc))
-              (equal? (second (first (first rules))) EMP))
-         (let* ([rle (rule (first (first rules)) (second (first rules)))]
-                [res (struct-copy trace (first acc)
-                                  [rules (cons rle (trace-rules (first acc)))])])
-           (make-trace word configs (rest rules) (cons res (rest acc))))]
+                (equal? (second (first (first rules))) EMP))
+           (let* ([rle (rule (first (first rules)) (second (first rules)))]
+                  [res (struct-copy trace (first acc)
+                                    [rules (cons rle (trace-rules (first acc)))])])
+             (make-trace word configs (rest rules) (cons res (rest acc))))]
         [else (let* ([rle (rule (first (first rules)) (second (first rules)))]
                      [res (trace (first configs) rle)])
                 (make-trace (rest word) (rest configs) (rest rules) (cons res acc)))]))
@@ -1305,8 +1400,8 @@ rule are a  (listof rule-struct)
 ;;Purpose: Searches the zipper for the given word by applying the given function on the zipper
 (define (zipper-search zip word zip-func)
   (if (equal? (second (zipper-current zip)) word)
-         zip
-         (zipper-search (zip-func zip) word zip-func)))
+      zip
+      (zipper-search (zip-func zip) word zip-func)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1509,10 +1604,10 @@ rule are a  (listof rule-struct)
          (reverse (cons (create-graph-thunk a-vs #:cut-off #t) acc))]
         [(not (ormap (λ (config) (empty? (second (last config))) #;(sm-finals (building-viz-state-M a-vs)))
                      (map config-state-path (get-configs (building-viz-state-pci a-vs)
-                                  (sm-rules (building-viz-state-M a-vs))
-                                  (sm-start (building-viz-state-M a-vs))
-                                  (building-viz-state-max-cmps a-vs)
-                                  (sm-finals (building-viz-state-M a-vs))))))
+                                                         (sm-rules (building-viz-state-M a-vs))
+                                                         (sm-start (building-viz-state-M a-vs))
+                                                         (building-viz-state-max-cmps a-vs)
+                                                         (sm-finals (building-viz-state-M a-vs))))))
          (reverse (cons (create-graph-thunk a-vs) acc))]
         [else (let ([next-graph (create-graph-thunk a-vs)])
                 (create-graph-thunks (struct-copy building-viz-state
@@ -1542,10 +1637,10 @@ rule are a  (listof rule-struct)
          ;;Purpose: Determines if the pci can be can be fully consumed
          [completed-config? (ormap (λ (config) (empty? (second (last config))))
                                    (map config-state-path (get-configs (imsg-state-pci imsg-st)
-                                                (sm-rules (imsg-state-M imsg-st))
-                                                (sm-start (imsg-state-M imsg-st))
-                                                (imsg-state-max-cmps imsg-st)
-                                                (sm-finals (imsg-state-M imsg-st)))))]
+                                                                       (sm-rules (imsg-state-M imsg-st))
+                                                                       (sm-start (imsg-state-M imsg-st))
+                                                                       (imsg-state-max-cmps imsg-st)
+                                                                       (sm-finals (imsg-state-M imsg-st)))))]
          
          ;;(listof symbols)
          ;;Purpose: The last word that could be fully consumed by the ndfa
@@ -1567,10 +1662,10 @@ rule are a  (listof rule-struct)
                           ;(display (format "upstck ~s \n \n" (imsg-state-upstck imsg-st)))
                           ;(display (format "pstck ~s \n \n" (imsg-state-pstck imsg-st)))
                           (if 
-                              (list? (imsg-state-upstck imsg-st))
-                              (imsg-state-pstck imsg-st)
+                           (list? (imsg-state-upstck imsg-st))
+                           (imsg-state-pstck imsg-st)
                               
-                              (third (zipper-current (imsg-state-upstck imsg-st)))))])
+                           (third (zipper-current (imsg-state-upstck imsg-st)))))])
     (overlay/align
      'left 'middle
      (above/align
@@ -1728,15 +1823,15 @@ rule are a  (listof rule-struct)
                                           (empty? (third (last config)))))
                                    (map config-state-path
                                         (get-configs (imsg-state-pci (informative-messages-component-state
-                                                                 (viz-state-informative-messages a-vs))) 
-                                                (sm-rules (imsg-state-M (informative-messages-component-state
-                                                                         (viz-state-informative-messages a-vs))))
-                                                (sm-start (imsg-state-M (informative-messages-component-state
-                                                                         (viz-state-informative-messages a-vs))))
-                                                (imsg-state-max-cmps (informative-messages-component-state
-                                                                      (viz-state-informative-messages a-vs)))
-                                                (sm-finals (imsg-state-M (informative-messages-component-state
-                                                                         (viz-state-informative-messages a-vs)))))))]
+                                                                      (viz-state-informative-messages a-vs))) 
+                                                     (sm-rules (imsg-state-M (informative-messages-component-state
+                                                                              (viz-state-informative-messages a-vs))))
+                                                     (sm-start (imsg-state-M (informative-messages-component-state
+                                                                              (viz-state-informative-messages a-vs))))
+                                                     (imsg-state-max-cmps (informative-messages-component-state
+                                                                           (viz-state-informative-messages a-vs)))
+                                                     (sm-finals (imsg-state-M (informative-messages-component-state
+                                                                               (viz-state-informative-messages a-vs)))))))]
          [pci (if (empty? (imsg-state-upci (informative-messages-component-state
                                             (viz-state-informative-messages a-vs))))
                   
@@ -1767,16 +1862,16 @@ rule are a  (listof rule-struct)
                                                        (viz-state-informative-messages a-vs)))))]
                      [pci pci]
                      [upstck 
-                             (cond [(list? (imsg-state-upstck (informative-messages-component-state
-                                                               (viz-state-informative-messages a-vs))))
-                                    (imsg-state-upstck (informative-messages-component-state
-                                                        (viz-state-informative-messages a-vs)))]
-                                   [(zipper-at-end? (imsg-state-upstck (informative-messages-component-state
-                                                                        (viz-state-informative-messages a-vs))))
-                                    (imsg-state-upstck (informative-messages-component-state
-                                                        (viz-state-informative-messages a-vs)))]
-                                   [else (zipper-next (imsg-state-upstck (informative-messages-component-state
-                                                                          (viz-state-informative-messages a-vs))))])]
+                      (cond [(list? (imsg-state-upstck (informative-messages-component-state
+                                                        (viz-state-informative-messages a-vs))))
+                             (imsg-state-upstck (informative-messages-component-state
+                                                 (viz-state-informative-messages a-vs)))]
+                            [(zipper-at-end? (imsg-state-upstck (informative-messages-component-state
+                                                                 (viz-state-informative-messages a-vs))))
+                             (imsg-state-upstck (informative-messages-component-state
+                                                 (viz-state-informative-messages a-vs)))]
+                            [else (zipper-next (imsg-state-upstck (informative-messages-component-state
+                                                                   (viz-state-informative-messages a-vs))))])]
                      [pstck (imsg-state-pstck (informative-messages-component-state
                                                (viz-state-informative-messages a-vs)))
                             ]
@@ -1849,16 +1944,16 @@ rule are a  (listof rule-struct)
                      (append last-consumed-word (take unconsumed-word 1))]
                     [else full-word])]
          [upstck 
-                 (cond [(list? (imsg-state-upstck (informative-messages-component-state
-                                                   (viz-state-informative-messages a-vs))))
-                        (imsg-state-upstck (informative-messages-component-state
-                                            (viz-state-informative-messages a-vs)))]
-                       [(zipper-at-end? (imsg-state-upstck (informative-messages-component-state
-                                                            (viz-state-informative-messages a-vs))))
-                        (imsg-state-upstck (informative-messages-component-state
-                                            (viz-state-informative-messages a-vs)))]
-                       [else (zipper-to-end (imsg-state-upstck (informative-messages-component-state
-                                                                (viz-state-informative-messages a-vs))))])]
+          (cond [(list? (imsg-state-upstck (informative-messages-component-state
+                                            (viz-state-informative-messages a-vs))))
+                 (imsg-state-upstck (informative-messages-component-state
+                                     (viz-state-informative-messages a-vs)))]
+                [(zipper-at-end? (imsg-state-upstck (informative-messages-component-state
+                                                     (viz-state-informative-messages a-vs))))
+                 (imsg-state-upstck (informative-messages-component-state
+                                     (viz-state-informative-messages a-vs)))]
+                [else (zipper-to-end (imsg-state-upstck (informative-messages-component-state
+                                                         (viz-state-informative-messages a-vs))))])]
          [pstck (imsg-state-pstck (informative-messages-component-state
                                    (viz-state-informative-messages a-vs)))
                 ]
@@ -1897,16 +1992,16 @@ rule are a  (listof rule-struct)
                                                        (viz-state-informative-messages a-vs)))))]
                      [pci pci]
                      [upstck 
-                             (cond [(list? (imsg-state-upstck (informative-messages-component-state
-                                                               (viz-state-informative-messages a-vs))))
-                                    (imsg-state-upstck (informative-messages-component-state
-                                                        (viz-state-informative-messages a-vs)))]
-                                   [(zipper-at-begin? (imsg-state-upstck (informative-messages-component-state
-                                                                          (viz-state-informative-messages a-vs))))
-                                    (imsg-state-upstck (informative-messages-component-state
-                                                        (viz-state-informative-messages a-vs)))]
-                                   [else (zipper-prev (imsg-state-upstck (informative-messages-component-state
-                                                                          (viz-state-informative-messages a-vs))))])]
+                      (cond [(list? (imsg-state-upstck (informative-messages-component-state
+                                                        (viz-state-informative-messages a-vs))))
+                             (imsg-state-upstck (informative-messages-component-state
+                                                 (viz-state-informative-messages a-vs)))]
+                            [(zipper-at-begin? (imsg-state-upstck (informative-messages-component-state
+                                                                   (viz-state-informative-messages a-vs))))
+                             (imsg-state-upstck (informative-messages-component-state
+                                                 (viz-state-informative-messages a-vs)))]
+                            [else (zipper-prev (imsg-state-upstck (informative-messages-component-state
+                                                                   (viz-state-informative-messages a-vs))))])]
                      [pstck (imsg-state-pstck (informative-messages-component-state
                                                (viz-state-informative-messages a-vs)))
                             ]
@@ -1952,16 +2047,16 @@ rule are a  (listof rule-struct)
                                              (viz-state-informative-messages a-vs)))
                             '())]
                    [upstck 
-                           (cond [(list? (imsg-state-upstck (informative-messages-component-state
-                                                             (viz-state-informative-messages a-vs))))
-                                  (imsg-state-upstck (informative-messages-component-state
-                                                      (viz-state-informative-messages a-vs)))]
-                                 [(zipper-at-end? (imsg-state-upstck (informative-messages-component-state
-                                                                      (viz-state-informative-messages a-vs))))
-                                  (imsg-state-upstck (informative-messages-component-state
-                                                      (viz-state-informative-messages a-vs)))]
-                                 [else (zipper-to-begin (imsg-state-upstck (informative-messages-component-state
-                                                                            (viz-state-informative-messages a-vs))))])]
+                    (cond [(list? (imsg-state-upstck (informative-messages-component-state
+                                                      (viz-state-informative-messages a-vs))))
+                           (imsg-state-upstck (informative-messages-component-state
+                                               (viz-state-informative-messages a-vs)))]
+                          [(zipper-at-end? (imsg-state-upstck (informative-messages-component-state
+                                                               (viz-state-informative-messages a-vs))))
+                           (imsg-state-upstck (informative-messages-component-state
+                                               (viz-state-informative-messages a-vs)))]
+                          [else (zipper-to-begin (imsg-state-upstck (informative-messages-component-state
+                                                                     (viz-state-informative-messages a-vs))))])]
                    [pstck (if (empty? (imsg-state-upstck (informative-messages-component-state
                                                           (viz-state-informative-messages a-vs))))   
                               (imsg-state-pstck (informative-messages-component-state
@@ -2274,8 +2369,8 @@ rule are a  (listof rule-struct)
   (if (empty? traces)
       acc
       (if (rule-empty? (trace-rule (first traces)))
-      (until-last-empty-idx (rest traces) (add1 acc))
-      acc)))
+          (until-last-empty-idx (rest traces) (add1 acc))
+          acc)))
 
 ;; (Listof trace) -> (Listof trace)
 ;; Calculate number of computations for each step of the computation
@@ -2287,21 +2382,21 @@ rule are a  (listof rule-struct)
         (cons (length (coallesce (map (lambda (x) (if (empty? x)
                                                       '()
                                                       (if (rule-empty? (trace-rule (first x)))
-                                                      ((until-last-empty (rest x) 0) x)
-                                                      (first x)))
-                                                      )  traces)))
+                                                          ((until-last-empty (rest x) 0) x)
+                                                          (first x)))
+                                        )  traces)))
               (find-num-comps-helper (map (lambda (x) (if (empty? x)
                                                           '()
                                                           (if (rule-empty? (trace-rule (first x)))
-                                                          ((lambda (x) (drop x (until-last-empty-idx (rest x) 1))) x)
-                                                          (rest x)
-                                                          )
+                                                              ((lambda (x) (drop x (until-last-empty-idx (rest x) 1))) x)
+                                                              (rest x)
+                                                              )
                                                           ))
                                           traces)
-                                          ))
+                                     ))
         )
     )
- (find-num-comps-helper traces ))
+  (find-num-comps-helper traces ))
 
                                  
 
@@ -2337,18 +2432,20 @@ rule are a  (listof rule-struct)
 ;;pda word [boolean] [natnum] . -> (void) Throws error
 ;;Purpose: Visualizes the given ndfa processing the given word
 ;;Assumption: The given machine is a ndfa or dfa
-(define (pda-viz M a-word #:add-dead [add-dead #f] #:max-cmps [max-cmps 25] . invs)
+(define (pda-viz M a-word #:add-dead [add-dead #f] #:max-cmps [max-cmps 10] . invs)
   (if (not (equal? (sm-type M) 'pda))
       (error "The given machine must be a pda.")
       (let* ([new-M (if add-dead (make-new-M M) M)]
              [dead-state (if add-dead (last (sm-states new-M)) 'no-dead)]
+             [test0 (displayln "hello?")]
              [configs (get-configs a-word (sm-rules new-M) (sm-start new-M) max-cmps (sm-finals new-M))]
+             [test1 (displayln "done here")]
              #;[test2 (displayln (format "hope this works: ~a" (find-num-comps configs) 
                                        
-                                       ))]
+                                         ))]
              [config (map config-state-path configs) ]
              [accept-config (filter (λ (c)
-                                      (and (member? (first (last c #;(config-state-path config))) (sm-finals new-M))
+                                      (and (member? (first (last c #;(config-state-path config))) (sm-finals new-M) equal?)
                                            (empty? (second (last c #;(config-state-path config))))
                                            (empty? (third (last c #;(config-state-path config))))))
                                     config)]
@@ -2370,7 +2467,7 @@ rule are a  (listof rule-struct)
                                    cut-accept-configs))]
              
              [reject-configs (filter (λ (config)
-                                       (not (member? config accept-config)))
+                                       (not (member? config accept-config equal?)))
                                      config)]
              [reject-rules (map (λ (config)
                                   (attach-rules->configs config a-word (sm-rules new-M) '()))
@@ -2409,12 +2506,12 @@ rule are a  (listof rule-struct)
              [computation-lens (map second graphs+comp-len)]
              ;[test1 (displayln (format "configs: ~a" configs))]
              [test0 (void) #;(begin
-                      ;(void)
-                      ;(displayln (map second (map config-state-path configs)))
-                      (displayln (format "test: ~a" (coallesce (map first (append accept-cmps reject-cmps)))))
-                      (displayln (format "test: ~a" (coallesce (map second (append accept-cmps reject-cmps)))))
-                      (displayln (format "test: ~a" (coallesce (map third (append accept-cmps reject-cmps)))))
-                      )]
+                               ;(void)
+                               ;(displayln (map second (map config-state-path configs)))
+                               (displayln (format "test: ~a" (coallesce (map first (append accept-cmps reject-cmps)))))
+                               (displayln (format "test: ~a" (coallesce (map second (append accept-cmps reject-cmps)))))
+                               (displayln (format "test: ~a" (coallesce (map third (append accept-cmps reject-cmps)))))
+                               )]
              ;[test1 (displayln (format "rejected cmps: ~a" reject-cmps))]
              [test2 (displayln (format "hope this works: ~a" (find-num-comps (append accept-cmps reject-cmps)) 
                                        #;(length (coallesce (map first (append accept-cmps reject-cmps))))
@@ -2648,6 +2745,8 @@ rule are a  (listof rule-struct)
                (length (filter (λ (w) (equal? w 'b)) stck)))
             (not (= (length (filter (λ (w) (equal? w 'b)) a-word))
                     (length (filter (λ (w) (equal? w 'a)) a-word)))))))
+
+(pda-viz P '(a b))
 
 #;(pda-viz a* '(a a a a a)
            (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (= (length w) 3)) (empty? s)))))
