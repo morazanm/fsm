@@ -9,6 +9,7 @@
            )
   (provide listof-words/c
            listof-words-tm/c
+           listof-words-regexp/c
            words-in-sigma/c
            words-in-sigma-tm/c
            acceptable-position/c
@@ -43,7 +44,7 @@
      )
     )
 
-    (define (listof-words-tm/c type)
+  (define (listof-words-tm/c type)
     (make-flat-contract
      #:name 'valid-list-of-words-tm
      #:first-order (lambda (words) (listof-words-tm? words))
@@ -59,6 +60,18 @@
                     )
      )
     )
+
+  (define (listof-words-regexp/c type step-number)
+    (make-flat-contract
+     #:name 'valid-list-of-words-regexp
+     #:first-order (lambda (words) (listof-words? words))
+     #:projection (lambda (blame)
+                    (lambda (words)
+                      (current-blame-format format-error)
+                      (raise-blame-error
+                       blame
+                       words
+                       (format "Step ~a of the design recipe for regular expressions has not been successfully completed.\nThe expected ~a is not a list of words" step-number type))))))
 
   (define (words-in-sigma/c sigma field step-number)
     (make-flat-contract
@@ -96,7 +109,7 @@
 
   (define (acceptable-position/c sigma)
     (make-flat-contract
-      #:name 'tm-starting-position-in-words
+     #:name 'tm-starting-position-in-words
      #:first-order (lambda (words) (acceptable-position? words))
      #:projection (lambda (blame)
                     (lambda (words)
@@ -305,14 +318,14 @@
                       (raise-blame-error
                        blame
                        (return-input-grammar states
-                                          sigma
-                                          rules
-                                          start
-                                          words
-                                          accepts?
-                                          make-unchecked-rg
-                                          rg-derive
-                                          )
+                                             sigma
+                                             rules
+                                             start
+                                             words
+                                             accepts?
+                                             make-unchecked-rg
+                                             rg-derive
+                                             )
                        (accepts/rejects-formatter 'grammar accepts?))))))
 
   (define (cfg-input/c states sigma rules start accepts?)
@@ -325,14 +338,14 @@
                       (raise-blame-error
                        blame
                        (return-input-grammar states
-                                          sigma
-                                          rules
-                                          start
-                                          words
-                                          accepts?
-                                          make-unchecked-cfg
-                                          cfg-derive
-                                          )
+                                             sigma
+                                             rules
+                                             start
+                                             words
+                                             accepts?
+                                             make-unchecked-cfg
+                                             cfg-derive
+                                             )
                        (accepts/rejects-formatter 'grammar accepts?))))))
 
   (define (csg-input/c states sigma rules start accepts?)
@@ -345,13 +358,13 @@
                       (raise-blame-error
                        blame
                        (return-input-grammar states
-                                          sigma
-                                          rules
-                                          start
-                                          words
-                                          accepts?
-                                          make-unchecked-csg
-                                          csg-derive
-                                          )
+                                             sigma
+                                             rules
+                                             start
+                                             words
+                                             accepts?
+                                             make-unchecked-csg
+                                             csg-derive
+                                             )
                        (accepts/rejects-formatter 'grammar accepts?))))))
   )
