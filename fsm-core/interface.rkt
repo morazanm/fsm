@@ -564,6 +564,11 @@
 ;; kleenestar-regexp: regexp --> kleenestar-regexp
 ;; purpose: Constructs a regular expression who language contains any word
 ;;          that is constructed by concatenating zero or more words from L(a).
-(define/contract (kleenestar-regexp a)
+(define/contract (kleenestar-regexp
+                  a
+                  #:pred [pred (lambda (x) #true)]
+                  #:accepts [accepts '()]
+                  #:rejects [rejects '()]
+                  #:sigma [sigma '()])
   kleenestar-regexp/c
   (make-unchecked-kleenestar a))

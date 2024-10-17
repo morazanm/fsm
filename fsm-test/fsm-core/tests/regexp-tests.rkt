@@ -183,6 +183,59 @@ The following singletons: (c) are in the regexp, but not in the specified alphab
    (kleenestar-regexp (kleenestar-regexp "a"))
    "Step five of the design recipe for regular expressions has not been successfully completed.
 The argument to kleenestar-regexp must be a regular expression, but found: \"a\"")
+  (check-expect
+   (kleenestar-regexp-r1 (kleenestar-regexp
+                          singleton-a
+                          #:pred (lambda (word) (or (equal? word EMP)
+                                                    (and (list? word)
+                                                         (andmap (lambda (x) (equal? x 'a)) word))))))
+   singleton-a)
+  (check-error
+   (kleenestar-regexp singleton-a #:pred (lambda (x) 5))
+   "Step three of the design recipe for regular expressions has not been successfully completed.
+Instead of returning a Boolean, the function given as a predicate returned: 5")
+  (check-error
+   (kleenestar-regexp (empty-regexp) #:pred (lambda (x) #f))
+   "Step three of the design recipe for regular expressions has not been successfully completed.
+The given predicate does not hold for the following words generated using the regexp: (ε)")
+  (check-error
+   (kleenestar-regexp singleton-a #:rejects '((a) (a a)))
+   "Step six of the design recipe for regular expressions has not been successfully completed.
+The constructed kleenestar-regexp does not reject the following words: ((a) (a a))")
+  (check-expect
+   (kleenestar-regexp-r1 (kleenestar-regexp singleton-a #:accepts '((a) (a a a a))))
+   singleton-a)
+  (check-expect
+   (kleenestar-regexp-r1 (kleenestar-regexp concat-ab #:rejects '((b) (b a b))))
+   concat-ab)
+  (check-error
+   (kleenestar-regexp singleton-a #:accepts '((a) (b) (d e) (b c)))
+   "Step six of the design recipe for regular expressions has not been successfully completed.
+The following words to accept: ((b) (d e) (b c)) contain characters not in the regular expression's alphabet: (a)")
+  (check-error
+   (kleenestar-regexp singleton-a #:rejects '((a) (b) (d e) (b c)))
+   "Step six of the design recipe for regular expressions has not been successfully completed.
+The following words to reject: ((b) (d e) (b c)) contain characters not in the regular expression's alphabet: (a)")
+  (check-error
+   (kleenestar-regexp singleton-a #:sigma 5)
+   "Step one of the design recipe for regular expressions has not been successfully completed.
+The given regexp alphabet must be a list: 5")
+  (check-error
+   (kleenestar-regexp concat-ab #:sigma '(a B))
+   "Step one of the design recipe for regular expressions has not been successfully completed.
+The following: (B) are not valid lowercase alphabet letters in the given input alphabet: (a B)")
+  (check-error
+   (kleenestar-regexp concat-ab #:sigma '(a b b))
+   "Step one of the design recipe for regular expressions has not been successfully completed.
+The following values, (b), are duplicated in the given sigma: (a b b)")
+  (check-error
+   (kleenestar-regexp singleton-c #:sigma '(a b))
+   "Step one of the design recipe for regular expressions has not been successfully completed.
+The following singletons: (c) are in the regexp, but not in the specified alphabet: (a b)")
+  (check-expect
+   (kleenestar-regexp-r1 (kleenestar-regexp concat-ab #:sigma '(a b)))
+   concat-ab)
+
   
   (test)
 

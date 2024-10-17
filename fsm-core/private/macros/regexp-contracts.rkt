@@ -1,5 +1,6 @@
 (module constructors racket
   (require "../regexp.rkt"
+           "../constants.rkt"
            "error-formatting.rkt"
            racket/contract
            "../../private/sm-getters.rkt"
@@ -137,11 +138,14 @@
             (if accepts? "accept" "reject")))
 
   ; any -> boolean
-  ; Determines if the given input is a word, which is a list of symbols.
+  ; Determines if the given input is a word, which is a list of symbols or the
+  ; empty set symbol (see EMP)
   (define (valid-word? word)
-    (and (list? word)
+    (or
+     (equal? word EMP)
+     (and (list? word)
          (andmap (lambda (letter) (symbol? letter))
-                 word)))
+                 word))))
 
   (define valid-word/c
     (make-flat-contract
@@ -264,5 +268,25 @@
   ;; kleenestar-regexp/c
   (define kleenestar-regexp/c
     (->i ([r1 (valid-regexp/c "The argument to kleenestar-regexp must be a regular expression, but found")])
+         (#:pred [pred (r1) (and/c
+                                valid-regexp-predicate/c
+                                (predicate-passes/c (make-unchecked-kleenestar r1)))]
+          #:accepts [accepts (r1) (and/c
+                                      (listof-words-regexp/c "accepts" "four")
+                                      (words-in-sigma/c "accept" (make-unchecked-kleenestar r1))
+                                      (regexp-input/c (make-unchecked-kleenestar r1)
+                                                      'kleenestar-regexp
+                                                      #true))]
+          #:rejects [rejects (r1) (and/c
+                                      (listof-words-regexp/c "rejects" "four")
+                                      (words-in-sigma/c "reject" (make-unchecked-kleenestar r1))
+                                      (regexp-input/c (make-unchecked-kleenestar r1)
+                                                      'kleenestar-regexp
+                                                      #false))]
+          #:sigma [sigma (r1) (and/c
+                                  (is-a-list-regexp/c "regexp alphabet" "one")
+                                  (valid-listof/c valid-alpha? "lowercase alphabet letter" "input alphabet" #:rule "one" #:for-regexp? #true)
+                                  (no-duplicates/c "sigma" "one" #:for-regexp? #true)
+                                  (valid-regexp-sigma/c (make-unchecked-kleenestar r1)))])
          [result kleenestar-regexp?]))
   )
