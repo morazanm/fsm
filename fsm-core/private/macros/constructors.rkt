@@ -63,8 +63,8 @@
                                                start
                                                finals
                                                rules
-                                               add-dead) (and/c (words-in-sigma/c sigma 'accepts)
-                                                                (listof-words/c "accepts")
+                                               add-dead) (and/c (words-in-sigma/c sigma 'accepts "two")
+                                                                (listof-words/c "accepts" "two")
                                                                 (dfa-input/c states
                                                                              sigma
                                                                              start
@@ -77,8 +77,8 @@
                                                start
                                                finals
                                                rules
-                                               add-dead) (and/c (words-in-sigma/c sigma 'rejects)
-                                                                (listof-words/c "rejects")
+                                               add-dead) (and/c (words-in-sigma/c sigma 'rejects "two")
+                                                                (listof-words/c "rejects" "two")
                                                                 (dfa-input/c states
                                                                              sigma
                                                                              start
@@ -113,8 +113,8 @@
                               sigma
                               start
                               finals
-                              rules) (and/c (listof-words/c "accepts")
-                                            (words-in-sigma/c sigma 'accepts)
+                              rules) (and/c (listof-words/c "accepts" "two")
+                                            (words-in-sigma/c sigma 'accepts "two")
                                             (ndfa-input/c states
                                                           sigma
                                                           start
@@ -125,8 +125,8 @@
                               sigma
                               start
                               finals
-                              rules) (and/c (listof-words/c "rejects")
-                                            (words-in-sigma/c sigma 'rejects)
+                              rules) (and/c (listof-words/c "rejects" "two")
+                                            (words-in-sigma/c sigma 'rejects "two")
                                             (ndfa-input/c states
                                                           sigma
                                                           start
@@ -165,8 +165,8 @@
                               gamma
                               start
                               finals
-                              rules) (and/c (listof-words/c "accepts")
-                                            (words-in-sigma/c sigma 'accepts)
+                              rules) (and/c (listof-words/c "accepts" "two")
+                                            (words-in-sigma/c sigma 'accepts "two")
                                             (ndpda-input/c states
                                                            sigma
                                                            gamma
@@ -179,8 +179,8 @@
                               gamma
                               start
                               finals
-                              rules) (and/c (listof-words/c "rejects")
-                                            (words-in-sigma/c sigma 'rejects)
+                              rules) (and/c (listof-words/c "rejects" "two")
+                                            (words-in-sigma/c sigma 'rejects "two")
                                             (ndpda-input/c states
                                                            sigma
                                                            gamma
