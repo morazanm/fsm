@@ -239,6 +239,26 @@
   (define union-regexp/c
     (->i ([r1 (valid-regexp/c "The first argument to union-regexp must be a regular expression, but found")]
           [r2 (valid-regexp/c "The second argument to union-regexp must be a regular expression, but found")])
+         (#:pred [pred (r1 r2) (and/c
+                                valid-regexp-predicate/c
+                                (predicate-passes/c (make-unchecked-union r1 r2)))]
+          #:accepts [accepts (r1 r2) (and/c
+                                      (listof-words-regexp/c "accepts" "four")
+                                      (words-in-sigma/c "accept" (make-unchecked-union r1 r2))
+                                      (regexp-input/c (make-unchecked-union r1 r2)
+                                                      'union-regexp
+                                                      #true))]
+          #:rejects [rejects (r1 r2) (and/c
+                                      (listof-words-regexp/c "rejects" "four")
+                                      (words-in-sigma/c "reject" (make-unchecked-union r1 r2))
+                                      (regexp-input/c (make-unchecked-union r1 r2)
+                                                      'union-regexp
+                                                      #false))]
+          #:sigma [sigma (r1 r2) (and/c
+                                  (is-a-list-regexp/c "regexp alphabet" "one")
+                                  (valid-listof/c valid-alpha? "lowercase alphabet letter" "input alphabet" #:rule "one" #:for-regexp? #true)
+                                  (no-duplicates/c "sigma" "one" #:for-regexp? #true)
+                                  (valid-regexp-sigma/c (make-unchecked-union r1 r2)))])
          [result union-regexp?]))
 
   ;; kleenestar-regexp/c

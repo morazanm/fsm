@@ -550,7 +550,13 @@
 ;; union-regexp: regexp regexp --> union-regexp
 ;; purpose: Constructs a regular expression whose language contains all the words
 ;;          from L(a) and L(b).
-(define/contract (union-regexp a b)
+(define/contract (union-regexp
+                  a
+                  b
+                  #:pred [pred (lambda (x) #true)]
+                  #:accepts [accepts '()]
+                  #:rejects [rejects '()]
+                  #:sigma [sigma '()])
   union-regexp/c
   (make-unchecked-union a b)
   )

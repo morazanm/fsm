@@ -122,6 +122,58 @@ The first argument to union-regexp must be a regular expression, but found: \"ab
    (union-regexp concat-ab 8)
    "Step five of the design recipe for regular expressions has not been successfully completed.
 The second argument to union-regexp must be a regular expression, but found: 8")
+  (check-expect
+   (union-regexp-r1 (union-regexp singleton-a singleton-b #:pred (lambda (word) (or (equal? word '(a)) (equal? word '(b))))))
+   singleton-a)
+  (check-error
+   (union-regexp singleton-a singleton-b #:pred (lambda (x) 5))
+   "Step three of the design recipe for regular expressions has not been successfully completed.
+Instead of returning a Boolean, the function given as a predicate returned: 5")
+  (check-error
+   (union-regexp singleton-a singleton-a #:pred (lambda (x) #f))
+   "Step three of the design recipe for regular expressions has not been successfully completed.
+The given predicate does not hold for the following words generated using the regexp: ((a))")
+  (check-error
+   (union-regexp singleton-a singleton-b #:accepts '((a) (b) (a b)))
+   "Step six of the design recipe for regular expressions has not been successfully completed.
+The constructed union-regexp does not accept the following words: ((a b))")
+  (check-error
+   (union-regexp singleton-a singleton-b #:rejects '((a b) (b)))
+   "Step six of the design recipe for regular expressions has not been successfully completed.
+The constructed union-regexp does not reject the following words: ((b))")
+  (check-expect
+   (union-regexp-r1 (union-regexp singleton-a singleton-b #:accepts '((a) (b))))
+   singleton-a)
+  (check-expect
+   (union-regexp-r1 (union-regexp singleton-a singleton-b #:rejects '((a b) (b a))))
+   singleton-a)
+  (check-error
+   (union-regexp singleton-a singleton-b #:accepts '((a) (b) (d e) (b c)))
+   "Step six of the design recipe for regular expressions has not been successfully completed.
+The following words to accept: ((d e) (b c)) contain characters not in the regular expression's alphabet: (a b)")
+  (check-error
+   (union-regexp singleton-a singleton-b #:rejects '((a) (b) (d e) (b c)))
+   "Step six of the design recipe for regular expressions has not been successfully completed.
+The following words to reject: ((d e) (b c)) contain characters not in the regular expression's alphabet: (a b)")
+  (check-error
+   (union-regexp singleton-a singleton-b #:sigma 5)
+   "Step one of the design recipe for regular expressions has not been successfully completed.
+The given regexp alphabet must be a list: 5")
+  (check-error
+   (union-regexp concat-ab singleton-c #:sigma '(a B))
+   "Step one of the design recipe for regular expressions has not been successfully completed.
+The following: (B) are not valid lowercase alphabet letters in the given input alphabet: (a B)")
+  (check-error
+   (union-regexp concat-ab singleton-c #:sigma '(a b b))
+   "Step one of the design recipe for regular expressions has not been successfully completed.
+The following values, (b), are duplicated in the given sigma: (a b b)")
+  (check-error
+   (union-regexp concat-ab singleton-c #:sigma '(a b))
+   "Step one of the design recipe for regular expressions has not been successfully completed.
+The following singletons: (c) are in the regexp, but not in the specified alphabet: (a b)")
+  (check-expect
+   (union-regexp-r1 (union-regexp concat-ab singleton-c #:sigma '(a b c)))
+   concat-ab)
 
   ;; kleenestar-regexp tests
   (check-expect
