@@ -16,9 +16,10 @@
    is-state-in-finals/c
    valid-num-tapes/c
    is-a-list/c
+   is-a-list-regexp/c
    )
 
-  ;is-a-list//c: string string --> contract
+  ;; is-a-list/c: string string --> contract
   ;; predicate: any --> boolean
   ;; Purpose: A flat contract that checks if the input is a list.
   (define (is-a-list/c field-name step)
@@ -32,6 +33,25 @@
                        blame
                        x
                        (format "Step ~a of the design recipe has not been successfully completed.\nThe given ~a must be a list" step field-name)
+                       ))
+                    )
+     )
+    )
+
+  ;; is-a-list-regexp/c: string string --> contract
+  ;; predicate: any --> boolean
+  ;; Purpose: A flat contract that checks if the input is a list.
+  (define (is-a-list-regexp/c field-name step)
+    (make-flat-contract
+     #:name 'is-a-list/c
+     #:first-order (lambda (x) (list? x))
+     #:projection (lambda (blame)
+                    (lambda (x)
+                      (current-blame-format format-error)
+                      (raise-blame-error
+                       blame
+                       x
+                       (format "Step ~a of the design recipe for regular expressions has not been successfully completed.\nThe given ~a must be a list" step field-name)
                        ))
                     )
      )
@@ -63,7 +83,7 @@
   ;; helper: (listof any) --> (listof any)
   ;Purpose: applies a predicate to a list and makes sure that everything in
   ; the list passes the predicate. Returns an error if it doesnt
-  (define (valid-listof/c predicate element-name field-name #:rule [rule ""])
+  (define (valid-listof/c predicate element-name field-name #:rule [rule ""] #:for-regexp? [for-regexp? #false])
     (make-flat-contract
      #:name (string->symbol (format "valid-~a" field-name))
      #:first-order (lambda (vals) (andmap predicate vals))
@@ -77,7 +97,9 @@
                        (format "~a.\nThe following: ~a are not valid ~as in the given ~a"
                                (if (equal? rule "")
                                    ""
-                                   (format "Step ~a of the design recipe has not been successfully completed" rule))
+                                   (if for-regexp?
+                                       (format "Step ~a of the design recipe for regular expressions has not been successfully completed" rule)
+                                       (format "Step ~a of the design recipe has not been successfully completed" rule)))
                                invalid-vals
                                element-name
                                field-name
@@ -175,7 +197,7 @@
   ;Purpose: to check if there are any duplicates in a list, and if there are
   ; returns an error that contains the offending value, and the type of list that
   ; those values are coming from
-  (define (no-duplicates/c type step)
+  (define (no-duplicates/c type step #:for-regexp? [for-regexp? #false])
     (make-flat-contract
      #:name (string->symbol (format "distinct-list-of-~a" type))
      #:first-order (lambda (vals) (not (check-duplicates vals)))
@@ -187,10 +209,15 @@
                           (raise-blame-error
                            blame
                            vals
-                           (format "Step ~a of the design recipe has not been successfully completed.\nThe following values, ~a, are duplicated in the given ~a"
-                                   step
-                                   (return-duplicates vals)
-                                   type)
+                           (if for-regexp?
+                               (format "Step ~a of the design recipe for regular expressions has not been successfully completed.\nThe following values, ~a, are duplicated in the given ~a"
+                                       step
+                                       (return-duplicates vals)
+                                       type)
+                               (format "Step ~a of the design recipe has not been successfully completed.\nThe following values, ~a, are duplicated in the given ~a"
+                                       step
+                                       (return-duplicates vals)
+                                       type))
                            )
                           )
                       
