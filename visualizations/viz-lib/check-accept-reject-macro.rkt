@@ -13,6 +13,8 @@
          "../../fsm-core/interface.rkt"
          "default-viz-functions.rkt")
 
+(provide check-accept check-reject)
+
 
 ;; check-accept M w [n] - returns #t if machine accepts, #f if rejects
 (define-syntax (check-accept stx)
@@ -38,37 +40,3 @@
      #'(if (check-equal? (not (string? (tm-apply M w n))) #t)
            #f
            #t)]))
-
-
-;; TESTING
-
-    
-(define AB*B*UAB*
-  (make-ndfa '(S K B C H)
-             '(a b)
-             'S
-             '(H)
-             `((S ,EMP K) (S a C)
-                          (K a B) (K ,EMP H)
-                          (B b K)
-                          (C ,EMP H)
-                          (H b H))))
-
-;; Write b
-
-;; PRE: tape = (LM w) AND i=k>0 AND tape[i]=s, where w in {a b BLANK}*
-;;      AND s in (a b BLANK)
-;; POST: tape = (LM w) AND i=k AND tape[i]=b
-(define Wb (make-tm '(S H)
-                    '(a b)
-                    `(((S a) (H b))
-                      ((S b) (H b))
-                      ((S ,BLANK) (H b)))
-                    'S
-                    '(H)))
-
-;; Tests for Wb
-(check-equal? (last (sm-showtransitions Wb `(,LM ,BLANK ,BLANK) 2))
-              `(H 2 (,LM ,BLANK b)))
-(check-equal? (last (sm-showtransitions Wb `(,LM b b b b) 3))
-              `(H 3 (,LM b b b b)))
