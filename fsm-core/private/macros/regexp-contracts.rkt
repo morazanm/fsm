@@ -144,8 +144,8 @@
     (or
      (equal? word EMP)
      (and (list? word)
-         (andmap (lambda (letter) (symbol? letter))
-                 word))))
+          (andmap (lambda (letter) (symbol? letter))
+                  word))))
 
   (define valid-word/c
     (make-flat-contract
@@ -195,8 +195,12 @@
                              failing-words
                              (accepts/rejects-formatter type accepts?))))))))
 
-  (define (predicate-passes/c regexp)
-    (let [(words (remove-duplicates (build-list 25 (lambda (x) (gen-regexp-word regexp)))))]
+  (define (predicate-passes/c regexp gen-cases)
+    (let [(words (remove-duplicates
+                  (build-list (if (unsupplied-arg? gen-cases)
+                                  10
+                                  gen-cases)
+                              (lambda (x) (gen-regexp-word regexp)))))]
       (make-flat-contract
        #:name 'predicate-passes
        #:first-order (lambda (predicate) (empty? (filter (lambda (word) (not (predicate word))) words)))
@@ -212,15 +216,34 @@
                                (format "Step three of the design recipe for regular expressions has not been successfully completed.\nThe given predicate does not hold for the following words generated using the regexp"))))
                         )))))
 
+  (define valid-gen-cases-count/c
+    (make-flat-contract
+     #:name 'valid-gen-cases-count
+     #:first-order (lambda (x) (and (integer? x) (> x 0)))
+     #:projection (lambda (blame)
+                    (lambda (x)
+                      (current-blame-format format-error)
+                      (if (and (integer? x) (> x 0))
+                          x
+                          (raise-blame-error
+                           blame
+                           x
+                           (format "Step six of the design recipe for regular expressions has not been successfully completed.\nThe number of generated test cases to check with the predicate must be a positive integer, but found")))))))
+
   
 
   ;; concat-regexp/c
   (define concat-regexp/c
     (->i ([r1 (valid-regexp/c "The first argument to concat-regexp must be a regular expression, but found")]
           [r2 (valid-regexp/c "The second argument to concat-regexp must be a regular expression, but found")])
-         (#:pred [pred (r1 r2) (and/c
-                                valid-regexp-predicate/c
-                                (predicate-passes/c (make-unchecked-concat r1 r2)))]
+         (#:sigma [sigma (r1 r2) (and/c (is-a-list-regexp/c "regexp alphabet" "one")
+                                        (valid-listof/c valid-alpha? "lowercase alphabet letter" "input alphabet" #:rule "one" #:for-regexp? #true)
+                                        (no-duplicates/c "sigma" "one" #:for-regexp? #true)
+                                        (valid-regexp-sigma/c (make-unchecked-concat r1 r2)))]
+          #:pred [pred (r1 r2 gen-cases) (and/c
+                                          valid-regexp-predicate/c
+                                          (predicate-passes/c (make-unchecked-concat r1 r2) gen-cases))]
+          #:gen-cases [gen-cases valid-gen-cases-count/c]
           #:accepts [accepts (r1 r2) (and/c
                                       (listof-words-regexp/c "accepts" "four")
                                       (words-in-sigma/c "accept" (make-unchecked-concat r1 r2))
@@ -233,19 +256,22 @@
                                       (regexp-input/c (make-unchecked-concat r1 r2)
                                                       'concat-regexp
                                                       #f))]
-          #:sigma [sigma (r1 r2) (and/c (is-a-list-regexp/c "regexp alphabet" "one")
-                                        (valid-listof/c valid-alpha? "lowercase alphabet letter" "input alphabet" #:rule "one" #:for-regexp? #true)
-                                        (no-duplicates/c "sigma" "one" #:for-regexp? #true)
-                                        (valid-regexp-sigma/c (make-unchecked-concat r1 r2)))])
+          )
          [result concat-regexp?]))
 
   ;; union-regexp/c
   (define union-regexp/c
     (->i ([r1 (valid-regexp/c "The first argument to union-regexp must be a regular expression, but found")]
           [r2 (valid-regexp/c "The second argument to union-regexp must be a regular expression, but found")])
-         (#:pred [pred (r1 r2) (and/c
-                                valid-regexp-predicate/c
-                                (predicate-passes/c (make-unchecked-union r1 r2)))]
+         (#:sigma [sigma (r1 r2) (and/c
+                                  (is-a-list-regexp/c "regexp alphabet" "one")
+                                  (valid-listof/c valid-alpha? "lowercase alphabet letter" "input alphabet" #:rule "one" #:for-regexp? #true)
+                                  (no-duplicates/c "sigma" "one" #:for-regexp? #true)
+                                  (valid-regexp-sigma/c (make-unchecked-union r1 r2)))]
+          #:pred [pred (r1 r2 gen-cases) (and/c
+                                          valid-regexp-predicate/c
+                                          (predicate-passes/c (make-unchecked-union r1 r2) gen-cases))]
+          #:gen-cases [gen-cases valid-gen-cases-count/c]
           #:accepts [accepts (r1 r2) (and/c
                                       (listof-words-regexp/c "accepts" "four")
                                       (words-in-sigma/c "accept" (make-unchecked-union r1 r2))
@@ -258,35 +284,33 @@
                                       (regexp-input/c (make-unchecked-union r1 r2)
                                                       'union-regexp
                                                       #false))]
-          #:sigma [sigma (r1 r2) (and/c
-                                  (is-a-list-regexp/c "regexp alphabet" "one")
-                                  (valid-listof/c valid-alpha? "lowercase alphabet letter" "input alphabet" #:rule "one" #:for-regexp? #true)
-                                  (no-duplicates/c "sigma" "one" #:for-regexp? #true)
-                                  (valid-regexp-sigma/c (make-unchecked-union r1 r2)))])
+          )
          [result union-regexp?]))
 
   ;; kleenestar-regexp/c
   (define kleenestar-regexp/c
     (->i ([r1 (valid-regexp/c "The argument to kleenestar-regexp must be a regular expression, but found")])
-         (#:pred [pred (r1) (and/c
-                                valid-regexp-predicate/c
-                                (predicate-passes/c (make-unchecked-kleenestar r1)))]
+         (#:sigma [sigma (r1) (and/c
+                               (is-a-list-regexp/c "regexp alphabet" "one")
+                               (valid-listof/c valid-alpha? "lowercase alphabet letter" "input alphabet" #:rule "one" #:for-regexp? #true)
+                               (no-duplicates/c "sigma" "one" #:for-regexp? #true)
+                               (valid-regexp-sigma/c (make-unchecked-kleenestar r1)))]
+          #:pred [pred (r1 gen-cases) (and/c
+                                       valid-regexp-predicate/c
+                                       (predicate-passes/c (make-unchecked-kleenestar r1) gen-cases))]
+          #:gen-cases [gen-cases valid-gen-cases-count/c]
           #:accepts [accepts (r1) (and/c
-                                      (listof-words-regexp/c "accepts" "four")
-                                      (words-in-sigma/c "accept" (make-unchecked-kleenestar r1))
-                                      (regexp-input/c (make-unchecked-kleenestar r1)
-                                                      'kleenestar-regexp
-                                                      #true))]
+                                   (listof-words-regexp/c "accepts" "four")
+                                   (words-in-sigma/c "accept" (make-unchecked-kleenestar r1))
+                                   (regexp-input/c (make-unchecked-kleenestar r1)
+                                                   'kleenestar-regexp
+                                                   #true))]
           #:rejects [rejects (r1) (and/c
-                                      (listof-words-regexp/c "rejects" "four")
-                                      (words-in-sigma/c "reject" (make-unchecked-kleenestar r1))
-                                      (regexp-input/c (make-unchecked-kleenestar r1)
-                                                      'kleenestar-regexp
-                                                      #false))]
-          #:sigma [sigma (r1) (and/c
-                                  (is-a-list-regexp/c "regexp alphabet" "one")
-                                  (valid-listof/c valid-alpha? "lowercase alphabet letter" "input alphabet" #:rule "one" #:for-regexp? #true)
-                                  (no-duplicates/c "sigma" "one" #:for-regexp? #true)
-                                  (valid-regexp-sigma/c (make-unchecked-kleenestar r1)))])
+                                   (listof-words-regexp/c "rejects" "four")
+                                   (words-in-sigma/c "reject" (make-unchecked-kleenestar r1))
+                                   (regexp-input/c (make-unchecked-kleenestar r1)
+                                                   'kleenestar-regexp
+                                                   #false))]
+          )
          [result kleenestar-regexp?]))
   )

@@ -540,10 +540,12 @@
 (define/contract (concat-regexp
                   a
                   b
+                  #:sigma [sigma '()]
                   #:pred [pred (lambda (x) #t)]
+                  #:gen-cases [gen-cases 10]
                   #:accepts [accepts '()]
                   #:rejects [rejects '()]
-                  #:sigma [sigma '()])
+                  )
   concat-regexp/c
   (make-unchecked-concat a b))
 
@@ -553,10 +555,12 @@
 (define/contract (union-regexp
                   a
                   b
+                  #:sigma [sigma '()]
                   #:pred [pred (lambda (x) #true)]
+                  #:gen-cases [gen-cases 10]
                   #:accepts [accepts '()]
                   #:rejects [rejects '()]
-                  #:sigma [sigma '()])
+                  )
   union-regexp/c
   (make-unchecked-union a b)
   )
@@ -566,9 +570,11 @@
 ;;          that is constructed by concatenating zero or more words from L(a).
 (define/contract (kleenestar-regexp
                   a
+                  #:sigma [sigma '()]
                   #:pred [pred (lambda (x) #true)]
+                  #:gen-cases [gen-cases 10]
                   #:accepts [accepts '()]
                   #:rejects [rejects '()]
-                  #:sigma [sigma '()])
+                  )
   kleenestar-regexp/c
   (make-unchecked-kleenestar a))

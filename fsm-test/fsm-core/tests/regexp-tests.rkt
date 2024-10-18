@@ -103,6 +103,10 @@ The given predicate does not hold for the following words generated using the re
    (concat-regexp singleton-a singleton-b #:pred (lambda (x) 5))
    "Step three of the design recipe for regular expressions has not been successfully completed.
 Instead of returning a Boolean, the function given as a predicate returned: 5")
+  (check-error
+   (concat-regexp singleton-a singleton-b #:gen-cases 'a #:pred (lambda (x) #true))
+   "Step six of the design recipe for regular expressions has not been successfully completed.
+The number of generated test cases to check with the predicate must be a positive integer, but found: a")
   
 
   (define concat-ab (concat-regexp singleton-a singleton-b))
@@ -174,6 +178,10 @@ The following singletons: (c) are in the regexp, but not in the specified alphab
   (check-expect
    (union-regexp-r1 (union-regexp concat-ab singleton-c #:sigma '(a b c)))
    concat-ab)
+  (check-error
+   (union-regexp singleton-a singleton-b #:gen-cases 'a #:pred (lambda (x) #true))
+   "Step six of the design recipe for regular expressions has not been successfully completed.
+The number of generated test cases to check with the predicate must be a positive integer, but found: a")
 
   ;; kleenestar-regexp tests
   (check-expect
@@ -235,6 +243,10 @@ The following singletons: (c) are in the regexp, but not in the specified alphab
   (check-expect
    (kleenestar-regexp-r1 (kleenestar-regexp concat-ab #:sigma '(a b)))
    concat-ab)
+  (check-error
+   (kleenestar-regexp singleton-a #:gen-cases 'a #:pred (lambda (x) #true))
+   "Step six of the design recipe for regular expressions has not been successfully completed.
+The number of generated test cases to check with the predicate must be a positive integer, but found: a")
 
   
   (test)
