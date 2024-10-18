@@ -17,6 +17,8 @@
 (provide check-derive check-not-derive)
 
 
+;; grammar word -> Boolean
+;; Purpose: To check if the given grammar can derive a given word
 (define-syntax (check-derive stx)
   (syntax-parse stx
     [(_ g w)
@@ -25,7 +27,8 @@
            #t)]
     ))
 
-
+;; grammar word -> Boolean
+;; Purpose: To check if the given grammar cannot derive a given word
 (define-syntax (check-not-derive stx)
   (syntax-parse stx
     [(_ g w)

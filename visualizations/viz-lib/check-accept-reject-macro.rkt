@@ -16,7 +16,8 @@
 (provide check-accept check-reject)
 
 
-;; check-accept M w [n] - returns #t if machine accepts, #f if rejects
+;; machine word [head-pos] -> Boolean
+;; Purpose: To determine whether a given machine can accept/process a given word
 (define-syntax (check-accept stx)
   (syntax-parse stx
     [(_ M w)
@@ -29,7 +30,8 @@
            #t)]))
 
 
-;; check-reject M w [n] - returns #t if machine accepts, #f if rejects
+;; machine word [head-pos] -> Boolean
+;; Purpose: To determine whether a given machine cannot accept/process a given word
 (define-syntax (check-reject stx)
   (syntax-parse stx
     [(_ M w)
