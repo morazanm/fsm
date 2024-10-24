@@ -543,8 +543,8 @@
                   #:sigma [sigma '()]
                   #:pred [pred (lambda (x) #t)]
                   #:gen-cases [gen-cases 10]
-                  #:accepts [accepts '()]
-                  #:rejects [rejects '()]
+                  #:in-lang [in-lang '()]
+                  #:not-in-lang [not-in-lang '()]
                   )
   concat-regexp/c
   (make-unchecked-concat a b))
@@ -558,8 +558,8 @@
                   #:sigma [sigma '()]
                   #:pred [pred (lambda (x) #true)]
                   #:gen-cases [gen-cases 10]
-                  #:accepts [accepts '()]
-                  #:rejects [rejects '()]
+                  #:in-lang [in-lang '()]
+                  #:not-in-lang [not-in-lang '()]
                   )
   union-regexp/c
   (make-unchecked-union a b)
@@ -573,8 +573,8 @@
                   #:sigma [sigma '()]
                   #:pred [pred (lambda (x) #true)]
                   #:gen-cases [gen-cases 10]
-                  #:accepts [accepts '()]
-                  #:rejects [rejects '()]
+                  #:in-lang [in-lang '()]
+                  #:not-in-lang [not-in-lang '()]
                   )
   kleenestar-regexp/c
   (make-unchecked-kleenestar a))

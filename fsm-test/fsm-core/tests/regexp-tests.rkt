@@ -48,9 +48,9 @@ The first argument to concat-regexp must be a regular expression, but found: \"a
    "Step five of the design recipe for regular expressions has not been successfully completed.
 The second argument to concat-regexp must be a regular expression, but found: 7")
   (check-error
-   (concat-regexp singleton-a singleton-b #:accepts '((a b) 5))
+   (concat-regexp singleton-a singleton-b #:in-lang '((a b) 5))
    "Step four of the design recipe for regular expressions has not been successfully completed.
-The expected accepts is not a list of words: ((a b) 5)")
+The expected words in the language is not a valid list of words: ((a b) 5)")
   (check-error
    (concat-regexp singleton-a singleton-b #:sigma 5)
    "Step one of the design recipe for regular expressions has not been successfully completed.
@@ -71,19 +71,19 @@ The following singletons: (b) are in the regexp, but not in the specified alphab
    (concat-regexp-r1 (concat-regexp singleton-a singleton-b #:sigma '(a b)))
    (singleton-regexp "a"))
   (check-error
-   (concat-regexp singleton-a singleton-b #:accepts '((a a) (a b)))
+   (concat-regexp singleton-a singleton-b #:in-lang '((a a) (a b)))
    "Step six of the design recipe for regular expressions has not been successfully completed.
-The constructed concat-regexp does not accept the following words: ((a a))")
+The following words are not in the language of the constructed concat-regexp: ((a a))")
   (check-error
-   (concat-regexp singleton-a singleton-b #:rejects '((a a) (a b)))
+   (concat-regexp singleton-a singleton-b #:not-in-lang '((a a) (a b)))
    "Step six of the design recipe for regular expressions has not been successfully completed.
-The constructed concat-regexp does not reject the following words: ((a b))")
+The following words are in the language of the constructed concat-regexp: ((a b))")
   (check-error
-   (concat-regexp singleton-a singleton-b #:accepts '((a b) (a c)))
+   (concat-regexp singleton-a singleton-b #:in-lang '((a b) (a c)))
    "Step six of the design recipe for regular expressions has not been successfully completed.
 The following words to accept: ((a c)) contain characters not in the regular expression's alphabet: (a b)")
   (check-error
-   (concat-regexp singleton-a singleton-b #:rejects '((a a) (d e)))
+   (concat-regexp singleton-a singleton-b #:not-in-lang '((a a) (d e)))
    "Step six of the design recipe for regular expressions has not been successfully completed.
 The following words to reject: ((d e)) contain characters not in the regular expression's alphabet: (a b)")
   (check-expect
@@ -91,8 +91,8 @@ The following words to reject: ((d e)) contain characters not in the regular exp
                       singleton-a
                       singleton-b
                       #:pred (lambda (word) (equal? word '(a b)))
-                      #:accepts '((a b))
-                      #:rejects '((a) (b))
+                      #:in-lang '((a b))
+                      #:not-in-lang '((a) (b))
                       #:sigma '(a b)))
    singleton-a)
   (check-error
@@ -138,25 +138,25 @@ Instead of returning a Boolean, the function given as a predicate returned: 5")
    "Step three of the design recipe for regular expressions has not been successfully completed.
 The given predicate does not hold for the following words generated using the regexp: ((a))")
   (check-error
-   (union-regexp singleton-a singleton-b #:accepts '((a) (b) (a b)))
+   (union-regexp singleton-a singleton-b #:in-lang '((a) (b) (a b)))
    "Step six of the design recipe for regular expressions has not been successfully completed.
-The constructed union-regexp does not accept the following words: ((a b))")
+The following words are not in the language of the constructed union-regexp: ((a b))")
   (check-error
-   (union-regexp singleton-a singleton-b #:rejects '((a b) (b)))
+   (union-regexp singleton-a singleton-b #:not-in-lang '((a b) (b)))
    "Step six of the design recipe for regular expressions has not been successfully completed.
-The constructed union-regexp does not reject the following words: ((b))")
+The following words are in the language of the constructed union-regexp: ((b))")
   (check-expect
-   (union-regexp-r1 (union-regexp singleton-a singleton-b #:accepts '((a) (b))))
+   (union-regexp-r1 (union-regexp singleton-a singleton-b #:in-lang '((a) (b))))
    singleton-a)
   (check-expect
-   (union-regexp-r1 (union-regexp singleton-a singleton-b #:rejects '((a b) (b a))))
+   (union-regexp-r1 (union-regexp singleton-a singleton-b #:not-in-lang '((a b) (b a))))
    singleton-a)
   (check-error
-   (union-regexp singleton-a singleton-b #:accepts '((a) (b) (d e) (b c)))
+   (union-regexp singleton-a singleton-b #:in-lang '((a) (b) (d e) (b c)))
    "Step six of the design recipe for regular expressions has not been successfully completed.
 The following words to accept: ((d e) (b c)) contain characters not in the regular expression's alphabet: (a b)")
   (check-error
-   (union-regexp singleton-a singleton-b #:rejects '((a) (b) (d e) (b c)))
+   (union-regexp singleton-a singleton-b #:not-in-lang '((a) (b) (d e) (b c)))
    "Step six of the design recipe for regular expressions has not been successfully completed.
 The following words to reject: ((d e) (b c)) contain characters not in the regular expression's alphabet: (a b)")
   (check-error
@@ -207,21 +207,21 @@ Instead of returning a Boolean, the function given as a predicate returned: 5")
    "Step three of the design recipe for regular expressions has not been successfully completed.
 The given predicate does not hold for the following words generated using the regexp: (ε)")
   (check-error
-   (kleenestar-regexp singleton-a #:rejects '((a) (a a)))
+   (kleenestar-regexp singleton-a #:not-in-lang '((a) (a a)))
    "Step six of the design recipe for regular expressions has not been successfully completed.
-The constructed kleenestar-regexp does not reject the following words: ((a) (a a))")
+The following words are in the language of the constructed kleenestar-regexp: ((a) (a a))")
   (check-expect
-   (kleenestar-regexp-r1 (kleenestar-regexp singleton-a #:accepts '((a) (a a a a))))
+   (kleenestar-regexp-r1 (kleenestar-regexp singleton-a #:in-lang '((a) (a a a a))))
    singleton-a)
   (check-expect
-   (kleenestar-regexp-r1 (kleenestar-regexp concat-ab #:rejects '((b) (b a b))))
+   (kleenestar-regexp-r1 (kleenestar-regexp concat-ab #:not-in-lang '((b) (b a b))))
    concat-ab)
   (check-error
-   (kleenestar-regexp singleton-a #:accepts '((a) (b) (d e) (b c)))
+   (kleenestar-regexp singleton-a #:in-lang '((a) (b) (d e) (b c)))
    "Step six of the design recipe for regular expressions has not been successfully completed.
 The following words to accept: ((b) (d e) (b c)) contain characters not in the regular expression's alphabet: (a)")
   (check-error
-   (kleenestar-regexp singleton-a #:rejects '((a) (b) (d e) (b c)))
+   (kleenestar-regexp singleton-a #:not-in-lang '((a) (b) (d e) (b c)))
    "Step six of the design recipe for regular expressions has not been successfully completed.
 The following words to reject: ((b) (d e) (b c)) contain characters not in the regular expression's alphabet: (a)")
   (check-error

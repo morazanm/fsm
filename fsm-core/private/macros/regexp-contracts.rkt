@@ -132,10 +132,10 @@
   ; string boolean -> string
   ; Formats an error message for step six of the DR if the regexp incorrectly
   ; rejects/accepts a word.
-  (define (accepts/rejects-formatter type accepts?)
-    (format "Step six of the design recipe for regular expressions has not been successfully completed.\nThe constructed ~a does not ~a the following words"
-            type
-            (if accepts? "accept" "reject")))
+  (define (accepts/rejects-formatter type in-lang?)
+    (format "Step six of the design recipe for regular expressions has not been successfully completed.\nThe following words are ~a of the constructed ~a"
+            (if in-lang? "not in the language" "in the language")
+            type))
 
   ; any -> boolean
   ; Determines if the given input is a word, which is a list of symbols or the
@@ -177,8 +177,7 @@
   
 
   (define valid-regexp-predicate/c
-    (->i ([input valid-word/c])
-         [result valid-regexp-predicate-result/c]))
+    (-> valid-word/c valid-regexp-predicate-result/c))
 
   (define (regexp-input/c regexp type accepts?)
     (make-flat-contract
@@ -244,18 +243,16 @@
                                           valid-regexp-predicate/c
                                           (predicate-passes/c (make-unchecked-concat r1 r2) gen-cases))]
           #:gen-cases [gen-cases valid-gen-cases-count/c]
-          #:accepts [accepts (r1 r2) (and/c
-                                      (listof-words-regexp/c "accepts" "four")
-                                      (words-in-sigma/c "accept" (make-unchecked-concat r1 r2))
-                                      (regexp-input/c (make-unchecked-concat r1 r2)
-                                                      'concat-regexp
-                                                      #t))]
-          #:rejects [rejects (r1 r2) (and/c
-                                      (listof-words-regexp/c "rejects" "four")
-                                      (words-in-sigma/c "reject" (make-unchecked-concat r1 r2))
-                                      (regexp-input/c (make-unchecked-concat r1 r2)
-                                                      'concat-regexp
-                                                      #f))]
+          #:in-lang [in-lang (r1 r2) (let [(R (make-unchecked-concat r1 r2))]
+                                       (and/c
+                                        (listof-words-regexp/c "words in the language" "four")
+                                        (words-in-sigma/c "accept" R)
+                                        (regexp-input/c R 'concat-regexp #t)))]
+          #:not-in-lang [not-in-lang (r1 r2) (let [(R (make-unchecked-concat r1 r2))]
+                                               (and/c
+                                                (listof-words-regexp/c "words not in the language" "four")
+                                                (words-in-sigma/c "reject" R)
+                                                (regexp-input/c R 'concat-regexp #f)))]
           )
          [result concat-regexp?]))
 
@@ -272,18 +269,16 @@
                                           valid-regexp-predicate/c
                                           (predicate-passes/c (make-unchecked-union r1 r2) gen-cases))]
           #:gen-cases [gen-cases valid-gen-cases-count/c]
-          #:accepts [accepts (r1 r2) (and/c
-                                      (listof-words-regexp/c "accepts" "four")
-                                      (words-in-sigma/c "accept" (make-unchecked-union r1 r2))
-                                      (regexp-input/c (make-unchecked-union r1 r2)
-                                                      'union-regexp
-                                                      #true))]
-          #:rejects [rejects (r1 r2) (and/c
-                                      (listof-words-regexp/c "rejects" "four")
-                                      (words-in-sigma/c "reject" (make-unchecked-union r1 r2))
-                                      (regexp-input/c (make-unchecked-union r1 r2)
-                                                      'union-regexp
-                                                      #false))]
+          #:in-lang [in-lang (r1 r2) (let [(R (make-unchecked-union r1 r2))]
+                                       (and/c
+                                        (listof-words-regexp/c "accepts" "four")
+                                        (words-in-sigma/c "accept" R)
+                                        (regexp-input/c R 'union-regexp #true)))]
+          #:not-in-lang [not-in-lang (r1 r2) (let [(R (make-unchecked-union r1 r2))]
+                                               (and/c
+                                                (listof-words-regexp/c "rejects" "four")
+                                                (words-in-sigma/c "reject" R)
+                                                (regexp-input/c R 'union-regexp #false)))]
           )
          [result union-regexp?]))
 
@@ -299,18 +294,16 @@
                                        valid-regexp-predicate/c
                                        (predicate-passes/c (make-unchecked-kleenestar r1) gen-cases))]
           #:gen-cases [gen-cases valid-gen-cases-count/c]
-          #:accepts [accepts (r1) (and/c
-                                   (listof-words-regexp/c "accepts" "four")
-                                   (words-in-sigma/c "accept" (make-unchecked-kleenestar r1))
-                                   (regexp-input/c (make-unchecked-kleenestar r1)
-                                                   'kleenestar-regexp
-                                                   #true))]
-          #:rejects [rejects (r1) (and/c
-                                   (listof-words-regexp/c "rejects" "four")
-                                   (words-in-sigma/c "reject" (make-unchecked-kleenestar r1))
-                                   (regexp-input/c (make-unchecked-kleenestar r1)
-                                                   'kleenestar-regexp
-                                                   #false))]
+          #:in-lang [in-lang (r1) (let [(R (make-unchecked-kleenestar r1))]
+                                    (and/c
+                                     (listof-words-regexp/c "accepts" "four")
+                                     (words-in-sigma/c "accept" R)
+                                     (regexp-input/c R 'kleenestar-regexp #true)))]
+          #:not-in-lang [not-in-lang (r1) (let [(R (make-unchecked-kleenestar r1))]
+                                            (and/c
+                                             (listof-words-regexp/c "rejects" "four")
+                                             (words-in-sigma/c "reject" R)
+                                             (regexp-input/c R 'kleenestar-regexp #false)))]
           )
          [result kleenestar-regexp?]))
   )
