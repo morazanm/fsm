@@ -1650,12 +1650,6 @@ triple is the entire of the ndfa rule
          (remove-similarities (rest prev-path) (rest curr-path) acc)]
         [(remove-similarities (rest prev-path) (rest curr-path) (cons (first curr-path) acc))]))
 
-;;config rule -> config
-;;Purpose: Applies the given rule to the given config
-;;ASSUMPTION: the given rule is applicable to the given config
-(define (appply-rule config rule)
-  (list (third rule)
-        (if (eq? (second rule) EMP) (second config) (rest (second config)))))
 
 ;;(listof symbols) (listof rules) symbol -> (listof configurations)
 ;;Purpose: Returns all possible configurations from start that consume the given word
@@ -1734,6 +1728,94 @@ triple is the entire of the ndfa rule
       '()
       (append (make-configs (first configs) a-word lor visited (append path (list (first configs))))
               (make-configs-helper (rest configs) a-word lor visited path))))
+
+
+
+(define qempty? empty?)
+
+(define E-QUEUE '())
+
+;; (qof X) → X throws error
+;; Purpose: Return first X of the given queue
+(define (qfirst a-qox)
+  (if (qempty? a-qox)
+      (error "qfirst applied to an empty queue")
+      (first a-qox)))
+
+;; (listof X) (qof X) → (qof X)
+;; Purpose: Add the given list of X to the given
+;;          queue of X
+(define (enqueue a-lox a-qox)
+  (append a-qox a-lox))
+
+;; (qof X) → (qof X) throws error
+;; Purpose: Return the rest of the given queue
+(define (dequeue a-qox)
+  (if (qempty? a-qox)
+      (error "dequeue applied to an empty queue")
+      (rest a-qox)))
+
+
+(struct computation (LoC LoR visited) #:transparent)
+
+
+;;config rule -> config
+;;Purpose: Applies the given rule to the given config
+;;ASSUMPTION: the given rule is applicable to the given config
+(define (apply-rule config rule)
+  (let* ([new-config (list (third rule)
+                           (if (eq? (second rule) EMP)
+                               (second (first (computation-LoC config)))
+                               (rest (second (first (computation-LoC config))))))])
+    (struct-copy computation config
+                 [LoC (cons new-config (computation-LoC config))]
+                 [LoR (cons rule (computation-LoR config))]
+                 [visited (cons (first (computation-LoC config)) (computation-visited config))])))
+
+(define (trace-computations start word lor)
+  (let (;;configuration
+        ;;Purpose: The starting configuration
+        [starting-config (computation (list (append (list start) (list word)))
+                                      '()
+                                      '())])
+    (make-computations starting-config
+                       lor
+                       (enqueue (list starting-config) E-QUEUE)
+                       '())))
+
+
+(define (make-computations config lor QoC path)
+  (if (qempty? QoC)
+      path
+      (let* (;;(listof rules)
+             ;;Purpose: Returns all rules that consume a letter using the given configurations
+             [connected-read-rules (if (empty? (second (first (computation-LoC (qfirst QoC)))))
+                                       '()
+                                       (filter (λ (rule)
+                                             (and (equal? (first rule) (first (first (computation-LoC (qfirst QoC)))))
+                                                  (equal? (second rule) (first (second (first (computation-LoC (qfirst QoC))))))))
+                                           lor))]
+             ;;(listof rules)
+             ;;Purpose: Returns all rules that have an empty transition using the given configurations
+             [connected-emp-rules
+              (filter (λ (rule) (and (equal? (first rule) (first (first (computation-LoC (qfirst QoC))))) (equal? (second rule) EMP)))
+                      lor)]
+             ;;(listof configurations)
+             ;;Purpose: Makes new configurations using given word and connected-rules
+             [new-configs (filter (λ (new-c) (not (member? (first (computation-LoC new-c)) (computation-visited new-c))))
+                                  (map (λ (rule) (apply-rule (qfirst QoC) rule)) (append connected-read-rules connected-emp-rules)))])
+        (if  (empty? new-configs)
+             (make-computations config lor (dequeue QoC) (cons (qfirst QoC) path))
+             (make-computations config lor (enqueue new-configs (dequeue QoC)) path)))))
+  
+
+
+
+
+
+
+
+
 
 ;;(listof configurations) (listof symbols) (listof rule) (listof rules) -> (listof rules)
 ;;Purpose: Attaches the transition rules used between configurations
@@ -3063,12 +3145,19 @@ triple is the entire of the ndfa rule
 ;(ndfa-viz aa-ab '(a a a a a a a) (list 'S S-INV) (list 'A A-INV1) (list 'B B-INV1) (list 'F F-INV1))
 ;things that change end with a bang(!)
 ;combines computations that have similiar configurations
-(ndfa-viz DNA-SEQUENCE '(a t c g t a c) (list 'K DNA-K-INV) (list 'H DNA-H-INV) (list 'F DNA-F-INV)
+#;(ndfa-viz DNA-SEQUENCE '(a t c g t a c) (list 'K DNA-K-INV) (list 'H DNA-H-INV) (list 'F DNA-F-INV)
           (list 'M DNA-M-INV) (list 'I DNA-I-INV) (list 'D DNA-D-INV)  (list 'B DNA-B-INV) (list 'S DNA-S-INV) (list 'R DNA-R-INV))
-(ndfa-viz DNA-SEQUENCE '(c g c g a t a t g c t a g c a t)  (list 'K DNA-K-INV) (list 'H DNA-H-INV) (list 'F DNA-F-INV)
+#;(ndfa-viz DNA-SEQUENCE '(c g c g a t a t g c t a g c a t)  (list 'K DNA-K-INV) (list 'H DNA-H-INV) (list 'F DNA-F-INV)
           (list 'M DNA-M-INV) (list 'I DNA-I-INV) (list 'D DNA-D-INV)  (list 'B DNA-B-INV) (list 'S DNA-S-INV) (list 'R DNA-R-INV)) 
 
 "notes to self:"
 "scroll thru word instead of jumping to end"
 "do dna problem for ndfas"
 "update code and clean"
+
+
+(define (makes-same-configs? lor word start)
+  (let ([get-con (get-configs word lor start)]
+        [get-comp (map (λ (comp) (reverse (computation-LoC comp))) (trace-computations start word lor))])
+    (andmap (λ (comp) (member? comp get-con))
+            get-comp)))
