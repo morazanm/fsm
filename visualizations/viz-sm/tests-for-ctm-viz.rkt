@@ -1,13 +1,14 @@
 #lang racket
 (require "../../fsm-core/interface.rkt"
          rackunit
+         "../../fsm-core/private/callgraphs/transdiagram-ctm6.rkt"
          "viz-ctm.rkt")
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; tms
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Move-right machine
 
-;; PRE:  tape = (LM w) AND i=k≥0, where w in {a b BLANK}*
+;; PRE:  tape = (LM w) AND i=k>0
 ;; POST: tape = (LM w) AND i=k+1
 (define R (make-tm '(S F)
                    '(a b)
