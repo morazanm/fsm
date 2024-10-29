@@ -21,13 +21,9 @@
 (define-syntax (check-accept stx)
   (syntax-parse stx
     [(_ M w)
-     #'(if (equal? (sm-apply M w) 'accept)
-           #t
-           #f)]
+     #'(check-equal? (sm-apply M w) 'accept)]
     [(_ M w n)
-     #'(if (equal? (sm-apply M w n) 'accept)
-           #t
-           #f)]))
+     #'(check-equal? (sm-apply M w n) 'accept)]))
 
 
 ;; machine word [head-pos] -> Boolean
@@ -35,10 +31,6 @@
 (define-syntax (check-reject stx)
   (syntax-parse stx
     [(_ M w)
-     #'(if (equal? (sm-apply M w) 'reject)
-           #t
-           #f)]
+     #'(check-equal? (sm-apply M w) 'reject)]
     [(_ M w n)
-     #'(if (equal? (sm-apply M w n) 'reject)
-           #t
-           #f)]))
+     #'(check-equal? (sm-apply M w n) 'reject)]))

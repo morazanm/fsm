@@ -6,6 +6,7 @@
                      racket/struct-info)
          2htdp/universe
          2htdp/image
+         "../../fsm-core/private/misc.rkt"
          "../../fsm-core/private/csg.rkt"
          "../../fsm-core/private/cfg.rkt"
          "../../fsm-core/private/regular-grammar.rkt"
@@ -22,9 +23,8 @@
 (define-syntax (check-derive stx)
   (syntax-parse stx
     [(_ g w)
-     #'(if (string? (grammar-derive g w))
-           #f
-           #t)]
+     #'(check-equal? (last (grammar-derive g w))
+                     (los->symbol w))]
     ))
 
 ;; grammar word -> Boolean
@@ -32,7 +32,5 @@
 (define-syntax (check-not-derive stx)
   (syntax-parse stx
     [(_ g w)
-     #'(if (string? (grammar-derive g w))
-           #t
-           #f)]
+     #'(check-equal? (string? (grammar-derive g w)) #t)]
     ))

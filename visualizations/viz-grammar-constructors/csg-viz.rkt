@@ -575,7 +575,7 @@
                                                                            #;(apply list y)))
                                      (cons frst (cons fourth (remove-every-second (drop (second renamed) 2))))
                                      (begin
-                                       (displayln (let ([res (append (dgrph-up-hex-nodes (first lod)) (dgrph-p-hex-nodes (first lod)))])
+                                       #;(displayln (let ([res (append (dgrph-up-hex-nodes (first lod)) (dgrph-p-hex-nodes (first lod)))])
                                          (drop-right (cons '() (cons (first res) (remove-every-second res))) 1)))
                                        (let ([res (append (dgrph-up-hex-nodes (first lod)) (dgrph-p-hex-nodes (first lod)))])
                                          (drop-right (cons '() (cons (first res) (remove-every-second res))) 1))
