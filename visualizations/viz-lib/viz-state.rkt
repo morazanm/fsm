@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 (provide (struct-out viz-state)
          (struct-out informative-messages)
          (struct-out instructions-graphic))

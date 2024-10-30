@@ -1,5 +1,6 @@
-#lang racket
-(require racket/treelist)
+#lang racket/base
+(require racket/treelist
+         racket/list)
 (provide (all-defined-out))
 
 (define (treelist-filter pred tl)

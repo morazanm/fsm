@@ -1,10 +1,12 @@
-#lang racket
+#lang racket/base
 (require racket/treelist
          "../../fsm-core/private/cfg.rkt"
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/misc.rkt"
          "circular-queue-treelist.rkt"
-         "../viz-lib/treelist-helper-functions.rkt")
+         "../viz-lib/treelist-helper-functions.rkt"
+         racket/list
+         )
 
 (provide cfg-derive-rightmost)
 
@@ -93,7 +95,7 @@
                               #f
                               (get-last-n-terms treelist-w (treelist-length start-terms-st)))])
       (cond
-        [(false? start-terms-w) #f]
+        [(not start-terms-w) #f]
         [else (equal? start-terms-st start-terms-w)])))
 
   (define (tlos->symbol l)
@@ -120,7 +122,7 @@
        (make-deriv visited (dequeue! derivs) g chomsky)]
       [else
        (let* ([fderiv (qpeek derivs)] [state (car fderiv)] [fnt (get-last-nt (first state))])
-         (if (false? fnt)
+         (if (not fnt)
              (if (equal? treelist-w (first state))
                  (append*
                   (map (lambda (l)
@@ -161,4 +163,4 @@
           (make-deriv (make-hash)
                       (enqueue! deriv-queue (list (list (treelist (cfg-get-start g)) '())))
                       g
-                      false)))))
+                      #f)))))

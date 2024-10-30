@@ -1,5 +1,15 @@
-#lang racket
-(require 2htdp/image racket/hash "dot.rkt" racket/treelist)
+#lang racket/base
+(require 2htdp/image
+         racket/hash
+         "dot.rkt"
+         racket/treelist
+         racket/string
+         racket/list
+         racket/match
+         racket/system
+         racket/function
+         racket/contract/base
+         )
 
 (provide hash->str)
 

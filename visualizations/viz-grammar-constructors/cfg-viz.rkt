@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 (require "../../fsm-gviz/private/lib.rkt"
          "../../fsm-core/private/cfg.rkt"
          "../../fsm-core/private/constants.rkt"
@@ -12,8 +12,9 @@
          "cfg-derive-level-leftmost.rkt"
          racket/treelist
          "yield-struct.rkt"
-         "../../fsm-gviz/private/parallel.rkt"
-         )
+         racket/list
+         racket/local
+         racket/string)
 
 
 
@@ -516,7 +517,7 @@
   (if (empty? rules)
       '()
       (let ([current-nt (find-nt-func unprocessed-yield)])
-        (if (false? current-nt)
+        (if (not current-nt)
             (generate-levels-bfs-list-helper processed-yield
                                              '()
                                              rules
@@ -559,7 +560,7 @@
       '()
       ;; Going to make this function return (list nt idx)
       (let ([current-nt (get-first-nt curr-yield alphabet-ht)])
-        (if (false? (first current-nt))
+        (if (not (first current-nt))
             (generate-levels-bfs-leftmost (yield (yield-state curr-yield) 0)
                                           rules
                                           used-names
@@ -596,7 +597,7 @@
       '()
       ;; Going to make this function return (list nt idx)
       (let ([current-nt (get-last-nt curr-yield alphabet-ht)])
-        (if (false? (first current-nt))
+        (if (not (first current-nt))
             (generate-levels-bfs-rightmost (yield (yield-state curr-yield)
                                                   (sub1 (treelist-length (yield-state curr-yield))))
                                            rules
@@ -769,7 +770,7 @@
   (define (remove-duplicate-yields-helper yields accum)
     (if (empty? yields)
         accum
-        (if (false? (hash-ref visited (yield-state (first (first yields))) #f))
+        (if (not (hash-ref visited (yield-state (first (first yields))) #f))
             (begin
               (hash-set! visited (yield-state (first (first yields))) #t)
               (remove-duplicate-yields-helper (rest yields) (cons (first yields) accum)))
@@ -1033,7 +1034,7 @@
 
 
 
-(define (test-cfg-viz cfg word derv-type num-trials . invariants)
+#;(define (test-cfg-viz cfg word derv-type num-trials . invariants)
   (define thrd-box (make-vector 1 '()))
   (let [(derivation (cfg-derive-leftmost cfg word))]
     (if (string? derivation)

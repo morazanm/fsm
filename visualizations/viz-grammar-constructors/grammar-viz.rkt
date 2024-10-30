@@ -1,19 +1,21 @@
-#lang racket
+#lang racket/base
 
 (require "../viz-lib/viz-macros.rkt"
          2htdp/image
-         "../viz-lib/vector-zipper.rkt"
          "../viz-lib/zipper.rkt"
          "../viz-lib/bounding-limits.rkt"
          "../viz-lib/viz.rkt"
          "../viz-lib/viz-state.rkt"
          "../../fsm-gviz/private/lib.rkt"
-         "../viz-lib/viz-constants.rkt"
+         
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "../viz-lib/default-viz-function-generators.rkt"
-         math/matrix)
+         
+         racket/list
+         racket/local
+         racket/function)
 
-(provide init-viz testing-init-viz)
+(provide init-viz)
 (define E-SCENE-WIDTH 1250)
 (define E-SCENE-HEIGHT 500)
 (define E-SCENE-BOUNDING-LIMITS (bounding-limits 0 E-SCENE-WIDTH 0 E-SCENE-HEIGHT))
@@ -1000,7 +1002,7 @@
      #:special-graphs? special-graphs?
      #:rank-node-lst rank-node-lst)))
 
-(define (testing-init-viz grammar
+#;(define (testing-init-viz grammar
                   word
                   w-der
                   rules

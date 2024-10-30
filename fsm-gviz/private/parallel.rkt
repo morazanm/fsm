@@ -1,8 +1,13 @@
-#lang racket
+#lang racket/base
 
 (require "lib.rkt"
          2htdp/image
          "dot.rkt"
+         racket/list
+         racket/future
+         racket/port
+         racket/system
+         racket/promise
          )
 
 (provide (all-defined-out))
@@ -16,9 +21,9 @@
   (for/list ([i enumerated-graphs])
     (if (list? (second i))
         (for/list ([j (range 0 (length (second i)))])
-          (thunk (bitmap/file (string->path (format "~adot~s_~s.png" SAVE-DIR (first i) j))))
+          (lambda () (bitmap/file (string->path (format "~adot~s_~s.png" SAVE-DIR (first i) j))))
           )
-        (thunk (bitmap/file (string->path (format "~adot~s.png" SAVE-DIR (first i)))))
+        (lambda () (bitmap/file (string->path (format "~adot~s.png" SAVE-DIR (first i)))))
         )
     )
   )
@@ -147,7 +152,6 @@
       (delay/sync (begin
                     (semaphore-wait cpu-cores-avail)
                     (let ([shell-process (func a)])
-                      ;(displayln a)
                       (let [
                             (result (sync (if (eq? system-os 'windows)
                                               (read-line-evt (first shell-process) 'any)
@@ -160,7 +164,7 @@
                       (close-output-port (second shell-process))
                       (close-input-port (fourth shell-process))
                       (semaphore-post cpu-cores-avail)
-                      (thunk (bitmap/file (string->path (format "~a.png" a))))
+                      (lambda () (bitmap/file (string->path (format "~a.png" a))))
                       )
                     )
                   )
@@ -239,7 +243,7 @@
           (force-promises flattened-list-dot-files (- (vector-length flattened-list-dot-files) NUM-PRELOAD) (vector-length flattened-list-dot-files))
           
 
-          (thread (thunk (for ([i (in-range NUM-PRELOAD (- (vector-length flattened-list-dot-files) NUM-PRELOAD))])
+          (thread (lambda () (for ([i (in-range NUM-PRELOAD (- (vector-length flattened-list-dot-files) NUM-PRELOAD))])
                            (force (vector-ref flattened-list-dot-files i)))))
           )
         (begin

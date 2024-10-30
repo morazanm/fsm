@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 
 (require "../../fsm-gviz/private/lib.rkt"
          "../../fsm-gviz/private/parallel.rkt"
@@ -8,7 +8,9 @@
          "../viz-lib/viz.rkt"
          "grammar-viz.rkt"
          "../viz-lib/zipper.rkt"
-         rackunit)
+         rackunit
+         racket/list
+         racket/local)
 
 (define anbn
   (make-unchecked-csg

@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 
 (require "../../fsm-gviz/private/lib.rkt"
          rackunit
@@ -7,7 +7,8 @@
          "../viz-lib/viz.rkt"
          "../viz-lib/zipper.rkt"
          "grammar-viz.rkt"
-         )
+         racket/list
+         racket/local)
 
 (define FNAME "fsm")
 
