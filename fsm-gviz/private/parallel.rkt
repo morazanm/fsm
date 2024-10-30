@@ -278,3 +278,57 @@
           )
       )
     )
+
+#;(define (test-cfg-graphs->dots enumerated-graphs rank-node-lst)
+  (for/list/concurrent ([i enumerated-graphs]
+                        [z rank-node-lst])
+    (if (list? (second i))
+        (for ([j (range 0 (length (second i)))]
+              [k (second i)])
+          (test-cfg-graph->dot k z SAVE-DIR (format "dot~s_~s" (first i) j))
+          )
+        (test-cfg-graph->dot (second i) z SAVE-DIR (format "dot~s" (first i)))
+        )
+    )
+  )
+
+
+;; (listof graph) (listof (listof symbol)) nat -> (listof thunk)
+;; Creates all the graph images needed in parallel, and returns a list of thunks that will load them from disk
+#;(define (parallel-special-graphs->bitmap-thunks graphs rank-node-lst #:cpu-cores [cpu-cores (quotient (find-number-of-cores) 2)])
+    (begin
+      (define enumerated-graphs (make-pairs (range 0 (length graphs)) graphs))
+      (define list-dot-files (for/list ([i enumerated-graphs])
+                               (if (list? (second i))
+                                   (for/list ([j (range 0 (length (second i)))])
+                                     (format "~adot~s_~s" SAVE-DIR (first i) j)
+                                     )
+                                   (format "~adot~s" SAVE-DIR (first i))
+                                   )
+                               )
+        )
+      (special-graphs->dots enumerated-graphs rank-node-lst)
+      (parallel-dots->pngs (flatten list-dot-files) cpu-cores)
+      (pngs->bitmap-thunks enumerated-graphs)
+      )
+    )
+
+;; (listof graph) (listof (listof symbol)) nat -> (listof thunk)
+;; Creates all the graph images needed in parallel, and returns a list of thunks that will load them from disk
+#;(define (parallel-cfg-graphs->bitmap-thunks graphs rank-node-lst #:cpu-cores [cpu-cores (quotient (find-number-of-cores) 2)])
+    (begin
+      (define enumerated-graphs (make-pairs (range 0 (length graphs)) graphs))
+      (define list-dot-files (for/list ([i enumerated-graphs])
+                               (if (list? (second i))
+                                   (for/list ([j (range 0 (length (second i)))])
+                                     (format "~adot~s_~s" SAVE-DIR (first i) j)
+                                     )
+                                   (format "~adot~s" SAVE-DIR (first i))
+                                   )
+                               )
+        )
+      (cfg-graphs->dots enumerated-graphs rank-node-lst)
+      (parallel-dots->pngs (flatten list-dot-files) cpu-cores)
+      (pngs->bitmap-thunks enumerated-graphs)
+      )
+    )
