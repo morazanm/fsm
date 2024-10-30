@@ -71,7 +71,7 @@
                       (raise-blame-error
                        blame
                        words
-                       (format "Step ~a of the design recipe for regular expressions has not been successfully completed.\nThe expected ~a is not a valid list of words" step-number type))))))
+                       (format "Step ~a of the design recipe for regular expressions has not been successfully completed.\nThe expected list of ~a is not a valid list of words" step-number type))))))
 
   (define (words-in-sigma/c sigma field step-number)
     (make-flat-contract
