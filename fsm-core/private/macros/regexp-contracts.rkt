@@ -192,7 +192,7 @@
                             (raise-blame-error
                              blame
                              failing-words
-                             (format "Step six of the design recipe for regular expressions has not been successfully completed.\nThe following words were expected to ~a by the constructed ~a but were ~a"
+                             (format "Step six of the design recipe for regular expressions has not been successfully completed.\nThe following words are expected to ~a by the constructed ~a but are ~a"
                                      (if in-lang? "be generated" "not be generated")
                                      type
                                      (if in-lang? "not generated" "generated")))))))))
