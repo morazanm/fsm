@@ -17,10 +17,11 @@
 
 
 ;; check-accept
-(define-check (check-accept? M w)
+(define-check (check-accept? M w line column)
   (unless (equal? (sm-apply M w) 'accept)
-    (with-check-info* (list (make-check-name 'check-accept)
-                            (make-check-location (list 'check-accept 6 1 #f #f)))
+    (with-check-info*
+        (list (make-check-name 'check-accept)
+              (make-check-location (list 'check-accept line column #f #f)))
       (lambda () (fail-check)))
     ))
 
@@ -30,7 +31,7 @@
 (define-syntax (check-accept stx)
   (syntax-parse stx
     [(_ M w)
-     #'(check-accept? M w)]
+     #`(check-accept? M w #,(syntax-line stx) #,(syntax-column stx))]
     #;[(_ M w n)
        #'(check-accept? M w n)]))
 
