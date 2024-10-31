@@ -16,14 +16,23 @@
 (provide check-accept check-reject)
 
 
+;; check-accept
+(define-check (check-accept? M w)
+  (unless (equal? (sm-apply M w) 'accept)
+    (with-check-info* (list (make-check-name 'check-accept)
+                            (make-check-location (list 'check-accept 6 1 #f #f)))
+      (lambda () (fail-check)))
+    ))
+
+
 ;; machine word [head-pos] -> Boolean
 ;; Purpose: To determine whether a given machine can accept/process a given word
 (define-syntax (check-accept stx)
   (syntax-parse stx
     [(_ M w)
-     #'(check-equal? (sm-apply M w) 'accept)]
-    [(_ M w n)
-     #'(check-equal? (sm-apply M w n) 'accept)]))
+     #'(check-accept? M w)]
+    #;[(_ M w n)
+       #'(check-accept? M w n)]))
 
 
 ;; machine word [head-pos] -> Boolean
