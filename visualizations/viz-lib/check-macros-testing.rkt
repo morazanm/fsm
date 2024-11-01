@@ -52,7 +52,7 @@ E - ci = ab* final
                (H b H))))
 
 (check-accept AB*B*UAB* '(a b a b a b b b b))
-;(check-reject AB*B*UAB* '(a b a b a b b b b))
+(check-reject AB*B*UAB* '(a b a b a b b b b))
 (check-accept AB*B*UAB* '(a b b a b b a b b))
 ;(check-reject AB*B*UAB* '(a b b a b b a b b))
 #|
