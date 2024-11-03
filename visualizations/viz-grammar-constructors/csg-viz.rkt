@@ -181,6 +181,16 @@
              (begin
                (hash-set! hashtb nt 0)
                (string->symbol (format "~s0" nt))))))
+
+     (define (list-match-update lst pred val)
+       (if (empty? lst)
+           '()
+           (if (pred (first lst))
+               (cons val (rest lst))
+               (cons (first lst) (list-match-update (rest lst) pred val))
+               )
+           )
+       )
      ;; (listof symbols) (listof rules) MutableHashtable (listof symbol) (listof symbol) (listof edges)
      ;; Returns the levels for each graph needed to display the derivation
      (define (generate-levels-helper curr-state
@@ -234,17 +244,55 @@
                                                  (list (first edge) removed-combined-symbol))
                                                (filter (lambda (edge) (member (second edge) removed))
                                                        (first levels)))))]
-                     #;[test2 (displayln (format "replaced-edges: ~s" replaced-edges))]
+                     [replaced-edges2 (remove-duplicates (foldr (lambda (val0 val1 accum) (list-match-update accum (lambda (x) (equal? x val0)) val1))
+                                             (if (empty? levels) '() (first levels))
+                                             (if (empty? levels)
+                                                 '()
+                                                 (filter (lambda (edge) (member (second edge) removed))
+                                                       (first levels))
+                                                 )
+                                             (if (empty? levels)
+                                                 '()
+                                                
+                                                  (map (lambda (edge)
+                                                 (list (first edge) removed-combined-symbol))
+                                               (filter (lambda (edge) (member (second edge) removed))
+                                                       (first levels)))
+                                                 )
+                                             ))]
+                     [test2 (displayln (format "replaced-edges: ~s" (if (empty? levels) '() (first levels))
+                                               #;(if (empty? levels)
+                                                 '()
+                                                 (map (lambda (edge)
+                                                 (list (first edge) removed-combined-symbol))
+                                               (filter (lambda (edge) (member (second edge) removed))
+                                                       (first levels)))
+                                                 )
+                                               #;(if (empty? levels)
+                                                                        '()
+                                                                        (filter (lambda (edge) (member (second edge) removed))
+                                                       (first levels)))
+                                               ))]
                      [after-replace
                       (cons (append (foldr (lambda (val accum)
                                              (cons (list removed-combined-symbol val) accum))
                                            '()
                                            replacement-symbols)
-                                    replaced-edges
-                                    not-replaced-edges)
+                                    replaced-edges2
+                                    #;replaced-edges
+                                    #;not-replaced-edges)
                             (cons (append before-replace (if (empty? levels) '() (first levels)))
                                   levels))]
-                     #;[test3 (displayln (format "after-replace: ~s \n\n\n" after-replace))]
+                     [test3 (displayln (format "after-replace: ~s \n ~s \n\n\n"
+                                               (append (foldr (lambda (val accum)
+                                             (cons (list removed-combined-symbol val) accum))
+                                           '()
+                                           replacement-symbols)
+                                    replaced-edges2
+                                    #;replaced-edges
+                                    #;not-replaced-edges)
+                                               before-replace
+                                               ))]
                      )
                 after-replace)
               (let* ([before-replace (cons (foldr (lambda (val accum)
@@ -257,7 +305,8 @@
                                                  '()
                                                  replacement-symbols)
                                           before-replace)])
-                after-replace)))))]
+                after-replace))
+             )))]
     (map reverse (generate-levels-helper curr-state rules used-names '() '() '() '()))))
 
 ;; deriv-with-rules -> deriv-with-rules
@@ -488,7 +537,7 @@
      (make-edge-graph
       (make-node-graph
        (create-graph 'dgraph
-                     #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in" 'splines "polyline" 'overlap "scale"))
+                     #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "out" 'splines "polyline" 'overlap "scale"))
        nodes
        hedge-nodes
        hex-nodes
@@ -514,7 +563,6 @@
 
 (define (csg-viz g w)
   (local [(define derv (csg-derive-edited g w))
-          #;(define test0 (displayln derv))
           (define w-derv (map (lambda (x) (symbol->fsmlos (first x))) derv))
           (define moved-rules
             (map (lambda (x) (list (second x) (third x))) (move-rule-applications-in-list derv)))
@@ -546,17 +594,7 @@
           (define lod (reverse (create-dgrphs dgraph '() #f)))
           (define graphs (map create-graph-structs lod))
           (define test-w-derv (copy w-derv))
-          ]
-    (init-viz g
-              w
-              w-derv 
-              rules
-              (let ([frst (first graphs)]
-                    [fourth (second graphs)])
-                (cons frst (cons fourth (remove-every-second (drop graphs 2)))))
-              'NO-INV
-              #:special-graphs? 'cfg
-              #:rank-node-lst (let ([frst (first (second renamed))]
+          (define rank-node-lst (let ([frst (first (second renamed))]
                                     [fourth (second (second renamed))])
                                 #;(displayln (cons frst (cons fourth (remove-every-second (drop (second renamed) 2)))))
                                 #;(displayln (map (lambda (x y) (cons (list x) (foldr (lambda (val accum) (cons (list val) accum))
@@ -584,6 +622,52 @@
                                        )
                                      )
                                 ))
+          (define (extract-single-ranks rank-lst)
+            (foldr (lambda (val accum) (if (= (length val) 1)
+                                           (hash-set accum val #t)
+                                           accum))
+                   (hash)
+                   rank-lst))
+          ]
+    (init-viz g
+              w
+              w-derv 
+              rules
+              (let ([frst (first graphs)]
+                    [fourth (second graphs)])
+                (cons frst (cons fourth (remove-every-second (drop graphs 2)))))
+              'NO-INV
+              #:special-graphs? 'cfg
+              #:rank-node-lst rank-node-lst #;(let ([frst (first (second renamed))]
+                                    [fourth (second (second renamed))])
+                                #;(displayln (cons frst (cons fourth (remove-every-second (drop (second renamed) 2)))))
+                                #;(displayln (map (lambda (x y) (cons (list x) (foldr (lambda (val accum) (cons (list val) accum))
+                                                                         '()
+                                                                         y)
+                                                                           #;(apply list y)))
+                                     (cons frst (cons fourth (remove-every-second (drop (second renamed) 2))))
+                                     (begin
+                                       #;(displayln (let ([res (append (dgrph-up-hex-nodes (first lod)) (dgrph-p-hex-nodes (first lod)))])
+                                         (cons (first res) (remove-every-second (rest res)))))
+                                       (let ([res (append (dgrph-up-hex-nodes (first lod)) (dgrph-p-hex-nodes (first lod)))])
+                                         (cons (first res) (remove-every-second (rest res))))
+                                       )
+                                     ))
+                                (map (lambda (x y) (cons x (foldr (lambda (val accum) (cons (list val) accum))
+                                                                         '()
+                                                                         y)
+                                                                           #;(apply list y)))
+                                     (cons frst (cons fourth (remove-every-second (drop (second renamed) 2))))
+                                     (begin
+                                       #;(displayln (let ([res (append (dgrph-up-hex-nodes (first lod)) (dgrph-p-hex-nodes (first lod)))])
+                                         (drop-right (cons '() (cons (first res) (remove-every-second res))) 1)))
+                                       (let ([res (append (dgrph-up-hex-nodes (first lod)) (dgrph-p-hex-nodes (first lod)))])
+                                         (drop-right (cons '() (cons (first res) (remove-every-second res))) 1))
+                                       )
+                                     )
+                                )
+              ;#:edge-dirs-lst (map extract-single-ranks rank-node-lst)
+              )
     ;(run-viz g w w-derv rules graphs #:special-graphs? #t #:rank-node-lst (second renamed))
     ))
 
@@ -602,8 +686,8 @@
               (AI ,ARROW Ia) 
               (I ,ARROW ,EMP)) 
             'S))
-#;(csg-viz anbn '(a a b b))
-(csg-viz anbncn-csg '(a a b b c c))
+(csg-viz anbn '(a a b b))
+#;(csg-viz anbncn-csg '(a a b b c c))
 
 #;(define (remove-every-second lst)
     (if (empty? lst)
