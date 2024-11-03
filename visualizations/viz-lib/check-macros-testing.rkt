@@ -51,16 +51,17 @@ E - ci = ab* final
                (C ,EMP H)
                (H b H))))
 
-(check-accept AB*B*UAB* '(a b a b a b b b b)) 
-(check-reject AB*B*UAB* '(a b a b a b b b b)) 
-(check-accept AB*B*UAB* '(a b b a b b a b b)) 
-(check-reject AB*B*UAB* '(a b b a b b a b b))
+(check-accept AB*B*UAB* '(a b a b a b b b b))
+(check-reject AB*B*UAB* '(a b a b a b b b b))
+(check-accept AB*B*UAB* '(a b b a b b a b b))
+;(check-reject AB*B*UAB* '(a b b a b b a b b))
+#|
 (check-accept AB*B*UAB* '(a b b b b)) 
 (check-reject AB*B*UAB* '(a b b b b))
 (check-accept AB*B*UAB* '(a b b b b b a b))
 (check-reject AB*B*UAB* '(a b b b b b a b))
 (check-accept AB*B*UAB* '())
-(check-reject AB*B*UAB* '())
+(check-reject AB*B*UAB* '())|#
 
 
 
@@ -88,7 +89,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
 
 
 
-|#
+
 
 
 (define equal-a-b-c (make-tm '(S X A B C D E F G H I P Y)
@@ -377,3 +378,4 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
 (check-not-derive aibj '(b b a b b))
 (check-not-derive aibj '(a a a a b b b b b b b b)) 
 
+|#
