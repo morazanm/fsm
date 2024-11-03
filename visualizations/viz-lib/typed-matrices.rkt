@@ -6,8 +6,8 @@
          )
 (require/typed "bounding-limits.rkt"
                [#:struct posn
-                ([x : Float]
-                 [y : Float])]
+                ([x : Real]
+                 [y : Real])]
                )
 (require/typed 2htdp/image
                [#:opaque htdp:image image?]
@@ -46,20 +46,20 @@
                       [0.0 0.0 1.0]])
              point)))
 
-(: zoom-affine-transform (-> Image posn Float Integer Integer (Matrix Float)))
+(: zoom-affine-transform (-> Image posn Real Integer Integer (Matrix Float)))
 (define (zoom-affine-transform img img-posn scale E-SCENE-WIDTH E-SCENE-HEIGHT)
   (let* [(fl-image-height (fl (image-height img)))
          (fl-image-width (fl (image-width img)))
          (transformed-x (fl* -1.0 (fl+ (fl- (fl/ (fl E-SCENE-WIDTH) 2.0)
-                                            (fl+ (posn-x img-posn) (fl/ fl-image-width 2.0)))
+                                            (fl+ (real->double-flonum (posn-x img-posn)) (fl/ fl-image-width 2.0)))
                                        (fl/ fl-image-width 2.0))))
          (transformed-y (fl* -1.0 (fl+ (fl- (fl/ (fl E-SCENE-HEIGHT) 2.0)
-                                            (fl+ (posn-y img-posn) (fl/ fl-image-height 2.0)))
+                                            (fl+ (real->double-flonum (posn-y img-posn)) (fl/ fl-image-height 2.0)))
                                        (fl/ fl-image-height 2.0))))]
     (affine-transform #:x-translate (fl* -1.0 transformed-x)
                       #:y-translate (fl* -1.0 transformed-y)
-                      #:point (affine-transform #:x-scale scale
-                                                #:y-scale scale
+                      #:point (affine-transform #:x-scale (real->double-flonum scale)
+                                                #:y-scale (real->double-flonum scale)
                                                 #:point (affine-transform #:x-translate transformed-x
                                                                           #:y-translate transformed-y
                                                                           #:point (matrix [ [0.0] [0.0] [1.0] ]))))))

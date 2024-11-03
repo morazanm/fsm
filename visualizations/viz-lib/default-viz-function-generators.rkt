@@ -582,13 +582,13 @@
 ;; viz-state -> viz-state
 ;; Purpose: Zooms all the way in on the visualization
 (define (max-zoom-in E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE PERCENT-BORDER-GAP DEFAULT-ZOOM-CAP DEFAULT-ZOOM) 
-  (lambda (a-vs) ((zoom (/ DEFAULT-ZOOM-CAP (viz-state-scale-factor a-vs))  E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE))))
+  (lambda (a-vs) ((zoom (/ DEFAULT-ZOOM-CAP (viz-state-scale-factor a-vs))  E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE) a-vs)))
 
 
 ;; viz-state -> viz-state
 ;; Purpose: Zooms in a moderate amount on the visualization
 (define (reset-zoom E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE PERCENT-BORDER-GAP DEFAULT-ZOOM-CAP DEFAULT-ZOOM)
-  (lambda (a-vs) ((zoom (/ (/ DEFAULT-ZOOM-CAP 2) (viz-state-scale-factor a-vs))  E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE))))
+  (lambda (a-vs) ((zoom (/ (/ DEFAULT-ZOOM-CAP 2) (viz-state-scale-factor a-vs))  E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE) a-vs)))
 
 ;; viz-state -> viz-state
 ;; Purpose: Zooms all the way out in the visualization
@@ -598,7 +598,7 @@
             (< E-SCENE-HEIGHT (image-height (viz-state-curr-image a-vs)))
             )
         (let [(img-resize (resize-image (viz-state-curr-image a-vs) (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))]
-          ((zoom (/ (min (second img-resize) (third img-resize)) (viz-state-scale-factor a-vs)) E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE)))
+          ((zoom (/ (min (second img-resize) (third img-resize)) (viz-state-scale-factor a-vs)) E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE) a-vs))
         (struct-copy viz-state a-vs
                      [scale-factor DEFAULT-ZOOM])))
   )
