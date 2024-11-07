@@ -10,6 +10,9 @@
          syntax/to-string
          2htdp/universe
          2htdp/image
+         "../../fsm-core/private/csg.rkt"
+         "../../fsm-core/private/cfg.rkt"
+         "../../fsm-core/private/regular-grammar.rkt"
          "../../fsm-core/private/sm-apply.rkt"
          "../../fsm-core/private/tm.rkt"
          "viz-state.rkt"
@@ -30,24 +33,12 @@
        a-srcloc])))
 
 
-
-;; check-accept
-(define-check (check-accept? M w line column name)
-  (unless (equal? (sm-apply M w) 'accept)
-    (with-check-info*
-        (list (make-check-name 'check-accept)
-              (make-check-location (list 'check-accept line column #f #f)))
-      (lambda () (begin
-                   (fail-check (format "~s does not accept ~s." name w))
-                   #f
-                   ))
-      ))
-  )
-
 ;; machine word [head-pos] -> Boolean
 ;; Purpose: To determine whether a given machine can accept/process a given word
 (define-syntax (check-accept stx)
   (syntax-parse stx
+
+    ;; Turing machines
     [(_ M [word header-pos:nat]...)
      #`(let* ([word-lst (list word ...)]
               [word-stx-lst (list #'word ...)]
@@ -88,6 +79,8 @@
                   #t
                   )))
      ]
+
+    ;; ndfas and dfas
     [(_ M . w)
      #:with (x ...) #'w
      #`(let ([res (foldr (lambda (val accum)
@@ -123,28 +116,55 @@
                   #t
                   )))
      ]
+
+    ;; Grammars
+    [(_ G . w)
+     #:with (x ...) #'w
+     #`(let ([res (foldr (lambda (val accum)
+                           (if (not (string? (grammar-derive G (second (syntax->datum val)))))
+                               accum
+                               (cons val accum)
+                               )                  
+                           )
+                         '()
+                         (list #'x ...))])
+         (unless (empty? res)
+           (raise (exn:fail:check-failed
+                   (if (= (length (list #'x ...)) 1)
+                       (format "~s derives the following word: ~a"
+                               (syntax-e #'M)
+                               (apply string-append (cons (format "\n~s" (second (syntax->datum (first res))))
+                                                          (map (lambda (n) (format "\n~s" n))
+                                                               (map second (map syntax->datum (rest res)))))))
+                       (format "~s derives the following words: ~a"
+                               (syntax-e #'M)
+                               (apply string-append (cons (format "\n~s" (second (syntax->datum (first res))))
+                                                          (map (lambda (n) (format "\n~s" n))
+                                                               (map second (map syntax->datum (rest res)))))))
+                       )
+                   (current-continuation-marks)
+                   (map (lambda (z)
+                          (srcloc (syntax-source z)
+                                  (syntax-line z)
+                                  (syntax-column z)
+                                  (syntax-position z)
+                                  (syntax-span z)))
+                        res))
+                  #t
+                  )))
+     ]
+    
             
-    #;[(_ M w n)
-       #'(check-accept? M w n)]))
+    ))
 
-;;
-
-;; check-accept
-#;(define-check (check-reject? M w line column)
-    (unless (equal? (sm-apply M w) 'reject)
-      (with-check-info*
-          (list (make-check-name 'check-reject)
-                (make-check-location (list 'check-reject line column #f #f))
-                (make-check-params (list M w))
-                (make-check-message (format "The machine does not reject ~s" w)))
-        (lambda () (fail-check)))
-      ))
 
 
 ;; machine word [head-pos] -> Boolean
 ;; Purpose: To determine whether a given machine can reject a given word
 (define-syntax (check-reject stx)
   (syntax-parse stx
+
+    ;; Turing machines
     [(_ M [word header-pos:nat]...)
      #`(let* ([word-lst (list word ...)]
               [word-stx-lst (list #'word ...)]
@@ -185,6 +205,8 @@
                   #t
                   )))
      ]
+
+    ;; ndfas and dfas
     [(_ M . w)
      #:with (x ...) #'w
      #`(let ([res (foldr (lambda (val accum)
@@ -220,7 +242,47 @@
                   #t
                   )))
      ]
-    #;[(_ M w n)
-       #'(check-reject? M w n)]))
+
+    ;; Grammars
+
+    [(_ G . w)
+     #:with (x ...) #'w
+     #`(let ([res (foldr (lambda (val accum)
+                           (if (string? (grammar-derive G (second (syntax->datum val))))
+                               accum
+                               (cons val accum)
+                               )                  
+                           )
+                         '()
+                         (list #'x ...))])
+         (unless (empty? res)
+           (raise (exn:fail:check-failed
+                   (if (= (length (list #'x ...)) 1)
+                       (format "~s derives the following word: ~a"
+                               (syntax-e #'M)
+                               (apply string-append (cons (format "\n~s" (second (syntax->datum (first res))))
+                                                          (map (lambda (n) (format "\n~s" n))
+                                                               (map second (map syntax->datum (rest res)))))))
+                       (format "~s derives the following words: ~a"
+                               (syntax-e #'M)
+                               (apply string-append (cons (format "\n~s" (second (syntax->datum (first res))))
+                                                          (map (lambda (n) (format "\n~s" n))
+                                                               (map second (map syntax->datum (rest res)))))))
+                       )
+                   (current-continuation-marks)
+                   (map (lambda (z)
+                          (srcloc (syntax-source z)
+                                  (syntax-line z)
+                                  (syntax-column z)
+                                  (syntax-position z)
+                                  (syntax-span z)))
+                        res))
+                  #t
+                  )))
+     ]
+     
+
+    
+    ))
 
 

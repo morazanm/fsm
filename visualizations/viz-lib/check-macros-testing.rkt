@@ -12,7 +12,6 @@
          "../../fsm-core/private/cfg.rkt"
          "../../fsm-core/private/regular-grammar.rkt"
          "viz-state.rkt"
-         "check-derive-not-derive-macros.rkt"
          "check-accept-reject-macro.rkt"
          rackunit
          "../../fsm-core/interface.rkt"
@@ -51,7 +50,7 @@ E - ci = ab* final
                (C ,EMP H)
                (H b H))))
 
-;(check-accept AB*B*UAB* '(a b a b a b b b b) '(a b a b a b b b b a) '(a b b b b b a b) '())
+(check-accept AB*B*UAB* '(a b a b a b b b b) '(a b a b a b b b b a) '(a b b b b b a b) '())
 ;(check-reject AB*B*UAB* '(a b a b a b b b b))
 ;(check-accept AB*B*UAB* '(a b b a b b a b b))
 ;(check-reject AB*B*UAB* '(a b b a b b a b b))
@@ -168,7 +167,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
 (check-reject equal-a-b-c `(,LM ,BLANK a a a b b b c c c) 1) 
 |#
 
-#|
+
 
 
 ;; L(M) = at least one missing
@@ -185,7 +184,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                           (B c B)
                                           (C a C)
                                           (C b C))))
-
+#|
 (check-accept AT-LEAST-ONE-MISSING '(a b c)) 
 (check-accept AT-LEAST-ONE-MISSING '(b b a b c b a)) 
 (check-accept AT-LEAST-ONE-MISSING '(b a c)) 
@@ -207,6 +206,8 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
 (check-reject AT-LEAST-ONE-MISSING '(c c a a))
 (check-reject AT-LEAST-ONE-MISSING '(b b c b b b))
 (check-reject AT-LEAST-ONE-MISSING '(a a a b b b))
+
+|#
 
 
 
@@ -241,6 +242,8 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                'A))
 
 ;; Tests for even-a-even-b
+
+#|
 (check-accept even-a-even-b `(,LM a a a a b b))
 (check-accept even-a-even-b `(,LM a a a b b))
 (check-accept even-a-even-b `(,LM))
@@ -254,7 +257,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
 (check-reject even-a-even-b `(,LM a a a a b b b))
 (check-reject even-a-even-b `(,LM a b)) 
 
-
+|#
 
 
 
@@ -264,34 +267,39 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
 (define even-bs-odd-as
   (make-unchecked-cfg '(S A B C)
                       '(a b)
-                      `((S ,ARROW aA) (S ,ARROW bB)
-                                      (S ,ARROW a)
-                                      (A ,ARROW aS)
-                                      (A ,ARROW bC)
-                                      (B ,ARROW aC)
-                                      (B ,ARROW bS)
-                                      (C ,ARROW aB)
-                                      (C ,ARROW bA)
-                                      (C ,ARROW b))
+                      `((S ,ARROW aA)
+                        (S ,ARROW bB)
+                        (S ,ARROW a)
+                        (A ,ARROW aS)
+                        (A ,ARROW bC)
+                        (B ,ARROW aC)
+                        (B ,ARROW bS)
+                        (C ,ARROW aB)
+                        (C ,ARROW bA)
+                        (C ,ARROW b))
                       'S))
 
 
-(check-derive even-bs-odd-as '(b b b b a a a))
-(check-derive even-bs-odd-as '(b b b a a a))
-(check-derive even-bs-odd-as '(b a a a)) 
-(check-derive even-bs-odd-as '(a a a))
-(check-derive even-bs-odd-as '(b b b b))
-(check-derive even-bs-odd-as '(b b b b a a a a))
+;(check-accept even-bs-odd-as '(b b b b a a a))
+
+#|
+(check-accept even-bs-odd-as '(b b b a a a))
+(check-accept even-bs-odd-as '(b a a a)) 
+(check-accept even-bs-odd-as '(a a a))
+(check-accept even-bs-odd-as '(b b b b))
+(check-accept even-bs-odd-as '(b b b b a a a a))
+
+|#
+
+#|
 
 
-
-
-(check-not-derive even-bs-odd-as '(b b b b a a a))
-(check-not-derive even-bs-odd-as '(b b b a a a))
-(check-not-derive even-bs-odd-as '(b a a a))
-(check-not-derive even-bs-odd-as '(a a a))
-(check-not-derive even-bs-odd-as '(b b b b))
-(check-not-derive even-bs-odd-as '(b b b b a a a a))
+(check-reject even-bs-odd-as '(b b b b a a a))
+(check-reject even-bs-odd-as '(b b b a a a))
+(check-reject even-bs-odd-as '(b a a a))
+(check-reject even-bs-odd-as '(a a a))
+(check-reject even-bs-odd-as '(b b b b))
+(check-reject even-bs-odd-as '(b b b b a a a a))
 
 
 
@@ -306,19 +314,19 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                             'S))
 
 
-(check-derive reverse-w '(b b b b a a a)) 
-(check-derive reverse-w '(a a a a a a)) 
-(check-derive reverse-w '(a a a b a a a))
-(check-derive reverse-w '(a a b b a a)) 
-(check-derive reverse-w '(b b b b))
-(check-derive reverse-w '(b b b b a a a a))
+(check-accept reverse-w '(b b b b a a a)) 
+(check-accept reverse-w '(a a a a a a)) 
+(check-accept reverse-w '(a a a b a a a))
+(check-accept reverse-w '(a a b b a a)) 
+(check-accept reverse-w '(b b b b))
+(check-accept reverse-w '(b b b b a a a a))
 
-(check-not-derive reverse-w '(b b b b a a a)) 
-(check-not-derive reverse-w '(a a a a a a))
-(check-not-derive reverse-w '(a a a b a a a)) 
-(check-not-derive reverse-w '(a a b b a a))
-(check-not-derive reverse-w '(b b b b))
-(check-not-derive reverse-w '(b b b b a a a a)) 
+(check-reject reverse-w '(b b b b a a a)) 
+(check-reject reverse-w '(a a a a a a))
+(check-reject reverse-w '(a a a b a a a)) 
+(check-reject reverse-w '(a a b b a a))
+(check-reject reverse-w '(b b b b))
+(check-reject reverse-w '(b b b b a a a a)) 
 
 ;; L = palindromes
 (define palindrome (make-cfg '(S A)
@@ -333,19 +341,20 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                              'S))
 
 
-(check-derive palindrome '(b b b b a a a))
-(check-derive palindrome '(a a a a a a))
-(check-derive palindrome '(a a a b a a a)) 
-(check-derive palindrome '(a a b b a a))
-(check-derive palindrome '(b b a b b))
-(check-derive palindrome '(b b b b a a a a))
 
-(check-not-derive palindrome '(b b b b a a a))
-(check-not-derive palindrome '(a a a a a a))
-(check-not-derive palindrome '(a a a b a a a))
-(check-not-derive palindrome '(a a b b a a))
-(check-not-derive palindrome '(b b a b b))
-(check-not-derive palindrome '(b b b b a a a a))
+(check-accept palindrome '(b b b b a a a))
+(check-accept palindrome '(a a a a a a))
+(check-accept palindrome '(a a a b a a a)) 
+(check-accept palindrome '(a a b b a a))
+(check-accept palindrome '(b b a b b))
+(check-accept palindrome '(b b b b a a a a))
+
+(check-reject palindrome '(b b b b a a a))
+(check-reject palindrome '(a a a a a a))
+(check-reject palindrome '(a a a b a a a))
+(check-reject palindrome '(a a b b a a))
+(check-reject palindrome '(b b a b b))
+(check-reject palindrome '(b b b b a a a a))
 
 
 
@@ -360,18 +369,18 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                          (A -> bS)) 
                        'S))
 
-(check-derive aibj '(a a a a b b b b))
-(check-derive aibj '(a a a a))
-(check-derive aibj '(a a a b a a a)) 
-(check-derive aibj '(a a b b a a))
-(check-derive aibj '(b b a b b))
-(check-derive aibj '(a a a a b b b b b b b b))
+(check-accept aibj '(a a a a b b b b))
+(check-accept aibj '(a a a a))
+(check-accept aibj '(a a a b a a a)) 
+(check-accept aibj '(a a b b a a))
+(check-accept aibj '(b b a b b))
+(check-accept aibj '(a a a a b b b b b b b b))
 
-(check-not-derive aibj '(a a a a b b b b)) 
-(check-not-derive aibj '(a a a a))
-(check-not-derive aibj '(a a a b a a a))
-(check-not-derive aibj '(a a b b a a))
-(check-not-derive aibj '(b b a b b))
-(check-not-derive aibj '(a a a a b b b b b b b b)) 
+(check-reject aibj '(a a a a b b b b)) 
+(check-reject aibj '(a a a a))
+(check-reject aibj '(a a a b a a a))
+(check-reject aibj '(a a b b a a))
+(check-reject aibj '(b b a b b))
+(check-reject aibj '(a a a a b b b b b b b b)) 
 
 |#
