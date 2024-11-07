@@ -44,41 +44,82 @@
       ))
   )
 
-
 ;; machine word [head-pos] -> Boolean
 ;; Purpose: To determine whether a given machine can accept/process a given word
 (define-syntax (check-accept stx)
   (syntax-parse stx
+    [(_ M [word header-pos:nat]...)
+     #`(let* ([word-lst (list #'word ...)]
+              [header-pos-lst (list header-pos ...)]
+              [res (foldr (lambda (val head accum)
+                           (if (equal? (sm-apply M (second (syntax->datum val)) head) 'accept)
+                               accum
+                               (cons val accum)
+                               )                  
+                           )
+                         '()
+                         word-lst
+                         header-pos-lst
+                         )])
+         (unless (empty? res)
+           (raise (exn:fail:check-failed
+                   (if (= (length word-lst) 1)
+                       (format "~s does not accept the following word: ~a"
+                           (syntax-e #'M)
+                           (apply string-append (cons (format "\n~s" (second (syntax->datum (first res))))
+                                                      (map (lambda (n) (format "\n~s" n))
+                                                           (map second (map syntax->datum (rest res)))))))
+                       (format "~s does not accept the following words: ~a"
+                           (syntax-e #'M)
+                           (apply string-append (cons (format "\n~s" (second (syntax->datum (first res))))
+                                                      (map (lambda (n) (format "\n~s" n))
+                                                           (map second (map syntax->datum (rest res)))))))
+                       )
+                   (current-continuation-marks)
+                   (map (lambda (z)
+                          (srcloc (syntax-source z)
+                                  (syntax-line z)
+                                  (syntax-column z)
+                                  (syntax-position z)
+                                  (syntax-span z)))
+                        res))
+                  #t
+                  )))
+     ]
     [(_ M . w)
      #:with (x ...) #'w
-     #`(begin
-         (let ([res (foldr (lambda (val accum)
-                             (if (equal? (sm-apply M (second (syntax->datum val))) 'accept)
-                                 accum
-                                 (cons val accum)
-                                 )                  
-                             )
-                           '()
-                           (list #'x ...))])
-           (unless (empty? res)
-             (raise (exn:fail:check-failed
-                     (format "~s does not accept the following words: ~a"
-                             (syntax-e #'M)
-                             (apply string-append (cons (format "\n~s" (second (syntax->datum (first res))))
-                                                        (map (lambda (n) (format "\n~s" n))
-                                                             (map second (map syntax->datum (rest res)))))))
-                     (current-continuation-marks)
-                     (map (lambda (z)
-                            (srcloc (syntax-source z)
-                                    (syntax-line z)
-                                    (syntax-column z)
-                                    (syntax-position z)
-                                    (syntax-span z)))
-                          res)
-                     ))
-             )
-           )
-         )
+     #`(let ([res (foldr (lambda (val accum)
+                           (if (equal? (sm-apply M (second (syntax->datum val))) 'accept)
+                               accum
+                               (cons val accum)
+                               )                  
+                           )
+                         '()
+                         (list #'x ...))])
+         (unless (empty? res)
+           (raise (exn:fail:check-failed
+                   (if (= (length (list #'x ...)) 1)
+                       (format "~s does not accept the following word: ~a"
+                           (syntax-e #'M)
+                           (apply string-append (cons (format "\n~s" (second (syntax->datum (first res))))
+                                                      (map (lambda (n) (format "\n~s" n))
+                                                           (map second (map syntax->datum (rest res)))))))
+                       (format "~s does not accept the following words: ~a"
+                           (syntax-e #'M)
+                           (apply string-append (cons (format "\n~s" (second (syntax->datum (first res))))
+                                                      (map (lambda (n) (format "\n~s" n))
+                                                           (map second (map syntax->datum (rest res)))))))
+                       )
+                   (current-continuation-marks)
+                   (map (lambda (z)
+                          (srcloc (syntax-source z)
+                                  (syntax-line z)
+                                  (syntax-column z)
+                                  (syntax-position z)
+                                  (syntax-span z)))
+                        res))
+                  #t
+                  )))
      ]
             
     #;[(_ M w n)
