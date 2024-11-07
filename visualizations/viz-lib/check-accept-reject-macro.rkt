@@ -57,9 +57,9 @@
                                  accum
                                  (cons val accum)
                                  #;(if (empty? val)
-                                     (append (list '()) accum)
+                                       (append (list '()) accum)
                                                          
-                                     (cons val accum)))
+                                       (cons val accum)))
                                                  
                              )
                            '()
@@ -68,20 +68,22 @@
              (raise (exn:fail:check-failed
                      (format "~s does not accept the following words: ~a"
                              (syntax-e #'M)
-                             (apply string-append (cons (format "\n~s" (syntax->datum (first res))) (map (lambda (n) (format "\n~s" n)) (map syntax->datum (rest res))))))
+                             (apply string-append (cons (format "\n~s" (second (syntax->datum (first res))))
+                                                        (map (lambda (n) (format "\n~s" n))
+                                                             (map second (map syntax->datum (rest res)))))))
                      (current-continuation-marks)
                      (map (lambda (z)
                             (srcloc (syntax-source z)
-                                   (syntax-line z)
-                                   (syntax-column z)
-                                   (syntax-position z)
-                                   (syntax-span z)))
+                                    (syntax-line z)
+                                    (syntax-column z)
+                                    (syntax-position z)
+                                    (syntax-span z)))
                           res)
-                            ))
+                     ))
              )
            )
          )
-         ]
+     ]
             
     #;[(_ M w n)
        #'(check-accept? M w n)]))
