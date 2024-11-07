@@ -1,6 +1,7 @@
 #lang racket
 
 (require (for-syntax syntax/parse
+                     racket/syntax-srcloc
                      racket/base
                      racket/match
                      syntax/to-string
@@ -28,36 +29,52 @@
        (list a-srcloc)])))
 
 
+
 ;; check-accept
-(define-check (check-accept? M w line column)
+(define-check (check-accept? M w line column name)
   (unless (equal? (sm-apply M w) 'accept)
     (with-check-info*
         (list (make-check-name 'check-accept)
               (make-check-location (list 'check-accept line column #f #f)))
       (lambda () (begin
-                   (fail-check (format "The machine does not accept ~s." w))
-                   #f))
-      )))
+                   (fail-check (format "~s does not accept ~s." name w))
+                   #f
+                   ))
+      ))
+  )
 
 
 ;; machine word [head-pos] -> Boolean
 ;; Purpose: To determine whether a given machine can accept/process a given word
 (define-syntax (check-accept stx)
   (syntax-parse stx
-    [(_ M w)
-     (quasisyntax/loc
-         stx
-       (unless (not (check-accept? M w #,(syntax-line stx)
-                                   #,(syntax-column stx)))
-         (lambda () (error-display-handler))
-         #;(raise (exn:fail:check-accept-failed
-                   "dummyyyyy"
-                   (current-continuation-marks)
-                   (srcloc '#,(syntax-source #'stx)
-                           '#,(syntax-line #'stx)
-                           '#,(syntax-column #'stx)
-                           '#,(syntax-position #'stx)
-                           '#,(syntax-span #'stx))))))]
+    [(_ M . w)
+     #:with (x ...) #'w
+     #`(begin
+         (let ([res (foldr (lambda (val accum)
+                             (if (equal? (sm-apply M val) 'accept)
+                                 accum
+                                 (if (empty? val)
+                                     (append (list '()) accum)
+                                                         
+                                     (cons val accum)))
+                                                 
+                             )
+                           '()
+                           (list x ...))])
+           (unless (empty? res)
+             (raise (exn:fail:check-accept-failed
+                     (format "~s does not accept the following words: ~a" (syntax-e #'M) res)
+                     (current-continuation-marks)
+                     (srcloc '#,(syntax-source stx)
+                             '#,(syntax-line stx)
+                             '#,(syntax-column stx)
+                             '#,(syntax-position stx)
+                             '#,(syntax-span stx))))
+             )
+           )
+         )
+         ]
             
     #;[(_ M w n)
        #'(check-accept? M w n)]))
