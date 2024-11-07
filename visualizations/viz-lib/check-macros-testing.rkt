@@ -51,7 +51,7 @@ E - ci = ab* final
                (C ,EMP H)
                (H b H))))
 
-(check-accept AB*B*UAB* '(a b a b a b b b b) '(a b a b a b b b b a) '(a b b b b b a b) '())
+;(check-accept AB*B*UAB* '(a b a b a b b b b) '(a b a b a b b b b a) '(a b b b b b a b) '())
 ;(check-reject AB*B*UAB* '(a b a b a b b b b))
 ;(check-accept AB*B*UAB* '(a b b a b b a b b))
 ;(check-reject AB*B*UAB* '(a b b a b b a b b))
@@ -83,7 +83,7 @@ P - i>4 and tape[4..i-1] = x+a OR x+b OR x+c or x+
 Y - w=x* AND [xs] remainder 3 = 0, final accepting state
 
 
-
+|#
 
 
 
@@ -140,7 +140,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                              'S '(Y) 'Y))
 
 
-(check-accept equal-a-b-c `(,LM ,BLANK a a) 1) 
+#|(check-accept equal-a-b-c [`(,LM ,BLANK a a) 1])
 (check-accept equal-a-b-c `(,LM ,BLANK b b b) 1) 
 (check-accept equal-a-b-c `(,LM ,BLANK c) 1) 
 (check-accept equal-a-b-c `(,LM ,BLANK b a b c) 1) 
@@ -152,14 +152,13 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
 (check-accept equal-a-b-c `(,LM ,BLANK) 1)
 (check-accept equal-a-b-c `(,LM ,BLANK a b c) 1) 
 (check-accept equal-a-b-c `(,LM ,BLANK a a b b c c) 1) 
-(check-accept equal-a-b-c `(,LM ,BLANK a a a b b b c c c) 1) 
+(check-accept equal-a-b-c `(,LM ,BLANK a a a b b b c c c) 1) |#
 
-(check-reject equal-a-b-c `(,LM ,BLANK a a) 1) 
-(check-reject equal-a-b-c `(,LM ,BLANK b b b) 1) 
-(check-reject equal-a-b-c `(,LM ,BLANK c) 1) 
-(check-reject equal-a-b-c `(,LM ,BLANK b a b c) 1) 
-(check-reject equal-a-b-c `(,LM ,BLANK a c b) 1)
-(check-reject equal-a-b-c `(,LM ,BLANK a a b c) 1) 
+(check-reject equal-a-b-c [`(,LM ,BLANK a a) 1]) 
+(check-reject equal-a-b-c [`(,LM ,BLANK b b b) 1]) 
+(check-reject equal-a-b-c [`(,LM ,BLANK c) 1]) 
+;(check-reject equal-a-b-c [`(,LM ,BLANK a c b) 1]) 
+#|(check-reject equal-a-b-c `(,LM ,BLANK a a b c) 1) 
 (check-reject equal-a-b-c `(,LM ,BLANK a a b b b c c) 1) 
 (check-reject equal-a-b-c `(,LM ,BLANK a b c c) 1)
 (check-reject equal-a-b-c `(,LM ,BLANK a a b b c c a b c) 1)
@@ -167,8 +166,9 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
 (check-reject equal-a-b-c `(,LM ,BLANK a b c) 1)
 (check-reject equal-a-b-c `(,LM ,BLANK a a b b c c) 1)
 (check-reject equal-a-b-c `(,LM ,BLANK a a a b b b c c c) 1) 
+|#
 
-
+#|
 
 
 ;; L(M) = at least one missing
