@@ -26,8 +26,8 @@
   #:property prop:exn:srclocs
   (lambda (a-struct)
     (match a-struct
-      [(exn:fail:check-failed msg marks a-srcloc)
-       (list a-srcloc)])))
+      [(exn:fail:check-failed msg marks (list a-srcloc ...))
+       a-srcloc])))
 
 
 
@@ -53,25 +53,31 @@
      #:with (x ...) #'w
      #`(begin
          (let ([res (foldr (lambda (val accum)
-                             (if (equal? (sm-apply M val) 'accept)
+                             (if (equal? (sm-apply M (syntax->datum val)) 'accept)
                                  accum
-                                 (if (empty? val)
+                                 (cons val accum)
+                                 #;(if (empty? val)
                                      (append (list '()) accum)
                                                          
                                      (cons val accum)))
                                                  
                              )
                            '()
-                           (list x ...))])
+                           (list #'x ...))])
            (unless (empty? res)
-             (raise (exn:fail:check-accept-failed
-                     (format "~s does not accept the following words: ~a" (syntax-e #'M) res)
+             (raise (exn:fail:check-failed
+                     (format "~s does not accept the following words: ~a"
+                             (syntax-e #'M)
+                             (apply string-append (cons (format "\n~s" (syntax->datum (first res))) (map (lambda (n) (format "\n~s" n)) (map syntax->datum (rest res))))))
                      (current-continuation-marks)
-                     (srcloc '#,(syntax-source stx)
-                             '#,(syntax-line stx)
-                             '#,(syntax-column stx)
-                             '#,(syntax-position stx)
-                             '#,(syntax-span stx))))
+                     (map (lambda (z)
+                            (srcloc (syntax-source z)
+                                   (syntax-line z)
+                                   (syntax-column z)
+                                   (syntax-position z)
+                                   (syntax-span z)))
+                          res)
+                            ))
              )
            )
          )
