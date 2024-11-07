@@ -55,7 +55,7 @@ E - ci = ab* final
 ;(check-reject AB*B*UAB* '(a b a b a b b b b))
 ;(check-accept AB*B*UAB* '(a b b a b b a b b))
 ;(check-reject AB*B*UAB* '(a b b a b b a b b))
-;(check-accept AB*B*UAB* '(a b b b b)) 
+;(check-accept AB*B*UAB* '(b)) 
 ;(check-reject AB*B*UAB* '(a b b b b))
 ;(check-accept AB*B*UAB* '(a b b b b b a b))
 ;(check-reject AB*B*UAB* '(a b b b b b a b))

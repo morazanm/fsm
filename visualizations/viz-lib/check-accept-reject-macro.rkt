@@ -20,12 +20,13 @@
 (provide check-accept check-reject)
 
 
-(struct exn:fail:check-accept-failed exn:fail
+;; exeption-structure
+(struct exn:fail:check-failed exn:fail
   (a-srcloc)
   #:property prop:exn:srclocs
   (lambda (a-struct)
     (match a-struct
-      [(exn:fail:check-accept-failed msg marks a-srcloc)
+      [(exn:fail:check-failed msg marks a-srcloc)
        (list a-srcloc)])))
 
 
@@ -82,15 +83,15 @@
 ;;
 
 ;; check-accept
-(define-check (check-reject? M w line column)
-  (unless (equal? (sm-apply M w) 'reject)
-    (with-check-info*
-        (list (make-check-name 'check-reject)
-              (make-check-location (list 'check-reject line column #f #f))
-              (make-check-params (list M w))
-              (make-check-message (format "The machine does not reject ~s" w)))
-      (lambda () (fail-check)))
-    ))
+#;(define-check (check-reject? M w line column)
+    (unless (equal? (sm-apply M w) 'reject)
+      (with-check-info*
+          (list (make-check-name 'check-reject)
+                (make-check-location (list 'check-reject line column #f #f))
+                (make-check-params (list M w))
+                (make-check-message (format "The machine does not reject ~s" w)))
+        (lambda () (fail-check)))
+      ))
 
 
 ;; machine word [head-pos] -> Boolean
@@ -98,7 +99,15 @@
 (define-syntax (check-reject stx)
   (syntax-parse stx
     [(_ M w)
-     #`(check-reject? M w #,(syntax-line stx) #,(syntax-column stx))]
+     #`(unless (equal? (sm-apply M w) 'reject)
+         (raise (exn:fail:check-failed
+                 (format "The machine does not reject ~s" w)
+                 (current-continuation-marks)
+                 (srcloc '#,(syntax-source stx)
+                         '#,(syntax-line stx)
+                         '#,(syntax-column stx)
+                         '#,(syntax-position stx)
+                         '#,(syntax-span stx)))))]
     #;[(_ M w n)
        #'(check-reject? M w n)]))
 
