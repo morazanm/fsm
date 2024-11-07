@@ -53,14 +53,10 @@
      #:with (x ...) #'w
      #`(begin
          (let ([res (foldr (lambda (val accum)
-                             (if (equal? (sm-apply M (syntax->datum val)) 'accept)
+                             (if (equal? (sm-apply M (second (syntax->datum val))) 'accept)
                                  accum
                                  (cons val accum)
-                                 #;(if (empty? val)
-                                       (append (list '()) accum)
-                                                         
-                                       (cons val accum)))
-                                                 
+                                 )                  
                              )
                            '()
                            (list #'x ...))])
