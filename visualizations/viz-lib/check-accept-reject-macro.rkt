@@ -5,6 +5,7 @@
                      racket/base
                      racket/match
                      syntax/to-string
+                     "../../fsm-core/private/sm-getters.rkt"
                      "viz-state.rkt"
                      racket/struct-info)
          syntax/to-string
@@ -33,11 +34,25 @@
        a-srcloc])))
 
 
+
+
+
+
 ;; machine word [head-pos] -> Boolean
 ;; Purpose: To determine whether a given machine can accept/process a given word
 (define-syntax (check-accept stx)
+  (define (is-machine stx)
+    (or (equal? 'ndfa (sm-type (syntax->datum stx)))
+        (equal? 'dfa (sm-type (syntax->datum stx)))))
+  (define-syntax-class machine
+    [pattern ((~var M ) ...)
+      #:fail-when (not (is-machine #'(M ...)))
+      ""])
+  (define-syntax-class grammar
+    [pattern ((~var M ) ...)
+      #:fail-when (is-machine #'(M ...))
+      ""])
   (syntax-parse stx
-
     ;; Turing machines
     [(_ M [word header-pos:nat]...)
      #`(let* ([word-lst (list word ...)]
@@ -83,6 +98,7 @@
     ;; ndfas and dfas
     [(_ M . w)
      #:with (x ...) #'w
+     #:with (~var y machine) #'M
      #`(let ([res (foldr (lambda (val accum)
                            (if (equal? (sm-apply M (second (syntax->datum val))) 'accept)
                                accum
@@ -120,6 +136,7 @@
     ;; Grammars
     [(_ G . w)
      #:with (x ...) #'w
+     #:with (~var y grammar) #'G
      #`(let ([res (foldr (lambda (val accum)
                            (if (not (string? (grammar-derive G (second (syntax->datum val)))))
                                accum
@@ -131,12 +148,12 @@
          (unless (empty? res)
            (raise (exn:fail:check-failed
                    (if (= (length (list #'x ...)) 1)
-                       (format "~s derives the following word: ~a"
+                       (format "~s doesn't derive the following word: ~a"
                                (syntax-e #'M)
                                (apply string-append (cons (format "\n~s" (second (syntax->datum (first res))))
                                                           (map (lambda (n) (format "\n~s" n))
                                                                (map second (map syntax->datum (rest res)))))))
-                       (format "~s derives the following words: ~a"
+                       (format "~s doesn't derive the following words: ~a"
                                (syntax-e #'M)
                                (apply string-append (cons (format "\n~s" (second (syntax->datum (first res))))
                                                           (map (lambda (n) (format "\n~s" n))
