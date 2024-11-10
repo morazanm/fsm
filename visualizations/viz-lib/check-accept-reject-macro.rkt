@@ -33,7 +33,8 @@
       [(exn:fail:check-failed msg marks (list a-srcloc ...))
        a-srcloc])))
 
-
+(define (is-ndfa? m)
+    (equal? 'ndfa (sm-type m)))
 
 
 
@@ -44,17 +45,22 @@
   (define (is-machine stx)
     (or (equal? 'ndfa (sm-type (syntax->datum stx)))
         (equal? 'dfa (sm-type (syntax->datum stx)))))
+  
   (define-syntax-class machine
-    [pattern ((~var M ) ...)
-      #:fail-when (not (is-machine #'(M ...)))
-      ""])
+    (pattern M
+      #:declare M (expr/c #'is-ndfa?)
+      #:with m #'M
+      #:with c (attribute M.c)
+      ))
+
+  
   (define-syntax-class grammar
     [pattern ((~var M ) ...)
       #:fail-when (is-machine #'(M ...))
       ""])
   (syntax-parse stx
     ;; Turing machines
-    [(_ M [word header-pos:nat]...)
+    #;[(_ M [word header-pos:nat]...)
      #`(let* ([word-lst (list word ...)]
               [word-stx-lst (list #'word ...)]
               [header-pos-lst (list header-pos ...)]
@@ -96,11 +102,13 @@
      ]
 
     ;; ndfas and dfas
-    [(_ M . w)
+    [(_ M:machine . w)
+     ;#:declare m (expr/c #'is-ndfa?)
+     ;#:with M (attribute m.c)
      #:with (x ...) #'w
-     #:with (~var y machine) #'M
+     ;#:with (~var y machine) #'M
      #`(let ([res (foldr (lambda (val accum)
-                           (if (equal? (sm-apply M (second (syntax->datum val))) 'accept)
+                           (if (equal? (sm-apply M.c (second (syntax->datum val))) 'accept)
                                accum
                                (cons val accum)
                                )                  
@@ -111,12 +119,12 @@
            (raise (exn:fail:check-failed
                    (if (= (length (list #'x ...)) 1)
                        (format "~s does not accept the following word: ~a"
-                               (syntax-e #'M)
+                               (syntax-e #'M.m)
                                (apply string-append (cons (format "\n~s" (second (syntax->datum (first res))))
                                                           (map (lambda (n) (format "\n~s" n))
                                                                (map second (map syntax->datum (rest res)))))))
                        (format "~s does not accept the following words: ~a"
-                               (syntax-e #'M)
+                               (syntax-e #'M.m)
                                (apply string-append (cons (format "\n~s" (second (syntax->datum (first res))))
                                                           (map (lambda (n) (format "\n~s" n))
                                                                (map second (map syntax->datum (rest res)))))))
@@ -134,7 +142,7 @@
      ]
 
     ;; Grammars
-    [(_ G . w)
+    #;[(_ G . w)
      #:with (x ...) #'w
      #:with (~var y grammar) #'G
      #`(let ([res (foldr (lambda (val accum)

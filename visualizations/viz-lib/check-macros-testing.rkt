@@ -4,13 +4,14 @@
                      racket/base
                      "viz-state.rkt"
                      racket/struct-info)
+          "../../fsm-core/private/sm-getters.rkt"
          2htdp/universe
          2htdp/image
          "../../fsm-core/private/sm-apply.rkt"
          "../../fsm-core/private/tm.rkt"
          "../../fsm-core/private/csg.rkt"
          "../../fsm-core/private/cfg.rkt"
-         "../../fsm-core/private/regular-grammar.rkt"
+         "../../fsm-core/interface.rkt"
          "viz-state.rkt"
          "check-accept-reject-macro.rkt"
          rackunit
@@ -49,6 +50,8 @@ E - ci = ab* final
                (B b K)
                (C ,EMP H)
                (H b H))))
+
+
 
 (check-accept AB*B*UAB* '(a b a b a b b b b) '(a b a b a b b b b a) '(a b b b b b a b) '())
 ;(check-reject AB*B*UAB* '(a b a b a b b b b))
@@ -153,9 +156,9 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
 (check-accept equal-a-b-c `(,LM ,BLANK a a b b c c) 1) 
 (check-accept equal-a-b-c `(,LM ,BLANK a a a b b b c c c) 1) |#
 
-(check-reject equal-a-b-c [`(,LM ,BLANK a a) 1]) 
-(check-reject equal-a-b-c [`(,LM ,BLANK b b b) 1]) 
-(check-reject equal-a-b-c [`(,LM ,BLANK c) 1]) 
+;(check-reject equal-a-b-c [`(,LM ,BLANK a a) 1]) 
+;(check-reject equal-a-b-c [`(,LM ,BLANK b b b) 1]) 
+;(check-reject equal-a-b-c [`(,LM ,BLANK c) 1]) 
 ;(check-reject equal-a-b-c [`(,LM ,BLANK a c b) 1]) 
 #|(check-reject equal-a-b-c `(,LM ,BLANK a a b c) 1) 
 (check-reject equal-a-b-c `(,LM ,BLANK a a b b b c c) 1) 
