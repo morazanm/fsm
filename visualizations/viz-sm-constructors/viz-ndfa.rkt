@@ -1756,6 +1756,7 @@ triple is the entire of the ndfa rule
       (rest a-qox)))
 
 
+
 (struct computation (LoC LoR visited) #:transparent)
 
 
@@ -1792,9 +1793,9 @@ triple is the entire of the ndfa rule
              [connected-read-rules (if (empty? (second (first (computation-LoC (qfirst QoC)))))
                                        '()
                                        (filter (λ (rule)
-                                             (and (equal? (first rule) (first (first (computation-LoC (qfirst QoC)))))
-                                                  (equal? (second rule) (first (second (first (computation-LoC (qfirst QoC))))))))
-                                           lor))]
+                                                 (and (equal? (first rule) (first (first (computation-LoC (qfirst QoC)))))
+                                                      (equal? (second rule) (first (second (first (computation-LoC (qfirst QoC))))))))
+                                               lor))]
              ;;(listof rules)
              ;;Purpose: Returns all rules that have an empty transition using the given configurations
              [connected-emp-rules
