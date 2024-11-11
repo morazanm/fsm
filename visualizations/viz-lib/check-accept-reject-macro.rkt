@@ -36,27 +36,36 @@
        a-srcloc]
       )))
 
+;; smth -> Boolean
+;; Purpose: Checks if smth is a machine (not tm)
 (define (is-machine? m)
   (let ([m-type (with-handlers ([exn:fail? (lambda (exn) #f)])
                   (m 'whatami 0 'whatami))])
     (or (eq? 'ndfa m-type)
         (eq? 'dfa m-type)
         (eq? 'pda m-type)
-        (eq? 'tm m-type)
-        (eq? 'tm-language-recognizer m-type))))
+        )))
 
+;; smth -> Boolean
+;; Purpose: Checks if smth is a turing machine
 (define (is-turing-machine? m)
   (let ([m-type (with-handlers ([exn:fail? (lambda (exn) #f)])
                   (m 'whatami 0 'whatami))])
     (or (eq? 'tm m-type)
         (eq? 'tm-language-recognizer m-type))))
 
+
+;; smth -> Boolean
+;; Purpose: Checks is smth is a grammar
 (define (is-grammar? g)
   (or (rg? g)
       (cfg? g)
       (csg? g)))
 
 
+
+;; stx -> stx
+;; Purpose: Tests grammars
 (define-syntax (check-accept-grammar stx)
   (define-syntax-class grammar
     (pattern G
@@ -65,16 +74,16 @@
     [(_ G:grammar . w)
      #:with (x ...) #'w
      #`(let* ([res (foldr (lambda (word word-stx accum)
-                           (if (not (string? (grammar-derive G word)))
-                               accum
-                               (cons (list word word-stx) accum)
-                               )                  
-                           )
-                         '()
-                         (list x ...)
-                         (list #'x ...))]
-             [word-lst (map first res)]
-             [word-stx-lst (map second res)])
+                            (if (not (string? (grammar-derive G word)))
+                                accum
+                                (cons (list word word-stx) accum)
+                                )                  
+                            )
+                          '()
+                          (list x ...)
+                          (list #'x ...))]
+              [word-lst (map first res)]
+              [word-stx-lst (map second res)])
          (unless (empty? res)
            (raise (exn:fail:check-failed
                    (if (= (length word-lst) 1)
@@ -99,16 +108,14 @@
      ]
     )
   )
+  
 
-
-(define (tm-word/c lang)
-  (listof (apply or/c lang))
-  )
-
+;; stx -> stx
+;; Purpose: Checks turing machines
 (define-syntax (check-accept-turing-machine stx)
   (define-syntax-class machine
     (pattern M
-      #:declare M (expr/c #'is-machine?)
+      #:declare M (expr/c #'is-turing-machine?)
       #:with m #'M
       #:with c (attribute M.c)
       ))
@@ -158,6 +165,9 @@
      ]
     ))
 
+
+;; stx -> stx
+;; Purpose: Checks state machines (without turing)
 (define-syntax (check-accept-machine stx)
   (define-syntax-class machine
     (pattern M
@@ -165,13 +175,8 @@
       #:with m #'M
       #:with c (attribute M.c)
       ))
-
-  
-  (syntax-parse stx
-    
+  (syntax-parse stx 
     [(_ M:machine . w)
-     ;#:declare m (expr/c #'is-ndfa?)
-     ;#:with M (attribute m.c)
      #:with (x ...) #'w
      #`(let* ([res (foldr (lambda (word wordstx accum)
                             (if (equal? (sm-apply M.c word) 'accept)
@@ -209,72 +214,27 @@
      ]
     ))
 
-#;(define (check-accept1 m . x)
-  (cond
-    [(is-turing-machine? m) (match x
-                              ([word head-pos]... (check-accept-turing-machine m [word head-pos]...)))]
-    [(is-machine? m) (check-accept-machine m . x)]
-    [(is-grammar? m) (check-accept-grammar m . x)]))
-;; machine word [head-pos] -> Boolean
-;; Purpose: To determine whether a given machine can accept/process a given word
+
+;; stx -> stx
+;; Purpose: To determine whether a given machine/grammar can accept/process a given word
 (define-syntax (check-accept stx)
-  (define-syntax-class machine
+  (define-syntax-class tmachine
     (pattern M
       #:declare M (expr/c #'is-turing-machine?)
       #:with m #'M
       #:with c (attribute M.c)
       ))
-  (define-syntax-class tm-word
-    (pattern [word0:expr header-pos0]
-      #:with word #'word0
-      #:with head-pos #'header-pos0
-      ))
   (define-syntax-class unknown-tm-word
     (pattern (~not (~datum quote))))
   (syntax-parse stx
-    [(_ M:machine [(~seq word:unknown-tm-word header-pos:expr)] ...)
-     #`(check-accept-turing-machine M [word header-pos]...)
-     #;(let* ([res (foldr (lambda (val word-val head accum)
-                            (if (equal? (sm-apply M.c word-val head) 'accept)
-                                accum
-                                (cons (list val word-val) accum)
-                                )                  
-                            )
-                          '()
-                          (list #'x.word ...)
-                          (list x.word ...)
-                          (list x.head-pos ...)
-                          )]
-              [word-lst (map second res)]
-              [word-stx-lst (map first res)])
-         (unless (empty? res)
-           (raise (exn:fail:check-failed
-                   (if (= (length word-lst) 1)
-                       (format "~s does not accept the following word: ~a"
-                               (syntax-e #'M.m)
-                               (first word-lst))
-                       (format "~s does not accept the following words: ~a"
-                               (syntax-e #'M.m)
-                               (apply string-append (cons (format "\n~s" (first word-lst))
-                                                          (map (lambda (n) (format "\n~s" n))
-                                                               (rest word-lst)))))
-                       )
-                   (current-continuation-marks)
-                   (map (lambda (z)
-                          (srcloc (syntax-source z)
-                                  (syntax-line z)
-                                  (syntax-column z)
-                                  (syntax-position z)
-                                  (syntax-span z)))
-                        word-stx-lst))
-                  #t
-                  )))
-       
+    ;; Turing machines
+    [(_ M:tmachine [(~seq word:unknown-tm-word header-pos:expr)] ...)
+     #`(check-accept-turing-machine M [word header-pos]...) 
      ]
+    ;; State machines (no turing) or grammars
     [(_ unknown-expr . words)
      #:with (x ...) #'words
-     #`(cond ;[(is-turing-machine? unknown-expr) (check-accept-turing-machine unknown-expr x ...)]
-             [(is-machine? unknown-expr) (check-accept-machine unknown-expr x ...)]
+     #`(cond [(is-machine? unknown-expr) (check-accept-machine unknown-expr x ...)]
              [(is-grammar? unknown-expr) (check-accept-grammar unknown-expr x ...)]
              [else (raise (exn:fail:check-failed
                            (format "~s is not a valid FSM value that can be tested" (syntax->datum #'unknown-expr))
@@ -282,13 +242,12 @@
                            (list (syntax-srcloc #'unknown-expr))
                            )
                           #t)
-                           #;(error "TODO make new exception for this")]
+                   #;(error "TODO make new exception for this")]
              )
          
      ]
     
     ))
-
 
 
 ;; machine word [head-pos] -> Boolean
