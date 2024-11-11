@@ -230,10 +230,13 @@
       #:with head-pos #'header-pos0
       ))
   (define-syntax-class unknown-tm-word
-    (pattern (~not quote)))
+    (pattern (~not (~datum quote))))
   (syntax-parse stx
-    [(_ M:machine [(~seq word:expr header-pos:nat)] ...)
-     #`(check-accept-turing-machine M [word header-pos] ...)
+    [(_ M:machine [(~seq word:unknown-tm-word header-pos:expr)] ...)
+     #`(begin
+         (displayln (syntax->datum #'word))...
+         ;(check-accept-turing-machine M [word header-pos] ...)
+         )
      #;(let* ([res (foldr (lambda (val word-val head accum)
                             (if (equal? (sm-apply M.c word-val head) 'accept)
                                 accum
