@@ -1829,9 +1829,9 @@ rule are a  (listof rule-struct)
                                                                        (sm-finals (imsg-state-M imsg-st)))))
                             (ormap (λ (config) (empty? (second (first config))))
                                    (map computation-LoC (get-computations (imsg-state-pci imsg-st)
-                                                                       (sm-rules (imsg-state-M imsg-st))
-                                                                       (sm-start (imsg-state-M imsg-st))
-                                                                       (imsg-state-max-cmps imsg-st))))]
+                                                                          (sm-rules (imsg-state-M imsg-st))
+                                                                          (sm-start (imsg-state-M imsg-st))
+                                                                          (imsg-state-max-cmps imsg-st))))]
          
          ;;(listof symbols)
          ;;Purpose: The last word that could be fully consumed by the ndfa
@@ -1852,10 +1852,8 @@ rule are a  (listof rule-struct)
          [current-stack (begin
                           ;(display (format "upstck ~s \n \n" (imsg-state-upstck imsg-st)))
                           ;(display (format "pstck ~s \n \n" (imsg-state-pstck imsg-st)))
-                          (if 
-                           (list? (imsg-state-upstck imsg-st))
+                          (if (zipper-empty? (imsg-state-upstck imsg-st)) 
                            (imsg-state-pstck imsg-st)
-                              
                            (third (zipper-current (imsg-state-upstck imsg-st)))))])
     (overlay/align
      'left 'middle
@@ -1929,7 +1927,7 @@ rule are a  (listof rule-struct)
                                                           (imsg-state-word-img-offset imsg-st)
                                                           0)
                                                       '())))])
-      (cond [(list? (imsg-state-upstck imsg-st)) (text "aaaa" 20 'white)]
+      (cond [(zipper-empty? (imsg-state-upstck imsg-st)) (text "aaaa" 20 'white)]
             [(empty? current-stack) (beside (text "aaak" 20 'white)
                                             (text "Stack: " 20 'black))]
             [else (beside (text "aaak" 20 'white)
@@ -2033,8 +2031,8 @@ rule are a  (listof rule-struct)
                                                      (sm-finals (imsg-state-M (informative-messages-component-state
                                                                                (viz-state-informative-messages a-vs)))))))]
          [pci (if (empty? (imsg-state-upci (informative-messages-component-state
-                                            (viz-state-informative-messages a-vs))))
-                  
+                                                (viz-state-informative-messages a-vs))))
+                  ;;something about completed config
                   (imsg-state-pci (informative-messages-component-state
                                    (viz-state-informative-messages a-vs)))
                   (append (imsg-state-pci (informative-messages-component-state
@@ -2062,20 +2060,21 @@ rule are a  (listof rule-struct)
                                                        (viz-state-informative-messages a-vs)))))]
                      [pci pci]
                      [upstck 
-                      (cond [(list? (imsg-state-upstck (informative-messages-component-state
+                      (cond #;[(list? (imsg-state-upstck (informative-messages-component-state
                                                         (viz-state-informative-messages a-vs))))
                              (imsg-state-upstck (informative-messages-component-state
                                                  (viz-state-informative-messages a-vs)))]
-                            [(zipper-at-end? (imsg-state-upstck (informative-messages-component-state
+                            [(or (zipper-empty? (imsg-state-upstck (informative-messages-component-state
                                                                  (viz-state-informative-messages a-vs))))
+                                 (zipper-at-end? (imsg-state-upstck (informative-messages-component-state
+                                                                 (viz-state-informative-messages a-vs)))))
                              (imsg-state-upstck (informative-messages-component-state
                                                  (viz-state-informative-messages a-vs)))]
                             [else (zipper-next (imsg-state-upstck (informative-messages-component-state
                                                                    (viz-state-informative-messages a-vs))))])]
                      [pstck (imsg-state-pstck (informative-messages-component-state
-                                               (viz-state-informative-messages a-vs)))
-                            ]
-                     [invs-zipper (cond [(list? (imsg-state-invs-zipper (informative-messages-component-state
+                                               (viz-state-informative-messages a-vs)))]
+                     [invs-zipper (cond [(zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                                                          (viz-state-informative-messages a-vs))))
                                          (imsg-state-invs-zipper (informative-messages-component-state
                                                                   (viz-state-informative-messages a-vs)))]
@@ -2109,7 +2108,7 @@ rule are a  (listof rule-struct)
          ;;(listof symbols)
          ;;Purpose: The portion of the word that cannont be consumed
          [unconsumed-word (remove-similarities last-consumed-word full-word '())]
-         [zip (if (list? (imsg-state-invs-zipper (informative-messages-component-state
+         [zip (if (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                                   (viz-state-informative-messages a-vs))))
                   (imsg-state-invs-zipper (informative-messages-component-state
                                            (viz-state-informative-messages a-vs)))
@@ -2143,12 +2142,14 @@ rule are a  (listof rule-struct)
                     [(not (equal? last-consumed-word full-word))
                      (append last-consumed-word (take unconsumed-word 1))]
                     [else full-word])]
-         [upstck (cond [(list? (imsg-state-upstck (informative-messages-component-state
+         [upstck (cond [(zipper-empty? (imsg-state-upstck (informative-messages-component-state
                                                    (viz-state-informative-messages a-vs))))
                         (imsg-state-upstck (informative-messages-component-state
                                             (viz-state-informative-messages a-vs)))]
-                       [(zipper-at-end? (imsg-state-upstck (informative-messages-component-state
-                                                            (viz-state-informative-messages a-vs))))
+                       [(or (zipper-empty? (imsg-state-upstck (informative-messages-component-state
+                                                   (viz-state-informative-messages a-vs))))
+                            (zipper-at-end? (imsg-state-upstck (informative-messages-component-state
+                                                            (viz-state-informative-messages a-vs)))))
                         (imsg-state-upstck (informative-messages-component-state
                                             (viz-state-informative-messages a-vs)))]
                        [else (zipper-to-end (imsg-state-upstck (informative-messages-component-state
@@ -2190,19 +2191,21 @@ rule are a  (listof rule-struct)
                                                        (viz-state-informative-messages a-vs)))))]
                      [pci pci]
                      [upstck 
-                      (cond [(list? (imsg-state-upstck (informative-messages-component-state
+                      (cond #;[(list? (imsg-state-upstck (informative-messages-component-state
                                                         (viz-state-informative-messages a-vs))))
                              (imsg-state-upstck (informative-messages-component-state
                                                  (viz-state-informative-messages a-vs)))]
-                            [(zipper-at-begin? (imsg-state-upstck (informative-messages-component-state
-                                                                   (viz-state-informative-messages a-vs))))
+                            [(or (zipper-empty? (imsg-state-upstck (informative-messages-component-state
+                                                   (viz-state-informative-messages a-vs))))
+                                 (zipper-at-begin? (imsg-state-upstck (informative-messages-component-state
+                                                                   (viz-state-informative-messages a-vs)))))
                              (imsg-state-upstck (informative-messages-component-state
                                                  (viz-state-informative-messages a-vs)))]
                             [else (zipper-prev (imsg-state-upstck (informative-messages-component-state
                                                                    (viz-state-informative-messages a-vs))))])]
                      [pstck (imsg-state-pstck (informative-messages-component-state
                                                (viz-state-informative-messages a-vs)))]
-                     [invs-zipper (cond [(list? (imsg-state-invs-zipper (informative-messages-component-state
+                     [invs-zipper (cond [(zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                                                          (viz-state-informative-messages a-vs))))
                                          (imsg-state-invs-zipper (informative-messages-component-state
                                                                   (viz-state-informative-messages a-vs)))]
@@ -2243,12 +2246,14 @@ rule are a  (listof rule-struct)
                             (imsg-state-pci (informative-messages-component-state
                                              (viz-state-informative-messages a-vs)))
                             '())]
-                   [upstck (cond [(list? (imsg-state-upstck (informative-messages-component-state
+                   [upstck (cond #;[(zipper-empty? (imsg-state-upstck (informative-messages-component-state
                                                              (viz-state-informative-messages a-vs))))
                                   (imsg-state-upstck (informative-messages-component-state
                                                       (viz-state-informative-messages a-vs)))]
-                                 [(zipper-at-end? (imsg-state-upstck (informative-messages-component-state
-                                                                      (viz-state-informative-messages a-vs))))
+                                 [(or (zipper-empty? (imsg-state-upstck (informative-messages-component-state
+                                                             (viz-state-informative-messages a-vs))))
+                                      (zipper-at-end? (imsg-state-upstck (informative-messages-component-state
+                                                                      (viz-state-informative-messages a-vs)))))
                                   (imsg-state-upstck (informative-messages-component-state
                                                       (viz-state-informative-messages a-vs)))]
                                  [else (zipper-to-begin (imsg-state-upstck (informative-messages-component-state
@@ -2258,7 +2263,7 @@ rule are a  (listof rule-struct)
                               (imsg-state-pstck (informative-messages-component-state
                                                  (viz-state-informative-messages a-vs)))
                               '())]
-                   [invs-zipper (if (list? (imsg-state-invs-zipper (informative-messages-component-state
+                   [invs-zipper (if (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                                                     (viz-state-informative-messages a-vs))))
                                     (imsg-state-invs-zipper (informative-messages-component-state
                                                              (viz-state-informative-messages a-vs)))
@@ -2299,7 +2304,7 @@ rule are a  (listof rule-struct)
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the previous broken invariant
 (define (j-key-pressed a-vs)
-  (if (or (list? (imsg-state-invs-zipper (informative-messages-component-state
+  (if (or (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                           (viz-state-informative-messages a-vs))))
           (< (length (imsg-state-pci (informative-messages-component-state
                                       (viz-state-informative-messages a-vs))))
@@ -2347,7 +2352,7 @@ rule are a  (listof rule-struct)
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the next failed invariant
 (define (l-key-pressed a-vs)
-  (if (or (list? (imsg-state-invs-zipper (informative-messages-component-state
+  (if (or (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                           (viz-state-informative-messages a-vs))))
           (> (length (imsg-state-pci (informative-messages-component-state
                                       (viz-state-informative-messages a-vs))))
@@ -2762,7 +2767,7 @@ rule are a  (listof rule-struct)
                                                    '()
                                                    stack
                                                    accepting-rules
-                                                   '() #;(if (empty? inv-configs) '() (list->zipper inv-configs))
+                                                   (list->zipper '()) ;'() #;(if (empty? inv-configs) '() (list->zipper inv-configs))
                                                    0 #;(sub1 (length inv-configs))
                                                    computation-lens
                                                    max-cmps
