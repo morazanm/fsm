@@ -140,8 +140,14 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                ((P ,BLANK) (X ,RIGHT)))
                              'S '(Y) 'Y))
 
-
-(check-accept equal-a-b-c [`(,LM ,BLANK a a) 1])
+(check-accept equal-a-b-c
+              '((@ _ a a z) 1)
+              '((@ _ a a b) 1)
+              '((@ _ a a) )
+              '(0)
+              '((@ _ a a) 1)
+              '((@ _ a a) )
+              )
 ;(check-accept equal-a-b-c [`(,LM ,BLANK a a) 1])
 #|(check-accept equal-a-b-c [`(,LM ,BLANK a a) 1])
 (check-accept equal-a-b-c `(,LM ,BLANK b b b) 1) 
@@ -284,7 +290,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                       'S))
 
 
-(check-accept even-bs-odd-as '(b b b b a a a) '(b))
+;(check-accept even-bs-odd-as '(b b b b a a a) '(b))
 
 ;(check-accept even-bs-odd-as '(b b b a a a))
 #|(check-accept even-bs-odd-as '(b a a a)) 
