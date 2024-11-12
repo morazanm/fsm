@@ -2749,6 +2749,7 @@ rule are a  (listof rule-struct)
         ;computations
         ;accept-computations
         ;"done"
+        ;reject-cmps
         (run-viz graphs
                  (lambda () (graph->bitmap (first graphs)))
                  (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2))
