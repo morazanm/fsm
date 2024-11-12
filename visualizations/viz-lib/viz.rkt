@@ -140,7 +140,10 @@
     (viz (viz-state (vector->vector-zipper imgs)
                     'BEGIN
                     ((vector-ref imgs 0))
-                    (load-image (vector-ref imgs 1))
+                    (if (= 1 (vector-length imgs))
+                        'DNE
+                        (load-image (vector-ref imgs 1))
+                        )
                     ((vector-ref imgs 0))
                     ((force (vector-ref imgs (sub1 (vector-length imgs)))))
                     first-img-coord
