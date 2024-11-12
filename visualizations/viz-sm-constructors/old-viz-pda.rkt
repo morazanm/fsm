@@ -10,6 +10,7 @@
          "../viz-lib/viz-macros.rkt"
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "../viz-lib/default-viz-function-generators.rkt"
+         "../viz-lib/vector-zipper.rkt"
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/pda.rkt"
          "../../fsm-core/private/misc.rkt"
@@ -2005,7 +2006,9 @@ rule are a  (listof rule-struct)
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization forward by one step
 (define (right-key-pressed a-vs)
-  (let* (;;boolean
+  (if (vector-zipper-at-end? (viz-state-imgs a-vs))
+      a-vs
+      (let* (;;boolean
          ;;Purpose: Determines if the pci can be can be fully consumed
          [completed-config? (ormap (λ (config) (empty? (second (first config))))
                                    (map computation-LoC (get-computations (imsg-state-pci (informative-messages-component-state
@@ -2086,7 +2089,7 @@ rule are a  (listof rule-struct)
                                          (zipper-next (imsg-state-invs-zipper (informative-messages-component-state
                                                                                (viz-state-informative-messages a-vs))))]
                                         [else (imsg-state-invs-zipper (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs)))])])])])))
+                                                                       (viz-state-informative-messages a-vs)))])])])]))))
 
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization to the end
@@ -2161,7 +2164,9 @@ rule are a  (listof rule-struct)
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization backward by one step
 (define (left-key-pressed a-vs)
-  (let* ([pci (if (empty? (imsg-state-pci (informative-messages-component-state
+  (if (vector-zipper-at-begin? (viz-state-imgs a-vs))
+      a-vs
+      (let* ([pci (if (empty? (imsg-state-pci (informative-messages-component-state
                                            (viz-state-informative-messages a-vs))))
                   (imsg-state-pci (informative-messages-component-state
                                    (viz-state-informative-messages a-vs)))
@@ -2217,7 +2222,7 @@ rule are a  (listof rule-struct)
                                          (zipper-prev (imsg-state-invs-zipper (informative-messages-component-state
                                                                                (viz-state-informative-messages a-vs))))]
                                         [else (imsg-state-invs-zipper (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs)))])])])])))
+                                                                       (viz-state-informative-messages a-vs)))])])])]))))
 
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization to the beginning
@@ -2349,7 +2354,7 @@ rule are a  (listof rule-struct)
                          [pci partial-word]
                          [invs-zipper zip])])]))))
 
-;;viz-state -> viz-state
+;;viz-state -> viz-stateimsg-state
 ;;Purpose: Jumps to the next failed invariant
 (define (l-key-pressed a-vs)
   (if (or (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
@@ -2712,6 +2717,8 @@ rule are a  (listof rule-struct)
              [graphs+comp-len (create-graph-thunks building-state '())]
              [graphs (map first graphs+comp-len)]
              [computation-lens (map second graphs+comp-len)]
+             
+             
              ;[test1 (displayln (format "configs: ~a" configs))]
              #;[test0 (void) #;(begin
                                ;(void)
@@ -3003,3 +3010,9 @@ rule are a  (listof rule-struct)
 (define (a-inv wrd stck)
   (or (not (= (length (filter (λ (w) (equal? w 'a)) wrd)) 4))
       (not (= (length (filter (λ (w) (equal? w 'b)) wrd)) 2))))
+
+
+
+(pda-viz more-a-than-b '(a b b a b a a))
+
+
