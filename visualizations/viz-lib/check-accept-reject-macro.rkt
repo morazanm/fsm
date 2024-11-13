@@ -102,14 +102,54 @@
 
 (define-syntax (check-accept-possibly-correct-turing-machine stx)
   (displayln stx)
+
+  (define-syntax-class
+    testing
+    (pattern (~not (~datum quote))))
   (define-syntax-class
     valid-pair
-    (pattern [_ (w n)]))
+    (pattern (quote (w n))))
+
+  (define-splicing-syntax-class
+    valid-pairs
+    (pattern (~seq (~var x valid-pair) ...))
+    (pattern (~seq))
+    )
+  
+  (define-syntax-class
+    invalid-pair
+    (pattern (~not (quote (w n))) #;(~or (quote ())
+                  (quote (w))
+                  )))
+
+  (define-splicing-syntax-class
+    invalid-pairs
+    (pattern (~seq (~var bad-pair invalid-pair) ...+))
+    )
+  
+  (define-splicing-syntax-class
+    bad-pairs
+    (pattern (~and (~var x valid-pairs) (~var y invalid-pairs) (~var z valid-pairs)) #;(~and (~seq (~var before-pairs valid-pair) ...) (~seq (~var bad-pairs invalid-pair) ...+) (~seq (~var after-pairs valid-pair) ...))))
+
   (syntax-parse stx
-    [(_ _ M)
+    [(_ C:id M)
      ;; TODO raise some error
-     #'(error "only machine")]
-    [(_ _ M (~var first-pairs valid-pair) ... [_ (w)] _ ...)
+     #`(raise (exn:fail:check-failed
+                   "Test does not contain any words to test"
+                   (current-continuation-marks)
+                   (list #,(syntax-srcloc stx))
+                   #;(map (lambda (z)
+                          (srcloc (syntax-source z)
+                                  (syntax-line z)
+                                  (syntax-column z)
+                                  (syntax-position z)
+                                  (syntax-span z)))
+                        word-stx-lst))
+              #t)
+     #;(error "only machine")]
+    #;[(_ C:id M (~var yikes bad-pairs))
+     #'(error "it worked")]
+    [(_ C:id M (~var before-pairs valid-pair) ... (~var bad-pair invalid-pair) _ ...)
      #'(error "illformed pair")]
     [(_ C:id M (~var first-pairs valid-pair) ... )
      #'(error "valid matched")]
@@ -150,7 +190,7 @@
                           '()
                           (list #'x.word ...)
                           (list x.word ...)
-                          (list x.cword ...)
+                          (apply list #,#'(values (syntax/loc #'x #'x.cword) ...))
                           (list x.head-pos ...)
                           )]
               [word-lst (map second res)]
@@ -176,7 +216,10 @@
                                   (syntax-span z)))
                         word-stx-lst))
                   #t)))]))
-
+#;(define-syntax (testing stx)
+  (syntax-parse stx
+    [(_ ((~var x) (~var xc)) ...)
+     #`(list #,(syntax/loc x xc) ...)]))
 ;; stx -> stx
 ;; Purpose: Checks state machines (without turing)
 (define-syntax (check-accept-machine stx)
@@ -186,17 +229,25 @@
       #:with m #'M
       #:with c (attribute M.c)
       ))
+  (define-syntax-class (sm-word sigma-contract)
+    (pattern W
+      #:declare W (expr/c sigma-contract
+                          #:positive #'W)
+      #:with w #'W
+      #:with c (attribute W.c)))
   (syntax-parse stx 
-    [(_ M:machine . w)
-     #:with (x ...) #'w
-     #`(let* ([res (foldr (lambda (word wordstx accum)
-                            (if (equal? (sm-apply M.c word) 'accept)
+    [(_ C:id M:machine . words #;(~var x (sm-word #'C)) #;...)
+        #:with ((~var x (sm-word #'C)) ...) #'words
+     #`(let* (
+              [res (foldr (lambda (word cword wordstx accum)
+                            (if (equal? (sm-apply M.c cword) 'accept)
                                 accum
                                 (cons (list word wordstx) accum)
                                 )
                             )
                           '()
                           (list x ...)
+                          #,(syntax/loc #'words (list x.c ...))
                           (list #'x ...))]
               [word-lst (map first res)]
               [word-stx-lst (map second res)])
@@ -245,6 +296,11 @@
            z)
       ))))
 
+(define (new-sm-word/c sigma)
+  (define sm-word-char/c (apply or/c sigma))
+  (define sm-word/c (listof sm-word-char/c))
+  sm-word/c)
+
 ;; stx -> stx
 ;; Purpose: To determine whether a given machine/grammar can accept/process a given word
 (define-syntax (check-accept stx)
@@ -268,16 +324,18 @@
      #:with (x ...) #'words
      #`(cond [(is-turing-machine? unknown-expr)
               (let ([tm-word-contract (new-tm-word/c (cons '_ (sm-sigma unknown-expr)))])
-                (check-accept-possibly-correct-turing-machine tm-word-contract unknown-expr x ...)
+                #,(syntax/loc stx (check-accept-possibly-correct-turing-machine tm-word-contract unknown-expr x ...))
                 )]
-             [(is-machine? unknown-expr) (check-accept-machine unknown-expr x ...)]
-             [(is-grammar? unknown-expr) (check-accept-grammar unknown-expr x ...)]
+             [(is-machine? unknown-expr) (let [(sm-word-contract (new-sm-word/c (sm-sigma unknown-expr)))]
+                                           #,(syntax/loc stx (check-accept-machine sm-word-contract unknown-expr x ...)))]
+             [(is-grammar? unknown-expr) #,(syntax/loc stx (check-accept-grammar unknown-expr x ...))]
              [else (raise (exn:fail:check-failed
                            (format "~s is not a valid FSM value that can be tested" (syntax->datum #'unknown-expr))
                            (current-continuation-marks)
                            (list (syntax-srcloc #'unknown-expr)))
                           #t)]
-             )]))
+             )]
+    ))
 
 ;; machine word [head-pos] -> Boolean
 ;; Purpose: To determine whether a given machine can reject a given word
