@@ -1,13 +1,18 @@
 #lang racket
 
-(require (for-syntax syntax/parse
+(require #;(for-template racket/base
+                       racket/syntax-srcloc
+                       syntax/parse)
+         (for-syntax syntax/parse
                      racket/syntax-srcloc
                      racket/base
                      racket/match
                      syntax/to-string
                      "../../fsm-core/private/sm-getters.rkt"
                      "viz-state.rkt"
-                     racket/struct-info)
+                     racket/struct-info
+                     syntax/parse/experimental/template)
+         ;syntax/parse/experimental/template
          racket/syntax-srcloc
          "../../fsm-core/private/grammar-getters.rkt"
          syntax/to-string
@@ -220,6 +225,14 @@
   (syntax-parse stx
     [(_ ((~var x) (~var xc)) ...)
      #`(list #,(syntax/loc x xc) ...)]))
+
+
+
+
+
+
+
+
 ;; stx -> stx
 ;; Purpose: Checks state machines (without turing)
 (define-syntax (check-accept-machine stx)
@@ -235,9 +248,13 @@
                           #:positive #'W)
       #:with w #'W
       #:with c (attribute W.c)))
+  (define-template-metafunction (reattribute-syntax-list stx)
+    (syntax-parse stx
+      [(_ x xc)
+       (template/loc #'x xc)]))
   (syntax-parse stx 
-    [(_ C:id M:machine . words #;(~var x (sm-word #'C)) #;...)
-        #:with ((~var x (sm-word #'C)) ...) #'words
+    [(_ C:id M:machine (~var x (sm-word #'C)) ...)
+        ;#:with ((~var x (sm-word #'C)) ...) #'words
      #`(let* (
               [res (foldr (lambda (word cword wordstx accum)
                             (if (equal? (sm-apply M.c cword) 'accept)
@@ -247,7 +264,8 @@
                             )
                           '()
                           (list x ...)
-                          #,(syntax/loc #'words (list x.c ...))
+                          (list (reattribute-syntax-list #'x x.c) ...)
+                          #;(list x.c ...)
                           (list #'x ...))]
               [word-lst (map first res)]
               [word-stx-lst (map second res)])

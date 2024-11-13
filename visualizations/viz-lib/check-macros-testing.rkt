@@ -51,7 +51,8 @@ E - ci = ab* final
                (C ,EMP H)
                (H b H))))
 
-(check-accept AB*B*UAB* '(a b a b a b b b b z) ;'(a b a b a b b b b a) '(a b b b b b a b)
+(check-accept AB*B*UAB* '(a b a b a b b b b z)
+               ;'(a b a b a b b b b a) '(a b b b b b a b)
               '())
 ;(check-reject AB*B*UAB* '(a b a b a b b b b))
 ;(check-accept AB*B*UAB* '(a b b a b b a b b))
