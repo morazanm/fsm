@@ -32,6 +32,9 @@
   "private/callgraphs/callgraphs-mttm.rkt"
   "private/callgraphs/transdiagram-mttm.rkt"
   "../visualizations/viz-sm/viz-ctm.rkt"
+  "../visualizations/viz-grammar-constructors/rg-viz.rkt"
+  "../visualizations/viz-grammar-constructors/cfg-viz.rkt"
+  "../visualizations/viz-grammar-constructors/csg-viz.rkt"
   "private/Chomsky-Greibach-CFG-Transformations/chomsky.rkt"
   "private/Chomsky-Greibach-CFG-Transformations/greibach.rkt")
   
@@ -110,9 +113,18 @@
  ctm-viz
 
  ; computation graphs
- sm-cmpgraph)
+ sm-cmpgraph
+
+ ;; Grammar visualizations
+ grammar-viz)
 ; Primitive constructors imported from other modules
 
+(define (grammar-viz G w #:derv-type [derv-type 'left] #:cpu-cores [cpu-cores #f] . invariants)
+  (cond [(rg? G) (apply rg-viz G w #:cpu-cores cpu-cores invariants)]
+        [(cfg? G) (apply cfg-viz G w #:cpu-cores cpu-cores #:derv-type derv-type invariants)]
+        [(csg? G) (apply csg-viz G w #:cpu-cores cpu-cores invariants)]
+        [else (error "Unknown grammar type given to grammar-viz.")]))
+  
 ; sm word [natnum] --> image
 (define (sm-cmpgraph M w #:palette [p 'default] #:cutoff [c 100] . headpos)
   (let ((t1 (sm-type M)))
@@ -124,8 +136,7 @@
           [(or (eq? t1 'tm) (eq? t1 'tm-language-recognizer))
            (computation-diagram-tm M w (if (empty? headpos) 0 (first headpos)) c p)]
           [(or (eq? t1 'mttm) (eq? t1 'mttm-language-recognizer))
-           (computation-diagram-mttm M w (if (empty? headpos) 0 (first headpos)) c p)
-           #;(error "Computation graphs for mttms coming soon!")]
+           (computation-diagram-mttm M w (if (empty? headpos) 0 (first headpos)) c p)]
           [else (error "Unknown machine type given to sm-cmpgraph.")])))
   
 ; (listof state) fsm --> fsm

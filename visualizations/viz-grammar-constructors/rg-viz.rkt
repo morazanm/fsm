@@ -2,7 +2,10 @@
 
 (require "../../fsm-gviz/private/lib.rkt"
          rackunit
-         "../../fsm-core/interface.rkt"
+         "../../fsm-core/private/regular-grammar.rkt"
+         "../../fsm-core/private/grammar-getters.rkt"
+         "../../fsm-core/private/constants.rkt"
+         "../../fsm-core/private/misc.rkt"
          "../../fsm-core/private/regular-grammar.rkt"
          "../viz-lib/viz.rkt"
          "../viz-lib/zipper.rkt"
@@ -10,12 +13,14 @@
          racket/list
          racket/local)
 
+(provide rg-viz)
+
 (define FNAME "fsm")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define even-bs-odd-as
-  (make-rg '(S A B C)
+  (make-unchecked-rg '(S A B C)
            '(a b)
            `((S ,ARROW aA) (S ,ARROW bB)
                            (S ,ARROW a)
@@ -301,45 +306,36 @@
                          producing-nodes
                          has-invariant)
   (foldl (λ (state result)
+           (displayln (and (member (undo-renaming state) has-invariant)
+                                                    (not (member state producing-nodes))))
            (add-node result
                      state
-                     #:atb (hash 'color
-                                 (cond
-                                   [(member state hedge-nodes) HEDGE-COLOR]
-                                   [(member state yield-node) YIELD-COLOR]
-                                   [else 'black])
-                                 'style
-                                 (if (or (member state hedge-nodes)
-                                         (member state yield-node))
-                                     'dashed
-                                     'solid)
-                                 'fillcolor
-                                 (cond
-                                   [(not (member (undo-renaming state) has-invariant)) 'white]
-                                   [(and (member (undo-renaming state) has-invariant)
-                                         (not (member state producing-nodes)))
-                                    'white]
-                                   [(and (member (undo-renaming state) has-invariant)
-                                         (member state producing-nodes)
-                                         (member state broken-invariants?))
-                                    INVARIANT-BROKEN-COLOR]
-                                   [(and (member (undo-renaming state) has-invariant)
-                                         (member state producing-nodes)
-                                         (not (member state broken-invariants?)))
-                                    INVARIANT-HOLDS-COLOR])
-                                 'shape
-                                 'circle
-                                 'label
-                                 (string->symbol (string (string-ref (symbol->string state) 0)))
-                                 #;'penwidth
-                                 #;(cond
-                                   [(member state hedge-nodes) 3.0]
-                                   [(member state yield-node) 3.0]
-                                   [else 1.0])
-                                 'fontcolor
-                                 'black
-                                 'font
-                                 "Sans")))
+                     #:atb (hash 'color (cond
+                                          [(member state hedge-nodes) HEDGE-COLOR]
+                                          [(member state yield-node) YIELD-COLOR]
+                                          [else 'black])
+                                 'style 'filled #;(if (or (member state hedge-nodes)
+                                                (member state yield-node))
+                                            'dashed
+                                            'filled)
+                                 'fillcolor (cond
+                                              [(not (member (undo-renaming state) has-invariant))
+                                               'white]
+                                              [(and (member (undo-renaming state) has-invariant)
+                                                    (not (member state producing-nodes)))
+                                               'white]
+                                              [(and (member (undo-renaming state) has-invariant)
+                                                    (member state producing-nodes)
+                                                    (member state broken-invariants?))
+                                               INVARIANT-BROKEN-COLOR]
+                                              [(and (member (undo-renaming state) has-invariant)
+                                                    (member state producing-nodes)
+                                                    (not (member state broken-invariants?)))
+                                               INVARIANT-HOLDS-COLOR])
+                                 'shape 'circle
+                                 'label (string->symbol (string (string-ref (symbol->string state) 0)))
+                                 'fontcolor 'black
+                                 'font "Sans")))
          graph
          (reverse lon)))
 
@@ -449,8 +445,8 @@
 
 ;; run function
 (define (rg-viz rg word #:cpu-cores [cpu-cores #f] . invariants)
-  (if (string? (grammar-derive rg word))
-      (grammar-derive rg word)
+  (if (string? (rg-derive rg word))
+      (rg-derive rg word)
       (let* ([derivation (rg-derive-with-rules rg word)]
              [w-der (map symbol->fsmlos
                          (map first (filter (λ (x) (not (equal? (first x) '->))) derivation)))]
@@ -486,11 +482,6 @@
                         lod)))]
              [graphs (map (lambda (dgrph) (create-graph-structs dgrph invariants (grammar-start rg)))
                           lod)])
-        (init-viz rg word w-der rules graphs broken-invariants)
+        (init-viz rg word w-der rules graphs broken-invariants #:special-graphs? 'rg #:cpu-cores cpu-cores)
         )))
-(rg-viz even-bs-odd-as '(a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a))
-
-#;(profile (rg-viz even-bs-odd-as '(a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a a a a a a b b b b a a a a a a))
-         #:svg-path "profile.svg"
-         #:preview? #t)
-(define G (make-rg '(S) '(a b) `((S ,ARROW ,EMP) (S ,ARROW aS)) 'S))
+(define G (make-unchecked-rg '(S) '(a b) `((S ,ARROW ,EMP) (S ,ARROW aS)) 'S))

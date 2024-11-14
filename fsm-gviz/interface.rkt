@@ -2,7 +2,7 @@
 (require "private/adapter.rkt"
          "private/lib.rkt"
          "private/dot.rkt"
-         "../fsm-core/interface.rkt"
+         "../fsm-core/private/sm-getters.rkt"
          "../fsm-gui/structs/machine.rkt"
          "../fsm-gui/structs/state.rkt"
          2htdp/image)

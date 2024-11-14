@@ -915,7 +915,3 @@
 
 (define aa-ab
   (make-unchecked-ndfa '(S A B F) '(a b) 'S '(A B) `((S a A) (S a B) (A a A) (B b B) (S ,EMP F))))
-
-(ndfa2regexp-viz aa-ab)
-
-;(run AT-LEAST-ONE-MISSING)

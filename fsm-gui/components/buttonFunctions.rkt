@@ -15,7 +15,8 @@ This file contains all the functions associated with a button
   "../globals.rkt"
   "../genCode.rkt"
   "../structs/world.rkt"
-  "../../fsm-core/interface.rkt"
+  "../../fsm-core/private/constants.rkt"
+  "../../fsm-core/private/pda.rkt"
   "../../fsm-core/private/pda.rkt"
   )
 
@@ -696,7 +697,7 @@ This file contains all the functions associated with a button
                           (determine-next-steps))])])))
 
 
-(define (fsm-machine->pda machine) (make-ndpda (machine-state-list machine)
+(define (fsm-machine->pda machine) (make-unchecked-ndpda (machine-state-list machine)
                                                       (machine-sigma-list machine)
                                                       (pda-machine-stack-alpha-list machine)
                                                       (machine-start-state machine)

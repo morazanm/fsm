@@ -2,12 +2,7 @@
 
 (require "../../fsm-gviz/private/lib.rkt"
          "../../fsm-core/private/tm.rkt"
-         "../../fsm-core/private/constants.rkt"
-         "../../fsm-core/private/configuration.rkt"
-         2htdp/universe rackunit
-         (rename-in racket/gui/base
-                    [make-color loc-make-color]
-                    [make-pen loc-make-pen])
+         2htdp/universe
          2htdp/image
          "../../fsm-core/private/callgraphs/transdiagram-ctm6.rkt"
          "../../visualizations/viz-lib/zipper.rkt"

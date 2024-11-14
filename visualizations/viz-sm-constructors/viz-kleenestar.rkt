@@ -763,5 +763,3 @@
                                       [E-KEY-DIMS viz-reset-zoom identity]
                                       [F-KEY-DIMS viz-max-zoom-in identity]))
            'kleenestar-viz))
-
-;(kleenestar-viz ab*)

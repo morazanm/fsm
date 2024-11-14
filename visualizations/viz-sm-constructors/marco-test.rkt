@@ -1,6 +1,6 @@
 #lang fsm
 
-(require "../fsm-gviz/private/lib.rkt")
+(require "../../fsm-gviz/private/lib.rkt")
 
 (define (make-node-graph graph los s f)
   (foldl (λ (state result)

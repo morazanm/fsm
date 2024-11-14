@@ -1,5 +1,5 @@
 #lang racket
-(require "viz-ctm.rkt"
+(require "../../../visualizations/viz-sm/viz-ctm.rkt"
          "../../../fsm-core/interface.rkt"
          rackunit)
 

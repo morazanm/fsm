@@ -6,7 +6,9 @@
          "./structs/world.rkt"
          "./structs/state.rkt"
          "./structs/input.rkt"
-         "../fsm-core/interface.rkt")
+         "../fsm-core/private/abstract-predicate.rkt"
+         "../fsm-core/private/constants.rkt"
+         )
 
 (provide genCode)
 

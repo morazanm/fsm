@@ -21,7 +21,8 @@
   "./components/inputFields.rkt"
   "./components/buttons.rkt"
   "./components/stateTransitions.rkt"
-  "../fsm-core/interface.rkt"
+  "../fsm-core/private/constants.rkt"
+  "../fsm-core/private/sm-getters.rkt"
   "../fsm-gviz/interface.rkt"
   "../fsm-core/private/pda.rkt"
   )
