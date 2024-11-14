@@ -1,8 +1,8 @@
 #lang racket
 
 (require #;(for-template racket/base
-                       racket/syntax-srcloc
-                       syntax/parse)
+                         racket/syntax-srcloc
+                         syntax/parse)
          (for-syntax syntax/parse
                      racket/syntax-srcloc
                      racket/base
@@ -124,8 +124,8 @@
   (define-syntax-class
     invalid-pair
     (pattern (~not (quote (w n))) #;(~or (quote ())
-                  (quote (w))
-                  )))
+                                         (quote (w))
+                                         )))
 
   (define-splicing-syntax-class
     invalid-pairs
@@ -140,28 +140,28 @@
     [(_ C:id M)
      ;; TODO raise some error
      #`(raise (exn:fail:check-failed
-                   "Test does not contain any words to test"
-                   (current-continuation-marks)
-                   (list #,(syntax-srcloc stx))
-                   #;(map (lambda (z)
-                          (srcloc (syntax-source z)
-                                  (syntax-line z)
-                                  (syntax-column z)
-                                  (syntax-position z)
-                                  (syntax-span z)))
-                        word-stx-lst))
+               "Test does not contain any words to test"
+               (current-continuation-marks)
+               (list #,(syntax-srcloc stx))
+               #;(map (lambda (z)
+                        (srcloc (syntax-source z)
+                                (syntax-line z)
+                                (syntax-column z)
+                                (syntax-position z)
+                                (syntax-span z)))
+                      word-stx-lst))
               #t)
      #;(error "only machine")]
     #;[(_ C:id M (~var yikes bad-pairs))
-     #'(error "it worked")]
+       #'(error "it worked")]
     [(_ C:id M (~var before-pairs valid-pair) ... (~var bad-pair invalid-pair) _ ...)
      #'(error "illformed pair")]
     [(_ C:id M (~var first-pairs valid-pair) ... )
      #'(error "valid matched")]
     #;[(_ C:id M (~var first-pairs valid-pair) ... [(~not (datum quote))] _ ...)
-     #'(void)]
+       #'(void)]
     ))
-        ;(~var first-pairs valid-pair) ... [(~not (datum quote))] [(~not (datum quote)) head-pos] ...)
+;(~var first-pairs valid-pair) ... [(~not (datum quote))] [(~not (datum quote)) head-pos] ...)
 
 
 ;; stx -> stx
@@ -222,9 +222,9 @@
                         word-stx-lst))
                   #t)))]))
 #;(define-syntax (testing stx)
-  (syntax-parse stx
-    [(_ ((~var x) (~var xc)) ...)
-     #`(list #,(syntax/loc x xc) ...)]))
+    (syntax-parse stx
+      [(_ ((~var x) (~var xc)) ...)
+       #`(list #,(syntax/loc x xc) ...)]))
 
 
 
@@ -254,7 +254,7 @@
        (template/loc #'x xc)]))
   (syntax-parse stx 
     [(_ C:id M:machine (~var x (sm-word #'C)) ...)
-        ;#:with ((~var x (sm-word #'C)) ...) #'words
+     ;#:with ((~var x (sm-word #'C)) ...) #'words
      #`(let* (
               [res (foldr (lambda (word cword wordstx accum)
                             (if (equal? (sm-apply M.c cword) 'accept)
@@ -289,10 +289,10 @@
                                   (syntax-position z)
                                   (syntax-span z)))
                         word-stx-lst))
-                  #t)))]))
+                  )))]))
 
 #;(define (tm-word/c lang)
-  (listof (apply or/c lang)))
+    (listof (apply or/c lang)))
 
 (define (new-tm-word/c sigma)
   (define tm-word-char/c (apply or/c sigma))
@@ -300,19 +300,19 @@
                           (cons/c tm-word-char/c (recursive-contract tm-word/c #:flat))))
   tm-word/c
   #;(make-flat-contract
-   ;#:first-order tm-word/c
-   ;#:late-neg-projection (contract-late-neg-projection tm-word/c)
-   #:projection (lambda (blame)
-    (lambda (z)
-      (map (lambda (x) (if (member x lang)
-                           x
-                           (raise-blame-error
-                            blame
-                            z
-                            '(expected nonterminal in machines language, given: "~e")
-                            x)))
-           z)
-      ))))
+     ;#:first-order tm-word/c
+     ;#:late-neg-projection (contract-late-neg-projection tm-word/c)
+     #:projection (lambda (blame)
+                    (lambda (z)
+                      (map (lambda (x) (if (member x lang)
+                                           x
+                                           (raise-blame-error
+                                            blame
+                                            z
+                                            '(expected nonterminal in machines language, given: "~e")
+                                            x)))
+                           z)
+                      ))))
 
 (define (new-sm-word/c sigma)
   (define sm-word-char/c (apply or/c sigma))
@@ -333,19 +333,20 @@
   (syntax-parse stx
     ;; Turing machines
     #;[(_ M:tmachine [(~seq word:unknown-tm-word header-pos:expr)] ...)
-     #`(let ([tm-word-contract (new-tm-word/c (cons '_ (sm-sigma M.c)))])
-         (check-accept-turing-machine tm-word-contract M.m [word header-pos]...)
-         )
-     ]
-    ;; State machines (no turing) or grammars
+       #`(let ([tm-word-contract (new-tm-word/c (cons '_ (sm-sigma M.c)))])
+           (check-accept-turing-machine tm-word-contract M.m [word header-pos]...)
+           )
+       ]
+    ;; State machines or grammars
     [(_ unknown-expr . words)
      #:with (x ...) #'words
      #`(cond [(is-turing-machine? unknown-expr)
               (let ([tm-word-contract (new-tm-word/c (cons '_ (sm-sigma unknown-expr)))])
                 #,(syntax/loc stx (check-accept-possibly-correct-turing-machine tm-word-contract unknown-expr x ...))
                 )]
-             [(is-machine? unknown-expr) (let [(sm-word-contract (new-sm-word/c (sm-sigma unknown-expr)))]
-                                           #,(syntax/loc stx (check-accept-machine sm-word-contract unknown-expr x ...)))]
+             [(is-machine? unknown-expr)
+              (let [(sm-word-contract (new-sm-word/c (sm-sigma unknown-expr)))]
+                #,(syntax/loc stx (check-accept-machine sm-word-contract unknown-expr x ...)))]
              [(is-grammar? unknown-expr) #,(syntax/loc stx (check-accept-grammar unknown-expr x ...))]
              [else (raise (exn:fail:check-failed
                            (format "~s is not a valid FSM value that can be tested" (syntax->datum #'unknown-expr))
