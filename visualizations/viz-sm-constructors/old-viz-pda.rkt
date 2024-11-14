@@ -10,7 +10,6 @@
          "../viz-lib/viz-macros.rkt"
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "../viz-lib/default-viz-function-generators.rkt"
-         "../viz-lib/vector-zipper.rkt"
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/pda.rkt"
          "../../fsm-core/private/misc.rkt"
@@ -1680,11 +1679,26 @@ rule are a  (listof rule-struct)
                               (filter (λ (configs)
                                         (not (empty? configs))) (building-viz-state-reject-configs a-vs)))))]
 
+         [r-config2 (begin
+                     ;(display (format "r-config ~v \n" (building-viz-state-reject-configs a-vs)))
+                     ;(display (format "a-config ~v \n" (building-viz-state-accept-configs a-vs)))
+                     (if (empty? (building-viz-state-reject-configs a-vs))
+                         (building-viz-state-reject-configs a-vs)
+                         (map (λ (configs) (list (trace-config (first configs))
+                                                 (trace-rule (first configs))))
+                              (filter (λ (configs)
+                                        (not (empty? configs))) (building-viz-state-reject-configs a-vs)))))]
+
          ;;(listof rule-structs)
          ;;Purpose: Extracts the rules from the first of the accepting computations
          [a-configs (if (empty? (building-viz-state-accept-configs a-vs))
                         (building-viz-state-accept-configs a-vs)
                         (map (λ (configs) (trace-rule (first configs))) (building-viz-state-accept-configs a-vs)))]
+
+         [a-config (if (empty? (building-viz-state-accept-configs a-vs))
+                        (building-viz-state-accept-configs a-vs)
+                        (map (λ (configs) (list (trace-config (first configs))
+                                                (trace-rule (first configs)))) (building-viz-state-accept-configs a-vs)))]
          
          ;;(listof rules)
          ;;Purpose: Reconstructs the rules from rule-structs
@@ -1754,6 +1768,8 @@ rule are a  (listof rule-struct)
                           ;(display (format "held-invs ~s \n" held-invs))
                           ;(display (format "brkn-invs ~s \n \n" brkn-invs))
                           ;(display (format "all rules ~s \n \n" (append current-rules current-a-rules)))
+                          ;(display (format "r configs: ~s \n a configs: ~s \n \n" r-config a-configs))
+                          #;(append (building-viz-state-reject-configs a-vs) (building-viz-state-accept-configs a-vs))
                           (if (not (empty? (building-viz-state-pci a-vs)))
                               (map last current-rules)
                               (cons (sm-start (building-viz-state-M a-vs)) (map last current-rules)))
@@ -2006,9 +2022,7 @@ rule are a  (listof rule-struct)
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization forward by one step
 (define (right-key-pressed a-vs)
-  (if (vector-zipper-at-end? (viz-state-imgs a-vs))
-      a-vs
-      (let* (;;boolean
+  (let* (;;boolean
          ;;Purpose: Determines if the pci can be can be fully consumed
          [completed-config? (ormap (λ (config) (empty? (second (first config))))
                                    (map computation-LoC (get-computations (imsg-state-pci (informative-messages-component-state
@@ -2089,7 +2103,7 @@ rule are a  (listof rule-struct)
                                          (zipper-next (imsg-state-invs-zipper (informative-messages-component-state
                                                                                (viz-state-informative-messages a-vs))))]
                                         [else (imsg-state-invs-zipper (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs)))])])])]))))
+                                                                       (viz-state-informative-messages a-vs)))])])])])))
 
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization to the end
@@ -2164,9 +2178,7 @@ rule are a  (listof rule-struct)
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization backward by one step
 (define (left-key-pressed a-vs)
-  (if (vector-zipper-at-begin? (viz-state-imgs a-vs))
-      a-vs
-      (let* ([pci (if (empty? (imsg-state-pci (informative-messages-component-state
+  (let* ([pci (if (empty? (imsg-state-pci (informative-messages-component-state
                                            (viz-state-informative-messages a-vs))))
                   (imsg-state-pci (informative-messages-component-state
                                    (viz-state-informative-messages a-vs)))
@@ -2222,7 +2234,7 @@ rule are a  (listof rule-struct)
                                          (zipper-prev (imsg-state-invs-zipper (informative-messages-component-state
                                                                                (viz-state-informative-messages a-vs))))]
                                         [else (imsg-state-invs-zipper (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs)))])])])]))))
+                                                                       (viz-state-informative-messages a-vs)))])])])])))
 
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization to the beginning
@@ -2354,7 +2366,7 @@ rule are a  (listof rule-struct)
                          [pci partial-word]
                          [invs-zipper zip])])]))))
 
-;;viz-state -> viz-stateimsg-state
+;;viz-state -> viz-state
 ;;Purpose: Jumps to the next failed invariant
 (define (l-key-pressed a-vs)
   (if (or (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
@@ -2717,8 +2729,6 @@ rule are a  (listof rule-struct)
              [graphs+comp-len (create-graph-thunks building-state '())]
              [graphs (map first graphs+comp-len)]
              [computation-lens (map second graphs+comp-len)]
-             
-             
              ;[test1 (displayln (format "configs: ~a" configs))]
              #;[test0 (void) #;(begin
                                ;(void)
@@ -2758,11 +2768,14 @@ rule are a  (listof rule-struct)
         ;(list (first config) (second config) (third config) (fourth config))
         ;;(length config)
         ;reject-cmps
-        ;computations
+        (map (λ (comp) (reverse (computation-LoR comp))) computations)
+        ;(map (λ (comp) (reverse (computation-LoC comp))) computations)
+        ;(map (λ (comp) (reverse (computation-LoT comp))) computations)
         ;accept-computations
         ;"done"
         ;reject-cmps
-        (run-viz graphs
+        ;(append rejecting-configs accepting-config)
+        #;(run-viz graphs
                  (lambda () (graph->bitmap (first graphs)))
                  (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2))
                  DEFAULT-ZOOM
@@ -3011,8 +3024,28 @@ rule are a  (listof rule-struct)
   (or (not (= (length (filter (λ (w) (equal? w 'a)) wrd)) 4))
       (not (= (length (filter (λ (w) (equal? w 'b)) wrd)) 2))))
 
+(define (break-up-configs a-word a-LoC acc)
+  (define (get-config a-word)
+    (remove-duplicates (append-map (λ (configs)
+                                     (filter (λ (config)
+                                               (equal? a-word (second config)))
+                                             configs))
+                                   a-LoC)))
+    (if (empty? a-word)
+        (reverse (cons (get-config a-word) acc))
+        (break-up-configs (rest a-word) a-LoC (cons (get-config a-word) acc))))
 
 
-(pda-viz more-a-than-b '(a b b a b a a))
 
+(define (break-up-configs2 a-word a-LoT acc)
+  (define (get-config a-word)
+    (remove-duplicates (append-map (λ (traces)
+                                     (filter (λ (trce)
+                                               (equal? a-word (second (trace-config trce))))
+                                             traces))
+                                   a-LoT)))
+    (if (empty? a-word)
+        (reverse (cons (get-config a-word) acc))
+        (break-up-configs2 (rest a-word) a-LoT (cons (get-config a-word) acc))))
 
+        
