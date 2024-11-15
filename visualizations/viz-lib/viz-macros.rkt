@@ -90,15 +90,16 @@
     #:literals (list)
     [(_ E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
      #'(lambda (a-vs)
-         (let* [(PARSE-TREE-IMG (place-image (scale (viz-state-scale-factor a-vs) (viz-state-curr-image a-vs))
-                                            (posn-x (viz-state-image-posn a-vs))
-                                            (posn-y (viz-state-image-posn a-vs))
-                                            (rectangle E-SCENE-WIDTH E-SCENE-HEIGHT 'outline 'white)
-                                            ))
+         (let* [
                (INFORMATIVE-MESSAGES ((informative-messages-draw-component (viz-state-informative-messages a-vs))
                    (informative-messages-component-state (viz-state-informative-messages a-vs))))
                (INSTRUCTIONS-GRAPHIC (instructions-graphic-img (viz-state-instructions-graphic a-vs)))
-               (WINDOW-FRAME (rectangle (* 0.95 WINDOW-WIDTH) (* 0.8 WINDOW-HEIGHT) #;1250 #;700 'outline 'white))
+               (PARSE-TREE-IMG (place-image (scale (viz-state-scale-factor a-vs) (viz-state-curr-image a-vs))
+                                            (posn-x (viz-state-image-posn a-vs))
+                                            (posn-y (viz-state-image-posn a-vs))
+                                            (rectangle E-SCENE-WIDTH (- (* 0.9 WINDOW-HEIGHT) (image-height INFORMATIVE-MESSAGES) (image-height INSTRUCTIONS-GRAPHIC)) 'outline 'white)
+                                            ))
+               (WINDOW-FRAME (rectangle (* 0.95 WINDOW-WIDTH) (* 0.9 WINDOW-HEIGHT) #;1250 #;700 'outline 'white))
                ]
            (overlay/align
             "middle"
