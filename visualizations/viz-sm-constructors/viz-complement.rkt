@@ -647,7 +647,7 @@
     (if (eq? (sm-type M) 'dfa)
         (run-viz
          (map graph-struct-grph (list (make-init-grph-structure M) (create-graph-structure M)))
-         (lambda () (graph->bitmap (graph-struct-grph (create-graph-structure M))))
+         (lambda () (graph->bitmap (graph-struct-grph (make-init-grph-structure M))))
          MIDDLE-E-SCENE
          DEFAULT-ZOOM
          DEFAULT-ZOOM-CAP
