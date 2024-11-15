@@ -193,7 +193,7 @@
 
 (define (load-image new-img)
   (if (list? new-img)
-      (force (delay/thread (lambda () (apply above (map (lambda (img) (img)) (force new-img))))))
+      (force (delay/thread (lambda () (apply above (map (lambda (img) ((force img))) (force new-img))))))
       (force (delay/thread ((force new-img))))))
 
 ;; viz-state -> viz-state
@@ -206,11 +206,14 @@
                (new-curr-img (if (image? (viz-state-next-image a-vs))
                                  (viz-state-next-image a-vs)
                                  (if (list? (viz-state-next-image a-vs))
-                                     (apply above (map (lambda (img) (img)) (viz-state-next-image a-vs)))
+                                     (apply above (map (lambda (img) ((force img))) (viz-state-next-image a-vs)))
+                                            
                                      (let [(cache (force (viz-state-next-image a-vs)))]
                                        (if (list? cache)
-                                           (apply above (map (lambda (img) (img)) cache))
-                                           cache)))))
+                                           (apply above (map (lambda (img) ((force img))) cache))
+                                           
+                                           (cache)
+                                           )))))
                (curr-pimgs-img (viz-state-curr-image a-vs))
                (img-resize (resize-image new-curr-img (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))
                (growth-x (- (/ (image-width (scale (viz-state-scale-factor a-vs) new-curr-img)) 2)
@@ -306,11 +309,11 @@
                (new-pimgs-img (if (image? (viz-state-prev-image a-vs))
                                   (viz-state-prev-image a-vs)
                                   (if (list? (viz-state-prev-image a-vs))
-                                      (apply above (map (lambda (img) (img)) (viz-state-prev-image a-vs)))
+                                      (apply above (map (lambda (img) ((force img))) (viz-state-prev-image a-vs)))
                                       (let [(cache (force (viz-state-prev-image a-vs)))]
                                         (if (list? cache)
-                                            (apply above (map (lambda (img) (img)) cache))
-                                            cache)))))
+                                            (apply above (map (lambda (img) ((force img))) cache))
+                                            (cache))))))
                (curr-pimgs-img (viz-state-curr-image a-vs))
                (img-resize (resize-image new-pimgs-img (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))
                (growth-x (- (/ (image-width (scale (viz-state-scale-factor a-vs) new-pimgs-img)) 2)
@@ -400,7 +403,7 @@
         a-vs
         (let* [(new-imgs (vector-zipper-to-begin (viz-state-imgs a-vs)))
                (new-pimgs-img (if (list? (viz-state-begin-image a-vs))
-                                  (apply above (map (lambda (img) (img)) (viz-state-begin-image a-vs)))
+                                  (apply above (map (lambda (img) ((force img))) (viz-state-begin-image a-vs)))
                                   (viz-state-begin-image a-vs)))
                (curr-pimgs-img (viz-state-curr-image a-vs))
                (img-resize (resize-image new-pimgs-img (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))
@@ -489,7 +492,7 @@
         a-vs
         (let* [(new-imgs (vector-zipper-to-end (viz-state-imgs a-vs)))
                (new-pimgs-img (if (list? (viz-state-end-image a-vs))
-                                  (apply above (map (lambda (img) (img)) (viz-state-end-image a-vs)))
+                                  (apply above (map (lambda (img) ((force img))) (viz-state-end-image a-vs)))
                                   (viz-state-end-image a-vs)
                                   ))
                (curr-pimgs-img (viz-state-curr-image a-vs))

@@ -82,7 +82,7 @@
                  #:cpu-cores [cpu-cores #f] #:special-graphs? [special-graphs? 'rg] #:rank-node-lst [rank-node-lst '()])
   (define (load-image new-img)
     (if (list? new-img)
-        (force (delay/thread (lambda () (apply above (map (lambda (img) (img)) (force new-img))))))
+        (force (delay/thread (lambda () (apply above (map (lambda (img) ((force img))) new-img)))))
         (force (delay/thread ((force new-img))))
         )
     )
