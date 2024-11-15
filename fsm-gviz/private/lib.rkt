@@ -661,7 +661,8 @@
                 '()
                 '()
                 DEFAULT-FORMATTERS
-                DEFAULT-GRAPH))
+                DEFAULT-GRAPH
+                '()))
 
 
   (test-equal? "Edges with dashes"
@@ -680,7 +681,8 @@
                  (edge 'A 'B #hash((fontsize . 15) (label . (a)))))
                 '()
                 DEFAULT-FORMATTERS
-                DEFAULT-GRAPH))
+                DEFAULT-GRAPH
+                '()))
 
   (test-equal? "Node with custom label"
                (add-node (create-graph 'test) 'A #:atb (hash 'label "AA"))
@@ -690,7 +692,8 @@
                 '()
                 '()
                 DEFAULT-FORMATTERS
-                DEFAULT-GRAPH))
+                DEFAULT-GRAPH
+                '()))
 
 
   (test-equal? "Subgraphs with edges"
@@ -718,7 +721,8 @@
                   '()
                   #hash()))
                 DEFAULT-FORMATTERS
-                DEFAULT-GRAPH))
+                DEFAULT-GRAPH
+                '()))
 
   ;; --- Exception Checks Below ---
   (check-exn
