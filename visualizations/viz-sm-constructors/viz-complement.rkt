@@ -662,33 +662,34 @@
                                (bounding-limits 0 0 0 0))
          (instructions-graphic E-SCENE-TOOLS RULE-YIELD-DIMS)
          (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
-          (create-viz-process-key ["right" viz-go-next right-key-pressed]
-                                   ["left" viz-go-prev left-key-pressed]
-                                   ["up" viz-go-to-begin up-key-pressed]
-                                   ["down" viz-go-to-end down-key-pressed]
-                                   ["w" viz-zoom-in identity]
-                                   ["s" viz-zoom-out identity]
-                                   ["r" viz-max-zoom-out identity]
-                                   ["f" viz-max-zoom-in identity]
-                                   ["e" viz-reset-zoom identity]
-                                   ["wheel-down" viz-zoom-in identity]
-                                   ["wheel-up" viz-zoom-out identity])
-           (create-viz-process-tick E-SCENE-BOUNDING-LIMITS
-                                    NODE-SIZE
-                                    E-SCENE-WIDTH
-                                    E-SCENE-HEIGHT
-                                    CLICK-BUFFER-SECONDS
-                                    ()
-                                    ( [ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed]
-                                      [ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed]
-                                      [ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed]
-                                      [ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed]
-                                      [W-KEY-DIMS viz-zoom-in identity]
-                                      [S-KEY-DIMS viz-zoom-out identity]
-                                      [R-KEY-DIMS viz-max-zoom-out identity]
-                                      [E-KEY-DIMS viz-reset-zoom identity]
-                                      [F-KEY-DIMS viz-max-zoom-in identity]))
-)
+         (create-viz-process-key ["right" viz-go-next right-key-pressed]
+                                 ["left" viz-go-prev left-key-pressed]
+                                 ["up" viz-go-to-begin up-key-pressed]
+                                 ["down" viz-go-to-end down-key-pressed]
+                                 ["w" viz-zoom-in identity]
+                                 ["s" viz-zoom-out identity]
+                                 ["r" viz-max-zoom-out identity]
+                                 ["f" viz-max-zoom-in identity]
+                                 ["e" viz-reset-zoom identity]
+                                 ["wheel-down" viz-zoom-in identity]
+                                 ["wheel-up" viz-zoom-out identity])
+         (create-viz-process-tick E-SCENE-BOUNDING-LIMITS
+                                  NODE-SIZE
+                                  E-SCENE-WIDTH
+                                  E-SCENE-HEIGHT
+                                  CLICK-BUFFER-SECONDS
+                                  ()
+                                  ( [ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed]
+                                    [ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed]
+                                    [ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed]
+                                    [ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed]
+                                    [W-KEY-DIMS viz-zoom-in identity]
+                                    [S-KEY-DIMS viz-zoom-out identity]
+                                    [R-KEY-DIMS viz-max-zoom-out identity]
+                                    [E-KEY-DIMS viz-reset-zoom identity]
+                                    [F-KEY-DIMS viz-max-zoom-in identity]))
+         'complement-viz)
+
         (let ([machine (ndfa->dfa M)])
           (run-viz
            (list (graph-struct-grph (make-init-grph-structure M))
@@ -780,5 +781,5 @@
                                   (G c G))
                         'no-dead))
 
-  ;(complement-viz aab*)
+  #;(complement-viz no-one-el)
   )
