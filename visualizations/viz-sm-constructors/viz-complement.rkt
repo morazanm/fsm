@@ -21,7 +21,7 @@
 
   (define FNAME "fsm")
 
-  (define E-SCENE-HEIGHT 510)
+  #;(define E-SCENE-HEIGHT 510)
 
   (define E-SCENE-TOOLS
     (let ([ARROW (above (triangle 30 'solid 'black) (rectangle 10 30 'solid 'black))])
@@ -707,7 +707,6 @@
                                                    (create-graph-structure M))))
                           (list->zipper (list (graph-struct-inf (make-init-grph-structure M))
                                               (text "Deterministic M" FONT-SIZE 'black)
-                                              ;(text "Starting NDFA" FONT-SIZE 'black)
                                               (graph-struct-inf (create-graph-structure machine)))))
             (bounding-limits 0 0 0 0))
            (instructions-graphic E-SCENE-TOOLS
@@ -780,6 +779,4 @@
                                   (G b G)
                                   (G c G))
                         'no-dead))
-
-  #;(complement-viz no-one-el)
   )

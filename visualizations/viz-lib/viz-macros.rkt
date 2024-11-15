@@ -3,6 +3,8 @@
                      racket/base
                      "viz-state.rkt"
                      racket/struct-info)
+         (only-in racket/gui/base
+                  get-display-size)
          2htdp/universe
          2htdp/image
          "viz-state.rkt"
@@ -12,6 +14,8 @@
 (provide  create-viz-process-key
           create-viz-draw-world
           create-viz-process-tick)
+
+(define-values (WINDOW-WIDTH WINDOW-HEIGHT) (get-display-size))
 
 (define-syntax (create-viz-process-key stx)
   (syntax-parse stx
@@ -94,7 +98,7 @@
                (INFORMATIVE-MESSAGES ((informative-messages-draw-component (viz-state-informative-messages a-vs))
                    (informative-messages-component-state (viz-state-informative-messages a-vs))))
                (INSTRUCTIONS-GRAPHIC (instructions-graphic-img (viz-state-instructions-graphic a-vs)))
-               (WINDOW-FRAME (rectangle 1250 700 'outline 'white))
+               (WINDOW-FRAME (rectangle (* 0.95 WINDOW-WIDTH) (* 0.8 WINDOW-HEIGHT) #;1250 #;700 'outline 'white))
                ]
            (overlay/align
             "middle"

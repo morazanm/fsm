@@ -1,9 +1,12 @@
 #lang racket/base
-(require "bounding-limits.rkt")
+(require "bounding-limits.rkt"
+         (only-in racket/gui/base
+                  get-display-size))
 (provide (all-defined-out))
 
-(define E-SCENE-WIDTH 1250)
-(define E-SCENE-HEIGHT 550)
+(define-values (WINDOW-WIDTH WINDOW-HEIGHT) (get-display-size))
+(define E-SCENE-WIDTH (* 0.95 WINDOW-WIDTH) #;1250)
+(define E-SCENE-HEIGHT (* 0.7 WINDOW-HEIGHT) #;550)
 (define E-SCENE-BOUNDING-LIMITS (bounding-limits 0 E-SCENE-WIDTH 0 E-SCENE-HEIGHT))
 (define FONT-SIZE 20)
 (define TAPE-SIZE 42)
