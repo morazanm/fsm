@@ -1453,7 +1453,11 @@ rule are a  (listof rule-struct)
 ;;(listof symbols) (lisof configurations) -> (listof configurations)
 ;;Purpose: Makes configurations usable for invariant predicates
 (define (make-inv-configs a-word configs)
-  (if (empty? configs)
+  (append-map (λ (comp)
+                (make-inv-configs-helper a-word (computation-LoC comp) (length a-word)))
+                configs)
+  ;(displayln configs)
+  #;(if (empty? configs)
       '()
       (append (list (make-inv-configs-helper a-word (first configs) (length a-word)))
               (make-inv-configs a-word (rest configs)))))
@@ -1475,11 +1479,15 @@ rule are a  (listof rule-struct)
 ;;(listof configurations) (listof (listof symbol ((listof sybmols) -> boolean))) -> (listof configurations)
 ;;Purpose: Adds the results of each invariant oredicate to its corresponding invariant configuration 
 (define (get-inv-config-results inv-configs invs)
-  (if (or (empty? inv-configs)
-          (empty? invs))
-      '()
-      (append (list (get-inv-config-results-helper (first inv-configs) invs))
-              (get-inv-config-results (rest inv-configs) invs))))
+  (append-map (λ (comp)
+                (get-inv-config-results-helper comp invs))
+              inv-configs)
+
+  #;(if (or (empty? inv-configs)
+            (empty? invs))
+        '()
+        (append (list (get-inv-config-results-helper (first inv-configs) invs))
+                (get-inv-config-results (rest inv-configs) invs))))
 
 ;;(listof configurations) (listof (listof symbol ((listof sybmols) -> boolean))) -> (listof configurations)
 ;;Purpose: Adds the results of each invariant oredicate to its corresponding invariant configuration
@@ -1576,6 +1584,22 @@ rule are a  (listof rule-struct)
   (if (equal? (second (zipper-current zip)) word)
       zip
       (zipper-search (zip-func zip) word zip-func)))
+
+;;word (listof configurations) (listof configurations) -> (listof configurations)
+;;Purpose: Counts the number of unique configurations for each stage of the word
+(define (count-computations a-word a-LoC acc)
+  ;;word -> number
+  ;;Purpose: Counts the number of unique configurations based on the given word
+  (define (get-config a-word)
+    (length (remove-duplicates
+             (append-map (λ (configs)
+                           (filter (λ (config)
+                                     (equal? a-word (second config)))
+                                   configs))
+                         a-LoC))))
+    (if (empty? a-word)
+        (reverse (cons (get-config a-word) acc))
+        (count-computations (rest a-word) a-LoC (cons (get-config a-word) acc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1775,7 +1799,20 @@ rule are a  (listof rule-struct)
                               (cons (sm-start (building-viz-state-M a-vs)) (map last current-rules)))
                           #;(map last (append current-rules current-a-rules)))])
     
-    (list (make-edge-graph
+    (make-edge-graph
+     (make-node-graph
+      (create-graph 'pdagraph #:atb (hash 'rankdir "LR"))
+      (building-viz-state-M a-vs)
+      (building-viz-state-dead a-vs)
+      held-invs
+      brkn-invs)
+     all-rules
+     current-a-rules
+     current-rules
+     held-invs
+     (building-viz-state-dead a-vs)
+     cut-off)
+    #;(list (make-edge-graph
            (make-node-graph
             (create-graph 'pdagraph #:atb (hash 'rankdir "LR"))
             (building-viz-state-M a-vs)
@@ -2422,7 +2459,7 @@ rule are a  (listof rule-struct)
   (local [;;symbol
           ;;Purpose: If ds is already used as a state in M, then generates a random seed symbol,
           ;;         otherwise uses DEAD
-          (define dead (if (member? DEAD (sm-states M)) (gen-state (sm-states M)) DEAD))
+          (define dead (if (member? DEAD (sm-states M) equal?) (gen-state (sm-states M)) DEAD))
           ;;(listof symbols)
           ;;Purpose: Makes partial rules for every combination of states in M and symbols in sigma of M
           (define new-read-rules
@@ -2449,7 +2486,7 @@ rule are a  (listof rule-struct)
                                                                            (list (first (first rule)) (second (first rule))))
                                                                          (sm-rules M)))]
                                         (filter (λ (rule)
-                                                  (not (member? rule partial-rules)))
+                                                  (not (member? rule partial-rules equal?)))
                                                 new-read-rules)))
           ;;(listof rules)
           ;;Purpose: Maps the dead state as a destination for all rules that are not currently in the original rules of M
@@ -2728,9 +2765,9 @@ rule are a  (listof rule-struct)
                                                  (if (and add-dead (not (empty? invs))) (cons (list dead-state (λ (w s) #t)) invs) invs) 
                                                  dead-state
                                                  max-cmps)]
-             [graphs+comp-len (create-graph-thunks building-state '())]
-             [graphs (map first graphs+comp-len)]
-             [computation-lens (map second graphs+comp-len)]
+             [graphs (create-graph-thunks building-state '())]
+             #;[graphs (map first graphs+comp-len)]
+             [computation-lens (count-computations a-word (map computation-LoC computations) '())]
              ;[test1 (displayln (format "configs: ~a" configs))]
              #;[test0 (void) #;(begin
                                ;(void)
@@ -2752,11 +2789,11 @@ rule are a  (listof rule-struct)
              #;[pstck (if (empty? upstck)
                           '()
                           (first stack))]
-             #;[inv-configs (map (λ (con)
+             [inv-configs (map (λ (con)
                                  (length (second (first con))))
                                (return-brk-inv-configs
                                 (get-inv-config-results
-                                 (make-inv-configs a-word computation)
+                                 (make-inv-configs a-word computations)
                                  invs)
                                 a-word))])
         ;(struct building-viz-state (upci pci M inv dead))
@@ -2777,6 +2814,7 @@ rule are a  (listof rule-struct)
         ;"done"
         ;reject-cmps
         ;(append rejecting-configs accepting-config)
+        ;computation-lens
         (run-viz graphs
                  (lambda () (graph->bitmap (first graphs)))
                  (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2))
@@ -2947,6 +2985,37 @@ rule are a  (listof rule-struct)
                           '(K)
                           `(((K ,EMP ,EMP) (K, '(a))))))
 
+(define wcw^r (make-ndpda '(S P Q F)
+                          '(a b c)
+                          '(a b)
+                          'S
+                          '(F)
+                          `(((S ,EMP ,EMP) (P ,EMP))
+                            ((P a ,EMP) (P (a)))
+                            ((P b ,EMP) (P (b)))
+                            ((P c ,EMP) (Q ,EMP))
+                            ((Q a (a)) (Q ,EMP))
+                            ((Q b (b)) (Q ,EMP))
+                            ((Q ,EMP ,EMP) (F ,EMP)))))
+
+(define PUW (make-ndpda '(S P Q F  A B X)
+                        '(a b c)
+                        '(a b)
+                        'S
+                        '(F X)
+                        `(((S ,EMP ,EMP) (P ,EMP))
+                          ((P a ,EMP) (P (a)))
+                          ((P b ,EMP) (P (b)))
+                          ((P c ,EMP) (Q ,EMP))
+                          ((Q a (a)) (Q ,EMP))
+                          ((Q b (b)) (Q ,EMP))
+                          ((Q ,EMP ,EMP) (F ,EMP))
+                          ((S ε ε)(A ε)) ((S ε ε)(X ε)) ((S a ε)(S (b b)))
+                          ((A b ε)(A ε)) ((A a ε)(A ε)) ((A ε ε)(B ε))
+                          ((B ε ε)(A ε))
+                          ((X b (b b))(X ε)) ((X b (b))(X ε)))))
+
+  
 ;;word stack-> boolean
 ;;purpose: Determine if the given word has an equal number of a's and b's
 ;;         and that the stack is empty
@@ -3026,16 +3095,7 @@ rule are a  (listof rule-struct)
   (or (not (= (length (filter (λ (w) (equal? w 'a)) wrd)) 4))
       (not (= (length (filter (λ (w) (equal? w 'b)) wrd)) 2))))
 
-(define (break-up-configs a-word a-LoC acc)
-  (define (get-config a-word)
-    (remove-duplicates (append-map (λ (configs)
-                                     (filter (λ (config)
-                                               (equal? a-word (second config)))
-                                             configs))
-                                   a-LoC)))
-    (if (empty? a-word)
-        (reverse (cons (get-config a-word) acc))
-        (break-up-configs (rest a-word) a-LoC (cons (get-config a-word) acc))))
+
 
 
 
@@ -3050,4 +3110,28 @@ rule are a  (listof rule-struct)
         (reverse (cons (get-config a-word) acc))
         (break-up-configs2 (rest a-word) a-LoT (cons (get-config a-word) acc))))
 
-        
+
+#;'(((S (a a b b b b) ()) (A (a a b b b b) ()) (B (a a b b b b) ()) (X (a a b b b b) ()))
+
+    
+  ((S (a b b b b) (b b)) (A (a b b b b) (b b)) (B (a b b b b) (b b)) (X (a b b b b) (b b)) (A (a b b b b) ()) (B (a b b b b) ()) (ds (a b b b b) ()))
+
+  
+  ((A (b b b b) (b b b b)) (S (b b b b) (b b b b)) (B (b b b b) (b b b b)) (A (b b b b) (b b)) (B (b b b b) (b b)) (ds (b b b b) (b b))
+                           (ds (b b b b) (b)) (ds (b b b b) ()) (A (b b b b) ()) (B (b b b b) ()) (X (b b b b) (b b b b)))
+
+  
+  ((A (b b b) (b b b b)) (B (b b b) (b b b b)) (ds (b b b) (b b b b)) (ds (b b b) (b b b)) (ds (b b b) (b b))(ds (b b b) (b)) (ds (b b b) ())
+   (A (b b b) (b b)) (B (b b b) (b b)) (A (b b b) ()) (B (b b b) ()) (X (b b b) (b b b)) (X (b b b) (b b)))
+
+  
+  ((A (b b) (b b b b)) (B (b b) (b b b b)) (ds (b b) (b b b b)) (ds (b b) (b b b))  (ds (b b) (b b)) (ds (b b) (b)) (ds (b b) ())
+   (A (b b) (b b)) (B (b b) (b b)) (A (b b) ())  (B (b b) ()) (X (b b) (b b)) (X (b b) (b)) (X (b b) ()))
+
+  
+  ((B (b) (b b b b)) (A (b) (b b b b)) (ds (b) (b b b b)) (ds (b) (b b b)) (ds (b) (b b)) (ds (b) (b)) (ds (b) ())
+   (B (b) (b b)) (A (b) (b b)) (A (b) ()) (B (b) ()) (X (b) (b))  (X (b) ()))
+
+  
+  ((ds () ()) (ds () (b)) (ds () (b b)) (ds () (b b b)) (ds () (b b b b)) (B () (b b b b)) (A () (b b b b))
+              (B () (b b)) (A () (b b))  (B () ()) (A () ()) (X () ())))
