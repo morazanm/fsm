@@ -49,7 +49,7 @@
 
 
 
-(zipper-current (imsg-a(move-struct-fields-next imsg (imsg (list->zipper (list 'c 'd)) (list->zipper '(e f)) (list->zipper '(j k))))))
+;(zipper-current (imsg-a(move-struct-fields-next imsg (imsg (list->zipper (list 'c 'd)) (list->zipper '(e f)) (list->zipper '(j k))))))
 ;(define test0 (imsg 'c 'd))
 
 #;(extract-struct-info (syntax-local-value test0))
