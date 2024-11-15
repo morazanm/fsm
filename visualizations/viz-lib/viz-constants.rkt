@@ -5,8 +5,8 @@
 (provide (all-defined-out))
 
 (define-values (WINDOW-WIDTH WINDOW-HEIGHT) (get-display-size))
-(define E-SCENE-WIDTH (* 0.95 WINDOW-WIDTH) #;1250)
-(define E-SCENE-HEIGHT (* 0.7 WINDOW-HEIGHT) #;550)
+(define E-SCENE-WIDTH (* 0.95 WINDOW-WIDTH))
+(define E-SCENE-HEIGHT (* 0.7 WINDOW-HEIGHT))
 (define E-SCENE-BOUNDING-LIMITS (bounding-limits 0 E-SCENE-WIDTH 0 E-SCENE-HEIGHT))
 (define FONT-SIZE 20)
 (define TAPE-SIZE 42)

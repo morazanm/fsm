@@ -46,7 +46,7 @@
                       [0.0 0.0 1.0]])
              point)))
 
-(: zoom-affine-transform (-> Image posn Real Integer Integer (Matrix Float)))
+(: zoom-affine-transform (-> Image posn Real Real Real (Matrix Float)))
 (define (zoom-affine-transform img img-posn scale E-SCENE-WIDTH E-SCENE-HEIGHT)
   (let* [(fl-image-height (fl (image-height img)))
          (fl-image-width (fl (image-width img)))

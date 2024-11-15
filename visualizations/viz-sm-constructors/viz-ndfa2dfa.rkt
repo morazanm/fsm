@@ -24,7 +24,7 @@
 
 (define FNAME "fsm")
 (define FONT-SIZE 24)
-(define E-SCENE-HEIGHT 560)
+;(define E-SCENE-HEIGHT 560)
 (define E-SCENE-TOOLS
   (let ([ARROW (above (triangle 30 'solid 'black) (rectangle 10 30 'solid 'black))])
     (beside/align

@@ -17,7 +17,7 @@
 
 (define FNAME "fsm")
 
-(define E-SCENE-HEIGHT 560)
+;(define E-SCENE-HEIGHT 560)
 
 (define E-SCENE-TOOLS
   (let ([ARROW (above (triangle 30 'solid 'black) (rectangle 10 30 'solid 'black))])

@@ -7,6 +7,7 @@
          "../viz-lib/viz.rkt"
          "../viz-lib/viz-state.rkt"
          "../../fsm-gviz/private/lib.rkt"
+         "../viz-lib/viz-constants.rkt"
          
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "../viz-lib/default-viz-function-generators.rkt"
@@ -16,8 +17,8 @@
          racket/function)
 
 (provide init-viz)
-(define E-SCENE-WIDTH 1250)
-(define E-SCENE-HEIGHT 500)
+;(define E-SCENE-WIDTH 1250)
+;(define E-SCENE-HEIGHT 500)
 (define E-SCENE-BOUNDING-LIMITS (bounding-limits 0 E-SCENE-WIDTH 0 E-SCENE-HEIGHT))
 (define FONT-SIZE 20)
 (define TAPE-SIZE 42)

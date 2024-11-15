@@ -18,7 +18,7 @@
 
 (define FNAME "fsm")
 
-(define E-SCENE-HEIGHT 475)
+;(define E-SCENE-HEIGHT 475)
 
 ;; L = nl
 (define nl (make-unchecked-ndfa '(S) '(a b) 'S '() '()))

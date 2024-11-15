@@ -43,8 +43,7 @@
                     (new-img-y (+ (posn-y (viz-state-image-posn a-vs)) y-diff))
                     (new-img-posn (posn (+ (posn-x (viz-state-image-posn a-vs)) x-diff) (+ (posn-y (viz-state-image-posn a-vs)) y-diff)))
                     (scaled-image (scale (viz-state-scale-factor a-vs) (viz-state-curr-image a-vs)))
-                    (viewport-lims (create-calculate-viewport-limits scaled-image (viz-state-scale-factor a-vs) NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT))
-                    ]
+                    (viewport-lims (create-calculate-viewport-limits scaled-image (viz-state-scale-factor a-vs) NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT))]
                (cond [(within-bounding-limits? E-SCENE-BOUNDING-LIMITS (viz-state-prev-mouse-posn a-vs))
                       (cond [(within-bounding-limits? viewport-lims new-img-posn)
                              (struct-copy viz-state a-vs
@@ -60,9 +59,7 @@
                                           [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])]
                             [(outside-x-and-y-axis-bounding-limits? viewport-lims new-img-posn)
                              (struct-copy viz-state a-vs
-                                          [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])])
-                      
-                      ]
+                                          [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])])]
                      [(within-bounding-limits? imsg-b-limit (viz-state-prev-mouse-posn a-vs))
                       (struct-copy viz-state a-vs
                                    [informative-messages
@@ -81,7 +78,7 @@
                        (lambda (a-vs) (imsg-key-func (viz-key-func a-vs))) CLICK-BUFFER-SECONDS)]
                      ...
                      [else (struct-copy viz-state a-vs
-                                        [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])]) )
+                                        [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])]))
              (struct-copy viz-state a-vs
                           [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])))]))
 
@@ -90,24 +87,23 @@
     #:literals (list)
     [(_ E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
      #'(lambda (a-vs)
-         (let* [
-               (INFORMATIVE-MESSAGES ((informative-messages-draw-component (viz-state-informative-messages a-vs))
-                   (informative-messages-component-state (viz-state-informative-messages a-vs))))
-               (INSTRUCTIONS-GRAPHIC (instructions-graphic-img (viz-state-instructions-graphic a-vs)))
-               (PARSE-TREE-IMG (place-image (scale (viz-state-scale-factor a-vs) (viz-state-curr-image a-vs))
-                                            (posn-x (viz-state-image-posn a-vs))
-                                            (posn-y (viz-state-image-posn a-vs))
-                                            (rectangle E-SCENE-WIDTH (- (* 0.9 WINDOW-HEIGHT) (image-height INFORMATIVE-MESSAGES) (image-height INSTRUCTIONS-GRAPHIC)) 'outline 'white)
-                                            ))
-               (WINDOW-FRAME (rectangle (* 0.95 WINDOW-WIDTH) (* 0.9 WINDOW-HEIGHT) #;1250 #;700 'outline 'white))
-               ]
+         (let* [(INFORMATIVE-MESSAGES ((informative-messages-draw-component (viz-state-informative-messages a-vs))
+                                       (informative-messages-component-state (viz-state-informative-messages a-vs))))
+                (INSTRUCTIONS-GRAPHIC (instructions-graphic-img (viz-state-instructions-graphic a-vs)))
+                (PARSE-TREE-IMG (place-image (scale (viz-state-scale-factor a-vs) (viz-state-curr-image a-vs))
+                                             (posn-x (viz-state-image-posn a-vs))
+                                             (posn-y (viz-state-image-posn a-vs))
+                                             (rectangle E-SCENE-WIDTH (- (* 0.9 WINDOW-HEIGHT)
+                                                                         (image-height INFORMATIVE-MESSAGES)
+                                                                         (image-height INSTRUCTIONS-GRAPHIC))
+                                                        'outline 'white)))
+                (WINDOW-FRAME (rectangle (* 0.95 WINDOW-WIDTH) (* 0.9 WINDOW-HEIGHT) 'outline 'white))]
            (overlay/align
             "middle"
             "bottom"
             (above PARSE-TREE-IMG
-                  ((informative-messages-draw-component (viz-state-informative-messages a-vs))
-                   (informative-messages-component-state (viz-state-informative-messages a-vs)))
-                  (square INS-TOOLS-BUFFER 'solid 'white)
-                  (instructions-graphic-img (viz-state-instructions-graphic a-vs)))
-            WINDOW-FRAME)
-            ))]))
+                   ((informative-messages-draw-component (viz-state-informative-messages a-vs))
+                    (informative-messages-component-state (viz-state-informative-messages a-vs)))
+                   (square INS-TOOLS-BUFFER 'solid 'white)
+                   (instructions-graphic-img (viz-state-instructions-graphic a-vs)))
+            WINDOW-FRAME)))]))

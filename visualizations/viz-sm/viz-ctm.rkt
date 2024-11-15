@@ -66,11 +66,7 @@
                           (above/align "middle" A-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Tape left" (- FONT-SIZE 2) 'black))
                           (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
 
-                          (above/align "middle" D-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Tape right" (- FONT-SIZE 2) 'black))
-                          )
-                  )
-    )
-  )
+                          (above/align "middle" D-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Tape right" (- FONT-SIZE 2) 'black))))))
 
 (define RULE-YIELD-DIMS (bounding-limits 0
                                          1250
@@ -506,9 +502,7 @@
 
 ;; imsg-struct
 (struct imsg-struct (tapes vars))
-(define E-SCENE (empty-scene 1250 600))
 (define TAPE-SIZE 20)
-
 
 ;; graph is a structure that has
 ;; upimgs - unprocessed graph images
@@ -973,9 +967,7 @@
                                      ["wheel-down" viz-zoom-in identity]
                                      ["wheel-up" viz-zoom-out identity]
                                      ["a" identity a-key-pressed]
-                                     ["d" identity d-key-pressed]
-                                           
-                                     )
+                                     ["d" identity d-key-pressed])
              (create-viz-process-tick E-SCENE-BOUNDING-LIMITS NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT
                                       CLICK-BUFFER-SECONDS
                                       ()
