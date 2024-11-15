@@ -1362,8 +1362,8 @@ rule are a  (listof rule-struct)
                                                                (equal? (take stack (length (third (first rule)))) (third (first rule))))))
                                                     (append connected-read-E-rules connected-read-rules))]
                      [new-configs (filter (λ (new-c) 
-                                            #;(not (member? (first (computation-LoC new-c)) (computation-visited new-c) equal?))
-                                                 (not (same-trace? (first (computation-LoT new-c)) (rest (computation-LoT new-c)))))
+                                            (not (member? (first (computation-LoC new-c)) (computation-visited new-c) equal?))
+                                                 #;(not (same-trace? (first (computation-LoT new-c)) (rest (computation-LoT new-c)))))
                                           (map (λ (rule) (apply-rule2 (qfirst QoC) rule)) connected-pop-rules))])
                 (if (empty? new-configs)
                     (make-computations lor (dequeue QoC) (cons (qfirst QoC) path) max-cmps)
@@ -2269,7 +2269,7 @@ rule are a  (listof rule-struct)
                                                       (viz-state-informative-messages a-vs)))]
                                  [(or (zipper-empty? (imsg-state-upstck (informative-messages-component-state
                                                              (viz-state-informative-messages a-vs))))
-                                      (zipper-at-end? (imsg-state-upstck (informative-messages-component-state
+                                      (zipper-at-begin? (imsg-state-upstck (informative-messages-component-state
                                                                       (viz-state-informative-messages a-vs)))))
                                   (imsg-state-upstck (informative-messages-component-state
                                                       (viz-state-informative-messages a-vs)))]
@@ -2280,8 +2280,10 @@ rule are a  (listof rule-struct)
                               (imsg-state-pstck (informative-messages-component-state
                                                  (viz-state-informative-messages a-vs)))
                               '())]
-                   [invs-zipper (if (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
+                   [invs-zipper (if (or (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                                                     (viz-state-informative-messages a-vs))))
+                                        (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                    (viz-state-informative-messages a-vs)))))
                                     (imsg-state-invs-zipper (informative-messages-component-state
                                                              (viz-state-informative-messages a-vs)))
                                     (zipper-to-idx (imsg-state-invs-zipper (informative-messages-component-state
@@ -2768,14 +2770,14 @@ rule are a  (listof rule-struct)
         ;(list (first config) (second config) (third config) (fourth config))
         ;;(length config)
         ;reject-cmps
-        (map (λ (comp) (reverse (computation-LoR comp))) computations)
+        ;(map (λ (comp) (reverse (computation-LoR comp))) computations)
         ;(map (λ (comp) (reverse (computation-LoC comp))) computations)
         ;(map (λ (comp) (reverse (computation-LoT comp))) computations)
         ;accept-computations
         ;"done"
         ;reject-cmps
         ;(append rejecting-configs accepting-config)
-        #;(run-viz graphs
+        (run-viz graphs
                  (lambda () (graph->bitmap (first graphs)))
                  (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2))
                  DEFAULT-ZOOM
