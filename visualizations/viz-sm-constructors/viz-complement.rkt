@@ -72,7 +72,8 @@
                                          (text "Max zoom" (- FONT-SIZE 2) 'black))))))
 
   (define imsg-img
-    (above (text "Complement of MD" 20 'black)
+    (above (text "Complement of Deterministic M" 20 'black)
+           ;(text "Complement of MD" 20 'black)
            (text (format "New final states:") 20 'black)
            (text (format "Starting state:") 20 'black)))
 
@@ -473,7 +474,8 @@
                                       (sm-start M)
                                       new-finals)
                      M)
-                    (above (text "Complement of MD" 20 'black)
+                    (above (text "Complement of Deterministic M" 20 'black)
+                           ;(text "Complement of MD" 20 'black)
                            (text (format "New final states: ~a" new-finals) 20 'black)
                            (text (format "Starting state: ~a" (sm-start M)) 20 'black)))))
 
@@ -703,7 +705,8 @@
                                              (list (make-init-grph-structure M)
                                                    (create-graph-structure M))))
                           (list->zipper (list (graph-struct-inf (make-init-grph-structure M))
-                                              (text "Starting NDFA" FONT-SIZE 'black)
+                                              (text "Deterministic M" FONT-SIZE 'black)
+                                              ;(text "Starting NDFA" FONT-SIZE 'black)
                                               (graph-struct-inf (create-graph-structure machine)))))
             (bounding-limits 0 0 0 0))
            (instructions-graphic E-SCENE-TOOLS
