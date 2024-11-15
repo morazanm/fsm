@@ -95,9 +95,14 @@
     (viz (viz-state (vector->vector-zipper imgs)
                     'BEGIN
                     ((vector-ref imgs 0))
-                    (load-image (vector-ref imgs 1))
+                    (if (= (vector-length imgs) 1)
+                        'DNE
+                        (load-image (vector-ref imgs 1)))
                     ((vector-ref imgs 0))
-                    ((force (vector-ref imgs (sub1 (vector-length imgs)))))
+                    (if (list? (vector-ref imgs (sub1 (vector-length imgs))))
+                        (above ((force (first (vector-ref imgs (sub1 (vector-length imgs)))))) ((force (second (vector-ref imgs (sub1 (vector-length imgs)))))))
+                        ((force (vector-ref imgs (sub1 (vector-length imgs)))))
+                        )
                     first-img-coord
                     DEFAULT-ZOOM
                     DEFAULT-ZOOM-CAP

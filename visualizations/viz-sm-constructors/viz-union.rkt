@@ -749,8 +749,6 @@
                              (rename-states-fsa (sm-states M) N)
                              N)])
     (run-viz (begin
-               #;(map (lambda (x) (displayln (format "~s \n\n" x))) (map graph-struct-grph
-                  (list (make-init-grph-structure M N) (create-graph-structures M renamed-machine))))
                (map graph-struct-grph
                   (list (make-init-grph-structure M N) (create-graph-structures M renamed-machine)))
                     )
