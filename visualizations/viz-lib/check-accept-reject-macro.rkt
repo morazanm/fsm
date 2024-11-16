@@ -106,61 +106,69 @@
                   #t)))]))
 
 (define-syntax (check-accept-possibly-correct-turing-machine stx)
-  (displayln stx)
-
-  (define-syntax-class
-    testing
-    (pattern (~not (~datum quote))))
+  
   (define-syntax-class
     valid-pair
     (pattern (quote (w n))))
 
-  (define-splicing-syntax-class
-    valid-pairs
-    (pattern (~seq (~var x valid-pair) ...))
-    (pattern (~seq))
-    )
+  (define-syntax-class
+    missing-one-expr
+    (pattern (quote (x))
+      #:with exp #'x))
+
+  (define-syntax-class
+    missing-both-exprs
+    (pattern (quote ())))
   
   (define-syntax-class
     invalid-pair
-    (pattern (~not (quote (w n))) #;(~or (quote ())
-                                         (quote (w))
-                                         )))
-
-  (define-splicing-syntax-class
-    invalid-pairs
-    (pattern (~seq (~var bad-pair invalid-pair) ...+))
-    )
+    (pattern (~not (quote (w n)))))
   
-  (define-splicing-syntax-class
-    bad-pairs
-    (pattern (~and (~var x valid-pairs) (~var y invalid-pairs) (~var z valid-pairs)) #;(~and (~seq (~var before-pairs valid-pair) ...) (~seq (~var bad-pairs invalid-pair) ...+) (~seq (~var after-pairs valid-pair) ...))))
-
   (syntax-parse stx
     [(_ C:id M)
      ;; TODO raise some error
      #`(raise (exn:fail:check-failed
-               "Test does not contain any words to test"
+               "This test does not contain any words to test"
                (current-continuation-marks)
-               (list #,(syntax-srcloc stx))
-               #;(map (lambda (z)
+               (list #,(syntax-srcloc stx)))
+              #t)]
+    [(_ C:id M (~var first-pairs valid-pair) ... )
+     #'(check-accept-turing-machine C M first-pairs ...)]
+    [(_ C:id M (~or (~var valids valid-pair)
+                    (~var missing-one missing-one-expr)
+                    (~var missing-both missing-both-exprs)
+                    (~var invalids invalid-pair)) ...)
+     #`(raise (exn:fail:check-failed
+               (let [(position-missing-exprs (filter (lambda (x) (list? (first x))) (list missing-one ...)))
+                     (word-missing-exprs (filter (lambda (x) (exact-nonnegative-integer? (first x))) (list missing-one ...)))]
+                 (string-append
+                  (if (not (empty? position-missing-exprs))
+                      (format "The following test cases are missing a head position:\n~a"
+                              (foldr (lambda (val accum) (string-append (format "~a\n" val) accum)) "" position-missing-exprs))
+                      "")
+                  (if (not (empty? word-missing-exprs))
+                      (format "The following test cases are missing a word:\n~a"
+                              (foldr (lambda (val accum) (string-append (format "~a\n" val) accum)) "" word-missing-exprs))
+                      "")
+                  (if (not (empty? (list missing-both ...)))
+                      (format "The following test cases are missing both a word and a head position:\n~a"
+                              (foldr (lambda (val accum) (string-append (format "~a\n" val) accum)) "" (list missing-both ...)))
+                      "")
+                  (if (not (empty? (list invalids ...)))
+                      (format "The following test cases are malformed:\n~a"
+                              (foldr (lambda (val accum) (string-append (format "~a\n" val) accum)) "" (list invalids ...)))
+                      "")
+                  )
+                 )
+               (current-continuation-marks)
+               (map (lambda (z)
                         (srcloc (syntax-source z)
                                 (syntax-line z)
                                 (syntax-column z)
                                 (syntax-position z)
                                 (syntax-span z)))
-                      word-stx-lst))
-              #t)
-     #;(error "only machine")]
-    #;[(_ C:id M (~var yikes bad-pairs))
-       #'(error "it worked")]
-    [(_ C:id M (~var before-pairs valid-pair) ... (~var bad-pair invalid-pair) _ ...)
-     #'(error "illformed pair")]
-    [(_ C:id M (~var first-pairs valid-pair) ... )
-     #'(error "valid matched")]
-    #;[(_ C:id M (~var first-pairs valid-pair) ... [(~not (datum quote))] _ ...)
-       #'(void)]
-    ))
+                      (append (list #'missing-one ...) (list #'missing-both ...) (list #'invalids ...))))
+              #t)]))
 ;(~var first-pairs valid-pair) ... [(~not (datum quote))] [(~not (datum quote)) head-pos] ...)
 
 
@@ -174,9 +182,10 @@
       ;#:with c (attribute M.c)
       ))
   (define-syntax-class unknown-tm-word
-    (pattern (~not (~datum quote))))
+    (pattern (~not (~datum quote)))
+    )
   (define-syntax-class (tm-word word-contract)
-    (pattern [word0 header-pos0]
+    (pattern (quote (word0 header-pos0))
       #:declare word0 (expr/c word-contract #:positive #'word0)
                             
       #:with word #'word0
@@ -221,17 +230,11 @@
                                   (syntax-span z)))
                         word-stx-lst))
                   #t)))]))
-#;(define-syntax (testing stx)
+
+(define-syntax (testing stx)
     (syntax-parse stx
-      [(_ ((~var x) (~var xc)) ...)
-       #`(list #,(syntax/loc x xc) ...)]))
-
-
-
-
-
-
-
+      [(_ x xc)
+       (syntax/loc #'x (identity xc))]))
 
 ;; stx -> stx
 ;; Purpose: Checks state machines (without turing)
@@ -240,18 +243,20 @@
     (pattern M
       #:declare M (expr/c #'is-machine?)
       #:with m #'M
-      #:with c (attribute M.c)
-      ))
+      #:with c (attribute M.c)))
+  
   (define-syntax-class (sm-word sigma-contract)
     (pattern W
       #:declare W (expr/c sigma-contract
                           #:positive #'W)
       #:with w #'W
       #:with c (attribute W.c)))
+  
   (define-template-metafunction (reattribute-syntax-list stx)
     (syntax-parse stx
       [(_ x xc)
-       (template/loc #'x xc)]))
+       (template/loc #'x (identity xc))]))
+  
   (syntax-parse stx 
     [(_ C:id M:machine (~var x (sm-word #'C)) ...)
      ;#:with ((~var x (sm-word #'C)) ...) #'words
@@ -259,13 +264,10 @@
               [res (foldr (lambda (word cword wordstx accum)
                             (if (equal? (sm-apply M.c cword) 'accept)
                                 accum
-                                (cons (list word wordstx) accum)
-                                )
-                            )
+                                (cons (list word wordstx) accum)))
                           '()
                           (list x ...)
-                          (list (reattribute-syntax-list #'x x.c) ...)
-                          #;(list x.c ...)
+                          (list (testing x x.c) ...)
                           (list #'x ...))]
               [word-lst (map first res)]
               [word-stx-lst (map second res)])
@@ -288,11 +290,7 @@
                                   (syntax-column z)
                                   (syntax-position z)
                                   (syntax-span z)))
-                        word-stx-lst))
-                  )))]))
-
-#;(define (tm-word/c lang)
-    (listof (apply or/c lang)))
+                        word-stx-lst)))))]))
 
 (define (new-tm-word/c sigma)
   (define tm-word-char/c (apply or/c sigma))
@@ -332,11 +330,6 @@
     (pattern (~not (~datum quote))))
   (syntax-parse stx
     ;; Turing machines
-    #;[(_ M:tmachine [(~seq word:unknown-tm-word header-pos:expr)] ...)
-       #`(let ([tm-word-contract (new-tm-word/c (cons '_ (sm-sigma M.c)))])
-           (check-accept-turing-machine tm-word-contract M.m [word header-pos]...)
-           )
-       ]
     ;; State machines or grammars
     [(_ unknown-expr . words)
      #:with (x ...) #'words
@@ -352,9 +345,7 @@
                            (format "~s is not a valid FSM value that can be tested" (syntax->datum #'unknown-expr))
                            (current-continuation-marks)
                            (list (syntax-srcloc #'unknown-expr)))
-                          #t)]
-             )]
-    ))
+                          #t)])]))
 
 ;; machine word [head-pos] -> Boolean
 ;; Purpose: To determine whether a given machine can reject a given word
