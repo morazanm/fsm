@@ -295,7 +295,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                       'S))
 
 
-(check-accept even-bs-odd-as '(b b b b a a a) '(b))
+(check-accept even-bs-odd-as '(b b b b a a a) '(z))
 
 ;(check-accept even-bs-odd-as '(b b b a a a))
 #|(check-accept even-bs-odd-as '(b a a a)) 

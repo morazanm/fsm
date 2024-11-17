@@ -3,25 +3,14 @@
 (require (for-syntax syntax/parse
                      racket/syntax-srcloc
                      racket/base
-                     
-                     
-                     "../../fsm-core/private/sm-getters.rkt"
-                    
                      )
          racket/syntax-srcloc
+         "../../fsm-core/private/sm-getters.rkt"
          "../../fsm-core/private/grammar-getters.rkt"
-         syntax/to-string
-         2htdp/universe
-         2htdp/image
          "../../fsm-core/private/csg.rkt"
          "../../fsm-core/private/cfg.rkt"
          "../../fsm-core/private/regular-grammar.rkt"
-         "../../fsm-core/private/sm-apply.rkt"
-         "../../fsm-core/private/tm.rkt"
-         "viz-state.rkt"
-         rackunit
-         "../../fsm-core/interface.rkt"
-         "default-viz-functions.rkt")
+         "../../fsm-core/private/sm-apply.rkt")
 
 (provide check-accept check-reject)
 
@@ -35,8 +24,8 @@
       [(exn:fail:check-failed msg marks (list a-srcloc ...))
        a-srcloc])))
 
-;; smth -> Boolean
-;; Purpose: Checks if smth is a machine (not tm)
+;; Any -> Boolean
+;; Purpose: Checks if m is a machine (not tm)
 (define (is-machine? m)
   (let ([m-type (with-handlers ([exn:fail? (lambda (exn) #f)])
                   (m 'whatami 0 'whatami))])
@@ -44,8 +33,8 @@
         (eq? 'dfa m-type)
         (eq? 'pda m-type))))
 
-;; smth -> Boolean
-;; Purpose: Checks if smth is a turing machine
+;; Any -> Boolean
+;; Purpose: Checks if m is a turing machine
 (define (is-turing-machine? m)
   (let ([m-type (with-handlers ([exn:fail? (lambda (exn) #f)])
                   (m 'whatami 0 'whatami))])
@@ -53,13 +42,15 @@
         (eq? 'tm-language-recognizer m-type))))
 
 
-;; smth -> Boolean
-;; Purpose: Checks is smth is a grammar
+;; Any -> Boolean
+;; Purpose: Checks is g is a grammar
 (define (is-grammar? g)
   (or (rg? g)
       (cfg? g)
       (csg? g)))
 
+;; Syntax -> Syntax
+;; Changes srcloc data associated with syntax so as to raise errors up to caller code
 (define-syntax (reattribute-syntax-loc stx)
     (syntax-parse stx
       [(_ x xc)
@@ -79,12 +70,21 @@
   
   (syntax-parse stx
     [(_ C:id G:grammar (~var w (grammar-word #'C)) ...)
-     #`(let* ([res (foldr (lambda (word word-stx accum)
-                            (if (not (string? (grammar-derive G word)))
+     #`(let* ([res (foldr (lambda (word cword word-stx accum)
+                            (if (not (string? (cond [(rg? G) (rg-derive G cword)]
+                                                    [(cfg? G) (cfg-derive G cword)]
+                                                    [(csg? G) (csg-derive G cword)]
+                                                    [else (raise (exn:fail:check-failed
+                                                                  "Unknown grammar type"
+                                                                  (current-continuation-marks)
+                                                                  (list (syntax-srcloc #'G)))
+                                                                 #t)])
+                                              ))
                                 accum
                                 (cons (list word word-stx) accum)))
                           '()
-                          (list w ...)
+                          (list w.word ...)
+                          (list w.cword ...)
                           (list #'w ...))]
               [word-lst (map first res)]
               [word-stx-lst (map second res)])
@@ -109,6 +109,8 @@
                         word-stx-lst))
                   #t)))]))
 
+;; Syntax -> Syntax
+;; Matches incorrect syntatic forms and provides specialized errors messages based on them
 (define-syntax (check-accept-possibly-correct-grammar stx)
   (define-syntax-class
     valid-word
@@ -188,6 +190,8 @@
                         word-stx-lst))
                   #t)))]))
 
+;; Syntax -> Syntax
+;; Matches incorrect syntatic forms and provides specialized errors messages based on them
 (define-syntax (check-accept-possibly-correct-turing-machine stx)
   (define-syntax-class
     valid-pair
@@ -263,7 +267,6 @@
   
   (syntax-parse stx 
     [(_ C:id M:machine (~var x (sm-word #'C)) ...)
-     ;#:with ((~var x (sm-word #'C)) ...) #'words
      #`(let* (
               [res (foldr (lambda (word cword wordstx accum)
                             (if (equal? (sm-apply M.c cword) 'accept)
@@ -296,6 +299,8 @@
                                   (syntax-span z)))
                         word-stx-lst)))))]))
 
+;; Syntax -> Syntax
+;; Matches incorrect syntatic forms and provides specialized errors messages based on them
 (define-syntax (check-accept-possibly-correct-machine stx)
   (define-syntax-class
     valid-word
@@ -324,17 +329,23 @@
                   #t)]
     ))
 
+;; (Listof Symbol) -> Contract
+;; Creates contract based off of language of turing machine provided in sigma
 (define (new-tm-word/c sigma)
   (define tm-word-char/c (apply or/c sigma))
   (define tm-word/c (or/c null?
                           (cons/c tm-word-char/c (recursive-contract tm-word/c #:flat))))
   tm-word/c)
 
+;; (Listof Symbol) -> Contract
+;; Creates contract based off of language of state machine (not turing) provided in sigma
 (define (new-sm-word/c sigma)
   (define sm-word-char/c (apply or/c sigma))
   (define sm-word/c (listof sm-word-char/c))
   sm-word/c)
 
+;; (Listof Symbol) -> Contract
+;; Creates contract based off of language of grammar provided in sigma
 (define (new-grammar-word/c sigma)
   (define grammar-word-char/c (apply or/c sigma))
   (define grammar-word/c (listof grammar-word-char/c))
@@ -344,8 +355,6 @@
 ;; Purpose: To determine whether a given machine/grammar can accept/process a given word
 (define-syntax (check-accept stx)
   (syntax-parse stx
-    ;; Turing machines
-    ;; State machines or grammars
     [(_ unknown-expr)
      #`(raise (exn:fail:check-failed
                "This test does not contain any words to test"
