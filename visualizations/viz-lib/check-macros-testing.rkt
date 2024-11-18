@@ -142,7 +142,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                ((P ,BLANK) (X ,RIGHT)))
                              'S '(Y) 'Y))
 
-#;(check-accept equal-a-b-c
+(check-accept equal-a-b-c
               ;'((@ _ a a z) 1)
               '((@ _ a a b) 1)
               ;'((@ _ a a b))

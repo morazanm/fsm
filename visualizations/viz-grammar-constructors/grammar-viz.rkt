@@ -7,7 +7,7 @@
          "../viz-lib/viz.rkt"
          "../viz-lib/viz-state.rkt"
          "../../fsm-gviz/private/lib.rkt"
-         
+         "../viz-lib/bounding-limits-macro.rkt"
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "../viz-lib/default-viz-function-generators.rkt"
          
@@ -162,6 +162,19 @@
                           (square HEIGHT-BUFFER 'solid 'white)
                           (text "Word end" (- FONT-SIZE 2) 'black))))))
 
+(create-bounding-limits E-SCENE-WIDTH E-SCENE-HEIGHT (image-width E-SCENE-TOOLS) RULE-YIELD-DIMS FONT-SIZE ARROW-KEY-WIDTH-BUFFER INS-TOOLS-BUFFER
+                        ((ARROW-UP-KEY "Restart")
+                         (ARROW-RIGHT-KEY "Forward")
+                         (ARROW-LEFT-KEY "Backward")
+                         (ARROW-DOWN-KEY "Finish")
+                         (W-KEY "Zoom in")
+                         (S-KEY "Zoom out")
+                         (R-KEY "Min zoom")
+                         (E-KEY "Mid zoom")
+                         (F-KEY "Max zoom")
+                         (A-KEY "Word start")
+                         (D-KEY "Word end")))
+#|
 (define ARROW-UP-KEY-DIMS
   (bounding-limits
    (+ (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
@@ -596,6 +609,7 @@
       (bounding-limits-height RULE-YIELD-DIMS)
       INS-TOOLS-BUFFER
       (image-height D-KEY))))
+|#
 
 ;; viz-state -> Image
 ;; Returns a image containing all the information regarding what is being derived and what the current yield is

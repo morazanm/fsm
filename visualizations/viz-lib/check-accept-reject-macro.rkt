@@ -2,8 +2,7 @@
 
 (require (for-syntax syntax/parse
                      racket/syntax-srcloc
-                     racket/base
-                     )
+                     racket/base)
          racket/syntax-srcloc
          "../../fsm-core/private/sm-getters.rkt"
          "../../fsm-core/private/grammar-getters.rkt"
@@ -111,7 +110,7 @@
 
 ;; Syntax -> Syntax
 ;; Matches incorrect syntatic forms and provides specialized errors messages based on them
-(define-syntax (check-accept-possibly-correct-grammar stx)
+(define-syntax (check-possibly-correct-grammar-syntax stx)
   (define-syntax-class
     valid-word
     (pattern (quote w)))
@@ -139,7 +138,7 @@
                   #t)]
     ))
 
-;; stx -> stx
+;; Syntax -> Syntax
 ;; Purpose: Checks turing machines
 (define-syntax (check-accept-turing-machine stx)
   (define-syntax-class machine
@@ -147,7 +146,7 @@
   
   (define-syntax-class (tm-word word-contract)
     (pattern (quote (word0 head-pos0))
-      #:with word #'(quote word0)
+      #:with word (syntax/loc #'word0 (quote word0))
       #:declare word (expr/c word-contract #:positive #'word)
       #:with cword #'word.c
       #:with head-pos #'head-pos0))
@@ -158,14 +157,12 @@
                             (if (equal? (sm-apply M cword-val head) 'accept)
                                 accum
                                 (cons (list val word-val) accum)
-                                )                  
-                            )
+                                ))
                           '()
                           (list #'x.word ...)
                           (list x.word ...)
                           (list (reattribute-syntax-loc x x.cword) ...)
-                          (list x.head-pos ...)
-                          )]
+                          (list x.head-pos ...))]
               [word-lst (map second res)]
               [word-stx-lst (map first res)])
          (unless (empty? res)
@@ -178,8 +175,7 @@
                                (syntax-e #'M)
                                (apply string-append (cons (format "\n~s" (first word-lst))
                                                           (map (lambda (n) (format "\n~s" n))
-                                                               (rest word-lst)))))
-                       )
+                                                               (rest word-lst))))))
                    (current-continuation-marks)
                    (map (lambda (z)
                           (srcloc (syntax-source z)
@@ -192,7 +188,7 @@
 
 ;; Syntax -> Syntax
 ;; Matches incorrect syntatic forms and provides specialized errors messages based on them
-(define-syntax (check-accept-possibly-correct-turing-machine stx)
+(define-syntax (check-possibly-correct-turing-machine-syntax stx)
   (define-syntax-class
     valid-pair
     (pattern (quote (w n))))
@@ -211,9 +207,11 @@
     (pattern (~not (quote (w n)))))
   
   (syntax-parse stx
-    [(_ C:id M (~var first-pairs valid-pair) ... )
-     #'(check-accept-turing-machine C M first-pairs ...)]
-    [(_ C:id M (~or (~var valids valid-pair)
+    [(_ accept?:boolean C:id M (~var first-pairs valid-pair) ... )
+     #'(if accept?
+           (check-accept-turing-machine C M first-pairs ...)
+           (check-reject-turing-machine C M first-pairs ...))]
+    [(_ accept?:boolean C:id M (~or (~var valids valid-pair)
                     (~var missing-one missing-one-expr)
                     (~var missing-both missing-both-exprs)
                     (~var invalids invalid-pair)) ...)
@@ -236,9 +234,7 @@
                   (if (not (empty? (list invalids ...)))
                       (format "The following test cases are malformed:\n~a"
                               (foldr (lambda (val accum) (string-append (format "~a\n" val) accum)) "" (list invalids ...)))
-                      "")
-                  )
-                 )
+                      "")))
                (current-continuation-marks)
                (map (lambda (z)
                         (srcloc (syntax-source z)
@@ -249,7 +245,7 @@
                       (append (list #'missing-one ...) (list #'missing-both ...) (list #'invalids ...))))
               #t)]))
 
-;; stx -> stx
+;; Syntax -> Syntax
 ;; Purpose: Checks state machines (without turing)
 (define-syntax (check-accept-machine stx)
   (define-syntax-class machine
@@ -301,7 +297,7 @@
 
 ;; Syntax -> Syntax
 ;; Matches incorrect syntatic forms and provides specialized errors messages based on them
-(define-syntax (check-accept-possibly-correct-machine stx)
+(define-syntax (check-possibly-correct-machine-syntax stx)
   (define-syntax-class
     valid-word
     (pattern (quote w)))
@@ -311,9 +307,12 @@
     (pattern (~not (quote w))))
   
   (syntax-parse stx
-    [(_ C:id M (~var x valid-word) ...)
-     #'(check-accept-machine C M x ...)]
-    [(_ C:id M (~or (~var valids valid-word)
+    [(_ accept?:boolean C:id M (~var x valid-word) ...)
+     #'(if accept?
+           (check-accept-machine C M x ...)
+           (check-reject-machine C M x ...)
+           )]
+    [(_ accept?:boolean C:id M (~or (~var valids valid-word)
                     (~var invalids invalid-word)) ...)
      #'(raise (exn:fail:check-failed
                    (format "The following expressions are not valid words that can be tested:\n~a"
@@ -351,7 +350,7 @@
   (define grammar-word/c (listof grammar-word-char/c))
   grammar-word/c)
 
-;; stx -> stx
+;; Syntax -> Syntax
 ;; Purpose: To determine whether a given machine/grammar can accept/process a given word
 (define-syntax (check-accept stx)
   (syntax-parse stx
@@ -365,14 +364,14 @@
      #:with (x ...) #'words
      #`(cond [(is-turing-machine? unknown-expr)
               (let ([tm-word-contract (new-tm-word/c (cons '_ (sm-sigma unknown-expr)))])
-                #,(syntax/loc stx (check-accept-possibly-correct-turing-machine tm-word-contract unknown-expr x ...))
+                #,(syntax/loc stx (check-possibly-correct-turing-machine-syntax tm-word-contract unknown-expr x ...))
                 )]
              [(is-machine? unknown-expr)
               (let [(sm-word-contract (new-sm-word/c (sm-sigma unknown-expr)))]
-                #,(syntax/loc stx (check-accept-possibly-correct-machine sm-word-contract unknown-expr x ...)))]
+                #,(syntax/loc stx (check-possibly-correct-machine-syntax sm-word-contract unknown-expr x ...)))]
              [(is-grammar? unknown-expr)
               (let [(grammar-word-contract (new-grammar-word/c (grammar-sigma unknown-expr)))]
-                #,(syntax/loc stx (check-accept-possibly-correct-grammar grammar-word-contract unknown-expr x ...)))]
+                #,(syntax/loc stx (check-possibly-correct-grammar-syntax grammar-word-contract unknown-expr x ...)))]
              [else (raise (exn:fail:check-failed
                            (format "~s is not a valid FSM value that can be tested" (syntax->datum #'unknown-expr))
                            (current-continuation-marks)
