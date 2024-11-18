@@ -8,11 +8,15 @@
                               '(A)
                               `((A ,EMP A))))
 
+;; ndfa2dfa works
+
 (define single-tran (make-ndfa '(A)
                                '(a b)
                                'A
                                '(A)
                                `((A a A))))
+
+;; ndfa2dfa works
 
 (define double-loop (make-ndfa '(A)
                                '(a b)
@@ -27,6 +31,8 @@
                                  '(A B)
                                  `((A ,EMP B) (B ,EMP A))))
 
+;; ndfa2dfa works
+
 (define AA (make-ndfa '(A B)
                       '(a)
                       'A
@@ -34,6 +40,8 @@
                       `((A a B)
                         (A a A)
                         (B a A))))
+
+;; ndfa2dfa works
 
 (define WWW (make-ndfa '(W E O)
                        '(a b c f)
@@ -46,6 +54,8 @@
                          (O c O)
                          (O a W))))
 
+;; ndfa2dfa works
+
 (define ABBCCD (make-ndfa '(S L P K)
                           '(a b c d)
                           'S
@@ -56,6 +66,8 @@
                             (L b L)
                             (P c P)
                             (K d K))))
+
+;; ndfa2dfa works
 
 (define another-ndfa (make-ndfa '(M X C Z)
                                 '(l k j)
