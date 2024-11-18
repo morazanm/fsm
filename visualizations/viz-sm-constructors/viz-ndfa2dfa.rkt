@@ -760,7 +760,9 @@
   (let* ([no-duplicates-fedges (remove-duplicates (filter (λ (fedge) (not (member fedge hedges)))
                                                           fedges))]
          [no-duplicates-bledges
-          (filter (λ (bledge) (not (member bledge (append hedges no-duplicates-fedges)))) bledges)])
+          (filter (λ (bledge) (not (member bledge (append hedges no-duplicates-fedges)))) bledges)]
+         )
+    
     (foldl (λ (rule result)
              (add-edge result
                        (second rule)
@@ -788,7 +790,8 @@
                                             (etc-hedges a-etc))
                            (etc-hedges a-etc)
                            (etc-fedges a-etc)
-                           (etc-bledges a-etc))])
+                           (etc-bledges a-etc))]
+         )
     ndfa-edge-graph-x))
 
 ;; create-etcs
@@ -803,9 +806,10 @@
              [new-incl-nodes (add-included-node (etc-incl-nodes a-etc) curr-dfa-ss-edge)]
              [new-hedges
               (compute-all-hedges (sm-rules (etc-M a-etc)) (third curr-dfa-ss-edge) curr-dfa-ss-edge)]
-             [new-fedges (if (empty? new-up-edges)
-                             (append new-hedges (etc-fedges a-etc))
-                             (append (etc-hedges a-etc) (etc-fedges a-etc)))]
+             [new-fedges (append (etc-hedges a-etc) (etc-fedges a-etc))
+                         #;(if (empty? new-up-edges)
+                               (append new-hedges (etc-fedges a-etc))
+                               (append (etc-hedges a-etc) (etc-fedges a-etc)))]
              [new-bledges (remove-edges new-hedges (etc-bledges a-etc))])
         (create-etcs (make-etc new-up-edges
                                new-ad-edges
@@ -1069,6 +1073,12 @@
 
 (define aa-ab
   (make-unchecked-ndfa `(S A B F) '(a b) 'S '(A B F) `((S a A) (S a B) (S ,EMP F) (A a A) (B b B))))
+
+(define double-loop (make-unchecked-ndfa '(A)
+                                         '(a b)
+                                         'A
+                                         '(A)
+                                         `((A a A) (A b A))))
 
 (define AT-LEAST-ONE-MISSING
   (make-unchecked-ndfa

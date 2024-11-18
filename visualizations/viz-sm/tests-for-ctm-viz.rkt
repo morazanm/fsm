@@ -3,6 +3,11 @@
          rackunit
          "../../fsm-core/private/callgraphs/transdiagram-ctm6.rkt"
          "viz-ctm.rkt")
+
+
+
+
+;; CAN ONLY BE TESTED IF PRECONDITION IS SATISFIED
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; tms
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -19,6 +19,7 @@
                                'A
                                '(A)
                                `((A a A) (A b A))))
+;; ndfa2dfa works
 
 (define empties-weird (make-ndfa '(A B)
                                  '(a)
@@ -98,11 +99,11 @@
                '(a b)
                'S
                '(A B F)
-               '((S a A)
-                (S a B)
-                (S ,EMP F)
-                (A b A)
-                (B a B))))
+               `((S a A)
+                 (S a B)
+                 (S ,EMP F)
+                 (A b A)
+                 (B a B))))
 
 (define NO-ABAA
   (make-dfa
@@ -133,11 +134,11 @@
 
 ;; L = e U aa* U ab*
 (define LNDFA1 (make-ndfa
-                '(S A B F ,DEAD)
+                `(S A B F ,DEAD)
                 '(a b)
                 'S
                 '(A B F)
-                '((S a A)
+                `((S a A)
                   (S a B)
                   (S ,EMP F)
                   (A b A)
@@ -162,13 +163,15 @@
                                           (C a C)
                                           (C b C))))
 
+;; ndfa2dfa works
+
 (define ND
   (make-ndfa
    '(S A B C D E)
    '(a b)
    'S
    '(S)
-   '((S a A)
+   `((S a A)
      (S a B)
      (A b C)
      (B b D)
