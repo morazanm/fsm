@@ -24,7 +24,7 @@
 (define HEDGE-COLOR 'violet)
 (define YIELD-COLOR 'skyblue)
 (define PERCENT-BORDER-GAP 0.9)
-(define HEIGHT-BUFFER 20)
+(define HEIGHT-BUFFER 10)
 (define LETTER-KEY-WIDTH-BUFFER 20)
 (define ARROW-KEY-WIDTH-BUFFER 40)
 (define INS-TOOLS-BUFFER 30)
@@ -80,7 +80,7 @@
                                               (above/align "right" RULE-USED DREV YIELD)))))))
 
 (define cursor
-  (let ([cursor-rect (let ([inner-white (rectangle 5 17.5 'solid 'white)]
+  (scale 0.9 (let ([cursor-rect (let ([inner-white (rectangle 5 17.5 'solid 'white)]
                            [outer-black (rectangle 9 20 'solid 'black)]
                            [white-triangle-infill (rectangle 9 5 'solid 'white)])
                        (above white-triangle-infill (overlay/xy inner-white -2 0 outer-black)))]
@@ -105,68 +105,77 @@
                                                   -1
                                                   (triangle/sss 60 90 90 'solid 'black))])
            (scale 0.5 (rotate 310 (overlay/xy inner-white -9 -3 outer-black))))])
-    (overlay/xy (rotate 25 cursor-rect) -7 -26 cursor-tri)))
+    (overlay/xy (rotate 25 cursor-rect) -7 -26 cursor-tri))))
 
 (define E-SCENE-TOOLS
-  (let ([ARROW (above (triangle 30 'solid 'black) (rectangle 10 30 'solid 'black))])
-    (beside/align
-     "bottom"
-     (above ARROW-UP-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Restart" (- FONT-SIZE 2) 'black))
-     (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
-     (above ARROW-RIGHT-KEY
-            (square HEIGHT-BUFFER 'solid 'white)
-            (text "Forward" (- FONT-SIZE 2) 'black))
-     (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
-     (above ARROW-LEFT-KEY
-            (square HEIGHT-BUFFER 'solid 'white)
-            (text "Backward" (- FONT-SIZE 2) 'black))
-     (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
-     (above ARROW-DOWN-KEY
-            (square HEIGHT-BUFFER 'solid 'white)
-            (text "Finish" (- FONT-SIZE 2) 'black))
-     (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
-     (above cursor (square HEIGHT-BUFFER 'solid 'white) (text "Hold to drag" (- FONT-SIZE 2) 'black))
-     (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
-     (beside (above/align "middle"
-                          W-KEY
-                          (square HEIGHT-BUFFER 'solid 'white)
-                          (text "Zoom in" (- FONT-SIZE 2) 'black))
-             (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
-             (above/align "middle"
-                          S-KEY
-                          (square HEIGHT-BUFFER 'solid 'white)
-                          (text "Zoom out" (- FONT-SIZE 2) 'black))
-             (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
-             (above/align "middle"
-                          R-KEY
-                          (square HEIGHT-BUFFER 'solid 'white)
-                          (text "Min zoom" (- FONT-SIZE 2) 'black))
-             (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
-             (above/align "middle"
-                          E-KEY
-                          (square HEIGHT-BUFFER 'solid 'white)
-                          (text "Mid zoom" (- FONT-SIZE 2) 'black))
-             (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
-             (above/align "middle"
-                          F-KEY
-                          (square HEIGHT-BUFFER 'solid 'white)
-                          (text "Max zoom" (- FONT-SIZE 2) 'black))
-             (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
-             (above/align "middle"
-                          A-KEY
-                          (square HEIGHT-BUFFER 'solid 'white)
-                          (text "Word start" (- FONT-SIZE 2) 'black))
-             (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
-             (above/align "middle"
-                          D-KEY
-                          (square HEIGHT-BUFFER 'solid 'white)
-                          (text "Word end" (- FONT-SIZE 2) 'black))))))
+  (beside/align
+   "bottom"
+   (above/align "middle"
+                ARROW-UP-KEY
+                (square HEIGHT-BUFFER 'solid 'white)
+                (text "Restart" (- FONT-SIZE 2) 'black))
+   (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
+   (above/align "middle"
+                ARROW-RIGHT-KEY
+                (square HEIGHT-BUFFER 'solid 'white)
+                (text "Forward" (- FONT-SIZE 2) 'black))
+   (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
+   (above/align "middle"
+                ARROW-LEFT-KEY
+                (square HEIGHT-BUFFER 'solid 'white)
+                (text "Backward" (- FONT-SIZE 2) 'black))
+   (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
+   (above/align "middle"
+                ARROW-DOWN-KEY
+                (square HEIGHT-BUFFER 'solid 'white)
+                (text "Finish" (- FONT-SIZE 2) 'black))
+   (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
+   (above/align "middle"
+                cursor
+                (square HEIGHT-BUFFER 'solid 'white)
+                (text "Hold to drag" (- FONT-SIZE 2) 'black))
+   (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
+   (above/align "middle"
+                W-KEY
+                (square HEIGHT-BUFFER 'solid 'white)
+                (text "Zoom in" (- FONT-SIZE 2) 'black))
+   (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
+   (above/align "middle"
+                S-KEY
+                (square HEIGHT-BUFFER 'solid 'white)
+                (text "Zoom out" (- FONT-SIZE 2) 'black))
+   (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
+   (above/align "middle"
+                R-KEY
+                (square HEIGHT-BUFFER 'solid 'white)
+                (text "Min zoom" (- FONT-SIZE 2) 'black))
+   (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
+   (above/align "middle"
+                E-KEY
+                (square HEIGHT-BUFFER 'solid 'white)
+                (text "Mid zoom" (- FONT-SIZE 2) 'black))
+   (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
+   (above/align "middle"
+                F-KEY
+                (square HEIGHT-BUFFER 'solid 'white)
+                (text "Max zoom" (- FONT-SIZE 2) 'black))
+   (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
+   (above/align "middle"
+                A-KEY
+                (square HEIGHT-BUFFER 'solid 'white)
+                (text "Word start" (- FONT-SIZE 2) 'black))
+   (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
+   (above/align "middle"
+                D-KEY
+                (square HEIGHT-BUFFER 'solid 'white)
+                (text "Word end" (- FONT-SIZE 2) 'black))))
 
-(create-bounding-limits E-SCENE-WIDTH E-SCENE-HEIGHT (image-width E-SCENE-TOOLS) RULE-YIELD-DIMS FONT-SIZE ARROW-KEY-WIDTH-BUFFER INS-TOOLS-BUFFER
+(create-bounding-limits E-SCENE-WIDTH E-SCENE-HEIGHT (image-width E-SCENE-TOOLS) RULE-YIELD-DIMS FONT-SIZE LETTER-KEY-WIDTH-BUFFER INS-TOOLS-BUFFER
                         ((ARROW-UP-KEY "Restart")
                          (ARROW-RIGHT-KEY "Forward")
                          (ARROW-LEFT-KEY "Backward")
                          (ARROW-DOWN-KEY "Finish")
+                         (cursor "Hold to drag")
                          (W-KEY "Zoom in")
                          (S-KEY "Zoom out")
                          (R-KEY "Min zoom")

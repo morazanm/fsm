@@ -22,9 +22,13 @@
        #'(begin
            (define new-id (bounding-limits
                            (+ (/ (- E-SCENE-WIDTH E-SCENE-TOOLS-WIDTH) 2)
-                              (/ (- (image-width (text first-pair.text (- FONT-SIZE 2) 'black)) (image-width first-pair.name)) 2))
+                              (if (>= (image-width first-pair.name) (image-width (text first-pair.text (- FONT-SIZE 2) 'black)))
+                                  0
+                                  (/ (- (image-width (text first-pair.text (- FONT-SIZE 2) 'black)) (image-width first-pair.name)) 2)))
                            (+ (/ (- E-SCENE-WIDTH E-SCENE-TOOLS-WIDTH) 2)
-                              (/ (- (image-width (text first-pair.text (- FONT-SIZE 2) 'black)) (image-width first-pair.name)) 2)
+                              (if (>= (image-width first-pair.name) (image-width (text first-pair.text (- FONT-SIZE 2) 'black)))
+                                  0
+                                  (/ (- (image-width (text first-pair.text (- FONT-SIZE 2) 'black)) (image-width first-pair.name)) 2))
                               (image-width first-pair.name))
                            (+ E-SCENE-HEIGHT
                               (bounding-limits-height INFORMATIVE-MSG-HEIGHT)
@@ -45,7 +49,9 @@
                                             KEY-BUFFER-SIZE
                                             accum))
                                        (+ (/ (- E-SCENE-WIDTH E-SCENE-TOOLS-WIDTH) 2)
-                                          (/ (- (image-width (text first-pair.text (- FONT-SIZE 2) 'black)) (image-width first-pair.name)) 2))
+                                          (if (>= (image-width first-pair.name) (image-width (text first-pair.text (- FONT-SIZE 2) 'black)))
+                                              0
+                                              (/ (- (image-width (text first-pair.text (- FONT-SIZE 2) 'black)) (image-width first-pair.name)) 2)))
                                        (list processed-pairs.name ...)
                                        (list processed-pairs.text ...)
                                        )]
