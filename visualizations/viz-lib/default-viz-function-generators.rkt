@@ -254,7 +254,7 @@
   (syntax-parse stx
     [(_ E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR PERCENT-BORDER-GAP)
      #'(lambda ( a-vs)
-  (if (or (list? (imsg-state-invs-zipper (informative-messages-component-state
+  (if (or (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                           (viz-state-informative-messages a-vs))))
           (< (length (imsg-state-pci (informative-messages-component-state
                                       (viz-state-informative-messages a-vs))))
@@ -272,18 +272,27 @@
                                                                             (viz-state-informative-messages a-vs)))))
                       (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
                                                                (viz-state-informative-messages a-vs)))))]
-             [new-imgs (zipper-to-idx (viz-state-imgs a-vs) idx)]
-             [new-curr-img ((zipper-current new-imgs))]
-             [curr-pimgs-img ((zipper-current (viz-state-imgs a-vs)))]
-             [img-resize (resize-image new-curr-img
+             [new-imgs (vector-zipper-to-idx (viz-state-imgs a-vs) idx)]
+             [new-curr-img (if (image? (vector-zipper-current new-imgs))
+                               ((vector-zipper-current new-imgs))
+                               (if (list? (vector-zipper-current new-imgs))
+                                   (apply above (map (lambda (img) (img)) (vector-zipper-current new-imgs)))
+                                   (let [(cache (force (vector-zipper-current new-imgs)))]
+                                     (if (list? cache)
+                                         (apply above (map (lambda (img) (img)) cache))
+                                         cache))))
+                           #;((zipper-current new-imgs))]
+             [curr-pimgs-img (viz-state-curr-image a-vs)
+                             #;((zipper-current (viz-state-imgs a-vs)))]
+             [img-resize (resize-image (new-curr-img)
                                        (* E-SCENE-WIDTH PERCENT-BORDER-GAP)
                                        (* E-SCENE-HEIGHT PERCENT-BORDER-GAP))]
-             [growth-x (- (/ (image-width (scale (viz-state-scale-factor a-vs) new-curr-img)) 2)
+             [growth-x (- (/ (image-width (scale (viz-state-scale-factor a-vs) (new-curr-img))) 2)
                           (/ (image-width (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2))]
-             [growth-y (- (/ (image-height (scale (viz-state-scale-factor a-vs) new-curr-img)) 2)
+             [growth-y (- (/ (image-height (scale (viz-state-scale-factor a-vs) (new-curr-img))) 2)
                           (/ (image-height (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2))])
         
-        (if (does-img-need-resizing? new-curr-img E-SCENE-WIDTH E-SCENE-HEIGHT)
+        (if (does-img-need-resizing? (new-curr-img) E-SCENE-WIDTH E-SCENE-HEIGHT)
             (let ([NEW-FLOOR (min (second img-resize) (third img-resize))])
               (cond
                 [(> (viz-state-scale-factor a-vs) DEFAULT-ZOOM-CAP)
@@ -301,10 +310,10 @@
                    (reposition-out-of-bounds-img
                     new-viz-state
                     (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
-                                                      new-curr-img)
+                                                      (new-curr-img))
                                                (viz-state-scale-factor new-viz-state)
                                                E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE)
-                    new-curr-img
+                    (new-curr-img)
                     (viz-state-scale-factor new-viz-state)))]
                 [(< (viz-state-scale-factor a-vs) NEW-FLOOR)
                  (let ([new-viz-state
@@ -321,10 +330,10 @@
                    (reposition-out-of-bounds-img
                     new-viz-state
                     (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
-                                                      new-curr-img)
+                                                      (new-curr-img))
                                                (viz-state-scale-factor new-viz-state)
                                                E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE)
-                    new-curr-img
+                    (new-curr-img)
                     (viz-state-scale-factor new-viz-state)))]
                 [else
                  (let ([new-viz-state
@@ -340,10 +349,10 @@
                    (reposition-out-of-bounds-img
                     new-viz-state
                     (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
-                                                      new-curr-img)
+                                                      (new-curr-img))
                                                (viz-state-scale-factor new-viz-state)
                                                E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE)
-                    new-curr-img
+                    (new-curr-img)
                     (viz-state-scale-factor new-viz-state)))]))
             (let ([new-viz-state (struct-copy viz-state
                                               a-vs
@@ -357,10 +366,10 @@
                                               [scale-factor-floor DEFAULT-ZOOM-FLOOR])])
               (reposition-out-of-bounds-img
                new-viz-state
-               (calculate-viewport-limits (scale (viz-state-scale-factor a-vs) new-curr-img)
+               (calculate-viewport-limits (scale (viz-state-scale-factor a-vs) (new-curr-img))
                                           (viz-state-scale-factor a-vs)
                                           E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE)
-               new-curr-img
+               (new-curr-img)
                (viz-state-scale-factor a-vs)))))))
      ]
     )
@@ -370,7 +379,7 @@
   (syntax-parse stx
     [(_ E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR PERCENT-BORDER-GAP)
      #'(lambda (a-vs)
-         (if (or (list? (imsg-state-invs-zipper (informative-messages-component-state
+         (if (or (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                                  (viz-state-informative-messages a-vs))))
                  (> (length (imsg-state-pci (informative-messages-component-state
                                              (viz-state-informative-messages a-vs))))
@@ -387,18 +396,26 @@
                                                                                    (viz-state-informative-messages a-vs)))))
                              (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
                                                                       (viz-state-informative-messages a-vs)))))]
-                    [new-imgs (zipper-to-idx (viz-state-imgs a-vs) idx)]
-                    [new-curr-img ((zipper-current new-imgs))]
-                    [curr-pimgs-img ((zipper-current (viz-state-imgs a-vs)))]
-                    [img-resize (resize-image new-curr-img
+                    [new-imgs (vector-zipper-to-idx (viz-state-imgs a-vs) idx)]
+                    [new-curr-img (if (image? (vector-zipper-current new-imgs))
+                                      ((vector-zipper-current new-imgs))
+                                      (if (list? (vector-zipper-current new-imgs))
+                                          (apply above (map (lambda (img) (img)) (vector-zipper-current new-imgs)))
+                                          (let [(cache (force (vector-zipper-current new-imgs)))]
+                                            (if (list? cache)
+                                                (apply above (map (lambda (img) (img)) cache))
+                                                cache))))
+                                  #;((zipper-current new-imgs))]
+                    [curr-pimgs-img (viz-state-curr-image a-vs) #;((zipper-current (viz-state-imgs a-vs)))]
+                    [img-resize (resize-image (new-curr-img)
                                               (* E-SCENE-WIDTH PERCENT-BORDER-GAP)
                                               (* E-SCENE-HEIGHT PERCENT-BORDER-GAP))]
-                    [growth-x (- (/ (image-width (scale (viz-state-scale-factor a-vs) new-curr-img)) 2)
+                    [growth-x (- (/ (image-width (scale (viz-state-scale-factor a-vs) (new-curr-img))) 2)
                                  (/ (image-width (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2))]
-                    [growth-y (- (/ (image-height (scale (viz-state-scale-factor a-vs) new-curr-img)) 2)
+                    [growth-y (- (/ (image-height (scale (viz-state-scale-factor a-vs) (new-curr-img))) 2)
                                  (/ (image-height (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2))])
        
-               (if (does-img-need-resizing? new-curr-img E-SCENE-WIDTH E-SCENE-HEIGHT)
+               (if (does-img-need-resizing? (new-curr-img) E-SCENE-WIDTH E-SCENE-HEIGHT)
                    (let ([NEW-FLOOR (min (second img-resize) (third img-resize))])
                      (cond
                        [(> (viz-state-scale-factor a-vs) DEFAULT-ZOOM-CAP)
@@ -412,7 +429,11 @@
                                                    (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
                                             [scale-factor DEFAULT-ZOOM-CAP]
                                             [scale-factor-cap DEFAULT-ZOOM-CAP]
-                                            [scale-factor-floor NEW-FLOOR])])
+                                            [scale-factor-floor NEW-FLOOR]
+                                            [prev-image (viz-state-curr-image a-vs)]
+                                            [next-image (if (vector-zipper-at-end? new-imgs)
+                                                            'END
+                                                            (load-image (vector-zipper-current (vector-zipper-next new-imgs))))])])
                           (reposition-out-of-bounds-img
                            new-viz-state
                            (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
@@ -432,7 +453,11 @@
                                                    (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
                                             [scale-factor NEW-FLOOR]
                                             [scale-factor-cap DEFAULT-ZOOM-CAP]
-                                            [scale-factor-floor NEW-FLOOR])])
+                                            [scale-factor-floor NEW-FLOOR]
+                                            [prev-image (viz-state-curr-image a-vs)]
+                                            [next-image (if (vector-zipper-at-end? new-imgs)
+                                                            'END
+                                                            (load-image (vector-zipper-current (vector-zipper-next new-imgs))))])])
                           (reposition-out-of-bounds-img
                            new-viz-state
                            (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
@@ -451,7 +476,11 @@
                                              (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
                                                    (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
                                             [scale-factor-cap DEFAULT-ZOOM-CAP]
-                                            [scale-factor-floor NEW-FLOOR])])
+                                            [scale-factor-floor NEW-FLOOR]
+                                            [prev-image (viz-state-curr-image a-vs)]
+                                            [next-image (if (vector-zipper-at-end? new-imgs)
+                                                            'END
+                                                            (load-image (vector-zipper-current (vector-zipper-next new-imgs))))])])
                           (reposition-out-of-bounds-img
                            new-viz-state
                            (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
@@ -469,13 +498,17 @@
                                                             (+ (posn-y (viz-state-image-posn a-vs))
                                                                growth-y))]
                                                      [scale-factor-cap DEFAULT-ZOOM-CAP]
-                                                     [scale-factor-floor DEFAULT-ZOOM-FLOOR])])
+                                                     [scale-factor-floor DEFAULT-ZOOM-FLOOR]
+                                                     [prev-image (viz-state-curr-image a-vs)]
+                                                     [next-image (if (vector-zipper-at-end? new-imgs)
+                                                                     'END
+                                                                     (load-image (vector-zipper-current (vector-zipper-next new-imgs))))])])
                      (reposition-out-of-bounds-img
                       new-viz-state
-                      (calculate-viewport-limits (scale (viz-state-scale-factor a-vs) new-curr-img)
+                      (calculate-viewport-limits (scale (viz-state-scale-factor a-vs) (new-curr-img))
                                                  (viz-state-scale-factor a-vs)
                                                  E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE)
-                      new-curr-img
+                      (new-curr-img)
                       (viz-state-scale-factor a-vs)))))))
      ]
     )

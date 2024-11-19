@@ -114,3 +114,8 @@
 ;; zipper -> boolean
 ;; Checks if the zipper's cursor is at the beginning of the original input list
 (define (vector-zipper-at-begin? zip) (= 0 (vector-zipper-idx zip))#;(empty? (zipper-processed zip)))
+
+
+;; zipper -> boolean
+;; Determine if the zipper is empty
+(define (vector-zipper-empty? zip) (= (vector-zipper-length zip) 0))
