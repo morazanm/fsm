@@ -11,6 +11,7 @@
          "../viz-lib/viz-state.rkt"
          "../viz-lib/viz-macros.rkt"
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
+         "david-imsg-state.rkt"
          "../viz-lib/default-viz-function-generators.rkt"
          math/matrix
          "../../fsm-core/interface.rkt")
@@ -752,6 +753,7 @@
       (bounding-limits-height RULE-YIELD-DIMS)
       INS-TOOLS-BUFFER
       (image-height L-KEY))))
+#|
 
 ;; num num num num boolean num num num (matrix [ [x] [y] [1] ]) -> (matrix [ [transformed-x] [transformed-y] [1] ])
 ;; Transforms a given point matrix based on the arguments provided
@@ -933,7 +935,7 @@
 ;; Checks to see if an image needs to be resized
 (define (does-img-need-resizing? img)
   (or (< E-SCENE-WIDTH (image-width img)) (< E-SCENE-HEIGHT (image-height img))))
-#|
+
 ;; viz-state -> viz-state
 ;; Purpose: Moves the visualization to the next step of the derivation
 (define (go-next a-vs)
@@ -1024,11 +1026,11 @@
                                           (viz-state-scale-factor a-vs))
                new-curr-img
                (viz-state-scale-factor a-vs)))))))
-|#
+
 ;;viz-state -> viz-state
 ;;Purpose: Jumps the visulization to next broken invariant
 (define (jump-next a-vs)
-  (if (or (list? (imsg-state-invs-zipper (informative-messages-component-state
+  (if (or (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                           (viz-state-informative-messages a-vs))))
           (> (length (imsg-state-pci (informative-messages-component-state
                                       (viz-state-informative-messages a-vs))))
@@ -1138,7 +1140,7 @@
 ;;viz-state -> viz-state
 ;;Purpose: Jumps the visulization to previous broken invariant
 (define (jump-prev a-vs)
-  (if (or (list? (imsg-state-invs-zipper (informative-messages-component-state
+  (if (or (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                           (viz-state-informative-messages a-vs))))
           (< (length (imsg-state-pci (informative-messages-component-state
                                       (viz-state-informative-messages a-vs))))
@@ -1243,7 +1245,7 @@
                                           (viz-state-scale-factor a-vs))
                new-curr-img
                (viz-state-scale-factor a-vs)))))))
-#|
+
 ;; viz-state -> viz-state
 ;; Purpose: Moves the visualization one step back in the derivation
 (define (go-prev a-vs)
@@ -1499,6 +1501,8 @@
                new-pimgs-img
                (viz-state-scale-factor new-viz-state)))))))
 
+
+
 ;; viz-state -> viz-state
 ;; Purpose: Zooms in on the visualization
 (define (zoom-in a-vs)
@@ -1537,87 +1541,6 @@
       (struct-copy viz-state a-vs [scale-factor DEFAULT-ZOOM-FLOOR])))
 |#
 
-(define viz-go-next
-  (go-next E-SCENE-WIDTH
-           E-SCENE-HEIGHT
-           NODE-SIZE
-           DEFAULT-ZOOM-CAP
-           DEFAULT-ZOOM-FLOOR
-           PERCENT-BORDER-GAP))
-
-(define viz-go-prev
-  (go-prev E-SCENE-WIDTH
-           E-SCENE-HEIGHT
-           NODE-SIZE
-           DEFAULT-ZOOM-CAP
-           DEFAULT-ZOOM-FLOOR
-           PERCENT-BORDER-GAP))
-
-(define viz-go-to-begin
-  (go-to-begin E-SCENE-WIDTH
-               E-SCENE-HEIGHT
-               NODE-SIZE
-               DEFAULT-ZOOM-CAP
-               DEFAULT-ZOOM-FLOOR
-               PERCENT-BORDER-GAP))
-
-(define viz-go-to-end
-  (go-to-end E-SCENE-WIDTH
-             E-SCENE-HEIGHT
-             NODE-SIZE
-             DEFAULT-ZOOM-CAP
-             DEFAULT-ZOOM-FLOOR
-             PERCENT-BORDER-GAP))
-
-(define viz-zoom-in
-  (zoom-in E-SCENE-WIDTH
-           E-SCENE-HEIGHT
-           ZOOM-INCREASE
-           ZOOM-DECREASE
-           NODE-SIZE
-           PERCENT-BORDER-GAP
-           DEFAULT-ZOOM-CAP
-           DEFAULT-ZOOM))
-
-(define viz-zoom-out
-  (zoom-out E-SCENE-WIDTH
-            E-SCENE-HEIGHT
-            ZOOM-INCREASE
-            ZOOM-DECREASE
-            NODE-SIZE
-            PERCENT-BORDER-GAP
-            DEFAULT-ZOOM-CAP
-            DEFAULT-ZOOM))
-
-(define viz-max-zoom-out
-  (max-zoom-out E-SCENE-WIDTH
-                E-SCENE-HEIGHT
-                ZOOM-INCREASE
-                ZOOM-DECREASE
-                NODE-SIZE
-                PERCENT-BORDER-GAP
-                DEFAULT-ZOOM-CAP
-                DEFAULT-ZOOM))
-
-(define viz-max-zoom-in
-  (max-zoom-in E-SCENE-WIDTH
-               E-SCENE-HEIGHT
-               ZOOM-INCREASE
-               ZOOM-DECREASE
-               NODE-SIZE
-               PERCENT-BORDER-GAP
-               DEFAULT-ZOOM-CAP
-               DEFAULT-ZOOM))
-
-(define viz-reset-zoom
-  (reset-zoom E-SCENE-WIDTH
-              E-SCENE-HEIGHT
-              ZOOM-INCREASE
-              ZOOM-DECREASE
-              NODE-SIZE
-              PERCENT-BORDER-GAP
-              DEFAULT-ZOOM-CAP
-              DEFAULT-ZOOM))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 #|
@@ -1956,6 +1879,23 @@ triple is the entire of the ndfa rule
                         config))
               full-configs))
 
+
+;;word (listof configurations) (listof configurations) -> (listof configurations)
+;;Purpose: Counts the number of unique configurations for each stage of the word
+(define (count-computations a-word a-LoC acc)
+  ;;word -> number
+  ;;Purpose: Counts the number of unique configurations based on the given word
+  (define (get-config a-word)
+    (length (remove-duplicates
+             (append-map (λ (configs)
+                           (filter (λ (config)
+                                     (equal? a-word (second config)))
+                                   configs))
+                         a-LoC))))
+    (if (empty? a-word)
+        (reverse (cons (get-config a-word) acc))
+        (count-computations (rest a-word) a-LoC (cons (get-config a-word) acc))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; graph machine (listof symbols) symbol (listof symbols) (listof symbols) -> graph
@@ -2007,7 +1947,7 @@ triple is the entire of the ndfa rule
 (struct building-viz-state (upci pci M inv dead configs accept-configs reject-configs))
 ;(struct viz-state-ndfa (upci pci M inv dead imsg instruct graphs))
 
-(struct imsg-state (M upci pci invs-zipper inv-amt comps word-img-offset word-img-offset-cap scroll-accum) #:transparent)
+;;(struct imsg-state (M upci pci invs-zipper inv-amt comps word-img-offset word-img-offset-cap scroll-accum) #:transparent)
 
 (define E-SCENE (empty-scene 1250 600))
 
@@ -2468,7 +2408,7 @@ triple is the entire of the ndfa rule
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the previous broken invariant
 (define (j-key-pressed a-vs)
-  (if (or (list? (imsg-state-invs-zipper (informative-messages-component-state
+  (if (or (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                           (viz-state-informative-messages a-vs))))
           (< (length (imsg-state-pci (informative-messages-component-state
                                       (viz-state-informative-messages a-vs))))
@@ -2510,7 +2450,7 @@ triple is the entire of the ndfa rule
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the next failed invariant
 (define (l-key-pressed a-vs)
-  (if (or (list? (imsg-state-invs-zipper (informative-messages-component-state
+  (if (or (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                           (viz-state-informative-messages a-vs))))
           (> (length (imsg-state-pci (informative-messages-component-state
                                       (viz-state-informative-messages a-vs))))
@@ -2593,6 +2533,104 @@ triple is the entire of the ndfa rule
      (make-dfa (sm-states M) (sm-sigma M) (sm-start M) (sm-finals M) (sm-rules M))]
     [else M]))
 
+
+(define jump-next
+  (jump-next-inv  E-SCENE-WIDTH
+                  E-SCENE-HEIGHT
+                  NODE-SIZE
+                  DEFAULT-ZOOM-CAP
+                  DEFAULT-ZOOM-FLOOR
+                  PERCENT-BORDER-GAP))
+(define jump-prev
+  (jump-prev-inv  E-SCENE-WIDTH
+                  E-SCENE-HEIGHT
+                  NODE-SIZE
+                  DEFAULT-ZOOM-CAP
+                  DEFAULT-ZOOM-FLOOR
+                  PERCENT-BORDER-GAP))
+(define viz-go-next
+  (go-next E-SCENE-WIDTH
+           E-SCENE-HEIGHT
+           NODE-SIZE
+           DEFAULT-ZOOM-CAP
+           DEFAULT-ZOOM-FLOOR
+           PERCENT-BORDER-GAP))
+
+(define viz-go-prev
+  (go-prev E-SCENE-WIDTH
+           E-SCENE-HEIGHT
+           NODE-SIZE
+           DEFAULT-ZOOM-CAP
+           DEFAULT-ZOOM-FLOOR
+           PERCENT-BORDER-GAP))
+
+(define viz-go-to-begin
+  (go-to-begin E-SCENE-WIDTH
+               E-SCENE-HEIGHT
+               NODE-SIZE
+               DEFAULT-ZOOM-CAP
+               DEFAULT-ZOOM-FLOOR
+               PERCENT-BORDER-GAP))
+
+(define viz-go-to-end
+  (go-to-end E-SCENE-WIDTH
+             E-SCENE-HEIGHT
+             NODE-SIZE
+             DEFAULT-ZOOM-CAP
+             DEFAULT-ZOOM-FLOOR
+             PERCENT-BORDER-GAP))
+
+(define viz-zoom-in
+  (zoom-in E-SCENE-WIDTH
+           E-SCENE-HEIGHT
+           ZOOM-INCREASE
+           ZOOM-DECREASE
+           NODE-SIZE
+           PERCENT-BORDER-GAP
+           DEFAULT-ZOOM-CAP
+           DEFAULT-ZOOM))
+
+(define viz-zoom-out
+  (zoom-out E-SCENE-WIDTH
+            E-SCENE-HEIGHT
+            ZOOM-INCREASE
+            ZOOM-DECREASE
+            NODE-SIZE
+            PERCENT-BORDER-GAP
+            DEFAULT-ZOOM-CAP
+            DEFAULT-ZOOM))
+
+(define viz-max-zoom-out
+  (max-zoom-out E-SCENE-WIDTH
+                E-SCENE-HEIGHT
+                ZOOM-INCREASE
+                ZOOM-DECREASE
+                NODE-SIZE
+                PERCENT-BORDER-GAP
+                DEFAULT-ZOOM-CAP
+                DEFAULT-ZOOM))
+
+(define viz-max-zoom-in
+  (max-zoom-in E-SCENE-WIDTH
+               E-SCENE-HEIGHT
+               ZOOM-INCREASE
+               ZOOM-DECREASE
+               NODE-SIZE
+               PERCENT-BORDER-GAP
+               DEFAULT-ZOOM-CAP
+               DEFAULT-ZOOM))
+
+(define viz-reset-zoom
+  (reset-zoom E-SCENE-WIDTH
+              E-SCENE-HEIGHT
+              ZOOM-INCREASE
+              ZOOM-DECREASE
+              NODE-SIZE
+              PERCENT-BORDER-GAP
+              DEFAULT-ZOOM-CAP
+              DEFAULT-ZOOM))
+
+
 ;;ndfa word [boolean] . -> (void) Throws error
 ;;Purpose: Visualizes the given ndfa processing the given word
 ;;Assumption: The given machine is a ndfa or dfa
@@ -2604,7 +2642,7 @@ triple is the entire of the ndfa rule
                                [(and add-dead (eq? (sm-type M) 'dfa)) DEAD]
                                [else 'no-dead])]
              [all-configs (get-configs a-word (sm-rules new-M) (sm-start new-M))]
-            
+             [computations (trace-computations (sm-start new-M) a-word (sm-rules new-M))]
              [all-accept-configs (filter (λ (config)
                                        (and (member? (first (last config)) (sm-finals new-M))
                                             (empty? (second (last config)))))
@@ -2636,7 +2674,8 @@ triple is the entire of the ndfa rule
                                                  rejecting-configs)]
              [graphs+comp-len (create-graph-thunks building-state '())]
              [graphs (map first graphs+comp-len)]
-             [computation-lens (map second graphs+comp-len)]
+             [computation-lens (count-computations a-word (map computation-LoC computations) '())]
+             #;[computation-lens (map second graphs+comp-len)]
              [inv-configs (map (λ (con)
                                  (length (second (first con))))
                                (return-brk-inv-configs
@@ -2658,9 +2697,11 @@ triple is the entire of the ndfa rule
                                        (imsg-state new-M
                                                    a-word
                                                    '()
-                                                   (if (empty? inv-configs) '() (list->zipper inv-configs))
+                                                   'N/A
+                                                   (list->zipper inv-configs)
                                                    (sub1 (length inv-configs))
                                                    computation-lens
+                                                   'N/A
                                                    0
                                                    (let ([offset-cap (- (length a-word) TAPE-SIZE)])
                                                      (if (> 0 offset-cap) 0 offset-cap))
@@ -3141,9 +3182,9 @@ triple is the entire of the ndfa rule
 ;(ndfa-viz n '(b a a))
 ;(ndfa-viz nk '(b a a))
 ;(ndfa-viz aa-ab '(a a a a b a))
-;(ndfa-viz aa-ab '(a a a a b a) #:add-dead #t)
-;(ndfa-viz aa-ab '(a a a a a a a) (list 'S S-INV1) (list 'A A-INV1) (list 'B B-INV1) (list 'F F-INV1));
-;(ndfa-viz aa-ab '(a a a a a a a) (list 'S S-INV) (list 'A A-INV1) (list 'B B-INV1) (list 'F F-INV1))
+(ndfa-viz aa-ab '(a a a a b a) #:add-dead #t)
+(ndfa-viz aa-ab '(a a a a a a a) (list 'S S-INV1) (list 'A A-INV1) (list 'B B-INV1) (list 'F F-INV1));
+(ndfa-viz aa-ab '(a a a a a a a) (list 'S S-INV) (list 'A A-INV1) (list 'B B-INV1) (list 'F F-INV1))
 ;things that change end with a bang(!)
 ;combines computations that have similiar configurations
 #;(ndfa-viz DNA-SEQUENCE '(a t c g t a c) (list 'K DNA-K-INV) (list 'H DNA-H-INV) (list 'F DNA-F-INV)

@@ -306,7 +306,11 @@
                                             (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
                                      [scale-factor DEFAULT-ZOOM-CAP]
                                      [scale-factor-cap DEFAULT-ZOOM-CAP]
-                                     [scale-factor-floor NEW-FLOOR])])
+                                     [scale-factor-floor NEW-FLOOR]
+                                     [prev-image (if (vector-zipper-at-begin? new-imgs)
+                                                     'BEGIN
+                                                     (load-image (vector-zipper-current (vector-zipper-prev new-imgs))))]
+                                     [next-image (viz-state-curr-image a-vs)])])
                    (reposition-out-of-bounds-img
                     new-viz-state
                     (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
@@ -326,7 +330,11 @@
                                             (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
                                      [scale-factor NEW-FLOOR]
                                      [scale-factor-cap DEFAULT-ZOOM-CAP]
-                                     [scale-factor-floor NEW-FLOOR])])
+                                     [scale-factor-floor NEW-FLOOR]
+                                     [prev-image (if (vector-zipper-at-begin? new-imgs)
+                                                     'BEGIN
+                                                     (load-image (vector-zipper-current (vector-zipper-prev new-imgs))))]
+                                     [next-image (viz-state-curr-image a-vs)])])
                    (reposition-out-of-bounds-img
                     new-viz-state
                     (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
@@ -345,7 +353,11 @@
                                       (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
                                             (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
                                      [scale-factor-cap DEFAULT-ZOOM-CAP]
-                                     [scale-factor-floor NEW-FLOOR])])
+                                     [scale-factor-floor NEW-FLOOR]
+                                     [prev-image (if (vector-zipper-at-begin? new-imgs)
+                                                     'BEGIN
+                                                     (load-image (vector-zipper-current (vector-zipper-prev new-imgs))))]
+                                     [next-image (viz-state-curr-image a-vs)])])
                    (reposition-out-of-bounds-img
                     new-viz-state
                     (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
@@ -363,7 +375,11 @@
                                                      (+ (posn-y (viz-state-image-posn a-vs))
                                                         growth-y))]
                                               [scale-factor-cap DEFAULT-ZOOM-CAP]
-                                              [scale-factor-floor DEFAULT-ZOOM-FLOOR])])
+                                              [scale-factor-floor DEFAULT-ZOOM-FLOOR]
+                                              [prev-image (if (vector-zipper-at-begin? new-imgs)
+                                                              'BEGIN
+                                                              (load-image (vector-zipper-current (vector-zipper-prev new-imgs))))]
+                                              [next-image (viz-state-curr-image a-vs)])])
               (reposition-out-of-bounds-img
                new-viz-state
                (calculate-viewport-limits (scale (viz-state-scale-factor a-vs) (new-curr-img))

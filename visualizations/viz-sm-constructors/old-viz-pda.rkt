@@ -20,6 +20,7 @@
 
 (define HELD-INV-COLOR 'chartreuse4)
 (define BRKN-INV-COLOR 'red2)
+(define DARKGOLDENROD2 (make-color 238 173 14))
 
 (define E-SCENE-WIDTH 1250)
 (define E-SCENE-HEIGHT 490)
@@ -1635,9 +1636,9 @@ rule are a  (listof rule-struct)
                      (first rule)
                      (third rule)
                      #:atb (hash 'color (cond [(find-rule? rule dead current-a-rules)
-                                               (if cut-off 'gold 'green)]
+                                               (if cut-off  DARKGOLDENROD2 'green)]
                                               [(find-rule? rule dead current-rules)
-                                               (if cut-off 'gold 'violetred)]
+                                               (if cut-off DARKGOLDENROD2 'violetred)]
                                               [else 'black])
                                  'style (cond [(equal? (third rule) dead) 'dashed]
                                               [(member? rule current-a-rules equal?) 'bold]
@@ -1880,7 +1881,7 @@ rule are a  (listof rule-struct)
                                                  (if (empty? (imsg-state-pci imsg-st))
                                                      '()
                                                      (list (list (length (imsg-state-pci imsg-st)) 'gray)
-                                                           (list (length (imsg-state-pci imsg-st)) 'gold)))))
+                                                           (list (length (imsg-state-pci imsg-st)) DARKGOLDENROD2)))))
                           (beside (text "Consumed: " 20 'black)
                                   (make-tape-img (imsg-state-pci imsg-st)
                                                  (if (> (length (imsg-state-pci imsg-st)) TAPE-SIZE)
@@ -1935,14 +1936,14 @@ rule are a  (listof rule-struct)
                                              0)
                                          '()))])
       (beside
-       (text (format "The current number of possible computations is ~a. "
+       (text (format "The current number of possible computations is: ~a (without repeated configurations). "
                      (number->string (list-ref (imsg-state-comps imsg-st)
                                                (length (imsg-state-pci imsg-st)))))
              20
              'brown)
        (text "aaaaa" 20 'white)
        (cond [(> (length (imsg-state-pci imsg-st)) (sub1 (imsg-state-max-cmps imsg-st)))
-              (text (format "All computations exceed the cut-off limit: ~a." (imsg-state-max-cmps imsg-st)) 20 'gold)]
+              (text (format "All computations exceed the cut-off limit: ~a." (imsg-state-max-cmps imsg-st)) 20 DARKGOLDENROD2)]
              [(not completed-config?)
               (text "All computations do not consume the entire word and the machine rejects." 20 'red)]
              [(and (empty? (imsg-state-upci imsg-st))
@@ -2967,13 +2968,13 @@ rule are a  (listof rule-struct)
             (not (= (length (filter (λ (w) (equal? w 'b)) a-word))
                     (length (filter (λ (w) (equal? w 'a)) a-word)))))))
 
-;(pda-viz P '(a b))
+#;(pda-viz P '(a a a b b b))
 
 #;(pda-viz a* '(a a a a a)
            (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (= (length w) 3)) (empty? s)))))
 #;(pda-viz aa* '(a a)
            (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (empty? w) (empty? s)))))
-(pda-viz a* '(a a)
+#;(pda-viz a* '(a a)
            (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (empty? w)) (empty? s)))))
 
 (pda-viz a* '(a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a
