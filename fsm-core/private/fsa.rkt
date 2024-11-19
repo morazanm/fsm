@@ -209,16 +209,16 @@
                                  to-super-states
                                  sigma))]
             (append new-rules (compute-ss-dfa-rules
-                                (append (rest to-search-ssts)
-                                                          (filter (λ (ss) (not (member ss (append to-search-ssts ssts))))
-                                                                  (remove-duplicates to-super-states))) ;; to-super-states may have duplicates
+                               (append (rest to-search-ssts)
+                                       (filter (λ (ss) (not (member ss (append to-search-ssts ssts))))
+                                               (remove-duplicates to-super-states))) ;; to-super-states may have duplicates
                                sigma
                                empties
                                rules
                                (cons curr-ss ssts))))))
 
-    (define (compute-ss-name-tbl super-states)
-      (foldr (λ (ss acc) (cons (list ss (gen-state (map second acc))) acc))
+    (define (compute-ss-name-tbl super-states m-states)
+      (foldr (λ (ss acc) (cons (list ss (gen-state (append m-states (map second acc)))) acc))
              '()
              super-states))
 
@@ -268,7 +268,7 @@
                             (append-map
                              (λ (r) (list (first r) (third r)))
                              ss-dfa-rules)))
-             (ss-name-tbl (compute-ss-name-tbl super-states))
+             (ss-name-tbl (compute-ss-name-tbl super-states states))
              ]
         (make-unchecked-dfa (map (λ (ss) (second (assoc ss ss-name-tbl)))
                                  super-states)
