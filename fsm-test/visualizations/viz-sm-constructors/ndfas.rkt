@@ -8,7 +8,9 @@
                               '(A)
                               `((A ,EMP A))))
 
-;; ndfa2dfa works
+;; ndfa2dfa works, i don't think the ndfa2dfa function works properly
+;; ndfa2regexp works
+;; complement 
 
 (define single-tran (make-ndfa '(A)
                                '(a b)
@@ -17,6 +19,7 @@
                                `((A a A))))
 
 ;; ndfa2dfa works
+;; ndfa2regexp works
 
 (define double-loop (make-ndfa '(A)
                                '(a b)
@@ -24,6 +27,7 @@
                                '(A)
                                `((A a A) (A b A))))
 ;; ndfa2dfa works
+;; ndfa2regexp works
 
 (define empties-weird (make-ndfa '(A B)
                                  '(a)
@@ -32,6 +36,7 @@
                                  `((A ,EMP B) (B ,EMP A))))
 
 ;; ndfa2dfa works
+;; ndfa2regexp works
 
 (define AA (make-ndfa '(A B)
                       '(a)
@@ -42,6 +47,7 @@
                         (B a A))))
 
 ;; ndfa2dfa works
+;; ndfa2regexp works
 
 (define WWW (make-ndfa '(W E O)
                        '(a b c f)
@@ -55,6 +61,7 @@
                          (O a W))))
 
 ;; ndfa2dfa works
+;; ndfa2regexp works
 
 (define ABBCCD (make-ndfa '(S L P K)
                           '(a b c d)
@@ -68,6 +75,7 @@
                             (K d K))))
 
 ;; ndfa2dfa works
+;; ndfa2regexp works
 
 (define another-ndfa (make-ndfa '(M X C Z)
                                 '(l k j)
@@ -79,6 +87,9 @@
                                   (X k X)
                                   (X ,EMP Z)
                                   (C j C))))
+
+;; ndfa2dfa works
+;; ndfa2regexp works
 
 ;; L(M) = ab*
 (define M (make-dfa `(S F ,DEAD)
@@ -93,6 +104,9 @@
                       (,DEAD b ,DEAD))
                     'no-dead))
 
+;; ndfa2dfa works
+;; ndfa2regexp works
+
 ;; L(M2) = abb*
 (define M2 (make-dfa `(S A F ,DEAD)
                      '(a b)
@@ -104,6 +118,9 @@
                        (A b F)
                        (F a ,DEAD)
                        (F b F))))
+
+;; ndfa2dfa works
+;; ndfa2regexp works
 
 ;; L = {e} ∪ aa* ∪ ab*
 (define LNDFA (make-ndfa
@@ -117,6 +134,9 @@
                  (A b A)
                  (B a B))))
 
+;; ndfa2dfa works
+;; ndfa2regexp works
+
 (define NO-ABAA
   (make-dfa
    '(S A B C R)
@@ -129,6 +149,9 @@
              (C a R) (C b B)
              (R a R) (R b R))
    'no-dead))
+
+;; ndfa2dfa works
+;; ndfa2regexp works
 
 (define EVEN-A-ODD-B (make-dfa '(S M N P)
                                '(a b)
@@ -144,9 +167,12 @@
                                  (P b M))
                                'no-dead))
 
+;; ndfa2dfa works
+;; ndfa2regexp works
+
 ;; L = e U aa* U ab*
 (define LNDFA1 (make-ndfa
-                `(S A B F ,DEAD)
+                `(S A B F D)
                 '(a b)
                 'S
                 '(A B F)
@@ -155,11 +181,14 @@
                   (S ,EMP F)
                   (A b A)
                   (B a B)
-                  (S b ,DEAD)
-                  (A a ,DEAD)
-                  (B b ,DEAD)
-                  (F a ,DEAD)
-                  (F b ,DEAD))))
+                  (S b D)
+                  (A a D)
+                  (B b D)
+                  (F a D)
+                  (F b D))))
+
+;; ndfa2dfa works
+;; ndfa2regexp works
 
 (define AT-LEAST-ONE-MISSING (make-ndfa '(S A B C)
                                         '(a b c)
@@ -176,6 +205,7 @@
                                           (C b C))))
 
 ;; ndfa2dfa works
+;; ndfa2regexp works
 
 (define ND
   (make-ndfa
@@ -190,3 +220,6 @@
      (C a E)
      (D ,EMP S)
      (E ,EMP S))))
+
+;; ndfa2dfa works
+;; ndfa2regexp works
