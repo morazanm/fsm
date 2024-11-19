@@ -453,7 +453,7 @@
                 (compute-ss-dfa-rules
                  (append (rest to-search-ssts)
                          (filter (λ (ss) (not (member ss (append to-search-ssts ssts))))
-                                 to-super-states))
+                                 (remove-duplicates to-super-states)))
                  sigma
                  empties
                  rules

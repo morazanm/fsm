@@ -209,9 +209,9 @@
                                  to-super-states
                                  sigma))]
             (append new-rules (compute-ss-dfa-rules
-                               (append (rest to-search-ssts)
-                                       (filter (λ (ss) (not (member ss (append to-search-ssts ssts))))
-                                               to-super-states))
+                                (append (rest to-search-ssts)
+                                                          (filter (λ (ss) (not (member ss (append to-search-ssts ssts))))
+                                                                  (remove-duplicates to-super-states))) ;; to-super-states may have duplicates
                                sigma
                                empties
                                rules
@@ -268,7 +268,8 @@
                             (append-map
                              (λ (r) (list (first r) (third r)))
                              ss-dfa-rules)))
-             (ss-name-tbl (compute-ss-name-tbl super-states))]
+             (ss-name-tbl (compute-ss-name-tbl super-states))
+             ]
         (make-unchecked-dfa (map (λ (ss) (second (assoc ss ss-name-tbl)))
                                  super-states)
                             sigma
