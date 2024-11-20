@@ -310,7 +310,7 @@
                                      [prev-image (if (vector-zipper-at-begin? new-imgs)
                                                      'BEGIN
                                                      (load-image (vector-zipper-current (vector-zipper-prev new-imgs))))]
-                                     [next-image (viz-state-curr-image a-vs)])])
+                                     [next-image (load-image (vector-zipper-current (vector-zipper-next new-imgs)))])])
                    (reposition-out-of-bounds-img
                     new-viz-state
                     (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
@@ -334,7 +334,7 @@
                                      [prev-image (if (vector-zipper-at-begin? new-imgs)
                                                      'BEGIN
                                                      (load-image (vector-zipper-current (vector-zipper-prev new-imgs))))]
-                                     [next-image (viz-state-curr-image a-vs)])])
+                                     [next-image (load-image (vector-zipper-current (vector-zipper-next new-imgs)))])])
                    (reposition-out-of-bounds-img
                     new-viz-state
                     (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
@@ -357,7 +357,7 @@
                                      [prev-image (if (vector-zipper-at-begin? new-imgs)
                                                      'BEGIN
                                                      (load-image (vector-zipper-current (vector-zipper-prev new-imgs))))]
-                                     [next-image (viz-state-curr-image a-vs)])])
+                                     [next-image (load-image (vector-zipper-current (vector-zipper-next new-imgs)))])])
                    (reposition-out-of-bounds-img
                     new-viz-state
                     (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
@@ -379,7 +379,7 @@
                                               [prev-image (if (vector-zipper-at-begin? new-imgs)
                                                               'BEGIN
                                                               (load-image (vector-zipper-current (vector-zipper-prev new-imgs))))]
-                                              [next-image (viz-state-curr-image a-vs)])])
+                                              [next-image (load-image (vector-zipper-current (vector-zipper-next new-imgs)))])])
               (reposition-out-of-bounds-img
                new-viz-state
                (calculate-viewport-limits (scale (viz-state-scale-factor a-vs) (new-curr-img))
@@ -446,7 +446,7 @@
                                             [scale-factor DEFAULT-ZOOM-CAP]
                                             [scale-factor-cap DEFAULT-ZOOM-CAP]
                                             [scale-factor-floor NEW-FLOOR]
-                                            [prev-image (viz-state-curr-image a-vs)]
+                                            [prev-image (load-image (vector-zipper-current (vector-zipper-prev new-imgs)))]
                                             [next-image (if (vector-zipper-at-end? new-imgs)
                                                             'END
                                                             (load-image (vector-zipper-current (vector-zipper-next new-imgs))))])])
@@ -470,7 +470,7 @@
                                             [scale-factor NEW-FLOOR]
                                             [scale-factor-cap DEFAULT-ZOOM-CAP]
                                             [scale-factor-floor NEW-FLOOR]
-                                            [prev-image (viz-state-curr-image a-vs)]
+                                            [prev-image (load-image (vector-zipper-current (vector-zipper-prev new-imgs)))]
                                             [next-image (if (vector-zipper-at-end? new-imgs)
                                                             'END
                                                             (load-image (vector-zipper-current (vector-zipper-next new-imgs))))])])
@@ -493,7 +493,7 @@
                                                    (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
                                             [scale-factor-cap DEFAULT-ZOOM-CAP]
                                             [scale-factor-floor NEW-FLOOR]
-                                            [prev-image (viz-state-curr-image a-vs)]
+                                            [prev-image (load-image (vector-zipper-current (vector-zipper-prev new-imgs)))]
                                             [next-image (if (vector-zipper-at-end? new-imgs)
                                                             'END
                                                             (load-image (vector-zipper-current (vector-zipper-next new-imgs))))])])
@@ -515,7 +515,7 @@
                                                                growth-y))]
                                                      [scale-factor-cap DEFAULT-ZOOM-CAP]
                                                      [scale-factor-floor DEFAULT-ZOOM-FLOOR]
-                                                     [prev-image (viz-state-curr-image a-vs)]
+                                                     [prev-image (load-image (vector-zipper-current (vector-zipper-prev new-imgs)))]
                                                      [next-image (if (vector-zipper-at-end? new-imgs)
                                                                      'END
                                                                      (load-image (vector-zipper-current (vector-zipper-next new-imgs))))])])
