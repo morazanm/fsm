@@ -4,7 +4,7 @@
                   get-display-size))
 (provide (all-defined-out))
 
-(define-values (WINDOW-WIDTH WINDOW-HEIGHT) (get-display-size))
+(define-values (WINDOW-WIDTH WINDOW-HEIGHT) (with-handlers ([exn:fail? (lambda (e) (values 1200 500))]) (get-display-size)))
 (define E-SCENE-WIDTH (* 0.95 WINDOW-WIDTH))
 ;(define E-SCENE-HEIGHT (* 0.7 WINDOW-HEIGHT))
 ;(define E-SCENE-BOUNDING-LIMITS (bounding-limits 0 E-SCENE-WIDTH 0 E-SCENE-HEIGHT))
