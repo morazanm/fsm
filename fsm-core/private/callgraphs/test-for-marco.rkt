@@ -440,5 +440,3 @@
                     FBL
                     shiftr
                     FBR))
-
-(ctm-viz COPY COPYL '(@ _ a a a a a a a a a a a a a a _) 16)
