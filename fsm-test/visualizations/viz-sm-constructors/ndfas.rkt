@@ -10,7 +10,9 @@
 
 ;; ndfa2dfa works, i don't think the ndfa2dfa function works properly
 ;; ndfa2regexp works
-;; complement 
+;; complement works
+;; union works
+
 
 (define single-tran (make-ndfa '(A)
                                '(a b)
@@ -20,6 +22,7 @@
 
 ;; ndfa2dfa works
 ;; ndfa2regexp works
+;; complement works
 
 (define double-loop (make-ndfa '(A)
                                '(a b)
@@ -28,6 +31,7 @@
                                `((A a A) (A b A))))
 ;; ndfa2dfa works
 ;; ndfa2regexp works
+;; complement works
 
 (define empties-weird (make-ndfa '(A B)
                                  '(a)
@@ -37,6 +41,7 @@
 
 ;; ndfa2dfa works
 ;; ndfa2regexp works
+;; complement works
 
 (define AA (make-ndfa '(A B)
                       '(a)
@@ -48,6 +53,7 @@
 
 ;; ndfa2dfa works
 ;; ndfa2regexp works
+;; complement works
 
 (define WWW (make-ndfa '(W E O)
                        '(a b c f)
@@ -62,6 +68,7 @@
 
 ;; ndfa2dfa works
 ;; ndfa2regexp works
+;; complement works
 
 (define ABBCCD (make-ndfa '(S L P K)
                           '(a b c d)
@@ -76,6 +83,7 @@
 
 ;; ndfa2dfa works
 ;; ndfa2regexp works
+;; complement works
 
 (define another-ndfa (make-ndfa '(M X C Z)
                                 '(l k j)
@@ -90,6 +98,7 @@
 
 ;; ndfa2dfa works
 ;; ndfa2regexp works
+;; complement works
 
 ;; L(M) = ab*
 (define M (make-dfa `(S F ,DEAD)
@@ -106,6 +115,7 @@
 
 ;; ndfa2dfa works
 ;; ndfa2regexp works
+;; complement works
 
 ;; L(M2) = abb*
 (define M2 (make-dfa `(S A F ,DEAD)
@@ -121,6 +131,7 @@
 
 ;; ndfa2dfa works
 ;; ndfa2regexp works
+;; complement works
 
 ;; L = {e} ∪ aa* ∪ ab*
 (define LNDFA (make-ndfa
@@ -136,6 +147,7 @@
 
 ;; ndfa2dfa works
 ;; ndfa2regexp works
+;; complement works
 
 (define NO-ABAA
   (make-dfa
@@ -152,6 +164,7 @@
 
 ;; ndfa2dfa works
 ;; ndfa2regexp works
+;; complement works
 
 (define EVEN-A-ODD-B (make-dfa '(S M N P)
                                '(a b)
@@ -169,6 +182,7 @@
 
 ;; ndfa2dfa works
 ;; ndfa2regexp works
+;; complement works
 
 ;; L = e U aa* U ab*
 (define LNDFA1 (make-ndfa
@@ -189,6 +203,7 @@
 
 ;; ndfa2dfa works
 ;; ndfa2regexp works
+;; complement works
 
 (define AT-LEAST-ONE-MISSING (make-ndfa '(S A B C)
                                         '(a b c)
@@ -206,6 +221,7 @@
 
 ;; ndfa2dfa works
 ;; ndfa2regexp works
+;; complement works
 
 (define ND
   (make-ndfa
@@ -223,3 +239,4 @@
 
 ;; ndfa2dfa works
 ;; ndfa2regexp works
+;; complement works
