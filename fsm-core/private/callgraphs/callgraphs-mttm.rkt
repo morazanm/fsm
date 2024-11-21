@@ -1,5 +1,4 @@
 #lang racket
-(require 2htdp/image)
 (require  "../../../fsm-gviz/private/lib.rkt" "cg-defs.rkt" "mk-cg-edges-function.rkt" "../sm-getters.rkt" "../mtape-tm.rkt" "../constants.rkt")
 (provide make-mttm-cg-edges dot-nodes-mttm dot-trans-mttm computation-diagram-mttm)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

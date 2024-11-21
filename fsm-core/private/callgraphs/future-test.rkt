@@ -1,5 +1,4 @@
 #lang racket
-;(require "../../interface.rkt")
 (require "../../private/tm.rkt"
          "../../private/macros/constructors.rkt"
          "../../private/constants.rkt"
