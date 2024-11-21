@@ -40,6 +40,8 @@
                                                      (list A-KEY "Tape left")
                                                      (list D-KEY "Tape right"))))
 
+(define TAPE-SIZE 20)
+
 (define beginning-imsg-img
   (let* [(tape '(A B C))
          (start-index 0)
@@ -98,7 +100,7 @@
 
 ;; imsg-struct
 (struct imsg-struct (tapes vars))
-(define TAPE-SIZE 20)
+
 
 ;; graph is a structure that has
 ;; upimgs - unprocessed graph images
