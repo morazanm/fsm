@@ -272,7 +272,7 @@
            (if (< (length (rest x)) 1)
                (list (first (first x)) (string->symbol (first (rest x))) (second (first x)))
                (list (first (first x))
-                     (make-unions (filter (λ (el) (not (equal? el 'ε))) (reverse (rest x))))
+                     (make-unions (reverse (filter (λ (el) (not (equal? el 'ε))) (reverse (rest x)))))
                      (second (first x)))))
          hash-l)))
 
@@ -305,11 +305,11 @@
                         (make-dgraph changed-rules)
                         '())))
     (cons (graph-struct (create-graphic (append (if (not (member DEAD (sm-states M)))
-                                                          (sm-states M)
-                                                          (cons DEAD (remove DEAD (sm-states M)))))
-                                              (make-dgraph changed-rules)
-                                              new-start
-                                              new-final)
+                                                    (sm-states M)
+                                                    (cons DEAD (remove DEAD (sm-states M)))))
+                                        (make-dgraph changed-rules)
+                                        new-start
+                                        new-final)
                         (text "Added starting and final state" 20 'black))
           (create-graphs-helper M))))
 
@@ -338,7 +338,7 @@
       (empty-regexp)
       (if (= 1 (length los))
           (singleton-regexp (symbol->string (first los)))
-          (make-unchecked-union (singleton-regexp (symbol->string (first los))) (make-unions (rest los))))))
+          (simplify-regexp (make-unchecked-union (singleton-regexp (symbol->string (first los))) (make-unions (rest los)))))))
 
 
 ;; make-init-graph

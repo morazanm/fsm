@@ -122,7 +122,7 @@
                 (compute-ss-dfa-rules
                  (append (rest to-search-ssts)
                          (filter (λ (ss) (not (member ss (append to-search-ssts ssts))))
-                                 to-super-states))
+                                 (remove-duplicates to-super-states)))
                  sigma
                  empties
                  rules
@@ -427,7 +427,9 @@
   (let* ([no-duplicates-fedges (remove-duplicates (filter (λ (fedge) (not (member fedge hedges)))
                                                           fedges))]
          [no-duplicates-bledges
-          (filter (λ (bledge) (not (member bledge (append hedges no-duplicates-fedges)))) bledges)])
+          (filter (λ (bledge) (not (member bledge (append hedges no-duplicates-fedges)))) bledges)]
+         )
+    
     (foldl (λ (rule result)
              (add-edge result
                        (second rule)
@@ -455,7 +457,8 @@
                                             (etc-hedges a-etc))
                            (etc-hedges a-etc)
                            (etc-fedges a-etc)
-                           (etc-bledges a-etc))])
+                           (etc-bledges a-etc))]
+         )
     ndfa-edge-graph-x))
 
 ;; create-etcs
@@ -470,9 +473,10 @@
              [new-incl-nodes (add-included-node (etc-incl-nodes a-etc) curr-dfa-ss-edge)]
              [new-hedges
               (compute-all-hedges (sm-rules (etc-M a-etc)) (third curr-dfa-ss-edge) curr-dfa-ss-edge)]
-             [new-fedges (if (empty? new-up-edges)
-                             (append new-hedges (etc-fedges a-etc))
-                             (append (etc-hedges a-etc) (etc-fedges a-etc)))]
+             [new-fedges (append (etc-hedges a-etc) (etc-fedges a-etc))
+                         #;(if (empty? new-up-edges)
+                               (append new-hedges (etc-fedges a-etc))
+                               (append (etc-hedges a-etc) (etc-fedges a-etc)))]
              [new-bledges (remove-edges new-hedges (etc-bledges a-etc))])
         (create-etcs (make-etc new-up-edges
                                new-ad-edges
@@ -674,68 +678,76 @@
 ;; ndfa2dfa-viz
 ;; ndfa -> void
 (define (ndfa2dfa-viz M)
-  (let* ([ss-edges (compute-ss-edges M)]
-         [super-start-state (compute-empties (list (sm-start M)) (sm-rules M) '())]
-         [init-hedges (compute-all-hedges (sm-rules M) super-start-state '())]
-         [etc (make-etc ss-edges
-                        '()
-                        (list (first (first ss-edges)))
-                        M
-                        init-hedges
-                        '()
-                        (remove init-hedges (sm-rules M)))]
-         [low (reverse (create-etcs etc '()))]
-         [ndfa-dgrphs (map make-ndfa-graph low)]
-         [dfa-dgrphs (map (lambda (world)
-                            (create-dfa-graph (etc-ad-edges world)
-                                              (etc-incl-nodes world)
-                                              (ndfa2dfa-finals-only (etc-M world))))
-                          low)]
-         [grphs (combine-lists ndfa-dgrphs dfa-dgrphs)])
-    (run-viz
-     grphs
-     (lambda () (above (graph->bitmap (first (first grphs))) (graph->bitmap (second (first grphs)))))
-     MIDDLE-E-SCENE
-     DEFAULT-ZOOM
-     DEFAULT-ZOOM-CAP
-     DEFAULT-ZOOM-FLOOR
-     (informative-messages draw-imsg (imsg-state (list->zipper low)) (bounding-limits 0 0 0 0))
-     (instructions-graphic E-SCENE-TOOLS
-                           (bounding-limits 0
-                                            (image-width imsg-img)
-                                            E-SCENE-HEIGHT
-                                            (+ E-SCENE-HEIGHT (image-height imsg-img))))
-     (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
-     (create-viz-process-key ["right" viz-go-next right-key-pressed]
-                             ["left" viz-go-prev left-key-pressed]
-                             ["up" viz-go-to-begin up-key-pressed]
-                             ["down" viz-go-to-end down-key-pressed]
-                             ["w" viz-zoom-in identity]
-                             ["s" viz-zoom-out identity]
-                             ["r" viz-max-zoom-out identity]
-                             ["f" viz-max-zoom-in identity]
-                             ["e" viz-reset-zoom identity]
-                             ["wheel-down" viz-zoom-in identity]
-                             ["wheel-up" viz-zoom-out identity])
-     (create-viz-process-tick E-SCENE-BOUNDING-LIMITS
-                              NODE-SIZE
-                              E-SCENE-WIDTH
-                              E-SCENE-HEIGHT
-                              CLICK-BUFFER-SECONDS
-                              ()
-                              ( [ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed]
-                                [ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed]
-                                [ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed]
-                                [ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed]
-                                [W-KEY-DIMS viz-zoom-in identity]
-                                [S-KEY-DIMS viz-zoom-out identity]
-                                [R-KEY-DIMS viz-max-zoom-out identity]
-                                [E-KEY-DIMS viz-reset-zoom identity]
-                                [F-KEY-DIMS viz-max-zoom-in identity]))
-     'ndfa2dfa-viz)))
+  (if (equal? (sm-type M) 'dfa)
+      "The machine is already a dfa."
+      (let* ([ss-edges (compute-ss-edges M)]
+             [super-start-state (compute-empties (list (sm-start M)) (sm-rules M) '())]
+             [init-hedges (compute-all-hedges (sm-rules M) super-start-state '())]
+             [etc (make-etc ss-edges
+                            '()
+                            (list (first (first ss-edges)))
+                            M
+                            init-hedges
+                            '()
+                            (remove init-hedges (sm-rules M)))]
+             [low (reverse (create-etcs etc '()))]
+             [ndfa-dgrphs (map make-ndfa-graph low)]
+             [dfa-dgrphs (map (lambda (world)
+                                (create-dfa-graph (etc-ad-edges world)
+                                                  (etc-incl-nodes world)
+                                                  (ndfa2dfa-finals-only (etc-M world))))
+                              low)]
+             [grphs (combine-lists ndfa-dgrphs dfa-dgrphs)])
+        (run-viz
+         grphs
+         (lambda () (above (graph->bitmap (first (first grphs))) (graph->bitmap (second (first grphs)))))
+         MIDDLE-E-SCENE
+         DEFAULT-ZOOM
+         DEFAULT-ZOOM-CAP
+         DEFAULT-ZOOM-FLOOR
+         (informative-messages draw-imsg (imsg-state (list->zipper low)) (bounding-limits 0 0 0 0))
+         (instructions-graphic E-SCENE-TOOLS
+                               (bounding-limits 0
+                                                (image-width imsg-img)
+                                                E-SCENE-HEIGHT
+                                                (+ E-SCENE-HEIGHT (image-height imsg-img))))
+         (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
+         (create-viz-process-key ["right" viz-go-next right-key-pressed]
+                                 ["left" viz-go-prev left-key-pressed]
+                                 ["up" viz-go-to-begin up-key-pressed]
+                                 ["down" viz-go-to-end down-key-pressed]
+                                 ["w" viz-zoom-in identity]
+                                 ["s" viz-zoom-out identity]
+                                 ["r" viz-max-zoom-out identity]
+                                 ["f" viz-max-zoom-in identity]
+                                 ["e" viz-reset-zoom identity]
+                                 ["wheel-down" viz-zoom-in identity]
+                                 ["wheel-up" viz-zoom-out identity])
+         (create-viz-process-tick E-SCENE-BOUNDING-LIMITS
+                                  NODE-SIZE
+                                  E-SCENE-WIDTH
+                                  E-SCENE-HEIGHT
+                                  CLICK-BUFFER-SECONDS
+                                  ()
+                                  ( [ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed]
+                                    [ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed]
+                                    [ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed]
+                                    [ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed]
+                                    [W-KEY-DIMS viz-zoom-in identity]
+                                    [S-KEY-DIMS viz-zoom-out identity]
+                                    [R-KEY-DIMS viz-max-zoom-out identity]
+                                    [E-KEY-DIMS viz-reset-zoom identity]
+                                    [F-KEY-DIMS viz-max-zoom-in identity]))
+         'ndfa2dfa-viz))))
 
 (define aa-ab
   (make-unchecked-ndfa `(S A B F) '(a b) 'S '(A B F) `((S a A) (S a B) (S ,EMP F) (A a A) (B b B))))
+
+(define double-loop (make-unchecked-ndfa '(A)
+                                         '(a b)
+                                         'A
+                                         '(A)
+                                         `((A a A) (A b A))))
 
 (define AT-LEAST-ONE-MISSING
   (make-unchecked-ndfa
