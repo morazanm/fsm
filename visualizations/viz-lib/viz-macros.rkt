@@ -15,7 +15,7 @@
           create-viz-draw-world
           create-viz-process-tick)
 
-(define-values (WINDOW-WIDTH WINDOW-HEIGHT) (get-display-size))
+(define-values (WINDOW-WIDTH WINDOW-HEIGHT) (with-handlers ([exn:fail? (lambda (e) (values 1200 500))]) (get-display-size)))
 
 (define-syntax (create-viz-process-key stx)
   (syntax-parse stx
