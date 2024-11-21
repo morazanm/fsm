@@ -2629,34 +2629,39 @@ rule are a  (listof rule-struct)
 (define (pda-viz M a-word #:add-dead [add-dead #f] #:max-cmps [max-cmps 100] . invs)
   (if (not (equal? (sm-type M) 'pda))
       (error "The given machine must be a pda.")
-      (let* ([new-M (if add-dead (make-new-M M) M)]
+      (let* (;;M ;;Purpose: A new machine with the dead state if add-dead is true
+             [new-M (if add-dead (make-new-M M) M)]
+             ;;symbol ;;Purpose: The name of the dead state
              [dead-state (if add-dead (last (sm-states new-M)) 'no-dead)]
-             #;[test0 (displayln "hello?")]
-             #;[configs (get-configs a-word (sm-rules new-M) (sm-start new-M) max-cmps (sm-finals new-M))]
-             #;[test1 (displayln "done here")]
-             #;[test2 (displayln (format "hope this works: ~a" (find-num-comps configs)))]
-             ;[config (map config-state-path configs) ]
+             ;;(listof computations) ;;Purpose: All computations that the machine can have
              [computations (get-computations a-word (sm-rules new-M) (sm-start new-M) max-cmps)]
-             [accept-computations (filter (λ (c)
-                                      (and (member? (first (first (computation-LoC c) #;(config-state-path config))) (sm-finals new-M) equal?)
-                                           (empty? (second (first (computation-LoC c) #;(config-state-path config))))
-                                           (empty? (third (first (computation-LoC c) #;(config-state-path config))))))
+             ;;(listof configurations) ;;Purpose: Extracts the configurations from the computation
+             [LoC (map computation-LoC computations)]
+             ;;number ;;Purpose: The length of the word
+             [word-len (length a-word)]
+             ;;(listof computation) ;;Purpose: Extracts all accepting computations
+             [accept-computations (filter (λ (comp)
+                                      (and (member? (first (first (computation-LoC comp))) (sm-finals new-M) equal?)
+                                           (empty? (second (first (computation-LoC comp))))
+                                           (empty? (third (first (computation-LoC comp))))))
                                     computations)]
-             [accepting-config (map (λ (c)
-                                     (make-trace2 (reverse (computation-LoC c))
-                                                  (reverse (computation-LoR c))
+             ;;(listof trace) ;;Purpose: Makes traces from the accepting computations
+             [accepting-traces (map (λ (acc-comp)
+                                     (make-trace2 (reverse (computation-LoC acc-comp))
+                                                  (reverse (computation-LoR acc-comp))
                                                   '()))
                                    accept-computations)]
-             [cut-accept-configs (if (> (length a-word) max-cmps)
-                                     (map last accepting-config)
+             ;;(listof trace) ;;Purpose: Gets the cut off trace if the the word length is greater than the cut
+             [cut-accept-configs (if (> word-len max-cmps)
+                                     (map last accepting-traces)
                                      '())]
+             ;;(listof trace) ;;Purpose: Gets the cut off trace if the the word length is greater than the cut
              [accept-cmps (if (empty? cut-accept-configs)
-                              accepting-config
+                              accepting-traces
                               (map (λ (configs last-reject)
                                      (append configs (list last-reject)))
-                                   accepting-config
+                                   accepting-traces
                                    cut-accept-configs))]
-             
              [reject-configs (filter (λ (config)
                                        (not (member? config accept-computations equal?)))
                                      computations)]
@@ -2665,7 +2670,7 @@ rule are a  (listof rule-struct)
                                                   (reverse (computation-LoR c))
                                                   '()))
                                    reject-configs)]
-             [cut-reject-configs (if (> (length a-word) max-cmps)
+             [cut-reject-configs (if (> word-len max-cmps)
                                      (map last rejecting-configs)
                                      '())]
              [reject-cmps (if (empty? cut-reject-configs)
@@ -2674,16 +2679,15 @@ rule are a  (listof rule-struct)
                                      (append configs (list last-reject)))
                                    rejecting-configs
                                    cut-reject-configs))]
-             [accepting-rules (list->zipper (if (empty? accepting-config)
-                                                '()
-                                                (map trace-rule (first accepting-config))))]
+             ;;(zipperof computation) ;;Purpose: Gets the stack of the first accepting computation (if applicable)
              [stack (list->zipper (remove-empty (if (empty? accept-computations)
                                                     '()
                                                     (reverse (computation-LoC (first accept-computations))))
                                                 '()))]
+             ;;building state struct
              [building-state (building-viz-state a-word
                                                  '()
-                                                 (map computation-LoC computations)
+                                                 LoC
                                                  stack
                                                  accept-cmps
                                                  reject-cmps
@@ -2691,23 +2695,22 @@ rule are a  (listof rule-struct)
                                                  (if (and add-dead (not (empty? invs))) (cons (list dead-state (λ (w s) #t)) invs) invs) 
                                                  dead-state
                                                  max-cmps)]
+             ;;(listof graph-thunk) ;;Purpose: Gets all the graphs needed to run the viz
              [graphs (create-graph-thunks building-state '())]
-             [computation-lens (count-computations a-word (map computation-LoC computations) '())]
-             ;[test1 (displayln (format "configs: ~a" configs))]
-             #;[test0 (void) #;(begin
-                               ;(void)
-                               ;(displayln (map second (map config-state-path configs)))
-                               (displayln (format "test: ~a" (coallesce (map first (append accept-cmps reject-cmps)))))
-                               (displayln (format "test: ~a" (coallesce (map second (append accept-cmps reject-cmps)))))
-                               (displayln (format "test: ~a" (coallesce (map third (append accept-cmps reject-cmps)))))
-                               )]
-             ;[test1 (displayln (format "rejected cmps: ~a" reject-cmps))]
-             #;[test2 (displayln (format "hope this works: ~a" (find-num-comps (append accept-cmps reject-cmps)) 
-                                       #;(length (coallesce (map first (append accept-cmps reject-cmps))))
-                                       ))]
-             
-             
-             
+             ;;(listof computation) ;;Purpose: Gets all the cut off computations if the length of the word is greater than max computations
+             [get-cut-off-comp (if (> word-len max-cmps)
+                               (map first LoC)
+                               '())]
+             ;;(listof computation) ;;Purpose: Makes the cut off computations if the length of the word is greater than max computations
+             [cut-of-comp (if (empty? get-cut-off-comp)
+                              LoC
+                              (map (λ (cut-off-comp comp)
+                                     (cons cut-off-comp comp))
+                                   get-cut-off-comp
+                                   LoC))]
+             ;;(listof number) ;;Purpose: Gets the number of computations for each step
+             [computation-lens (count-computations a-word cut-of-comp '())]
+             ;;(listof number) ;;Purpose: Gets the index of image where an invariant failed
              [inv-configs (map (λ (con)
                                  (length (second (first con))))
                                (return-brk-inv-configs
@@ -2718,23 +2721,6 @@ rule are a  (listof rule-struct)
         ;(struct building-viz-state (upci pci M inv dead))
         ;(struct imsg-state (M upci pci))
         ;;ANCHOR
-        ;reject-configs
-        ;reject-rules
-        ;rejecting-configs
-        ;accept-cmps
-        ;accept-config
-        ;(list (first config) (second config) (third config) (fourth config))
-        ;;(length config)
-        ;reject-cmps
-        ;(map (λ (comp) (reverse (computation-LoR comp))) computations)
-        ;(map (λ (comp) (reverse (computation-LoC comp))) computations)
-        ;(break-up-configs2 a-word (map (λ (comp) (reverse (computation-LoC comp))) computations) '())
-        ;accept-computations
-        ;"done"
-        ;reject-cmps
-        ;(append rejecting-configs accepting-config)
-        ;computation-lens
-       ; inv-configs
         (run-viz graphs
                  (lambda () (graph->bitmap (first graphs)))
                  (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2))
@@ -2806,37 +2792,20 @@ rule are a  (listof rule-struct)
                                             [ L-KEY-DIMS jump-next l-key-pressed]))
                  'pda-viz))))
 
-(define BUGGY-SAME-NUM-AB (make-ndpda '(K H F M)
-                                      '(a b)
-                                      '(a b)
-                                      'K
-                                      '(K)
-                                      `(;((K ,EMP ,EMP) (K ,EMP))
-                                        ((K a    ,EMP) (H (b)))
-                                        ((K b    ,EMP) (F (a)))                                  
-                                        ((H a    ,EMP) (H (b)))
-                                        ((H ,EMP  (b)) (M ,EMP))                                  
-                                        ((F ,EMP  (a)) (M ,EMP))
-                                        ((F b    ,EMP) (F (a)))                                  
-                                        ;((M a    ,EMP) (H ,EMP))
-                                        ((M a    ,EMP) (K ,EMP))
-                                        ;((M b    ,EMP) (F ,EMP))
-                                        ((M b    ,EMP) (K ,EMP))
-                                        )))
 
-(define SAME-NUM-AB (make-ndpda '(K H F M)
+
+(define SAME-NUM-AB (make-ndpda '(K H I)
                                 '(a b)
                                 '(a b)
                                 'K
-                                '(M)
-                                `(((K ,EMP ,EMP) (H ,EMP))
-                                  ((K ,EMP ,EMP) (F ,EMP))
-                                  ((H a ,EMP) (H (b)))
-                                  ((H b (b)) (F ,EMP))
-                                  ((H ,EMP ,EMP) (M ,EMP))
-                                  ((F b ,EMP) (F (a)))
-                                  ((F a (a)) (H ,EMP))
-                                  ((F ,EMP ,EMP) (M ,EMP)))))
+                                '(I)
+                                `(((K ,EMP ,EMP)(H ,EMP))
+                                  ((K a (b))(K ,EMP))
+                                  ((K b (a))(K ,EMP))
+                                  ((H ,EMP ,EMP)(K ,EMP))
+                                  ((H b ,EMP)(H (b)))
+                                  ((H a ,EMP)(H (a)))
+                                  ((H ,EMP ,EMP)(I ,EMP)))))
 
 
 (define P (make-ndpda '(S A B X)
@@ -2970,7 +2939,7 @@ rule are a  (listof rule-struct)
 
 #;(pda-viz P '(a a a b b b))
 
-(pda-viz a* '(a a a a a)
+(pda-viz a* '(a a a a a) #:max-cmps 3
            (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (= (length w) 3)) (not (= (length w) 5)) (empty? s)))))
 #;(pda-viz aa* '(a a)
            (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (empty? w) (empty? s)))))
@@ -2983,7 +2952,7 @@ rule are a  (listof rule-struct)
 
 "note to self:"
 "edit A and D to scroll thru word, not jump to end"
-"macro bug: need to "
+"max-cmps idea: check length of comp to determine if it has been cut-off "
 
 (define pd (make-ndpda '(S A)
                        '(a b)
