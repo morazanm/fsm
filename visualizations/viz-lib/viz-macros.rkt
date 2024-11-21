@@ -4,7 +4,8 @@
                      "viz-state.rkt"
                      racket/struct-info)
          (only-in racket/gui/base
-                  get-display-size)
+                  get-display-size
+                  get-display-count)
          2htdp/universe
          2htdp/image
          "viz-state.rkt"
@@ -15,7 +16,11 @@
           create-viz-draw-world
           create-viz-process-tick)
 
-(define-values (WINDOW-WIDTH WINDOW-HEIGHT) (with-handlers ([exn:fail? (lambda (e) (values 1200 500))]) (get-display-size)))
+(define-values (WINDOW-WIDTH WINDOW-HEIGHT) (if (>= (get-display-count) 1)
+                                                (with-handlers ([exn:fail? (lambda (e) (values 1200 500))]) (get-display-size))
+                                                (values 1200 500)
+                                                )
+                                                )
 
 (define-syntax (create-viz-process-key stx)
   (syntax-parse stx
