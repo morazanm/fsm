@@ -310,8 +310,6 @@
          [hedges (dgrph-hedges a-dgrph)]
          [invariant-nts (map first invariants)]
          [producing-nodes (map (lambda (edge) (first edge)) (append* levels))]
-         
-         
          [invariant-nodes
           (cons root-node
                 (append-map
@@ -918,8 +916,7 @@
                         graphs
                         broken-invariants
                         #:special-graphs? 'cfg
-                        #:rank-node-lst rank-node-lvls)))))
-  )
+                        #:rank-node-lst rank-node-lvls))))))
 
 (define numb>numa
   (make-unchecked-cfg

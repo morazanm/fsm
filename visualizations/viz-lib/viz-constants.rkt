@@ -6,8 +6,8 @@
 
 (define-values (WINDOW-WIDTH WINDOW-HEIGHT) (get-display-size))
 (define E-SCENE-WIDTH (* 0.95 WINDOW-WIDTH))
-(define E-SCENE-HEIGHT (* 0.7 WINDOW-HEIGHT))
-(define E-SCENE-BOUNDING-LIMITS (bounding-limits 0 E-SCENE-WIDTH 0 E-SCENE-HEIGHT))
+;(define E-SCENE-HEIGHT (* 0.7 WINDOW-HEIGHT))
+;(define E-SCENE-BOUNDING-LIMITS (bounding-limits 0 E-SCENE-WIDTH 0 E-SCENE-HEIGHT))
 (define FONT-SIZE 20)
 (define TAPE-SIZE 42)
 (define HEDGE-COLOR 'violet)
@@ -19,7 +19,7 @@
 (define INS-TOOLS-BUFFER 1)
 (define EXTRA-HEIGHT-FROM-CURSOR 4)
 (define NODE-SIZE 50)
-(define MIDDLE-E-SCENE (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2)))
+;(define MIDDLE-E-SCENE (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2)))
 
 (define DEFAULT-ZOOM 1)
 (define DEFAULT-ZOOM-FLOOR 1)

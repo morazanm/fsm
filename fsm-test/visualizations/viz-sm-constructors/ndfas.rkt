@@ -98,7 +98,7 @@
                '(a b)
                'S
                '(A B F)
-               '((S a A)
+               `((S a A)
                 (S a B)
                 (S ,EMP F)
                 (A b A)
@@ -133,11 +133,11 @@
 
 ;; L = e U aa* U ab*
 (define LNDFA1 (make-ndfa
-                '(S A B F ,DEAD)
+                `(S A B F ,DEAD)
                 '(a b)
                 'S
                 '(A B F)
-                '((S a A)
+                `((S a A)
                   (S a B)
                   (S ,EMP F)
                   (A b A)
@@ -168,7 +168,7 @@
    '(a b)
    'S
    '(S)
-   '((S a A)
+   `((S a A)
      (S a B)
      (A b C)
      (B b D)
