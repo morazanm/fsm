@@ -3,7 +3,7 @@
          (only-in racket/gui
                   get-display-size
                   get-display-count))
-(provide (all-defined-out))
+(provide (all-defined-out)) 
 
 (define-values (WINDOW-WIDTH WINDOW-HEIGHT) (if (>= (get-display-count) 1)
                                                 (with-handlers ([exn:fail? (lambda (e) (values 1200 500))]) (get-display-size))
