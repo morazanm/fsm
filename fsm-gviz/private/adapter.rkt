@@ -1,6 +1,10 @@
-#lang racket
-(require "lib.rkt")
-(require 2htdp/image)
+#lang racket/base
+(require "lib.rkt"
+         2htdp/image
+         racket/contract/base
+         racket/match
+         racket/list
+         racket/string)
 
 ;; structure of a ndfa/dfa rule
 (define (dfa/ndfa-rule? r)

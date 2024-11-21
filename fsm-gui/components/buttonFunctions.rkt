@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 #|
 Created by Joshua Schappel on 12/19/19
 This file contains all the functions associated with a button
@@ -18,6 +18,9 @@ This file contains all the functions associated with a button
   "../../fsm-core/private/constants.rkt"
   "../../fsm-core/private/pda.rkt"
   "../../fsm-core/private/pda.rkt"
+  racket/string
+  racket/list
+  racket/match
   )
 
 (require racket/pretty)

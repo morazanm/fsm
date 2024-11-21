@@ -2,7 +2,7 @@
 ; Copyright (C) 2015 by Marco T. Morazan
 ; Written by: Marco T. Morazan, 2015
 
-#lang racket
+#lang racket/base
 
 (require
   "private/fsa.rkt"
@@ -36,7 +36,10 @@
   "../visualizations/viz-grammar-constructors/cfg-viz.rkt"
   "../visualizations/viz-grammar-constructors/csg-viz.rkt"
   "private/Chomsky-Greibach-CFG-Transformations/chomsky.rkt"
-  "private/Chomsky-Greibach-CFG-Transformations/greibach.rkt")
+  "private/Chomsky-Greibach-CFG-Transformations/greibach.rkt"
+  racket/list
+  racket/bool
+  racket/contract)
   
 (provide
  check-machine

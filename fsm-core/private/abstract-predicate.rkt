@@ -1,7 +1,9 @@
-(module abstract-predicate racket
-  (require "rule-pred.rkt" "constants.rkt"
-           "sm-getters.rkt" "fsa.rkt" "tm.rkt" "pda.rkt"
-           "grammar-getters.rkt"
+#lang racket/base
+  (require "rule-pred.rkt"
+           "constants.rkt"
+           racket/local
+           racket/list
+           racket/bool
            )
   (provide check-machine check-grammar) 
 
@@ -496,4 +498,3 @@
                                                                               #t)
                                                                             (display rule-errors))
                                           ))))])))])))
-  )

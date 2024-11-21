@@ -8,8 +8,12 @@
 
 ; A superstate is a (listof state)
 
-(module state racket
-  (require "misc.rkt" "constants.rkt" "rules.rkt" "string.rkt")
+#lang racket/base
+  (require "misc.rkt"
+           "constants.rkt"
+           "rules.rkt"
+           "string.rkt"
+           racket/list)
   (provide get-result minus-set empties get-final-super-states compute-P 
            compute-super-states extract-sstates extract-final-ss superstate->state
            union-states)
@@ -112,5 +116,3 @@
     (displayln (format "ss: ~s\n" ss))
     (generate-symbol 'X '(X))
     #;(string->symbol (lostr->string (los->lostr ss))))
-  
-  )

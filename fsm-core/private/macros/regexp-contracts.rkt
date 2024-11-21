@@ -1,7 +1,9 @@
-(module constructors racket
+#lang racket/base
   (require "../regexp.rkt"
            "error-formatting.rkt"
            racket/contract
+           racket/list
+           racket/bool
            )
   (provide singleton-regexp/c
            concat-regexp/c
@@ -67,4 +69,3 @@
   (define kleenestar-regexp/c
     (->i ([r1 (valid-regexp/c "The argument to kleenestar-regexp must be a regular expression, but found")])
          [result kleenestar-regexp?]))
-  )

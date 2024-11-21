@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 (require "../../fsm-gviz/private/lib.rkt"
          2htdp/image
          "../../fsm-core/private/misc.rkt"
@@ -12,7 +12,9 @@
          "../viz-lib/bounding-limits.rkt"
          "../../fsm-core/private/regexp.rkt"
          "../viz-lib/viz-imgs/cursor.rkt"
-         "../viz-lib/zipper.rkt")
+         "../viz-lib/zipper.rkt"
+         racket/list
+         racket/function)
 
 (provide regexp2ndfa-viz)
 

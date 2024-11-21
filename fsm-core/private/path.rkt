@@ -6,19 +6,18 @@
 
 ; A path is a (listof config).
 
-(module rules racket
-  (require "configuration.rkt" "word.rkt")
+#lang racket/base
+(require "configuration.rkt" "word.rkt")
   
-  (provide mk-path convert-path)
+(provide mk-path convert-path)
   
-  ; config path --> path
-  (define (mk-path c p) (cons c p))
+; config path --> path
+(define (mk-path c p) (cons c p))
   
-  ; path word --> (listof (list word state))
-  (define (convert-path p w) 
-    (map (lambda (c) 
-           (cond [(symbol? c) c]
-                 [(= (wi-config c) (length w)) (list null (state-config c))]
-                 [else (list (get-subword w (wi-config c)) (state-config c))])) 
-         p))
-  )
+; path word --> (listof (list word state))
+(define (convert-path p w) 
+  (map (lambda (c) 
+         (cond [(symbol? c) c]
+               [(= (wi-config c) (length w)) (list null (state-config c))]
+               [else (list (get-subword w (wi-config c)) (state-config c))])) 
+       p))
