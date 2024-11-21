@@ -1,6 +1,6 @@
 #lang racket/base
 (require "bounding-limits.rkt"
-         (only-in racket/gui/base
+         (only-in racket/gui
                   get-display-size
                   get-display-count))
 (provide (all-defined-out))

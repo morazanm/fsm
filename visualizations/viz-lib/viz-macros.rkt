@@ -3,7 +3,7 @@
                      racket/base
                      "viz-state.rkt"
                      racket/struct-info)
-         (only-in racket/gui/base
+         (only-in racket/gui
                   get-display-size
                   get-display-count)
          2htdp/universe
