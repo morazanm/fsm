@@ -6,7 +6,6 @@
 
   (require rackunit
            "fsm-core/interface.rkt"
-           "fsm-gviz/interface.rkt"
            "fsm-gui/interface.rkt"
            "visualizations/viz-sm-constructors/viz-complement.rkt"
            "visualizations/viz-sm-constructors/viz-concat.rkt"
