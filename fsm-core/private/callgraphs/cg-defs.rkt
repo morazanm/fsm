@@ -1,8 +1,6 @@
-#lang racket/base
+#lang racket
 
-(require rackunit
-         racket/list
-         racket/local)
+(require rackunit)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

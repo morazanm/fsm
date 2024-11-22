@@ -1,9 +1,10 @@
-#lang racket/base
+#lang racket
 (require 2htdp/image
          "../inv.rkt"
          "../globals.rkt"
-         "../../fsm-gviz/interface.rkt"
-         racket/bool)
+         "../structs/state.rkt"
+         "../structs/machine.rkt"
+         "../../fsm-gviz/interface.rkt")
 
 (provide
  scaled-graph

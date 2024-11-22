@@ -1,4 +1,4 @@
-#lang racket/base
+#lang racket
 (require 2htdp/image)
 (provide resize-sm-image)
 ;; resize-image :: image -> int -> int -> image

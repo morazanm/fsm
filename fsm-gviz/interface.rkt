@@ -1,13 +1,11 @@
-#lang racket/base
+#lang racket
 (require "private/adapter.rkt"
          "private/lib.rkt"
          "private/dot.rkt"
          "../fsm-core/private/sm-getters.rkt"
          "../fsm-gui/structs/machine.rkt"
          "../fsm-gui/structs/state.rkt"
-         2htdp/image
-         racket/match
-         racket/contract/base)
+         2htdp/image)
 
 ; *Color Blind States*
 ; 0 -> default colors

@@ -1,4 +1,4 @@
-#lang racket/base
+#lang racket
 
 (require "sm-getters.rkt" "fsa.rkt" "pda.rkt" "tm.rkt" "mtape-tm.rkt")
 

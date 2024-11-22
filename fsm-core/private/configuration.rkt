@@ -5,43 +5,35 @@
 
 ;;; CONFIG
 
-#lang racket/base
-
-(require racket/bool)
-
-(provide wi-config
-         state-config
-         mk-config
-         member-config?
-         first-config-path
-         rest-path
-         empty-path?
-         printable-path)
+(module config racket
+  (provide wi-config state-config mk-config member-config? first-config-path rest-path empty-path?
+           printable-path)
   
-; A configuration (config) is (list word-index state).
-; A path is a (listof config).
+  ; A configuration (config) is (list word-index state).
+  ; A path is a (listof config).
   
-; config --> wi
-(define wi-config car)
+  ; config --> wi
+  (define wi-config car)
   
-; config --> state
-(define state-config cadr)
+  ; config --> state
+  (define state-config cadr)
   
-; wi state --> config
-(define (mk-config a-wi a-state) (list a-wi a-state))
+  ; wi state --> config
+  (define (mk-config a-wi a-state) (list a-wi a-state))
   
-; config (listof config) --> boolean
-(define (member-config? c l) (not (false? (member c l))))
+  ; config (listof config) --> boolean
+  (define (member-config? c l) (not (false? (member c l))))
   
-; path --> boolean
-(define empty-path? null?)
+  ; path --> boolean
+  (define empty-path? null?)
   
-; path --> config
-(define first-config-path car)
+  ; path --> config
+  (define first-config-path car)
   
-; path --> path
-(define rest-path cdr)
+  ; path --> path
+  (define rest-path cdr)
   
-; word path --> (listof (list word state))
-(define (printable-path w p)
-  (reverse (map (lambda (c) (list (list-tail w (wi-config c)) (state-config c))) p)))
+  ; word path --> (listof (list word state))
+  (define (printable-path w p)
+    (reverse (map (lambda (c) (list (list-tail w (wi-config c)) (state-config c))) p)))
+  )

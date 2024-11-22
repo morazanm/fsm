@@ -1,8 +1,5 @@
-#lang racket/base
-(require "../../../fsm-gviz/private/lib.rkt"
-         "../sm-getters.rkt"
-         racket/list
-         racket/string)
+#lang racket
+(require "../../../fsm-gviz/private/lib.rkt" "../sm-getters.rkt")
 
 (provide transition-diagram-mttm)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

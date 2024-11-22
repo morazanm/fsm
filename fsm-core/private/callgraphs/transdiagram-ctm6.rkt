@@ -1,7 +1,5 @@
-#lang racket/base
-(require "../../../fsm-gviz/private/lib.rkt"
-         "../tm.rkt"
-         racket/list)
+#lang racket
+(require "../../../fsm-gviz/private/lib.rkt" "../tm.rkt")
 (provide computation-edges transition-diagram-ctm dot-nodes dot-edges clean-list parse-program)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; structs

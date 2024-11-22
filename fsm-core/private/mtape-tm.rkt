@@ -1,6 +1,6 @@
-#lang racket/base
-  (require "constants.rkt"
-           racket/list)
+
+(module mttm racket
+  (require "constants.rkt" "misc.rkt" "word.rkt")
   (provide make-unchecked-mttm
            mttm-get-states
            mttm-get-sigma
@@ -128,7 +128,7 @@
     ((M 'show-transitions) w (if (null? t1pos) 0 (car t1pos))))
 
   
- ; closes module
+  ) ; closes module
 
 ;; 1 tape
 ;#;(define M1 (make-mttm '(S Y N)

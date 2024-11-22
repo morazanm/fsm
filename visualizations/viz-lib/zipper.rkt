@@ -1,5 +1,4 @@
-#lang racket/base
-(require racket/list)
+#lang racket
 (provide (all-defined-out))
 
 ;; A zipper is a data structure that allows for a "text cursor" of sorts through other data structures

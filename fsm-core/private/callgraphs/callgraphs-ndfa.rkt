@@ -1,12 +1,8 @@
-#lang racket/base
+#lang racket
 (require "../../../fsm-gviz/private/lib.rkt"
-         "../sm-getters.rkt"
-         "../misc.rkt"
-         "../constants.rkt"
-         "cg-defs.rkt"
-         "mk-cg-edges-function.rkt"
-         "../sm-apply.rkt"
-         racket/list)
+         "../sm-getters.rkt" "../misc.rkt" "../constants.rkt"
+         "cg-defs.rkt" "mk-cg-edges-function.rkt"
+         "../sm-apply.rkt")
 (provide make-ndfa-cg-edges dot-nodes-fsa dot-trans-fsa computation-diagram-fsa)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; make-ndfa-cg-edges 

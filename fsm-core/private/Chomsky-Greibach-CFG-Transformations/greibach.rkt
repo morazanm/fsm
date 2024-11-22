@@ -1,10 +1,5 @@
-#lang racket/base
-(require "chomsky.rkt"
-         "../grammar-getters.rkt"
-         "../misc.rkt"
-         "../constants.rkt"
-         "../cfg.rkt"
-         racket/list)
+#lang racket
+(require "chomsky.rkt" "../grammar-getters.rkt" "../misc.rkt" "../constants.rkt" "../cfg.rkt")
 (provide greibach)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

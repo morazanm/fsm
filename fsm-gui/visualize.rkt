@@ -1,4 +1,4 @@
-#lang racket/base
+#lang racket
 #| *** FSM Graphical User Interface ***
     Developed by: Marco T. Morazan, Joshua Schappel, and Sachin Mahashabde in 2019. (names in no particular order)
     Goal: Build a GUI for the fsm library in order to help students be able to visualize the machines that the library
@@ -24,9 +24,7 @@
   "../fsm-core/private/constants.rkt"
   "../fsm-core/private/sm-getters.rkt"
   "../fsm-gviz/interface.rkt"
-  racket/list
-  racket/match
-  racket/math
+  "../fsm-core/private/pda.rkt"
   )
 
 (provide

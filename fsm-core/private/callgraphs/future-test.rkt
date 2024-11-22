@@ -1,8 +1,7 @@
-#lang racket/base
+#lang racket
 (require "../../private/tm.rkt"
          "../../private/macros/constructors.rkt"
          "../../private/constants.rkt"
-         racket/contract
          )
 (provide COPY COPYL2)
 

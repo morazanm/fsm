@@ -1,4 +1,4 @@
-#lang racket/base
+(module sm-getters racket
   (provide sm-rules
            sm-states
            sm-start
@@ -58,3 +58,4 @@
     (if (or (eq? t1 'mttm) (eq? t1 'mttm-language-recognizer))
         (M 'get-numtapes)
         1)))
+  )

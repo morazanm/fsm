@@ -1,9 +1,7 @@
-#lang racket/base
+#lang racket
 (require
   "../globals.rkt"
   "../../fsm-core/private/constants.rkt"
-  racket/match
-  racket/list
   )
 
 (provide getCurRule)

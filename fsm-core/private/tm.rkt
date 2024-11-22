@@ -2,11 +2,8 @@
 ; Copyright (C) 2020 by Marco T. Morazan
 ; Written by: Marco T. Morazan
 
-#lang racket/base
-  (require "constants.rkt"
-           "misc.rkt"
-           "word.rkt"
-           racket/list)
+(module tm racket 
+  (require "constants.rkt" "misc.rkt" "word.rkt")
   (provide tm-rename-states
            make-unchecked-tm
            combine-tms
@@ -537,4 +534,5 @@
   (define tm-rename-sts-WriteI (tm-rename-states (tm-getstates tm-WriteI) tm-WriteI))
 
   ;k(tm-apply tm-rename-sts-WriteI `(i ,BLANK i ,BLANK i i ,BLANK) 1)
-; closes module
+
+  ) ; closes module

@@ -1,4 +1,4 @@
-#lang racket/base
+#lang racket
 
 #|
 This file was created by Joshua Schappel on 12/19/19
@@ -10,8 +10,7 @@ This file was created by Joshua Schappel on 12/19/19
   "msgWindow.rkt"
   "posn.rkt"
   "../globals.rkt"
-  "../graphViz/main.rkt"
-  racket/list)
+  "../graphViz/main.rkt")
 
 (provide
  (struct-out world)

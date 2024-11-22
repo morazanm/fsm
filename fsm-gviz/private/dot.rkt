@@ -1,5 +1,4 @@
-#lang racket/base
-(require racket/match)
+#lang racket
 ;; NOTE: Some of the code in this file was copied from
 ;; https://github.com/racket/gui/blob/master/gui-lib/mrlib/private/dot.rkt
 (provide

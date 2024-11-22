@@ -1,4 +1,4 @@
-#lang racket/base
+#lang racket
 #|
 Created by Joshua Schappel on 12/19/19
   This field contains the runProgram function. That checks a given machine and determines if the program should run
@@ -17,8 +17,7 @@ Created by Joshua Schappel on 12/19/19
          "../structs/machine.rkt"
          "../structs/posn.rkt"
          "../structs/msgWindow.rkt"
-         "../globals.rkt"
-         racket/list)
+         "../globals.rkt")
 
 
 (provide runProgram)

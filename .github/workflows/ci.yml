@@ -21,7 +21,7 @@ jobs:
         uses: actions/checkout@master
 
       - name: Install Racket and Raco 
-        uses: Bogdanp/setup-racket@v1.11 # see https://github.com/Bogdanp/setup-racket for more info
+        uses: Bogdanp/setup-racket@v1.8.1 # see https://github.com/Bogdanp/setup-racket for more info
         with:
           architecture: 'x64'
           distribution: 'full' # or: 'minimal'
@@ -29,11 +29,7 @@ jobs:
           version: ${{ matrix.racket-version }} # Taken from `racket-version: ["stable"]`
       # Build FSM
       - name: Build FSM DSL
-        uses: coactions/setup-xvfb@v1.0.1
-        with:
-          run: raco pkg install
+        run: xvfb-run raco pkg install
       # Kick off the tests
       - name: Run tests
-        uses: coactions/setup-xvfb@v1.0.1
-        with:
-          run: raco test -t -j 4 fsm-test fsm-gui fsm-core fsm-gviz
+        run: xvfb-run -a raco test -t -j 4 fsm-test fsm-gui fsm-core fsm-gviz

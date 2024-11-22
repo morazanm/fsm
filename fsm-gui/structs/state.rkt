@@ -1,7 +1,6 @@
-#lang racket/base
+#lang racket
 
-(require "posn.rkt"
-         racket/math)
+(require "posn.rkt")
 
 ;; ------- machine.rkt -------
 ;; This file contains the structure for fsm state

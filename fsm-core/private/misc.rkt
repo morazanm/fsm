@@ -2,10 +2,8 @@
 ; Copyright (C) 2015 by Marco T. Morazan and Rosario Antunez
 ; Written by: Marco T. Morazan and Rosario Antunez, 2015
 
-#lang racket/base
-  (require "string.rkt"
-           "constants.rkt"
-           racket/list)
+(module misc racket
+  (require "string.rkt" "constants.rkt")
   (provide #;remove-duplicates los->symbol generate-symbol symbol-upcase equiv-los? 
            not-in-l2 symbol->list sublist subst-in-list gen-symbol get-differences
            symbol->fsmlos gen-state gen-nt)
@@ -147,4 +145,4 @@
         seed
         (helper)))
   
-  ; closes module
+  ) ; closes module

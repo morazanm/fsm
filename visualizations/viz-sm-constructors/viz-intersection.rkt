@@ -1,4 +1,4 @@
-#lang racket/base
+#lang racket
 (require "../../fsm-gviz/interface.rkt"
          2htdp/image
          "../../fsm-core/private/state.rkt"
@@ -16,9 +16,7 @@
          "../viz-lib/viz.rkt"
          "../viz-lib/bounding-limits.rkt"
          "../viz-lib/viz-imgs/cursor.rkt"
-         "../viz-lib/zipper.rkt"
-         racket/list
-         racket/function)
+         "../viz-lib/zipper.rkt")
 
 (provide intersection-viz)
 

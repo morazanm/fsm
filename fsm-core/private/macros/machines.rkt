@@ -1,6 +1,5 @@
-#lang racket/base
+#lang racket
 (require (for-syntax
-          racket/base
           racket/syntax
           syntax/stx
           syntax/parse
@@ -8,8 +7,7 @@
           racket/list
           racket/string
           syntax/to-string
-          racket/match)
-         )
+          racket/match))
 
 (begin-for-syntax
   ;; member-stx :: syntax -> [syntax] -> boolean

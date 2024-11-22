@@ -1,10 +1,8 @@
-#lang racket/base
+#lang racket
 (require
   "globals.rkt"
   "./structs/machine.rkt"
-  "./structs/state.rkt"
-  racket/bool
-  racket/list)
+  "./structs/state.rkt")
 
 (provide determin-inv determin-mttm-inv)
 

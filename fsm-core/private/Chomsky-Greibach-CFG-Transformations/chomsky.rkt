@@ -1,9 +1,5 @@
-#lang racket/base
-(require "../grammar-getters.rkt"
-         "../misc.rkt"
-         "../constants.rkt"
-         "../cfg.rkt"
-         racket/list)
+#lang racket
+(require "../grammar-getters.rkt" "../misc.rkt" "../constants.rkt" "../cfg.rkt")
 (provide chomsky rm-empties)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Chomsky Normal Form

@@ -2,10 +2,8 @@
 ; Copyright (C) 2015 by Marco T. Morazan and Rosario Antunez
 ; Written by: Marco T. Morazan and Rosario Antunez, 2015
 
-#lang racket/base
-  (require "constants.rkt"
-           "misc.rkt"
-           racket/list)
+(module csg racket
+  (require "constants.rkt" "misc.rkt")
   (provide csg make-unchecked-csg csg-rule csg-getsigma csg-getv csg-getrules csg-getstart csg-get-unparsed-rules 
            csg-rule-lhs csg-rule-rhs csg? csg-rename-nts csg-derive csg-union csg-concat)
   
@@ -220,4 +218,5 @@
                                  'S))
 
   (define G4 (csg-rename-nts (csg-getv G1) G2))
-  ;;; closes module
+  
+  ) ;;; closes module

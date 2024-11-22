@@ -1,9 +1,7 @@
-#lang racket/base
+#lang racket
 ;; This is a install script to help switch the fsm install path between local and prod
 
-(require racket/runtime-path
-         racket/system
-         racket/path)
+(require racket/runtime-path)
 
 
 (define-runtime-path file-dir "install.rkt")

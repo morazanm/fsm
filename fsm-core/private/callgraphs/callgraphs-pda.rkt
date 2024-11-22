@@ -1,14 +1,7 @@
-#lang racket/base
-(require "../../../fsm-gviz/private/lib.rkt"
-         "cg-defs.rkt"
-         "mk-cg-edges-function.rkt"
-         "../sm-getters.rkt"
-         "../misc.rkt"
-         "../constants.rkt"
-         "../sm-apply.rkt"
-         racket/list
-         racket/local
-         racket/string)
+#lang racket
+(require "../../../fsm-gviz/private/lib.rkt" "cg-defs.rkt"
+         "mk-cg-edges-function.rkt" "../sm-getters.rkt" "../misc.rkt" "../constants.rkt"
+         "../sm-apply.rkt")
 (provide make-pda-cg-edges dot-nodes-pda dot-trans-pda computation-diagram-pda)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; make-pda-cg-edges

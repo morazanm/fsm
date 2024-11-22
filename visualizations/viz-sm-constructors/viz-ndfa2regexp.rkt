@@ -1,4 +1,4 @@
-#lang racket/base
+#lang racket
 
 (require 2htdp/image
          "../../fsm-gviz/private/lib.rkt"
@@ -18,9 +18,7 @@
          "../../fsm-core/private/regexp.rkt"
          "../viz-lib/zipper.rkt"
          "../viz-lib/viz-imgs/cursor.rkt"
-         "../../sm-graph.rkt"
-         racket/list
-         racket/function)
+         "../../sm-graph.rkt")
 
 (provide ndfa2regexp-viz)
 

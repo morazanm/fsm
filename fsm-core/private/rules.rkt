@@ -12,9 +12,8 @@
 
 ; A superstate rule (ssr) is a (list superstate symbol superstate).
 
-#lang racket/base
-  (require "constants.rkt" "misc.rkt"
-           racket/list)
+(module rules racket
+  (require "string.rkt" "constants.rkt" "misc.rkt")
   
   (provide to-state-fsarule from-state-fsarule symb-fsarule get-applicable-fsarules 
            empty-rules? new-dead-rules filter-rules convert2rules mk-fsarule)
@@ -59,3 +58,6 @@
                            (cadr r)
                            (los->symbol (caddr r))))
          rls))
+  
+  
+  )
