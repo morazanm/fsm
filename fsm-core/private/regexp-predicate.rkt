@@ -1,5 +1,7 @@
-(module regexp-predicate racket
-  (require "regexp.rkt")
+#lang racket/base
+  (require "regexp.rkt"
+           racket/local
+           racket/list)
   (provide valid-regexp?)
 
   ;valid-regexp?: string --> boolean/listof errors
@@ -65,4 +67,3 @@
                   ])
       )
     )
-  )

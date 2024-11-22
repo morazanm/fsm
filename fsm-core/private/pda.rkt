@@ -2,8 +2,12 @@
 ; Copyright (C) 2015 by Marco T. Morazan and Rosario Antunez
 ; Written by: Marco T. Morazan and Rosario Antunez, 2015
 
-(module pda racket
-  (require "word.rkt" "constants.rkt" "cfg.rkt" "misc.rkt")
+#lang racket/base
+  (require "word.rkt"
+           "constants.rkt"
+           "cfg.rkt"
+           "misc.rkt"
+           racket/list)
   
   (provide make-unchecked-ndpda rename-states-pda cfg->pda pda->cfg
            pdarule-fromstate pdarule-readsymb pdarule-pop pdarule-tostate pdarule-push
@@ -607,6 +611,4 @@
           )
       )
     )
-  
-  ); closes module
-
+; closes module

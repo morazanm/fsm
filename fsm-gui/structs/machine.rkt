@@ -1,4 +1,5 @@
-#lang racket
+#lang racket/base
+(require racket/match)
 
 ;; ------- machine.rkt -------
 ;; This file contains the structure for a fsm machine (dfa, ndfa, pda, ...) 

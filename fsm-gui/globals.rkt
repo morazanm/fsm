@@ -1,4 +1,6 @@
-#lang racket
+#lang racket/base
+(require racket/bool
+         racket/list)
 #|
 Created by Joshua Schappel on 12/19/19
    This file contains global variables for the visualization tool and its components

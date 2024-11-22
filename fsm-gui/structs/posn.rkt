@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 
 ;; ***** posn.rk *****
 ;; This file holds the functionality for a posn structure

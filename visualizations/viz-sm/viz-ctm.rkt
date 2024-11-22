@@ -1,8 +1,7 @@
-#lang racket
+#lang racket/base
 
 (require "../../fsm-gviz/private/lib.rkt"
          "../../fsm-core/private/tm.rkt"
-         2htdp/universe
          2htdp/image
          "../../fsm-core/private/callgraphs/transdiagram-ctm6.rkt"
          "../../visualizations/viz-lib/zipper.rkt"
@@ -15,6 +14,8 @@
          "../../visualizations/viz-lib/viz-macros.rkt"
          "../../visualizations/viz-lib/viz-state.rkt"
          "../../visualizations/viz-lib/viz.rkt"
+         racket/list
+         racket/function
          )
 
 
