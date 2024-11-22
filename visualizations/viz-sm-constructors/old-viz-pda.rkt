@@ -1192,39 +1192,45 @@ visited is a (listof configuration)
 
          ;;(listof rule-structs)
          ;;Purpose: Extracts the rules from the first of all configurations
-         [r-config (if (empty? (building-viz-state-reject-configs a-vs))
+         [r-config (map (λ (configs) (trace-rule (first configs))) (building-viz-state-reject-configs a-vs))
+                   #;(if (empty? (building-viz-state-reject-configs a-vs))
                        (building-viz-state-reject-configs a-vs)
-                       (map (λ (configs) (trace-rule (first configs)))
-                            (filter (λ (configs)
-                                      (not (empty? configs))) (building-viz-state-reject-configs a-vs))))]
-        
+                       (map (λ (configs) (trace-rule (first configs))) (building-viz-state-reject-configs a-vs)))]
+         
+         [current-cons (map (λ (comps) (trace-config (first comps)))
+                            (append (building-viz-state-accept-configs a-vs) (building-viz-state-reject-configs a-vs)))]
+         
          ;;(listof rule-structs)
          ;;Purpose: Extracts the rules from the first of the accepting computations
-         [a-configs (if (empty? (building-viz-state-accept-configs a-vs))
+         [a-configs (map (λ (configs) (trace-rule (first configs))) (building-viz-state-accept-configs a-vs))
+                    #;(if (empty? (building-viz-state-accept-configs a-vs))
                         (building-viz-state-accept-configs a-vs)
                         (map (λ (configs) (trace-rule (first configs))) (building-viz-state-accept-configs a-vs)))]
                  
          ;;(listof rules)
-         ;;Purpose: Reconstructs the rules from rule-structs
-         [curr-a-config (append-map (λ (lor)
+         ;;Purpose: Extracts the triple and pair from rule-structs
+         [curr-accept-rules (append-map (λ (lor)
                                       (map (λ (rule)
                                              (list (rule-triple rule)
                                                    (rule-pair rule)))
                                            lor))
                                     a-configs)]
 
-         [extracted-rules (append-map (λ (lor)
+         ;;(listof rules)
+         ;;Purpose: Extracs the triple and pair from rule-structs
+         [curr-reject-rules (append-map (λ (lor)
                                         (map (λ (rule)
                                                (list (rule-triple rule)
                                                      (rule-pair rule)))
                                              lor))
                                       (append r-config a-configs))]
-
-         [current-rules (configs->rules (filter (λ (rule) (not (equal? rule (list (list EMP EMP EMP) (list EMP EMP))))) extracted-rules))]
+         ;;(listof rules)
+         ;;Purpose: Converts the current rules from the rejecting computations and makes them usable for graphviz
+         [current-r-rules (configs->rules (filter (λ (rule) (not (equal? rule (list (list EMP EMP EMP) (list EMP EMP))))) curr-reject-rules))]
                   
          ;;(listof rules)
-         ;;Purpose: The current rules of the accepting computations that the pda is using to consume the CI
-         [current-a-rules (configs->rules (filter (λ (rule) (not (equal? rule (list (list EMP EMP EMP) (list EMP EMP))))) curr-a-config))]
+         ;;Purpose: Converts the current rules from the accepting computations and makes them usable for graphviz
+         [current-a-rules (configs->rules (filter (λ (rule) (not (equal? rule (list (list EMP EMP EMP) (list EMP EMP))))) curr-accept-rules))]
          
          ;;(listof rules)
          ;;Purpose: All of the pda rules converted to triples
@@ -1233,7 +1239,7 @@ visited is a (listof configuration)
          ;;(listof (listof symbol ((listof symbols) -> boolean))) (listof symbols))
          ;;Purpose: Extracts all invariants for the states that the machine can be in
          [get-invs (for*/list ([invs (building-viz-state-inv a-vs)]
-                               [curr current-config]
+                               [curr current-cons]
                                #:when (equal? (first invs) (first curr)))
                      (list invs (building-viz-state-pci a-vs) (third curr)))]
 
@@ -1265,7 +1271,7 @@ visited is a (listof configuration)
       brkn-invs)
      all-rules
      current-a-rules
-     current-rules
+     current-r-rules
      held-invs
      (building-viz-state-dead a-vs)
      cut-off)))
@@ -1420,7 +1426,7 @@ visited is a (listof configuration)
                                              0)
                                          '()))])
       (beside
-       (text (format "The current number of possible computations is: ~a (without repeated configurations). "
+       (text (format "The current number of possible computations is: ~a (without repeated configurations)."
                      (number->string (list-ref (imsg-state-comps imsg-st)
                                                (length (imsg-state-pci imsg-st)))))
              20
@@ -2053,8 +2059,9 @@ visited is a (listof configuration)
         ;(struct building-viz-state (upci pci M inv dead))
         ;(struct imsg-state (M upci pci))
         ;;ANCHOR
-        computations
-        #;(run-viz graphs
+        ;(displayln computations)
+        ;(displayln (sm-states new-M))
+        (run-viz graphs
                  (lambda () (graph->bitmap (first graphs)))
                  (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2))
                  DEFAULT-ZOOM
@@ -2290,6 +2297,8 @@ visited is a (listof configuration)
 "BUGS: "
 "FIX RANDOM MACHINE DURING CUTOFF"
 "FIX EMPTY DESYNC WHEN MOVING BACKWARDS"
+"FIX GOING OFF THE SCREEN"
+"PREVENT WORD FROM BEING CONSUMED DURING CUTOFF"
 
 (define pd (make-ndpda '(S A)
                        '(a b)
