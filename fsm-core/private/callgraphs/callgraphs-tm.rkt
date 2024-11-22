@@ -1,6 +1,11 @@
-#lang racket
-(require "../../../fsm-gviz/private/lib.rkt" "cg-defs.rkt"
-         "mk-cg-edges-function.rkt" "../sm-getters.rkt" "../sm-apply.rkt")
+#lang racket/base
+(require "../../../fsm-gviz/private/lib.rkt"
+         "cg-defs.rkt"
+         "mk-cg-edges-function.rkt"
+         "../sm-getters.rkt"
+         "../sm-apply.rkt"
+         racket/list
+         racket/string)
 (provide make-tm-cg-edges dot-nodes-tm dot-trans-tm computation-diagram-tm)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; make-tm-cg-edges

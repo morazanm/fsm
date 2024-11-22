@@ -1,5 +1,8 @@
-#lang racket
-(require 2htdp/image "globals.rkt")
+#lang racket/base
+(require 2htdp/image
+         "globals.rkt"
+         racket/list
+         racket/match)
 #|
   This module handles the creation of the rule display at the bottom of the GUI
    To add another machine please add a case to the function create-text and a function to format the

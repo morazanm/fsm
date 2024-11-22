@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 (require "../../fsm-gviz/private/lib.rkt"
          2htdp/image
          "../../fsm-core/private/fsa.rkt"
@@ -13,7 +13,9 @@
          "../viz-lib/viz.rkt"
          "../viz-lib/bounding-limits.rkt"
          "../viz-lib/viz-imgs/cursor.rkt"
-         "../viz-lib/zipper.rkt")
+         "../viz-lib/zipper.rkt"
+         racket/list
+         racket/function)
 
 (provide union-viz)
 

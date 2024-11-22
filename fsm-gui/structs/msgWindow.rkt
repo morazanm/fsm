@@ -1,5 +1,8 @@
-#lang racket
-(require 2htdp/image 2htdp/universe "posn.rkt")
+#lang racket/base
+(require 2htdp/image
+         "posn.rkt"
+         racket/list
+         racket/string)
 
 ;; ------- msgWindow.rkt -------
 ;; This file contains the functionality for a message window

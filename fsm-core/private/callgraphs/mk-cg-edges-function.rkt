@@ -1,4 +1,6 @@
-#lang racket
+#lang racket/base
+
+(require racket/list)
 
 (provide mk-cg-edges-function)
 

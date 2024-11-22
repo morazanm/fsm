@@ -2,8 +2,12 @@
 ; Copyright (C) 2015 by Marco T. Morazan
 ; Written by: Marco T. Morazan, 2015
 
-(module cfg racket
-  (require "constants.rkt" "misc.rkt" "word.rkt")
+#lang racket/base
+  (require "constants.rkt"
+           "misc.rkt"
+           "word.rkt"
+           racket/list
+           racket/bool)
   (provide cfg make-unchecked-cfg cfg-rule cfg-get-alphabet cfg-get-v cfg-get-rules cfg-get-start cfg-get-the-rules cfg-rule-lhs cfg-rule-rhs
            remove-dead-nts cfg-union cfg-concat cfg-star cfg? cfg-rename-nts cfg-derive test-cfg) 
   
@@ -911,4 +915,4 @@
   
   ;;;;; End Chomsky Normal Form Functions
   
-  ) ;closes module
+  ;closes module
