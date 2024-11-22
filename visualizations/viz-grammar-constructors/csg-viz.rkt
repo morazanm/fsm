@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 
 (require "../../fsm-gviz/private/lib.rkt"
          "../../fsm-gviz/private/parallel.rkt"
@@ -8,7 +8,11 @@
          "../viz-lib/viz.rkt"
          "grammar-viz.rkt"
          "../viz-lib/zipper.rkt"
-         rackunit)
+         rackunit
+         racket/list
+         racket/local)
+
+(provide csg-viz)
 
 (define anbn
   (make-unchecked-csg
@@ -40,7 +44,6 @@
 (define YIELD-COLOR 'violet)
 
 (define FONT-SIZE 12)
-#;(define HEXAGON-COLOR 'violet)
 (define HEXAGON-COLOR 'black)
 
 
@@ -197,8 +200,6 @@
                   [before-replacement (take curr-state idx-of-replaced)]
                   [before-replacement-removed (drop curr-state idx-of-replaced)]
                   [removed (take before-replacement-removed replaced-str-length)]
-                  #;[test0 (displayln (format "removed: ~s" removed))]
-                  #;[test1 (displayln (format "curr-rule: ~s" curr-rule))]
                   [removed-combined-symbol (rename-symbols (first curr-rule) used-names)]
                   [replacement-symbols (map (lambda (x) (rename-symbols x used-names))
                                             (symbol->fsmlos (second curr-rule)))]
@@ -221,10 +222,8 @@
                                               (cons (list val removed-combined-symbol) accum))
                                             '()
                                             removed)]
-                     #;[test0 (displayln (format "before-replace: ~s" before-replace))]
                      [not-replaced-edges (filter (lambda (edge) (not (member (second edge) removed)))
                                                  (if (empty? levels) '() (first levels)))]
-                     #;[test1 (displayln (format "not-replaced-edges: ~s" not-replaced-edges))]
                      [replaced-edges (if (empty? levels)
                                          '()
                                          (remove-duplicates
@@ -232,7 +231,6 @@
                                                  (list (first edge) removed-combined-symbol))
                                                (filter (lambda (edge) (member (second edge) removed))
                                                        (first levels)))))]
-                     #;[test2 (displayln (format "replaced-edges: ~s" replaced-edges))]
                      [after-replace
                       (cons (append (foldr (lambda (val accum)
                                              (cons (list removed-combined-symbol val) accum))
@@ -242,7 +240,6 @@
                                     not-replaced-edges)
                             (cons (append before-replace (if (empty? levels) '() (first levels)))
                                   levels))]
-                     #;[test3 (displayln (format "after-replace: ~s \n\n\n" after-replace))]
                      )
                 after-replace)
               (let* ([before-replace (cons (foldr (lambda (val accum)
@@ -306,33 +303,20 @@
   (foldl (λ (state result)
            (add-node result
                      state
-                     #:atb (hash 'color
-                                 (cond
-                                   [(member state yield-node) YIELD-COLOR]
-                                   [(member state hedge-nodes) HEDGE-COLOR]
-                                   ;[(member state hex-nodes) HEXAGON-COLOR]
-                                   [else 'black])
-                                 'style
-                                 'solid
-                                 #;(if (or (member state hedge-nodes)
-                                           #;(member state yield-node))
-                                       'dashed
-                                       'solid)
-                                 'shape
-                                 (cond
-                                   [(member state hex-nodes) 'hexagon]
-                                   [else 'circle])
-                                 'label
-                                 (undo-renaming state)
-                                 'penwidth
-                                 (cond
-                                   [(member state hedge-nodes) 3.0]
-                                   #;[(member state yield-node) 3.0]
-                                   [else 1.0])
-                                 'fontcolor
-                                 'black
-                                 'font
-                                 "Sans"))) 
+                     #:atb (hash 'color (cond
+                                          [(member state yield-node) YIELD-COLOR]
+                                          [(member state hedge-nodes) HEDGE-COLOR]
+                                          [else 'black])
+                                 'style 'solid
+                                 'shape (cond
+                                          [(member state hex-nodes) 'hexagon]
+                                          [else 'circle])
+                                 'label (undo-renaming state)
+                                 'penwidth (cond
+                                             [(member state hedge-nodes) 3.0]
+                                             [else 1.0])
+                                 'fontcolor 'black
+                                 'font "Sans")))
          graph
          lon))
 
@@ -357,12 +341,10 @@
       (first rule)
       (second rule)
       #:atb
-      (hash 'fontsize FONT-SIZE 'style 'solid #;(if (member rule hedges)
-                                                    'dashed
-                                                    'solid)
+      (hash 'fontsize FONT-SIZE
+            'style 'solid 
             'penwidth (cond
                         [(member rule hedges) 3.0]
-                        #;[(member state yield-node) 3.0]
                         [else 1.0])
             'color (if (member rule hedges) HEDGE-COLOR 'black))))
    graph
@@ -371,52 +353,6 @@
 ;; create-dgraphs
 ;; dgrph (listof dgrph) boolean -> (listof dgrph)
 ;; Purpose: To create all the dgrphs for graph imgs
-#;(define (create-dgrphs a-dgrph lod hex?)
-    (if (empty? (dgrph-up-levels a-dgrph))
-        (cons a-dgrph lod)
-        (let* ([new-up-levels (rest (dgrph-up-levels a-dgrph))]
-               [new-ad-levels (cons (first (dgrph-up-levels a-dgrph)) (dgrph-p-levels a-dgrph))]
-               [new-nodes (extract-nodes (first (dgrph-up-levels a-dgrph)))]
-               [new-up-hex-nodes (rest (dgrph-up-hex-nodes a-dgrph))]
-               [new-p-hex-nodes (cons (first (dgrph-up-hex-nodes a-dgrph)) (dgrph-p-hex-nodes a-dgrph))]
-               [new-up-yield-nodes (rest (dgrph-up-yield-nodes a-dgrph))]
-               [new-p-yield-nodes (cons (first (dgrph-up-yield-nodes a-dgrph))
-                                        (dgrph-p-yield-nodes a-dgrph))]
-               [new-up-hedges (rest (dgrph-up-hedges a-dgrph))]
-               [new-p-hedges (cons (first (dgrph-up-hedges a-dgrph)) (dgrph-p-hedges a-dgrph))]
-               #;[new-up-rules (dgrph-up-rules a-dgrph)]
-               #;[new-p-rules (dgrph-p-rules a-dgrph)])
-          (if hex?
-              (let ([new-up-rules (rest (dgrph-up-rules a-dgrph))]
-                    [new-p-rules (cons (first (dgrph-up-rules a-dgrph)) (dgrph-p-rules a-dgrph))])
-                (create-dgrphs (dgrph new-up-levels
-                                      new-ad-levels
-                                      new-nodes
-                                      new-up-hex-nodes
-                                      new-p-hex-nodes
-                                      new-up-yield-nodes
-                                      new-p-yield-nodes
-                                      new-up-hedges
-                                      new-p-hedges
-                                      new-up-rules
-                                      new-p-rules)
-                               (cons a-dgrph lod)
-                               #t))
-              (let ([new-up-rules (dgrph-up-rules a-dgrph)] [new-p-rules (dgrph-p-rules a-dgrph)])
-                (create-dgrphs (dgrph new-up-levels
-                                      new-ad-levels
-                                      new-nodes
-                                      new-up-hex-nodes
-                                      new-p-hex-nodes
-                                      new-up-yield-nodes
-                                      new-p-yield-nodes
-                                      new-up-hedges
-                                      new-p-hedges
-                                      new-up-rules
-                                      new-p-rules)
-                               (cons a-dgrph lod)
-                               #f))))))
-
 (define (create-dgrphs a-dgrph lod hex?)
   (if (empty? (dgrph-up-levels a-dgrph))
       (cons a-dgrph lod)
@@ -429,9 +365,7 @@
              [new-p-yield-nodes (cons (first (dgrph-up-yield-nodes a-dgrph))
                                       (dgrph-p-yield-nodes a-dgrph))]
              [new-up-hedges (rest (dgrph-up-hedges a-dgrph))]
-             [new-p-hedges (cons (first (dgrph-up-hedges a-dgrph)) (dgrph-p-hedges a-dgrph))]
-             #;[new-up-rules (dgrph-up-rules a-dgrph)]
-             #;[new-p-rules (dgrph-p-rules a-dgrph)])
+             [new-p-hedges (cons (first (dgrph-up-hedges a-dgrph)) (dgrph-p-hedges a-dgrph))])
         (if hex?
             (let ([new-up-rules (rest (dgrph-up-rules a-dgrph))]
                   [new-p-rules (cons (first (dgrph-up-rules a-dgrph)) (dgrph-p-rules a-dgrph))])
@@ -510,9 +444,8 @@
       '()
       (cons (first lst) (cons (first lst) (copy (rest lst))))))
 
-(define (csg-viz g w)
+(define (csg-viz g w #:cpu-cores [cpu-cores #f] . invariants)
   (local [(define derv (csg-derive-edited g w))
-          #;(define test0 (displayln derv))
           (define w-derv (map (lambda (x) (symbol->fsmlos (first x))) derv))
           (define moved-rules
             (map (lambda (x) (list (second x) (third x))) (move-rule-applications-in-list derv)))
@@ -553,36 +486,19 @@
                     [fourth (second graphs)])
                 (cons frst (cons fourth (remove-every-second (drop graphs 2)))))
               'NO-INV
+              #:cpu-cores cpu-cores
               #:special-graphs? 'cfg
               #:rank-node-lst (let ([frst (first (second renamed))]
                                     [fourth (second (second renamed))])
-                                #;(displayln (cons frst (cons fourth (remove-every-second (drop (second renamed) 2)))))
-                                #;(displayln (map (lambda (x y) (cons (list x) (foldr (lambda (val accum) (cons (list val) accum))
-                                                                         '()
-                                                                         y)
-                                                                           #;(apply list y)))
-                                     (cons frst (cons fourth (remove-every-second (drop (second renamed) 2))))
-                                     (begin
-                                       #;(displayln (let ([res (append (dgrph-up-hex-nodes (first lod)) (dgrph-p-hex-nodes (first lod)))])
-                                         (cons (first res) (remove-every-second (rest res)))))
-                                       (let ([res (append (dgrph-up-hex-nodes (first lod)) (dgrph-p-hex-nodes (first lod)))])
-                                         (cons (first res) (remove-every-second (rest res))))
-                                       )
-                                     ))
                                 (map (lambda (x y) (cons x (foldr (lambda (val accum) (cons (list val) accum))
                                                                          '()
-                                                                         y)
-                                                                           #;(apply list y)))
+                                                                         y)))
                                      (cons frst (cons fourth (remove-every-second (drop (second renamed) 2))))
-                                     (begin
-                                       (displayln (let ([res (append (dgrph-up-hex-nodes (first lod)) (dgrph-p-hex-nodes (first lod)))])
-                                         (drop-right (cons '() (cons (first res) (remove-every-second res))) 1)))
-                                       (let ([res (append (dgrph-up-hex-nodes (first lod)) (dgrph-p-hex-nodes (first lod)))])
-                                         (drop-right (cons '() (cons (first res) (remove-every-second res))) 1))
-                                       )
+                                     (let ([res (append (dgrph-up-hex-nodes (first lod)) (dgrph-p-hex-nodes (first lod)))])
+                                       (drop-right (cons '() (cons (first res) (remove-every-second res))) 1))
+                                       
                                      )
                                 ))
-    ;(run-viz g w w-derv rules graphs #:special-graphs? #t #:rank-node-lst (second renamed))
     ))
 
 (define anbncn-csg
@@ -600,23 +516,3 @@
               (AI ,ARROW Ia) 
               (I ,ARROW ,EMP)) 
             'S))
-#;(csg-viz anbn '(a a b b))
-(csg-viz anbncn-csg '(a a b b c c))
-
-#;(define (remove-every-second lst)
-    (if (empty? lst)
-        lst
-        (if (= (length lst) 1)
-            (cons lst '())
-            (cons lst (remove-every-second (rest (rest lst)))) 
-            )
-        )
-    )
-
-
-#;'(
-    ((S0) (S0) (B1 S0) (B1 S0) (AaA0 B1 S0) (AaA0 B1 S0) (S2 AaA0 B1 S0) (S2 AaA0 B1 S0) (B3 S2 AaA0 B1 S0) (B3 S2 AaA0 B1 S0) (AaA1 B3 S2 AaA0 B1 S0) (AaA1 B3 S2 AaA0 B1 S0) (S4 AaA1 B3 S2 AaA0 B1 S0) (S4 AaA1 B3 S2 AaA0 B1 S0) (B5 S4 AaA1 B3 S2 AaA0 B1 S0) (B5 S4 AaA1 B3 S2 AaA0 B1 S0) (AaA2 B5 S4 AaA1 B3 S2 AaA0 B1 S0) (AaA2 B5 S4 AaA1 B3 S2 AaA0 B1 S0))
-    ((S0) (A0 a0 B0) (A0 a0 B1) (A0 a0 A1) (AaA0) (a1 S1 b0) (a1 S2 b0) (a1 A2 a2 B2 b0) (a1 A2 a2 B3 b0) (a1 A2 a2 A3 b0) (a1 AaA1 b0) (a1 a3 S3 b1 b0) (a1 a3 S4 b1 b0) (a1 a3 A4 a4 B4 b1 b0) (a1 a3 A4 a4 B5 b1 b0) (a1 a3 A4 a4 A5 b1 b0) (a1 a3 AaA2 b1 b0) (a1 a3 ε0 b1 b0))
-    (((S S0)) ((S0 A0) (S0 a0) (S0 B0)) ((B0 B1) (S0 A0) (S0 a0) (S0 B0)) ((B1 A1) (S0 B1) (S0 A0) (S0 a0)) ((A0 AaA0) (a0 AaA0) (A1 AaA0) (B1 A1) (S0 B1) (S0 A0) (S0 a0)) ((AaA0 a1) (AaA0 S1) (AaA0 b0) (B1 AaA0) (S0 AaA0) (S0 B1)) ((S1 S2) (AaA0 a1) (AaA0 S1) (AaA0 b0) (B1 AaA0) (S0 AaA0) (S0 B1)) ((S2 A2) (S2 a2) (S2 B2) (AaA0 S2) (AaA0 a1) (AaA0 b0) (B1 AaA0) (S0 AaA0) (S0 B1)) ((B2 B3) (S2 A2) (S2 a2) (S2 B2) (AaA0 S2) (AaA0 a1) (AaA0 b0) (B1 AaA0) (S0 AaA0) (S0 B1)) ((B3 A3) (S2 B3) (S2 A2) (S2 a2) (AaA0 S2) (AaA0 a1) (AaA0 b0) (B1 AaA0) (S0 AaA0) (S0 B1)) ((A2 AaA1) (a2 AaA1) (A3 AaA1) (B3 A3) (S2 B3) (S2 A2) (S2 a2) (AaA0 S2) (AaA0 a1) (AaA0 b0) (B1 AaA0) (S0 AaA0) (S0 B1)) ((AaA1 a3) (AaA1 S3) (AaA1 b1) (B3 AaA1) (S2 AaA1) (S2 B3) (AaA0 S2) (AaA0 a1) (AaA0 b0) (B1 AaA0) (S0 AaA0) (S0 B1)) ((S3 S4) (AaA1 a3) (AaA1 S3) (AaA1 b1) (B3 AaA1) (S2 AaA1) (S2 B3) (AaA0 S2) (AaA0 a1) (AaA0 b0) (B1 AaA0) (S0 AaA0) (S0 B1)) ((S4 A4) (S4 a4) (S4 B4) (AaA1 S4) (AaA1 a3) (AaA1 b1) (B3 AaA1) (S2 AaA1) (S2 B3) (AaA0 S2) (AaA0 a1) (AaA0 b0) (B1 AaA0) (S0 AaA0) (S0 B1)) ((B4 B5) (S4 A4) (S4 a4) (S4 B4) (AaA1 S4) (AaA1 a3) (AaA1 b1) (B3 AaA1) (S2 AaA1) (S2 B3) (AaA0 S2) (AaA0 a1) (AaA0 b0) (B1 AaA0) (S0 AaA0) (S0 B1)) ((B5 A5) (S4 B5) (S4 A4) (S4 a4) (AaA1 S4) (AaA1 a3) (AaA1 b1) (B3 AaA1) (S2 AaA1) (S2 B3) (AaA0 S2) (AaA0 a1) (AaA0 b0) (B1 AaA0) (S0 AaA0) (S0 B1)) ((A4 AaA2) (a4 AaA2) (A5 AaA2) (B5 A5) (S4 B5) (S4 A4) (S4 a4) (AaA1 S4) (AaA1 a3) (AaA1 b1) (B3 AaA1) (S2 AaA1) (S2 B3) (AaA0 S2) (AaA0 a1) (AaA0 b0) (B1 AaA0) (S0 AaA0) (S0 B1)) ((AaA2 ε0) (B5 AaA2) (S4 AaA2) (S4 B5) (AaA1 S4) (AaA1 a3) (AaA1 b1) (B3 AaA1) (S2 AaA1) (S2 B3) (AaA0 S2) (AaA0 a1) (AaA0 b0) (B1 AaA0) (S0 AaA0) (S0 B1)))
-    (((S S0)) ((S0 A0) (S0 a0) (S0 B0)) ((B0 B1)) ((B1 A1)) ((A0 AaA0) (a0 AaA0) (A1 AaA0)) ((AaA0 a1) (AaA0 S1) (AaA0 b0)) ((S1 S2)) ((S2 A2) (S2 a2) (S2 B2)) ((B2 B3)) ((B3 A3)) ((A2 AaA1) (a2 AaA1) (A3 AaA1)) ((AaA1 a3) (AaA1 S3) (AaA1 b1)) ((S3 S4)) ((S4 A4) (S4 a4) (S4 B4)) ((B4 B5)) ((B5 A5)) ((A4 AaA2) (a4 AaA2) (A5 AaA2)) ((AaA2 ε0)))
-    )

@@ -1,9 +1,9 @@
-#lang racket
+#lang racket/base
 (require "../../fsm-core/private/cfg.rkt"
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/misc.rkt"
-         "circular-queue-treelist.rkt")
-
+         "circular-queue-treelist.rkt"
+         racket/list)
 (provide cfg-derive-leftmost)
 
 (define (cfg-derive-leftmost g w)
@@ -60,7 +60,7 @@
                               #f
                               (get-first-n-terms w (length start-terms-st)))])
       (cond
-        [(false? start-terms-w) #f]
+        [(not start-terms-w) #f]
         [else (equal? start-terms-st start-terms-w)])))
 
   (define input-word-length (length w))
@@ -79,7 +79,7 @@
        (make-deriv visited (dequeue! derivs) g chomsky)]
       [else
        (let* ([fderiv (qpeek derivs)] [state (first fderiv)] [fnt (get-first-nt (first state))])
-         (if (false? fnt)
+         (if (not fnt)
              (if (equal? w (first state))
                  (append-map (lambda (l)
                                (if (equal? w (first l))
@@ -121,6 +121,4 @@
           (make-deriv (make-hash)
                       (enqueue! deriv-queue (list (list (list (cfg-get-start g)) '())))
                       g
-                      false))
-        ;)
-        )))
+                      #f)))))

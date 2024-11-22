@@ -1,11 +1,12 @@
-#lang racket
+#lang racket/base
 
 (require "../../fsm-core/private/cfg.rkt"
          "../../fsm-core/private/constants.rkt"
          "circular-queue-treelist.rkt"
          racket/treelist
          "yield-struct.rkt"
-         "../viz-lib/treelist-helper-functions.rkt")
+         "../viz-lib/treelist-helper-functions.rkt"
+         racket/list)
 
 (provide cfg-derive-level-leftmost)
 
@@ -61,7 +62,7 @@
                               #f
                               (get-first-n-terms treelist-w (treelist-length start-terms-st)))])
       (cond
-        [(false? start-terms-w) #f]
+        [(not start-terms-w) #f]
         [else (equal? start-terms-st start-terms-w)])))
 
   ; ASSUMPTION: yield has at least one NT in unprocessed field
@@ -118,7 +119,7 @@
                               #f
                               (get-last-n-terms treelist-w (treelist-length start-terms-st)))])
       (cond
-        [(false? start-terms-w) #f]
+        [(not start-terms-w) #f]
         [else (equal? start-terms-st start-terms-w)])))
 
   ; ASSUMPTION: yield has at least one NT in unprocessed field
@@ -164,7 +165,7 @@
               [current-yield (first current-yield-and-rule)]
               [state (yield-state current-yield)]
               [current-nt (get-first-nt current-yield)])
-         (if (false? current-nt)
+         (if (not current-nt)
              (if (equal? treelist-w state)
                  (reverse (cons (list current-yield (second current-yield-and-rule))
                                 (rest current-deriv)))

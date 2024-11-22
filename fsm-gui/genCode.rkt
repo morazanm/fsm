@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 
 (require racket/date
          "globals.rkt"
@@ -6,7 +6,12 @@
          "./structs/world.rkt"
          "./structs/state.rkt"
          "./structs/input.rkt"
-         "../fsm-core/interface.rkt")
+         "../fsm-core/private/abstract-predicate.rkt"
+         "../fsm-core/private/constants.rkt"
+         racket/list
+         racket/match
+         racket/string
+         )
 
 (provide genCode)
 

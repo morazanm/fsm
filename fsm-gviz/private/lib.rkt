@@ -1,5 +1,15 @@
-#lang racket
-(require 2htdp/image racket/hash "dot.rkt" racket/treelist)
+#lang racket/base
+(require 2htdp/image
+         racket/hash
+         "dot.rkt"
+         racket/treelist
+         racket/string
+         racket/list
+         racket/match
+         racket/system
+         racket/function
+         racket/contract/base
+         )
 
 (provide hash->str)
 
@@ -651,7 +661,8 @@
                 '()
                 '()
                 DEFAULT-FORMATTERS
-                DEFAULT-GRAPH))
+                DEFAULT-GRAPH
+                '()))
 
 
   (test-equal? "Edges with dashes"
@@ -670,7 +681,8 @@
                  (edge 'A 'B #hash((fontsize . 15) (label . (a)))))
                 '()
                 DEFAULT-FORMATTERS
-                DEFAULT-GRAPH))
+                DEFAULT-GRAPH
+                '()))
 
   (test-equal? "Node with custom label"
                (add-node (create-graph 'test) 'A #:atb (hash 'label "AA"))
@@ -680,7 +692,8 @@
                 '()
                 '()
                 DEFAULT-FORMATTERS
-                DEFAULT-GRAPH))
+                DEFAULT-GRAPH
+                '()))
 
 
   (test-equal? "Subgraphs with edges"
@@ -708,7 +721,8 @@
                   '()
                   #hash()))
                 DEFAULT-FORMATTERS
-                DEFAULT-GRAPH))
+                DEFAULT-GRAPH
+                '()))
 
   ;; --- Exception Checks Below ---
   (check-exn

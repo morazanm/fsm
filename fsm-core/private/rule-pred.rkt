@@ -1,5 +1,8 @@
-(module temp-rulepreds racket
-  (require "constants.rkt" "misc.rkt")
+#lang racket/base
+  (require "constants.rkt"
+           "misc.rkt"
+           racket/local
+           racket/list)
   (provide  check-rgrule check-cfgrule check-csgrule
             check-dfarule check-ndfarule check-pda-rules check-tmrules
             ;check-pdarule check-tmrule
@@ -228,5 +231,3 @@
       ""
       (let ((problem (check-tmrule states sigma (car deltas))))
         (string-append problem (check-tmrules states sigma (cdr deltas))))))
-
-)

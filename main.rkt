@@ -6,16 +6,15 @@
 
   (require rackunit
            "fsm-core/interface.rkt"
-           "fsm-gviz/interface.rkt"
            "fsm-gui/interface.rkt"
-           "viz-constructors/viz-complement.rkt"
-           "viz-constructors/viz-concat.rkt"
-           "viz-constructors/viz-intersection.rkt"
-           "viz-constructors/viz-kleenestar.rkt"
-           "viz-constructors/viz-ndfa2dfa.rkt"
-           "viz-constructors/viz-ndfa2regexp.rkt"
-           "viz-constructors/viz-regexp2ndfa.rkt"
-           "viz-constructors/viz-union.rkt"
+           "visualizations/viz-sm-constructors/viz-complement.rkt"
+           "visualizations/viz-sm-constructors/viz-concat.rkt"
+           "visualizations/viz-sm-constructors/viz-intersection.rkt"
+           "visualizations/viz-sm-constructors/viz-kleenestar.rkt"
+           "visualizations/viz-sm-constructors/viz-ndfa2dfa.rkt"
+           "visualizations/viz-sm-constructors/viz-ndfa2regexp.rkt"
+           "visualizations/viz-sm-constructors/viz-regexp2ndfa.rkt"
+           "visualizations/viz-sm-constructors/viz-union.rkt"
            "sm-graph.rkt")
   
   (provide
@@ -88,6 +87,8 @@
    ; computation graphs
    sm-cmpgraph
 
+   grammar-viz
+
    ; ctm-viz
    ctm-viz
 
@@ -144,6 +145,13 @@
             (list 'G (list BLANK LEFT LEFT LEFT))))
      4
      'Y))
+
+  (define M (make-dfa 
+	'(B A S) 
+	'(a b) 
+	'S 
+	'(B) 
+	'((B a S) (A b A) (B b B) (A a B) (S b A) (S a B))))
 
   ;(sm-graph EQABC2)
   ;(sm-cmpgraph EQABC2 `(,LM ,BLANK a a b c c b) 1)

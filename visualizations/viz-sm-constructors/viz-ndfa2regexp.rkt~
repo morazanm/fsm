@@ -23,7 +23,7 @@
 
 (define FNAME "fsm")
 
-(define E-SCENE-HEIGHT 560)
+;(define E-SCENE-HEIGHT 560)
 
 (define E-SCENE-TOOLS
   (let ([ARROW (above (triangle 30 'solid 'black) (rectangle 10 30 'solid 'black))])
@@ -85,15 +85,15 @@
    (+ (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
       (/ (- (image-width (text "Restart" (- FONT-SIZE 2) 'black)) (image-width ARROW-UP-KEY)) 2)
       (image-width ARROW-UP-KEY))
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER)
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER
-      (image-height ARROW-UP-KEY))))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Restart" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         (image-height ARROW-UP-KEY)
+         ))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Restart" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         ))))
 
 (define ARROW-RIGHT-KEY-DIMS
   (bounding-limits
@@ -106,15 +106,15 @@
       (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
       (/ (- (image-width (text "Forward" (- FONT-SIZE 2) 'black)) (image-width ARROW-RIGHT-KEY)) 2)
       (image-width ARROW-RIGHT-KEY))
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER)
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER
-      (image-height ARROW-RIGHT-KEY))))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Forward" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         (image-height ARROW-RIGHT-KEY)
+         ))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Forward" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         ))))
 
 (define ARROW-LEFT-KEY-DIMS
   (bounding-limits
@@ -131,15 +131,15 @@
       (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
       (/ (- (image-width (text "Backward" (- FONT-SIZE 2) 'black)) (image-width ARROW-LEFT-KEY)) 2)
       (image-width ARROW-LEFT-KEY))
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER)
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER
-      (image-height ARROW-LEFT-KEY))))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Backward" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         (image-height ARROW-LEFT-KEY)
+         ))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Backward" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         ))))
 
 (define ARROW-DOWN-KEY-DIMS
   (bounding-limits
@@ -160,15 +160,15 @@
       (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
       (/ (- (image-width (text "Finish" (- FONT-SIZE 2) 'black)) (image-width ARROW-DOWN-KEY)) 2)
       (image-width ARROW-DOWN-KEY))
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER)
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER
-      (image-height ARROW-DOWN-KEY))))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Finish" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         (image-height ARROW-DOWN-KEY)
+         ))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Finish" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         ))))
 
 (define W-KEY-DIMS
   (bounding-limits
@@ -197,15 +197,15 @@
       (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
       (/ (- (image-width (text "Zoom in" (- FONT-SIZE 2) 'black)) (image-width W-KEY)) 2)
       (image-width W-KEY))
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER)
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER
-      (image-height W-KEY))))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Zoom in" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         (image-height ARROW-DOWN-KEY)
+         ))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Zoom in" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         ))))
 
 (define S-KEY-DIMS
   (bounding-limits
@@ -238,15 +238,15 @@
       (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
       (/ (- (image-width (text "Zoom out" (- FONT-SIZE 2) 'black)) (image-width S-KEY)) 2)
       (image-width S-KEY))
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER)
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER
-      (image-height S-KEY))))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Zoom out" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         (image-height ARROW-DOWN-KEY)
+         ))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Zoom out" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         ))))
 
 (define R-KEY-DIMS
   (bounding-limits
@@ -283,15 +283,15 @@
       (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
       (/ (- (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black)) (image-width R-KEY)) 2)
       (image-width R-KEY))
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER)
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER
-      (image-height R-KEY))))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Mid Zoom" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         (image-height ARROW-DOWN-KEY)
+         ))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Mid Zoom" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         ))))
 
 (define E-KEY-DIMS
   (bounding-limits
@@ -332,15 +332,15 @@
       (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
       (/ (- (image-width (text "Mid Zoom" (- FONT-SIZE 2) 'black)) (image-width E-KEY)) 2)
       (image-width E-KEY))
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER)
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER
-      (image-height E-KEY))))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Min Zoom" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         (image-height ARROW-DOWN-KEY)
+         ))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Min Zoom" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         ))))
 
 (define F-KEY-DIMS
   (bounding-limits
@@ -385,15 +385,16 @@
       (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
       (/ (- (image-width (text "Max Zoom" (- FONT-SIZE 2) 'black)) (image-width F-KEY)) 2)
       (image-width F-KEY))
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER)
-   (+ EXTRA-HEIGHT-FROM-CURSOR
-      E-SCENE-HEIGHT
-      (bounding-limits-height RULE-YIELD-DIMS)
-      INS-TOOLS-BUFFER
-      (image-height F-KEY))))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Max Zoom" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         (image-height ARROW-DOWN-KEY)
+         ))
+   (- VIZ-FRAME-HEIGHT
+      (+ (image-height (text "Max Zoom" (- FONT-SIZE 2) 'black))
+         HEIGHT-BUFFER
+         ))))
+
 ;; L = ab*
 #| (define nl (make-ndfa '(S)
                       '(a b)
@@ -532,21 +533,12 @@
   (foldr (λ (s g) (rip-out-node s g)) g lon))
 
 ;; (listof ndfa-rule) → dgraph
-;; Purpose: Create a dgraph from the given ndfa
+;; Purpose: Create a dgraph from the given ndfa (for the ones that are already regexp)
 (define (make-dgraph lor)
   (map (λ (r)
          (if (eq? (second r) EMP)
-             (list (first r) (empty-regexp) (third r))
-             (list (first r) (singleton-regexp (symbol->string (second r))) (third r))))
-       lor))
-
-;; (listof ndfa-rule) → dgraph
-;; Purpose: Create a dgraph from the given ndfa (for the ones that are already regexp)
-(define (make-dgraph-unions lor)
-  (map (λ (r)
-         (if (eq? (second r) EMP)
              (list (first r) (printable-regexp (empty-regexp)) (third r))
-             (list (first r) (second r) (third r))))
+             (list (first r)  (second r) (third r))))
        lor))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -563,7 +555,7 @@
 ;;          start and final states.
 (define (create-nodes graph los ns nf)
   (let ([states-only (remove-duplicates (append (list ns nf) los))])
-    (foldl (λ (state result)
+    (foldr (λ (state result)
              (add-node result
                        state
                        #:atb (hash 'color
@@ -583,7 +575,7 @@
 ;; graph (listof edge) -> graph
 ;; Purpose: To create graph of edges
 (define (create-edges graph loe)
-  (foldl (λ (rule result)
+  (foldr (λ (rule result)
            (add-edge result
                      (printable-regexp (simplify-regexp (second rule)))
                      (first rule)
@@ -592,27 +584,6 @@
          graph
          loe))
 
-;; create-edges-special
-;; graph (listof edge) -> graph
-;; Purpose: To create graph of edges
-(define (create-edges-special graph loe)
-  (foldl (λ (rule result)
-           (add-edge result
-                     (second rule)
-                     (first rule)
-                     (third rule)
-                     #:atb (hash 'fontsize 14 'style 'solid 'fontname "Sans")))
-         graph
-         loe))
-
-;; create-graph-special
-;; (listof state) dgraph state state -> graph
-;; Purpose: To create a graph structure for the given dgraph using
-;;          news as the start state and newf as the final state
-(define (create-graph-special los loe news newf)
-  (create-edges-special
-   (create-nodes (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans")) los news newf)
-   loe))
 
 ;; create-graphic
 ;; (listof state) dgraph state state -> graph
@@ -623,40 +594,57 @@
    (create-nodes (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans")) los news newf)
    loe))
 
+
+;; to-union
+;; (listof edges) -> (listof edges with regexp labels)
+;; Purpose: To turn all loops on multiple edges into unions
+(define (to-union loe)
+  (let* ([hash-t (add-edges-to-hash (make-hash) loe)]
+         [hash-l (reverse (hash->list hash-t))])
+    (map (λ (x)
+           (if (< (length (rest x)) 1)
+               (list (first (first x)) (string->symbol (first (rest x))) (second (first x)))
+               (list (first (first x))
+                     (make-unions (filter (λ (el) (not (equal? el 'ε))) (reverse (rest x))))
+                     (second (first x)))))
+         hash-l)))
+
 ;; create-graphs
 ;; ndfa -> (listof graph)
 ;; Purpose: To create a list of graph structures that build a regular
 ;; expression from the  given ndfa
 (define (create-graphs M)
-  (define new-start (gen-state (sm-states M)))
-  (define new-final (gen-state (cons new-start (sm-states M))))
-  (define new-rules
-    (cons (list new-start EMP (sm-start M)) (map (λ (fst) (list fst EMP new-final)) (sm-finals M))))
-  (define (create-graphs-helper M)
-    (define (grp-seq to-rip g gseq)
-      (if (null? to-rip)
-          gseq
-          (let ([new-g (rip-out-node (first to-rip) g)])
-            (grp-seq
-             (rest to-rip)
-             new-g
-             (cons (graph-struct
-                    (create-graphic (append (list new-start new-final)) new-g new-start new-final)
-                    (text (format "Ripped node: ~a" (first to-rip)) 20 'black))
-                   gseq)))))
-    (reverse (grp-seq (if (not (member DEAD (sm-states M)))
-                          (sm-states M)
-                          (cons DEAD (remove DEAD (sm-states M))))
-                      (make-dgraph (append (sm-rules M) new-rules))
-                      '())))
-  (cons (graph-struct (create-graphic (append (if (not (member DEAD (sm-states M)))
-                                                  (sm-states M)
-                                                  (cons DEAD (remove DEAD (sm-states M)))))
-                                      (make-dgraph (append (sm-rules M) new-rules))
-                                      new-start
-                                      new-final)
-                      (text "Added starting and final state" 20 'black))
-        (create-graphs-helper M)))
+  (let*
+      [(new-start (gen-state (sm-states M)))
+       (new-final (gen-state (cons new-start (sm-states M))))
+       (new-rules
+        (cons (list new-start EMP (sm-start M)) (map (λ (fst) (list fst EMP new-final)) (sm-finals M))))
+       (changed-rules (to-union (append (sm-rules M) new-rules)))]
+    (define (create-graphs-helper M)
+      (define (grp-seq to-rip g gseq)
+        (if (null? to-rip)
+            gseq
+            (let ([new-g (rip-out-node (first to-rip) g)])
+              (grp-seq
+               (rest to-rip)
+               new-g
+               (cons (graph-struct
+                      (create-graphic (append (list new-start new-final)) new-g new-start new-final)
+                      (text (format "Ripped node: ~a" (first to-rip)) 20 'black))
+                     gseq)))))
+      (reverse (grp-seq (if (not (member DEAD (sm-states M)))
+                            (sm-states M)
+                            (cons DEAD (remove DEAD (sm-states M))))
+                        (make-dgraph changed-rules)
+                        '())))
+    (cons (graph-struct (create-graphic (append (if (not (member DEAD (sm-states M)))
+                                                          (sm-states M)
+                                                          (cons DEAD (remove DEAD (sm-states M)))))
+                                              (make-dgraph changed-rules)
+                                              new-start
+                                              new-final)
+                        (text "Added starting and final state" 20 'black))
+          (create-graphs-helper M))))
 
 ;; add-edges-to-hash
 ;; hash (listof edges) -> hash
@@ -679,22 +667,12 @@
 ;; (listof symbol) -> regexp
 ;; Purpose: To return a union of all symbols in a list
 (define (make-unions los)
-  (if (= 1 (length los))
-      (symbol->string (first los))
-      (string-append (symbol->string (first los)) " U " (make-unions (rest los)))))
+  (if (empty? los)
+      (empty-regexp)
+      (if (= 1 (length los))
+          (singleton-regexp (symbol->string (first los)))
+          (make-unchecked-union (singleton-regexp (symbol->string (first los))) (make-unions (rest los))))))
 
-;; to-union
-;; (listof edges) -> (listof edges with regexp labels)
-;; Purpose: To turn all loops on multiple edges into unions
-(define (to-union loe)
-  (let* ([hash-t (add-edges-to-hash (make-hash) loe)] [hash-l (reverse (hash->list hash-t))])
-    (map (λ (x)
-           (if (< (length (rest x)) 1)
-               (list (first (first x)) (string->symbol (first (rest x))) (second (first x)))
-               (list (first (first x))
-                     (string->symbol (make-unions (reverse (rest x))))
-                     (second (first x)))))
-         hash-l)))
 
 ;; make-init-graph
 ;; ndfa -> img
@@ -705,9 +683,9 @@
          [new-rules (cons (list new-start EMP (sm-start M))
                           (map (λ (fst) (list fst EMP new-final)) (sm-finals M)))]
          [changed-rules (to-union (append (sm-rules M) new-rules))])
-    (graph-struct (create-graph-special
+    (graph-struct (create-graphic
                    (if (not (member DEAD (sm-states M))) (sm-states M) (cons DEAD (sm-states M)))
-                   (make-dgraph-unions changed-rules)
+                   (make-dgraph changed-rules)
                    new-start
                    new-final)
                   (text "Starting ndfa" FONT-SIZE 'black))))
@@ -884,37 +862,40 @@
                                           E-SCENE-HEIGHT
                                           (+ E-SCENE-HEIGHT (image-height imsg-img))))
    (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
-   (create-viz-process-key (list (list "right" viz-go-next right-key-pressed)
-                                 (list "left" viz-go-prev left-key-pressed)
-                                 (list "up" viz-go-to-begin up-key-pressed)
-                                 (list "down" viz-go-to-end down-key-pressed)
-                                 (list "w" viz-zoom-in identity)
-                                 (list "s" viz-zoom-out identity)
-                                 (list "r" viz-max-zoom-out identity)
-                                 (list "f" viz-max-zoom-in identity)
-                                 (list "e" viz-reset-zoom identity)
-                                 (list "wheel-down" viz-zoom-in identity)
-                                 (list "wheel-up" viz-zoom-out identity)))
+   (create-viz-process-key  ["right" viz-go-next right-key-pressed]
+                            ["left" viz-go-prev left-key-pressed]
+                            ["up" viz-go-to-begin up-key-pressed]
+                            ["down" viz-go-to-end down-key-pressed]
+                            ["w" viz-zoom-in identity]
+                            ["s" viz-zoom-out identity]
+                            ["r" viz-max-zoom-out identity]
+                            ["f" viz-max-zoom-in identity]
+                            ["e" viz-reset-zoom identity]
+                            ["wheel-down" viz-zoom-in identity]
+                            ["wheel-up" viz-zoom-out identity])
    (create-viz-process-tick E-SCENE-BOUNDING-LIMITS
                             NODE-SIZE
                             E-SCENE-WIDTH
                             E-SCENE-HEIGHT
                             CLICK-BUFFER-SECONDS
-                            (list)
-                            (list (list ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed)
-                                  (list ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed)
-                                  (list ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed)
-                                  (list ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed)
-                                  (list W-KEY-DIMS viz-zoom-in identity)
-                                  (list S-KEY-DIMS viz-zoom-out identity)
-                                  (list R-KEY-DIMS viz-max-zoom-out identity)
-                                  (list E-KEY-DIMS viz-reset-zoom identity)
-                                  (list F-KEY-DIMS viz-max-zoom-in identity)))
+                            ()
+                            ( [ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed]
+                              [ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed]
+                              [ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed]
+                              [ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed]
+                              [W-KEY-DIMS viz-zoom-in identity]
+                              [S-KEY-DIMS viz-zoom-out identity]
+                              [R-KEY-DIMS viz-max-zoom-out identity]
+                              [E-KEY-DIMS viz-reset-zoom identity]
+                              [F-KEY-DIMS viz-max-zoom-in identity]))
    'ndfa2regexp-viz))
+
+(define ex (make-unchecked-ndfa '(A)
+                                '(a b)
+                                'A
+                                '(A)
+                                `((A a A) (A b A))))
+
 
 (define aa-ab
   (make-unchecked-ndfa '(S A B F) '(a b) 'S '(A B) `((S a A) (S a B) (A a A) (B b B) (S ,EMP F))))
-
-(ndfa2regexp-viz aa-ab)
-
-;(run AT-LEAST-ONE-MISSING)

@@ -1,7 +1,8 @@
-#lang racket
-(require 2htdp/image)
-(require "../../../fsm-gviz/private/lib.rkt" "cg-defs.rkt"
-         "../sm-apply.rkt" "../sm-getters.rkt")
+#lang racket/base
+(require "../../../fsm-gviz/private/lib.rkt"
+         "../sm-getters.rkt"
+         racket/list
+         racket/string)
 
 (provide transition-diagram-mttm)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

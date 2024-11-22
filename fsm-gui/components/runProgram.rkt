@@ -1,17 +1,24 @@
-#lang racket
+#lang racket/base
 #|
 Created by Joshua Schappel on 12/19/19
   This field contains the runProgram function. That checks a given machine and determines if the program should run
 |#
 
-(require "../../fsm-core/interface.rkt"
+(require "../../fsm-core/private/tm.rkt"
+         "../../fsm-core/private/abstract-predicate.rkt"
+         "../../fsm-core/private/sm-apply.rkt"
+         "../../fsm-core/private/sm-getters.rkt"
+         "../../fsm-core/private/fsa.rkt"
+         "../../fsm-core/private/mtape-tm.rkt"
+         "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/pda.rkt"
          "../structs/world.rkt"
          "../structs/state.rkt"
          "../structs/machine.rkt"
          "../structs/posn.rkt"
          "../structs/msgWindow.rkt"
-         "../globals.rkt")
+         "../globals.rkt"
+         racket/list)
 
 
 (provide runProgram)
@@ -82,7 +89,7 @@ Created by Joshua Schappel on 12/19/19
                                          (machine-start-state (world-fsm-machine w))
                                          (machine-final-state-list (world-fsm-machine w)))]
                      ['mttm-language-recognizer
-                      (make-mttm state-list
+                      (make-unchecked-mttm state-list
                                  (machine-alpha-list (world-fsm-machine w))
                                  (machine-start-state (world-fsm-machine w))
                                  (machine-final-state-list (world-fsm-machine w))
@@ -90,7 +97,7 @@ Created by Joshua Schappel on 12/19/19
                                  (mttm-machine-num-tapes (world-fsm-machine w))
                                  (mttm-lang-rec-machine-accept-state (world-fsm-machine w)))]
                      ['mttm
-                      (make-mttm state-list
+                      (make-unchecked-mttm state-list
                                  (machine-alpha-list (world-fsm-machine w))
                                  (machine-start-state (world-fsm-machine w))
                                  (machine-final-state-list (world-fsm-machine w))
@@ -107,7 +114,9 @@ Created by Joshua Schappel on 12/19/19
                 ;; Unprocessed transitions
                 (unprocessed-list (case MACHINE-TYPE
                                     [(tm)
-                                     (let* ((sig-list TM-ORIGIONAL-TAPE)
+                                     (begin
+                                       (set-original-machine-struct (world-fsm-machine w))
+                                       (let* ((sig-list TM-ORIGIONAL-TAPE)
                                             (proper-list (cond
                                                            [(empty? sig-list) #f]
                                                            [(equal? LM (car sig-list))
@@ -121,9 +130,11 @@ Created by Joshua Schappel on 12/19/19
                                                                        (tm-machine-tape-posn (world-fsm-machine w)))))
                                        (if (string? trans)
                                            (list trans)
-                                           (append trans '(halt))))]
+                                           (append trans '(halt)))))]
                                     [(tm-language-recognizer)
-                                     (let* ((sig-list TM-ORIGIONAL-TAPE)
+                                     (begin
+                                       (set-original-machine-struct (world-fsm-machine w))
+                                       (let* ((sig-list TM-ORIGIONAL-TAPE)
                                             (proper-list (cond
                                                            [(empty? sig-list) #f]
                                                            [(equal? LM (car sig-list))
@@ -137,9 +148,11 @@ Created by Joshua Schappel on 12/19/19
                                                                        (tm-machine-tape-posn (world-fsm-machine w)))))
                                        (if (string? trans)
                                            (list trans)
-                                           trans))]
+                                           trans)))]
                                     [(mttm)
-                                     (let* ((sig-list TM-ORIGIONAL-TAPE)
+                                     (begin
+                                       (set-original-machine-struct (world-fsm-machine w))
+                                       (let* ((sig-list TM-ORIGIONAL-TAPE)
                                             (proper-list (cond
                                                            [(empty? sig-list) #f]
                                                            [(equal? LM (car sig-list))
@@ -151,9 +164,11 @@ Created by Joshua Schappel on 12/19/19
                                                                        (mttm-machine-start-tape-posn (world-fsm-machine w)))))
                                        (if (string? trans)
                                            (list trans)
-                                           (append trans '(halt))))]
+                                           (append trans '(halt)))))]
                                     [(mttm-language-recognizer)
-                                     (let* ((sig-list TM-ORIGIONAL-TAPE)
+                                     (begin
+                                       (set-original-machine-struct (world-fsm-machine w))
+                                       (let* ((sig-list TM-ORIGIONAL-TAPE)
                                             (proper-list (cond
                                                            [(empty? sig-list) #f]
                                                            [(equal? LM (car sig-list))
@@ -165,15 +180,17 @@ Created by Joshua Schappel on 12/19/19
                                                                        (mttm-machine-start-tape-posn (world-fsm-machine w)))))
                                        (if (string? trans)
                                            (list trans)
-                                           trans))]
+                                           trans)))]
                                     ;; dfa, ndfa, pda below
-                                    [else
+                                    [(pda)
                                      (begin (set-original-machine-struct (world-fsm-machine w))
                                             (set-transitions (pda-transitions-with-rules m (machine-sigma-list (world-fsm-machine w)) (machine-start-state (world-fsm-machine w))))
                                      (sm-showtransitions m
-                                                         (machine-sigma-list (world-fsm-machine w)))
-                                     )
-                                            ])))
+                                                         (machine-sigma-list (world-fsm-machine w))))]
+                                    [else
+                                     (begin (set-original-machine-struct (world-fsm-machine w))      
+                                            (sm-showtransitions m
+                                                                (machine-sigma-list (world-fsm-machine w))))])))
                            
          ;; Set up the world to have all the valid machine components below                 
          (begin

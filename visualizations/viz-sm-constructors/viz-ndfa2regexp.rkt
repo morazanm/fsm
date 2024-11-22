@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 
 (require 2htdp/image
          "../../fsm-gviz/private/lib.rkt"
@@ -10,6 +10,7 @@
          "../viz-lib/viz-constants.rkt"
          "../viz-lib/viz-state.rkt"
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
+         "../viz-lib/bounding-limits-macro.rkt"
          "../viz-lib/viz-macros.rkt"
          "../viz-lib/default-viz-function-generators.rkt"
          "../viz-lib/viz.rkt"
@@ -17,60 +18,33 @@
          "../../fsm-core/private/regexp.rkt"
          "../viz-lib/zipper.rkt"
          "../viz-lib/viz-imgs/cursor.rkt"
-         "../../sm-graph.rkt")
+         "../../sm-graph.rkt"
+         racket/list
+         racket/function)
 
 (provide ndfa2regexp-viz)
 
 (define FNAME "fsm")
 
-(define E-SCENE-HEIGHT 560)
-
-(define E-SCENE-TOOLS
-  (let ([ARROW (above (triangle 30 'solid 'black) (rectangle 10 30 'solid 'black))])
-    (beside/align
-     "bottom"
-     (above ARROW-UP-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Restart" (- FONT-SIZE 2) 'black))
-     (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
-     (above ARROW-RIGHT-KEY
-            (square HEIGHT-BUFFER 'solid 'white)
-            (text "Forward" (- FONT-SIZE 2) 'black))
-     (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
-     (above ARROW-LEFT-KEY
-            (square HEIGHT-BUFFER 'solid 'white)
-            (text "Backward" (- FONT-SIZE 2) 'black))
-     (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
-     (above ARROW-DOWN-KEY
-            (square HEIGHT-BUFFER 'solid 'white)
-            (text "Finish" (- FONT-SIZE 2) 'black))
-     (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
-     (above cursor (square HEIGHT-BUFFER 'solid 'white) (text "Hold to drag" (- FONT-SIZE 2) 'black))
-     (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
-     (beside (above/align "middle"
-                          W-KEY
-                          (square HEIGHT-BUFFER 'solid 'white)
-                          (text "Zoom in" (- FONT-SIZE 2) 'black))
-             (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
-             (above/align "middle"
-                          S-KEY
-                          (square HEIGHT-BUFFER 'solid 'white)
-                          (text "Zoom out" (- FONT-SIZE 2) 'black))
-             (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
-             (above/align "middle"
-                          R-KEY
-                          (square HEIGHT-BUFFER 'solid 'white)
-                          (text "Min zoom" (- FONT-SIZE 2) 'black))
-             (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
-             (above/align "middle"
-                          E-KEY
-                          (square HEIGHT-BUFFER 'solid 'white)
-                          (text "Mid zoom" (- FONT-SIZE 2) 'black))
-             (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
-             (above/align "middle"
-                          F-KEY
-                          (square HEIGHT-BUFFER 'solid 'white)
-                          (text "Max zoom" (- FONT-SIZE 2) 'black))))))
+(define E-SCENE-TOOLS (e-scene-tools-generator HEIGHT-BUFFER LETTER-KEY-WIDTH-BUFFER FONT-SIZE
+                                               (list (list ARROW-UP-KEY "Restart")
+                                                     (list ARROW-RIGHT-KEY "Forward")
+                                                     (list ARROW-LEFT-KEY "Backward")
+                                                     (list ARROW-DOWN-KEY "Finish")
+                                                     (list CURSOR "Hold to drag")
+                                                     (list W-KEY "Zoom in")
+                                                     (list S-KEY "Zoom out")
+                                                     (list R-KEY "Min zoom")
+                                                     (list E-KEY "Mid zoom")
+                                                     (list F-KEY "Max zoom"))))
 
 (define imsg-img (text "Starting ndfa" FONT-SIZE 'black))
+
+(define E-SCENE-HEIGHT (- (* 0.9 WINDOW-HEIGHT)
+                          (image-height imsg-img)
+                          (image-height E-SCENE-TOOLS)))
+(define MIDDLE-E-SCENE (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2)))
+(define E-SCENE-BOUNDING-LIMITS (bounding-limits 0 E-SCENE-WIDTH 0 E-SCENE-HEIGHT))
 
 (define RULE-YIELD-DIMS
   (bounding-limits 0
@@ -78,322 +52,17 @@
                    E-SCENE-HEIGHT
                    (+ E-SCENE-HEIGHT (image-height imsg-img))))
 
-(define ARROW-UP-KEY-DIMS
-  (bounding-limits
-   (+ (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Restart" (- FONT-SIZE 2) 'black)) (image-width ARROW-UP-KEY)) 2))
-   (+ (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Restart" (- FONT-SIZE 2) 'black)) (image-width ARROW-UP-KEY)) 2)
-      (image-width ARROW-UP-KEY))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Restart" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         (image-height ARROW-UP-KEY)
-         ))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Restart" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         ))))
-
-(define ARROW-RIGHT-KEY-DIMS
-  (bounding-limits
-   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Forward" (- FONT-SIZE 2) 'black)) (image-width ARROW-RIGHT-KEY)) 2))
-   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Forward" (- FONT-SIZE 2) 'black)) (image-width ARROW-RIGHT-KEY)) 2)
-      (image-width ARROW-RIGHT-KEY))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Forward" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         (image-height ARROW-RIGHT-KEY)
-         ))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Forward" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         ))))
-
-(define ARROW-LEFT-KEY-DIMS
-  (bounding-limits
-   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Backward" (- FONT-SIZE 2) 'black)) (image-width ARROW-LEFT-KEY)) 2))
-   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Backward" (- FONT-SIZE 2) 'black)) (image-width ARROW-LEFT-KEY)) 2)
-      (image-width ARROW-LEFT-KEY))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Backward" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         (image-height ARROW-LEFT-KEY)
-         ))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Backward" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         ))))
-
-(define ARROW-DOWN-KEY-DIMS
-  (bounding-limits
-   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Finish" 18 'black)) (image-width ARROW-DOWN-KEY)) 2))
-   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Finish" (- FONT-SIZE 2) 'black)) (image-width ARROW-DOWN-KEY)) 2)
-      (image-width ARROW-DOWN-KEY))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Finish" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         (image-height ARROW-DOWN-KEY)
-         ))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Finish" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         ))))
-
-(define W-KEY-DIMS
-  (bounding-limits
-   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Zoom in" (- FONT-SIZE 2) 'black)) (image-width W-KEY)) 2))
-   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Zoom in" (- FONT-SIZE 2) 'black)) (image-width W-KEY)) 2)
-      (image-width W-KEY))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Zoom in" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         (image-height ARROW-DOWN-KEY)
-         ))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Zoom in" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         ))))
-
-(define S-KEY-DIMS
-  (bounding-limits
-   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Zoom out" (- FONT-SIZE 2) 'black)) (image-width S-KEY)) 2))
-   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Zoom out" (- FONT-SIZE 2) 'black)) (image-width S-KEY)) 2)
-      (image-width S-KEY))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Zoom out" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         (image-height ARROW-DOWN-KEY)
-         ))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Zoom out" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         ))))
-
-(define R-KEY-DIMS
-  (bounding-limits
-   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Min zoom" (- FONT-SIZE 2) 'black)) (image-width R-KEY)) 2))
-   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black)) (image-width R-KEY)) 2)
-      (image-width R-KEY))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Mid Zoom" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         (image-height ARROW-DOWN-KEY)
-         ))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Mid Zoom" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         ))))
-
-(define E-KEY-DIMS
-  (bounding-limits
-   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Mid zoom" (- FONT-SIZE 2) 'black)) (image-width E-KEY)) 2))
-   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Mid Zoom" (- FONT-SIZE 2) 'black)) (image-width E-KEY)) 2)
-      (image-width E-KEY))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Min Zoom" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         (image-height ARROW-DOWN-KEY)
-         ))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Min Zoom" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         ))))
-
-(define F-KEY-DIMS
-  (bounding-limits
-   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (image-width (text "Mid Zoom" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Max zoom" (- FONT-SIZE 2) 'black)) (image-width F-KEY)) 2))
-   (+ (image-width (text "Restart" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Forward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Backward" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Finish" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Hold to drag" (- FONT-SIZE 2) 'black))
-      ARROW-KEY-WIDTH-BUFFER
-      (image-width (text "Zoom in" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (image-width (text "Zoom out" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (image-width (text "Min Zoom" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (image-width (text "Mid Zoom" (- FONT-SIZE 2) 'black))
-      LETTER-KEY-WIDTH-BUFFER
-      (/ (- E-SCENE-WIDTH (image-width E-SCENE-TOOLS)) 2)
-      (/ (- (image-width (text "Max Zoom" (- FONT-SIZE 2) 'black)) (image-width F-KEY)) 2)
-      (image-width F-KEY))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Max Zoom" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         (image-height ARROW-DOWN-KEY)
-         ))
-   (- VIZ-FRAME-HEIGHT
-      (+ (image-height (text "Max Zoom" (- FONT-SIZE 2) 'black))
-         HEIGHT-BUFFER
-         ))))
+(create-bounding-limits E-SCENE-WIDTH E-SCENE-HEIGHT (image-width E-SCENE-TOOLS) RULE-YIELD-DIMS FONT-SIZE LETTER-KEY-WIDTH-BUFFER INS-TOOLS-BUFFER
+                        ((ARROW-UP-KEY "Restart")
+                         (ARROW-RIGHT-KEY "Forward")
+                         (ARROW-LEFT-KEY "Backward")
+                         (ARROW-DOWN-KEY "Finish")
+                         (CURSOR "Hold to drag")
+                         (W-KEY "Zoom in")
+                         (S-KEY "Zoom out")
+                         (R-KEY "Min zoom")
+                         (E-KEY "Mid zoom")
+                         (F-KEY "Max zoom")))
 
 ;; L = ab*
 #| (define nl (make-ndfa '(S)
@@ -533,21 +202,12 @@
   (foldr (λ (s g) (rip-out-node s g)) g lon))
 
 ;; (listof ndfa-rule) → dgraph
-;; Purpose: Create a dgraph from the given ndfa
+;; Purpose: Create a dgraph from the given ndfa (for the ones that are already regexp)
 (define (make-dgraph lor)
   (map (λ (r)
          (if (eq? (second r) EMP)
-             (list (first r) (empty-regexp) (third r))
-             (list (first r) (singleton-regexp (symbol->string (second r))) (third r))))
-       lor))
-
-;; (listof ndfa-rule) → dgraph
-;; Purpose: Create a dgraph from the given ndfa (for the ones that are already regexp)
-(define (make-dgraph-unions lor)
-  (map (λ (r)
-         (if (eq? (second r) EMP)
              (list (first r) (printable-regexp (empty-regexp)) (third r))
-             (list (first r) (second r) (third r))))
+             (list (first r)  (second r) (third r))))
        lor))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -564,7 +224,7 @@
 ;;          start and final states.
 (define (create-nodes graph los ns nf)
   (let ([states-only (remove-duplicates (append (list ns nf) los))])
-    (foldl (λ (state result)
+    (foldr (λ (state result)
              (add-node result
                        state
                        #:atb (hash 'color
@@ -584,7 +244,7 @@
 ;; graph (listof edge) -> graph
 ;; Purpose: To create graph of edges
 (define (create-edges graph loe)
-  (foldl (λ (rule result)
+  (foldr (λ (rule result)
            (add-edge result
                      (printable-regexp (simplify-regexp (second rule)))
                      (first rule)
@@ -593,27 +253,6 @@
          graph
          loe))
 
-;; create-edges-special
-;; graph (listof edge) -> graph
-;; Purpose: To create graph of edges
-(define (create-edges-special graph loe)
-  (foldl (λ (rule result)
-           (add-edge result
-                     (second rule)
-                     (first rule)
-                     (third rule)
-                     #:atb (hash 'fontsize 14 'style 'solid 'fontname "Sans")))
-         graph
-         loe))
-
-;; create-graph-special
-;; (listof state) dgraph state state -> graph
-;; Purpose: To create a graph structure for the given dgraph using
-;;          news as the start state and newf as the final state
-(define (create-graph-special los loe news newf)
-  (create-edges-special
-   (create-nodes (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans")) los news newf)
-   loe))
 
 ;; create-graphic
 ;; (listof state) dgraph state state -> graph
@@ -624,40 +263,57 @@
    (create-nodes (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans")) los news newf)
    loe))
 
+
+;; to-union
+;; (listof edges) -> (listof edges with regexp labels)
+;; Purpose: To turn all loops on multiple edges into unions
+(define (to-union loe)
+  (let* ([hash-t (add-edges-to-hash (make-hash) loe)]
+         [hash-l (reverse (hash->list hash-t))])
+    (map (λ (x)
+           (if (< (length (rest x)) 1)
+               (list (first (first x)) (string->symbol (first (rest x))) (second (first x)))
+               (list (first (first x))
+                     (make-unions (reverse (filter (λ (el) (not (equal? el 'ε))) (reverse (rest x)))))
+                     (second (first x)))))
+         hash-l)))
+
 ;; create-graphs
 ;; ndfa -> (listof graph)
 ;; Purpose: To create a list of graph structures that build a regular
 ;; expression from the  given ndfa
 (define (create-graphs M)
-  (define new-start (gen-state (sm-states M)))
-  (define new-final (gen-state (cons new-start (sm-states M))))
-  (define new-rules
-    (cons (list new-start EMP (sm-start M)) (map (λ (fst) (list fst EMP new-final)) (sm-finals M))))
-  (define (create-graphs-helper M)
-    (define (grp-seq to-rip g gseq)
-      (if (null? to-rip)
-          gseq
-          (let ([new-g (rip-out-node (first to-rip) g)])
-            (grp-seq
-             (rest to-rip)
-             new-g
-             (cons (graph-struct
-                    (create-graphic (append (list new-start new-final)) new-g new-start new-final)
-                    (text (format "Ripped node: ~a" (first to-rip)) 20 'black))
-                   gseq)))))
-    (reverse (grp-seq (if (not (member DEAD (sm-states M)))
-                          (sm-states M)
-                          (cons DEAD (remove DEAD (sm-states M))))
-                      (make-dgraph (append (sm-rules M) new-rules))
-                      '())))
-  (cons (graph-struct (create-graphic (append (if (not (member DEAD (sm-states M)))
-                                                  (sm-states M)
-                                                  (cons DEAD (remove DEAD (sm-states M)))))
-                                      (make-dgraph (append (sm-rules M) new-rules))
-                                      new-start
-                                      new-final)
-                      (text "Added starting and final state" 20 'black))
-        (create-graphs-helper M)))
+  (let*
+      [(new-start (gen-state (sm-states M)))
+       (new-final (gen-state (cons new-start (sm-states M))))
+       (new-rules
+        (cons (list new-start EMP (sm-start M)) (map (λ (fst) (list fst EMP new-final)) (sm-finals M))))
+       (changed-rules (to-union (append (sm-rules M) new-rules)))]
+    (define (create-graphs-helper M)
+      (define (grp-seq to-rip g gseq)
+        (if (null? to-rip)
+            gseq
+            (let ([new-g (rip-out-node (first to-rip) g)])
+              (grp-seq
+               (rest to-rip)
+               new-g
+               (cons (graph-struct
+                      (create-graphic (append (list new-start new-final)) new-g new-start new-final)
+                      (text (format "Ripped node: ~a" (first to-rip)) 20 'black))
+                     gseq)))))
+      (reverse (grp-seq (if (not (member DEAD (sm-states M)))
+                            (sm-states M)
+                            (cons DEAD (remove DEAD (sm-states M))))
+                        (make-dgraph changed-rules)
+                        '())))
+    (cons (graph-struct (create-graphic (append (if (not (member DEAD (sm-states M)))
+                                                    (sm-states M)
+                                                    (cons DEAD (remove DEAD (sm-states M)))))
+                                        (make-dgraph changed-rules)
+                                        new-start
+                                        new-final)
+                        (text "Added starting and final state" 20 'black))
+          (create-graphs-helper M))))
 
 ;; add-edges-to-hash
 ;; hash (listof edges) -> hash
@@ -680,22 +336,12 @@
 ;; (listof symbol) -> regexp
 ;; Purpose: To return a union of all symbols in a list
 (define (make-unions los)
-  (if (= 1 (length los))
-      (symbol->string (first los))
-      (string-append (symbol->string (first los)) " U " (make-unions (rest los)))))
+  (if (empty? los)
+      (empty-regexp)
+      (if (= 1 (length los))
+          (singleton-regexp (symbol->string (first los)))
+          (simplify-regexp (make-unchecked-union (singleton-regexp (symbol->string (first los))) (make-unions (rest los)))))))
 
-;; to-union
-;; (listof edges) -> (listof edges with regexp labels)
-;; Purpose: To turn all loops on multiple edges into unions
-(define (to-union loe)
-  (let* ([hash-t (add-edges-to-hash (make-hash) loe)] [hash-l (reverse (hash->list hash-t))])
-    (map (λ (x)
-           (if (< (length (rest x)) 1)
-               (list (first (first x)) (string->symbol (first (rest x))) (second (first x)))
-               (list (first (first x))
-                     (string->symbol (make-unions (reverse (rest x))))
-                     (second (first x)))))
-         hash-l)))
 
 ;; make-init-graph
 ;; ndfa -> img
@@ -706,9 +352,9 @@
          [new-rules (cons (list new-start EMP (sm-start M))
                           (map (λ (fst) (list fst EMP new-final)) (sm-finals M)))]
          [changed-rules (to-union (append (sm-rules M) new-rules))])
-    (graph-struct (create-graph-special
+    (graph-struct (create-graphic
                    (if (not (member DEAD (sm-states M))) (sm-states M) (cons DEAD (sm-states M)))
-                   (make-dgraph-unions changed-rules)
+                   (make-dgraph changed-rules)
                    new-start
                    new-final)
                   (text "Starting ndfa" FONT-SIZE 'black))))
@@ -913,9 +559,12 @@
                               [F-KEY-DIMS viz-max-zoom-in identity]))
    'ndfa2regexp-viz))
 
+(define ex (make-unchecked-ndfa '(A)
+                                '(a b)
+                                'A
+                                '(A)
+                                `((A a A) (A b A))))
+
+
 (define aa-ab
   (make-unchecked-ndfa '(S A B F) '(a b) 'S '(A B) `((S a A) (S a B) (A a A) (B b B) (S ,EMP F))))
-
-(ndfa2regexp-viz aa-ab)
-
-;(run AT-LEAST-ONE-MISSING)

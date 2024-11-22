@@ -1,5 +1,8 @@
-#lang racket
-(require 2htdp/image 2htdp/universe "posn.rkt" "../globals.rkt")
+#lang racket/base
+(require 2htdp/image
+         "posn.rkt"
+         "../globals.rkt"
+         racket/bool)
 
 ;; ------- button.rkt -------
 ;; This file contains the functionality and structure for buttons

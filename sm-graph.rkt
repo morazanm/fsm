@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 
 (require "fsm-gviz/interface.rkt" "fsm-core/private/sm-getters.rkt"
          "fsm-core/private/callgraphs/transdiagram-mttm.rkt")
