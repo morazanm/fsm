@@ -306,7 +306,7 @@
                          producing-nodes
                          has-invariant)
   (foldl (λ (state result)
-           (displayln (and (member (undo-renaming state) has-invariant)
+           #;(displayln (and (member (undo-renaming state) has-invariant)
                                                     (not (member state producing-nodes))))
            (add-node result
                      state
