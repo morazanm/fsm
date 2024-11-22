@@ -14,7 +14,7 @@ jobs:
         uses: actions/checkout@master
 
       - name: Install Racket and Raco 
-        uses: Bogdanp/setup-racket@v1.11 # see https://github.com/Bogdanp/setup-racket for more info
+        uses: Bogdanp/setup-racket@v1.8.1 # see https://github.com/Bogdanp/setup-racket for more info
         with:
           architecture: 'x64'
           distribution: 'full' # or: 'minimal'
@@ -22,21 +22,17 @@ jobs:
           version: stable
 
       - name: install base package
-        uses: coactions/setup-xvfb@v1.0.1
-        with:
-          run: raco pkg install
+        run: raco pkg install
       - name: push main website to ph-pages
         shell: "bash"
         run: |
           cp -Rv ./GithubPages ./docs
       - name: build docs
         shell: "bash"
-        uses: coactions/setup-xvfb@v1.0.1
-        with:
-          run: | 
-            cd fsm-docs
-            scribble +m --redirect-main http://pkg-build.racket-lang.org/doc/ --htmls --dest ../docs ./dev.scrbl
-            scribble +m --redirect-main http://pkg-build.racket-lang.org/doc/ --htmls --dest ../docs ./fsm.scrbl
+        run: | 
+          cd fsm-docs
+          scribble +m --redirect-main http://pkg-build.racket-lang.org/doc/ --htmls --dest ../docs ./dev.scrbl
+          scribble +m --redirect-main http://pkg-build.racket-lang.org/doc/ --htmls --dest ../docs ./fsm.scrbl
       - name: push to gh-pages
         uses: JamesIves/github-pages-deploy-action@4.1.4 # more info at: https://github.com/JamesIves/github-pages-deploy-action
         with:

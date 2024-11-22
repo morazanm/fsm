@@ -10,7 +10,7 @@
          2htdp/image
          "viz-state.rkt"
          "bounding-limits.rkt"
-         "default-viz-functions.rkt")
+         "default-viz-function-generators.rkt")
 
 (provide  create-viz-process-key
           create-viz-draw-world
