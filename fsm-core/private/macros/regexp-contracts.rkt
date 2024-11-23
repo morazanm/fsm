@@ -15,7 +15,7 @@
   ;; purpose: Returns true if the given input is a single alphabet character string,
   ;;          and false for every other input.
   (define (valid-alpha-string? x)
-    (define regex-pattern (regexp "^[a-z]$"))
+    (define regex-pattern (regexp "^[a-z]|^[0-9]$$"))
     (not (false? (and (string? x)
                       (regexp-match regex-pattern x)))))
 
@@ -31,7 +31,7 @@
                           (raise-blame-error
                            blame
                            x
-                           (format "The argument to singleton-regexp must be a single lowercase Roman alphabet character, but found")))))))
+                           (format "The argument to singleton-regexp must be a single digit or lowercase Roman alphabet character, but found")))))))
 
   ;; singleton-regexp/c
   (define singleton-regexp/c
