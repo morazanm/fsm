@@ -675,9 +675,9 @@ word are returned.
          regexp]{Builds the regular expression for the language that only contains the
                  empty string.}
 
-@defproc[(singleton-regexp [a letter])
+@defproc[(singleton-regexp [a (or/c letter? special-char?)])
          regexp]{Builds the regular expression for the language that only has a single
-                 word of length 1 representing the given letter.}
+                 word of length 1 representing the given letter or special character: $, &, !, *.}
 
 @defproc[(union-regexp [r1 regexp] [r2 regexp])
          regexp]{Builds a union regular expression from the given
