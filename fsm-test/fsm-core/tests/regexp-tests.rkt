@@ -13,16 +13,16 @@
    "a")
   (check-error
    (singleton-regexp "abc")
-   "The argument to singleton-regexp must be a single lowercase Roman alphabet character, but found: \"abc\"")
+   "The argument to singleton-regexp must be a single digit or lowercase Roman alphabet character, but found: \"abc\"")
   (check-error
    (singleton-regexp 5)
-   "The argument to singleton-regexp must be a single lowercase Roman alphabet character, but found: 5")
+   "The argument to singleton-regexp must be a single digit or lowercase Roman alphabet character, but found: 5")
   (check-error
    (singleton-regexp "A")
-   "The argument to singleton-regexp must be a single lowercase Roman alphabet character, but found: \"A\"")
+   "The argument to singleton-regexp must be a single digit or lowercase Roman alphabet character, but found: \"A\"")
   (check-error
    (singleton-regexp "*")
-   "The argument to singleton-regexp must be a single lowercase Roman alphabet character, but found: \"*\"")
+   "The argument to singleton-regexp must be a single digit or lowercase Roman alphabet character, but found: \"*\"")
 
   (define singleton-a (singleton-regexp "a"))
   (define singleton-b (singleton-regexp "b"))

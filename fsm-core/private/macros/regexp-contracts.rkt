@@ -15,7 +15,7 @@
   ;; purpose: Returns true if the given input is a single alphabet character string,
   ;;          and false for every other input.
   (define (valid-alpha-string? x)
-    (define regex-pattern (regexp "^[a-z]|^[0-9]$$"))
+    (define regex-pattern (regexp "^[a-z0-9]$"))
     (not (false? (and (string? x)
                       (regexp-match regex-pattern x)))))
 
