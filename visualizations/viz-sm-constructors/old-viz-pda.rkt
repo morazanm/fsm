@@ -755,7 +755,7 @@
       INS-TOOLS-BUFFER
       (image-height L-KEY))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 #|
 A rule is a structure:
 (make-rule triple pair)
@@ -939,12 +939,6 @@ visited is a (listof configuration)
 ;;(listof configurations) (listof rules) (listof configurations) -> (listof configurations)
 ;;Purpose: Returns a propers trace for the given (listof configurations) that accurately
 ;;         tracks each transition
-
-
-
-;;(listof configurations) (listof rules) (listof configurations) -> (listof configurations)
-;;Purpose: Returns a propers trace for the given (listof configurations) that accurately
-;;         tracks each transition
 (define (make-trace configs rules acc)
   (cond [(empty? rules) (reverse acc)]
         [(and (empty? acc)
@@ -1050,38 +1044,10 @@ visited is a (listof configuration)
          (remove-similarities (rest prev-path) (rest curr-path) acc)]
         [(remove-similarities (rest prev-path) (rest curr-path) (append acc (list (first curr-path))))]))
 
-;;rule symbol (listof rules) -> boolean
-;;Purpose: Determines if the given rule is a member of the given (listof rules)
-;;         or similiar to one of the rules in the given (listof rules) 
-(define (find-rule? rule dead lor)
-  (or (member? rule lor equal?)
-      (ormap (λ (p)
-               (and (equal? (first rule) (first p))
-                    (or (equal? (third rule) (third p))
-                        (and (equal? (third rule) (third p))
-                             (equal? (third rule) dead)))))
-             lor)))
-
-;;(listof symbols) (listof configurations) boolean -> (listof configurations)
-;;Purpose: Returns the configurations have the given word as unconsumed input
-(define (get-portion-configs word full-configs)
-  (append-map (λ (config)
-                (filter (λ (configs)
-                          (equal? (second configs) word))
-                        config))
-              full-configs))
-
 ;;(listof rules) -> (listof rules)
 ;;Purpose: Converts the given (listof configurations)s to rules
 (define (configs->rules curr-config)
   (make-rule-triples (remove-duplicates curr-config)))
-
-;;(zipperof words) word (f-on-zip) -> zip
-;;Purpose: Searches the zipper for the given word by applying the given function on the zipper
-(define (zipper-search zip word zip-func)
-  (if (equal? (second (zipper-current zip)) word)
-      zip
-      (zipper-search (zip-func zip) word zip-func)))
 
 ;;word (listof configurations) (listof configurations) -> (listof configurations)
 ;;Purpose: Counts the number of unique configurations for each stage of the word
@@ -1099,7 +1065,18 @@ visited is a (listof configuration)
       (reverse (cons (get-config a-word) acc))
       (count-computations (rest a-word) a-LoC (cons (get-config a-word) acc))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;(listof trace-rule) -> (listof rules)
+;;Purpose: Remakes the rules extracted from the trace
+(define (remake-rules trace-rules)
+  (append-map (λ (lor)
+                (map (λ (rule)
+                       (list (rule-triple rule)
+                             (rule-pair rule)))
+                     lor))
+              trace-rules))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;graph machine -> graph
 ;;Purpose: Creates the nodes for the given graph
@@ -1134,9 +1111,9 @@ visited is a (listof configuration)
                      (second rule)
                      (first rule)
                      (third rule)
-                     #:atb (hash 'color (cond [(find-rule? rule dead current-a-rules)
+                     #:atb (hash 'color (cond [(member? rule current-a-rules equal?)
                                                (if cut-off  DARKGOLDENROD2 'green)]
-                                              [(find-rule? rule dead current-rules)
+                                              [(member? rule current-rules equal?)
                                                (if cut-off DARKGOLDENROD2 'violetred)]
                                               [else 'black])
                                  'style (cond [(equal? (third rule) dead) 'dashed]
@@ -1147,7 +1124,7 @@ visited is a (listof configuration)
          rules))
          
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;(listof symbols) -> string
 ;;Purpose: Converts the given los into a string
@@ -1182,22 +1159,14 @@ visited is a (listof configuration)
 ;;viz-state -> graph-thunk
 ;;Purpose: Creates a graph thunk for a given viz-state
 (define (create-graph-thunk a-vs #:cut-off [cut-off #f])
-  (let* (;;(listof configurations)
-         ;;Purpose: Returns all configurations using the CI
-         [current-config (get-portion-configs (if cut-off
-                                                  (cons (last (building-viz-state-pci a-vs))
-                                                        (building-viz-state-upci a-vs))
-                                                  (building-viz-state-upci a-vs))
-                                              (building-viz-state-configs a-vs))]
-
-         ;;(listof rule-structs)
+  (let* (;;(listof rule-structs)
          ;;Purpose: Extracts the rules from the first of all configurations
          [r-config (map (λ (configs) (trace-rule (first configs))) (building-viz-state-reject-configs a-vs))
                    #;(if (empty? (building-viz-state-reject-configs a-vs))
                        (building-viz-state-reject-configs a-vs)
                        (map (λ (configs) (trace-rule (first configs))) (building-viz-state-reject-configs a-vs)))]
          
-         [current-cons (map (λ (comps) (trace-config (first comps)))
+         [current-configs (map (λ (comps) (trace-config (first comps)))
                             (append (building-viz-state-accept-configs a-vs) (building-viz-state-reject-configs a-vs)))]
          
          ;;(listof rule-structs)
@@ -1209,28 +1178,22 @@ visited is a (listof configuration)
                  
          ;;(listof rules)
          ;;Purpose: Extracts the triple and pair from rule-structs
-         [curr-accept-rules (append-map (λ (lor)
-                                      (map (λ (rule)
-                                             (list (rule-triple rule)
-                                                   (rule-pair rule)))
-                                           lor))
-                                    a-configs)]
+         [curr-accept-rules (remake-rules a-configs)]
 
          ;;(listof rules)
-         ;;Purpose: Extracs the triple and pair from rule-structs
-         [curr-reject-rules (append-map (λ (lor)
-                                        (map (λ (rule)
-                                               (list (rule-triple rule)
-                                                     (rule-pair rule)))
-                                             lor))
-                                      (append r-config a-configs))]
+         ;;Purpose: Extracts the triple and pair from rule-structs
+         [curr-reject-rules (remake-rules r-config)]
+         
+         ;;A dummy pda rule 
+         [dummy-rule (list (list EMP EMP EMP) (list EMP EMP))]
+         
          ;;(listof rules)
          ;;Purpose: Converts the current rules from the rejecting computations and makes them usable for graphviz
-         [current-r-rules (configs->rules (filter (λ (rule) (not (equal? rule (list (list EMP EMP EMP) (list EMP EMP))))) curr-reject-rules))]
+         [current-r-rules (configs->rules (filter (λ (rule) (not (equal? rule dummy-rule))) curr-reject-rules))]
                   
          ;;(listof rules)
          ;;Purpose: Converts the current rules from the accepting computations and makes them usable for graphviz
-         [current-a-rules (configs->rules (filter (λ (rule) (not (equal? rule (list (list EMP EMP EMP) (list EMP EMP))))) curr-accept-rules))]
+         [current-a-rules (configs->rules (filter (λ (rule) (not (equal? rule dummy-rule))) curr-accept-rules))]
          
          ;;(listof rules)
          ;;Purpose: All of the pda rules converted to triples
@@ -1239,7 +1202,7 @@ visited is a (listof configuration)
          ;;(listof (listof symbol ((listof symbols) -> boolean))) (listof symbols))
          ;;Purpose: Extracts all invariants for the states that the machine can be in
          [get-invs (for*/list ([invs (building-viz-state-inv a-vs)]
-                               [curr current-cons]
+                               [curr current-configs]
                                #:when (equal? (first invs) (first curr)))
                      (list invs (building-viz-state-pci a-vs) (third curr)))]
 
@@ -1285,7 +1248,7 @@ visited is a (listof configuration)
          (reverse (cons (create-graph-thunk a-vs) acc))]
         [(> (length (building-viz-state-pci a-vs)) (sub1 (building-viz-state-max-cmps a-vs)))
          (reverse (cons (create-graph-thunk a-vs #:cut-off #t) acc))]
-        [(not (ormap (λ (config) (empty? (second (first config))))
+        #;[(not (ormap (λ (config) (empty? (second (first config))))
                      (map computation-LoC (get-computations (building-viz-state-pci a-vs)
                                                             (sm-rules (building-viz-state-M a-vs))
                                                             (sm-start (building-viz-state-M a-vs))
@@ -2140,11 +2103,11 @@ visited is a (listof configuration)
                                 'K
                                 '(I)
                                 `(((K ,EMP ,EMP)(H ,EMP))
-                                  ((K a (b))(K ,EMP))
-                                  ((K b (a))(K ,EMP))
+                                  ((K a ,EMP)(K (b)))
+                                  ((K b ,EMP)(K (a)))
                                   ((H ,EMP ,EMP)(K ,EMP))
-                                  ((H b ,EMP)(H (b)))
-                                  ((H a ,EMP)(H (a)))
+                                  ((H b (b))(H ,EMP))
+                                  ((H a (a))(H ,EMP))
                                   ((H ,EMP ,EMP)(I ,EMP)))))
 
 
