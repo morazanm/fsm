@@ -13,9 +13,11 @@
 
 (provide check-accept check-reject)
 
+(define (display-failed-test desc exn)
+  ((error-display-handler) desc exn))
 
 ;; exeption-structure
-(struct exn:fail:check-failed exn:fail
+(struct exn:fail:check-failed exn:fail:user
   (a-srcloc)
   #:property prop:exn:srclocs
   (lambda (a-struct)
@@ -88,8 +90,7 @@
               [word-lst (map first res)]
               [word-stx-lst (map second res)])
          (unless (empty? res)
-           (raise (exn:fail:check-failed
-                   (if (= (length word-lst) 1)
+           (let ([failure-str (if (= (length word-lst) 1)
                        (format "~s doesn't derive the following word: ~a"
                                (syntax-e #'G)
                                (first word-lst))
@@ -97,16 +98,19 @@
                                (syntax-e #'G)
                                (apply string-append (cons (format "\n~s" (first word-lst))
                                                           (map (lambda (n) (format "\n~s" n))
-                                                               (rest word-lst))))))
-                   (current-continuation-marks)
-                   (map (lambda (z)
-                          (srcloc (syntax-source z)
-                                  (syntax-line z)
-                                  (syntax-column z)
-                                  (syntax-position z)
-                                  (syntax-span z)))
-                        word-stx-lst))
-                  #t)))]))
+                                                               (rest word-lst))))))])
+             (display-failed-test failure-str (exn:fail:check-failed
+                                               failure-str
+                                               (current-continuation-marks)
+                                               (map (lambda (z)
+                                                      (srcloc (syntax-source z)
+                                                              (syntax-line z)
+                                                              (syntax-column z)
+                                                              (syntax-position z)
+                                                              (syntax-span z)))
+                                                    word-stx-lst))
+                                  #t))
+           ))]))
 
 ;; Syntax -> Syntax
 ;; Matches incorrect syntatic forms and provides specialized errors messages based on them
@@ -166,8 +170,7 @@
               [word-lst (map second res)]
               [word-stx-lst (map first res)])
          (unless (empty? res)
-           (raise (exn:fail:check-failed
-                   (if (= (length word-lst) 1)
+           (let ([failure-str (if (= (length word-lst) 1)
                        (format "~s does not accept the following word: ~a"
                                (syntax-e #'M)
                                (first word-lst))
@@ -175,7 +178,9 @@
                                (syntax-e #'M)
                                (apply string-append (cons (format "\n~s" (first word-lst))
                                                           (map (lambda (n) (format "\n~s" n))
-                                                               (rest word-lst))))))
+                                                               (rest word-lst))))))])
+             (display-failed-test failure-str (exn:fail:check-failed
+                   failure-str
                    (current-continuation-marks)
                    (map (lambda (z)
                           (srcloc (syntax-source z)
@@ -184,7 +189,8 @@
                                   (syntax-position z)
                                   (syntax-span z)))
                         word-stx-lst))
-                  #t)))]))
+                  #t))
+           ))]))
 
 (define-syntax (check-reject-turing-machine stx)
   (define-syntax-class machine
@@ -278,8 +284,7 @@
   
   (syntax-parse stx 
     [(_ C:id M:machine (~var x (sm-word #'C)) ...)
-     #`(let* (
-              [res (foldr (lambda (word cword wordstx accum)
+     #`(let* ([res (foldr (lambda (word cword wordstx accum)
                             (if (equal? (sm-apply M.c cword) 'accept)
                                 accum
                                 (cons (list word wordstx) accum)))
@@ -290,25 +295,30 @@
               [word-lst (map first res)]
               [word-stx-lst (map second res)])
          (unless (empty? res)
-           (raise (exn:fail:check-failed
-                   (if (= (length word-lst) 1)
-                       (format "~s does not accept the following word: ~a"
-                               (syntax-e #'M.m)
-                               (first word-lst))
-                       (format "~s does not accept the following words: ~a"
-                               (syntax-e #'M.m)
-                               (apply string-append (cons (format "\n~s" (first word-lst))
-                                                          (map (lambda (n) (format "\n~s" n))
-                                                               (rest word-lst)))))
-                       )
-                   (current-continuation-marks)
-                   (map (lambda (z)
-                          (srcloc (syntax-source z)
-                                  (syntax-line z)
-                                  (syntax-column z)
-                                  (syntax-position z)
-                                  (syntax-span z)))
-                        word-stx-lst)))))]))
+           (let ([failure-str (if (= (length word-lst) 1)
+                                               (format "~s does not accept the following word: ~a"
+                                                       (syntax-e #'M.m)
+                                                       (first word-lst))
+                                               (format "~s does not accept the following words: ~a"
+                                                       (syntax-e #'M.m)
+                                                       (apply string-append (cons (format "\n~s" (first word-lst))
+                                                                                  (map (lambda (n) (format "\n~s" n))
+                                                                                       (rest word-lst)))))
+                                               )])
+           (display-failed-test failure-str (exn:fail:check-failed
+                                           failure-str
+                                           (current-continuation-marks)
+                                           (map (lambda (z)
+                                                  (srcloc (syntax-source z)
+                                                          (syntax-line z)
+                                                          (syntax-column z)
+                                                          (syntax-position z)
+                                                          (syntax-span z)))
+                                                word-stx-lst))
+                                ))
+             ))
+          
+     ]))
 
 (define-syntax (check-reject-machine stx)
   (define-syntax-class machine
@@ -395,21 +405,24 @@
               #t)]
     [(_ unknown-expr . words)
      #:with (x ...) #'words
-     #`(cond [(is-turing-machine? unknown-expr)
-              (let ([tm-word-contract (new-tm-word/c (cons '_ (sm-sigma unknown-expr)))])
-                #,(syntax/loc stx (check-possibly-correct-turing-machine-syntax #t tm-word-contract unknown-expr x ...))
-                )]
-             [(is-machine? unknown-expr)
-              (let [(sm-word-contract (new-sm-word/c (sm-sigma unknown-expr)))]
-                #,(syntax/loc stx (check-possibly-correct-machine-syntax #t sm-word-contract unknown-expr x ...)))]
-             [(is-grammar? unknown-expr)
-              (let [(grammar-word-contract (new-grammar-word/c (grammar-sigma unknown-expr)))]
-                #,(syntax/loc stx (check-possibly-correct-grammar-syntax #t grammar-word-contract unknown-expr x ...)))]
-             [else (raise (exn:fail:check-failed
-                           (format "~s is not a valid FSM value that can be tested" (syntax->datum #'unknown-expr))
-                           (current-continuation-marks)
-                           (list (syntax-srcloc #'unknown-expr)))
-                          #t)])]))
+     #`(parameterize-break #t       
+        (cond [(is-turing-machine? unknown-expr)
+               (let ([tm-word-contract (new-tm-word/c (cons '_ (sm-sigma unknown-expr)))])
+                 #,(syntax/loc stx (check-possibly-correct-turing-machine-syntax #t tm-word-contract unknown-expr x ...))
+                 )]
+              [(is-machine? unknown-expr)
+               (let [(sm-word-contract (new-sm-word/c (sm-sigma unknown-expr)))]
+                 #,(syntax/loc stx (check-possibly-correct-machine-syntax #t sm-word-contract unknown-expr x ...)))]
+              [(is-grammar? unknown-expr)
+               (let [(grammar-word-contract (new-grammar-word/c (grammar-sigma unknown-expr)))]
+                 #,(syntax/loc stx (check-possibly-correct-grammar-syntax #t grammar-word-contract unknown-expr x ...)))]
+              [else (raise (exn:fail:check-failed
+                            (format "~s is not a valid FSM value that can be tested" (syntax->datum #'unknown-expr))
+                            (current-continuation-marks)
+                            (list (syntax-srcloc #'unknown-expr)))
+                           #t)])
+        )
+     ]))
 
 ;; machine word [head-pos] -> Boolean
 ;; Purpose: To determine whether a given machine can reject a given word
