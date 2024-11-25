@@ -120,9 +120,9 @@
     (pattern (~not (quote w))))
   
   (syntax-parse stx
-    [(_ C:id M (~var x valid-word) ...)
+    [(_ accept?:boolean C:id M (~var x valid-word) ...)
      #'(check-accept-grammar C M x ...)]
-    [(_ C:id M (~or (~var valids valid-word)
+    [(_ accept?:boolean C:id M (~or (~var valids valid-word)
                     (~var invalids invalid-word)) ...)
      #'(raise (exn:fail:check-failed
                    (format "The following expressions are not valid words that can be tested:\n~a"
@@ -185,6 +185,21 @@
                                   (syntax-span z)))
                         word-stx-lst))
                   #t)))]))
+
+(define-syntax (check-reject-turing-machine stx)
+  (define-syntax-class machine
+    (pattern M))
+  
+  (define-syntax-class (tm-word word-contract)
+    (pattern (quote (word0 head-pos0))
+      #:with word (syntax/loc #'word0 (quote word0))
+      #:declare word (expr/c word-contract #:positive #'word)
+      #:with cword #'word.c
+      #:with head-pos #'head-pos0))
+  
+  (syntax-parse stx
+    [(_ C:id M:machine (~var x (tm-word #'C)) ...)
+     #'(void)]))
 
 ;; Syntax -> Syntax
 ;; Matches incorrect syntatic forms and provides specialized errors messages based on them
@@ -295,6 +310,24 @@
                                   (syntax-span z)))
                         word-stx-lst)))))]))
 
+(define-syntax (check-reject-machine stx)
+  (define-syntax-class machine
+    (pattern M
+      #:declare M (expr/c #'is-machine?)
+      #:with m #'M
+      #:with c (attribute M.c)))
+  
+  (define-syntax-class (sm-word sigma-contract)
+    (pattern W
+      #:declare W (expr/c sigma-contract
+                          #:positive #'W)
+      #:with w #'W
+      #:with c (attribute W.c)))
+  
+  (syntax-parse stx 
+    [(_ C:id M:machine (~var x (sm-word #'C)) ...)
+     #'(void)]))
+
 ;; Syntax -> Syntax
 ;; Matches incorrect syntatic forms and provides specialized errors messages based on them
 (define-syntax (check-possibly-correct-machine-syntax stx)
@@ -364,14 +397,14 @@
      #:with (x ...) #'words
      #`(cond [(is-turing-machine? unknown-expr)
               (let ([tm-word-contract (new-tm-word/c (cons '_ (sm-sigma unknown-expr)))])
-                #,(syntax/loc stx (check-possibly-correct-turing-machine-syntax tm-word-contract unknown-expr x ...))
+                #,(syntax/loc stx (check-possibly-correct-turing-machine-syntax #t tm-word-contract unknown-expr x ...))
                 )]
              [(is-machine? unknown-expr)
               (let [(sm-word-contract (new-sm-word/c (sm-sigma unknown-expr)))]
-                #,(syntax/loc stx (check-possibly-correct-machine-syntax sm-word-contract unknown-expr x ...)))]
+                #,(syntax/loc stx (check-possibly-correct-machine-syntax #t sm-word-contract unknown-expr x ...)))]
              [(is-grammar? unknown-expr)
               (let [(grammar-word-contract (new-grammar-word/c (grammar-sigma unknown-expr)))]
-                #,(syntax/loc stx (check-possibly-correct-grammar-syntax grammar-word-contract unknown-expr x ...)))]
+                #,(syntax/loc stx (check-possibly-correct-grammar-syntax #t grammar-word-contract unknown-expr x ...)))]
              [else (raise (exn:fail:check-failed
                            (format "~s is not a valid FSM value that can be tested" (syntax->datum #'unknown-expr))
                            (current-continuation-marks)
