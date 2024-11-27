@@ -753,793 +753,6 @@
       (bounding-limits-height RULE-YIELD-DIMS)
       INS-TOOLS-BUFFER
       (image-height L-KEY))))
-#|
-
-;; num num num num boolean num num num (matrix [ [x] [y] [1] ]) -> (matrix [ [transformed-x] [transformed-y] [1] ])
-;; Transforms a given point matrix based on the arguments provided
-(define (affine-transform #:x-translate [x-translate 0]
-                          #:y-translate [y-translate 0]
-                          #:x-scale [x-scale 1]
-                          #:y-scale [y-scale 1]
-                          #:reflect [reflect #f]
-                          #:rotate [rotate 0]
-                          #:x-shear [x-shear 0]
-                          #:y-shear [y-shear 0]
-                          #:point point)
-  (let* ([reflection (if reflect -1 1)]
-         [result (matrix* (matrix [[(* reflection x-scale (cos rotate))
-                                    (* x-shear (* -1 (sin rotate)))
-                                    x-translate]
-                                   [(* (sin rotate) y-shear) (* y-scale (cos rotate)) y-translate]
-                                   [0 0 1]])
-                          point)])
-    result))
-
-;; img posn num>0 -> matrix x y 1
-;; Calculates the transform needed to zoom correctly
-(define (zoom-affine-transform img img-posn scale)
-  (let* ([transformed-x (* -1
-                           (+ (- (/ E-SCENE-WIDTH 2) (+ (posn-x img-posn) (/ (image-width img) 2)))
-                              (/ (image-width img) 2)))]
-         [transformed-y (* -1
-                           (+ (- (/ E-SCENE-HEIGHT 2) (+ (posn-y img-posn) (/ (image-height img) 2)))
-                              (/ (image-height img) 2)))])
-    (affine-transform #:x-translate (* -1 transformed-x)
-                      #:y-translate (* -1 transformed-y)
-                      #:point
-                      (affine-transform #:x-scale scale
-                                        #:y-scale scale
-                                        #:point (affine-transform #:x-translate transformed-x
-                                                                  #:y-translate transformed-y
-                                                                  #:point (matrix [[0] [0] [1]]))))))
-
-;; img num>0 -> viewport-limits
-;; Calculates the min and max values of x and y that keep the graph on the screen at all times
-(define (calculate-viewport-limits scaled-image scale)
-  (let* ([img-width-node-diff (- (/ (image-width scaled-image) 2) (* NODE-SIZE scale))]
-         [img-height-node-diff (- (/ (image-height scaled-image) 2) (* NODE-SIZE scale))]
-         [scaled-node-size (* NODE-SIZE scale)]
-         [MIN-X (if (< E-SCENE-WIDTH (/ (image-width scaled-image) 2))
-                    (- (* -1 (- (/ (image-width scaled-image) 2) E-SCENE-WIDTH))
-                       (- E-SCENE-WIDTH scaled-node-size))
-                    (* -1 img-width-node-diff))]
-         [MAX-X (if (< E-SCENE-WIDTH (/ (image-width scaled-image) 2))
-                    (+ (- (/ (image-width scaled-image) 2) E-SCENE-WIDTH)
-                       E-SCENE-WIDTH
-                       (- E-SCENE-WIDTH scaled-node-size))
-                    (+ E-SCENE-WIDTH img-width-node-diff))]
-         [MIN-Y (if (< E-SCENE-HEIGHT (/ (image-height scaled-image) 2))
-                    (- (* -1 (- (/ (image-height scaled-image) 2) E-SCENE-HEIGHT))
-                       (- E-SCENE-HEIGHT scaled-node-size))
-                    (* -1 img-height-node-diff))]
-         [MAX-Y (if (< E-SCENE-HEIGHT (/ (image-height scaled-image) 2))
-                    (+ (- (/ (image-height scaled-image) 2) E-SCENE-HEIGHT)
-                       E-SCENE-HEIGHT
-                       (- E-SCENE-HEIGHT scaled-node-size))
-                    (+ E-SCENE-HEIGHT img-height-node-diff))])
-    (bounding-limits MIN-X MAX-X MIN-Y MAX-Y)))
-
-;; viz-state viewport-limits img num>0 -> viz-state
-;; Returns a new viz-state where if the given image would be out of bounds of its viewport limits
-;; It is placed into a position inbounds
-(define (reposition-out-of-bounds-img a-vs viewport-lims new-img new-scale)
-  (cond
-    [(outside-west-side-bounding-limits? viewport-lims (viz-state-image-posn a-vs))
-     (struct-copy viz-state
-                  a-vs
-                  [curr-image new-img]
-                  [image-posn
-                   (posn (bounding-limits-min-x viewport-lims) (posn-y (viz-state-image-posn a-vs)))]
-                  [scale-factor new-scale])]
-    [(outside-east-side-bounding-limits? viewport-lims (viz-state-image-posn a-vs))
-     (struct-copy viz-state
-                  a-vs
-                  [curr-image new-img]
-                  [image-posn
-                   (posn (bounding-limits-max-x viewport-lims) (posn-y (viz-state-image-posn a-vs)))]
-                  [scale-factor new-scale])]
-    [(outside-north-side-bounding-limits? viewport-lims (viz-state-image-posn a-vs))
-     (struct-copy viz-state
-                  a-vs
-                  [curr-image new-img]
-                  [image-posn
-                   (posn (posn-x (viz-state-image-posn a-vs)) (bounding-limits-min-y viewport-lims))]
-                  [scale-factor new-scale])]
-    [(outside-south-side-bounding-limits? viewport-lims (viz-state-image-posn a-vs))
-     (struct-copy viz-state
-                  a-vs
-                  [curr-image new-img]
-                  [image-posn
-                   (posn (posn-x (viz-state-image-posn a-vs)) (bounding-limits-max-y viewport-lims))]
-                  [scale-factor new-scale])]
-    [(outside-west-north-sides-bounding-limits? viewport-lims (viz-state-image-posn a-vs))
-     (struct-copy viz-state
-                  a-vs
-                  [curr-image new-img]
-                  [image-posn
-                   (posn (bounding-limits-min-x viewport-lims) (bounding-limits-min-y viewport-lims))]
-                  [scale-factor new-scale])]
-    [(outside-west-south-sides-bounding-limits? viewport-lims (viz-state-image-posn a-vs))
-     (struct-copy viz-state
-                  a-vs
-                  [curr-image new-img]
-                  [image-posn
-                   (posn (bounding-limits-min-x viewport-lims) (bounding-limits-max-y viewport-lims))]
-                  [scale-factor new-scale])]
-    [(outside-east-north-sides-bounding-limits? viewport-lims (viz-state-image-posn a-vs))
-     (struct-copy viz-state
-                  a-vs
-                  [curr-image new-img]
-                  [image-posn
-                   (posn (bounding-limits-max-x viewport-lims) (bounding-limits-min-y viewport-lims))]
-                  [scale-factor new-scale])]
-    [(outside-east-south-sides-bounding-limits? viewport-lims (viz-state-image-posn a-vs))
-     (struct-copy viz-state
-                  a-vs
-                  [curr-image new-img]
-                  [image-posn
-                   (posn (bounding-limits-max-x viewport-lims) (bounding-limits-max-y viewport-lims))]
-                  [scale-factor new-scale])]
-    [(within-bounding-limits? viewport-lims (viz-state-image-posn a-vs))
-     (struct-copy viz-state a-vs [curr-image new-img] [scale-factor new-scale])]))
-
-;; viz-state real>0 -> viz-state
-;; Returns a a viz-state where zoomed in onto the current graph being displayed
-(define (zoom a-vs factor)
-  (let* ([new-scale (* factor (viz-state-scale-factor a-vs))]
-         [scalable? (cond
-                      [(eq? factor ZOOM-INCREASE)
-                       (> (viz-state-scale-factor-cap a-vs) new-scale)]
-                      [(eq? factor ZOOM-DECREASE)
-                       (< (viz-state-scale-factor-floor a-vs) new-scale)])])
-    (if scalable?
-        (let* ([scaled-image (scale new-scale (viz-state-curr-image a-vs))]
-               [viewport-lims (calculate-viewport-limits scaled-image new-scale)]
-               [scale-increase (/ new-scale (viz-state-scale-factor a-vs))]
-               [affine-matrix (zoom-affine-transform (scale (viz-state-scale-factor a-vs)
-                                                            (viz-state-curr-image a-vs))
-                                                     (viz-state-image-posn a-vs)
-                                                     scale-increase)])
-          (reposition-out-of-bounds-img (struct-copy viz-state
-                                                     a-vs
-                                                     [image-posn
-                                                      (posn (+ (posn-x (viz-state-image-posn a-vs))
-                                                               (matrix-ref affine-matrix 0 0))
-                                                            (+ (posn-y (viz-state-image-posn a-vs))
-                                                               (matrix-ref affine-matrix 1 0)))]
-                                                     [scale-factor new-scale])
-                                        viewport-lims
-                                        (viz-state-curr-image a-vs)
-                                        new-scale))
-        a-vs)))
-
-;; viz-state ( Any* -> viz-state) -> viz-state
-;; Purpose: Prevents holding down a left or right mouse click from spamming a function too fast
-(define (buffer-held-click a-vs func)
-  (if (= (viz-state-click-buffer a-vs) 0)
-      (func (struct-copy viz-state
-                         a-vs
-                         [click-buffer 1]
-                         [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)]))
-      (if (= (viz-state-click-buffer a-vs))
-          (struct-copy viz-state
-                       a-vs
-                       [click-buffer 0]
-                       [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])
-          (struct-copy viz-state
-                       a-vs
-                       [click-buffer (add1 (viz-state-click-buffer a-vs))]
-                       [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)]))))
-
-;; img -> boolean
-;; Checks to see if an image needs to be resized
-(define (does-img-need-resizing? img)
-  (or (< E-SCENE-WIDTH (image-width img)) (< E-SCENE-HEIGHT (image-height img))))
-
-;; viz-state -> viz-state
-;; Purpose: Moves the visualization to the next step of the derivation
-(define (go-next a-vs)
-  (if (zipper-at-end? (viz-state-imgs a-vs))
-      a-vs
-      (let* ([new-imgs (zipper-next (viz-state-imgs a-vs))]
-             [new-curr-img ((zipper-current new-imgs))]
-             [curr-pimgs-img ((zipper-current (viz-state-imgs a-vs)))]
-             [img-resize (resize-image new-curr-img
-                                       (* E-SCENE-WIDTH PERCENT-BORDER-GAP)
-                                       (* E-SCENE-HEIGHT PERCENT-BORDER-GAP))]
-             [growth-x (- (/ (image-width (scale (viz-state-scale-factor a-vs) new-curr-img)) 2)
-                          (/ (image-width (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2))]
-             [growth-y (- (/ (image-height (scale (viz-state-scale-factor a-vs) new-curr-img)) 2)
-                          (/ (image-height (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2))])
-        (if (does-img-need-resizing? new-curr-img)
-            (let ([NEW-FLOOR (min (second img-resize) (third img-resize))])
-              (cond
-                [(> (viz-state-scale-factor a-vs) DEFAULT-ZOOM-CAP)
-                 (let ([new-viz-state
-                        (struct-copy viz-state
-                                     a-vs
-                                     [imgs new-imgs]
-                                     [curr-image new-curr-img]
-                                     [image-posn
-                                      (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
-                                            (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
-                                     [scale-factor DEFAULT-ZOOM-CAP]
-                                     [scale-factor-cap DEFAULT-ZOOM-CAP]
-                                     [scale-factor-floor NEW-FLOOR])])
-                   (reposition-out-of-bounds-img
-                    new-viz-state
-                    (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
-                                                      new-curr-img)
-                                               (viz-state-scale-factor new-viz-state))
-                    new-curr-img
-                    (viz-state-scale-factor new-viz-state)))]
-                [(< (viz-state-scale-factor a-vs) NEW-FLOOR)
-                 (let ([new-viz-state
-                        (struct-copy viz-state
-                                     a-vs
-                                     [imgs new-imgs]
-                                     [curr-image new-curr-img]
-                                     [image-posn
-                                      (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
-                                            (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
-                                     [scale-factor NEW-FLOOR]
-                                     [scale-factor-cap DEFAULT-ZOOM-CAP]
-                                     [scale-factor-floor NEW-FLOOR])])
-                   (reposition-out-of-bounds-img
-                    new-viz-state
-                    (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
-                                                      new-curr-img)
-                                               (viz-state-scale-factor new-viz-state))
-                    new-curr-img
-                    (viz-state-scale-factor new-viz-state)))]
-                [else
-                 (let ([new-viz-state
-                        (struct-copy viz-state
-                                     a-vs
-                                     [imgs new-imgs]
-                                     [curr-image new-curr-img]
-                                     [image-posn
-                                      (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
-                                            (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
-                                     [scale-factor-cap DEFAULT-ZOOM-CAP]
-                                     [scale-factor-floor NEW-FLOOR])])
-                   (reposition-out-of-bounds-img
-                    new-viz-state
-                    (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
-                                                      new-curr-img)
-                                               (viz-state-scale-factor new-viz-state))
-                    new-curr-img
-                    (viz-state-scale-factor new-viz-state)))]))
-            (let ([new-viz-state (struct-copy viz-state
-                                              a-vs
-                                              [imgs new-imgs]
-                                              [curr-image new-curr-img]
-                                              [image-posn
-                                               (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
-                                                     (+ (posn-y (viz-state-image-posn a-vs))
-                                                        growth-y))]
-                                              [scale-factor-cap DEFAULT-ZOOM-CAP]
-                                              [scale-factor-floor DEFAULT-ZOOM-FLOOR])])
-              (reposition-out-of-bounds-img
-               new-viz-state
-               (calculate-viewport-limits (scale (viz-state-scale-factor a-vs) new-curr-img)
-                                          (viz-state-scale-factor a-vs))
-               new-curr-img
-               (viz-state-scale-factor a-vs)))))))
-
-;;viz-state -> viz-state
-;;Purpose: Jumps the visulization to next broken invariant
-(define (jump-next a-vs)
-  (if (or (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
-                                          (viz-state-informative-messages a-vs))))
-          (> (length (imsg-state-pci (informative-messages-component-state
-                                      (viz-state-informative-messages a-vs))))
-             (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
-                                                      (viz-state-informative-messages a-vs)))))
-          
-          
-          )
-      a-vs
-      (let* ([idx (if (and (not (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                         (viz-state-informative-messages a-vs)))))
-                           (> (length (imsg-state-pci (informative-messages-component-state
-                                                       (viz-state-informative-messages a-vs))))
-                              (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs))))))
-                      (zipper-current (zipper-next (imsg-state-invs-zipper (informative-messages-component-state
-                                                                            (viz-state-informative-messages a-vs)))))
-                      (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
-                                                               (viz-state-informative-messages a-vs)))))]
-             [new-imgs (zipper-to-idx (viz-state-imgs a-vs) idx)]
-             [new-curr-img ((zipper-current new-imgs))]
-             [curr-pimgs-img ((zipper-current (viz-state-imgs a-vs)))]
-             [img-resize (resize-image new-curr-img
-                                       (* E-SCENE-WIDTH PERCENT-BORDER-GAP)
-                                       (* E-SCENE-HEIGHT PERCENT-BORDER-GAP))]
-             [growth-x (- (/ (image-width (scale (viz-state-scale-factor a-vs) new-curr-img)) 2)
-                          (/ (image-width (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2))]
-             [growth-y (- (/ (image-height (scale (viz-state-scale-factor a-vs) new-curr-img)) 2)
-                          (/ (image-height (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2))])
-       
-        (if (does-img-need-resizing? new-curr-img)
-            (let ([NEW-FLOOR (min (second img-resize) (third img-resize))])
-              (cond
-                [(> (viz-state-scale-factor a-vs) DEFAULT-ZOOM-CAP)
-                 (let ([new-viz-state
-                        (struct-copy viz-state
-                                     a-vs
-                                     [imgs new-imgs]
-                                     [curr-image new-curr-img]
-                                     [image-posn
-                                      (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
-                                            (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
-                                     [scale-factor DEFAULT-ZOOM-CAP]
-                                     [scale-factor-cap DEFAULT-ZOOM-CAP]
-                                     [scale-factor-floor NEW-FLOOR])])
-                   (reposition-out-of-bounds-img
-                    new-viz-state
-                    (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
-                                                      new-curr-img)
-                                               (viz-state-scale-factor new-viz-state))
-                    new-curr-img
-                    (viz-state-scale-factor new-viz-state)))]
-                [(< (viz-state-scale-factor a-vs) NEW-FLOOR)
-                 (let ([new-viz-state
-                        (struct-copy viz-state
-                                     a-vs
-                                     [imgs new-imgs]
-                                     [curr-image new-curr-img]
-                                     [image-posn
-                                      (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
-                                            (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
-                                     [scale-factor NEW-FLOOR]
-                                     [scale-factor-cap DEFAULT-ZOOM-CAP]
-                                     [scale-factor-floor NEW-FLOOR])])
-                   (reposition-out-of-bounds-img
-                    new-viz-state
-                    (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
-                                                      new-curr-img)
-                                               (viz-state-scale-factor new-viz-state))
-                    new-curr-img
-                    (viz-state-scale-factor new-viz-state)))]
-                [else
-                 (let ([new-viz-state
-                        (struct-copy viz-state
-                                     a-vs
-                                     [imgs new-imgs]
-                                     [curr-image new-curr-img]
-                                     [image-posn
-                                      (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
-                                            (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
-                                     [scale-factor-cap DEFAULT-ZOOM-CAP]
-                                     [scale-factor-floor NEW-FLOOR])])
-                   (reposition-out-of-bounds-img
-                    new-viz-state
-                    (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
-                                                      new-curr-img)
-                                               (viz-state-scale-factor new-viz-state))
-                    new-curr-img
-                    (viz-state-scale-factor new-viz-state)))]))
-            (let ([new-viz-state (struct-copy viz-state
-                                              a-vs
-                                              [imgs new-imgs]
-                                              [curr-image new-curr-img]
-                                              [image-posn
-                                               (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
-                                                     (+ (posn-y (viz-state-image-posn a-vs))
-                                                        growth-y))]
-                                              [scale-factor-cap DEFAULT-ZOOM-CAP]
-                                              [scale-factor-floor DEFAULT-ZOOM-FLOOR])])
-              (reposition-out-of-bounds-img
-               new-viz-state
-               (calculate-viewport-limits (scale (viz-state-scale-factor a-vs) new-curr-img)
-                                          (viz-state-scale-factor a-vs))
-               new-curr-img
-               (viz-state-scale-factor a-vs)))))))
-
-;;viz-state -> viz-state
-;;Purpose: Jumps the visulization to previous broken invariant
-(define (jump-prev a-vs)
-  (if (or (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
-                                          (viz-state-informative-messages a-vs))))
-          (< (length (imsg-state-pci (informative-messages-component-state
-                                      (viz-state-informative-messages a-vs))))
-             (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
-                                                      (viz-state-informative-messages a-vs)))))
-          )
-        
-      a-vs
-      (let* ([idx (if (and (not (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                         (viz-state-informative-messages a-vs)))))
-                           (< (length (imsg-state-pci (informative-messages-component-state
-                                                       (viz-state-informative-messages a-vs))))
-                              (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs))))))
-                      (zipper-current (zipper-prev (imsg-state-invs-zipper (informative-messages-component-state
-                                                                            (viz-state-informative-messages a-vs)))))
-                      (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
-                                                               (viz-state-informative-messages a-vs)))))]
-             [new-imgs (zipper-to-idx (viz-state-imgs a-vs) idx)]
-             [new-curr-img ((zipper-current new-imgs))]
-             [curr-pimgs-img ((zipper-current (viz-state-imgs a-vs)))]
-             [img-resize (resize-image new-curr-img
-                                       (* E-SCENE-WIDTH PERCENT-BORDER-GAP)
-                                       (* E-SCENE-HEIGHT PERCENT-BORDER-GAP))]
-             [growth-x (- (/ (image-width (scale (viz-state-scale-factor a-vs) new-curr-img)) 2)
-                          (/ (image-width (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2))]
-             [growth-y (- (/ (image-height (scale (viz-state-scale-factor a-vs) new-curr-img)) 2)
-                          (/ (image-height (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2))])
-        
-        (if (does-img-need-resizing? new-curr-img)
-            (let ([NEW-FLOOR (min (second img-resize) (third img-resize))])
-              (cond
-                [(> (viz-state-scale-factor a-vs) DEFAULT-ZOOM-CAP)
-                 (let ([new-viz-state
-                        (struct-copy viz-state
-                                     a-vs
-                                     [imgs new-imgs]
-                                     [curr-image new-curr-img]
-                                     [image-posn
-                                      (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
-                                            (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
-                                     [scale-factor DEFAULT-ZOOM-CAP]
-                                     [scale-factor-cap DEFAULT-ZOOM-CAP]
-                                     [scale-factor-floor NEW-FLOOR])])
-                   (reposition-out-of-bounds-img
-                    new-viz-state
-                    (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
-                                                      new-curr-img)
-                                               (viz-state-scale-factor new-viz-state))
-                    new-curr-img
-                    (viz-state-scale-factor new-viz-state)))]
-                [(< (viz-state-scale-factor a-vs) NEW-FLOOR)
-                 (let ([new-viz-state
-                        (struct-copy viz-state
-                                     a-vs
-                                     [imgs new-imgs]
-                                     [curr-image new-curr-img]
-                                     [image-posn
-                                      (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
-                                            (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
-                                     [scale-factor NEW-FLOOR]
-                                     [scale-factor-cap DEFAULT-ZOOM-CAP]
-                                     [scale-factor-floor NEW-FLOOR])])
-                   (reposition-out-of-bounds-img
-                    new-viz-state
-                    (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
-                                                      new-curr-img)
-                                               (viz-state-scale-factor new-viz-state))
-                    new-curr-img
-                    (viz-state-scale-factor new-viz-state)))]
-                [else
-                 (let ([new-viz-state
-                        (struct-copy viz-state
-                                     a-vs
-                                     [imgs new-imgs]
-                                     [curr-image new-curr-img]
-                                     [image-posn
-                                      (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
-                                            (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
-                                     [scale-factor-cap DEFAULT-ZOOM-CAP]
-                                     [scale-factor-floor NEW-FLOOR])])
-                   (reposition-out-of-bounds-img
-                    new-viz-state
-                    (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
-                                                      new-curr-img)
-                                               (viz-state-scale-factor new-viz-state))
-                    new-curr-img
-                    (viz-state-scale-factor new-viz-state)))]))
-            (let ([new-viz-state (struct-copy viz-state
-                                              a-vs
-                                              [imgs new-imgs]
-                                              [curr-image new-curr-img]
-                                              [image-posn
-                                               (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
-                                                     (+ (posn-y (viz-state-image-posn a-vs))
-                                                        growth-y))]
-                                              [scale-factor-cap DEFAULT-ZOOM-CAP]
-                                              [scale-factor-floor DEFAULT-ZOOM-FLOOR])])
-              (reposition-out-of-bounds-img
-               new-viz-state
-               (calculate-viewport-limits (scale (viz-state-scale-factor a-vs) new-curr-img)
-                                          (viz-state-scale-factor a-vs))
-               new-curr-img
-               (viz-state-scale-factor a-vs)))))))
-
-;; viz-state -> viz-state
-;; Purpose: Moves the visualization one step back in the derivation
-(define (go-prev a-vs)
-  (if (zipper-at-begin? (viz-state-imgs a-vs))
-      a-vs
-      (let* ([new-imgs (zipper-prev (viz-state-imgs a-vs))]
-             [new-pimgs-img ((zipper-current new-imgs))]
-             [curr-pimgs-img ((zipper-current (viz-state-imgs a-vs)))]
-             [img-resize (resize-image new-pimgs-img
-                                       (* E-SCENE-WIDTH PERCENT-BORDER-GAP)
-                                       (* E-SCENE-HEIGHT PERCENT-BORDER-GAP))]
-             [growth-x (- (/ (image-width (scale (viz-state-scale-factor a-vs) new-pimgs-img)) 2)
-                          (/ (image-width (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2))]
-             [growth-y (- (/ (image-height (scale (viz-state-scale-factor a-vs) new-pimgs-img)) 2)
-                          (/ (image-height (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2))])
-        (if (does-img-need-resizing? new-pimgs-img)
-            (let ([NEW-FLOOR (min (second img-resize) (third img-resize))])
-              (cond
-                [(> (viz-state-scale-factor a-vs) DEFAULT-ZOOM-CAP)
-                 (reposition-out-of-bounds-img
-                  (struct-copy viz-state
-                               a-vs
-                               [imgs new-imgs]
-                               [curr-image new-pimgs-img]
-                               [image-posn
-                                (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
-                                      (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
-                               [scale-factor DEFAULT-ZOOM-CAP]
-                               [scale-factor-cap DEFAULT-ZOOM-CAP]
-                               [scale-factor-floor NEW-FLOOR])
-                  (calculate-viewport-limits (scale (viz-state-scale-factor a-vs) new-pimgs-img)
-                                             (viz-state-scale-factor a-vs))
-                  new-pimgs-img
-                  (viz-state-scale-factor a-vs))]
-                [(< (viz-state-scale-factor a-vs) NEW-FLOOR)
-                 (reposition-out-of-bounds-img
-                  (struct-copy viz-state
-                               a-vs
-                               [imgs new-imgs]
-                               [curr-image new-pimgs-img]
-                               [scale-factor NEW-FLOOR]
-                               [scale-factor-cap DEFAULT-ZOOM-CAP]
-                               [scale-factor-floor NEW-FLOOR])
-                  (calculate-viewport-limits (scale (viz-state-scale-factor a-vs) new-pimgs-img)
-                                             (viz-state-scale-factor a-vs))
-                  new-pimgs-img
-                  (viz-state-scale-factor a-vs))]
-                [else
-                 (reposition-out-of-bounds-img
-                  (struct-copy viz-state
-                               a-vs
-                               [imgs new-imgs]
-                               [curr-image new-pimgs-img]
-                               [image-posn
-                                (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
-                                      (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
-                               [scale-factor-cap DEFAULT-ZOOM-CAP]
-                               [scale-factor-floor NEW-FLOOR])
-                  (calculate-viewport-limits (scale (viz-state-scale-factor a-vs) new-pimgs-img)
-                                             (viz-state-scale-factor a-vs))
-                  new-pimgs-img
-                  (viz-state-scale-factor a-vs))]))
-            (reposition-out-of-bounds-img
-             (struct-copy viz-state
-                          a-vs
-                          [imgs new-imgs]
-                          [curr-image new-pimgs-img]
-                          [image-posn
-                           (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
-                                 (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
-                          [scale-factor-cap DEFAULT-ZOOM-CAP]
-                          [scale-factor-floor DEFAULT-ZOOM-FLOOR])
-             (calculate-viewport-limits (scale (viz-state-scale-factor a-vs) new-pimgs-img)
-                                        (viz-state-scale-factor a-vs))
-             new-pimgs-img
-             (viz-state-scale-factor a-vs))))))
-
-;; viz-state -> viz-state
-;; Purpose: Restarts the derivation in the visualization
-(define (go-to-begin a-vs)
-  (if (zipper-at-begin? (viz-state-imgs a-vs))
-      a-vs
-      (let* ([new-imgs (zipper-to-begin (viz-state-imgs a-vs))]
-             [new-pimgs-img ((zipper-current new-imgs))]
-             [curr-pimgs-img ((zipper-current (viz-state-imgs a-vs)))]
-             [img-resize (resize-image new-pimgs-img
-                                       (* E-SCENE-WIDTH PERCENT-BORDER-GAP)
-                                       (* E-SCENE-HEIGHT PERCENT-BORDER-GAP))]
-             [growth-x (- (/ (image-width (scale (viz-state-scale-factor a-vs) new-pimgs-img)) 2)
-                          (/ (image-width (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2))]
-             [growth-y (- (/ (image-height (scale (viz-state-scale-factor a-vs) new-pimgs-img)) 2)
-                          (/ (image-height (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2))])
-        (if (does-img-need-resizing? new-pimgs-img)
-            (let ([NEW-FLOOR (min (second img-resize) (third img-resize))])
-              (cond
-                [(> (viz-state-scale-factor a-vs) DEFAULT-ZOOM-CAP)
-                 (let ([new-viz-state
-                        (struct-copy viz-state
-                                     a-vs
-                                     [imgs new-imgs]
-                                     [curr-image new-pimgs-img]
-                                     [image-posn
-                                      (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
-                                            (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
-                                     [scale-factor DEFAULT-ZOOM-CAP]
-                                     [scale-factor-cap DEFAULT-ZOOM-CAP]
-                                     [scale-factor-floor NEW-FLOOR])])
-                   (reposition-out-of-bounds-img
-                    new-viz-state
-                    (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
-                                                      new-pimgs-img)
-                                               (viz-state-scale-factor new-viz-state))
-                    new-pimgs-img
-                    (viz-state-scale-factor new-viz-state)))]
-                [(< (viz-state-scale-factor a-vs) NEW-FLOOR)
-                 (let ([new-viz-state
-                        (struct-copy viz-state
-                                     a-vs
-                                     [imgs new-imgs]
-                                     [curr-image new-pimgs-img]
-                                     [image-posn
-                                      (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
-                                            (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
-                                     [scale-factor NEW-FLOOR]
-                                     [scale-factor-cap DEFAULT-ZOOM-CAP]
-                                     [scale-factor-floor NEW-FLOOR])])
-                   (reposition-out-of-bounds-img
-                    new-viz-state
-                    (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
-                                                      new-pimgs-img)
-                                               (viz-state-scale-factor new-viz-state))
-                    new-pimgs-img
-                    (viz-state-scale-factor new-viz-state)))]
-                [else
-                 (let ([new-viz-state
-                        (struct-copy viz-state
-                                     a-vs
-                                     [imgs new-imgs]
-                                     [curr-image new-pimgs-img]
-                                     [image-posn
-                                      (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
-                                            (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
-                                     [scale-factor-cap DEFAULT-ZOOM-CAP]
-                                     [scale-factor-floor NEW-FLOOR])])
-                   (reposition-out-of-bounds-img
-                    new-viz-state
-                    (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
-                                                      new-pimgs-img)
-                                               (viz-state-scale-factor new-viz-state))
-                    new-pimgs-img
-                    (viz-state-scale-factor new-viz-state)))]))
-            (let ([new-viz-state (struct-copy viz-state
-                                              a-vs
-                                              [imgs new-imgs]
-                                              [curr-image new-pimgs-img]
-                                              [image-posn
-                                               (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
-                                                     (+ (posn-y (viz-state-image-posn a-vs))
-                                                        growth-y))]
-                                              [scale-factor-cap DEFAULT-ZOOM-CAP]
-                                              [scale-factor-floor DEFAULT-ZOOM-FLOOR])])
-              (reposition-out-of-bounds-img
-               new-viz-state
-               (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state) new-pimgs-img)
-                                          (viz-state-scale-factor new-viz-state))
-               new-pimgs-img
-               (viz-state-scale-factor new-viz-state)))))))
-
-;; viz-state -> viz-state
-;; Purpose: Finishes the derivations in the visualization
-(define (go-to-end a-vs)
-  (if (zipper-at-end? (viz-state-imgs a-vs))
-      a-vs
-      (let* ([new-imgs (zipper-to-end (viz-state-imgs a-vs))]
-             [new-pimgs-img ((zipper-current new-imgs))]
-             [curr-pimgs-img ((zipper-current (viz-state-imgs a-vs)))]
-             [img-resize (resize-image new-pimgs-img
-                                       (* E-SCENE-WIDTH PERCENT-BORDER-GAP)
-                                       (* E-SCENE-HEIGHT PERCENT-BORDER-GAP))]
-             [growth-x (- (/ (image-width (scale (viz-state-scale-factor a-vs) new-pimgs-img)) 2)
-                          (/ (image-width (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2))]
-             [growth-y (- (/ (image-height (scale (viz-state-scale-factor a-vs) new-pimgs-img)) 2)
-                          (/ (image-height (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2))])
-        (if (does-img-need-resizing? new-pimgs-img)
-            (let ([NEW-FLOOR (min (second img-resize) (third img-resize))])
-              (cond
-                [(> (viz-state-scale-factor a-vs) DEFAULT-ZOOM-CAP)
-                 (let ([new-viz-state
-                        (struct-copy viz-state
-                                     a-vs
-                                     [imgs new-imgs]
-                                     [curr-image new-pimgs-img]
-                                     [image-posn
-                                      (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
-                                            (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
-                                     [scale-factor DEFAULT-ZOOM-CAP]
-                                     [scale-factor-cap DEFAULT-ZOOM-CAP]
-                                     [scale-factor-floor NEW-FLOOR])])
-                   (reposition-out-of-bounds-img
-                    new-viz-state
-                    (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
-                                                      new-pimgs-img)
-                                               (viz-state-scale-factor new-viz-state))
-                    new-pimgs-img
-                    (viz-state-scale-factor new-viz-state)))]
-                [(< (viz-state-scale-factor a-vs) NEW-FLOOR)
-                 (let ([new-viz-state (struct-copy viz-state
-                                                   a-vs
-                                                   [imgs new-imgs]
-                                                   [curr-image new-pimgs-img]
-                                                   [scale-factor NEW-FLOOR]
-                                                   [scale-factor-cap DEFAULT-ZOOM-CAP]
-                                                   [scale-factor-floor NEW-FLOOR])])
-                   (reposition-out-of-bounds-img
-                    new-viz-state
-                    (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
-                                                      new-pimgs-img)
-                                               (viz-state-scale-factor new-viz-state))
-                    new-pimgs-img
-                    (viz-state-scale-factor new-viz-state)))]
-                [else
-                 (let ([new-viz-state
-                        (struct-copy viz-state
-                                     a-vs
-                                     [imgs new-imgs]
-                                     [curr-image new-pimgs-img]
-                                     [image-posn
-                                      (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
-                                            (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
-                                     [scale-factor-cap DEFAULT-ZOOM-CAP]
-                                     [scale-factor-floor NEW-FLOOR])])
-                   (reposition-out-of-bounds-img
-                    new-viz-state
-                    (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
-                                                      new-pimgs-img)
-                                               (viz-state-scale-factor new-viz-state))
-                    new-pimgs-img
-                    (viz-state-scale-factor new-viz-state)))]))
-            (let ([new-viz-state (struct-copy viz-state
-                                              a-vs
-                                              [imgs new-imgs]
-                                              [curr-image new-pimgs-img]
-                                              [image-posn
-                                               (posn (+ (posn-x (viz-state-image-posn a-vs)) growth-x)
-                                                     (+ (posn-y (viz-state-image-posn a-vs))
-                                                        growth-y))]
-                                              [scale-factor-cap DEFAULT-ZOOM-CAP]
-                                              [scale-factor-floor DEFAULT-ZOOM-FLOOR])])
-              (reposition-out-of-bounds-img
-               new-viz-state
-               (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state) new-pimgs-img)
-                                          (viz-state-scale-factor new-viz-state))
-               new-pimgs-img
-               (viz-state-scale-factor new-viz-state)))))))
-
-
-
-;; viz-state -> viz-state
-;; Purpose: Zooms in on the visualization
-(define (zoom-in a-vs)
-  (zoom a-vs ZOOM-INCREASE))
-
-;; viz-state -> viz-state
-;; Purpose: Zooms out the visualization
-(define (zoom-out a-vs)
-  (zoom a-vs ZOOM-DECREASE))
-
-;; viz-state -> viz-state
-;; Purpose: Zooms all the way in on the visualization
-(define (max-zoom-in a-vs)
-  (zoom a-vs (/ DEFAULT-ZOOM-CAP (viz-state-scale-factor a-vs))))
-
-;; viz-state -> viz-state
-;; Purpose: Zooms in a moderate amount on the visualization
-(define (reset-zoom a-vs)
-  (zoom a-vs (/ (/ DEFAULT-ZOOM-CAP 2) (viz-state-scale-factor a-vs))))
-
-;; viz-state -> viz-state
-;; Purpose: Zooms all the way out in the visualization
-(define (max-zoom-out a-vs)
-  #;(zoom a-vs (/ DEFAULT-ZOOM-FLOOR (viz-state-scale-factor a-vs)))
-  (if (or (< E-SCENE-WIDTH (image-width (viz-state-curr-image a-vs)))
-          (< E-SCENE-HEIGHT (image-height (viz-state-curr-image a-vs))))
-      (let ([img-resize (resize-image (viz-state-curr-image a-vs)
-                                      (* E-SCENE-WIDTH PERCENT-BORDER-GAP)
-                                      (* E-SCENE-HEIGHT PERCENT-BORDER-GAP))])
-        (begin
-          ;(display (format "image-width ~s \n" (image-width (viz-state-curr-image a-vs))))
-          ;(display (format "image-height ~s \n" (image-height (viz-state-curr-image a-vs))))
-          ;(display (format "second img-resize ~s \n" (second img-resize)))
-          ;(display (format "third img-resize ~s \n" (third img-resize)))
-          (zoom a-vs (/ (min (second img-resize) (third img-resize)) (viz-state-scale-factor a-vs)))))
-      (struct-copy viz-state a-vs [scale-factor DEFAULT-ZOOM-FLOOR])))
-|#
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1549,14 +762,14 @@ A trace is a structure:
 config is a single configuration
 rules are a (listof rule-structs)
 |#
-(struct trace (config rules))
+(struct trace (config rules) #:transparent)
 
 #|
 A rule is a structure:
 (make-rule triple)
 triple is the entire of the ndfa rule
 |#
-(struct rule (triple))
+(struct rule (triple) #:transparent)
 
 ;; X (listof X) -> boolean
 ;;Purpose: Determine if X is in the given list
@@ -1572,87 +785,6 @@ triple is the entire of the ndfa rule
         [(equal? (first prev-path) (first curr-path))
          (remove-similarities (rest prev-path) (rest curr-path) acc)]
         [(remove-similarities (rest prev-path) (rest curr-path) (cons (first curr-path) acc))]))
-
-
-;;(listof symbols) (listof rules) symbol -> (listof configurations)
-;;Purpose: Returns all possible configurations from start that consume the given word
-(define (get-configs a-word lor start)
-  (let (;;configuration
-        ;;Purpose: The starting configuration
-        [starting-config (append (list start) (list a-word))])
-    (make-configs starting-config
-                  a-word
-                  lor
-                  (list starting-config)
-                  (list starting-config))))
-
-;;configuration (listof symbols) (listof rule) (listof configurations) (listof configurations) -> (listof configurations)
-;;Purpose: Explores all possible configurations using the given word, (listof rules), and visited
-;;Visited = All configurations of the consumed the processed word
-;;Path = The configurations that consumed the processed word
-(define (make-configs config a-word lor visited path)
-  (let* (;;(listof rules)
-         ;;Purpose: Returns all rules that consume a letter using the given configurations
-         [connected-rules (if (empty? a-word)
-                              '()
-                              (filter (λ (rule)
-                                        (and (equal? (first rule) (first config))
-                                             (equal? (second rule) (first (second config)))))
-                                      lor))]
-         ;;(listof configurations)
-         ;;Purpose: Makes new configurations using given word and connected-rules
-         [new-config (filter (λ (new-config) (not (member? new-config visited)))
-                             (map (λ (rule)
-                                    (if (empty? a-word)
-                                        (append (list (third rule)) (list a-word))
-                                        (append (list (third rule)) (list (rest a-word)))))
-                                  connected-rules))]
-         ;;(listof rules)
-         ;;Purpose: Returns all rules that have an empty transition using the given configurations
-         [connected-rules-via-emp
-          (filter (λ (rule) (and (equal? (first rule) (first config)) (equal? (second rule) EMP)))
-                  lor)]
-         ;;(listof configurations)
-         ;;Purpose: Makes new configurations using the given word and connected-rules-via-emp
-         [new-config-via-emp (filter (λ (new-config) (not (member? new-config visited)))
-                                     (map (λ (rule) (append (list (third rule)) (list a-word)))
-                                          connected-rules-via-emp))])
-    (cond [(and (empty? new-config) (empty? new-config-via-emp))
-           (list path)] ;;no rules found that connect the config
-          [(and (empty? new-config) (not (empty? new-config-via-emp)))
-           (make-configs-helper new-config-via-emp
-                                a-word
-                                lor
-                                (append new-config-via-emp visited)
-                                path)]
-          [(and (not (empty? new-config)) (empty? new-config-via-emp))
-           (make-configs-helper new-config 
-                                (rest a-word)
-                                lor
-                                (append new-config visited)
-                                path)]
-          [else (append (make-configs-helper new-config 
-                                             (rest a-word)
-                                             lor
-                                             (append new-config visited)
-                                             path)
-                        (make-configs-helper new-config-via-emp
-                                             a-word
-                                             lor
-                                             (append new-config-via-emp visited)
-                                             path))])))
-
-;;(listof configurations) (listof symbols) (listof rule) (listof configurations) (listof configurations) -> (listof configurations)
-;;Purpose: Ensures that all possible configurations are explored
-;;Visited = All configurations that consumed the processed word
-;;Path = The configurations that consumed the processed word
-(define (make-configs-helper configs a-word lor visited path)
-  (if (empty? configs)
-      '()
-      (append (make-configs (first configs) a-word lor visited (append path (list (first configs))))
-              (make-configs-helper (rest configs) a-word lor visited path))))
-
-
 
 (define qempty? empty?)
 
@@ -1679,7 +811,6 @@ triple is the entire of the ndfa rule
       (rest a-qox)))
 
 
-
 (struct computation (LoC LoR visited) #:transparent)
 
 
@@ -1696,49 +827,52 @@ triple is the entire of the ndfa rule
                  [LoR (cons rule (computation-LoR config))]
                  [visited (cons (first (computation-LoC config)) (computation-visited config))])))
 
-(define (trace-computations start word lor)
+
+
+;;(listof symbol) (listof rule) symbol -> (listof computation)
+;;Purpose: Traces all computations that the machine can make based on the starting state, word, and given rules
+(define (trace-computations word lor start)
   (let (;;configuration
         ;;Purpose: The starting configuration
         [starting-config (computation (list (append (list start) (list word)))
                                       '()
                                       '())])
-    (make-computations starting-config
-                       lor
+    (make-computations lor
                        (enqueue (list starting-config) E-QUEUE)
                        '())))
 
 
-(define (make-computations config lor QoC path)
+;;(listof rule) -> (listof computation)
+;;Purpose: Traces all computations that the machine can make based on the starting state, word, and given rules
+(define (make-computations lor QoC path)
   (if (qempty? QoC)
       path
-      (let* (;;(listof rules)
+      (let* ([first-computation (first (computation-LoC (qfirst QoC)))]
+
+             ;;(listof rules)
              ;;Purpose: Returns all rules that consume a letter using the given configurations
-             [connected-read-rules (if (empty? (second (first (computation-LoC (qfirst QoC)))))
+             [connected-read-rules (if (empty? (second first-computation))
                                        '()
                                        (filter (λ (rule)
-                                                 (and (equal? (first rule) (first (first (computation-LoC (qfirst QoC)))))
-                                                      (equal? (second rule) (first (second (first (computation-LoC (qfirst QoC))))))))
+                                                 (and (equal? (first rule) (first first-computation))
+                                                      (equal? (second rule) (first (second first-computation)))))
                                                lor))]
              ;;(listof rules)
              ;;Purpose: Returns all rules that have an empty transition using the given configurations
              [connected-emp-rules
-              (filter (λ (rule) (and (equal? (first rule) (first (first (computation-LoC (qfirst QoC))))) (equal? (second rule) EMP)))
+              (filter (λ (rule)
+                        (and (equal? (first rule) (first first-computation))
+                             (equal? (second rule) EMP)))
                       lor)]
              ;;(listof configurations)
              ;;Purpose: Makes new configurations using given word and connected-rules
-             [new-configs (filter (λ (new-c) (not (member? (first (computation-LoC new-c)) (computation-visited new-c))))
+             [new-configs (filter (λ (new-c)
+                                    (not (member? (first (computation-LoC new-c)) (computation-visited new-c))))
                                   (map (λ (rule) (apply-rule (qfirst QoC) rule)) (append connected-read-rules connected-emp-rules)))])
         (if  (empty? new-configs)
-             (make-computations config lor (dequeue QoC) (cons (qfirst QoC) path))
-             (make-computations config lor (enqueue new-configs (dequeue QoC)) path)))))
+             (make-computations lor (dequeue QoC) (cons (qfirst QoC) path))
+             (make-computations lor (enqueue new-configs (dequeue QoC)) path)))))
   
-
-
-
-
-
-
-
 
 
 ;;(listof configurations) (listof symbols) (listof rule) (listof rules) -> (listof rules)
@@ -1767,7 +901,8 @@ triple is the entire of the ndfa rule
              (empty? configs)) (reverse acc)]
         [(and (empty? acc)
               (not (equal? (second (first rules)) EMP)))
-         (let ([res (trace (first configs) '())])
+         (let* ([rle (rule (list EMP EMP EMP))]
+                [res (trace (first configs) (list rle))])
            (make-trace (rest configs) rules (cons res acc)))]
         [(and (not (empty? acc))
               (equal? (second (first rules)) EMP))
@@ -1784,8 +919,8 @@ triple is the entire of the ndfa rule
 ;;Purpose: Returns the last fully consumed word for the given machine
 (define (last-fully-consumed a-word M)
   (cond [(empty? a-word) '()]
-        [(not (ormap (λ (config) (empty? (last (last config))))
-                     (get-configs a-word (sm-rules M) (sm-start M))))
+        [(not (ormap (λ (config) (empty? (second (first (computation-LoC config)))))
+                     (trace-computations a-word (sm-rules M) (sm-start M))))
          (last-fully-consumed (take a-word (sub1 (length a-word))) M)]
         [a-word]))
 
@@ -1896,6 +1031,13 @@ triple is the entire of the ndfa rule
         (reverse (cons (get-config a-word) acc))
         (count-computations (rest a-word) a-LoC (cons (get-config a-word) acc))))
 
+;;(listof trace-rule) -> (listof rules)
+;;Purpose: Remakes the rule extracted from the rule-struct
+(define (extract-rules trace-rules)
+  (map (λ (rule)
+         (rule-triple rule))
+       trace-rules))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; graph machine (listof symbols) symbol (listof symbols) (listof symbols) -> graph
@@ -1904,7 +1046,7 @@ triple is the entire of the ndfa rule
   (foldl (λ (state result)
            (add-node result
                      state
-                     #:atb (hash 'color (if (eq? state (sm-start M)) 'darkgreen 'black)
+                     #:atb (hash 'color (if (eq? state (sm-start M)) 'green 'black)
                                  'style (cond [(or (member? state held-inv) (member? state brkn-inv)) 'filled]
                                               [(eq? state dead) 'dashed]
                                               [else 'solid])
@@ -1930,9 +1072,7 @@ triple is the entire of the ndfa rule
                                               [else 'black])
                                  'fontsize 20
                                  'style (cond [(equal? (third rule) dead) 'dashed]
-                                              [(or (find-rule? rule dead current-rules)
-                                                   (find-rule? rule dead current-a-rules))
-                                               'bold]
+                                              [(find-rule? rule dead current-a-rules) 'bold]
                                               [else 'solid]))))
          cgraph
          (sm-rules M)))
@@ -1945,57 +1085,14 @@ triple is the entire of the ndfa rule
 ;;inv is a the (listof (state (listof symbols -> boolean)))
 ;;dead is the sybmol of dead state
 (struct building-viz-state (upci pci M inv dead configs accept-configs reject-configs))
-;(struct viz-state-ndfa (upci pci M inv dead imsg instruct graphs))
-
-;;(struct imsg-state (M upci pci invs-zipper inv-amt comps word-img-offset word-img-offset-cap scroll-accum) #:transparent)
-
-(define E-SCENE (empty-scene 1250 600))
-
-;;(listof symbols) -> string
-;;Purpose: Converts the given los into a string
-(define (los2str los)
-  (define (helper los)
-    (if (empty? (rest los))
-        (string-append (symbol->string (first los)) " ")
-        (string-append (symbol->string (first los)) " " (helper (rest los)))))
-  (helper los))
-
-;; image int int -> image
-;; PurpScales a image to the given dimentions
-(define (resize-image img max-width max-height)
-  (let* ([src-width (image-width img)]
-         [src-height (image-height img)]
-         [aspect (/ src-width src-height)]
-         [scale (min (/ max-width src-width) (/ max-height src-height))]
-         [scaled-width (* src-width scale)]
-         [scaled-height (* src-height scale)])
-    (cond [(and (> scaled-width max-width) (<= scaled-height max-height))
-           (list (scale/xy (/ max-width src-width) (/ (/ scaled-width aspect) src-height) img)
-                 (/ max-width src-width)
-                 (/ (/ scaled-width aspect) src-height))]
-          [(and (<= scaled-width max-width) (> scaled-height max-height))
-           (let ([scaled-aspect (/ scaled-width scaled-height)])
-             (list (scale/xy (/ (* scaled-height scaled-aspect) src-width) (/ max-height src-height) img)
-                   (/ (* scaled-height scaled-aspect) src-width)
-                   (/ max-height src-height)))]
-          [(and (> scaled-width max-width) (> scaled-height max-height))
-           (let* ([new-scaled-height (/ max-width aspect)]
-                  [scaled-aspect (/ max-width new-scaled-height)])
-             (list (scale/xy (/ (* max-height scaled-aspect) src-width) (/ max-height src-height) img)
-                   (/ (* max-height scaled-aspect) src-width)
-                   (/ max-height src-height)))]
-          [(and (<= scaled-width max-width) (<= scaled-height max-height))
-           (list (scale/xy (/ scaled-width src-width) (/ scaled-height src-height) img)
-                 (/ scaled-width src-width)
-                 (/ scaled-height src-height))])))
 
 ;;image-state -> image
 ;;Purpose: Determines which informative message is displayed to the user
 (define (create-draw-informative-message imsg-st)
   (let* (;;boolean
          ;;Purpose: Determines if the pci can be can be fully consumed
-         [completed-config? (ormap (λ (config) (empty? (last (last config))))
-                                   (get-configs (imsg-state-pci imsg-st)
+         [completed-config? (ormap (λ (config) (empty? (second (first (computation-LoC config)))))
+                                   (trace-computations (imsg-state-pci imsg-st)
                                                 (sm-rules (imsg-state-M imsg-st))
                                                 (sm-start (imsg-state-M imsg-st))))]
          
@@ -2095,23 +1192,27 @@ triple is the entire of the ndfa rule
 
          ;;(listof rule-structs)
          ;;Purpose: Extracts the rules from the first of all configurations
-         [r-config (append-map (λ (configs) (trace-rules (first configs))) (building-viz-state-reject-configs a-vs))]
+         [r-config (filter-map (λ (traces) (and (not (empty? traces))
+                                             (trace-rules (first traces))))
+                              (building-viz-state-reject-configs a-vs))]
 
          ;;(listof rules)
          ;;Purpose: Reconstructs the rules from rule-structs
-         [current-rules (map (λ (rule) (rule-triple rule)) r-config)]
+         [current-rules (append-map extract-rules r-config)]
 
          ;;(listof rule-structs)
          ;;Purpose: Extracts the rules from the first of the accepting computations
-         [a-configs (if (empty? (building-viz-state-accept-configs a-vs))
-                        (building-viz-state-accept-configs a-vs)
-                        (trace-rules (first (building-viz-state-accept-configs a-vs))))
-                        #;(append-map (λ (configs) (trace-rules (first configs)))
-                                      (building-viz-state-accept-configs a-vs))]
+         [a-configs (filter-map (λ (traces) (and (not (empty? traces))
+                                             (trace-rules (first traces))))
+                              (building-viz-state-accept-configs a-vs))]
+
+         ;;A dummy dfa/ndfa rule
+         [dummy-rule (list EMP EMP EMP)]
          
          ;;(listof rules)
          ;;Purpose: Reconstructs the rules from rule-structs
-         [current-a-rules (map (λ (rule) (rule-triple rule)) a-configs)]
+         [current-a-rules (filter (λ (rule) (and (not (equal? rule dummy-rule)) rule))
+                                  (append-map extract-rules a-configs))]
      
          ;;(listof (listof symbol ((listof symbols) -> boolean))) (listof symbols))
          ;;Purpose: Extracts all invariants for the states that the machine can be in
@@ -2122,35 +1223,18 @@ triple is the entire of the ndfa rule
 
          ;;(listof symbols)
          ;;Purpose: Returns all states whose invariants holds
-         [held-invs (append-map
-                     (λ (inv)
-                       (if ((second (first inv)) (second inv))
-                           (list (first (first inv)))
-                           '()))
-                     get-invs)]
+         [held-invs (filter-map (λ (inv)
+                                  (and ((second (first inv)) (second inv))
+                                       (first (first inv))))
+                                get-invs)]
 
          ;;(listof symbols)
          ;;Purpose: Returns all states whose invariants fail
-         [brkn-invs (append-map
-                     (λ (inv)
-                       (if (not (member? (first (first inv)) held-invs))
-                           (list (first (first inv)))
-                           '()))
-                     get-invs)]
-         ;;(listof symbols)
-         ;;Purpose: The states that the ndfa could be in
-         [destin-states (begin
-                          (display (format "curR-a-config ~s \n" current-rules))
-                          (display (format "curr-a-config ~s \n \n" current-a-rules))
-                          ;(display (format "current-a-rules ~s \n" current-a-rules))
-                          (if (not (empty? (building-viz-state-pci a-vs)))
-                              (map last (remove-duplicates (append current-rules current-a-rules)))
-                              #;(append r-config a-configs)
-                              (cons (sm-start (building-viz-state-M a-vs))
-                                    (remove-duplicates
-                                     (map last #;current-rules
-                                          (append current-rules current-a-rules))))))])
-    (list (edge-graph
+         [brkn-invs (filter-map (λ (inv)
+                                  (and (not ((second (first inv)) (second inv)))
+                                       (first (first inv))))
+                                get-invs)])
+    (edge-graph
            (node-graph
             (create-graph 'ndfagraph #:atb (hash 'rankdir "LR"))
             (building-viz-state-M a-vs)
@@ -2160,15 +1244,14 @@ triple is the entire of the ndfa rule
            (building-viz-state-M a-vs)
            current-a-rules
            current-rules
-           (building-viz-state-dead a-vs))
-          (length destin-states))))
+           (building-viz-state-dead a-vs))))
 
 ;;viz-state (listof graph-thunks) -> (listof graph-thunks)
 ;;Purpose: Creates all the graphs needed for the visualization
 (define (create-graph-thunks a-vs acc)
   (cond [(empty? (building-viz-state-upci a-vs)) (reverse (cons (create-graph-thunk a-vs) acc))]
-        [(not (ormap (λ (config) (empty? (last (last config))))
-                     (get-configs (building-viz-state-pci a-vs)
+        [(not (ormap (λ (config) (empty? (second (first (computation-LoC config)))))
+                     (trace-computations (building-viz-state-pci a-vs)
                                   (sm-rules (building-viz-state-M a-vs))
                                   (sm-start (building-viz-state-M a-vs)))))
          (reverse (cons (create-graph-thunk a-vs) acc))]
@@ -2178,12 +1261,14 @@ triple is the entire of the ndfa rule
                                                   [upci (rest (building-viz-state-upci a-vs))]
                                                   [pci (append (building-viz-state-pci a-vs)
                                                                (list (first (building-viz-state-upci a-vs))))]
-                                                  [accept-configs (if (empty? (building-viz-state-accept-configs a-vs))
-                                                                      (building-viz-state-accept-configs a-vs)
-                                                                      (rest (building-viz-state-accept-configs a-vs)))]
-                                                  [reject-configs (filter (λ (configs)
-                                                                            (not (empty? configs)))
-                                                                          (map rest (building-viz-state-reject-configs a-vs)))])
+                                                  [accept-configs (filter-map (λ (configs)
+                                                                            (and (not (empty? configs))
+                                                                                 (rest configs)))
+                                                                              (building-viz-state-accept-configs a-vs))]
+                                                  [reject-configs (filter-map (λ (configs)
+                                                                            (and (not (empty? configs))
+                                                                                 (rest configs)))
+                                                                              (building-viz-state-reject-configs a-vs))])
                                      (cons next-graph acc)))]))
 
 ;;viz-state -> viz-state
@@ -2192,8 +1277,8 @@ triple is the entire of the ndfa rule
   (let* (;;boolean
          ;;Purpose: Determines if the pci can be can be fully consumed
          [completed-config? (ormap (λ (config)
-                                     (empty? (last (last config))))
-                                   (get-configs (imsg-state-pci (informative-messages-component-state
+                                     (empty? (second (first (computation-LoC config)))))
+                                   (trace-computations (imsg-state-pci (informative-messages-component-state
                                                                  (viz-state-informative-messages a-vs))) 
                                                 (sm-rules (imsg-state-M (informative-messages-component-state
                                                                          (viz-state-informative-messages a-vs))))
@@ -2228,7 +1313,7 @@ triple is the entire of the ndfa rule
                                (rest (imsg-state-upci (informative-messages-component-state
                                                        (viz-state-informative-messages a-vs)))))]
                      [pci pci]
-                     [invs-zipper (cond [(list? (imsg-state-invs-zipper (informative-messages-component-state
+                     [invs-zipper (cond [(zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                                                          (viz-state-informative-messages a-vs))))
                                          (imsg-state-invs-zipper (informative-messages-component-state
                                                                   (viz-state-informative-messages a-vs)))]
@@ -2260,7 +1345,7 @@ triple is the entire of the ndfa rule
          ;;(listof symbols)
          ;;Purpose: The portion of the word that cannont be consumed
          [unconsumed-word (remove-similarities last-consumed-word full-word '())]
-         [zip (if (list? (imsg-state-invs-zipper (informative-messages-component-state
+         [zip (if (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                                   (viz-state-informative-messages a-vs))))
                   (imsg-state-invs-zipper (informative-messages-component-state
                                            (viz-state-informative-messages a-vs)))
@@ -2328,7 +1413,7 @@ triple is the entire of the ndfa rule
                                      (imsg-state-upci (informative-messages-component-state
                                                        (viz-state-informative-messages a-vs)))))]
                      [pci pci]
-                     [invs-zipper (cond [(list? (imsg-state-invs-zipper (informative-messages-component-state
+                     [invs-zipper (cond [(zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                                                          (viz-state-informative-messages a-vs))))
                                          (imsg-state-invs-zipper (informative-messages-component-state
                                                                   (viz-state-informative-messages a-vs)))]
@@ -2369,7 +1454,7 @@ triple is the entire of the ndfa rule
                             (imsg-state-pci (informative-messages-component-state
                                              (viz-state-informative-messages a-vs)))
                             '())]
-                   [invs-zipper (if (list? (imsg-state-invs-zipper (informative-messages-component-state
+                   [invs-zipper (if (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                                                     (viz-state-informative-messages a-vs))))
                                     (imsg-state-invs-zipper (informative-messages-component-state
                                                              (viz-state-informative-messages a-vs)))
@@ -2637,56 +1722,62 @@ triple is the entire of the ndfa rule
 (define (ndfa-viz M a-word #:add-dead [add-dead #f] . invs)
   (if (not (or (eq? (sm-type M) 'ndfa) (eq? (sm-type M) 'dfa)))
       (error "The given machine must be a ndfa.")
-      (let* ([new-M (if add-dead (make-new-M M) M)]
+      (let* (;;M ;;Purpose: A new machine with the dead state if add-dead is true
+             [new-M (if add-dead (make-new-M M) M)]
+             ;;symbol ;;Purpose: The name of the dead state
              [dead-state (cond [(and add-dead (eq? (sm-type M) 'ndfa)) (last (sm-states new-M))]
                                [(and add-dead (eq? (sm-type M) 'dfa)) DEAD]
                                [else 'no-dead])]
-             [all-configs (get-configs a-word (sm-rules new-M) (sm-start new-M))]
-             [computations (trace-computations (sm-start new-M) a-word (sm-rules new-M))]
-             [all-accept-configs (filter (λ (config)
-                                       (and (member? (first (last config)) (sm-finals new-M))
-                                            (empty? (second (last config)))))
-                                     all-configs)]
-             [accept-configs (if (empty? all-accept-configs) all-accept-configs (first all-accept-configs))]
-             [accept-rules (attach-rules->configs accept-configs a-word (sm-rules new-M) '())]
-             [accepting-configs (make-trace accept-configs accept-rules '())
-                                #;(map (λ (config rules)
-                                       (make-trace config rules '()))
-                                     accept-configs
-                                     accept-rules)]
-             [reject-configs (filter (λ (config)
-                                       (not (member? config accept-configs)))
-                                     all-configs)]
-             [reject-rules (map (λ (configs)
-                                  (attach-rules->configs configs a-word (sm-rules new-M) '()))
-                                reject-configs)]
-             [rejecting-configs (map (λ (configs rules)
-                                       (make-trace configs rules '()))
-                                     reject-configs
-                                     reject-rules)]
+             ;;(listof computations) ;;Purpose: All computations that the machine can have
+             [computations (trace-computations a-word (sm-rules new-M) (sm-start new-M))]
+             ;;(listof configurations) ;;Purpose: Extracts the configurations from the computation
+             [LoC (map computation-LoC computations)]
+             ;;(listof computation) ;;Purpose: Extracts all accepting computations
+             [accepting-computations (filter (λ (comp)
+                                       (and (member? (first (first (computation-LoC comp))) (sm-finals new-M))
+                                            (empty? (second (first (computation-LoC comp))))))
+                                     computations)]
+             ;;(listof trace) ;;Purpose: Makes traces from the accepting computations
+             [accepting-traces (map (λ (acc-comp)
+                                      (make-trace (reverse (computation-LoC acc-comp))
+                                                  (reverse (computation-LoR acc-comp))
+                                                  '()))
+                                    accepting-computations)]
+             ;;(listof computation) ;;Purpose: Extracts all rejecting computations
+             [rejecting-computations (filter (λ (config)
+                                               (not (member? config accepting-computations)))
+                                             computations)]
+             ;;(listof trace) ;;Purpose: Makes traces from the rejecting computations
+             [rejecting-traces (map (λ (rej-comp)
+                                      (make-trace (reverse (computation-LoC rej-comp))
+                                                  (reverse (computation-LoR rej-comp))
+                                                  '()))
+                                    rejecting-computations)]
+             ;;building-state struct
              [building-state (building-viz-state a-word
                                                  '()
                                                  new-M
                                                  (if (and add-dead (not (empty? invs))) (cons (list dead-state (λ (w) #t)) invs) invs) 
                                                  dead-state
-                                                 all-configs
-                                                 accepting-configs
-                                                 rejecting-configs)]
-             [graphs+comp-len (create-graph-thunks building-state '())]
-             [graphs (map first graphs+comp-len)]
+                                                 LoC
+                                                 accepting-traces
+                                                 rejecting-traces)]
+             ;;(listof graph-thunk) ;;Purpose: Gets all the graphs needed to run the viz
+             [graphs (create-graph-thunks building-state '())]
+             ;;(listof number) ;;Purpose: Gets the number of computations for each step
              [computation-lens (count-computations a-word (map computation-LoC computations) '())]
-             #;[computation-lens (map second graphs+comp-len)]
+             ;;(listof number) ;;Purpose: Gets the index of image where an invariant failed
              [inv-configs (map (λ (con)
                                  (length (second (first con))))
                                (return-brk-inv-configs
                                 (get-inv-config-results
-                                 (make-inv-configs a-word all-configs)
+                                 (make-inv-configs a-word LoC)
                                  invs)
                                 a-word))])
         ;(struct building-viz-state (upci pci M inv dead))
         ;(struct imsg-state (M upci pci))
         ;;ANCHOR
-        
+        ;rejecting-traces
         (run-viz graphs
                  (lambda () (graph->bitmap (first graphs)))
                  (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2))
@@ -2697,6 +1788,7 @@ triple is the entire of the ndfa rule
                                        (imsg-state new-M
                                                    a-word
                                                    '()
+                                                   'N/A
                                                    'N/A
                                                    (list->zipper inv-configs)
                                                    (sub1 (length inv-configs))
@@ -2757,7 +1849,15 @@ triple is the entire of the ndfa rule
                                             [ J-KEY-DIMS jump-prev j-key-pressed]
                                             [ L-KEY-DIMS jump-next l-key-pressed])
                                           )
-                 'ndfa-viz))))
+                 (if (eq? (sm-type M) 'ndfa)
+                          'ndfa-viz
+                          'dfa-viz)))))
+
+"FIX JUMP BUG namely L-PRESS"
+"FIX sync"
+
+
+
 
 (define aa*Uab* (make-ndfa '(K B D)
                            '(a b)
@@ -2931,11 +2031,6 @@ triple is the entire of the ndfa rule
                                (F a ,DEAD) (F b F))))
 
 
-#;(let ([res (graph->bitmap cgraph (current-directory) FNAME)])
-    (begin
-      (delete-file (string-append FNAME ".dot"))
-      (delete-file (string-append FNAME ".png"))
-      res))
 #|
 ;;accept examples
 (ndfa-viz AB*B*UAB* '(a b b))
@@ -3194,12 +2289,3 @@ triple is the entire of the ndfa rule
 
 "notes to self:"
 "scroll thru word instead of jumping to end"
-"do dna problem for ndfas"
-"update code and clean"
-
-
-(define (makes-same-configs? lor word start)
-  (let ([get-con (get-configs word lor start)]
-        [get-comp (map (λ (comp) (reverse (computation-LoC comp))) (trace-computations start word lor))])
-    (andmap (λ (comp) (member? comp get-con))
-            get-comp)))
