@@ -2,8 +2,13 @@
 
 (require (for-syntax syntax/parse
                      racket/syntax-srcloc
-                     racket/base)
+                     racket/base
+                     racket/stxparam
+                     syntax/contract
+                     )
          racket/syntax-srcloc
+         racket/stxparam
+         syntax/contract
          "../../fsm-core/private/sm-getters.rkt"
          "../../fsm-core/private/grammar-getters.rkt"
          "../../fsm-core/private/csg.rkt"
@@ -53,6 +58,11 @@
 ;; Syntax -> Syntax
 ;; Changes srcloc data associated with syntax so as to raise errors up to caller code
 (define-syntax (reattribute-syntax-loc stx)
+    (syntax-parse stx
+      [(_ x xc)
+       (syntax/loc #'x (identity xc))]))
+
+(define-syntax (reattribute-syntax-loc0 stx)
     (syntax-parse stx
       [(_ x xc)
        (syntax/loc #'x (identity xc))]))
@@ -188,9 +198,7 @@
                                   (syntax-column z)
                                   (syntax-position z)
                                   (syntax-span z)))
-                        word-stx-lst))
-                  #t))
-           ))]))
+                        word-stx-lst))))))]))
 
 (define-syntax (check-reject-turing-machine stx)
   (define-syntax-class machine
@@ -233,9 +241,9 @@
            (check-accept-turing-machine C M first-pairs ...)
            (check-reject-turing-machine C M first-pairs ...))]
     [(_ accept?:boolean C:id M (~or (~var valids valid-pair)
-                    (~var missing-one missing-one-expr)
-                    (~var missing-both missing-both-exprs)
-                    (~var invalids invalid-pair)) ...)
+                                    (~var missing-one missing-one-expr)
+                                    (~var missing-both missing-both-exprs)
+                                    (~var invalids invalid-pair)) ...)
      #`(raise (exn:fail:check-failed
                (let [(position-missing-exprs (filter (lambda (x) (list? (first x))) (list missing-one ...)))
                      (word-missing-exprs (filter (lambda (x) (exact-nonnegative-integer? (first x))) (list missing-one ...)))]
@@ -275,50 +283,178 @@
       #:with m #'M
       #:with c (attribute M.c)))
   
-  (define-syntax-class (sm-word sigma-contract)
-    (pattern W
-      #:declare W (expr/c sigma-contract
-                          #:positive #'W)
-      #:with w #'W
-      #:with c (attribute W.c)))
-  
   (syntax-parse stx 
-    [(_ C:id M:machine (~var x (sm-word #'C)) ...)
-     #`(let* ([res (foldr (lambda (word cword wordstx accum)
-                            (if (equal? (sm-apply M.c cword) 'accept)
-                                accum
-                                (cons (list word wordstx) accum)))
-                          '()
-                          (list x ...)
-                          (list (reattribute-syntax-loc x x.c) ...)
-                          (list #'x ...))]
-              [word-lst (map first res)]
-              [word-stx-lst (map second res)])
-         (unless (empty? res)
-           (let ([failure-str (if (= (length word-lst) 1)
-                                               (format "~s does not accept the following word: ~a"
-                                                       (syntax-e #'M.m)
-                                                       (first word-lst))
-                                               (format "~s does not accept the following words: ~a"
-                                                       (syntax-e #'M.m)
-                                                       (apply string-append (cons (format "\n~s" (first word-lst))
-                                                                                  (map (lambda (n) (format "\n~s" n))
-                                                                                       (rest word-lst)))))
+    [(_ C:id M:machine ((~var x) ...))
+     #`(let* ([unprocessed-word-lst (list x ...)]
+              [unprocessed-word-stx-lst (list #'x ...)]
+              [invalids (foldr (lambda (w w-stx accum) (if (C w)
+                                                           accum
+                                                           (cons (list w w-stx) accum)))
+                                    '()
+                                    unprocessed-word-lst
+                                    unprocessed-word-stx-lst)]
+              [invalid-words (map first invalids)]
+              [invalid-word-stx (map second invalids)])
+         (if (empty? invalids)
+             (let* ([res (foldr (lambda (word cword wordstx accum)
+                                  (if (equal? (sm-apply M.c word) 'accept)
+                                      accum
+                                      (cons (list word wordstx) accum)))
+                                '()
+                                unprocessed-word-lst
+                                unprocessed-word-stx-lst)]
+                    [word-lst (map first res)]
+                    [word-stx-lst (map second res)])
+               (unless (empty? res)
+                 (let ([failure-str (cond [(and (= (length word-lst) 1) (identifier? #'M.m))
+                                           (format "Step 6 of the design recipe has not been succesfully completed. The constructed machine, ~s, does not accept the following word: ~a"
+                                                   (syntax-e #'M.m)
+                                                   (first word-lst))]
+                                          [(and (> (length word-lst) 1) (identifier? #'M.m))
+                                           (format "Step 6 of the design recipe has not been succesfully completed. The constructed machine, ~s, does not accept the following words: ~a"
+                                                   (syntax-e #'M.m)
+                                                   (apply string-append (cons (format "\n~s" (first word-lst))
+                                                                              (map (lambda (n) (format "\n~s" n))
+                                                                                   (rest word-lst)))))]
+                                          [(and (= (length word-lst) 1) (not (identifier? #'M.m)))
+                                           (format "Step 6 of the design recipe has not been succesfully completed. The constructed machine does not accept the following word: ~a"
+                                                   (first word-lst))]
+                                          [(and (> (length word-lst) 1) (not (identifier? #'M.m)))
+                                           (format "Step 6 of the design recipe has not been succesfully completed. The constructed machine does not accept the following words: ~a"
+                                                   (apply string-append (cons (format "\n~s" (first word-lst))
+                                                                              (map (lambda (n) (format "\n~s" n))
+                                                                                   (rest word-lst)))))]
+                                          )])
+                   (display-failed-test failure-str (exn:fail:check-failed
+                                                     failure-str
+                                                     (current-continuation-marks)
+                                                     (map (lambda (z)
+                                                            (srcloc (syntax-source z)
+                                                                    (syntax-line z)
+                                                                    (syntax-column z)
+                                                                    (syntax-position z)
+                                                                    (syntax-span z)))
+                                                          word-stx-lst))))))
+             (let ([failure-str (apply string-append
+                                       (cons "Step X of the design recipe has not been sucessfully completed. The word following words contain nonterminals not in the language of the constructed machine"
+                                             (map (lambda (n) (format "\n~a" n)) invalid-words))) 
+                                       ])
+               (display-failed-test failure-str (exn:fail:check-failed
+                                                     failure-str
+                                                     (current-continuation-marks)
+                                                     (map (lambda (z)
+                                                            (srcloc (syntax-source z)
+                                                                    (syntax-line z)
+                                                                    (syntax-column z)
+                                                                    (syntax-position z)
+                                                                    (syntax-span z)))
+                                                          invalid-word-stx))))
+         
+           )
+         )
+           ]))
+(define (sm-word-lst/c0 sigma)
+  (lambda (x)
+    (andmap (lambda (y) (andmap (lambda (z) (member z sigma)) y)) x)))
+
+(define (sm-word-lst/c sigma)
+  #;(make-flat-contract
+   #:first-order (listof (listof (apply or/c sigma)))
+   
+   #:projection
+   (lambda (blame)
+     (lambda (x)
+       #;(current-blame-format format-error)
+       (if ((listof (listof (apply or/c sigma))) x)
+           x
+           (raise-blame-error blame x (format "Step 2 of the design recipe has not been successfully completed. The following words that should be accepted contain symbols not included in sigma")))
+       )
+     
+     ))
+  (listof (apply or/c sigma))
+  )
+
+#;(define-syntax (check-accept-machine0 stx)
+  (define-syntax-class machine
+    (pattern M
+      #:declare M (expr/c #'is-machine?)
+      #:with m #'M
+      #:with c (attribute M.c)))
+
+  
+
+  (define-splicing-syntax-class (new-sm-word-lst sigma-contract)
+    (pattern (~seq w ...+)
+      #:with lst #'(list w ...)
+      #:declare lst (expr/c #'sm-word-contract #;sigma-contract)
+      #:with lst-c (attribute lst.c)
+      #:with stx-lst #'(list #'w ...)))
+
+  #;(define-splicing-syntax-class word-lst
+    (pattern (~var x new-sm-word-lst)))
+
+  (define-syntax-class (sm-words contr)
+    (pattern (w ...)
+      #:with lst (syntax/loc #'(w ...) (list w ...))
+      #:declare lst (expr/c contr)
+      #:with lst-c (attribute lst.c)
+      #:with stx-lst #'(list #'w ...)
+      ))
+  (syntax-parse stx 
+    [(_ C:id M:machine (w ...)) ;(~var x (sm-word #'C)) ...)
+     #:with lst #'(list w ...)
+     #:with stx-lst #'(list #'w ...)
+         #`(begin
+            (let ([invalid-words (filter (lambda (x) (not (C x))) (list w ...))])
+              (if (not (empty? invalid-words))
+                  (error "TODO implement contract like RBE")
+                  (let* ([res (foldr (lambda (word cword wordstx accum)
+                                       (if (equal? (sm-apply M.c cword) 'accept)
+                                           accum
+                                           (cons (list word wordstx) accum)))
+                                     '()
+                                     lst
+                                     lst
+                                     stx-lst)]
+                         [word-lst (map first res)]
+                         [word-stx-lst (map second res)])
+                    (unless (empty? res)
+                      (let ([failure-str (cond [(and (= (length word-lst) 1) (identifier? #'M.m))
+                                                (format "Step 6 of the design recipe has not been succesfully completed. The constructed machine, ~s, does not accept the following word: ~a"
+                                                        (syntax-e #'M.m)
+                                                        (first word-lst))]
+                                               [(and (> (length word-lst) 1) (identifier? #'M.m))
+                                                (format "Step 6 of the design recipe has not been succesfully completed. The constructed machine, ~s, does not accept the following words: ~a"
+                                                        (syntax-e #'M.m)
+                                                        (apply string-append (cons (format "\n~s" (first word-lst))
+                                                                                   (map (lambda (n) (format "\n~s" n))
+                                                                                        (rest word-lst)))))]
+                                               [(and (= (length word-lst) 1) (not (identifier? #'M.m)))
+                                                (format "Step 6 of the design recipe has not been succesfully completed. The constructed machine does not accept the following word: ~a"
+                                                        (first word-lst))]
+                                               [(and (> (length word-lst) 1) (not (identifier? #'M.m)))
+                                                (format "Step 6 of the design recipe has not been succesfully completed. The constructed machine does not accept the following words: ~a"
+                                                        (apply string-append (cons (format "\n~s" (first word-lst))
+                                                                                   (map (lambda (n) (format "\n~s" n))
+                                                                                        (rest word-lst)))))]
                                                )])
-           (display-failed-test failure-str (exn:fail:check-failed
-                                           failure-str
-                                           (current-continuation-marks)
-                                           (map (lambda (z)
-                                                  (srcloc (syntax-source z)
-                                                          (syntax-line z)
-                                                          (syntax-column z)
-                                                          (syntax-position z)
-                                                          (syntax-span z)))
-                                                word-stx-lst))
-                                ))
-             ))
-          
-     ]))
+                        (display-failed-test failure-str (exn:fail:check-failed
+                                                          failure-str
+                                                          (current-continuation-marks)
+                                                          (map (lambda (z)
+                                                                 (srcloc (syntax-source z)
+                                                                         (syntax-line z)
+                                                                         (syntax-column z)
+                                                                         (syntax-position z)
+                                                                         (syntax-span z)))
+                                                               word-stx-lst))))))
+                  ))
+           )
+       
+           ]))
+
+
+
 
 (define-syntax (check-reject-machine stx)
   (define-syntax-class machine
@@ -348,15 +484,18 @@
   (define-syntax-class
     invalid-word
     (pattern (~not (quote w))))
+
+  (define-splicing-syntax-class valid-words
+    (pattern (~seq (~var x valid-word) ...)))
   
   (syntax-parse stx
     [(_ accept?:boolean C:id M (~var x valid-word) ...)
-     #'(if accept?
-           (check-accept-machine C M x ...)
-           (check-reject-machine C M x ...)
-           )]
+     #;(syntax/loc #'(~seq x ...) (check-accept-machine C M (x ...)))
+     #`(if accept?
+           (check-accept-machine C M (x ...))
+           #,(syntax/loc stx (check-reject-machine C M (x ...))))]
     [(_ accept?:boolean C:id M (~or (~var valids valid-word)
-                    (~var invalids invalid-word)) ...)
+                                    (~var invalids invalid-word)) ...)
      #'(raise (exn:fail:check-failed
                    (format "The following expressions are not valid words that can be tested:\n~a"
                            (foldr (lambda (val accum) (string-append (format "~a\n" val) accum)) "" (list invalids ...)))
@@ -368,8 +507,7 @@
                                   (syntax-position z)
                                   (syntax-span z)))
                         (list #'invalids ...)))
-                  #t)]
-    ))
+                  #t)]))
 
 ;; (Listof Symbol) -> Contract
 ;; Creates contract based off of language of turing machine provided in sigma
@@ -384,11 +522,20 @@
 (define (new-sm-word/c sigma)
   (define sm-word-char/c (apply or/c sigma))
   (define sm-word/c (listof sm-word-char/c))
-  sm-word/c)
+  (make-flat-contract
+   #:first-order sm-word/c
+   #:projection (lambda (blame)
+                  (lambda (x)
+                    #;(current-blame-format format-error)
+                    (raise-blame-error blame x (format "Step 2 of the design recipe has not been successfully completed. The following words that should be accepted contain symbols not included in sigma"))))))
+
+
+   
+
 
 ;; (Listof Symbol) -> Contract
 ;; Creates contract based off of language of grammar provided in sigma
-(define (new-grammar-word/c sigma)
+(define (new-grammar-word/c sigma)sm-word-lst/c
   (define grammar-word-char/c (apply or/c sigma))
   (define grammar-word/c (listof grammar-word-char/c))
   grammar-word/c)
@@ -403,26 +550,21 @@
                (current-continuation-marks)
                (list #,(syntax-srcloc stx)))
               #t)]
-    [(_ unknown-expr . words)
-     #:with (x ...) #'words
-     #`(parameterize-break #t       
-        (cond [(is-turing-machine? unknown-expr)
-               (let ([tm-word-contract (new-tm-word/c (cons '_ (sm-sigma unknown-expr)))])
-                 #,(syntax/loc stx (check-possibly-correct-turing-machine-syntax #t tm-word-contract unknown-expr x ...))
-                 )]
-              [(is-machine? unknown-expr)
-               (let [(sm-word-contract (new-sm-word/c (sm-sigma unknown-expr)))]
-                 #,(syntax/loc stx (check-possibly-correct-machine-syntax #t sm-word-contract unknown-expr x ...)))]
-              [(is-grammar? unknown-expr)
-               (let [(grammar-word-contract (new-grammar-word/c (grammar-sigma unknown-expr)))]
-                 #,(syntax/loc stx (check-possibly-correct-grammar-syntax #t grammar-word-contract unknown-expr x ...)))]
-              [else (raise (exn:fail:check-failed
-                            (format "~s is not a valid FSM value that can be tested" (syntax->datum #'unknown-expr))
-                            (current-continuation-marks)
-                            (list (syntax-srcloc #'unknown-expr)))
-                           #t)])
-        )
-     ]))
+    [(_ unknown-expr x ...)
+     #`(cond [(is-turing-machine? unknown-expr)
+              (let ([tm-word-contract (new-tm-word/c (cons '_ (sm-sigma unknown-expr)))])
+                #,(syntax/loc stx (check-possibly-correct-turing-machine-syntax #t tm-word-contract unknown-expr x ...)))]
+             [(is-machine? unknown-expr)
+              (let [(sm-word-contract (sm-word-lst/c (sm-sigma unknown-expr)))]
+                #,(syntax/loc stx (check-possibly-correct-machine-syntax #t sm-word-contract unknown-expr x ...)))]
+             [(is-grammar? unknown-expr)
+              (let [(grammar-word-contract (new-grammar-word/c (grammar-sigma unknown-expr)))]
+                #,(syntax/loc stx (check-possibly-correct-grammar-syntax #t grammar-word-contract unknown-expr x ...)))]
+             [else (raise (exn:fail:check-failed
+                           (format "~s is not a valid FSM value that can be tested" (syntax->datum #'unknown-expr))
+                           (current-continuation-marks)
+                           (list (syntax-srcloc #'unknown-expr)))
+                          #t)])]))
 
 ;; machine word [head-pos] -> Boolean
 ;; Purpose: To determine whether a given machine can reject a given word

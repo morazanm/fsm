@@ -51,10 +51,10 @@ E - ci = ab* final
                (C ,EMP H)
                (H b H))))
 
-(check-accept AB*B*UAB* '(a b a b a b b b b a)
+(check-accept AB*B*UAB* '(a b a b a b b b b a z)
               
-               ;'(a b a b a b b b b a) '(a b b b b b a b)
-              '(b b b b b a))
+               '(a b a b a b b b b) '(a b b b b b a b)
+              '(b b b b b a z))
 ;(check-reject AB*B*UAB* '(a b a b a b b b b))
 ;(check-accept AB*B*UAB* '(a b b a b b a b b))
 ;(check-reject AB*B*UAB* '(a b b a b b a b b))
@@ -142,7 +142,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                ((P ,BLANK) (X ,RIGHT)))
                              'S '(Y) 'Y))
 
-#;(check-accept equal-a-b-c
+(check-accept equal-a-b-c
               ;'((@ _ a a z) 1)
               '((@ _ a a b) 1)
               ;'((@ _ a a b))
