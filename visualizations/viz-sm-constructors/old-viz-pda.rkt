@@ -1390,6 +1390,11 @@ visited is a (listof configuration)
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization forward by one step
 (define (right-key-pressed a-vs)
+  (begin
+    (displayln (imsg-state-invs-zipper (informative-messages-component-state
+                                        (viz-state-informative-messages a-vs))))
+    (displayln (imsg-state-pci (informative-messages-component-state
+                                (viz-state-informative-messages a-vs))))
   (let* (;;boolean
          ;;Purpose: Determines if the pci can be can be fully consumed
          [pci (if (or (empty? (imsg-state-upci (informative-messages-component-state
@@ -1447,15 +1452,15 @@ visited is a (listof configuration)
                                                                                  (viz-state-informative-messages a-vs))))
                                          (imsg-state-invs-zipper (informative-messages-component-state
                                                                   (viz-state-informative-messages a-vs)))]
-                                        [(and (not (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                                              (viz-state-informative-messages a-vs)))))
-                                              (>= pci-len (first (zipper-processed
+                                        [(and (not (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                            (viz-state-informative-messages a-vs)))))
+                                              (>= pci-len (first (zipper-unprocessed
                                                                   (imsg-state-invs-zipper (informative-messages-component-state
                                                                                            (viz-state-informative-messages a-vs)))))))
-                                         (zipper-prev (imsg-state-invs-zipper (informative-messages-component-state
+                                         (zipper-next (imsg-state-invs-zipper (informative-messages-component-state
                                                                                (viz-state-informative-messages a-vs))))]
                                         [else (imsg-state-invs-zipper (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs)))])])])])))
+                                                                       (viz-state-informative-messages a-vs)))])])])]))))
 
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization to the end
@@ -1537,7 +1542,12 @@ visited is a (listof configuration)
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization backward by one step
 (define (left-key-pressed a-vs)
-  (let* ([acpt-trace (if (or (zipper-empty? (imsg-state-acpt-trace (informative-messages-component-state
+  (begin
+    (displayln (imsg-state-invs-zipper (informative-messages-component-state
+                                        (viz-state-informative-messages a-vs))))
+    (displayln (imsg-state-pci (informative-messages-component-state
+                                (viz-state-informative-messages a-vs))))
+    (let* ([acpt-trace (if (or (zipper-empty? (imsg-state-acpt-trace (informative-messages-component-state
                                                                             (viz-state-informative-messages a-vs))))
                                          (zipper-at-begin? (imsg-state-acpt-trace (informative-messages-component-state
                                                             (viz-state-informative-messages a-vs)))))
@@ -1610,7 +1620,7 @@ visited is a (listof configuration)
                                          (zipper-prev (imsg-state-invs-zipper (informative-messages-component-state
                                                                                (viz-state-informative-messages a-vs))))]
                                         [else (imsg-state-invs-zipper (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs)))])])])])))
+                                                                       (viz-state-informative-messages a-vs)))])])])]))))
 
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization to the beginning
@@ -1698,9 +1708,18 @@ visited is a (listof configuration)
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the previous broken invariant
 (define (j-key-pressed a-vs)
+  (begin
+    (displayln (imsg-state-invs-zipper (informative-messages-component-state
+                                        (viz-state-informative-messages a-vs))))
+    (displayln (imsg-state-pci (informative-messages-component-state
+                                (viz-state-informative-messages a-vs))))
   (if (or (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                                   (viz-state-informative-messages a-vs))))
-          (< (length (imsg-state-pci (informative-messages-component-state
+          (and (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                           (viz-state-informative-messages a-vs))))
+               (not (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                           (viz-state-informative-messages a-vs))))))
+          #;(< (length (imsg-state-pci (informative-messages-component-state
                                       (viz-state-informative-messages a-vs))))
              (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
                                                       (viz-state-informative-messages a-vs))))))
@@ -1747,14 +1766,23 @@ visited is a (listof configuration)
                                                                     (viz-state-informative-messages a-vs)))
                                                   (zipper-current zip)))]
                          [pci partial-word]
-                         [invs-zipper zip])])]))))
+                         [invs-zipper zip])])])))))
 
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the next failed invariant
 (define (l-key-pressed a-vs)
+  (begin
+    (displayln (imsg-state-invs-zipper (informative-messages-component-state
+                                        (viz-state-informative-messages a-vs))))
+    (displayln (imsg-state-pci (informative-messages-component-state
+                                (viz-state-informative-messages a-vs))))
   (if (or (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                                   (viz-state-informative-messages a-vs))))
-          (> (length (imsg-state-pci (informative-messages-component-state
+          (and (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                         (viz-state-informative-messages a-vs))))
+               (not (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                           (viz-state-informative-messages a-vs))))))
+          #;(> (length (imsg-state-pci (informative-messages-component-state
                                       (viz-state-informative-messages a-vs))))
              (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
                                                       (viz-state-informative-messages a-vs))))))
@@ -1801,7 +1829,7 @@ visited is a (listof configuration)
                                                                     (viz-state-informative-messages a-vs)))
                                                   (zipper-current zip)))]
                          [pci partial-word]
-                         [invs-zipper zip])])]))))
+                         [invs-zipper zip])])])))))
 
 ;;machine -> machine
 ;;Purpose: Produces an equivalent machine with the addition of the dead state and rules to the dead state
