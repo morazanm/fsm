@@ -1542,7 +1542,7 @@ triple is the entire of the ndfa rule
             (struct-copy imsg-state
                          (informative-messages-component-state
                           (viz-state-informative-messages a-vs))
-                         [upci (remove-similarities full-word partial-word '())]
+                         [upci (drop full-word (zipper-current zip))]
                          [pci partial-word]
                          [invs-zipper zip])])]))))
 
@@ -1586,7 +1586,7 @@ triple is the entire of the ndfa rule
             (struct-copy imsg-state
                          (informative-messages-component-state
                           (viz-state-informative-messages a-vs))
-                         [upci (remove-similarities full-word partial-word '())]
+                         [upci (drop full-word (zipper-current zip))]
                          [pci partial-word]
                          [invs-zipper zip])])]))))
 
