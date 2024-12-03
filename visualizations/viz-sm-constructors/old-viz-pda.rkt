@@ -1062,6 +1062,47 @@ visited is a (listof configuration)
                              (equal? (third rule) dead)))))
              lor)))
 
+;;X -> X
+;;Purpose: Returns X
+(define (id x) x)
+
+;;(X -> Y) (X -> Y) (X -> Y) (X -> Y) (listof (listof X)) -> (listof (listof X))
+;;Purpose: filtermaps the given f-on-x on the given (listof (listof X))
+(define (filter-map-acc filter-func map-func bool-func accessor a-lolox)
+  (filter-map (λ (x)
+                (and (bool-func (filter-func x))
+                     (map-func (accessor x))))
+              a-lolox))
+
+;;(listof symbols) -> string
+;;Purpose: Converts the given los into a string
+(define (make-edge-label rule)
+  (format "\n[~a ~a ~a]" (second (first rule)) (third (first rule)) (second (second rule))))
+
+;;(listof rules)
+;;Purpose: Transforms the pda rules into triples similiar to an ndfa 
+(define (make-rule-triples rules)
+  (map (λ (rule)
+         (append (list (first (first rule)))
+                 (list (string->symbol (make-edge-label rule)))
+                 (list (first (second rule)))))
+       rules))
+
+;;(listof trace) (X -> Y) -> (listof rule)
+;;Purpose: Extracts the rule from the first trace in a (listof trace)
+(define (get-trace-X LoT map-func)
+  (filter-map-acc empty? map-func not first LoT))
+
+;;(listof symbol ((listof symbols) (listof symbols) -> boolean))) (X -> Y) -> (listof symbol ((listof symbols) (listof symbols) -> boolean)))
+;;Purpose: Extracts the invariants from the (listof symbol ((listof symbols) (listof symbols) -> boolean)))
+(define (get-invariants LoI func)
+  (filter-map-acc (λ (x) ((second (first x)) (second x) (third x))) first func first LoI))
+
+;;(listof trace) -> (listof trace)
+;;Purpose: Extracts the empty trace from the (listof trace) and maps rest onto the non-empty trace
+(define (get-next-traces LoT)
+  (filter-map-acc empty? rest not id LoT))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;graph machine -> graph
@@ -1112,40 +1153,22 @@ visited is a (listof configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;(listof symbols) -> string
-;;Purpose: Converts the given los into a string
-(define (make-edge-label rule)
-  (format "\n[~a ~a ~a]" (second (first rule)) (third (first rule)) (second (second rule))))
-
-;;(listof rules)
-;;Purpose: Transforms the pda rules into triples similiar to an ndfa 
-(define (make-rule-triples rules)
-  (map (λ (rule)
-         (append (list (first (first rule)))
-                 (list (string->symbol (make-edge-label rule)))
-                 (list (first (second rule)))))
-       rules))
-
 ;;viz-state -> graph-thunk
 ;;Purpose: Creates a graph thunk for a given viz-state
 (define (create-graph-thunk a-vs #:cut-off [cut-off #f])
   (let* (;;(listof rule-structs)
          ;;Purpose: Extracts the rules from the first of all configurations
-         [r-rules (filter-map (λ (traces) (and (not (empty? traces))
-                                             (trace-rule (first traces))))
-                              (building-viz-state-reject-traces a-vs))]
+         [r-rules (get-trace-X (building-viz-state-reject-traces a-vs) trace-rule)]
 
          ;;(listof configs)
          ;;Purpose: Extracts all the configs from both the accepting and rejecting configs
-         [current-configs (filter-map (λ (configs) (and (not (empty? configs))
-                                             (trace-config (first configs))))
-                            (append (building-viz-state-accept-traces a-vs) (building-viz-state-reject-traces a-vs)))]
+         [current-configs (get-trace-X (append (building-viz-state-accept-traces a-vs)
+                                               (building-viz-state-reject-traces a-vs))
+                                       trace-config) ]
          
          ;;(listof rule-structs)
          ;;Purpose: Extracts the rules from the first of the accepting computations
-         [a-rules (filter-map (λ (configs) (and (not (empty? configs))
-                                                  (trace-rule (first configs))))
-                              (building-viz-state-accept-traces a-vs))]
+         [a-rules (get-trace-X (building-viz-state-accept-traces a-vs) trace-rule)]
 
          ;;(listof rules)
          ;;Purpose: Extracts the triple and pair from rule-structs
@@ -1167,7 +1190,7 @@ visited is a (listof configuration)
          ;;Purpose: All of the pda rules converted to triples
          [all-rules (make-rule-triples (sm-rules (building-viz-state-M a-vs)))]
          
-         ;;(listof (listof symbol ((listof symbols) -> boolean))) (listof symbols))
+         ;;(listof (listof symbol ((listof symbols) (listof symbols) -> boolean))) (listof symbols))
          ;;Purpose: Extracts all invariants for the states that the machine can be in
          [get-invs (for*/list ([invs (building-viz-state-inv a-vs)]
                                [curr current-configs]
@@ -1176,18 +1199,11 @@ visited is a (listof configuration)
 
          ;;(listof symbols)
          ;;Purpose: Returns all states whose invariants fail
-         [brkn-invs (filter-map (λ (inv)
-                                  (and (not ((second (first inv)) (second inv) (third inv)))
-                                       (first (first inv))))
-                                get-invs)]
+         [brkn-invs (get-invariants get-invs not)]
          
          ;;(listof symbols)
          ;;Purpose: Returns all states whose invariants holds
-         [held-invs (filter-map (λ (inv)
-                                  (and ((second (first inv)) (second inv) (third inv))
-                                       (first (first inv))))
-                                get-invs)])
-    
+         [held-invs (get-invariants get-invs id)])
     (make-edge-graph
      (make-node-graph
       (create-graph 'pdagraph #:atb (hash 'rankdir "LR"))
@@ -1225,14 +1241,8 @@ visited is a (listof configuration)
                                                                  (zipper-at-end? (building-viz-state-stack a-vs)))
                                                              (building-viz-state-stack a-vs)
                                                              (zipper-next (building-viz-state-stack a-vs)))]
-                                                  [accept-traces (filter-map (λ (traces)
-                                                                                (and (not (empty? traces))
-                                                                                     (rest traces)))
-                                                                              (building-viz-state-accept-traces a-vs))]
-                                                  [reject-traces (filter-map (λ (traces)
-                                                                                (and (not (empty? traces))
-                                                                                     (rest traces)))
-                                                                              (building-viz-state-reject-traces a-vs))])
+                                                  [accept-traces (get-next-traces (building-viz-state-accept-traces a-vs))]
+                                                  [reject-traces (get-next-traces (building-viz-state-reject-traces a-vs))])
                                      (cons next-graph acc)))]))
 
 ;;image-state -> image
@@ -1390,11 +1400,6 @@ visited is a (listof configuration)
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization forward by one step
 (define (right-key-pressed a-vs)
-  (begin
-    (displayln (imsg-state-invs-zipper (informative-messages-component-state
-                                        (viz-state-informative-messages a-vs))))
-    (displayln (imsg-state-pci (informative-messages-component-state
-                                (viz-state-informative-messages a-vs))))
   (let* (;;boolean
          ;;Purpose: Determines if the pci can be can be fully consumed
          [pci (if (or (empty? (imsg-state-upci (informative-messages-component-state
@@ -1460,7 +1465,7 @@ visited is a (listof configuration)
                                          (zipper-next (imsg-state-invs-zipper (informative-messages-component-state
                                                                                (viz-state-informative-messages a-vs))))]
                                         [else (imsg-state-invs-zipper (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs)))])])])]))))
+                                                                       (viz-state-informative-messages a-vs)))])])])])))
 
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization to the end
@@ -1542,12 +1547,7 @@ visited is a (listof configuration)
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization backward by one step
 (define (left-key-pressed a-vs)
-  (begin
-    (displayln (imsg-state-invs-zipper (informative-messages-component-state
-                                        (viz-state-informative-messages a-vs))))
-    (displayln (imsg-state-pci (informative-messages-component-state
-                                (viz-state-informative-messages a-vs))))
-    (let* ([acpt-trace (if (or (zipper-empty? (imsg-state-acpt-trace (informative-messages-component-state
+  (let* ([acpt-trace (if (or (zipper-empty? (imsg-state-acpt-trace (informative-messages-component-state
                                                                             (viz-state-informative-messages a-vs))))
                                          (zipper-at-begin? (imsg-state-acpt-trace (informative-messages-component-state
                                                             (viz-state-informative-messages a-vs)))))
@@ -1620,7 +1620,7 @@ visited is a (listof configuration)
                                          (zipper-prev (imsg-state-invs-zipper (informative-messages-component-state
                                                                                (viz-state-informative-messages a-vs))))]
                                         [else (imsg-state-invs-zipper (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs)))])])])]))))
+                                                                       (viz-state-informative-messages a-vs)))])])])])))
 
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization to the beginning
@@ -1708,18 +1708,13 @@ visited is a (listof configuration)
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the previous broken invariant
 (define (j-key-pressed a-vs)
-  (begin
-    (displayln (imsg-state-invs-zipper (informative-messages-component-state
-                                        (viz-state-informative-messages a-vs))))
-    (displayln (imsg-state-pci (informative-messages-component-state
-                                (viz-state-informative-messages a-vs))))
   (if (or (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                                   (viz-state-informative-messages a-vs))))
           (and (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
                                                                            (viz-state-informative-messages a-vs))))
                (not (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
                                                                            (viz-state-informative-messages a-vs))))))
-          #;(< (length (imsg-state-pci (informative-messages-component-state
+          (< (length (imsg-state-pci (informative-messages-component-state
                                       (viz-state-informative-messages a-vs))))
              (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
                                                       (viz-state-informative-messages a-vs))))))
@@ -1766,23 +1761,18 @@ visited is a (listof configuration)
                                                                     (viz-state-informative-messages a-vs)))
                                                   (zipper-current zip)))]
                          [pci partial-word]
-                         [invs-zipper zip])])])))))
+                         [invs-zipper zip])])]))))
 
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the next failed invariant
 (define (l-key-pressed a-vs)
-  (begin
-    (displayln (imsg-state-invs-zipper (informative-messages-component-state
-                                        (viz-state-informative-messages a-vs))))
-    (displayln (imsg-state-pci (informative-messages-component-state
-                                (viz-state-informative-messages a-vs))))
   (if (or (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                                   (viz-state-informative-messages a-vs))))
           (and (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
                                                                          (viz-state-informative-messages a-vs))))
                (not (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
                                                                            (viz-state-informative-messages a-vs))))))
-          #;(> (length (imsg-state-pci (informative-messages-component-state
+          (> (length (imsg-state-pci (informative-messages-component-state
                                       (viz-state-informative-messages a-vs))))
              (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
                                                       (viz-state-informative-messages a-vs))))))
@@ -1829,7 +1819,7 @@ visited is a (listof configuration)
                                                                     (viz-state-informative-messages a-vs)))
                                                   (zipper-current zip)))]
                          [pci partial-word]
-                         [invs-zipper zip])])])))))
+                         [invs-zipper zip])])]))))
 
 ;;machine -> machine
 ;;Purpose: Produces an equivalent machine with the addition of the dead state and rules to the dead state

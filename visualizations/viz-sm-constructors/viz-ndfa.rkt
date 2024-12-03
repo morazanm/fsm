@@ -927,7 +927,8 @@ triple is the entire of the ndfa rule
 ;;(listof symbols) (lisof configurations) -> (listof configurations)
 ;;Purpose: Makes configurations usable for invariant predicates
 (define (make-inv-configs a-word configs)
-  (if (empty? configs)
+ (map (λ (config) (make-inv-configs-helper a-word config (length a-word))) configs)
+  #;(if (empty? configs)
       '()
       (append (list (make-inv-configs-helper a-word (first configs) (length a-word)))
               (make-inv-configs a-word (rest configs)))))
@@ -1038,6 +1039,33 @@ triple is the entire of the ndfa rule
          (rule-triple rule))
        trace-rules))
 
+;;X -> X
+;;Purpose: Returns X
+(define (id x) x)
+
+;;(X -> Y) (X -> Y) (X -> Y) (X -> Y) (listof (listof X)) -> (listof (listof X))
+;;Purpose: filtermaps the given f-on-x on the given (listof (listof X))
+(define (filter-map-acc filter-func map-func bool-func accessor a-lolox)
+  (filter-map (λ (x)
+                (and (bool-func (filter-func x))
+                     (map-func (accessor x))))
+              a-lolox))
+
+;;(listof trace) -> (listof rule)
+;;Purpose: Extracts the rule from the first trace in a (listof trace)
+(define (get-trace-rule LoT)
+  (filter-map-acc empty? trace-rules not first LoT))
+
+;;(listof symbol ((listof symbols) -> boolean))) (X -> Y) -> (listof symbol ((listof symbols) -> boolean)))
+;;Purpose: Extracts the invariants from the (listof symbol ((listof symbols) -> boolean)))
+(define (get-invariants LoI func)
+  (filter-map-acc (λ (x) ((second (first x)) (second x))) first func first LoI))
+
+;;(listof trace) -> (listof trace)
+;;Purpose: Extracts the empty trace from the (listof trace) and maps rest onto the non-empty trace
+(define (get-next-traces LoT)
+  (filter-map-acc empty? rest not id LoT))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; graph machine (listof symbols) symbol (listof symbols) (listof symbols) -> graph
@@ -1084,7 +1112,7 @@ triple is the entire of the ndfa rule
 ;;M is a machine
 ;;inv is a the (listof (state (listof symbols -> boolean)))
 ;;dead is the sybmol of dead state
-(struct building-viz-state (upci pci M inv dead configs accept-configs reject-configs))
+(struct building-viz-state (upci pci M inv dead computations accept-traces reject-traces))
 
 ;;image-state -> image
 ;;Purpose: Determines which informative message is displayed to the user
@@ -1188,13 +1216,11 @@ triple is the entire of the ndfa rule
   (let* (;;(listof configurations)
          ;;Purpose: Returns all configurations using the given word
          [all-configs (get-portion-configs (building-viz-state-upci a-vs)
-                                           (building-viz-state-configs a-vs))]
+                                           (building-viz-state-computations a-vs))]
 
          ;;(listof rule-structs)
          ;;Purpose: Extracts the rules from the first of all configurations
-         [r-config (filter-map (λ (traces) (and (not (empty? traces))
-                                             (trace-rules (first traces))))
-                              (building-viz-state-reject-configs a-vs))]
+         [r-config (get-trace-rule (building-viz-state-reject-traces a-vs))]
 
          ;;(listof rules)
          ;;Purpose: Reconstructs the rules from rule-structs
@@ -1202,9 +1228,7 @@ triple is the entire of the ndfa rule
 
          ;;(listof rule-structs)
          ;;Purpose: Extracts the rules from the first of the accepting computations
-         [a-configs (filter-map (λ (traces) (and (not (empty? traces))
-                                             (trace-rules (first traces))))
-                              (building-viz-state-accept-configs a-vs))]
+         [a-configs (get-trace-rule (building-viz-state-accept-traces a-vs))]
 
          ;;A dummy dfa/ndfa rule
          [dummy-rule (list EMP EMP EMP)]
@@ -1217,23 +1241,17 @@ triple is the entire of the ndfa rule
          ;;(listof (listof symbol ((listof symbols) -> boolean))) (listof symbols))
          ;;Purpose: Extracts all invariants for the states that the machine can be in
          [get-invs (for*/list ([invs (building-viz-state-inv a-vs)]
-                               [curr all-configs]
-                               #:when (equal? (first invs) (first curr)))
-                     (list invs (building-viz-state-pci a-vs)))]
+                                 [curr all-configs]
+                                 #:when (equal? (first invs) (first curr)))
+                       (list invs (building-viz-state-pci a-vs)))]
 
          ;;(listof symbols)
          ;;Purpose: Returns all states whose invariants holds
-         [held-invs (filter-map (λ (inv)
-                                  (and ((second (first inv)) (second inv))
-                                       (first (first inv))))
-                                get-invs)]
+         [held-invs (get-invariants get-invs id)]
 
          ;;(listof symbols)
          ;;Purpose: Returns all states whose invariants fail
-         [brkn-invs (filter-map (λ (inv)
-                                  (and (not ((second (first inv)) (second inv)))
-                                       (first (first inv))))
-                                get-invs)])
+         [brkn-invs (get-invariants get-invs not)])
     (edge-graph
            (node-graph
             (create-graph 'ndfagraph #:atb (hash 'rankdir "LR"))
@@ -1261,14 +1279,8 @@ triple is the entire of the ndfa rule
                                                   [upci (rest (building-viz-state-upci a-vs))]
                                                   [pci (append (building-viz-state-pci a-vs)
                                                                (list (first (building-viz-state-upci a-vs))))]
-                                                  [accept-configs (filter-map (λ (configs)
-                                                                            (and (not (empty? configs))
-                                                                                 (rest configs)))
-                                                                              (building-viz-state-accept-configs a-vs))]
-                                                  [reject-configs (filter-map (λ (configs)
-                                                                            (and (not (empty? configs))
-                                                                                 (rest configs)))
-                                                                              (building-viz-state-reject-configs a-vs))])
+                                                  [accept-traces (get-next-traces (building-viz-state-accept-traces a-vs))]
+                                                  [reject-traces (get-next-traces (building-viz-state-reject-traces a-vs))])
                                      (cons next-graph acc)))]))
 
 ;;viz-state -> viz-state
@@ -1495,12 +1507,14 @@ triple is the entire of the ndfa rule
 (define (j-key-pressed a-vs)
   (if (or (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                           (viz-state-informative-messages a-vs))))
+          (and (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                           (viz-state-informative-messages a-vs))))
+               (not (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                           (viz-state-informative-messages a-vs))))))
           (< (length (imsg-state-pci (informative-messages-component-state
                                       (viz-state-informative-messages a-vs))))
              (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
-                                                      (viz-state-informative-messages a-vs)))))
-          
-          )
+                                                      (viz-state-informative-messages a-vs))))))
       a-vs
       (let* ([zip (if (and (not (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
                                                                            (viz-state-informative-messages a-vs)))))
@@ -1537,12 +1551,14 @@ triple is the entire of the ndfa rule
 (define (l-key-pressed a-vs)
   (if (or (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                           (viz-state-informative-messages a-vs))))
+          (and (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                         (viz-state-informative-messages a-vs))))
+               (not (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                           (viz-state-informative-messages a-vs))))))
           (> (length (imsg-state-pci (informative-messages-component-state
                                       (viz-state-informative-messages a-vs))))
              (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
-                                                      (viz-state-informative-messages a-vs)))))
-          
-          )
+                                                      (viz-state-informative-messages a-vs))))))
       a-vs
       (let* ([zip (if (and (not (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
                                                                          (viz-state-informative-messages a-vs)))))
@@ -1759,7 +1775,7 @@ triple is the entire of the ndfa rule
                                                  new-M
                                                  (if (and add-dead (not (empty? invs))) (cons (list dead-state (λ (w) #t)) invs) invs) 
                                                  dead-state
-                                                 LoC
+                                                 (map reverse LoC)
                                                  accepting-traces
                                                  rejecting-traces)]
              ;;(listof graph-thunk) ;;Purpose: Gets all the graphs needed to run the viz
@@ -1771,13 +1787,14 @@ triple is the entire of the ndfa rule
                                  (length (second (first con))))
                                (return-brk-inv-configs
                                 (get-inv-config-results
-                                 (make-inv-configs a-word LoC)
+                                 (make-inv-configs a-word (map reverse LoC))
                                  invs)
                                 a-word))])
         ;(struct building-viz-state (upci pci M inv dead))
         ;(struct imsg-state (M upci pci))
         ;;ANCHOR
         ;rejecting-traces
+        ;inv-configs
         (run-viz graphs
                  (lambda () (graph->bitmap (first graphs)))
                  (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2))
@@ -1852,12 +1869,6 @@ triple is the entire of the ndfa rule
                  (if (eq? (sm-type M) 'ndfa)
                           'ndfa-viz
                           'dfa-viz)))))
-
-"FIX JUMP BUG namely L-PRESS"
-"FIX sync"
-
-
-
 
 (define aa*Uab* (make-ndfa '(K B D)
                            '(a b)
