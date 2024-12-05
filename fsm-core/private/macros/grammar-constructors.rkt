@@ -1,19 +1,16 @@
-(module constructors racket
-  (require "rules/rules-flat-contracts.rkt"
-           "shared/shared-flat-contracts.rkt"
-           "validation/validation-flat-contracts.rkt"
-           "../constants.rkt"
-           "rules/rules-predicates.rkt"
-           "shared/shared-predicates.rkt"
-           "validation/validation-predicates.rkt"
-           "error-formatting.rkt"
-           "../grammar-getters.rkt"
-           racket/contract
-           )
-  (provide make-cfg/c
-           make-rg/c
-           make-csg/c
-           )
+#lang racket/base
+(require "rules/rules-flat-contracts.rkt"
+         "shared/shared-flat-contracts.rkt"
+         "validation/validation-flat-contracts.rkt"
+         "../constants.rkt"
+         "shared/shared-predicates.rkt"
+         "../grammar-getters.rkt"
+         racket/contract
+         )
+(provide make-cfg/c
+         make-rg/c
+         make-csg/c
+         )
 
   (define make-rg/c
     (->i ([states (and/c (is-a-list/c "nonterminals" "two")
@@ -57,7 +54,7 @@
 
 
          
-         [result (lambda (x) (equal? 'rg (grammar-type x)))]))
+       [result (lambda (x) (equal? 'rg (grammar-type x)))]))
 
   (define make-cfg/c
     (->i ([states (and/c (is-a-list/c "nonterminals" "two")
@@ -99,7 +96,7 @@
 
 
          
-         [result (lambda (x) (equal? 'cfg (grammar-type x)))]))
+       [result (lambda (x) (equal? 'cfg (grammar-type x)))]))
 
   (define make-csg/c
     (->i ([states (and/c (is-a-list/c "nonterminals" "two")
@@ -142,6 +139,4 @@
 
 
          
-         [result (lambda (x) (equal? 'csg (grammar-type x)))]))
-
-  )
+       [result (lambda (x) (equal? 'csg (grammar-type x)))]))

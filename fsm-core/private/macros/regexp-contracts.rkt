@@ -1,4 +1,4 @@
-(module constructors racket
+#lang racket/base
   (require "../regexp.rkt"
            "../constants.rkt"
            "error-formatting.rkt"
@@ -20,7 +20,7 @@
   ;; purpose: Returns true if the given input is a single alphabet character string,
   ;;          and false for every other input.
   (define (valid-alpha-string? x)
-    (define regex-pattern (regexp "^[a-z]$"))
+    (define regex-pattern (regexp "^[a-z0-9A-Z$&!*]$"))
     (not (false? (and (string? x)
                       (regexp-match regex-pattern x)))))
 
@@ -309,4 +309,3 @@
                                              (regexp-input/c R 'kleenestar-regexp #false)))]
           )
          [result kleenestar-regexp?]))
-  )

@@ -1,5 +1,15 @@
-#lang racket
-(require 2htdp/image racket/hash "dot.rkt")
+#lang racket/base
+(require 2htdp/image
+         racket/hash
+         "dot.rkt"
+         racket/treelist
+         racket/string
+         racket/list
+         racket/match
+         racket/system
+         racket/function
+         racket/contract/base
+         )
 
 (provide hash->str)
 
@@ -11,8 +21,16 @@
   (or (graph? a) (subgraph? a)))
 
 (provide
+ hash->str
  stringify-value
  image?
+ find-dot
+ find-tmp-dir
+ special-graph->dot
+ cfg-graph->dot
+ test-cfg-graph->dot
+ test-cfg-graph->str
+ cfg-graph->str
  (contract-out
   (struct formatters ((graph (hash/c symbol? (-> any/c string?)))
                       (node (hash/c symbol? (-> any/c string?)))
@@ -34,7 +52,9 @@
                  (edge-list (listof edge?))
                  (subgraph-list (listof subgraph?))
                  (fmtrs formatters?)
-                 (atb (hash/c symbol? any/c)))]
+                 (atb (hash/c symbol? any/c))
+                 (rank-node-lst (listof (listof symbol?)))
+                 )]
   [create-graph (->* (symbol?)
                      (#:fmtrs formatters?
                       #:atb (hash/c symbol? any/c))
@@ -95,7 +115,8 @@
                edge-list
                subgraph-list
                fmtrs
-               [atb #:mutable]) #:transparent)
+               [atb #:mutable]
+               rank-node-lst) #:transparent)
 
 ; A structure the represents a subgraph in the dot language
 (struct subgraph (name
@@ -165,6 +186,111 @@
           (graph-subgraph-list g))
    "}"))
 
+
+;; graph -> string
+;; Returns graphviz representation of a graph containing a context sensitive graph as a string
+(define (special-graph->str g rank-node-lst)
+  (define name (format "digraph ~s {\n" (graph-name g)))
+  (define fmtrs (graph-fmtrs g))
+  (string-append
+   name
+   (format "    ~a;\n" (hash->str (graph-atb g) (formatters-graph fmtrs) ";\n    "))
+   (foldl (lambda (n a) (string-append a (node->str n (formatters-node fmtrs))))
+          ""
+          (graph-node-list g))
+   (foldl (lambda (e a) (string-append a (edge->str e (formatters-edge fmtrs))))
+          ""
+          (graph-edge-list g))
+   (foldl (lambda (e a) (string-append a (subgraph->str e fmtrs)))
+          ""
+          (graph-subgraph-list g))
+   (format "    {rank=same;~a};\n" (foldr (lambda (val accum) (string-append (symbol->string val) ";" accum)) "" rank-node-lst))
+   "}")
+  )
+
+;; graph -> string
+;; Returns graphviz representation of a graph containing a context free graph as a string
+(define (cfg-graph->str g rank-node-lst)
+  (define name (format "digraph ~s {\n" (graph-name g)))
+  (define fmtrs (graph-fmtrs g))
+  (string-append
+   name
+   (format "    ~a;\n" (hash->str (graph-atb g) (formatters-graph fmtrs) ";\n    "))
+   (foldl (lambda (n a) (string-append a (node->str n (formatters-node fmtrs))))
+          ""
+          (graph-node-list g))
+   (foldl (lambda (e a) (string-append a (edge->str e (formatters-edge fmtrs))))
+          ""
+          (graph-edge-list g))
+   (foldl (lambda (e a) (string-append a (subgraph->str e fmtrs)))
+          ""
+          (graph-subgraph-list g))
+   (foldr (lambda (lvl accum)
+            (string-append (format "    {rank=same;~a};\n" (foldr (lambda (val accum) (string-append (symbol->string val) ";" accum)) "" lvl)) accum))
+          ""
+          rank-node-lst)
+   "}")
+  )
+
+
+
+(define (test-cfg-graph->str g rank-node-lst)
+  (define (hash->str-accum hash fmtr accum (spacer ", "))
+    (define (fmt-val val)
+      (if (boolean? val)
+          (if val 'true 'false)
+          val))
+    #;(define (key-val->string key value)
+      (define fmtr-fun (hash-ref fmtr key #f))
+      (if fmtr-fun
+          (cons "\"" (cons (fmtr-fun value) (cons "\"" (cons "=" (cons (stringify-value key) '())))))
+          (cons (if (equal? key 'label)
+                    (stringify-value (fmt-val value))
+                    (stringify-value (fmt-val value)))
+                (cons "=" (cons (symbol->string key) '())))
+          ))
+    (define (key-val->string key value)
+      (define fmtr-fun (hash-ref fmtr key #f))
+      (if fmtr-fun
+          (format "~s=~s" key (fmtr-fun value))
+          (format "~s=~s" key (if (equal? key 'label)
+                                  (format "~a" (fmt-val value))
+                                  (fmt-val value)))))
+    (define (add-spacer lst accum)
+      (if (empty? lst)
+          accum
+          (add-spacer (rest lst) (cons (first lst) (cons spacer accum)))))
+    (let ([hash-vals (reverse (hash-map hash key-val->string))])
+      (add-spacer (rest hash-vals) (cons (first hash-vals) accum))
+      ))
+  (define (node->str-accum node fmtr accum)
+    (cons "];\n" (hash->str-accum (node-atb node) fmtr (cons "[" (cons (symbol->string (node-name node)) (cons "    " accum)))))
+    )
+  (define (edge->str-accum edge fmtr accum)
+    (cons "];\n" (hash->str-accum (edge-atb edge) fmtr (cons " [" (cons (symbol->string (edge-end-node edge)) (cons " -> " (cons (symbol->string (edge-start-node edge)) (cons "    " accum)))))))
+    )
+  (define name (format "digraph ~s {\n" (graph-name g)))
+  (define fmtrs (graph-fmtrs g))
+  (apply string-append
+   (reverse (cons "}" (foldr (lambda (lvl acc0)
+                               (cons "};\n" (foldr (lambda (val acc1) (cons ";" (cons (symbol->string val) acc1))) (cons "    {rank=same;" acc0) lvl)
+                                     )
+                               )
+                             (foldr (lambda (e a) (edge->str-accum e (formatters-edge fmtrs) a))
+                                    (foldr (lambda (n a) (node->str-accum n (formatters-node fmtrs) a))
+                                           (cons "\n" (hash->str-accum (graph-atb g)
+                                                                       (formatters-graph fmtrs)
+                                                                       (cons "    " (cons " {\n" (cons (symbol->string (graph-name g)) (cons "digraph " '())))) ";\n    "))
+                                           (graph-node-list g))
+                                    (graph-edge-list g))
+                             rank-node-lst)))
+   )
+  )
+
+
+
+
+
 ;; combine :: hash hash -> hash
 ;; combines the two hashes together. If the hashs have the same key the first hash 
 ;; is used.
@@ -185,7 +311,8 @@
                    (formatters-node DEFAULT-FORMATTERS))
           (combine (formatters-edge fmtrs)
                    (formatters-edge DEFAULT-FORMATTERS)))
-         (combine atb DEFAULT-GRAPH)))
+         (combine atb DEFAULT-GRAPH)
+         '()))
 
 
 (define (create-formatters #:graph[graph (hash)] #:node[node (hash)] #:edge[edge (hash)])
@@ -211,7 +338,8 @@
       (or (member name (graph-node-list parent) (lambda (v n) (equal? (node-name n) v)))
           (member name (graph-subgraph-list parent) check-subgraph))
       (check-subgraph n parent)))
-    
+
+
 
 
 ;; add-node: graph | subgraph string Optional(hash-map) -> graph | subgraph
@@ -221,14 +349,18 @@
     (error "[Duplicate Name]: Node name already exists on the graph"))
   (define new-node (node (clean-string name) (hash-set atb 'label (stringify-value (hash-ref atb 'label name)))))
   (if (graph? parent)
-      (graph
+      (struct-copy graph parent
+                   [node-list (cons new-node (graph-node-list parent))])
+      #;(graph
        (graph-name parent)
        (cons new-node (graph-node-list parent))
        (graph-edge-list parent)
        (graph-subgraph-list parent)
        (graph-fmtrs parent)
        (graph-atb parent))
-      (subgraph 
+      (struct-copy subgraph parent
+                   [node-list (cons new-node (subgraph-node-list parent))])
+      #;(subgraph 
        (subgraph-name parent)
        (cons new-node (subgraph-node-list parent))
        (subgraph-edge-list parent)
@@ -246,14 +378,18 @@
            (node (clean-string n) (hash-set atb 'label (stringify-value n))))
          names))
   (if (graph? parent)
-      (graph
+      (struct-copy graph parent
+                   [node-list (append nodes-to-add (graph-node-list parent))])
+      #;(graph
        (graph-name parent)
        (append nodes-to-add (graph-node-list parent))
        (graph-edge-list parent)
        (graph-subgraph-list parent)
        (graph-fmtrs parent)
        (graph-atb parent))
-      (subgraph 
+      (struct-copy subgraph parent
+                   [node-list (append nodes-to-add (subgraph-node-list parent))])
+      #;(subgraph 
        (subgraph-name parent)
        (append nodes-to-add (subgraph-node-list parent))
        (subgraph-edge-list parent)
@@ -306,14 +442,18 @@
                                  (cons val (hash-ref (edge-atb e) 'label))))))]))
     
   (if (graph? parent)
-      (graph 
+      (struct-copy graph parent
+                   [edge-list (add/update-in-list (graph-edge-list parent))])
+      #;(graph 
        (graph-name parent)
        (graph-node-list parent)
        (add/update-in-list (graph-edge-list parent))
        (graph-subgraph-list parent)
        (graph-fmtrs parent)
        (graph-atb parent))
-      (subgraph 
+      (struct-copy subgraph parent
+                   [edge-list (add/update-in-list (subgraph-edge-list parent))])
+      #;(subgraph 
        (subgraph-name parent)
        (subgraph-node-list parent)
        (add/update-in-list (subgraph-edge-list parent))
@@ -338,14 +478,18 @@
              (existing-name? parent (subgraph-name sg)))
     (error "[Duplicate Name]: Name of subgraph already exists on the graph"))
   (if (graph? parent)
-      (graph 
+      (struct-copy graph parent
+                   [subgraph-list (cons sg (graph-subgraph-list parent))])
+      #;(graph 
        (graph-name parent)
        (graph-node-list parent)
        (graph-edge-list parent)
        (cons sg (graph-subgraph-list parent))
        (graph-fmtrs parent)
        (graph-atb parent))
-      (subgraph 
+      (struct-copy subgraph parent
+                   [subgraph-list (cons sg (subgraph-subgraph-list parent))])
+      #;(subgraph 
        (subgraph-name parent)
        (subgraph-node-list parent)
        (subgraph-edge-list parent)
@@ -367,6 +511,37 @@
     (lambda (out)
       (displayln (graph->str graph) out)))
   dot-path)
+
+;; graph path string -> path
+;; Writes graph containing context sensitive grammar to the specified file
+(define (special-graph->dot graph rank-node-lst save-dir filename)
+  (define dot-path (build-path save-dir (format "~a.dot" filename)))
+  (call-with-output-file dot-path
+    #:exists 'replace
+    (lambda (out)
+      (displayln (special-graph->str graph rank-node-lst) out)))
+  dot-path)
+
+;; graph path string -> path
+;; Writes graph containing context sensitive grammar to the specified file
+(define (cfg-graph->dot graph rank-node-lst save-dir filename)
+  (define dot-path (build-path save-dir (format "~a.dot" filename)))
+  (call-with-output-file dot-path
+    #:exists 'replace
+    (lambda (out)
+      (displayln (cfg-graph->str graph rank-node-lst) out)))
+  dot-path)
+
+
+
+(define (test-cfg-graph->dot graph rank-node-lst save-dir filename)
+  (define dot-path (build-path save-dir (format "~a.dot" filename)))
+  (call-with-output-file dot-path
+    #:exists 'replace
+    (lambda (out)
+      (displayln (test-cfg-graph->str graph rank-node-lst) out)))
+  dot-path)
+
 
 ;; dot->output-fmt: symbolof(file-format) path -> path
 ;; Purpose: converts a dot file to the specified output. The new file is saved in directory
@@ -456,7 +631,9 @@
     (define fmtr-fun (hash-ref fmtr key #f))
     (if fmtr-fun
         (format "~s=~s" key (fmtr-fun value))
-        (format "~s=~s" key (if (equal? key 'label) (format "~a" (fmt-val value)) (fmt-val value)))))
+        (format "~s=~s" key (if (equal? key 'label)
+                                (format "~a" (fmt-val value))
+                                (fmt-val value)))))
   (string-join (hash-map hash key-val->string) spacer))
 
 ;; Helper function to convert a value to a string
@@ -484,7 +661,8 @@
                 '()
                 '()
                 DEFAULT-FORMATTERS
-                DEFAULT-GRAPH))
+                DEFAULT-GRAPH
+                '()))
 
 
   (test-equal? "Edges with dashes"
@@ -503,7 +681,8 @@
                  (edge 'A 'B #hash((fontsize . 15) (label . (a)))))
                 '()
                 DEFAULT-FORMATTERS
-                DEFAULT-GRAPH))
+                DEFAULT-GRAPH
+                '()))
 
   (test-equal? "Node with custom label"
                (add-node (create-graph 'test) 'A #:atb (hash 'label "AA"))
@@ -513,7 +692,8 @@
                 '()
                 '()
                 DEFAULT-FORMATTERS
-                DEFAULT-GRAPH))
+                DEFAULT-GRAPH
+                '()))
 
 
   (test-equal? "Subgraphs with edges"
@@ -541,7 +721,8 @@
                   '()
                   #hash()))
                 DEFAULT-FORMATTERS
-                DEFAULT-GRAPH))
+                DEFAULT-GRAPH
+                '()))
 
   ;; --- Exception Checks Below ---
   (check-exn
@@ -553,5 +734,26 @@
    (lambda ()
      (define sg (create-subgraph #:name 'A))
      (add-subgraph (add-nodes (create-graph 'test) '(A B C D)) sg)))
+
+
+
+  #;(displayln
+   (graph 'dgraph
+          (list (node 'S0 (make-hash '(['color . 'violet]
+                                       ['font . 'Sans]
+                                       ['fontcolor . 'black]
+                                       ['label . 'S]
+                                       ['shape . 'hexagon]))))
+          (list (edge 'A2 'a2 (make-hash '(['arrowhead . 'none]
+                                           ['label . '()]
+                                           ['style . 'invisible])))
+                (edge 'S2 'A2 (make-hash '(['color . 'red]
+                                           ['fontsize . 12]
+                                           ['label . '()]
+                                           ['style . 'solid]))))
+          '()
+          DEFAULT-FORMATTERS
+          (hash))
+   )
 
   ) ;; end module+ test

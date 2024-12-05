@@ -2,14 +2,21 @@
 ; Copyright (C) 2015 by Marco T. Morazan and Rosario Antunez
 ; Written by: Marco T. Morazan and Rosario Antunez, 2015
 
-(module pda racket
-  (require "word.rkt" "constants.rkt" "cfg.rkt" "misc.rkt")
+#lang racket/base
+  (require "word.rkt"
+           "constants.rkt"
+           "cfg.rkt"
+           "misc.rkt"
+           racket/list)
   
   (provide make-unchecked-ndpda rename-states-pda cfg->pda pda->cfg
            pdarule-fromstate pdarule-readsymb pdarule-pop pdarule-tostate pdarule-push
            pda-getrules pda-getalphabet pda-getgamma pda-getstates pda-getfinals pda-getstart
            pda-showtransitions  show-transitions-pda apply-pda test-pda
-           union-pda concat-pda kleenestar-pda)
+           union-pda concat-pda kleenestar-pda
+           pdaconfig-state pdaconfig-wi pdaconfig-stack
+           pda-transitions-with-rules
+           )
   ;;; pdaconfig
   
   ; A pdaconfig is a (list state wi stack). 
@@ -157,13 +164,16 @@
                (if (not (null? accepts))
                    (reverse (mk-pdapath (car accepts) first-path))
                    (consume w (cons config visited) (append (cdr tovisit)
-                                                            (new-pda-paths new-configs first-path)))))]))
+                                                            (new-pda-paths new-configs first-path)))))]
+            )
+      )
+    
     (lambda (w . L)
       (cond [(eq? w 'whatami) 'pda]
             [(empty? L) 
              (let ((res (consume w '() (list (list (mk-pdaconfig start 0 (empty-stack)))))))
                (if (list? res) 'accept 'reject))]
-            [(eq? (car L) 'transitions) 
+            [(eq? (car L) 'transitions)
              (let ((res (consume w '() (list (list (mk-pdaconfig start 0 (empty-stack)))))))
                (if (eq? res 'reject)
                    'reject
@@ -516,24 +526,89 @@
     (let ((test-words (generate-words number-tests (pda-getalphabet p1) null)))
       (map (lambda (w) (list w (apply-pda p1 w))) test-words)))
 
-  ;;;;;;;;;;;;;;;;;;;;;
-#|
-  (define wcw^r (make-unchecked-ndpda '(S P Q F)
-                                      '(a b c)
-                                      '(a b)
-                                      'S
-                                      '(F)
-                                      `(((S ,EMP ,EMP) (P ,EMP))
-                                        ((P a ,EMP) (P (a)))
-                                        ((P b ,EMP) (P (b)))
-                                        ((P c ,EMP) (Q ,EMP))
-                                        ((Q a (a)) (Q ,EMP))
-                                        ((Q b (b)) (Q ,EMP))
-                                        ((Q ,EMP ,EMP) (F ,EMP)))))
 
-  (define G (pda->cfg wcw^r))
 
-  (cfg-derive G '(a b c b a))
-|#
-  ); closes module
 
+
+
+
+
+  ;; EDITED STUFF
+
+  (define (get-pdaconfig-accepts-edited new-configs w finals)
+    (filter (lambda (c) (and (member (pdaconfig-state (first c)) finals)
+                             (empty-stack? (pdaconfig-stack (first c)))
+                             (= (word-length w) (pdaconfig-wi (first c)))))
+            new-configs))
+
+  (define (convert-pop-edited r)
+    (let ((pop-val (pdarule-pop r)))
+      (if (eq? pop-val EMP) '() pop-val)))
+
+  (define (mk-pdatransitions-edited c w pdarules)
+    ; pdarule --> pdaconfig
+    (define (mk-pdatransition r)
+        
+      (list (mk-pdaconfig (pdarule-tostate r)
+                          (if (eq? (pdarule-readsymb r) EMP)
+                              (pdaconfig-wi (first c))
+                              (+ (pdaconfig-wi (first c)) 1)
+                              )
+                          (stack-push (pdarule-push r) (stack-pop (pdaconfig-stack (first c)) (pdarule-pop r))))
+            r
+            )
+      )
+      
+    (let* ((state (pdaconfig-state (first c)))
+           (wi (pdaconfig-wi (first c)))
+           (S (pdaconfig-stack (first c)))
+           (read (if (= wi (length w)) '() (get-symb-word w wi)))
+           (rls (filter (lambda (r) (and (eq? state (pdarule-fromstate r))
+                                         (or (eq? read (pdarule-readsymb r)) (eq? EMP (pdarule-readsymb r)))
+                                         (or (eq? (pdarule-pop r) EMP)
+                                             (and (>= (stack-size S) (length (convert-pop-edited r)))
+                                                  (equal? (convert-pop-edited r) 
+                                                          (stack-top-n S (length (convert-pop-edited r))))))))
+                        pdarules)))
+      (map mk-pdatransition rls)))
+
+  (define (consume-edited ndpda w visited tovisit)
+    (define (new-pda-paths new-configs path)
+      (map (lambda (c) (cons c path)) new-configs))
+      
+    (cond [(null? tovisit) 'reject]
+          [else
+           (let* (
+                  (first-path (first tovisit))
+                  (config (first-config-pdapath first-path))
+                  (new-configs (filter-pdaconfigs (mk-pdatransitions-edited config w (pda-getrules ndpda))
+                                                  (generated-configs visited tovisit)))
+                  (accepts (get-pdaconfig-accepts-edited (cons config new-configs) w (pda-getfinals ndpda))))
+             (if (not (null? accepts))
+                 (reverse (mk-pdapath (car accepts) first-path))
+                 (consume-edited ndpda w (cons config visited) (append (cdr tovisit)
+                                                                       (new-pda-paths new-configs first-path)))))]
+          )
+    )
+
+  (define (pda-transitions-with-rules ndpda w start)
+    (let ((res (consume-edited ndpda w '() (list (list (list (mk-pdaconfig start 0 (empty-stack)) '())
+                                                       )
+                                                 )
+                               )
+               )
+          )
+      (if (eq? res 'reject)
+          'reject
+          (append (map (lambda (config) (list (mk-pdaconfig (pdaconfig-state (first config))
+                                                            (list-tail w (pdaconfig-wi (first config)))
+                                                            (pdaconfig-stack (first config)))
+                                              (second config)
+                                              )   
+                         )
+                       res)
+                  )
+          )
+      )
+    )
+; closes module

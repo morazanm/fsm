@@ -3,7 +3,7 @@
 
 #lang scribble/manual
 
-@(require (for-label (only-in racket [regexp racket-regexp]) setup/collects))
+@(require (for-label racket 2htdp/image) setup/collects)
 
 @title{FSM}
 @author[(author+email "Marco T. Morazán" "morazanm@shu.edu")]
@@ -168,7 +168,7 @@ a is a terminal symbol.
  at least one nonterminal and K is either
  EMP or a an aggregate symbol of terminals and nonterminals.}
 
-@defidform[state-machine]  
+@defidform[machine]  
 A representation of a statemachine in FSM. A state machine is one of the following:
 @itemlist[
  @item{Deterministic Finite Automaton (dfa)}
@@ -198,7 +198,7 @@ A derivation is either a (list nts ARROW nts) or
 a (append (list ARROW nts) Derivation).
 
 @defidform[ctmd]  
-A combined Turing machine description is either:
+A composed Turing machine description is either:
 @itemlist[@item{empty}
           @item{(cons tm ctmd)}
           @item{(cons LABEL ctmd)}
@@ -206,7 +206,10 @@ A combined Turing machine description is either:
           @item{(cons BRANCH (listof (list symbol ctmd)))}
           @item{(cons (GOTO LABEL) ctm)}
           @item{(cons ((VAR symbol) ctm) ctm)}]
-A LABEL is a natnum.
+A LABEL is a natural number.
+
+@defidform[ctm]  
+A composed Turing machine.
 
 @section{State Machine Constructors}
 
@@ -280,46 +283,46 @@ Turing machine is a language recognizer.}
          ndfa]{Builds a fsm for the language of the given
  regular expression.}
 
-@defproc[(sm-rename-states [sts (listof state)] [m1 state-machine])
-         state-machine]{Builds a state machine that is excatly the same as
+@defproc[(sm-rename-states [sts (listof state)] [m1 machine?])
+         machine?]{Builds a state machine that is excatly the same as
  the given machine except that its states are renamed
  as to not have a name in common with the given list
  of states.}
 
-@defproc[(sm-union [m1 state-machine] [m2 state-machine])
-         state-machine]{Builds a state machine for the language obtained
+@defproc[(sm-union [m1 machine?] [m2 machine?])
+         machine?]{Builds a state machine for the language obtained
  from the union of the languages of the two given
  state machines. If the inputs are Turing machines then
  they must be language recognizers. The given machines 
  must have the same type. May not be used with multitape Turing machines.}
 
-@defproc[(sm-concat [m1 state-machine] [m2 state-machine])
-         state-machine]{Builds a state machine for the language obtained
+@defproc[(sm-concat [m1 machine?] [m2 machine?])
+         machine?]{Builds a state machine for the language obtained
  from the concatenation of the languages of the two given
  state machines. [Note: Not yet implemented for Turing machines language recognizers.
  May not be used with multitape Turing machines.].}
 
-@defproc[(sm-kleenestar [m1 state-machine])
-         state-machine]{Builds a state machine for the language obtained
+@defproc[(sm-kleenestar [m1 machine?])
+         machine?]{Builds a state machine for the language obtained
  from the Kleene star of the given machine's language. May not be used with
  multitape Turing machines nor with Turing machine language recognizers.}
 
-@defproc[(sm-complement [m1 state-machine])
-         state-machine]{Builds a state machine for the language obtained
+@defproc[(sm-complement [m1 machine?])
+         machine?]{Builds a state machine for the language obtained
  from the complement of the given machine's language.
  The given machine can not be a ndpda. If the inputs are 
  Turing machines then they must be language recognizers. May not be used
  with multitape Turing machines.}
 
-@defproc[(sm-intersection [m1 state-machine] [m2 state-machine])
-         state-machine]{Builds a state machine for the language obtained
+@defproc[(sm-intersection [m1 machine?] [m2 machine?])
+         machine?]{Builds a state machine for the language obtained
  from the intersection of the languages of the two given
  state machines. If the inputs are Turing machines then
  they must be language recognizers. The given machines 
  must have the same type. May not be used with multitape Turing machines.}
 
 @defproc[(grammar->sm [g grammar])
-         state-machine]{Builds a state machine for the language of the given
+         machine?]{Builds a state machine for the language of the given
  regular or context-free grammar.}
 
 
@@ -327,41 +330,37 @@ Turing machine is a language recognizer.}
 @bold{You must have GraphViz installed as an enviroment variable
   for this to work. For more information how to set this up, please see: @(hyperlink "https://github.com/morazanm/fsm/tree/master/GraphViz" "FSM GraphViz ReadMe")}
 
-@defproc[(sm-graph [m state-machine])
-         image]{Generates an image for the given machine's transition diagram. @(linebreak)}
+@defproc[(sm-graph [m machine?])
+         image?]{Generates an image for the given machine's transition diagram. @(linebreak)}
 
-@defproc*[([(sm-cmpgraph [m state-machine] [w word] [#:palette symbol? 'default] [#:cutoff natnum 25])
-         image]
-          [(sm-cmpgraph [m state-machine] [w word] [#:palette symbol? 'default] [#:cutoff natnum 25] [headpos natnum])
-         image])]
+@defproc[(sm-cmpgraph [m machine?] [w word?] [#:palette palette symbol? 'default] [#:cutoff cutoff natural? 100] [headpos natural? 0])
+         image?]
         Generates a computation graph image for the given machine and word. A computation graph
         visually summarizes the result of all paths in the computation tree generated by applying
         the given machine to the given word. Any state at which any computation ends is highlighted
-        in crimson. Given that a machine may run forever (e.g. when it semidecides a language),
+        in crimson. Given that a machine may run forever (e.g., when it semidecides a language),
         the user may specify the maximum number of steps to explore for all possible computations.
         States at which a computation is cut off by reaching this threshold are highlighted using
         gold filling. If any final state is highlighted in crimson, then we have visual proof that
         at least one computation naturally halts. @(linebreak) @(linebreak)
         The optional
         keyword parameter @italic{palette} is a symbol used to select a color blindness pallete:
-        'default for the default palette and 'deut for the deuteranopia palette. The default value for
-        @italic{palette} is 'default. The optional keyword argument @italic{cutoff} is used to specify the
-        maximum number of steps any possible computation may perform and its default value is 25.
+        'default for the default palette and 'deut for the deuteranopia palette. The optional
+        keyword argument @italic{cutoff} is used to specify the
+        maximum number of steps any possible computation may perform.
         The optional argument @italic{headpos} specifies the initial head position on the main tape
-        and its default value is 0. @(linebreak)
+        for Turing machines and multitape Turing machines. @(linebreak)
 
 
-@defproc*[([(sm-visualize [sym symbol?]) void]
-           [(sm-visualize [m state-machine]) void]
-           [(sm-visualize [m state-machine]
-                          [inv-list (listof (listof state? procedure?))]) void])]{
- When supplied with a symbol as the argument the visualiztion tool is started for the specified machine type.
- Valid symbols are:@(racketblock 'dfa  'ndfa  'pda  'tm  'tm-language-recognizer)
- When supplied with a state-machine as the argument the visualiztion tool is started with
- the state-machine built within the tool. When supplied with the optional list of state and
+@defproc*[([(sm-visualize [sym (or/c 'dfa 'ndfa 'pda 'tm 'mttm 'tm-language-recognizer 'mttm-language-recognizer)]) void?]
+           [(sm-visualize [m machine?]
+                          [inv-list (listof (listof state? procedure?)) '()]) void])]{
+ When supplied with a symbol as the argument the visualization tool is started for the specified machine type.
+ When supplied with a state machine as the argument the visualization tool is started with
+ the state machine built within the tool. When supplied with the optional list of state and
  invariant predicates the visualization tool changes the color of the arrow to green or
- red to indicate, respectively, if the invariant holds or does not hold. The given machine
- may not be a @bold{mttm}. @bold{For more information about the dynamic machine execution vizualization tool, please visit the @(hyperlink "https://morazanm.github.io/fsm/index.html" "FSM Website")}}
+ red to indicate, respectively, if the invariant holds or does not hold. @bold{For more information
+  about the dynamic machine execution vizualization tool, please visit the @(hyperlink "https://morazanm.github.io/fsm/index.html" "FSM Website")}}
 @(linebreak)@(linebreak)
 Examples: @(linebreak)@(linebreak)
 Empty Tool
@@ -414,22 +413,22 @@ Empty Tool
 
 @section{State Machine Observers}
 
-@defproc[(sm-states [m state-machine])
+@defproc[(sm-states [m machine?])
          (listof state)]{Returns the states of the given state 
  machine.}
 
-@defproc[(sm-sigma [m state-machine])
+@defproc[(sm-sigma [m machine?])
          alphabet]{Returns the alphabet of the given state 
  machine.}
 
-@defproc[(sm-rules [m state-machine])
+@defproc[(sm-rules [m machine?])
          (listof smrule)]{Returns the rules of the given state 
  machine.}
 
-@defproc[(sm-start [m state-machine])
+@defproc[(sm-start [m machine?])
          state]{Returns the start state of the given state machine.}
 
-@defproc[(sm-finals [m state-machine])
+@defproc[(sm-finals [m machine?])
          (listof state)]{Returns the final states of the given state 
  machine.}
 
@@ -437,33 +436,31 @@ Empty Tool
          (listof symbol)]{Returns the stack alphabet of the given pushdown
  automaton.}
 
-@defproc[(sm-type [m state-machine])
+@defproc[(sm-type [m machine?])
          symbol]{Returns a symbol indicating the type of the given
  machine: dfa, ndfa, ndpda, tm, tm-language-recognizer, mttm, or mttm-language-recognizer.}
 
-@defproc[(sm-numtapes [m state-machine])
+@defproc[(sm-numtapes [m machine?])
          symbol]{Returns the number of tapes in the given state machine.}
 
-@defproc*[([(sm-apply [m state-machine] [w word]) symbol]
-           [(sm-apply [m state-machine] [w word] [n natnum]) symbol])
-         ]{Applies the given state machine to the given word
+@defproc[(sm-apply [m machine?] [w word?] [n natural? 0]) symbol]
+ Applies the given state machine to the given word
  and returns either @racket['accept] or @racket['reject] for a dfa, a
- ndfa, a ndpa, a Turing machine language 
+ ndfa, a ndpda, a Turing machine language 
  recognizer, or a multitape Turing machine language recognizer. If the given machine
  is a Turing machine, but not a language recognizer, a (list @racket['Halt:] S) is
  returned where S is a state. The optional natural 
  number is only used for the initial position of the 
- Turing machine head (the default position is zero) or the head position for the first tape
- in a multitape Turing machine.}
+ Turing machine head or the head position for the first tape
+ in a multitape Turing machine.
 
-@defproc*[([(sm-showtransitions [m state-machine] [w word]) (or (listof smconfig) 'reject)]
-           [(sm-showtransitions [m state-machine] [w word] [n natnum]) (or (listof smconfig) 'reject)])
-        ]{Applies the given state machine to the given word
+@defproc[(sm-showtransitions [m machine?] [w word?] [n natural? 0]) (or/c (listof smconfig) 'reject)]
+ Applies the given state machine to the given word
  and returns a list of configurations if the machine
- reaches a halting state and @racket['reject] otherwise. The 
+ reaches a final/halting state and @racket['reject] otherwise. The 
  optional natural number is only used for the initial position of a 
- Turing machine's head of the head position for the first tape
- in a multitape Turing machine (the default position is zero)}
+ Turing machine's head or the head position for the first tape
+ in a multitape Turing machine.
 
 @section{Construction Visualization}
 
@@ -471,8 +468,7 @@ Empty Tool
       visualization forwards or backwards. The right arrow moves the visualization
       one step forward. The left arrow moves the visualization one step backwards.
       The up arrow moves the visualization to the beginning. The down arrow moves
-      the visualization to the end. While the visualization is active the arrow
-      keys may be used to navigate the visualization.}
+      the visualization to the end.}
 
 @defproc[(union-viz [m1 ndfa] [m2 ndfa]) (void)]
 Launches a visualization tool for the construction of an ndfa that decides
@@ -507,13 +503,29 @@ Launches a visualization tool for the construction of an ndfa to decide, L(r),
 the language generated by the given regular expression.
 
 
+@section{Derivation Visualization}
 
+@bold{The word derivation visualization tool uses the arrow keys to move the
+      visualization forwards or backwards. The right arrow moves the visualization
+      one step forward. The left arrow moves the visualization one step backwards.
+      The up arrow moves the visualization to the beginning. The down arrow moves
+      the visualization to the end}
 
+@defproc[(grammar-viz [g grammar] [w word] [#:derv-type derv-type (or/c 'left 'right 'level-left 'level-right) 'left] [#:cpu-cores cpu-cores (or/c number? #f) #f] [inv-list (listof (listof state? (-> word? boolean?))) (void)]) (or/c (void) string)]
+Launches a visualization tool for the construction of the derivation tree for the given
+word using the given grammar. If the given word is not in the language then the tool does
+not launch and a string is returned indicating that the given word is not in the given grammar's
+language. The optional keyword parameter @italic{derv-type} is only used with a context-free grammar
+to guide the substitution of the next nonterminal: leftmost first, rightmost first, lowest
+level rightmost first, and lowest level leftmost first. The optional keyword argument @italic{cpu-cores}
+is used to specify the number of cores dedicated to generating images for the visualization.
+The optional argument @italic{inv-list} is used to provide a list of pairs, each containing a nonterminal
+and a predicate to determine if the word generated by the nonterminal satisfies it.
 
 @section{State Machine Testers}
 
-@defproc*[([(sm-test [m1 state-machine]) (listof (list word symbol))]
-           [(sm-test [m1 state-machine] [n natnum]) (listof (list word symbol))])]
+@defproc*[([(sm-test [m1 machine?]) (listof (list word symbol))]
+           [(sm-test [m1 machine?] [n natural?]) (listof (list word symbol))])]
          Applies the given machine to randomly generated words  and returns
           a list of words and the obtained result. If the given machine is a
           Turing machine, it must be a language recognizer. For a Turing machine
@@ -523,11 +535,11 @@ the language generated by the given regular expression.
           (the default is 100). May not be used for Turing machines and multitape
           Turing machines.
 
-@defproc[(sm-sameresult? [m1 state-machine] [m2 state-machine] [w word])
+@defproc[(sm-sameresult? [m1 machine?] [m2 machine?] [w word])
          boolean]{Tests if the two given machines return the same
  result when applied to the given word.}
 
-@defproc[(sm-testequiv? [m1 state-machine] [m2 state-machine] [n natnum])
+@defproc[(sm-testequiv? [m1 machine?] [m2 machine?] [n natural?])
          (or boolean (listof word))]{Tests if the two given machines 
  return the same result when
  applied to the same 100 randomly
@@ -574,7 +586,7 @@ the language generated by the given regular expression.
         Let L(g) denote the language defined by g. This function
          builds a grammar for L(g)^*.
 
-@defproc[(sm->grammar [m state-machine])
+@defproc[(sm->grammar [m machine?])
          grammar]{Builds a grammar for the language of the given
  dfa, ndfa, or ndpda.}
 
@@ -625,7 +637,7 @@ the language generated by the given regular expression.
  word.}
 
 @defproc*[([(grammar-testequiv [g1 grammar] [g2 grammar]) (or true (listof word))]
-           [(grammar-testequiv [g1 grammar] [g2 grammar] [natnum n]) (or true (listof word))])]
+           [(grammar-testequiv [g1 grammar] [g2 grammar] [natural? n]) (or true (listof word))])]
 Tests in the given grammars obtain
  the same results when deriving 100 (or the optional n)
  randomly generated words.  If all tests
@@ -635,7 +647,7 @@ Tests in the given grammars obtain
  returned.
 
 @defproc*[([(grammar-test [g1 grammar]) (listof (cons word (Derivation or string)))]
-           [(grammar-test [g1 grammar] [n natnum]) (listof (cons word (Derivation or string)))])]
+           [(grammar-test [g1 grammar] [n natural?]) (listof (cons word (Derivation or string)))])]
 Tests the given grammar with 100 (or the optional n) randomly generated words.
 A list of pairs containing a word and the result of attemting to derive the
 word are returned.
@@ -647,7 +659,7 @@ word are returned.
          ctm]{Builds a (combined) Turing machine from the given
  ctmd and the given tape alphabet union {BLANK}.}
 
-@defproc[(ctm-run [m ctm] [w tmtape] [i natnum])
+@defproc[(ctm-run [m ctm] [w tmtape] [i natural?])
          list]{Runs the given machine on the given tape with the
  head starting at position i (which must be a valid)
  index into w (without exceeding the length of w).
@@ -663,9 +675,9 @@ word are returned.
          regexp]{Builds the regular expression for the language that only contains the
                  empty string.}
 
-@defproc[(singleton-regexp [a letter])
+@defproc[(singleton-regexp [a (or/c letter? special-char?)])
          regexp]{Builds the regular expression for the language that only has a single
-                 word of length 1 representing the given letter.}
+                 word of length 1 representing the given letter or special character: $, &, !, *.}
 
 @defproc[(union-regexp [r1 regexp] [r2 regexp])
          regexp]{Builds a union regular expression from the given
@@ -729,10 +741,10 @@ word are returned.
          regexp]{Extracts the regular expression in the given kleenestar-regexp.}
 
 @defproc*[([(gen-regexp-word [r regexp]) word]
-           [(gen-regexp-word [r regexp] [n natnum]) word])]
+           [(gen-regexp-word [r regexp] [n natural?]) word])]
         Nondeterministically generate a word in the language
         of the given regexp. The maximum nuber of repetitions
-        for a Kleene star is the the optional natnum if provided.
+        for a Kleene star is the the optional natural number if provided.
         Otherwise, it is 20.
 
 @defproc[(gen-concat-word [r concat-regexp] [f (regexp --> word)])
@@ -742,7 +754,7 @@ word are returned.
         the given word-generating function. This includes any
         nested concat-regexps in r.
 
-@defproc[(gen-ks-word [n natnum] [r regexp] [f (regexp --> word)])
+@defproc[(gen-ks-word [n natural?] [r regexp] [f (regexp --> word)])
          word]
          Generate a word of arbitrary length in [0..n+1] using
          given regular expression and the given word-generating function.
@@ -764,7 +776,7 @@ word are returned.
          Nondeterministically return a nested sub-regexp from the given union-regexp.
          This includes any nested union-regexps in r.
 
-@defproc[(pick-reps [n natnum])
+@defproc[(pick-reps [n natural?])
          regexp]
          Nondeterministically return a natural number in [0..n].
 
