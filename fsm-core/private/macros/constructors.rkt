@@ -35,159 +35,159 @@
     )
   (append rules dead-state-rules))
 
-(define make-dfa/c (->i ([states (and/c (is-a-list/c "machine states" "three")
-                                        (valid-listof/c valid-state? "machine state" "list of machine states" #:rule "three")
-                                        (no-duplicates/c "states" "three"))]
-                         [sigma (and/c (is-a-list/c "machine alphabet" "one")
-                                       (valid-listof/c valid-alpha? "lowercase alphabet letter" "input alphabet" #:rule "one")
-                                       (no-duplicates/c "sigma" "one"))]
-                         [start (states) (and/c (valid-start/c states)
-                                                (start-in-states/c states))]
-                         [finals (states) (and/c (is-a-list/c "machine final states" "three")
-                                                 (valid-listof/c valid-state? "machine state" "list of machine finals" #:rule "three")
-                                                 (valid-finals/c states)
-                                                 (no-duplicates/c "final states" "three"))]
-                         [rules (states
-                                 sigma
-                                 add-dead) (and/c (is-a-list/c "machine rules" "four")
-                                                  correct-dfa-rule-structures/c
-                                                  (correct-dfa-rules/c states sigma)
-                                                  (functional/c states sigma add-dead)
-                                                  (no-duplicates-dfa/c "rules"))]
-                         )
-                        ([add-dead (lambda (x) (equal? 'no-dead x))]
-                         #:accepts [accepts (states
-                                             sigma
-                                             start
-                                             finals
-                                             rules
-                                             add-dead) (and/c (words-in-sigma/c sigma 'accepts)
-                                                              (listof-words/c "accepts")
-                                                              (dfa-input/c states
-                                                                           sigma
-                                                                           start
-                                                                           finals
-                                                                           rules
-                                                                           add-dead
-                                                                           #t))]
-                         #:rejects [rejects (states
-                                             sigma
-                                             start
-                                             finals
-                                             rules
-                                             add-dead) (and/c (words-in-sigma/c sigma 'rejects)
-                                                              (listof-words/c "rejects")
-                                                              (dfa-input/c states
-                                                                           sigma
-                                                                           start
-                                                                           finals
-                                                                           rules
-                                                                           add-dead
-                                                                           #f))]
-                         )
+  (define make-dfa/c (->i ([states (and/c (is-a-list/c "machine states" "three")
+                                          (valid-listof/c valid-state? "machine state" "list of machine states" #:rule "three")
+                                          (no-duplicates/c "states" "three"))]
+                           [sigma (and/c (is-a-list/c "machine alphabet" "one")
+                                         (valid-listof/c valid-alpha? "lowercase alphabet letter" "input alphabet" #:rule "one")
+                                         (no-duplicates/c "sigma" "one"))]
+                           [start (states) (and/c (valid-start/c states)
+                                                  (start-in-states/c states))]
+                           [finals (states) (and/c (is-a-list/c "machine final states" "three")
+                                                   (valid-listof/c valid-state? "machine state" "list of machine finals" #:rule "three")
+                                                   (valid-finals/c states)
+                                                   (no-duplicates/c "final states" "three"))]
+                           [rules (states
+                                   sigma
+                                   add-dead) (and/c (is-a-list/c "machine rules" "four")
+                                                    correct-dfa-rule-structures/c
+                                                    (correct-dfa-rules/c states sigma)
+                                                    (functional/c states sigma add-dead)
+                                                    (no-duplicates-dfa/c "rules"))]
+                           )
+                          ([add-dead (lambda (x) (equal? 'no-dead x))]
+                           #:accepts [accepts (states
+                                               sigma
+                                               start
+                                               finals
+                                               rules
+                                               add-dead) (and/c (words-in-sigma/c sigma 'accepts "two")
+                                                                (listof-words/c "accepts" "two")
+                                                                (dfa-input/c states
+                                                                             sigma
+                                                                             start
+                                                                             finals
+                                                                             rules
+                                                                             add-dead
+                                                                             #t))]
+                           #:rejects [rejects (states
+                                               sigma
+                                               start
+                                               finals
+                                               rules
+                                               add-dead) (and/c (words-in-sigma/c sigma 'rejects "two")
+                                                                (listof-words/c "rejects" "two")
+                                                                (dfa-input/c states
+                                                                             sigma
+                                                                             start
+                                                                             finals
+                                                                             rules
+                                                                             add-dead
+                                                                             #f))]
+                           )
          
                         [result dfa?]))
 
-(define make-ndfa/c
-  (->i ([states (and/c (is-a-list/c "machine states" "three")
-                       (valid-listof/c valid-state? "machine state" "list of machine states" #:rule "three")
-                       (no-duplicates/c "states" "three"))]
-        [sigma (and/c (is-a-list/c "machine alphabet" "one")
-                      (valid-listof/c valid-alpha? "lowercase alphabet letter" "input alphabet" #:rule "one")
-                      (no-duplicates/c "sigma" "one"))]
-        [start (states) (and/c (valid-start/c states)
-                               (start-in-states/c states))]
-        [finals (states) (and/c (is-a-list/c "machine final states" "three")
-                                (valid-listof/c valid-state? "machine state" "list of machine finals" #:rule "three")
-                                (valid-finals/c states)
-                                (no-duplicates/c "final states" "three"))]
-        [rules (states
-                sigma) (and/c (is-a-list/c "machine rules" "four")
-                              correct-dfa-rule-structures/c
-                              (correct-dfa-rules/c states (cons EMP sigma))
-                              (no-duplicates/c "rules" "four"))]
-        )
-       (#:accepts [accepts (states
-                            sigma
-                            start
-                            finals
-                            rules) (and/c (listof-words/c "accepts")
-                                          (words-in-sigma/c sigma 'accepts)
-                                          (ndfa-input/c states
-                                                        sigma
-                                                        start
-                                                        finals
-                                                        rules
-                                                        #t))]
-        #:rejects [rejects (states
-                            sigma
-                            start
-                            finals
-                            rules) (and/c (listof-words/c "rejects")
-                                          (words-in-sigma/c sigma 'rejects)
-                                          (ndfa-input/c states
-                                                        sigma
-                                                        start
-                                                        finals
-                                                        rules
-                                                        #f))]
-        )
+  (define make-ndfa/c
+    (->i ([states (and/c (is-a-list/c "machine states" "three")
+                         (valid-listof/c valid-state? "machine state" "list of machine states" #:rule "three")
+                         (no-duplicates/c "states" "three"))]
+          [sigma (and/c (is-a-list/c "machine alphabet" "one")
+                        (valid-listof/c valid-alpha? "lowercase alphabet letter" "input alphabet" #:rule "one")
+                        (no-duplicates/c "sigma" "one"))]
+          [start (states) (and/c (valid-start/c states)
+                                 (start-in-states/c states))]
+          [finals (states) (and/c (is-a-list/c "machine final states" "three")
+                                  (valid-listof/c valid-state? "machine state" "list of machine finals" #:rule "three")
+                                  (valid-finals/c states)
+                                  (no-duplicates/c "final states" "three"))]
+          [rules (states
+                  sigma) (and/c (is-a-list/c "machine rules" "four")
+                                correct-dfa-rule-structures/c
+                                (correct-dfa-rules/c states (cons EMP sigma))
+                                (no-duplicates/c "rules" "four"))]
+          )
+         (#:accepts [accepts (states
+                              sigma
+                              start
+                              finals
+                              rules) (and/c (listof-words/c "accepts" "two")
+                                            (words-in-sigma/c sigma 'accepts "two")
+                                            (ndfa-input/c states
+                                                          sigma
+                                                          start
+                                                          finals
+                                                          rules
+                                                          #t))]
+          #:rejects [rejects (states
+                              sigma
+                              start
+                              finals
+                              rules) (and/c (listof-words/c "rejects" "two")
+                                            (words-in-sigma/c sigma 'rejects "two")
+                                            (ndfa-input/c states
+                                                          sigma
+                                                          start
+                                                          finals
+                                                          rules
+                                                          #f))]
+          )
          
        [result ndfa?]))
 
-(define make-ndpda/c
-  (->i ([states (and/c (is-a-list/c "machine states" "three")
-                       (valid-listof/c valid-state? "machine state" "list of machine states" #:rule "three")
-                       (no-duplicates/c "states" "three"))]
-        [sigma (and/c (is-a-list/c "machine sigma" "one")
-                      (valid-listof/c valid-alpha? "lowercase alphabet letter" "input alphabet" #:rule "one")
-                      (no-duplicates/c "sigma" "one"))]
-        [gamma (and/c (is-a-list/c "machine gamma" "one")
-                      (valid-listof/c (lambda (g) (or (valid-state? g) (valid-alpha? g))) "stack symbol" "stack alphabet" #:rule "one")
-                      (no-duplicates/c "gamma" "one"))]
-        [start (states) (and/c (valid-start/c states)
-                               (start-in-states/c states))]
-        [finals (states) (and/c (is-a-list/c "machine final states" "three")
-                                (valid-listof/c valid-state? "machine state" "list of machine finals" #:rule "three")
-                                (valid-finals/c states)
-                                (no-duplicates/c "final states" "three"))]
-        [rules (states
-                sigma
-                gamma) (and/c (is-a-list/c "machine rules" "four")
-                              correct-ndpda-rule-structures/c
-                              (correct-ndpda-rules/c states sigma gamma)
-                              (no-duplicates/c "rules" "four"))]
-        )
-       (#:accepts [accepts (states
-                            sigma
-                            gamma
-                            start
-                            finals
-                            rules) (and/c (listof-words/c "accepts")
-                                          (words-in-sigma/c sigma 'accepts)
-                                          (ndpda-input/c states
-                                                         sigma
-                                                         gamma
-                                                         start
-                                                         finals
-                                                         rules
-                                                         #t))]
-        #:rejects [rejects (states
-                            sigma
-                            gamma
-                            start
-                            finals
-                            rules) (and/c (listof-words/c "rejects")
-                                          (words-in-sigma/c sigma 'rejects)
-                                          (ndpda-input/c states
-                                                         sigma
-                                                         gamma
-                                                         start
-                                                         finals
-                                                         rules
-                                                         #f))]
-        )
-       [result ndpda?]))
+  (define make-ndpda/c
+    (->i ([states (and/c (is-a-list/c "machine states" "three")
+                         (valid-listof/c valid-state? "machine state" "list of machine states" #:rule "three")
+                         (no-duplicates/c "states" "three"))]
+          [sigma (and/c (is-a-list/c "machine sigma" "one")
+                        (valid-listof/c valid-alpha? "lowercase alphabet letter" "input alphabet" #:rule "one")
+                        (no-duplicates/c "sigma" "one"))]
+          [gamma (and/c (is-a-list/c "machine gamma" "one")
+                        (valid-listof/c (lambda (g) (or (valid-state? g) (valid-alpha? g))) "stack symbol" "stack alphabet" #:rule "one")
+                        (no-duplicates/c "gamma" "one"))]
+          [start (states) (and/c (valid-start/c states)
+                                 (start-in-states/c states))]
+          [finals (states) (and/c (is-a-list/c "machine final states" "three")
+                                  (valid-listof/c valid-state? "machine state" "list of machine finals" #:rule "three")
+                                  (valid-finals/c states)
+                                  (no-duplicates/c "final states" "three"))]
+          [rules (states
+                  sigma
+                  gamma) (and/c (is-a-list/c "machine rules" "four")
+                                correct-ndpda-rule-structures/c
+                                (correct-ndpda-rules/c states sigma gamma)
+                                (no-duplicates/c "rules" "four"))]
+          )
+         (#:accepts [accepts (states
+                              sigma
+                              gamma
+                              start
+                              finals
+                              rules) (and/c (listof-words/c "accepts" "two")
+                                            (words-in-sigma/c sigma 'accepts "two")
+                                            (ndpda-input/c states
+                                                           sigma
+                                                           gamma
+                                                           start
+                                                           finals
+                                                           rules
+                                                           #t))]
+          #:rejects [rejects (states
+                              sigma
+                              gamma
+                              start
+                              finals
+                              rules) (and/c (listof-words/c "rejects" "two")
+                                            (words-in-sigma/c sigma 'rejects "two")
+                                            (ndpda-input/c states
+                                                           sigma
+                                                           gamma
+                                                           start
+                                                           finals
+                                                           rules
+                                                           #f))]
+          )
+         [result ndpda?]))
 
 (define make-tm/c
   (->i ([states (and/c (is-a-list/c "machine states" "three")
