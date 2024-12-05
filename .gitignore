@@ -68,7 +68,7 @@ fsmGUIFunctions.rkt
 
 # Viztool Generated dot files
 *vizTool.dot
-*.dot
+# *.dot
 
 *.1
 *.2
