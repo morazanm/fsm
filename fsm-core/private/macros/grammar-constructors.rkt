@@ -33,7 +33,7 @@
          (#:accepts [accepts (states
                               sigma
                               delta
-                              start) (and/c (listof-words/c "accepts")
+                              start) (and/c (listof-words/c "accepts" "two")
                                             (words-in-sigma/c sigma 'accepts "two")
                                             (rg-input/c states
                                                         sigma
