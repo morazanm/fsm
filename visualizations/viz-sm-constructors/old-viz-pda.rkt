@@ -1120,6 +1120,14 @@ visited is a (listof configuration)
                      (last comp))
                      comp)
        LoC))
+
+
+(define (get-farthest-consumed LoC acc)
+  (cond [(empty? LoC) acc]
+        [(< (length (second (first (first LoC)))) (length acc))
+         (get-farthest-consumed (rest LoC) (second (first (first LoC))))]
+        [else (get-farthest-consumed (rest LoC) acc)]))
+      
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;graph machine -> graph
@@ -1230,7 +1238,8 @@ visited is a (listof configuration)
          ;;Purpose: Returns all states whose invariants holds
          [held-invs (get-invariants get-invs id)])
     (begin
-      (displayln cut-off-states)
+      ;(displayln cut-off-states)
+      ;(displayln current-configs)
       #|(displayln "configs")
       (displayln current-configs)
       (displayln "invs")
@@ -1261,7 +1270,7 @@ visited is a (listof configuration)
               (or (list? (building-viz-state-stack a-vs))
                   (zipper-at-end? (building-viz-state-stack a-vs))))
          (reverse (cons (create-graph-thunk a-vs) acc))]
-        [(ormap (λ (comp-len) (= comp-len (building-viz-state-max-cmps a-vs))) (map length (building-viz-state-computations a-vs)))
+        [(andmap (λ (comp-len) (= comp-len (building-viz-state-max-cmps a-vs))) (map length (building-viz-state-computations a-vs)))
          #;(length (map length (building-viz-state-computations a-vs)) (sub1 (building-viz-state-max-cmps a-vs)))
          (reverse (cons (create-graph-thunk a-vs #:cut-off #t) acc))]
         [else (let ([next-graph (create-graph-thunk a-vs)])
@@ -1288,7 +1297,10 @@ visited is a (listof configuration)
   (let* (;;boolean
          ;;Purpose: Determines if the pci can be can be fully consumed
          [completed-config? (ormap (λ (config) (empty? (second (first config))))
-                                   (imsg-state-comps imsg-st))]
+                                   (map computation-LoC (get-computations (imsg-state-pci imsg-st)
+                                                                          (sm-rules (imsg-state-M imsg-st))
+                                                                          (sm-start (imsg-state-M imsg-st))
+                                                                          (imsg-state-max-cmps imsg-st))))]
          
          ;;(listof symbols)
          ;;Purpose: The last word that could be fully consumed by the ndfa
@@ -1393,15 +1405,21 @@ visited is a (listof configuration)
                                              0)
                                          '()))])
       (text (format "The current number of possible computations is: ~a (without repeated configurations)."
-                     (number->string (if (= (length (imsg-state-pci imsg-st)) (imsg-state-max-cmps imsg-st))
+                     (begin
+                       ;(displayln (imsg-state-pci imsg-st))
+                       ;(displayln (imsg-state-max-cmps imsg-st))
+                      ; (displayln (imsg-state-comps-len imsg-st))
+                       (number->string (if (= (length (imsg-state-pci imsg-st)) (imsg-state-max-cmps imsg-st))
                                          (list-ref (imsg-state-comps-len imsg-st)
                                                (sub1 (length (imsg-state-pci imsg-st))))
                                          (list-ref (imsg-state-comps-len imsg-st)
-                                               (length (imsg-state-pci imsg-st))))))
+                                               (length (imsg-state-pci imsg-st)))))))
              20
              'brown)
-      (cond [(ormap (λ (comp) (>= (length comp) (imsg-state-max-cmps imsg-st)))
-                     (imsg-state-comps imsg-st))
+      (cond [(and (ormap (λ (comp) (>= (length comp) (imsg-state-max-cmps imsg-st)))
+                         (imsg-state-comps imsg-st))
+                  (eq? (imsg-state-upci imsg-st)
+                       (imsg-state-farthest-consumed imsg-st)))
               (text (format "All computations exceed the cut-off limit: ~a." (imsg-state-max-cmps imsg-st)) 20 DARKGOLDENROD2)]
              [(not completed-config?)
               (text "All computations do not consume the entire word and the machine rejects." 20 'red)]
@@ -1461,18 +1479,21 @@ visited is a (listof configuration)
 (define (right-key-pressed a-vs)
   (let* (;;boolean
          ;;Purpose: Determines if the pci can be can be fully consumed
-         [pci (if (or (empty? (imsg-state-upci (informative-messages-component-state
-                                                (viz-state-informative-messages a-vs))))
-                      (= (length (imsg-state-pci (informative-messages-component-state
-                                                   (viz-state-informative-messages a-vs))))
-                         (imsg-state-max-cmps (informative-messages-component-state
-                                               (viz-state-informative-messages a-vs)))))
-                  (imsg-state-pci (informative-messages-component-state
-                                   (viz-state-informative-messages a-vs)))
-                  (append (imsg-state-pci (informative-messages-component-state
-                                           (viz-state-informative-messages a-vs)))
-                          (list (first (imsg-state-upci (informative-messages-component-state
-                                                         (viz-state-informative-messages a-vs)))))))]
+         [pci (begin
+                (displayln (imsg-state-pci (informative-messages-component-state
+                                            (viz-state-informative-messages a-vs))))
+                (if (or (empty? (imsg-state-upci (informative-messages-component-state
+                                                  (viz-state-informative-messages a-vs))))
+                        (eq? (imsg-state-upci (informative-messages-component-state
+                                                 (viz-state-informative-messages a-vs)))
+                                (imsg-state-farthest-consumed (informative-messages-component-state
+                                                               (viz-state-informative-messages a-vs)))))
+                    (imsg-state-pci (informative-messages-component-state
+                                     (viz-state-informative-messages a-vs)))
+                    (append (imsg-state-pci (informative-messages-component-state
+                                             (viz-state-informative-messages a-vs)))
+                            (list (first (imsg-state-upci (informative-messages-component-state
+                                                           (viz-state-informative-messages a-vs))))))))]
          [pci-len (length pci)])
     (struct-copy
      viz-state
@@ -1486,10 +1507,10 @@ visited is a (listof configuration)
                      (informative-messages-component-state (viz-state-informative-messages a-vs))
                      [upci (if (or (empty? (imsg-state-upci (informative-messages-component-state
                                                              (viz-state-informative-messages a-vs))))
-                                   (= (length (imsg-state-pci (informative-messages-component-state
-                                                                (viz-state-informative-messages a-vs))))
-                                      (imsg-state-max-cmps (informative-messages-component-state
-                                                            (viz-state-informative-messages a-vs)))))
+                                   (eq? (imsg-state-upci (informative-messages-component-state
+                                                          (viz-state-informative-messages a-vs)))
+                                        (imsg-state-farthest-consumed (informative-messages-component-state
+                                                                       (viz-state-informative-messages a-vs)))))
                                
                                (imsg-state-upci (informative-messages-component-state
                                                  (viz-state-informative-messages a-vs)))
@@ -1892,7 +1913,7 @@ visited is a (listof configuration)
           (define new-read-rules
             (for*/list ([states (sm-states M)]
                         [sigma (sm-sigma M)])
-              (list states sigma)))
+                (list states sigma)))
         
           ;;(listof rules)
           ;;Purpose: Makes rules for that empty the stack and transition to the ds
@@ -1905,8 +1926,8 @@ visited is a (listof configuration)
           ;;Purpose: Makes rules for every dead state transition to itself using the symbols in sigma of M
           (define dead-read-rules
             (for*/list ([ds (list dead)]
-                        [gamma (sm-gamma M)])
-              (list (list ds gamma EMP) (list ds EMP))))
+                        [sigma (sm-sigma M)])
+              (list (list ds sigma EMP) (list ds EMP))))
           ;;(listof rules)
           ;;Purpose: Gets rules that are not currently in the original rules of M
           (define get-rules-not-in-M  (local [(define partial-rules (map (λ (rule)
@@ -2091,6 +2112,7 @@ visited is a (listof configuration)
                                                         '()))]
                      ;;(listof rules) ;;Purpose: Returns the first accepting computations (listof rules)
                      [accepting-trace (if (empty? accept-cmps) '() (first accept-cmps))]
+                     [least-consumed-word (get-farthest-consumed LoC a-word)]
                      ;;building-state struct
                      [building-state (building-viz-state a-word
                                                          '()
@@ -2102,6 +2124,7 @@ visited is a (listof configuration)
                                                          (if (and add-dead (not (empty? invs))) (cons (list dead-state (λ (w s) #t)) invs) invs) 
                                                          dead-state
                                                          max-cmps)]
+                     
                      ;;(listof graph-thunk) ;;Purpose: Gets all the graphs needed to run the viz
                      [graphs (create-graph-thunks building-state '())]
                      ;;(listof computation) ;;Purpose: Gets all the cut off computations if the length of the word is greater than max computations
@@ -2128,6 +2151,9 @@ visited is a (listof configuration)
                 ;(struct building-viz-state (upci pci M inv dead))
                 ;(struct imsg-state (M upci pci))
                 ;;ANCHOR
+                ;(displayln least-consumed-word)
+                ;(displayln (count-computations a-word cut-off-comp a-word))
+                ;displayln (map displayln LoC))
                 ;(displayln (length get-cut-off-comp))
                 ;(displayln computation-lens)
                 ;(map displayln cut-off-comp)
@@ -2150,6 +2176,7 @@ visited is a (listof configuration)
                                                            '()
                                                            (list->zipper accepting-trace)
                                                            stack
+                                                           least-consumed-word
                                                            (list->zipper inv-configs) 
                                                            (sub1 (length inv-configs))
                                                            computation-lens
@@ -2414,12 +2441,11 @@ visited is a (listof configuration)
 
 ;(pda-viz P2 '(a a a b b b b))
 ;(pda-viz P2 '(a a a b b b) (list 'S P-S-INV) (list 'X P-X-INV))
-(pda-viz P3 '(a a a b b b) (list 'S P-S-INV) (list 'H P-X-INV))
+;(pda-viz P3 '(a a a b b b) (list 'S P-S-INV) (list 'H P-X-INV))
 
 ;"note to self:"
 ;"edit A and D to scroll thru word, not jump to end"
 ;"max-cmps idea: check length of comp to determine if it has been cut-off "
-
 
 (define pd (make-ndpda '(S A)
                        '(a b)
@@ -2461,3 +2487,7 @@ visited is a (listof configuration)
                             'S))
 
 (define pd-numb>numa (grammar->sm numb>numa))
+
+;(pda-viz pd-numb>numa '(a b) #:max-cmps 5)
+(pda-viz pd-numb>numa '(a b) #:add-dead #t #:max-cmps 5)
+;;track most consumed input
