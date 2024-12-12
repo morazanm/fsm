@@ -1112,31 +1112,20 @@ visited is a (listof configuration)
                         config))
               full-configs))
 
-(define (get-cut-off LoC cmps)
-  (filter-map (λ (comp)
-                (and (>= (length comp) cmps)
-                     (first comp)))
-              #;(λ (comp) (and (= (length comp) cmps)
-                     (last comp))
-                     comp)
-       LoC))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;graph machine -> graph
 ;;Purpose: Creates the nodes for the given graph
-(define (make-node-graph dgraph M dead held-inv fail-inv cut-off)
+(define (make-node-graph dgraph M dead held-inv fail-inv)
   (foldl (λ (state graph)
            (add-node graph
                      state
                      #:atb (hash 'color (if (eq? (sm-start M) state) 'green 'black)
                                  'style (cond [(and (member? state held-inv equal?) (member? state fail-inv equal?)) 'wedged]
-                                              [(or (member? state held-inv equal?)
-                                                   (member? state fail-inv equal?)
-                                                   (member? state cut-off equal?)) 'filled]                                              
+                                              [(or (member? state held-inv equal?) (member? state fail-inv equal?)) 'filled]                                              
                                               [else 'solid])
                                  'shape (if (member? state (sm-finals M) equal?) 'doublecircle 'circle)
-                                 'fillcolor (cond [(member? state cut-off equal?) GRAPHVIZ-CUTOFF-GOLD]
-                                                  [(and (member? state held-inv equal?) (member? state fail-inv equal?))
+                                 'fillcolor (cond [(and (member? state held-inv equal?) (member? state fail-inv equal?))
                                                    "red:chartreuse4"]
                                                   [(member? state held-inv equal?) HELD-INV-COLOR ]
                                                   [(member? state fail-inv equal?) BRKN-INV-COLOR]
@@ -1159,9 +1148,9 @@ visited is a (listof configuration)
                      (first rule)
                      (third rule)
                      #:atb (hash 'color (cond [(find-rule? rule dead current-a-rules)
-                                               'green #;(if cut-off  GRAPHVIZ-CUTOFF-GOLD 'green)]
+                                               (if cut-off  GRAPHVIZ-CUTOFF-GOLD 'green)]
                                               [(find-rule? rule dead current-rules)
-                                               'violetred #;(if cut-off GRAPHVIZ-CUTOFF-GOLD 'violetred)]
+                                               (if cut-off GRAPHVIZ-CUTOFF-GOLD 'violetred)]
                                               [else 'black])
                                  'style (cond [(equal? (third rule) dead) 'dashed]
                                               [(member? rule current-a-rules equal?) 'bold]
@@ -1187,9 +1176,6 @@ visited is a (listof configuration)
                           #;(get-trace-X (append (building-viz-state-accept-traces a-vs)
                                                (building-viz-state-reject-traces a-vs))
                                        trace-config) ]
-
-         [cut-off-states (remove-duplicates (map first (get-cut-off (building-viz-state-computations a-vs)
-                                                                    (building-viz-state-max-cmps a-vs))))]
          
          ;;(listof rule-structs)
          ;;Purpose: Extracts the rules from the first of the accepting computations
@@ -1230,7 +1216,6 @@ visited is a (listof configuration)
          ;;Purpose: Returns all states whose invariants holds
          [held-invs (get-invariants get-invs id)])
     (begin
-      (displayln cut-off-states)
       #|(displayln "configs")
       (displayln current-configs)
       (displayln "invs")
@@ -1245,14 +1230,13 @@ visited is a (listof configuration)
         (building-viz-state-M a-vs)
         (building-viz-state-dead a-vs)
         held-invs
-        brkn-invs
-        cut-off-states)
+        brkn-invs)
        all-rules
        current-a-rules
        current-r-rules
        held-invs
        (building-viz-state-dead a-vs)
-       #f))))
+       cut-off))))
     
 ;;viz-state (listof graph-thunks) -> (listof graph-thunks)
 ;;Purpose: Creates all the graphs needed for the visualization
@@ -1261,8 +1245,7 @@ visited is a (listof configuration)
               (or (list? (building-viz-state-stack a-vs))
                   (zipper-at-end? (building-viz-state-stack a-vs))))
          (reverse (cons (create-graph-thunk a-vs) acc))]
-        [(ormap (λ (comp-len) (= comp-len (building-viz-state-max-cmps a-vs))) (map length (building-viz-state-computations a-vs)))
-         #;(length (map length (building-viz-state-computations a-vs)) (sub1 (building-viz-state-max-cmps a-vs)))
+        [(> (length (building-viz-state-pci a-vs)) (sub1 (building-viz-state-max-cmps a-vs)))
          (reverse (cons (create-graph-thunk a-vs #:cut-off #t) acc))]
         [else (let ([next-graph (create-graph-thunk a-vs)])
                 (create-graph-thunks (struct-copy building-viz-state
@@ -1288,7 +1271,10 @@ visited is a (listof configuration)
   (let* (;;boolean
          ;;Purpose: Determines if the pci can be can be fully consumed
          [completed-config? (ormap (λ (config) (empty? (second (first config))))
-                                   (imsg-state-comps imsg-st))]
+                                   (map computation-LoC (get-computations (imsg-state-pci imsg-st)
+                                                                          (sm-rules (imsg-state-M imsg-st))
+                                                                          (sm-start (imsg-state-M imsg-st))
+                                                                          (imsg-state-max-cmps imsg-st))))]
          
          ;;(listof symbols)
          ;;Purpose: The last word that could be fully consumed by the ndfa
@@ -1326,8 +1312,7 @@ visited is a (listof configuration)
                       (if (equal? (sm-apply (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'accept)
                           (text (format "~a" EMP) 20 'black)
                           (text (format "~a" EMP) 20 'white))))]
-            [(ormap (λ (comp) (>= (length comp) (imsg-state-max-cmps imsg-st)))
-                     (imsg-state-comps imsg-st))
+            [(= (length (imsg-state-pci imsg-st)) (imsg-state-max-cmps imsg-st))
              (above/align 'left
                           (beside (text "aaaa" 20 'white)
                                   (text "Word: " 20 'black)
@@ -1392,31 +1377,7 @@ visited is a (listof configuration)
                                              (imsg-state-word-img-offset imsg-st)
                                              0)
                                          '()))])
-      (text (format "The current number of possible computations is: ~a (without repeated configurations)."
-                     (number->string (if (= (length (imsg-state-pci imsg-st)) (imsg-state-max-cmps imsg-st))
-                                         (list-ref (imsg-state-comps-len imsg-st)
-                                               (sub1 (length (imsg-state-pci imsg-st))))
-                                         (list-ref (imsg-state-comps-len imsg-st)
-                                               (length (imsg-state-pci imsg-st))))))
-             20
-             'brown)
-      (cond [(ormap (λ (comp) (>= (length comp) (imsg-state-max-cmps imsg-st)))
-                     (imsg-state-comps imsg-st))
-              (text (format "All computations exceed the cut-off limit: ~a." (imsg-state-max-cmps imsg-st)) 20 DARKGOLDENROD2)]
-             [(not completed-config?)
-              (text "All computations do not consume the entire word and the machine rejects." 20 'red)]
-             [(and (empty? (imsg-state-upci imsg-st))
-                   (or (zipper-empty? (imsg-state-stck imsg-st))
-                       (zipper-at-end? (imsg-state-stck imsg-st)))
-                   (equal? (sm-apply (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'accept))
-              (text "There is a computation that accepts." 20 'forestgreen)]
-             [(and (empty? (imsg-state-upci imsg-st))
-                   (or (zipper-empty? (imsg-state-stck imsg-st))
-                       (zipper-at-end? (imsg-state-stck imsg-st)))
-                   (equal? (sm-apply (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'reject))
-              (text "All computations end in a non-final state and the machine rejects." 20 'red)]
-             [else (text "Word Status: accept " 20 'white)])
-      #;(beside
+      (beside
        (text (format "The current number of possible computations is: ~a (without repeated configurations)."
                      (number->string (if (= (length (imsg-state-pci imsg-st)) (imsg-state-max-cmps imsg-st))
                                          (list-ref (imsg-state-comps imsg-st)
@@ -2153,7 +2114,6 @@ visited is a (listof configuration)
                                                            (list->zipper inv-configs) 
                                                            (sub1 (length inv-configs))
                                                            computation-lens
-                                                           LoC
                                                            max-cmps
                                                            0
                                                            (let ([offset-cap (- (length a-word) TAPE-SIZE)])
@@ -2237,21 +2197,13 @@ visited is a (listof configuration)
                                        ((B ε ε)(A ε))
                                        ((X b (b b))(X ε)) ((X b (b))(X ε)))))
 
-(define P2 (make-ndpda '(S H)
+(define P2 (make-ndpda '(S X)
                       '(a b)
                       '(b)
                       'S
-                      '(H)
-                      `(((S ε ε)(H ε))     ((S a ε)(S (b b)))
-                        ((H b (b b))(H ε)) ((H ε (b))(H ε)))))
-
-(define P3 (make-ndpda '(S H)
-                      '(a b)
-                      '(b)
-                      'S
-                      '(H)
-                      `(((S ε ε)(H ε))     ((S a ε)(S (b b)))
-                        ((H b (b b))(H ε)) ((H b (b))(H ε)))))
+                      '(X)
+                      `(((S ε ε)(X ε))     ((S a ε)(S (b b)))
+                        ((X b (b b))(X ε)) ((X b (b))(X ε)))))
 
 (define aˆnbˆn (make-ndpda '(S M F)
                            '(a b)
@@ -2412,13 +2364,12 @@ visited is a (listof configuration)
                   a a a a a a a a a a a a a a a a a a a)
            (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (empty? w)) (empty? s)))))
 
-;(pda-viz P2 '(a a a b b b b))
-;(pda-viz P2 '(a a a b b b) (list 'S P-S-INV) (list 'X P-X-INV))
-(pda-viz P3 '(a a a b b b) (list 'S P-S-INV) (list 'H P-X-INV))
-
-;"note to self:"
-;"edit A and D to scroll thru word, not jump to end"
-;"max-cmps idea: check length of comp to determine if it has been cut-off "
+"note to self:"
+"edit A and D to scroll thru word, not jump to end"
+"max-cmps idea: check length of comp to determine if it has been cut-off "
+"BUGS: "
+"FIX GOING OFF THE SCREEN"
+"FIX BUG WITH SYNCING INVARIANTS(BOTH VIZS)"
 
 
 (define pd (make-ndpda '(S A)
@@ -2450,14 +2401,3 @@ visited is a (listof configuration)
   (or (not (= (length (filter (λ (w) (equal? w 'a)) wrd)) 4))
       (not (= (length (filter (λ (w) (equal? w 'b)) wrd)) 2))))
 
-(define numb>numa (make-cfg '(S A)
-                            '(a b)
-                            `((S ,ARROW b)
-                              (S ,ARROW AbA)
-                              (A ,ARROW AaAbA)
-                              (A ,ARROW AbAaA)
-                              (A ,ARROW ,EMP)
-                              (A ,ARROW bA))
-                            'S))
-
-(define pd-numb>numa (grammar->sm numb>numa))

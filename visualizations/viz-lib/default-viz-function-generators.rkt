@@ -187,7 +187,6 @@
                                       (viz-state-informative-messages a-vs))))
              (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
                                                       (viz-state-informative-messages a-vs))))))
-        
       a-vs
       (let* ([idx (if (and (not (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
                                                                          (viz-state-informative-messages a-vs)))))
@@ -237,7 +236,9 @@
                                      [prev-image (if (vector-zipper-at-begin? new-imgs)
                                                      'BEGIN
                                                      (load-image (vector-zipper-current (vector-zipper-prev new-imgs))))]
-                                     [next-image (load-image (vector-zipper-current (vector-zipper-next new-imgs)))])])
+                                     [next-image (if (vector-zipper-at-end? new-imgs)
+                                                     'END
+                                                     (load-image (vector-zipper-current (vector-zipper-next new-imgs))))])])
                    (reposition-out-of-bounds-img
                     new-viz-state
                     (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
@@ -261,7 +262,9 @@
                                      [prev-image (if (vector-zipper-at-begin? new-imgs)
                                                      'BEGIN
                                                      (load-image (vector-zipper-current (vector-zipper-prev new-imgs))))]
-                                     [next-image (load-image (vector-zipper-current (vector-zipper-next new-imgs)))])])
+                                     [next-image (if (vector-zipper-at-end? new-imgs)
+                                                              'END
+                                                              (load-image (vector-zipper-current (vector-zipper-next new-imgs))))])])
                    (reposition-out-of-bounds-img
                     new-viz-state
                     (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
@@ -284,7 +287,9 @@
                                      [prev-image (if (vector-zipper-at-begin? new-imgs)
                                                      'BEGIN
                                                      (load-image (vector-zipper-current (vector-zipper-prev new-imgs))))]
-                                     [next-image (load-image (vector-zipper-current (vector-zipper-next new-imgs)))])])
+                                     [next-image (if (vector-zipper-at-end? new-imgs)
+                                                              'END
+                                                              (load-image (vector-zipper-current (vector-zipper-next new-imgs))))])])
                    (reposition-out-of-bounds-img
                     new-viz-state
                     (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state)
@@ -306,7 +311,9 @@
                                               [prev-image (if (vector-zipper-at-begin? new-imgs)
                                                               'BEGIN
                                                               (load-image (vector-zipper-current (vector-zipper-prev new-imgs))))]
-                                              [next-image (load-image (vector-zipper-current (vector-zipper-next new-imgs)))])])
+                                              [next-image (if (vector-zipper-at-end? new-imgs)
+                                                              'END
+                                                              (load-image (vector-zipper-current (vector-zipper-next new-imgs))))])])
               (reposition-out-of-bounds-img
                new-viz-state
                (calculate-viewport-limits (scale (viz-state-scale-factor a-vs) (new-curr-img))

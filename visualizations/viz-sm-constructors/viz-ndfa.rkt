@@ -1157,6 +1157,26 @@ triple is the entire of the ndfa rule
               'left
               (beside (text "aaaa" 20 'white)
                       (text "Word: " 20 'black)
+                      (make-tape-img entire-word
+                                     (if (> (length entire-word) TAPE-SIZE)
+                                         (imsg-state-word-img-offset imsg-st)
+                                         0)
+                                     (if (empty? (imsg-state-pci imsg-st))
+                                         '()
+                                         (list (list (length last-consumed-word) 'gray)
+                                               (list (length last-consumed-word) 'red)))))
+              (beside (text "Consumed: " 20 'black)
+                      (if (empty? last-consumed-word)
+                          (text "" 20 'black)
+                          (make-tape-img last-consumed-word
+                                         (if (> (length last-consumed-word) TAPE-SIZE)
+                                             (imsg-state-word-img-offset imsg-st)
+                                             0)
+                                         '()))))
+             #;(above/align
+              'left
+              (beside (text "aaaa" 20 'white)
+                      (text "Word: " 20 'black)
                       ;(if (empty? last-consumed-word)
                       ;(text "" 20 'gray)
                       (make-tape-img entire-word
@@ -1191,7 +1211,21 @@ triple is the entire of the ndfa rule
                                                           (imsg-state-word-img-offset imsg-st)
                                                           0)
                                                       '())))])
-      (beside
+      (text (format "The current number of possible computations is ~a (without repeated configurations). "
+                     (number->string (list-ref (imsg-state-comps imsg-st)
+                                               (length (imsg-state-pci imsg-st)))))
+             20
+             'brown)
+      (cond [(not completed-config?)
+              (text "All computations do not consume the entire word and the machine rejects." 20 'red)]
+             [(and (empty? (imsg-state-upci imsg-st))
+                   (equal? (sm-apply (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'accept))
+              (text "There is a computation that accepts." 20 'forestgreen)]
+             [(and (empty? (imsg-state-upci imsg-st))
+                   (equal? (sm-apply (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'reject))
+              (text "All computations end in a non-final state and the machine rejects." 20 'red)]
+             [else (text "Word Status: accept " 20 'white)])
+      #;(beside
        (text (format "The current number of possible computations is ~a. "
                      (number->string (list-ref (imsg-state-comps imsg-st)
                                                (length (imsg-state-pci imsg-st)))))
@@ -1922,13 +1956,14 @@ triple is the entire of the ndfa rule
                           (C ,EMP H)
                           (H b H) (H a S))))
 
-(define aa-ab (make-ndfa `(S A B F)
-                         '(a b)
-                         'S
-                         '(A B F)
-                         `((S a A) (S a B) (S ,EMP F)
-                                   (A a A)
-                                   (B b B))))
+(define aa-ab
+  (make-ndfa `(S A B F)
+             '(a b)
+             'S
+             '(A B F)
+             `((S a A) (S a B) (S ,EMP F)
+                       (A a A)
+                       (B b B))))
 
 (define ends-with-two-bs
   (make-ndfa `(S A B)
@@ -2056,7 +2091,7 @@ triple is the entire of the ndfa rule
 (ndfa-viz p2-ndfa '(a b b a))
 (ndfa-viz missing-exactly-one '(a a a a b b b b a a b b a a c))
 (ndfa-viz AT-LEAST-ONE-MISSING '(c c c c b b b b c b a))
-(ndfa-viz aa-ab '(a b b b a)
+(ndfa-viz aa-ab'(a b b b a)
 (ndfa-viz AT-LEAST-ONE-MISSING '(a b c))
 (ndfa-viz p2-ndfa '(a b a b))
 (ndfa-viz AB*B*UAB* '(a b a b))
@@ -2108,7 +2143,9 @@ triple is the entire of the ndfa rule
 ;;word -> boolean
 ;;Purpose: Determines if the last letter in the given word is an a
 (define (B-INV a-word)
-  (and (not (empty? a-word)) (not (equal? (last a-word) 'a))))
+  (and (not (empty? a-word)) ;(not
+                              (equal? (last a-word) 'a)))
+  ;)
 
 ;;word -> boolean
 ;;Purpose: Determines if the given word has one a
@@ -2287,9 +2324,9 @@ triple is the entire of the ndfa rule
 
 ;(ndfa-viz n '(b a a))
 ;(ndfa-viz nk '(b a a))
-;(ndfa-viz aa-ab '(a a a a b a))
+(ndfa-viz aa-ab '(a a a a b a))
 (ndfa-viz aa-ab '(a a a a b a) #:add-dead #t)
-(ndfa-viz aa-ab '(a a a a a a a) (list 'S S-INV1) (list 'A A-INV1) (list 'B B-INV1) (list 'F F-INV1));
+(ndfa-viz aa-ab '(a a a a a a a) (list 'S S-INV1) (list 'A A-INV1) (list 'B B-INV1) (list 'F F-INV1))
 (ndfa-viz aa-ab '(a a a a a a a) (list 'S S-INV) (list 'A A-INV1) (list 'B B-INV1) (list 'F F-INV1))
 ;things that change end with a bang(!)
 ;combines computations that have similiar configurations
