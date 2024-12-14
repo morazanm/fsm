@@ -1,5 +1,16 @@
 #lang racket
 (provide (all-defined-out))
-(struct imsg-state (M
-                    upci pci acpt-trace stck farthest-consumed invs-zipper
-                    inv-amt comps-len comps max-cmps word-img-offset word-img-offset-cap scroll-accum) #:transparent)
+(struct imsg-state (M  ;new-M
+                    upci ;;a-word
+                    pci ;;'()
+                    acpt-trace ;;'N/A
+                    stck ;;'N/A
+                    farthest-consumed ;;'N/A
+                    invs-zipper ;;(list->zipper inv-configs)
+                    inv-amt ;;(sub1 (length inv-configs))
+                    comps-len ;computation-lens
+                    comps ;'N/A
+                    max-cmps
+                    word-img-offset
+                    word-img-offset-cap
+                    scroll-accum) #:transparent)

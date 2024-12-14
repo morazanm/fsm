@@ -380,7 +380,9 @@
                                             [scale-factor DEFAULT-ZOOM-CAP]
                                             [scale-factor-cap DEFAULT-ZOOM-CAP]
                                             [scale-factor-floor NEW-FLOOR]
-                                            [prev-image (load-image (vector-zipper-current (vector-zipper-prev new-imgs)))]
+                                            [prev-image (if (vector-zipper-at-begin? new-imgs)
+                                                                     'BEGIN
+                                                                     (load-image (vector-zipper-current (vector-zipper-prev new-imgs))))]
                                             [next-image (if (vector-zipper-at-end? new-imgs)
                                                             'END
                                                             (load-image (vector-zipper-current (vector-zipper-next new-imgs))))])])
@@ -404,7 +406,9 @@
                                             [scale-factor NEW-FLOOR]
                                             [scale-factor-cap DEFAULT-ZOOM-CAP]
                                             [scale-factor-floor NEW-FLOOR]
-                                            [prev-image (load-image (vector-zipper-current (vector-zipper-prev new-imgs)))]
+                                            [prev-image (if (vector-zipper-at-begin? new-imgs)
+                                                                     'BEGIN
+                                                                     (load-image (vector-zipper-current (vector-zipper-prev new-imgs))))]
                                             [next-image (if (vector-zipper-at-end? new-imgs)
                                                             'END
                                                             (load-image (vector-zipper-current (vector-zipper-next new-imgs))))])])
@@ -427,7 +431,9 @@
                                                    (+ (posn-y (viz-state-image-posn a-vs)) growth-y))]
                                             [scale-factor-cap DEFAULT-ZOOM-CAP]
                                             [scale-factor-floor NEW-FLOOR]
-                                            [prev-image (load-image (vector-zipper-current (vector-zipper-prev new-imgs)))]
+                                            [prev-image (if (vector-zipper-at-begin? new-imgs)
+                                                                     'BEGIN
+                                                                     (load-image (vector-zipper-current (vector-zipper-prev new-imgs))))]
                                             [next-image (if (vector-zipper-at-end? new-imgs)
                                                             'END
                                                             (load-image (vector-zipper-current (vector-zipper-next new-imgs))))])])
@@ -449,7 +455,9 @@
                                                                growth-y))]
                                                      [scale-factor-cap DEFAULT-ZOOM-CAP]
                                                      [scale-factor-floor DEFAULT-ZOOM-FLOOR]
-                                                     [prev-image (load-image (vector-zipper-current (vector-zipper-prev new-imgs)))]
+                                                     [prev-image (if (vector-zipper-at-begin? new-imgs)
+                                                                     'BEGIN
+                                                                     (load-image (vector-zipper-current (vector-zipper-prev new-imgs))))]
                                                      [next-image (if (vector-zipper-at-end? new-imgs)
                                                                      'END
                                                                      (load-image (vector-zipper-current (vector-zipper-next new-imgs))))])])

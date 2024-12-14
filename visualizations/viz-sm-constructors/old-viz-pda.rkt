@@ -1109,7 +1109,7 @@ visited is a (listof configuration)
   (append-map (λ (config)
                 (filter (λ (configs)
                               (equal? (second configs) word))
-                        config))
+                        (computation-LoC config)))
               full-configs))
 
 (define (get-cut-off LoC cmps)
@@ -1140,7 +1140,8 @@ visited is a (listof configuration)
                                  'style (cond [(and (member? state held-inv equal?) (member? state fail-inv equal?)) 'wedged]
                                               [(or (member? state held-inv equal?)
                                                    (member? state fail-inv equal?)
-                                                   (member? state cut-off equal?)) 'filled]                                              
+                                                   (member? state cut-off equal?)) 'filled]
+                                              [(eq? state dead) 'dashed]
                                               [else 'solid])
                                  'shape (if (member? state (sm-finals M) equal?) 'doublecircle 'circle)
                                  'fillcolor (cond [(member? state cut-off equal?) GRAPHVIZ-CUTOFF-GOLD]
@@ -1191,7 +1192,7 @@ visited is a (listof configuration)
          ;;(listof configs)
          ;;Purpose: Extracts all the configs from both the accepting and rejecting configs
          [current-configs (get-portion-configs (building-viz-state-upci a-vs)
-                                               (building-viz-state-computations a-vs))
+                                               (building-viz-state-acc-comp a-vs))
                           #;(get-trace-X (append (building-viz-state-accept-traces a-vs)
                                                (building-viz-state-reject-traces a-vs))
                                        trace-config) ]
@@ -1202,6 +1203,8 @@ visited is a (listof configuration)
          ;;(listof rule-structs)
          ;;Purpose: Extracts the rules from the first of the accepting computations
          [a-rules (get-trace-X (building-viz-state-accept-traces a-vs) trace-rule)]
+
+         ;[a-rules (get-config-X (building-viz-state-accept-traces a-vs) trace-rule)]
 
          ;;(listof rules)
          ;;Purpose: Extracts the triple and pair from rule-structs
@@ -1314,14 +1317,18 @@ visited is a (listof configuration)
          
          ;;(listof symbols)
          ;;Purpose: The portion of the word that cannont be consumed
-         [unconsumed-word (remove-similarities last-consumed-word entire-word '())]
+         [unconsumed-word (drop entire-word (length last-consumed-word)) #;(remove-similarities last-consumed-word entire-word '())]
          
          ;;(listof symbols)
          ;;Purpose: Holds what needs to displayed for the stack based off the upci
          [current-stack (if (zipper-empty? (imsg-state-stck imsg-st)) 
                             (imsg-state-stck imsg-st)
                             (third (zipper-current (imsg-state-stck imsg-st))))])
-    (overlay/align
+    (begin
+      ;(displayln last-consumed-word)
+      ;(displayln entire-word)
+      ;(displayln unconsumed-word)
+      (overlay/align
      'left 'middle
      (above/align
       'left
@@ -1338,8 +1345,9 @@ visited is a (listof configuration)
                       (if (equal? (sm-apply (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'accept)
                           (text (format "~a" EMP) 20 'black)
                           (text (format "~a" EMP) 20 'white))))]
-            [(ormap (λ (comp) (>= (length comp) (imsg-state-max-cmps imsg-st)))
-                     (imsg-state-comps imsg-st))
+            [(and (not (empty? (imsg-state-farthest-consumed imsg-st)))
+                  (ormap (λ (comp) (>= (length comp) (imsg-state-max-cmps imsg-st)))
+                     (imsg-state-comps imsg-st)))
              (above/align 'left
                           (beside (text "aaaa" 20 'white)
                                   (text "Word: " 20 'black)
@@ -1405,22 +1413,18 @@ visited is a (listof configuration)
                                              0)
                                          '()))])
       (text (format "The current number of possible computations is: ~a (without repeated configurations)."
-                     (begin
-                       ;(displayln (imsg-state-pci imsg-st))
-                       ;(displayln (imsg-state-max-cmps imsg-st))
-                      ; (displayln (imsg-state-comps-len imsg-st))
-                       (number->string (if (= (length (imsg-state-pci imsg-st)) (imsg-state-max-cmps imsg-st))
+                     (number->string (if (= (length (imsg-state-pci imsg-st)) (imsg-state-max-cmps imsg-st))
                                          (list-ref (imsg-state-comps-len imsg-st)
                                                (sub1 (length (imsg-state-pci imsg-st))))
                                          (list-ref (imsg-state-comps-len imsg-st)
-                                               (length (imsg-state-pci imsg-st)))))))
+                                               (length (imsg-state-pci imsg-st))))))
              20
              'brown)
       (cond [(and (ormap (λ (comp) (>= (length comp) (imsg-state-max-cmps imsg-st)))
                          (imsg-state-comps imsg-st))
                   (eq? (imsg-state-upci imsg-st)
                        (imsg-state-farthest-consumed imsg-st)))
-              (text (format "All computations exceed the cut-off limit: ~a." (imsg-state-max-cmps imsg-st)) 20 DARKGOLDENROD2)]
+              (text "There are computations that exceed the cut-off limit." 20 DARKGOLDENROD2)]
              [(not completed-config?)
               (text "All computations do not consume the entire word and the machine rejects." 20 'red)]
              [(and (empty? (imsg-state-upci imsg-st))
@@ -1459,7 +1463,7 @@ visited is a (listof configuration)
                    (equal? (sm-apply (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'reject))
               (text "All computations end in a non-final state and the machine rejects." 20 'red)]
              [(text "Word Status: accept " 20 'white)])))
-     (rectangle 1250 50 'solid 'white))))
+     (rectangle 1250 50 'solid 'white)))))
 
 ;;upci is the unprocessed consumed input (listof symbol)
 ;;pci is the proccessed consumed input (listof symbol)
@@ -1470,32 +1474,41 @@ visited is a (listof configuration)
 ;;M is a machine
 ;;inv is a the (listof (state (listof symbol -> boolean)))
 ;;dead is the sybmol of dead state
-(struct building-viz-state (upci pci computations stack accept-traces reject-traces M inv dead max-cmps))
+(struct building-viz-state (upci pci computations acc-comp stack accept-traces reject-traces M inv dead max-cmps))
 
 (define E-SCENE (empty-scene 1250 600))
 
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization forward by one step
 (define (right-key-pressed a-vs)
-  (let* (;;boolean
+  (let* ([completed-config? (ormap (λ (config) (empty? (second (first (computation-LoC config)))))
+                                   (get-computations (imsg-state-pci (informative-messages-component-state
+                                                                                           (viz-state-informative-messages a-vs)))
+                                                                          (sm-rules (imsg-state-M (informative-messages-component-state
+                                                                                                   (viz-state-informative-messages a-vs))))
+                                                                          (sm-start (imsg-state-M (informative-messages-component-state
+                                                                                                   (viz-state-informative-messages a-vs))))
+                                                                          (imsg-state-max-cmps (informative-messages-component-state
+                                                                                                (viz-state-informative-messages a-vs)))))]
+         ;;boolean
          ;;Purpose: Determines if the pci can be can be fully consumed
-         [pci (begin
-                (displayln (imsg-state-pci (informative-messages-component-state
-                                            (viz-state-informative-messages a-vs))))
-                (if (or (empty? (imsg-state-upci (informative-messages-component-state
-                                                  (viz-state-informative-messages a-vs))))
-                        (eq? (imsg-state-upci (informative-messages-component-state
-                                                 (viz-state-informative-messages a-vs)))
-                                (imsg-state-farthest-consumed (informative-messages-component-state
-                                                               (viz-state-informative-messages a-vs)))))
-                    (imsg-state-pci (informative-messages-component-state
-                                     (viz-state-informative-messages a-vs)))
-                    (append (imsg-state-pci (informative-messages-component-state
+         [pci (if (or (not completed-config?)
+                      (empty? (imsg-state-upci (informative-messages-component-state
+                                                (viz-state-informative-messages a-vs))))
+                      (eq? (imsg-state-upci (informative-messages-component-state
                                              (viz-state-informative-messages a-vs)))
-                            (list (first (imsg-state-upci (informative-messages-component-state
-                                                           (viz-state-informative-messages a-vs))))))))]
+                           (imsg-state-farthest-consumed (informative-messages-component-state
+                                                          (viz-state-informative-messages a-vs)))))
+                  (imsg-state-pci (informative-messages-component-state
+                                   (viz-state-informative-messages a-vs)))
+                  (append (imsg-state-pci (informative-messages-component-state
+                                           (viz-state-informative-messages a-vs)))
+                          (list (first (imsg-state-upci (informative-messages-component-state
+                                                         (viz-state-informative-messages a-vs)))))))]
          [pci-len (length pci)])
-    (struct-copy
+    (begin (displayln (imsg-state-pci (informative-messages-component-state
+                                           (viz-state-informative-messages a-vs))))
+      (struct-copy
      viz-state
      a-vs
      [informative-messages
@@ -1505,7 +1518,8 @@ visited is a (listof configuration)
        [component-state
         (struct-copy imsg-state
                      (informative-messages-component-state (viz-state-informative-messages a-vs))
-                     [upci (if (or (empty? (imsg-state-upci (informative-messages-component-state
+                     [upci (if (or (not completed-config?)
+                                   (empty? (imsg-state-upci (informative-messages-component-state
                                                              (viz-state-informative-messages a-vs))))
                                    (eq? (imsg-state-upci (informative-messages-component-state
                                                           (viz-state-informative-messages a-vs)))
@@ -1545,7 +1559,7 @@ visited is a (listof configuration)
                                          (zipper-next (imsg-state-invs-zipper (informative-messages-component-state
                                                                                (viz-state-informative-messages a-vs))))]
                                         [else (imsg-state-invs-zipper (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs)))])])])])))
+                                                                       (viz-state-informative-messages a-vs)))])])])]))))
 
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization to the end
@@ -2112,11 +2126,14 @@ visited is a (listof configuration)
                                                         '()))]
                      ;;(listof rules) ;;Purpose: Returns the first accepting computations (listof rules)
                      [accepting-trace (if (empty? accept-cmps) '() (first accept-cmps))]
-                     [least-consumed-word (get-farthest-consumed LoC a-word)]
+                     [least-consumed-word (if (ormap (λ (comp) (>= (length comp) max-cmps)) LoC)
+                                                     (get-farthest-consumed LoC a-word)
+                                                     'no-cut-off)]
                      ;;building-state struct
                      [building-state (building-viz-state a-word
                                                          '()
                                                          LoC
+                                                         accepting-computations
                                                          stack
                                                          accept-cmps
                                                          reject-cmps
@@ -2145,7 +2162,7 @@ visited is a (listof configuration)
                                          (length (second (first con))))
                                        (return-brk-inv-configs
                                         (get-inv-config-results
-                                         (make-inv-configs a-word computations)
+                                         (make-inv-configs a-word accepting-computations)
                                          invs)
                                         a-word))])
                 ;(struct building-viz-state (upci pci M inv dead))
@@ -2400,7 +2417,7 @@ visited is a (listof configuration)
                     (length (filter (λ (w) (equal? w 'a)) a-word)))))))
 
 ;;purpose: to determine if the number of a's in the word is less than or equal the number of 'b's
-(define (P-S-INV a-word stck)
+#;(define (P-S-INV a-word stck)
   (let ([num-as (length (filter (λ (w) (eq? w 'a)) a-word))]
         [num-bs (length (filter (λ (w) (eq? w 'b)) stck))])
     (and (or (<= num-as num-bs)
@@ -2425,6 +2442,19 @@ visited is a (listof configuration)
     (and (or (<= num-as num-bs)
              (<= num-as (/ num-bs 2)))
          (andmap (λ (w) (eq? w 'b)) stck))))
+
+;;purpose: to determine if the number of a's in the word is less than or equal the number of 'b's
+(define (P-S-INV a-word stck)
+  (and (andmap (λ (w) (eq? w 'b)) stck)
+       (andmap (λ (w) (eq? w 'a)) a-word)
+       (= (* 2 (length a-word)) (length stck))))
+;;Purpose: to determine if the number of b's in the stack is greater than or equal to the number of b's in the ci
+(define (P-H-INV ci stck)
+  (let ([ci-as (filter (λ (w) (eq? w 'a)) ci)]
+        [ci-bs (filter (λ (w) (eq? w 'b)) ci)])
+    (and (equal? ci (append ci-as ci-bs))
+         (andmap (λ (w) (eq? w 'b)) stck)
+         (<= (length ci-as) (length (append ci-bs stck)) (* 2 (length ci-as))))))
 #;(pda-viz P '(a a a b b b))
 
 #;(pda-viz a* '(a a a a a) #:max-cmps 3
@@ -2440,8 +2470,8 @@ visited is a (listof configuration)
            (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (empty? w)) (empty? s)))))
 
 ;(pda-viz P2 '(a a a b b b b))
-;(pda-viz P2 '(a a a b b b) (list 'S P-S-INV) (list 'X P-X-INV))
-;(pda-viz P3 '(a a a b b b) (list 'S P-S-INV) (list 'H P-X-INV))
+;(pda-viz P2 '(a a a b b) (list 'S P-S-INV) (list 'X P-X-INV))
+(pda-viz P3 '(a a a b b b) (list 'S P-S-INV) (list 'H P-X-INV))
 
 ;"note to self:"
 ;"edit A and D to scroll thru word, not jump to end"

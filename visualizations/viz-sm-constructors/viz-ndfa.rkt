@@ -57,7 +57,11 @@
           TAPE-SIZE
           (λ (i)
             (if (< (+ start-index i) (length tape))
-                (overlay (text (symbol->string (list-ref tape (+ start-index i)))
+                (overlay (text (symbol->string (begin
+                                                 ;(displayln tape)
+                                                 (list-ref tape (+ start-index i))
+                                                 )
+                                               )
                                20
                                (cond [(empty? color-pair) 'black]
                                      [(and (not (empty? (first color-pair)))
@@ -1112,7 +1116,7 @@ triple is the entire of the ndfa rule
 ;;M is a machine
 ;;inv is a the (listof (state (listof symbols -> boolean)))
 ;;dead is the sybmol of dead state
-(struct building-viz-state (upci pci M inv dead computations accept-traces reject-traces))
+(struct building-viz-state (upci pci M inv dead computations acc-comps accept-traces reject-traces))
 
 ;;image-state -> image
 ;;Purpose: Determines which informative message is displayed to the user
@@ -1134,8 +1138,11 @@ triple is the entire of the ndfa rule
          
          ;;(listof symbols)
          ;;Purpose: The portion of the word that cannont be consumed
-         [unconsumed-word (remove-similarities last-consumed-word entire-word '())]) ;;keep an eye on remove-similiarites
-    (overlay/align
+         [unconsumed-word (drop entire-word (length last-consumed-word)) #;(remove-similarities last-consumed-word entire-word '())]) ;;keep an eye on remove-similiarites
+    (begin
+      ;(displayln entire-word)
+      ;(displayln unconsumed-word)
+      (overlay/align
      'left 'middle
      (above/align
       'left
@@ -1212,7 +1219,7 @@ triple is the entire of the ndfa rule
                                                           0)
                                                       '())))])
       (text (format "The current number of possible computations is ~a (without repeated configurations). "
-                     (number->string (list-ref (imsg-state-comps imsg-st)
+                     (number->string (list-ref (imsg-state-comps-len imsg-st)
                                                (length (imsg-state-pci imsg-st)))))
              20
              'brown)
@@ -1241,7 +1248,7 @@ triple is the entire of the ndfa rule
                    (equal? (sm-apply (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'reject))
               (text "All computations end in a non-final state and the machine rejects." 20 'red)]
              [(text "Word Status: accept " 20 'white)])))
-     (rectangle 1250 50 'solid 'white))))
+     (rectangle 1250 50 'solid 'white)))))
 
 
 ;;viz-state -> (list graph-thunk computation-length)
@@ -1250,7 +1257,7 @@ triple is the entire of the ndfa rule
   (let* (;;(listof configurations)
          ;;Purpose: Returns all configurations using the given word
          [all-configs (get-portion-configs (building-viz-state-upci a-vs)
-                                           (building-viz-state-computations a-vs))]
+                                           (map computation-LoC (building-viz-state-acc-comps a-vs)))]
 
          ;;(listof rule-structs)
          ;;Purpose: Extracts the rules from the first of all configurations
@@ -1341,7 +1348,10 @@ triple is the entire of the ndfa rule
                                                          (viz-state-informative-messages
                                                           a-vs)))))))]
          [pci-len (length pci)])
-    (struct-copy
+    (begin
+      (displayln (imsg-state-pci (informative-messages-component-state
+                                           (viz-state-informative-messages a-vs))))
+      (struct-copy
      viz-state
      a-vs
      [informative-messages
@@ -1371,7 +1381,7 @@ triple is the entire of the ndfa rule
                                          (zipper-next (imsg-state-invs-zipper (informative-messages-component-state
                                                                                (viz-state-informative-messages a-vs))))]
                                         [else (imsg-state-invs-zipper (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs)))])])])])))
+                                                                       (viz-state-informative-messages a-vs)))])])])]))))
 
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization to the end
@@ -1390,7 +1400,7 @@ triple is the entire of the ndfa rule
                                              (viz-state-informative-messages a-vs))))]
          ;;(listof symbols)
          ;;Purpose: The portion of the word that cannont be consumed
-         [unconsumed-word (remove-similarities last-consumed-word full-word '())]
+         [unconsumed-word (drop full-word (length last-consumed-word)) #;(remove-similarities last-consumed-word full-word '())]
          [zip (if (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                                   (viz-state-informative-messages a-vs))))
                   (imsg-state-invs-zipper (informative-messages-component-state
@@ -1399,7 +1409,11 @@ triple is the entire of the ndfa rule
                                                           (viz-state-informative-messages a-vs)))
                                  (imsg-state-inv-amt (informative-messages-component-state
                                                       (viz-state-informative-messages a-vs)))))])
-    (struct-copy
+    (begin
+      (displayln last-consumed-word)
+      (displayln unconsumed-word)
+      (displayln full-word)
+      (struct-copy
      viz-state
      a-vs
      [informative-messages
@@ -1425,7 +1439,7 @@ triple is the entire of the ndfa rule
                     [(not (equal? last-consumed-word full-word))
                      (append last-consumed-word (take unconsumed-word 1))]
                     [else full-word])]
-         [invs-zipper zip])])])))
+         [invs-zipper zip])])]))))
 
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization backward by one step
@@ -1810,6 +1824,7 @@ triple is the entire of the ndfa rule
                                                  (if (and add-dead (not (empty? invs))) (cons (list dead-state (λ (w) #t)) invs) invs) 
                                                  dead-state
                                                  (map reverse LoC)
+                                                 accepting-computations
                                                  accepting-traces
                                                  rejecting-traces)]
              ;;(listof graph-thunk) ;;Purpose: Gets all the graphs needed to run the viz
@@ -1821,7 +1836,9 @@ triple is the entire of the ndfa rule
                                  (length (second (first con))))
                                (return-brk-inv-configs
                                 (get-inv-config-results
-                                 (make-inv-configs a-word (map reverse LoC))
+                                 (make-inv-configs a-word (map (λ (comp)
+                                                                 (reverse (computation-LoC comp)))
+                                                               accepting-computations))
                                  invs)
                                 a-word))])
         ;(struct building-viz-state (upci pci M inv dead))
@@ -1839,12 +1856,14 @@ triple is the entire of the ndfa rule
                                        (imsg-state new-M
                                                    a-word
                                                    '()
-                                                   'N/A
-                                                   'N/A
+                                                   'no-acpt-trace
+                                                   'no-stck
+                                                   'no-farthest-consumed
                                                    (list->zipper inv-configs)
                                                    (sub1 (length inv-configs))
                                                    computation-lens
-                                                   'N/A
+                                                   'no-comps
+                                                   'no-max-cmps
                                                    0
                                                    (let ([offset-cap (- (length a-word) TAPE-SIZE)])
                                                      (if (> 0 offset-cap) 0 offset-cap))
@@ -2324,10 +2343,10 @@ triple is the entire of the ndfa rule
 
 ;(ndfa-viz n '(b a a))
 ;(ndfa-viz nk '(b a a))
-(ndfa-viz aa-ab '(a a a a b a))
-(ndfa-viz aa-ab '(a a a a b a) #:add-dead #t)
+;(ndfa-viz aa-ab '(a a a a b a))
+;(ndfa-viz aa-ab '(a a a a b a) #:add-dead #t)
 (ndfa-viz aa-ab '(a a a a a a a) (list 'S S-INV1) (list 'A A-INV1) (list 'B B-INV1) (list 'F F-INV1))
-(ndfa-viz aa-ab '(a a a a a a a) (list 'S S-INV) (list 'A A-INV1) (list 'B B-INV1) (list 'F F-INV1))
+;(ndfa-viz aa-ab '(a a a a a a a) (list 'S S-INV) (list 'A A-INV1) (list 'B B-INV1) (list 'F F-INV1))
 ;things that change end with a bang(!)
 ;combines computations that have similiar configurations
 #;(ndfa-viz DNA-SEQUENCE '(a t c g t a c) (list 'K DNA-K-INV) (list 'H DNA-H-INV) (list 'F DNA-F-INV)
