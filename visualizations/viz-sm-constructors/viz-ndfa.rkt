@@ -1138,11 +1138,8 @@ triple is the entire of the ndfa rule
          
          ;;(listof symbols)
          ;;Purpose: The portion of the word that cannont be consumed
-         [unconsumed-word (drop entire-word (length last-consumed-word)) #;(remove-similarities last-consumed-word entire-word '())]) ;;keep an eye on remove-similiarites
-    (begin
-      ;(displayln entire-word)
-      ;(displayln unconsumed-word)
-      (overlay/align
+         [unconsumed-word (drop entire-word (length last-consumed-word))]) ;;keep an eye on remove-similiarites
+    (overlay/align
      'left 'middle
      (above/align
       'left
@@ -1172,28 +1169,6 @@ triple is the entire of the ndfa rule
                                          '()
                                          (list (list (length last-consumed-word) 'gray)
                                                (list (length last-consumed-word) 'red)))))
-              (beside (text "Consumed: " 20 'black)
-                      (if (empty? last-consumed-word)
-                          (text "" 20 'black)
-                          (make-tape-img last-consumed-word
-                                         (if (> (length last-consumed-word) TAPE-SIZE)
-                                             (imsg-state-word-img-offset imsg-st)
-                                             0)
-                                         '()))))
-             #;(above/align
-              'left
-              (beside (text "aaaa" 20 'white)
-                      (text "Word: " 20 'black)
-                      ;(if (empty? last-consumed-word)
-                      ;(text "" 20 'gray)
-                      (make-tape-img entire-word
-                                     (if (> (length entire-word) TAPE-SIZE)
-                                         (imsg-state-word-img-offset imsg-st)
-                                         0)
-                                     (if (empty? (imsg-state-pci imsg-st))
-                                         '()
-                                         (list (list (length last-consumed-word) 'gray)
-                                               (list (length last-consumed-word) 'red)))));)
               (beside (text "Consumed: " 20 'black)
                       (if (empty? last-consumed-word)
                           (text "" 20 'black)
@@ -1232,23 +1207,8 @@ triple is the entire of the ndfa rule
                    (equal? (sm-apply (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'reject))
               (text "All computations end in a non-final state and the machine rejects." 20 'red)]
              [else (text "Word Status: accept " 20 'white)])
-      #;(beside
-       (text (format "The current number of possible computations is ~a. "
-                     (number->string (list-ref (imsg-state-comps imsg-st)
-                                               (length (imsg-state-pci imsg-st)))))
-             20
-             'brown)
-       (text "aaaaa" 20 'white)
-       (cond [(not completed-config?)
-              (text "All computations do not consume the entire word and the machine rejects." 20 'red)]
-             [(and (empty? (imsg-state-upci imsg-st))
-                   (equal? (sm-apply (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'accept))
-              (text "There is a computation that accepts." 20 'forestgreen)]
-             [(and (empty? (imsg-state-upci imsg-st))
-                   (equal? (sm-apply (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'reject))
-              (text "All computations end in a non-final state and the machine rejects." 20 'red)]
-             [(text "Word Status: accept " 20 'white)])))
-     (rectangle 1250 50 'solid 'white)))))
+      )
+     (rectangle 1250 50 'solid 'white))))
 
 
 ;;viz-state -> (list graph-thunk computation-length)
@@ -1348,10 +1308,7 @@ triple is the entire of the ndfa rule
                                                          (viz-state-informative-messages
                                                           a-vs)))))))]
          [pci-len (length pci)])
-    (begin
-      (displayln (imsg-state-pci (informative-messages-component-state
-                                           (viz-state-informative-messages a-vs))))
-      (struct-copy
+    (struct-copy
      viz-state
      a-vs
      [informative-messages
@@ -1381,7 +1338,7 @@ triple is the entire of the ndfa rule
                                          (zipper-next (imsg-state-invs-zipper (informative-messages-component-state
                                                                                (viz-state-informative-messages a-vs))))]
                                         [else (imsg-state-invs-zipper (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs)))])])])]))))
+                                                                       (viz-state-informative-messages a-vs)))])])])])))
 
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization to the end
@@ -1409,11 +1366,7 @@ triple is the entire of the ndfa rule
                                                           (viz-state-informative-messages a-vs)))
                                  (imsg-state-inv-amt (informative-messages-component-state
                                                       (viz-state-informative-messages a-vs)))))])
-    (begin
-      (displayln last-consumed-word)
-      (displayln unconsumed-word)
-      (displayln full-word)
-      (struct-copy
+    (struct-copy
      viz-state
      a-vs
      [informative-messages
@@ -1439,7 +1392,7 @@ triple is the entire of the ndfa rule
                     [(not (equal? last-consumed-word full-word))
                      (append last-consumed-word (take unconsumed-word 1))]
                     [else full-word])]
-         [invs-zipper zip])])]))))
+         [invs-zipper zip])])])))
 
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization backward by one step
@@ -2227,7 +2180,7 @@ triple is the entire of the ndfa rule
 ;; Purpose: To determine whether ci = aa*
 (define (A-INV1 ci)
   (and (not (empty? ci))
-       (andmap (λ (el) (eq? el 'a)) ci)))
+       (andmap (λ (w) (eq? w 'a)) ci)))
 
 ;; word -> Boolean
 ;; Purpose: To determine whether ci = ab*
@@ -2345,8 +2298,8 @@ triple is the entire of the ndfa rule
 ;(ndfa-viz nk '(b a a))
 ;(ndfa-viz aa-ab '(a a a a b a))
 ;(ndfa-viz aa-ab '(a a a a b a) #:add-dead #t)
-(ndfa-viz aa-ab '(a a a a a a a) (list 'S S-INV1) (list 'A A-INV1) (list 'B B-INV1) (list 'F F-INV1))
-;(ndfa-viz aa-ab '(a a a a a a a) (list 'S S-INV) (list 'A A-INV1) (list 'B B-INV1) (list 'F F-INV1))
+(ndfa-viz aa-ab '(a a a a a a a))
+(ndfa-viz aa-ab '(a a a a a a a) (list 'S S-INV) (list 'A A-INV1) (list 'B B-INV1) (list 'F F-INV1) #:add-dead #t)
 ;things that change end with a bang(!)
 ;combines computations that have similiar configurations
 #;(ndfa-viz DNA-SEQUENCE '(a t c g t a c) (list 'K DNA-K-INV) (list 'H DNA-H-INV) (list 'F DNA-F-INV)

@@ -2470,8 +2470,8 @@ visited is a (listof configuration)
            (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (empty? w)) (empty? s)))))
 
 ;(pda-viz P2 '(a a a b b b b))
-;(pda-viz P2 '(a a a b b) (list 'S P-S-INV) (list 'X P-X-INV))
-(pda-viz P3 '(a a a b b b) (list 'S P-S-INV) (list 'H P-X-INV))
+(pda-viz P2 '(a a a b b) (list 'S P-S-INV) (list 'H P-X-INV))
+;(pda-viz P3 '(a a a b b b) (list 'S P-S-INV) (list 'H P-X-INV))
 
 ;"note to self:"
 ;"edit A and D to scroll thru word, not jump to end"
@@ -2519,5 +2519,5 @@ visited is a (listof configuration)
 (define pd-numb>numa (grammar->sm numb>numa))
 
 ;(pda-viz pd-numb>numa '(a b) #:max-cmps 5)
-(pda-viz pd-numb>numa '(a b) #:add-dead #t #:max-cmps 5)
+(pda-viz pd-numb>numa '(a b) #:max-cmps 5)
 ;;track most consumed input
