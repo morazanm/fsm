@@ -142,18 +142,19 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                ((P ,BLANK) (X ,RIGHT)))
                              'S '(Y) 'Y))
 
-(check-accept equal-a-b-c
+#;(check-accept equal-a-b-c
               ;'((@ _ a a z) 1)
-              '((@ _ a a b) 1)
+              ;'((@ _ a a b) 1)
               ;'((@ _ a a b))
               ;'()
-              '((@ _ a a b) 1)
+              ;'((@ _ a a b) 1)
               ;'(0)
               ;0
-              '((@ _ a a) 1)
+              ;'((@ _ a a) 1)
               ;'((@ _ a a) )
               )
-;(check-accept equal-a-b-c [`(,LM ,BLANK a a) 1])
+(check-accept equal-a-b-c `[(,LM ,BLANK a a b b c c) 1])
+(check-reject equal-a-b-c `[(,LM ,BLANK a a b b c c) 1])
 #|(check-accept equal-a-b-c [`(,LM ,BLANK a a) 1])
 (check-accept equal-a-b-c `(,LM ,BLANK b b b) 1) 
 (check-accept equal-a-b-c `(,LM ,BLANK c) 1) 
