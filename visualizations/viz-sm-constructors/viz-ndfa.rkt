@@ -2299,6 +2299,7 @@ triple is the entire of the ndfa rule
 ;(ndfa-viz aa-ab '(a a a a b a))
 ;(ndfa-viz aa-ab '(a a a a b a) #:add-dead #t)
 (ndfa-viz aa-ab '(a a a a a a a))
+;(ndfa-viz ends-with-two-bs '(a a a a b b a b b b))
 (ndfa-viz aa-ab '(a a a a a a a) (list 'S S-INV) (list 'A A-INV1) (list 'B B-INV1) (list 'F F-INV1) #:add-dead #t)
 ;things that change end with a bang(!)
 ;combines computations that have similiar configurations
