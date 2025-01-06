@@ -1316,7 +1316,7 @@ visited is a (listof configuration)
                   (empty? (imsg-state-upci imsg-st)))
              (above/align
               'left
-              (beside (text "aaaa" 20 'white)
+              (beside (text "aaaC" 20 'white)
                       (text "Word: " 20 'black)
                       (if (equal? (sm-apply (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'accept)
                           (text (format "~a" EMP) 20 'gray)
@@ -1329,7 +1329,7 @@ visited is a (listof configuration)
                   (ormap (λ (comp) (>= (length comp) (imsg-state-max-cmps imsg-st)))
                      (imsg-state-comps imsg-st)))
              (above/align 'left
-                          (beside (text "aaaa" 20 'white)
+                          (beside (text "aaaC" 20 'white)
                                   (text "Word: " 20 'black)
                                   (make-tape-img entire-word
                                                  (if (> (length entire-word) TAPE-SIZE)
@@ -1348,7 +1348,7 @@ visited is a (listof configuration)
             [(and (not (empty? (imsg-state-pci imsg-st))) (not completed-config?))
              (above/align
               'left
-              (beside (text "aaaa" 20 'white)
+              (beside (text "aaaC" 20 'white)
                       (text "Word: " 20 'black)
                       (make-tape-img entire-word
                                      (if (> (length entire-word) TAPE-SIZE)
@@ -1367,7 +1367,7 @@ visited is a (listof configuration)
                                              0)
                                          '()))))]
             [else (above/align 'left
-                               (beside (text "aaaa" 20 'white)
+                               (beside (text "aaaC" 20 'white)
                                        (text "Word: " 20 'black)
                                        (make-tape-img entire-word
                                                       (if (> (length entire-word) TAPE-SIZE)
@@ -1383,9 +1383,9 @@ visited is a (listof configuration)
                                                           0)
                                                       '())))])
       (cond [(zipper-empty? (imsg-state-stck imsg-st)) (text "aaaa" 20 'white)]
-            [(empty? current-stack) (beside (text "aaak" 20 'white)
+            [(empty? current-stack) (beside (text "aaaC" 20 'white)
                                             (text "Stack: " 20 'black))]
-            [else (beside (text "aaak" 20 'white)
+            [else (beside (text "aaaC" 20 'white)
                           (text "Stack: " 20 'black)
                           (make-tape-img current-stack
                                          (if (> (length current-stack) TAPE-SIZE)

@@ -99,8 +99,6 @@
 
 (define pd-numb>numa (grammar->sm numb>numa))
 
-
-
-
-#;(pda-viz a^ib^j-student '(a a a b b) (list 'S PDA-S-INV) (list 'H PDA-H-INV))
+#;(pda-viz a^ib^j-student '(a a a b b) (list 'S PDA-S-INV)
+           (list 'H PDA-H-INV))
 ;(pda-viz pd-numb>numa '(a b) #:max-cmps 5)

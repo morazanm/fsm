@@ -1149,7 +1149,7 @@ triple is the entire of the ndfa rule
                   (empty? (imsg-state-upci imsg-st)))
              (above/align
               'left
-              (beside (text "aaaa" 20 'white)
+              (beside (text "aaaC" 20 'white)
                       (text "Word: " 20 'black)
                       (if (equal? (sm-apply (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'accept)
                           (text (format "~a" EMP) 20 'gray)
@@ -1161,7 +1161,7 @@ triple is the entire of the ndfa rule
             [(and (not (empty? (imsg-state-pci imsg-st))) (not completed-config?))
              (above/align
               'left
-              (beside (text "aaaa" 20 'white)
+              (beside (text "aaaC" 20 'white)
                       (text "Word: " 20 'black)
                       (make-tape-img entire-word
                                      (if (> (length entire-word) TAPE-SIZE)
@@ -1180,7 +1180,7 @@ triple is the entire of the ndfa rule
                                              0)
                                          '()))))]
             [else (above/align 'left
-                               (beside (text "aaaa" 20 'white)
+                               (beside (text "aaaC" 20 'white)
                                        (text "Word: " 20 'black)
                                        (make-tape-img entire-word
                                                       (if (> (length entire-word) TAPE-SIZE)
