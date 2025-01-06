@@ -10,7 +10,7 @@
          "bounding-limits.rkt"
          2htdp/image
          "resize-viz-image.rkt"
-         "../viz-sm-constructors/david-imsg-state.rkt"
+         "../viz-sm/david-imsg-state.rkt"
          "typed-matrices.rkt"
          racket/promise
          racket/list
