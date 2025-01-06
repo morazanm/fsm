@@ -16,6 +16,8 @@
          math/matrix
          "../../fsm-core/interface.rkt")
 
+(provide ndfa-viz)
+
 (define FNAME "fsm")
 
 (define HELD-INV-COLOR 'chartreuse4)

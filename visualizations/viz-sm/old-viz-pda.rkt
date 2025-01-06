@@ -16,6 +16,8 @@
          "david-imsg-state.rkt"
          "../../fsm-core/interface.rkt")
 
+(provide pda-viz)
+
 (define FNAME "fsm")
 
 (define HELD-INV-COLOR 'chartreuse4)

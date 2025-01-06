@@ -16,6 +16,7 @@
          "../../fsm-core/private/misc.rkt"
          "david-imsg-state.rkt")
 
+(provide pda-viz)
 
 (define FNAME "fsm")
 
