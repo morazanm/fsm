@@ -2221,6 +2221,19 @@ visited is a (listof configuration)
                                   ((H a (a))(H ,EMP))
                                   ((H ,EMP ,EMP)(I ,EMP)))))
 
+(define same-num-ab (make-ndpda '(K)
+                                '(a b)
+                                '(a b)
+                                'K
+                                '(K)
+                                `(
+                                  ((K a ,EMP)(K (b)))
+                                  ((K b ,EMP)(K (a)))
+                                 
+                                  ((K b (b))(K ,EMP))
+                                  ((K a (a))(K ,EMP))
+                                  )))
+
 
 (define P (make-ndpda '(S A B X)
                       '(a b)
@@ -2429,7 +2442,7 @@ visited is a (listof configuration)
            (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (empty? w)) (empty? s)))))
 
 ;(pda-viz P2 '(a a a b b b b))
-(pda-viz P2 '(a a a b b) (list 'S P-S-INV) (list 'H P-H-INV))
+;(pda-viz P2 '(a a a b b) (list 'S P-S-INV) (list 'H P-H-INV))
 ;(pda-viz P3 '(a a a b b b) (list 'S P-S-INV) (list 'H P-H-INV))
 ;(pda-viz P3 '(a a a b b b) (list 'S P-S-INV) (list 'H P-H1-INV))
 ;"note to self:"
@@ -2464,6 +2477,20 @@ visited is a (listof configuration)
   (or (not (= (length (filter (λ (w) (equal? w 'a)) wrd)) 4))
       (not (= (length (filter (λ (w) (equal? w 'b)) wrd)) 2))))
 
+
+
+;(pda-viz pd-numb>numa '(a b) #:max-cmps 5)
+;;(pda-viz pd-numb>numa '(a b) #:max-cmps 5)
+;;track most consumed input
+
+
+
+
+
+
+
+
+
 (define numb>numa (make-cfg '(S A)
                             '(a b)
                             `((S ,ARROW b)
@@ -2476,6 +2503,12 @@ visited is a (listof configuration)
 
 (define pd-numb>numa (grammar->sm numb>numa))
 
-(pda-viz pd-numb>numa '(a b) #:max-cmps 5)
-;;(pda-viz pd-numb>numa '(a b) #:max-cmps 5)
-;;track most consumed input
+
+
+
+
+
+
+
+;(pda-viz P2 '(a a a b b) (list 'S P-S-INV) (list 'H P-H-INV))
+;(pda-viz pd-numb>numa '(a b) #:max-cmps 5)

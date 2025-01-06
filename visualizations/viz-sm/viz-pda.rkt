@@ -1306,7 +1306,7 @@ visited is a (listof configuration)
                             (imsg-state-stck imsg-st)
                             (third (zipper-current (imsg-state-stck imsg-st))))]
 
-         [pda-decision (apply-pda (imsg-state-M imsg-st) (imsg-state-pci imsg-st))])
+         #;[pda-decision (apply-pda (imsg-state-M imsg-st) (imsg-state-pci imsg-st))])
     (overlay/align
      'left 'middle
      (above/align
@@ -1317,11 +1317,11 @@ visited is a (listof configuration)
               'left
               (beside (text "aaaa" 20 'white)
                       (text "Word: " 20 'black)
-                      (if (equal? pda-decision 'accept)
+                      (if (equal? (apply-pda (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'accept)
                           (text (format "~a" EMP) 20 'gray)
                           (text (format "~a" EMP) 20 'red)))
               (beside (text "Consumed: " 20 'black)
-                      (if (equal? pda-decision 'accept)
+                      (if (equal? (apply-pda (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'accept)
                           (text (format "~a" EMP) 20 'black)
                           (text (format "~a" EMP) 20 'white))))]
             [(and (not (empty? (imsg-state-farthest-consumed imsg-st)))
@@ -1409,12 +1409,12 @@ visited is a (listof configuration)
              [(and (empty? (imsg-state-upci imsg-st))
                    (or (zipper-empty? (imsg-state-stck imsg-st))
                        (zipper-at-end? (imsg-state-stck imsg-st)))
-                   (equal? pda-decision 'accept))
+                   (equal? (apply-pda (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'accept))
               (text "There is a computation that accepts." 20 'forestgreen)]
              [(and (empty? (imsg-state-upci imsg-st))
                    (or (zipper-empty? (imsg-state-stck imsg-st))
                        (zipper-at-end? (imsg-state-stck imsg-st)))
-                   (equal? pda-decision 'reject))
+                   (equal? (apply-pda (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'reject))
               (text "All computations end in a non-final state and the machine rejects." 20 'red)]
              [else (text "Word Status: accept " 20 'white)]))
      (rectangle 1250 50 'solid 'white))))
@@ -2117,23 +2117,6 @@ visited is a (listof configuration)
                                          (make-inv-configs a-word accepting-computations)
                                          invs)
                                         a-word))])
-                ;(struct building-viz-state (upci pci M inv dead))
-                ;(struct imsg-state (M upci pci))
-                ;;ANCHOR
-                
-                ;(displayln least-consumed-word)
-                ;(displayln (count-computations a-word cut-off-comp a-word))
-                
-                ;(displayln (length get-cut-off-comp))
-                ;(displayln computation-lens)
-                ;(map displayln cut-off-comp)
-                ;(displayln  graphs)
-                ;(displayln (list-ref graphs 0))
-                ;(displayln (list-ref graphs max-cmps))
-                ;(displayln (length graphs))
-                ;(displayln (length accept-cmps))
-                ;(displayln (computation-LoC (first accepting-computations)))
-                ;(println reject-cmps)
                 (run-viz graphs
                          (lambda () (graph->bitmap (first graphs)))
                          (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2))
@@ -2365,7 +2348,7 @@ visited is a (listof configuration)
            (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (empty? w)) (empty? s)))))
 
 ;(pda-viz P2 '(a a a b b b b))
-(pda-viz P2 '(a a a b b) (list 'S P-S-INV) (list 'H P-H-INV))
+;(pda-viz P2 '(a a a b b) (list 'S P-S-INV) (list 'H P-H-INV))
 ;(pda-viz P3 '(a a a b b b) (list 'S P-S-INV) (list 'H P-H-INV))
 ;(pda-viz P3 '(a a a b b b) (list 'S P-S-INV) (list 'H P-H1-INV))
 ;"note to self:"
@@ -2374,7 +2357,7 @@ visited is a (listof configuration)
 
 
 
-(define numb>numa (make-unchecked-cfg '(S A)
+#;(define numb>numa (make-unchecked-cfg '(S A)
                             '(a b)
                             `((S ,ARROW b)
                               (S ,ARROW AbA)
@@ -2384,10 +2367,10 @@ visited is a (listof configuration)
                               (A ,ARROW bA))
                             'S))
 
-(define pd-numb>numa (cfg->pda numb>numa))
+;(define pd-numb>numa (cfg->pda numb>numa))
 
 ;(pda-viz pd-numb>numa '(a b) #:max-cmps 5)
-;;(pda-viz pd-numb>numa '(a b) #:max-cmps 5)
+;(pda-viz pd-numb>numa '(a b) #:max-cmps 5)
 ;;track most consumed input
 
 (define BUGGY-SAME-NUM-AB (make-unchecked-ndpda '(K H F M)
@@ -2539,4 +2522,22 @@ visited is a (listof configuration)
   (or (not (= (length (filter (λ (w) (equal? w 'a)) wrd)) 4))
       (not (= (length (filter (λ (w) (equal? w 'b)) wrd)) 2))))
 
+
+
+
+;;(pda-viz P2 '(a a a b b) (list 'S P-S-INV) (list 'H P-H-INV))
+
+(define numb>numa (make-unchecked-cfg '(S A)
+                            '(a b)
+                            `((S ,ARROW b)
+                              (S ,ARROW AbA)
+                              (A ,ARROW AaAbA)
+                              (A ,ARROW AbAaA)
+                              (A ,ARROW ,EMP)
+                              (A ,ARROW bA))
+                            'S))
+
+(define pd-numb>numa (cfg->pda numb>numa))
+
+;;(pda-viz pd-numb>numa '(a b) #:max-cmps 5)
         

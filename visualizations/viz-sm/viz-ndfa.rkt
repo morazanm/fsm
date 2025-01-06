@@ -2298,9 +2298,9 @@ triple is the entire of the ndfa rule
 ;(ndfa-viz nk '(b a a))
 ;(ndfa-viz aa-ab '(a a a a b a))
 ;(ndfa-viz aa-ab '(a a a a b a) #:add-dead #t)
-(ndfa-viz aa-ab '(a a a a a a a))
+;(ndfa-viz aa-ab '(a a a a a a a))
 ;(ndfa-viz ends-with-two-bs '(a a a a b b a b b b))
-(ndfa-viz aa-ab '(a a a a a a a) (list 'S S-INV) (list 'A A-INV1) (list 'B B-INV1) (list 'F F-INV1) #:add-dead #t)
+;(ndfa-viz aa-ab '(a a a a a a a) (list 'S S-INV) (list 'A A-INV1) (list 'B B-INV1) (list 'F F-INV1) #:add-dead #t)
 ;things that change end with a bang(!)
 ;combines computations that have similiar configurations
 #;(ndfa-viz DNA-SEQUENCE '(a t c g t a c) (list 'K DNA-K-INV) (list 'H DNA-H-INV) (list 'F DNA-F-INV)
@@ -2308,5 +2308,40 @@ triple is the entire of the ndfa rule
 #;(ndfa-viz DNA-SEQUENCE '(c g c g a t a t g c t a g c a t)  (list 'K DNA-K-INV) (list 'H DNA-H-INV) (list 'F DNA-F-INV)
           (list 'M DNA-M-INV) (list 'I DNA-I-INV) (list 'D DNA-D-INV)  (list 'B DNA-B-INV) (list 'S DNA-S-INV) (list 'R DNA-R-INV)) 
 
-"notes to self:"
-"scroll thru word instead of jumping to end"
+;"notes to self:"
+;"scroll thru word instead of jumping to end"
+;"highlight which rule is being used when there are multiple rules on an edge"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+;(ndfa-viz aa-ab '(a a a a a a a))
+#;(ndfa-viz aa-ab '(a a a a a a a) (list 'S S-INV)
+                                 (list 'A A-INV1)
+                                 (list 'B B-INV1)
+                                 (list 'F F-INV1)
+                                 #:add-dead #t)
