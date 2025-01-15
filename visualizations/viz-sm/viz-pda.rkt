@@ -269,16 +269,6 @@ visited is a (listof configuration)
          (last-fully-consumed (take a-word (sub1 (length a-word))) M max-cmps)]
         [a-word]))
 
-;;(listof X) (listof X) (listof X) -> (listof X)
-;;Purpose: Removes all similiarities between lst1 and lst2
-;;Acc = The differences between the previous path and the current path
-(define (remove-similarities prev-path curr-path acc)
-  (cond [(empty? prev-path) (append acc curr-path)]
-        [(empty? curr-path) prev-path]
-        [(equal? (first prev-path) (first curr-path))
-         (remove-similarities (rest prev-path) (rest curr-path) acc)]
-        [(remove-similarities (rest prev-path) (rest curr-path) (append acc (list (first curr-path))))]))
-
 ;;(listof rules) -> (listof rules)
 ;;Purpose: Converts the given (listof configurations)s to rules
 (define (configs->rules curr-config)
@@ -353,7 +343,7 @@ visited is a (listof configuration)
 (define (get-trace-X LoT map-func)
   (filter-map-acc empty? map-func not first LoT))
 
-;;(listof symbol ((listof symbols) (listof symbols) -> boolean))) (X -> Y) -> (listof symbol ((listof symbols) (listof symbols) -> boolean)))
+;(listof symbol ((listof symbol) (listof symbol) -> boolean))) (X -> Y) -> (listof symbol ((listof symbol) (listof symbol) -> boolean)))
 ;;Purpose: Extracts the invariants from the (listof symbol ((listof symbols) (listof symbols) -> boolean)))
 (define (get-invariants LoI func)
   (filter-map-acc (λ (x) ((second (first x)) (second x) (third x))) first func first LoI))
@@ -372,13 +362,16 @@ visited is a (listof configuration)
                         (computation-LoC config)))
               full-configs))
 
-(define (get-cut-off LoC cmps)
-  (filter-map (λ (comp)
-                (and (>= (length comp) cmps)
-                     (first comp)))
+;; (listof configuration) number -> (listof configuration)
+;; Purpose: Returns the first configuration in a (listof configuration) if it exceeds the cut-off amount
+(define (get-cut-off LoC max-cmps)
+  (filter-map (λ (config)
+                (and (>= (length config) max-cmps)
+                     (first config)))
        LoC))
 
-
+;; (listof configuration) (listof symbol) -> (listof symbol)
+;; Purpose: Returns the most consumed input
 (define (get-farthest-consumed LoC acc)
   (cond [(empty? LoC) acc]
         [(< (length (second (first (first LoC)))) (length acc))
@@ -563,9 +556,7 @@ visited is a (listof configuration)
          ;;Purpose: Holds what needs to displayed for the stack based off the upci
          [current-stack (if (zipper-empty? (imsg-state-stck imsg-st)) 
                             (imsg-state-stck imsg-st)
-                            (third (zipper-current (imsg-state-stck imsg-st))))]
-
-         #;[pda-decision (apply-pda (imsg-state-M imsg-st) (imsg-state-pci imsg-st))])
+                            (third (zipper-current (imsg-state-stck imsg-st))))])
     (overlay/align
      'left 'middle
      (above/align
@@ -791,7 +782,9 @@ visited is a (listof configuration)
                                                     (viz-state-informative-messages a-vs))))]
          ;;(listof symbols)
          ;;Purpose: The portion of the word that cannont be consumed
-         [unconsumed-word (remove-similarities last-consumed-word full-word '())]
+         [unconsumed-word (drop full-word (length last-consumed-word))
+
+          #;(remove-similarities last-consumed-word full-word '())]
          [zip (if (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                                           (viz-state-informative-messages a-vs))))
                   (imsg-state-invs-zipper (informative-messages-component-state
@@ -1050,7 +1043,7 @@ visited is a (listof configuration)
             (struct-copy imsg-state
                          (informative-messages-component-state
                           (viz-state-informative-messages a-vs))
-                         [upci (remove-similarities full-word partial-word '())]
+                         [upci (drop full-word (zipper-current zip))]
                          [acpt-trace (if (zipper-empty? (imsg-state-acpt-trace (informative-messages-component-state
                                                                                 (viz-state-informative-messages a-vs))))
                                          (imsg-state-acpt-trace (informative-messages-component-state
@@ -1108,7 +1101,7 @@ visited is a (listof configuration)
             (struct-copy imsg-state
                          (informative-messages-component-state
                           (viz-state-informative-messages a-vs))
-                         [upci (remove-similarities full-word partial-word '())]
+                         [upci (drop full-word (zipper-current zip))]
                          [acpt-trace (if (zipper-empty? (imsg-state-acpt-trace (informative-messages-component-state
                                                                                 (viz-state-informative-messages a-vs))))
                                          (imsg-state-acpt-trace (informative-messages-component-state
@@ -1178,8 +1171,7 @@ visited is a (listof configuration)
 ;;Purpose: Visualizes the given ndfa processing the given word
 ;;Assumption: The given machine is a ndfa or dfa
 (define (pda-viz M a-word #:add-dead [add-dead #f] #:max-cmps [max-cmps 100] . invs)
-  (cond [(not (equal? (M 'whatami) 'pda)) (error "The given machine must be a pda.")]
-        [(<= max-cmps 0) (error (format "The maximum amount of computations, ~a, must be greater than 0" max-cmps))]
+  (cond [(<= max-cmps 0) (error (format "The maximum amount of computations, ~a, must be an integer greater than 0" max-cmps))]
         [else (let* (;;M ;;Purpose: A new machine with the dead state if add-dead is true
                      [new-M (if add-dead (make-new-M M) M)]
                      ;;symbol ;;Purpose: The name of the dead state
@@ -1353,354 +1345,3 @@ visited is a (listof configuration)
                                                     [ J-KEY-DIMS jump-prev j-key-pressed]
                                                     [ L-KEY-DIMS jump-next l-key-pressed]))
                          'pda-viz))]))
-
-(define SCHIZO-SAME-NUM-AB (make-unchecked-ndpda '(K H I)
-                                '(a b)
-                                '(a b)
-                                'K
-                                '(I)
-                                `(((K ,EMP ,EMP)(H ,EMP))
-                                  ((K a ,EMP)(K (b)))
-                                  ((K b ,EMP)(K (a)))
-                                  ((H ,EMP ,EMP)(K ,EMP))
-                                  ((H b (b))(H ,EMP))
-                                  ((H a (a))(H ,EMP))
-                                  ((H ,EMP ,EMP)(I ,EMP)))))
-
-
-(define P2 (make-unchecked-ndpda '(S H)
-                      '(a b)
-                      '(b)
-                      'S
-                      '(H)
-                      `(((S ε ε)(H ε))     ((S a ε)(S (b b)))
-                        ((H b (b b))(H ε)) ((H ε (b))(H ε)))))
-
-(define P3 (make-unchecked-ndpda '(S H)
-                      '(a b)
-                      '(b)
-                      'S
-                      '(H)
-                      `(((S ε ε)(H ε))     ((S a ε)(S (b b)))
-                        ((H b (b b))(H ε)) ((H b (b))(H ε)))))
-
-
-(define wcw^r (make-unchecked-ndpda '(S P Q F)
-                          '(a b c)
-                          '(a b)
-                          'S
-                          '(F)
-                          `(((S ,EMP ,EMP) (P ,EMP))
-                            ((P a ,EMP) (P (a)))
-                            ((P b ,EMP) (P (b)))
-                            ((P c ,EMP) (Q ,EMP))
-                            ((Q a (a)) (Q ,EMP))
-                            ((Q b (b)) (Q ,EMP))
-                            ((Q ,EMP ,EMP) (F ,EMP)))))
-
-(define PUW (make-unchecked-ndpda '(S P Q F  A B X)
-                        '(a b c)
-                        '(a b)
-                        'S
-                        '(F X)
-                        `(((S ,EMP ,EMP) (P ,EMP))
-                          ((P a ,EMP) (P (a)))
-                          ((P b ,EMP) (P (b)))
-                          ((P c ,EMP) (Q ,EMP))
-                          ((Q a (a)) (Q ,EMP))
-                          ((Q b (b)) (Q ,EMP))
-                          ((Q ,EMP ,EMP) (F ,EMP))
-                          ((S ε ε)(A ε)) ((S ε ε)(X ε)) ((S a ε)(S (b b)))
-                          ((A b ε)(A ε)) ((A a ε)(A ε)) ((A ε ε)(B ε))
-                          ((B ε ε)(A ε))
-                          ((X b (b b))(X ε)) ((X b (b))(X ε)))))
-
-  
-;;word stack-> boolean
-;;purpose: Determine if the given word has an equal number of a's and b's
-;;         and that the stack is empty
-(define (K-INV a-word stck)
-  (and (empty? stck)
-       (= (length (filter (λ (w) (equal? w 'a)) a-word))
-          (length (filter (λ (w) (equal? w 'b)) a-word)))))
-
-;;word stack-> boolean
-;;purpose: Determine if the given word has >= a's than b's with an a 
-;;         and that the stack has only b's
-(define (H-INV a-word stck)
-  (and (andmap (λ (w) (not (equal? w 'a))) stck)
-       (> (length (filter (λ (s) (equal? s 'a)) a-word))
-          (length (filter (λ (s) (equal? s 'b)) a-word)))))
-
-;;word stack-> boolean
-;;purpose: Determine if the given word >= b's than a's than
-;;         and that the stack has only a's
-(define (F-INV a-word stck)
-  (and (andmap (λ (w) (not (equal? w 'b))) stck))   
-  (> (length (filter (λ (s) (equal? s 'b)) a-word))
-     (length (filter (λ (s) (equal? s 'a)) a-word))))
-
-;;word stack-> boolean
-;;purpose: Determine if the given word has a differing amount of b's and a's
-;;         and that the stack has the same amount of a's and b's 
-(define (M-INV a-word stck)
-  (not (and (= (length (filter (λ (w) (equal? w 'a)) stck))
-               (length (filter (λ (w) (equal? w 'b)) stck)))
-            (not (= (length (filter (λ (w) (equal? w 'b)) a-word))
-                    (length (filter (λ (w) (equal? w 'a)) a-word)))))))
-
-;;purpose: to determine if the number of a's in the word is less than or equal the number of 'b's
-#;(define (P-S-INV a-word stck)
-  (let ([num-as (length (filter (λ (w) (eq? w 'a)) a-word))]
-        [num-bs (length (filter (λ (w) (eq? w 'b)) stck))])
-    (and (or (<= num-as num-bs)
-             (<= num-as (/ num-bs 2)))
-         (andmap (λ (w) (eq? w 'b)) stck))))
-;;Purpose: to determine if the number of b's in the stack is greater than or equal to the number of b's in the ci
-(define (P-X-INV a-word stck)
-  (let ([word-num-bs (length (filter (λ (w) (eq? w 'b)) a-word))]
-        [stck-num-bs (length (filter (λ (w) (eq? w 'b)) stck))])
-    (>= stck-num-bs word-num-bs)))
-;;purpose: to determine if the number of a's in the word is less than or equal the number of 'b's
-(define (P-A-INV a-word stck)
-  (let ([num-as (length (filter (λ (w) (eq? w 'a)) a-word))]
-        [num-bs (length (filter (λ (w) (eq? w 'b)) stck))])
-    (and (or (<= num-as num-bs)
-             (<= num-as (/ num-bs 2)))
-         (andmap (λ (w) (eq? w 'b)) stck))))
-;;purpose: to determine if the number of a's in the word is less than or equal the number of 'b's
-(define (P-B-INV a-word stck)
-  (let ([num-as (length (filter (λ (w) (eq? w 'a)) a-word))]
-        [num-bs (length (filter (λ (w) (eq? w 'b)) stck))])
-    (and (or (<= num-as num-bs)
-             (<= num-as (/ num-bs 2)))
-         (andmap (λ (w) (eq? w 'b)) stck))))
-
-;;purpose: to determine if the number of a's in the word is less than or equal the number of 'b's
-(define (P-S-INV a-word stck)
-  (and (andmap (λ (w) (eq? w 'b)) stck)
-       (andmap (λ (w) (eq? w 'a)) a-word)
-       (= (* 2 (length a-word)) (length stck))))
-;;Purpose: to determine if the number of b's in the stack is greater than or equal to the number of b's in the ci
-(define (P-H-INV ci stck)
-  (let ([ci-as (filter (λ (w) (eq? w 'a)) ci)]
-        [ci-bs (filter (λ (w) (eq? w 'b)) ci)])
-    (and (equal? ci (append ci-as ci-bs))
-         (andmap (λ (w) (eq? w 'b)) stck)
-         (<= (length ci-as) (length (append ci-bs stck)) (* 2 (length ci-as))))))
-
-(define (P-H1-INV ci stck)
-  (let ([ci-as (filter (λ (w) (eq? w 'a)) ci)]
-        [ci-bs (filter (λ (w) (eq? w 'b)) ci)])
-    (and (equal? ci (append ci-as ci-bs))
-         (<= (length ci-as) (length ci-bs) (* 2 (length ci-as)))
-         (andmap (λ (w) (eq? w 'b)) stck)
-         (<= (length ci-as) (length (append ci-bs stck)) (* 2 (length ci-as))))))
-#;(pda-viz P '(a a a b b b))
-
-#;(pda-viz a* '(a a a a a) #:max-cmps 3
-           (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (= (length w) 3)) (not (= (length w) 5)) (empty? s)))))
-#;(pda-viz aa* '(a a)
-           (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (empty? w) (empty? s)))))
-#;(pda-viz a* '(a a)
-           (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (empty? w)) (empty? s)))))
-
-#;(pda-viz a* '(a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a
-                  a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a
-                  a a a a a a a a a a a a a a a a a a a)
-           (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (empty? w)) (empty? s)))))
-
-;(pda-viz P2 '(a a a b b b b))
-;(pda-viz P2 '(a a a b b) (list 'S P-S-INV) (list 'H P-H-INV))
-;(pda-viz P3 '(a a a b b b) (list 'S P-S-INV) (list 'H P-H-INV))
-;(pda-viz P3 '(a a a b b b) (list 'S P-S-INV) (list 'H P-H1-INV))
-;"note to self:"
-;"edit A and D to scroll thru word, not jump to end"
-
-
-
-
-#;(define numb>numa (make-unchecked-cfg '(S A)
-                            '(a b)
-                            `((S ,ARROW b)
-                              (S ,ARROW AbA)
-                              (A ,ARROW AaAbA)
-                              (A ,ARROW AbAaA)
-                              (A ,ARROW ,EMP)
-                              (A ,ARROW bA))
-                            'S))
-
-;(define pd-numb>numa (cfg->pda numb>numa))
-
-;(pda-viz pd-numb>numa '(a b) #:max-cmps 5)
-;(pda-viz pd-numb>numa '(a b) #:max-cmps 5)
-;;track most consumed input
-
-(define BUGGY-SAME-NUM-AB (make-unchecked-ndpda '(K H F M)
-                                                '(a b)
-                                                '(a b)
-                                                'K
-                                                '(K)
-                                                `(;((K ,EMP ,EMP) (K ,EMP))
-                                                  ((K a    ,EMP) (H (b)))
-                                                  ((K b    ,EMP) (F (a)))                                  
-                                                  ((H a    ,EMP) (H (b)))
-                                                  ((H ,EMP  (b)) (M ,EMP))                                  
-                                                  ((F ,EMP  (a)) (M ,EMP))
-                                                  ((F b    ,EMP) (F (a)))                                  
-                                                  ;((M a    ,EMP) (H ,EMP))
-                                                  ((M a    ,EMP) (K ,EMP))
-                                                  ;((M b    ,EMP) (F ,EMP))
-                                                  ((M b    ,EMP) (K ,EMP))
-                                                  )))
-
-(define SAME-NUM-AB (make-unchecked-ndpda '(K H F M)
-                                          '(a b)
-                                          '(a b)
-                                          'K
-                                          '(M)
-                                          `(((K ,EMP ,EMP) (H ,EMP))
-                                            ((K ,EMP ,EMP) (F ,EMP))
-                                            ((H a ,EMP) (H (b)))
-                                            ((H b (b)) (F ,EMP))
-                                            ((H ,EMP ,EMP) (M ,EMP))
-                                            ((F b ,EMP) (F (a)))
-                                            ((F a (a)) (H ,EMP))
-                                            ((F ,EMP ,EMP) (M ,EMP)))))
-
-(define P (make-unchecked-ndpda '(S A B X)
-                                '(a b)
-                                '(b)
-                                'S
-                                '(X)
-                                `(((S ε ε)(A ε)) ((S ε ε)(X ε)) ((S a ε)(S (b b)))
-                                                 ((A b ε)(A ε)) ((A a ε)(A ε)) ((A ε ε)(B ε))
-                                                 ((B ε ε)(A ε))
-                                                 ((X b (b b))(X ε)) ((X b (b))(X ε)))))
-
-(define aˆnbˆn (make-unchecked-ndpda '(S M F)
-                                     '(a b)
-                                     '(a)
-                                     'S
-                                     '(F)
-                                     `(((S ,EMP ,EMP) (M ,EMP))
-                                       ((S a ,EMP) (S (a)))
-                                       ((M b (a)) (M ,EMP))
-                                       ((M ,EMP ,EMP) (F ,EMP)))))
-
-(define n (make-unchecked-ndpda '(K H F M I)
-                                '(a b)
-                                '(a b)
-                                'K
-                                '(I)
-                                `(((K b ,EMP)(H ,EMP))
-                                  ((H ,EMP ,EMP)(F ,EMP))
-                                  ((H ,EMP ,EMP)(M ,EMP))
-                                  ((F a ,EMP)(I ,EMP))
-                                  ((M a ,EMP)(I ,EMP)))))
-
-(define nk (make-unchecked-ndpda '(K H F M I)
-                                 '(a b)
-                                 '(a b)
-                                 'K
-                                 '(I)
-                                 `(((K b ,EMP)(H ,EMP))
-                                   ((H ,EMP ,EMP)(F ,EMP))
-                                   ((F ,EMP ,EMP)(M ,EMP))
-                                   ((M ,EMP ,EMP)(I ,EMP))
-                                   ((I ,EMP ,EMP)(H ,EMP)))))
-
-(define a* (make-unchecked-ndpda '(K H)
-                                 '(a b)
-                                 '(a)
-                                 'K
-                                 '(H)
-                                 `(((K ,EMP ,EMP)(H ,EMP))
-                                   ((H a ,EMP)(H ,EMP)))))
-
-(define aa* (make-unchecked-ndpda '(K H)
-                                  '(a b)
-                                  '(a)
-                                  'K
-                                  '(H)
-                                  `(((K a ,EMP)(H ,EMP))
-                                    ((H a ,EMP)(H ,EMP)))))
-
-(define inf-a (make-unchecked-ndpda '(K)
-                                    '(a)
-                                    '(a)
-                                    'K
-                                    '(K)
-                                    `(((K ,EMP ,EMP) (K, '(a))))))
-
-(define more-a-than-b (make-unchecked-ndpda '(S A)
-                                            '(a b)
-                                            '(a)
-                                            'S
-                                            '(A)
-                                            `(((S a ,EMP) (S (a)))
-                                              ((S ,EMP ,EMP) (A ,EMP))
-                                              ((A b (a)) (A ,EMP))
-                                              ((A ,EMP (a)) (A ,EMP)))))
-#;(pda-viz more-a-than-b '(a a a a a b b))
-#;(pda-viz a* '(a a a a a)
-           (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (= (length w) 3)) (empty? s)))))
-#;(pda-viz aa* '(a a)
-           (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (empty? w) (empty? s)))))
-#;(pda-viz a* '(a a)
-           (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (empty? w)) (empty? s)))))
-
-#;(pda-viz a* '(a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a
-                  a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a)
-           (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (empty? w)) (empty? s)))))
-
-"note to self:"
-"edit A and D to scroll thru word, not jump to end"
-
-(define pd (make-unchecked-ndpda '(S A)
-                                 '(a b)
-                                 '(a b)
-                                 'S
-                                 '(A)
-                                 `(((S a ,EMP) (A (a)))
-                                   ((S a ,EMP) (A (b))))))
-
-(define (pd-A-INV a-wrd a-stck)
-  (andmap (λ (s) (eq? s 'a)) a-stck))
-
-#;(define more-a-than-b (make-unchecked-ndpda '(S A)
-                                              '(a b)
-                                              '(a)
-                                              'S
-                                              '(A)
-                                              `(((S a ,EMP) (S (a)))
-                                                ((S ,EMP ,EMP) (A ,EMP))
-                                                ((A b (a)) (A ,EMP))
-                                                ((A ,EMP (a)) (A ,EMP)))))
-(define (s-inv wrd stck)
-  (and (empty? wrd)
-       (empty? stck)))
-
-(define (a-inv wrd stck)
-  (or (not (= (length (filter (λ (w) (equal? w 'a)) wrd)) 4))
-      (not (= (length (filter (λ (w) (equal? w 'b)) wrd)) 2))))
-
-
-
-
-;;(pda-viz P2 '(a a a b b) (list 'S P-S-INV) (list 'H P-H-INV))
-
-(define numb>numa (make-unchecked-cfg '(S A)
-                            '(a b)
-                            `((S ,ARROW b)
-                              (S ,ARROW AbA)
-                              (A ,ARROW AaAbA)
-                              (A ,ARROW AbAaA)
-                              (A ,ARROW ,EMP)
-                              (A ,ARROW bA))
-                            'S))
-
-(define pd-numb>numa (cfg->pda numb>numa))
-
-;;(pda-viz pd-numb>numa '(a b) #:max-cmps 5)
-        

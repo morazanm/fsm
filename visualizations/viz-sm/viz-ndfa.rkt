@@ -15,7 +15,9 @@
          "david-viz-constants.rkt"
          "../viz-lib/default-viz-function-generators.rkt"
          math/matrix
-         "../../fsm-core/interface.rkt")
+         "../../fsm-core/private/constants.rkt"
+         "../../fsm-core/private/fsa.rkt"
+         "../../fsm-core/private/misc.rkt")
 
 (provide ndfa-viz)
 
@@ -139,25 +141,6 @@ triple is the entire of the ndfa rule
              (make-computations lor (enqueue new-configs (dequeue QoC)) path)))))
   
 
-
-;;(listof configurations) (listof symbols) (listof rule) (listof rules) -> (listof rules)
-;;Purpose: Attaches the transition rules used between configurations
-(define (attach-rules->configs configs word lor acc)
-  (cond [(<= (length configs) 1) (reverse acc)]
-        [(equal? (second (first configs)) (second (second configs)))
-         (local [(define e-rule-used (filter (λ (rule)
-                                               (and (equal? (first rule) (first (first configs)))
-                                                    (equal? (second rule) EMP)
-                                                    (equal? (third rule) (first (second configs)))))
-                                             lor))]
-           (attach-rules->configs (rest configs) word lor (append e-rule-used acc)))]
-        [else (local [(define rule-used (filter (λ (rule)
-                                                  (and (equal? (first rule) (first (first configs)))
-                                                       (equal? (second rule) (first word))
-                                                       (equal? (third rule) (first (second configs)))))
-                                                lor))]
-                (attach-rules->configs (rest configs) (rest word) lor (append rule-used acc)))]))
-
 ;;(listof configurations) (listof rules) (listof configurations) -> (listof configurations)
 ;;Purpose: Returns a propers trace for the given (listof configurations) that accurately
 ;;         tracks each transition
@@ -185,18 +168,14 @@ triple is the entire of the ndfa rule
 (define (last-fully-consumed a-word M)
   (cond [(empty? a-word) '()]
         [(not (ormap (λ (config) (empty? (second (first (computation-LoC config)))))
-                     (trace-computations a-word (sm-rules M) (sm-start M))))
+                     (trace-computations a-word (fsa-getrules M) (fsa-getstart M))))
          (last-fully-consumed (take a-word (sub1 (length a-word))) M)]
         [a-word]))
 
 ;;(listof symbols) (lisof configurations) -> (listof configurations)
 ;;Purpose: Makes configurations usable for invariant predicates
 (define (make-inv-configs a-word configs)
- (map (λ (config) (make-inv-configs-helper a-word config (length a-word))) configs)
-  #;(if (empty? configs)
-      '()
-      (append (list (make-inv-configs-helper a-word (first configs) (length a-word)))
-              (make-inv-configs a-word (rest configs)))))
+ (map (λ (config) (make-inv-configs-helper a-word config (length a-word))) configs))
 
 ;;(listof symbols) (lisof configurations) natnum -> (listof configurations)
 ;;Purpose: Makes configurations usable for invariant predicates
@@ -339,18 +318,18 @@ triple is the entire of the ndfa rule
   (foldl (λ (state result)
            (add-node result
                      state
-                     #:atb (hash 'color (if (eq? state (sm-start M)) 'green 'black)
+                     #:atb (hash 'color (if (eq? state (fsa-getstart M)) 'green 'black)
                                  'style (cond [(or (member? state held-inv) (member? state brkn-inv)) 'filled]
                                               [(eq? state dead) 'dashed]
                                               [else 'solid])
-                                 'shape (if (member? state (sm-finals M)) 'doublecircle 'circle)
+                                 'shape (if (member? state (fsa-getfinals M)) 'doublecircle 'circle)
                                  'fillcolor (cond [(member? state held-inv) HELD-INV-COLOR]
                                                   [(member? state brkn-inv) BRKN-INV-COLOR]
                                                   [else 'white])
                                  'label state
                                  'fontcolor 'black)))
          cgraph
-         (sm-states M)))
+         (fsa-getstates M)))
 
 ;; graph machine word (listof rules) (listof rules) symbol -> graph
 ;; Purpose: To create a graph of edges from the given list of rules
@@ -368,7 +347,7 @@ triple is the entire of the ndfa rule
                                               [(find-rule? rule dead current-a-rules) 'bold]
                                               [else 'solid]))))
          cgraph
-         (sm-rules M)))
+         (fsa-getrules M)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -386,8 +365,8 @@ triple is the entire of the ndfa rule
          ;;Purpose: Determines if the pci can be can be fully consumed
          [completed-config? (ormap (λ (config) (empty? (second (first (computation-LoC config)))))
                                    (trace-computations (imsg-state-pci imsg-st)
-                                                (sm-rules (imsg-state-M imsg-st))
-                                                (sm-start (imsg-state-M imsg-st))))]
+                                                (fsa-getrules (imsg-state-M imsg-st))
+                                                (fsa-getstart (imsg-state-M imsg-st))))]
          
          ;;(listof symbols)
          ;;Purpose: The last word that could be fully consumed by the ndfa
@@ -408,19 +387,19 @@ triple is the entire of the ndfa rule
                   (empty? (imsg-state-upci imsg-st)))
              (above/align
               'left
-              (beside (text "aaaC" 20 'white)
+              (beside (text "aaaa" 20 'white)
                       (text "Word: " 20 'black)
-                      (if (equal? (sm-apply (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'accept)
+                      (if (equal? (apply-fsa (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'accept)
                           (text (format "~a" EMP) 20 'gray)
                           (text (format "~a" EMP) 20 'red)))
               (beside (text "Consumed: " 20 'black)
-                      (if (equal? (sm-apply (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'accept)
+                      (if (equal? (apply-fsa (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'accept)
                           (text (format "~a" EMP) 20 'black)
                           (text (format "~a" EMP) 20 'white))))]
             [(and (not (empty? (imsg-state-pci imsg-st))) (not completed-config?))
              (above/align
               'left
-              (beside (text "aaaC" 20 'white)
+              (beside (text "aaaa" 20 'white)
                       (text "Word: " 20 'black)
                       (make-tape-img entire-word
                                      (if (> (length entire-word) TAPE-SIZE)
@@ -439,7 +418,7 @@ triple is the entire of the ndfa rule
                                              0)
                                          '()))))]
             [else (above/align 'left
-                               (beside (text "aaaC" 20 'white)
+                               (beside (text "aaaa" 20 'white)
                                        (text "Word: " 20 'black)
                                        (make-tape-img entire-word
                                                       (if (> (length entire-word) TAPE-SIZE)
@@ -462,10 +441,10 @@ triple is the entire of the ndfa rule
       (cond [(not completed-config?)
               (text "All computations do not consume the entire word and the machine rejects." 20 'red)]
              [(and (empty? (imsg-state-upci imsg-st))
-                   (equal? (sm-apply (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'accept))
+                   (equal? (apply-fsa (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'accept))
               (text "There is a computation that accepts." 20 'forestgreen)]
              [(and (empty? (imsg-state-upci imsg-st))
-                   (equal? (sm-apply (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'reject))
+                   (equal? (apply-fsa (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'reject))
               (text "All computations end in a non-final state and the machine rejects." 20 'red)]
              [else (text "Word Status: accept " 20 'white)])
       )
@@ -532,8 +511,8 @@ triple is the entire of the ndfa rule
   (cond [(empty? (building-viz-state-upci a-vs)) (reverse (cons (create-graph-thunk a-vs) acc))]
         [(not (ormap (λ (config) (empty? (second (first (computation-LoC config)))))
                      (trace-computations (building-viz-state-pci a-vs)
-                                  (sm-rules (building-viz-state-M a-vs))
-                                  (sm-start (building-viz-state-M a-vs)))))
+                                  (fsa-getrules (building-viz-state-M a-vs))
+                                  (fsa-getstart (building-viz-state-M a-vs)))))
          (reverse (cons (create-graph-thunk a-vs) acc))]
         [else (let ([next-graph (create-graph-thunk a-vs)])
                 (create-graph-thunks (struct-copy building-viz-state
@@ -554,9 +533,9 @@ triple is the entire of the ndfa rule
                                      (empty? (second (first (computation-LoC config)))))
                                    (trace-computations (imsg-state-pci (informative-messages-component-state
                                                                  (viz-state-informative-messages a-vs))) 
-                                                (sm-rules (imsg-state-M (informative-messages-component-state
+                                                (fsa-getrules (imsg-state-M (informative-messages-component-state
                                                                          (viz-state-informative-messages a-vs))))
-                                                (sm-start (imsg-state-M (informative-messages-component-state
+                                                (fsa-getstart (imsg-state-M (informative-messages-component-state
                                                                          (viz-state-informative-messages a-vs))))))]
          [pci (if (or (empty? (imsg-state-upci (informative-messages-component-state
                                                 (viz-state-informative-messages a-vs))))
@@ -856,29 +835,29 @@ triple is the entire of the ndfa rule
 ;;Purpose: Produces an equivalent machine with the addition of the dead state and rules to the dead state
 (define (make-new-M M)
   (cond
-    [(eq? (sm-type M) 'ndfa)
+    [(eq? '(M whatami) 'ndfa)
      (local
        [;;symbol
         ;;Purpose: If ds is already used as a state in M, then generates a random seed symbol,
         ;;         otherwise uses DEAD
-        (define dead (if (member? DEAD (sm-states M)) (gen-state (sm-states M)) DEAD))
+        (define dead (if (member? DEAD (fsa-getstates M)) (gen-state (fsa-getstates M)) DEAD))
         ;;(listof symbols)
         ;;Purpose: Makes partial rules for every combination of states in M and symbols in sigma of M
         (define new-rules
-          (for*/list ([states (sm-states M)]
-                      [sigma (sm-sigma M)])
+          (for*/list ([states (fsa-getstates M)]
+                      [sigma (fsa-getalphabet M)])
             (list states sigma)))
         ;;(listof rules)
         ;;Purpose: Makes rules for every dead state transition to itself using the symbols in sigma of M
         (define dead-rules
           (for*/list ([ds (list dead)]
-                      [sigma (sm-sigma M)])
+                      [sigma (fsa-getalphabet M)])
             (list ds sigma ds)))
         ;;(listof rules)
         ;;Purpose: Gets rules that are not currently in the original rules of M
         (define get-rules-not-in-M  (local [(define partial-rules (map (λ (rule)
                                                                          (append (list (first rule)) (list (second rule))))
-                                                                       (sm-rules M)))]
+                                                                       (fsa-getrules M)))]
                                       (filter (λ (rule)
                                                 (not (member? rule partial-rules)))
                                               new-rules)))
@@ -887,13 +866,13 @@ triple is the entire of the ndfa rule
         (define rules-to-dead
           (map (λ (rule) (append rule (list dead)))
                get-rules-not-in-M))]
-       (make-ndfa (append (sm-states M) (list dead))
-                  (sm-sigma M)
-                  (sm-start M)
-                  (sm-finals M)
-                  (append (sm-rules M) rules-to-dead dead-rules)))]
-    [(and (eq? (sm-type M) 'dfa) (not (member? DEAD (sm-states M))))
-     (make-dfa (sm-states M) (sm-sigma M) (sm-start M) (sm-finals M) (sm-rules M))]
+       (make-unchecked-ndfa (append (fsa-getstates M) (list dead))
+                  (fsa-getalphabet M)
+                  (fsa-getstart M)
+                  (fsa-getfinals M)
+                  (append (fsa-getrules M) rules-to-dead dead-rules)))]
+    [(and (eq? '(M whatami) 'dfa) (not (member? DEAD (fsa-getstates M))))
+     (make-unchecked-dfa (fsa-getstates M) (fsa-getalphabet M) (fsa-getstart M) (fsa-getfinals M) (fsa-getrules M))]
     [else M]))
 
 
@@ -902,21 +881,19 @@ triple is the entire of the ndfa rule
 ;;Purpose: Visualizes the given ndfa processing the given word
 ;;Assumption: The given machine is a ndfa or dfa
 (define (ndfa-viz M a-word #:add-dead [add-dead #f] . invs)
-  (if (not (or (eq? (sm-type M) 'ndfa) (eq? (sm-type M) 'dfa)))
-      (error "The given machine must be a ndfa.")
-      (let* (;;M ;;Purpose: A new machine with the dead state if add-dead is true
+  (let* (;;M ;;Purpose: A new machine with the dead state if add-dead is true
              [new-M (if add-dead (make-new-M M) M)]
              ;;symbol ;;Purpose: The name of the dead state
-             [dead-state (cond [(and add-dead (eq? (sm-type M) 'ndfa)) (last (sm-states new-M))]
-                               [(and add-dead (eq? (sm-type M) 'dfa)) DEAD]
+             [dead-state (cond [(and add-dead (eq? '(M whatami) 'ndfa)) (last (fsa-getstates new-M))]
+                               [(and add-dead (eq? '(M whatami) 'dfa)) DEAD]
                                [else 'no-dead])]
              ;;(listof computations) ;;Purpose: All computations that the machine can have
-             [computations (trace-computations a-word (sm-rules new-M) (sm-start new-M))]
+             [computations (trace-computations a-word (fsa-getrules new-M) (fsa-getstart new-M))]
              ;;(listof configurations) ;;Purpose: Extracts the configurations from the computation
              [LoC (map computation-LoC computations)]
              ;;(listof computation) ;;Purpose: Extracts all accepting computations
              [accepting-computations (filter (λ (comp)
-                                       (and (member? (first (first (computation-LoC comp))) (sm-finals new-M))
+                                       (and (member? (first (first (computation-LoC comp))) (fsa-getfinals new-M))
                                             (empty? (second (first (computation-LoC comp))))))
                                      computations)]
              ;;(listof trace) ;;Purpose: Makes traces from the accepting computations
@@ -954,9 +931,10 @@ triple is the entire of the ndfa rule
                                  (length (second (first con))))
                                (return-brk-inv-configs
                                 (get-inv-config-results
-                                 (make-inv-configs a-word (map (λ (comp)
-                                                                 (reverse (computation-LoC comp)))
-                                                               accepting-computations))
+                                 (make-inv-configs a-word
+                                                   (map (λ (comp)
+                                                          (reverse (computation-LoC comp)))
+                                                        accepting-computations))
                                  invs)
                                 a-word))])
         ;(struct building-viz-state (upci pci M inv dead))
@@ -1037,441 +1015,9 @@ triple is the entire of the ndfa rule
                                             [ J-KEY-DIMS jump-prev j-key-pressed]
                                             [ L-KEY-DIMS jump-next l-key-pressed])
                                           )
-                 (if (eq? (sm-type M) 'ndfa)
+                 (if (eq? '(M whatami) 'ndfa)
                           'ndfa-viz
-                          'dfa-viz)))))
-
-(define aa*Uab* (make-ndfa '(K B D)
-                           '(a b)
-                           'K
-                           '(B D)
-                           `((K a D) (K a B)
-                                     (B a B)
-                                     (D b D))))
-
-(define AT-LEAST-ONE-MISSING
-  (make-ndfa '(S A B C)
-             '(a b c)
-             'S
-             '(A B C)
-             `((S ,EMP A) (S ,EMP B) (S ,EMP C)
-                          (A b A) (A c A)
-                          (B a B) (B c B)
-                          (C a C) (C b C))))
-
-(define p2-ndfa
-  (make-ndfa '(S A B C D E)
-             '(a b)
-             'S
-             '(C E)
-             `((S ,EMP A) (S ,EMP D)
-                          (A a B) (A ,EMP C)
-                          (B b A)
-                          (C b C)
-                          (D a E)
-                          (E b E))))
-
-(define AB*B*UAB*
-  (make-ndfa '(S K B C H)
-             '(a b)
-             'S
-             '(H)
-             `((S ,EMP K) (S a C)
-                          (K a B) (K ,EMP H)
-                          (B b K)
-                          (C ,EMP H)
-                          (H b H))))
-
-(define AB*B*UAB*2
-  (make-ndfa '(S K B C H)
-             '(a b)
-             'S
-             '(H)
-             `((S ,EMP K) (S a C)
-                          (K a B) (K ,EMP H)
-                          (B b K)
-                          (C ,EMP H)
-                          (H b H) (H a S))))
-
-(define aa-ab
-  (make-ndfa `(S A B F)
-             '(a b)
-             'S
-             '(A B F)
-             `((S a A) (S a B) (S ,EMP F)
-                       (A a A)
-                       (B b B))))
-
-(define ends-with-two-bs
-  (make-ndfa `(S A B)
-             '(a b)
-             'S
-             '(B)
-             `((S a S) (S b S) (S b A)
-                       (A b B)
-                       (B b B))))
-(define ENDS-WITH-TWO-Bs
-  (make-ndfa `(S A B)
-             '(a b)
-             'S
-             '(B)
-             `((S a S) (S b A)
-                       (A b B) (A a S)
-                       (B b B) (B a S))))
-
-(define missing-exactly-one
-  (make-ndfa '(S A B C D E F G H I J K L M N O P)
-             '(a b c)
-             'S
-             '(E G I K M O)
-             `((S ,EMP A) (S ,EMP B) (S ,EMP C)
-                          (A b D) (A c F)
-                          (B a H) (B b J)
-                          (C a L) (C c N)
-                          (D b D) (D c E)
-                          (F c F) (F b G)
-                          (H a H) (H b I)
-                          (J b J) (J a K)
-                          (L a L) (L c M)
-                          (N c N) (N a O)
-                          (E c E) (E b E) (E a P)
-                          (G b G) (G c G) (G a P)
-                          (I b I) (I a I) (I c P)
-                          (K a K) (K b K) (K c P)
-                          (M a M) (M c M) (M b P)
-                          (O a O) (O c O) (O b P)
-                          (P a P) (P b P) (P c P))))
-
-;; L = (aba)* U (ab)*
-(define ND
-  (make-ndfa '(S A B C D E)
-             '(a b)
-             'S
-             '(S)
-             `((S a A) (S a B)
-                       (A b C)
-                       (B b D)
-                       (C a E)
-                       (D ,EMP S)
-                       (E ,EMP S))))
-
-(define ND2
-  (make-ndfa
-   '(S A B C D E F)
-   '(a b)
-   'S
-   '(D E)
-   `((S ,EMP A) (S ,EMP B)
-                (A ,EMP D)
-                (D b D) (D ,EMP F)
-                (B a E) (B b B)
-                (E a E) (E b E) (E ,EMP C))))
-
-(define ND3
-  (make-ndfa '(S A B C D)
-             '(a b)
-             'S
-             '(B)
-             `((S ,EMP A) (S ,EMP B)
-                          (A a A) (A ,EMP C)
-                          (C ,EMP D)
-                          (D ,EMP B)
-                          (B b B))))
-
-(define ND4 (make-ndfa '(S ds)
-                       '(a b)
-                       'S
-                       '(ds)
-                       `((S a ds)
-                         (ds a ds))))
-
-(define ND5
-  (make-ndfa '(S A B C D)
-             '(a b)
-             'S
-             '(B)
-             `((S ,EMP A) 
-               (A ,EMP B)
-               (B ,EMP C)
-               (C ,EMP D)
-               (D ,EMP S))))
-
-(define EVEN-NUM-Bs
-  (make-dfa '(S F)
-            '(a b)
-            'S
-            '(S)
-            `((S a S) (S b F)
-                      (F a F) (F b S))
-            'no-dead))
-
-(define M2 (make-dfa `(S A F ,DEAD)
-                     '(a b)
-                     'S
-                     '(F)
-                     `((S a A) (S b ,DEAD)
-                               (A a ,DEAD) (A b F)
-                               (F a ,DEAD) (F b F))))
-
-
-#|
-;;accept examples
-(ndfa-viz AB*B*UAB* '(a b b))
-(ndfa-viz p2-ndfa '(a b b))
-(ndfa-viz missing-exactly-one '(a a a a b b b b a a b b a a))
-(ndfa-viz AT-LEAST-ONE-MISSING '(c c c c b b b b c b))
-(ndfa-viz aa-ab '(a a a a))
-(ndfa-viz ends-with-two-bs '(a b a b a b b b))
-(ndfa-viz ends-with-two-bs '(a b a b a b b a a a b b))
-;;reject examples
-(ndfa-viz AB*B*UAB* '(a b b a))
-(ndfa-viz p2-ndfa '(a b b a))
-(ndfa-viz missing-exactly-one '(a a a a b b b b a a b b a a c))
-(ndfa-viz AT-LEAST-ONE-MISSING '(c c c c b b b b c b a))
-(ndfa-viz aa-ab'(a b b b a)
-(ndfa-viz AT-LEAST-ONE-MISSING '(a b c))
-(ndfa-viz p2-ndfa '(a b a b))
-(ndfa-viz AB*B*UAB* '(a b a b))
-
-;;Invariant examples
-(ndfa-viz AT-LEAST-ONE-MISSING '(a b c)
-          (list 'S S-INV)
-          (list 'A ALON-A-INV)
-          (list 'B ALON-B-INV)
-          (list 'C ALON-C-INV)) 
-(ndfa-viz EVEN-NUM-Bs '(a b b b a b b) 
-          (list 'S EVEN-NUM-Bs-S-INV)
-          (list 'F EVEN-NUM-Bs-F-INV))
-(ndfa-viz AB*B*UAB* '(a b b b b)
-          (list 'S S-INV)
-          (list 'K K-INV)
-          (list 'B B-INV)
-          (list 'C C-INV)
-          (list 'H H-INV))
-
-|#
-;;word -> boolean
-;;Purpose: Determines if the given word is missing an a
-(define (ALON-A-INV a-word)
-  (empty? (filter (λ (w) (equal? w 'a))
-                  a-word)))
-
-;;word -> boolean
-;;Purpose: Determines if the given word is missing an b
-(define (ALON-B-INV a-word)
-  (empty? (filter (λ (w) (equal? w 'b))
-                  a-word)))
-;;word -> boolean
-;;Purpose: Determines if the given word is missing an c
-(define (ALON-C-INV a-word)
-  (empty? (filter (λ (w) (equal? w 'c))
-                  a-word)))
-
-;;word -> boolean
-;;Purpose: Determines if the given word is empty
-(define (S-INV a-word)
-  (empty? a-word))
-
-;;word -> boolean
-;;Purpose: Determines if the last letter in the given word is an b
-(define (K-INV a-word)
-  (or (empty? a-word) (equal? (last a-word) 'b)))
-
-;;word -> boolean
-;;Purpose: Determines if the last letter in the given word is an a
-(define (B-INV a-word)
-  (and (not (empty? a-word)) ;(not
-                              (equal? (last a-word) 'a)))
-  ;)
-
-;;word -> boolean
-;;Purpose: Determines if the given word has one a
-(define (C-INV a-word)
-  (= (length (filter (λ (w) (equal? w 'a)) a-word)) 1))
-
-;;word -> boolean
-;;Purpose: Determines if the given word is empty or if the last letter is an a or b
-(define (H-INV a-word)
-  ;(not
-  (or (empty? a-word) (equal? (last a-word) 'a) (equal? (last a-word) 'b)))
-;)
-
-;;word -> boolean
-;;Purpose: Determine if the given word has an even number of Bs
-(define (EVEN-NUM-Bs-S-INV a-word)
-  (even? (length (filter (λ (w) (equal? w 'b)) a-word))))
-
-;;word -> boolean
-;;Purpose: Determine if the given word has an odd number of Bs
-(define (EVEN-NUM-Bs-F-INV a-word)
-  (odd? (length (filter (λ (w) (equal? w 'b)) a-word))))
-
-
-(define (s-inv a-word)
-  (empty? a-word))
-
-(define (a-inv a-word)
-  (local [(define num-a (length (filter (λ (w) (equal? w 'a)) a-word)))
-          (define num-b (length (filter (λ (w) (equal? w 'b)) a-word)))]
-    (= num-a num-b)))
-
-(define (b-inv a-word)
-  (local [(define num-a (length (filter (λ (w) (equal? w 'a)) a-word)))
-          (define num-b (length (filter (λ (w) (equal? w 'b)) a-word)))]
-    (> num-a num-b)))
-
-(define (c-inv a-word)
-  (local [(define num-a (length (filter (λ (w) (equal? w 'a)) a-word)))
-          (define num-b (length (filter (λ (w) (equal? w 'b)) a-word)))]
-    (= num-b num-a)))
-
-(define (d-inv a-word)
-  (local [(define num-a (length (filter (λ (w) (equal? w 'a)) a-word)))
-          (define num-b (length (filter (λ (w) (equal? w 'b)) a-word)))]
-    (= num-a num-b)))
-
-(define (e-inv a-word)
-  (andmap (λ (w) (equal? w 'b)) (rest a-word)))
-
-(define inv-list (list (list 'S S-INV)
-                       (list 'K K-INV)
-                       (list 'B B-INV)
-                       (list 'C C-INV)
-                       (list 'H H-INV)))
-(define (S-INV1 ci)
-  (not (empty? ci)))
-
-;; word -> Boolean
-;; Purpose: To determine whether ci = aa*
-(define (A-INV1 ci)
-  (and (not (empty? ci))
-       (andmap (λ (w) (eq? w 'a)) ci)))
-
-;; word -> Boolean
-;; Purpose: To determine whether ci = ab*
-(define (B-INV1 ci)
-  (and (not (empty? ci))
-       (eq? (first ci) 'a)
-       (andmap (λ (el) (eq? el 'b)) ci)))
-
-;;word -> Boolean
-;;Purpose: To determine whether ci = emp
-(define (F-INV1 ci)
-  (empty? ci))
-
-(define nd (make-ndfa '(S Z Y A B)
-                      '(a b)
-                      'S
-                      '(B)
-                      `((S b Z)
-                        (S b Y)
-                        (Y a A)
-                        (Z a A)
-                        (A a B))))
-
-(define n (make-ndfa '(K H F M I)
-                     '(a b)
-                     'K
-                     '(I)
-                     `((K b H)
-                       (H ,EMP F)
-                       (H ,EMP M)
-                       (F a I)
-                       (M a I))))
-
-(define nk (make-ndfa '(K H F M I)
-                      '(a b)
-                      'K
-                      '(I)
-                      `((K b H)
-                        (H ,EMP F)
-                        (F ,EMP M)
-                        (M ,EMP I)
-                        (I ,EMP H))))
-
-(define DNA-SEQUENCE (make-dfa '(K H F M I D B S R) ;C)
-                               '(a t c g)
-                               'K
-                               '(K F I B R)
-                               `((K a H) (H t F) (F a H) (F t M) (F c D) (F g S)  
-                                         (K t M) (M a I) (I a H) (I t M) (I c D) (I g S)
-                                         (K c D) (D g B) (B a H) (B t M) (B c D) (B g S)
-                                         (K g S) (S c R) (R a H) (R t M) (R c D) (R g S))))
-
-;;word -> boolean
-;;Purpose: Determines if the given word is empty
-(define (DNA-K-INV a-word)
-  (empty? a-word))
-
-;;word -> boolean
-;;Purpose: Determines if the given word has more a's than t's
-(define (DNA-H-INV a-word)
-  (let ([num-a (length (filter (λ (w) (equal? w 'a)) a-word))]
-        [num-t (length (filter (λ (w) (equal? w 't)) a-word))])
-    (> num-a num-t)))
-
-;;word -> boolean
-;;Purpose: Determines if the given word has an even amount of a's and t's
-(define (DNA-F-INV a-word)
-  (let ([num-a (length (filter (λ (w) (equal? w 'a)) a-word))]
-        [num-t (length (filter (λ (w) (equal? w 't)) a-word))])
-    (= num-a num-t)))
-
-;;word -> boolean
-;;Purpose: Determines if the given word has more t's than a's
-(define (DNA-M-INV a-word)
-  (let ([num-a (length (filter (λ (w) (equal? w 'a)) a-word))]
-        [num-t (length (filter (λ (w) (equal? w 't)) a-word))])
-    (> num-t num-a)))
-
-;;word -> boolean
-;;Purpose: Determines if the given word has an even amount of t's and a's
-(define (DNA-I-INV a-word)
-  (let ([num-a (length (filter (λ (w) (equal? w 'a)) a-word))]
-        [num-t (length (filter (λ (w) (equal? w 't)) a-word))])
-    (= num-a num-t)))
-
-;;word -> boolean
-;;Purpose: Determines if the given word has more c's than g's
-(define (DNA-D-INV a-word)
-  (let ([num-g (length (filter (λ (w) (equal? w 'g)) a-word))]
-        [num-c (length (filter (λ (w) (equal? w 'c)) a-word))])
-    (> num-c num-g)))
-
-;;word -> boolean
-;;Purpose: Determines if the given word has an even amount of c's and g's
-(define (DNA-B-INV a-word)
-  (let ([num-g (length (filter (λ (w) (equal? w 'g)) a-word))]
-        [num-c (length (filter (λ (w) (equal? w 'c)) a-word))])
-    (= num-g num-c)))
-
-;;word -> boolean
-;;Purpose: Determines if the given word has more g's than c's
-(define (DNA-S-INV a-word)
-  (let ([num-g (length (filter (λ (w) (equal? w 'g)) a-word))]
-        [num-c (length (filter (λ (w) (equal? w 'c)) a-word))])
-    (> num-g num-c)))
-
-;;word -> boolean
-;;Purpose: Determines if the given word has an even amount of g's and c's
-(define (DNA-R-INV a-word)
-  (let ([num-g (length (filter (λ (w) (equal? w 'g)) a-word))]
-        [num-c (length (filter (λ (w) (equal? w 'c)) a-word))])
-    (= num-g num-c)))
-
-;(ndfa-viz n '(b a a))
-;(ndfa-viz nk '(b a a))
-;(ndfa-viz aa-ab '(a a a a b a))
-;(ndfa-viz aa-ab '(a a a a b a) #:add-dead #t)
-;(ndfa-viz aa-ab '(a a a a a a a))
-;(ndfa-viz ends-with-two-bs '(a a a a b b a b b b))
-;(ndfa-viz aa-ab '(a a a a a a a) (list 'S S-INV) (list 'A A-INV1) (list 'B B-INV1) (list 'F F-INV1) #:add-dead #t)
-;things that change end with a bang(!)
-;combines computations that have similiar configurations
-#;(ndfa-viz DNA-SEQUENCE '(a t c g t a c) (list 'K DNA-K-INV) (list 'H DNA-H-INV) (list 'F DNA-F-INV)
-          (list 'M DNA-M-INV) (list 'I DNA-I-INV) (list 'D DNA-D-INV)  (list 'B DNA-B-INV) (list 'S DNA-S-INV) (list 'R DNA-R-INV))
-#;(ndfa-viz DNA-SEQUENCE '(c g c g a t a t g c t a g c a t)  (list 'K DNA-K-INV) (list 'H DNA-H-INV) (list 'F DNA-F-INV)
-          (list 'M DNA-M-INV) (list 'I DNA-I-INV) (list 'D DNA-D-INV)  (list 'B DNA-B-INV) (list 'S DNA-S-INV) (list 'R DNA-R-INV)) 
+                          'dfa-viz))))
 
 ;"notes to self:"
 ;"scroll thru word instead of jumping to end"

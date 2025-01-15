@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require "viz-ndfa.rkt"
-         "old-viz-pda.rkt"
+         "viz-pda.rkt"
          "../../fsm-core/interface.rkt")
 
 (provide sm-viz)

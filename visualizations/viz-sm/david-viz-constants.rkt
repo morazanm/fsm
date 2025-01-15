@@ -124,6 +124,8 @@
            (scale 0.5 (rotate 310 (overlay/xy inner-white -9 -3 outer-black))))])
     (overlay/xy (rotate 25 cursor-rect) -7 -26 cursor-tri)))
 
+
+
 (define E-SCENE-TOOLS
   (let ([ARROW (above (triangle 30 'solid 'black) (rectangle 10 30 'solid 'black))])
     (beside/align
