@@ -4,7 +4,7 @@
                     upci ;;a-word
                     pci ;;'()
                     acpt-trace ;;'N/A
-                    stck ;;'N/A
+                    stack ;;'N/A
                     farthest-consumed ;;'N/A
                     invs-zipper ;;(list->zipper inv-configs)
                     inv-amt ;;(sub1 (length inv-configs))

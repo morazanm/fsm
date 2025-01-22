@@ -179,43 +179,6 @@
                                (A a ,DEAD) (A b F)
                                (F a ,DEAD) (F b F))))
 
-
-#|
-;;accept examples
-(sm-viz AB*B*UAB* '(a b b))
-(sm-viz p2-ndfa '(a b b))
-(sm-viz missing-exactly-one '(a a a a b b b b a a b b a a))
-(sm-viz AT-LEAST-ONE-MISSING '(c c c c b b b b c b))
-(sm-viz aa-ab '(a a a a))
-(sm-viz ends-with-two-bs '(a b a b a b b b))
-(sm-viz ends-with-two-bs '(a b a b a b b a a a b b))
-;;reject examples
-(sm-viz AB*B*UAB* '(a b b a))
-(sm-viz p2-ndfa '(a b b a))
-(sm-viz missing-exactly-one '(a a a a b b b b a a b b a a c))
-(sm-viz AT-LEAST-ONE-MISSING '(c c c c b b b b c b a))
-(sm-viz aa-ab'(a b b b a)
-(sm-viz AT-LEAST-ONE-MISSING '(a b c))
-(sm-viz p2-ndfa '(a b a b))
-(sm-viz AB*B*UAB* '(a b a b))
-
-;;Invariant examples
-(sm-viz AT-LEAST-ONE-MISSING '(a b c)
-          (list 'S S-INV)
-          (list 'A ALON-A-INV)
-          (list 'B ALON-B-INV)
-          (list 'C ALON-C-INV)) 
-(sm-viz EVEN-NUM-Bs '(a b b b a b b) 
-          (list 'S EVEN-NUM-Bs-S-INV)
-          (list 'F EVEN-NUM-Bs-F-INV))
-(sm-viz AB*B*UAB* '(a b b b b)
-          (list 'S S-INV)
-          (list 'K K-INV)
-          (list 'B B-INV)
-          (list 'C C-INV)
-          (list 'H H-INV))
-
-|#
 ;;word -> boolean
 ;;Purpose: Determines if the given word is missing an a
 (define (ALON-A-INV a-word)
@@ -299,11 +262,6 @@
 (define (e-inv a-word)
   (andmap (λ (w) (equal? w 'b)) (rest a-word)))
 
-(define inv-list (list (list 'S S-INV)
-                       (list 'K ND-K-INV)
-                       (list 'B B-INV)
-                       (list 'C C-INV)
-                       (list 'H ND-H-INV)))
 (define (S-INV1 ci)
   (not (empty? ci)))
 
@@ -425,20 +383,7 @@
         [num-c (length (filter (λ (w) (equal? w 'c)) a-word))])
     (= num-g num-c)))
 
-;(sm-viz n '(b a a))
-;(sm-viz nk '(b a a))
-;(sm-viz aa-ab '(a a a a b a))
-;(sm-viz aa-ab '(a a a a b a) #:add-dead #t)
-;(sm-viz aa-ab '(a a a a a a a))
-;(sm-viz ends-with-two-bs '(a a a a b b a b b b))
-;(sm-viz aa-ab '(a a a a a a a) (list 'S S-INV) (list 'A A-INV1) (list 'B B-INV1) (list 'F F-INV1) #:add-dead #t)
-#;(sm-viz DNA-SEQUENCE '(a t c g t a c) (list 'K DNA-K-INV) (list 'H DNA-H-INV) (list 'F DNA-F-INV)
-          (list 'M DNA-M-INV) (list 'I DNA-I-INV) (list 'D DNA-D-INV)  (list 'B DNA-B-INV) (list 'S DNA-S-INV) (list 'R DNA-R-INV))
-#;(sm-viz DNA-SEQUENCE '(c g c g a t a t g c t a g c a t)  (list 'K DNA-K-INV) (list 'H DNA-H-INV) (list 'F DNA-F-INV)
-          (list 'M DNA-M-INV) (list 'I DNA-I-INV) (list 'D DNA-D-INV)  (list 'B DNA-B-INV) (list 'S DNA-S-INV) (list 'R DNA-R-INV)) 
-
-
-
+ 
 (define SCHIZO-SAME-NUM-AB (make-ndpda '(K H I)
                                 '(a b)
                                 '(a b)
@@ -581,45 +526,6 @@
          (<= (length ci-as) (length ci-bs) (* 2 (length ci-as)))
          (andmap (λ (w) (eq? w 'b)) stck)
          (<= (length ci-as) (length (append ci-bs stck)) (* 2 (length ci-as))))))
-#;(sm-viz P '(a a a b b b))
-
-#;(sm-viz a* '(a a a a a) #:max-cmps 3
-           (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (= (length w) 3)) (not (= (length w) 5)) (empty? s)))))
-#;(sm-viz aa* '(a a)
-           (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (empty? w) (empty? s)))))
-#;(sm-viz a* '(a a)
-           (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (empty? w)) (empty? s)))))
-
-#;(sm-viz a* '(a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a
-                  a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a
-                  a a a a a a a a a a a a a a a a a a a)
-           (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (empty? w)) (empty? s)))))
-
-;(sm-viz P2 '(a a a b b b b))
-;(sm-viz P2 '(a a a b b) (list 'S P-S-INV) (list 'H P-H-INV))
-;(sm-viz P3 '(a a a b b b) (list 'S P-S-INV) (list 'H P-H-INV))
-;(sm-viz P3 '(a a a b b b) (list 'S P-S-INV) (list 'H P-H1-INV))
-;"note to self:"
-;"edit A and D to scroll thru word, not jump to end"
-
-
-
-
-#;(define numb>numa (make-cfg '(S A)
-                            '(a b)
-                            `((S ,ARROW b)
-                              (S ,ARROW AbA)
-                              (A ,ARROW AaAbA)
-                              (A ,ARROW AbAaA)
-                              (A ,ARROW ,EMP)
-                              (A ,ARROW bA))
-                            'S))
-
-;(define pd-numb>numa (cfg->pda numb>numa))
-
-;(sm-viz pd-numb>numa '(a b) #:max-cmps 5)
-;(sm-viz pd-numb>numa '(a b) #:max-cmps 5)
-;;track most consumed input
 
 (define BUGGY-SAME-NUM-AB (make-ndpda '(K H F M)
                                                 '(a b)
@@ -727,17 +633,7 @@
                                               ((S ,EMP ,EMP) (A ,EMP))
                                               ((A b (a)) (A ,EMP))
                                               ((A ,EMP (a)) (A ,EMP)))))
-#;(sm-viz more-a-than-b '(a a a a a b b))
-#;(sm-viz a* '(a a a a a)
-           (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (= (length w) 3)) (empty? s)))))
-#;(sm-viz aa* '(a a)
-           (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (empty? w) (empty? s)))))
-#;(sm-viz a* '(a a)
-           (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (empty? w)) (empty? s)))))
 
-#;(sm-viz a* '(a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a
-                  a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a)
-           (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (empty? w)) (empty? s)))))
 
 ;;"note to self:"
 ;;"edit A and D to scroll thru word, not jump to end"
@@ -753,15 +649,7 @@
 (define (pd-A-INV a-wrd a-stck)
   (andmap (λ (s) (eq? s 'a)) a-stck))
 
-#;(define more-a-than-b (make-ndpda '(S A)
-                                              '(a b)
-                                              '(a)
-                                              'S
-                                              '(A)
-                                              `(((S a ,EMP) (S (a)))
-                                                ((S ,EMP ,EMP) (A ,EMP))
-                                                ((A b (a)) (A ,EMP))
-                                                ((A ,EMP (a)) (A ,EMP)))))
+
 (define (p-xds-inv wrd stck)
   (and (empty? wrd)
        (empty? stck)))
@@ -769,11 +657,6 @@
 (define (pd-a-inv wrd stck)
   (or (not (= (length (filter (λ (w) (equal? w 'a)) wrd)) 4))
       (not (= (length (filter (λ (w) (equal? w 'b)) wrd)) 2))))
-
-
-
-
-;;(sm-viz P2 '(a a a b b) (list 'S P-S-INV) (list 'H P-H-INV))
 
 (define numb>numa (make-cfg '(S A)
                             '(a b)
@@ -787,4 +670,72 @@
 
 (define pd-numb>numa (grammar->sm numb>numa))
 
-;;(sm-viz pd-numb>numa '(a b) #:max-cmps 5)
+;(sm-viz pd-numb>numa '(a b) #:max-cmps 5) ;;needs to be looked into
+;(sm-viz pd-numb>numa '(a b) #:max-cmps 0) ;;needs to be looked into 
+;(sm-viz pd-numb>numa '(a b) #:max-cmps -3)
+#;(sm-viz more-a-than-b '(a a a a a b b))
+#;(sm-viz a* '(a a a a a)
+           (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (= (length w) 3)) (empty? s)))))
+#;(sm-viz aa* '(a a)
+           (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (empty? w) (empty? s)))))
+#;(sm-viz a* '(a a)
+           (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (empty? w)) (empty? s)))))
+(sm-viz P2 '(a a a b b) (list 'S P-S-INV) (list 'H P-H-INV))
+#;(sm-viz a* '(a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a
+                  a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a)
+           (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (empty? w)) (empty? s))))) ;; look into
+;(sm-viz P2 '(a a a b b) (list 'S P-S-INV) (list 'H P-H-INV)) ;;needs to be looked into
+#|
+;;accept examples
+(sm-viz AB*B*UAB* '(a b b))
+(sm-viz p2-ndfa '(a b b))
+(sm-viz missing-exactly-one '(a a a a b b b b a a b b a a))
+(sm-viz AT-LEAST-ONE-MISSING '(c c c c b b b b c b))
+(sm-viz aa-ab '(a a a a))
+(sm-viz ends-with-two-bs '(a b a b a b b b))
+(sm-viz ends-with-two-bs '(a b a b a b b a a a b b))
+;;reject examples
+(sm-viz AB*B*UAB* '(a b b a))
+(sm-viz p2-ndfa '(a b b a))
+(sm-viz missing-exactly-one '(a a a a b b b b a a b b a a c))
+(sm-viz AT-LEAST-ONE-MISSING '(c c c c b b b b c b a))
+(sm-viz aa-ab'(a b b b a)
+(sm-viz AT-LEAST-ONE-MISSING '(a b c))
+(sm-viz p2-ndfa '(a b a b))
+(sm-viz AB*B*UAB* '(a b a b))
+
+;;Invariant examples
+(sm-viz AT-LEAST-ONE-MISSING '(a b c)
+          (list 'S S-INV)
+          (list 'A ALON-A-INV)
+          (list 'B ALON-B-INV)
+          (list 'C ALON-C-INV)) 
+(sm-viz EVEN-NUM-Bs '(a b b b a b b) 
+          (list 'S EVEN-NUM-Bs-S-INV)
+          (list 'F EVEN-NUM-Bs-F-INV))
+(sm-viz AB*B*UAB* '(a b b b b)
+          (list 'S S-INV)
+          (list 'K K-INV)
+          (list 'B B-INV)
+          (list 'C C-INV)
+          (list 'H H-INV))
+
+
+
+(sm-viz n '(b a a))
+(sm-viz nk '(b a a))
+(sm-viz aa-ab '(a a a a b a))
+(sm-viz aa-ab '(a a a a b a) #:add-dead #t)
+(sm-viz aa-ab '(a a a a b a) #:add-dead 3)
+
+(sm-viz aa-ab '(a a a a a a a))
+(sm-viz ends-with-two-bs '(a a a a b b a b b b))
+(sm-viz aa-ab '(a a a a a a a) (list 'S S-INV) (list 'A A-INV1) (list 'B B-INV1) (list 'F F-INV1) #:add-dead #t)
+(sm-viz DNA-SEQUENCE '(a t c g t a c) (list 'K DNA-K-INV) (list 'H DNA-H-INV) (list 'F DNA-F-INV)
+          (list 'M DNA-M-INV) (list 'I DNA-I-INV) (list 'D DNA-D-INV)  (list 'B DNA-B-INV) (list 'S DNA-S-INV) (list 'R DNA-R-INV))
+(sm-viz DNA-SEQUENCE '(c g c g a t a t g c t a g c a t)  (list 'K DNA-K-INV) (list 'H DNA-H-INV) (list 'F DNA-F-INV)
+          (list 'M DNA-M-INV) (list 'I DNA-I-INV) (list 'D DNA-D-INV)  (list 'B DNA-B-INV) (list 'S DNA-S-INV) (list 'R DNA-R-INV))
+
+(sm-viz ND4 '(a b b b) #:add-dead #t)
+(sm-viz M2 '(a a b b b b) #:add-dead #t)
+|#

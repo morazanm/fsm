@@ -495,7 +495,9 @@ visited is a (listof configuration)
          ;;(listof symbols)
          ;;Purpose: Returns all states whose invariants holds
          [held-invs (get-invariants get-invs id)])
-    (make-edge-graph
+    (begin
+      (displayln cut-off)
+      (make-edge-graph
        (make-node-graph
         (create-graph 'pdagraph #:atb (hash 'rankdir "LR"))
         (building-viz-state-M a-vs)
@@ -507,7 +509,7 @@ visited is a (listof configuration)
        current-a-rules
        current-r-rules
        held-invs
-       (building-viz-state-dead a-vs))))
+       (building-viz-state-dead a-vs)))))
     
 ;;viz-state (listof graph-thunks) -> (listof graph-thunks)
 ;;Purpose: Creates all the graphs needed for the visualization
@@ -564,9 +566,9 @@ visited is a (listof configuration)
          
          ;;(listof symbols)
          ;;Purpose: Holds what needs to displayed for the stack based off the upci
-         [current-stack (if (zipper-empty? (imsg-state-stck imsg-st)) 
-                            (imsg-state-stck imsg-st)
-                            (third (zipper-current (imsg-state-stck imsg-st))))])
+         [current-stack (if (zipper-empty? (imsg-state-stack imsg-st)) 
+                            (imsg-state-stack imsg-st)
+                            (third (zipper-current (imsg-state-stack imsg-st))))])
     (overlay/align
      'left 'middle
      (above/align
@@ -584,9 +586,15 @@ visited is a (listof configuration)
                       (if (equal? (sm-apply (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'accept)
                           (text (format "~a" EMP) 20 'black)
                           (text (format "~a" EMP) 20 'white))))]
-            [(and (not (empty? (imsg-state-farthest-consumed imsg-st)))
+            [(begin
+               ;(display "farthest-consumed: ")
+               ;(displayln (imsg-state-farthest-consumed imsg-st))
+               ;(display "upci: ")
+               ;(displayln (imsg-state-upci imsg-st))
+                (and #;(not (empty? (imsg-state-farthest-consumed imsg-st)))
+                     (< (length (imsg-state-upci imsg-st)) (length (imsg-state-farthest-consumed imsg-st)))
                   (ormap (λ (comp) (>= (length comp) (imsg-state-max-cmps imsg-st)))
-                     (imsg-state-comps imsg-st)))
+                     (imsg-state-comps imsg-st))))
              (above/align 'left
                           (beside (text "aaaC" 20 'white)
                                   (text "Word: " 20 'black)
@@ -641,7 +649,7 @@ visited is a (listof configuration)
                                                           (imsg-state-word-img-offset imsg-st)
                                                           0)
                                                       '())))])
-      (cond [(zipper-empty? (imsg-state-stck imsg-st)) (text "aaaa" 20 'white)]
+      (cond [(zipper-empty? (imsg-state-stack imsg-st)) (text "aaaa" 20 'white)]
             [(empty? current-stack) (beside (text "aaaC" 20 'white)
                                             (text "Stack: " 20 'black))]
             [else (beside (text "aaaC" 20 'white)
@@ -667,13 +675,13 @@ visited is a (listof configuration)
              [(not completed-config?)
               (text "All computations do not consume the entire word and the machine rejects." 20 'red)]
              [(and (empty? (imsg-state-upci imsg-st))
-                   (or (zipper-empty? (imsg-state-stck imsg-st))
-                       (zipper-at-end? (imsg-state-stck imsg-st)))
+                   (or (zipper-empty? (imsg-state-stack imsg-st))
+                       (zipper-at-end? (imsg-state-stack imsg-st)))
                    (equal? (sm-apply (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'accept))
               (text "There is a computation that accepts." 20 'forestgreen)]
              [(and (empty? (imsg-state-upci imsg-st))
-                   (or (zipper-empty? (imsg-state-stck imsg-st))
-                       (zipper-at-end? (imsg-state-stck imsg-st)))
+                   (or (zipper-empty? (imsg-state-stack imsg-st))
+                       (zipper-at-end? (imsg-state-stack imsg-st)))
                    (equal? (sm-apply (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'reject))
               (text "All computations end in a non-final state and the machine rejects." 20 'red)]
              [else (text "Word Status: accept " 20 'white)]))
@@ -751,13 +759,13 @@ visited is a (listof configuration)
                                                              (viz-state-informative-messages a-vs)))
                                      (zipper-next (imsg-state-acpt-trace (informative-messages-component-state
                                                                           (viz-state-informative-messages a-vs)))))]
-                     [stck (if (or (zipper-empty? (imsg-state-stck (informative-messages-component-state
+                     [stack (if (or (zipper-empty? (imsg-state-stack (informative-messages-component-state
                                                                     (viz-state-informative-messages a-vs))))
-                                   (zipper-at-end? (imsg-state-stck (informative-messages-component-state
+                                   (zipper-at-end? (imsg-state-stack (informative-messages-component-state
                                                                      (viz-state-informative-messages a-vs)))))
-                               (imsg-state-stck (informative-messages-component-state
+                               (imsg-state-stack (informative-messages-component-state
                                                  (viz-state-informative-messages a-vs)))
-                               (zipper-next (imsg-state-stck (informative-messages-component-state
+                               (zipper-next (imsg-state-stack (informative-messages-component-state
                                                               (viz-state-informative-messages a-vs)))))]
                      [invs-zipper (cond [(zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                                                                  (viz-state-informative-messages a-vs))))
@@ -835,17 +843,17 @@ visited is a (listof configuration)
                                                        (viz-state-informative-messages a-vs)))
                          (zipper-to-end (imsg-state-acpt-trace (informative-messages-component-state
                                                        (viz-state-informative-messages a-vs)))))]
-         [stck (cond [(zipper-empty? (imsg-state-stck (informative-messages-component-state
+         [stack (cond [(zipper-empty? (imsg-state-stack (informative-messages-component-state
                                                        (viz-state-informative-messages a-vs))))
-                      (imsg-state-stck (informative-messages-component-state
+                      (imsg-state-stack (informative-messages-component-state
                                         (viz-state-informative-messages a-vs)))]
-                     [(or (zipper-empty? (imsg-state-stck (informative-messages-component-state
+                     [(or (zipper-empty? (imsg-state-stack (informative-messages-component-state
                                                            (viz-state-informative-messages a-vs))))
-                          (zipper-at-end? (imsg-state-stck (informative-messages-component-state
+                          (zipper-at-end? (imsg-state-stack (informative-messages-component-state
                                                             (viz-state-informative-messages a-vs)))))
-                      (imsg-state-stck (informative-messages-component-state
+                      (imsg-state-stack (informative-messages-component-state
                                         (viz-state-informative-messages a-vs)))]
-                     [else (zipper-to-end (imsg-state-stck (informative-messages-component-state
+                     [else (zipper-to-end (imsg-state-stack (informative-messages-component-state
                                                             (viz-state-informative-messages a-vs))))])]
          
          [invs-zipper zip])])])))
@@ -905,13 +913,13 @@ visited is a (listof configuration)
                                                        (viz-state-informative-messages a-vs)))))]
                      [pci pci]
                      [acpt-trace acpt-trace]
-                     [stck (if (or (zipper-empty? (imsg-state-stck (informative-messages-component-state
+                     [stack (if (or (zipper-empty? (imsg-state-stack (informative-messages-component-state
                                                                     (viz-state-informative-messages a-vs))))
-                                   (zipper-at-begin? (imsg-state-stck (informative-messages-component-state
+                                   (zipper-at-begin? (imsg-state-stack (informative-messages-component-state
                                                                        (viz-state-informative-messages a-vs)))))
-                               (imsg-state-stck (informative-messages-component-state
+                               (imsg-state-stack (informative-messages-component-state
                                                  (viz-state-informative-messages a-vs)))
-                               (zipper-prev (imsg-state-stck (informative-messages-component-state
+                               (zipper-prev (imsg-state-stack (informative-messages-component-state
                                                               (viz-state-informative-messages a-vs)))))]
                      
                      [invs-zipper (cond [(zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
@@ -963,13 +971,13 @@ visited is a (listof configuration)
                                                            (viz-state-informative-messages a-vs)))
                                    (zipper-to-begin (imsg-state-acpt-trace (informative-messages-component-state
                                                                             (viz-state-informative-messages a-vs)))))]
-                   [stck (if (or (zipper-empty? (imsg-state-stck (informative-messages-component-state
+                   [stack (if (or (zipper-empty? (imsg-state-stack (informative-messages-component-state
                                                                   (viz-state-informative-messages a-vs))))
-                                 (zipper-at-begin? (imsg-state-stck (informative-messages-component-state
+                                 (zipper-at-begin? (imsg-state-stack (informative-messages-component-state
                                                                      (viz-state-informative-messages a-vs)))))
-                             (imsg-state-stck (informative-messages-component-state
+                             (imsg-state-stack (informative-messages-component-state
                                                (viz-state-informative-messages a-vs)))
-                             (zipper-to-begin (imsg-state-stck (informative-messages-component-state
+                             (zipper-to-begin (imsg-state-stack (informative-messages-component-state
                                                                 (viz-state-informative-messages a-vs)))))]
                    [invs-zipper (if (or (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                                                                 (viz-state-informative-messages a-vs))))
@@ -1059,11 +1067,11 @@ visited is a (listof configuration)
                                          (zipper-to-idx (imsg-state-acpt-trace (informative-messages-component-state
                                                                                 (viz-state-informative-messages a-vs)))
                                                         (zipper-current zip)))]
-                         [stck (if (zipper-empty? (imsg-state-stck (informative-messages-component-state
+                         [stack (if (zipper-empty? (imsg-state-stack (informative-messages-component-state
                                                                     (viz-state-informative-messages a-vs))))
-                                   (imsg-state-stck (informative-messages-component-state
+                                   (imsg-state-stack (informative-messages-component-state
                                                      (viz-state-informative-messages a-vs)))
-                                   (zipper-to-idx (imsg-state-stck (informative-messages-component-state
+                                   (zipper-to-idx (imsg-state-stack (informative-messages-component-state
                                                                     (viz-state-informative-messages a-vs)))
                                                   (zipper-current zip)))]
                          [pci partial-word]
@@ -1117,11 +1125,11 @@ visited is a (listof configuration)
                                          (zipper-to-idx (imsg-state-acpt-trace (informative-messages-component-state
                                                                                 (viz-state-informative-messages a-vs)))
                                                         (zipper-current zip)))]
-                         [stck (if (zipper-empty? (imsg-state-stck (informative-messages-component-state
+                         [stack (if (zipper-empty? (imsg-state-stack (informative-messages-component-state
                                                                     (viz-state-informative-messages a-vs))))
-                                   (imsg-state-stck (informative-messages-component-state
+                                   (imsg-state-stack (informative-messages-component-state
                                                      (viz-state-informative-messages a-vs)))
-                                   (zipper-to-idx (imsg-state-stck (informative-messages-component-state
+                                   (zipper-to-idx (imsg-state-stack (informative-messages-component-state
                                                                     (viz-state-informative-messages a-vs)))
                                                   (zipper-current zip)))]
                          [pci partial-word]
@@ -1244,7 +1252,8 @@ visited is a (listof configuration)
                                                         '()))]
                      ;;(listof rules) ;;Purpose: Returns the first accepting computations (listof rules)
                      [accepting-trace (if (empty? accept-cmps) '() (first accept-cmps))]
-                     [least-consumed-word (if (ormap (λ (comp) (>= (length comp) max-cmps)) LoC)
+                     [least-consumed-word (get-farthest-consumed LoC a-word)
+                                          #;(if (ormap (λ (comp) (>= (length comp) max-cmps)) LoC)
                                                      (get-farthest-consumed LoC a-word)
                                                      'no-cut-off)]
                      ;;building-state struct
@@ -1292,7 +1301,7 @@ visited is a (listof configuration)
                 ;(displayln (length get-cut-off-comp))
                 ;(displayln computation-lens)
                 ;(map displayln cut-off-comp)
-                ;(displayln  graphs)
+                (displayln  least-consumed-word)
                 ;(displayln (list-ref graphs 0))
                 ;(displayln (list-ref graphs max-cmps))
                 ;(displayln (length graphs))
