@@ -450,9 +450,9 @@ visited is a (listof configuration)
 
          ;;(listof symbol)
          ;;Purpose: Gets the states where it's computation has cutoff
-         [cut-off-states (remove-duplicates (map first (get-cut-off (building-viz-state-computations a-vs)
+         [cut-off-states #;(remove-duplicates (map first (get-cut-off (building-viz-state-computations a-vs)
                                                                         (building-viz-state-max-cmps a-vs))))
-                         #;(if cut-off
+                         (if cut-off
                              (remove-duplicates (map first (get-cut-off (building-viz-state-computations a-vs)
                                                                         (building-viz-state-max-cmps a-vs))))
                              '())]
@@ -505,11 +505,16 @@ visited is a (listof configuration)
 ;;viz-state (listof graph-thunks) -> (listof graph-thunks)
 ;;Purpose: Creates all the graphs needed for the visualization
 (define (create-graph-thunks a-vs acc)
+  (begin
+    (displayln "upci")
+    (displayln (building-viz-state-upci a-vs))
+    (displayln "farthest consumed")
+    (displayln (building-viz-state-farthest-consumed a-vs))
   (cond [(and (empty? (building-viz-state-upci a-vs))
               (or (list? (building-viz-state-stack a-vs))
                   (zipper-at-end? (building-viz-state-stack a-vs))))
          (reverse (cons (create-graph-thunk a-vs) acc))]
-        #;[(and (< (length (building-viz-state-upci a-vs)) (length (building-viz-state-farthest-consumed a-vs)))
+        [(and (eq? (building-viz-state-upci a-vs) (building-viz-state-farthest-consumed a-vs))
               (ormap (λ (comp-len) (>= comp-len (building-viz-state-max-cmps a-vs)))
                  (map length (building-viz-state-computations a-vs))))
          (reverse (cons (create-graph-thunk a-vs #:cut-off #t) acc))]
@@ -531,7 +536,7 @@ visited is a (listof configuration)
                                                                         (building-viz-state-computations a-vs))]
                                                   [accept-traces (get-next-traces (building-viz-state-accept-traces a-vs))]
                                                   [reject-traces (get-next-traces (building-viz-state-reject-traces a-vs))])
-                                     (cons next-graph acc)))]))
+                                     (cons next-graph acc)))])))
 
 ;;image-state -> image
 ;;Purpose: Determines which informative message is displayed to the user
@@ -580,7 +585,8 @@ visited is a (listof configuration)
                       (if (equal? (apply-pda (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'accept)
                           (text (format "~a" EMP) 20 'black)
                           (text (format "~a" EMP) 20 'white))))]
-            [(and (<= (length (imsg-state-upci imsg-st)) (length (imsg-state-farthest-consumed imsg-st)))
+            [(and (eq? (imsg-state-upci imsg-st) (imsg-state-farthest-consumed imsg-st))
+                  ;(<= (length (imsg-state-upci imsg-st)) (length (imsg-state-farthest-consumed imsg-st)))
                   (ormap (λ (comp) (>= (length comp) (imsg-state-max-cmps imsg-st)))
                      (imsg-state-comps imsg-st)))
              (above/align 'left
@@ -657,7 +663,10 @@ visited is a (listof configuration)
              'brown)
       (cond [(begin
                ;(displayln (imsg-state-farthest-consumed imsg-st))
-               (and (<= (length (imsg-state-upci imsg-st)) (length (imsg-state-farthest-consumed imsg-st)))
+               (and #;(or (eq? (imsg-state-upci imsg-st) (imsg-state-farthest-consumed imsg-st))
+                        (< (length (imsg-state-upci imsg-st)) (length (imsg-state-farthest-consumed imsg-st))))
+                    (eq? (imsg-state-upci imsg-st) (imsg-state-farthest-consumed imsg-st))
+                ;(<= (length (imsg-state-upci imsg-st)) (length (imsg-state-farthest-consumed imsg-st)))
                   (ormap (λ (comp) (>= (length comp) (imsg-state-max-cmps imsg-st)))
                      (imsg-state-comps imsg-st))))
              #;(and (ormap (λ (comp) (>= (length comp) (imsg-state-max-cmps imsg-st)))
@@ -805,7 +814,44 @@ visited is a (listof configuration)
                                                           (viz-state-informative-messages a-vs)))
                                  (imsg-state-inv-amt (informative-messages-component-state
                                                       (viz-state-informative-messages a-vs)))))])
-    (struct-copy
+    (begin
+      ;(displayln unconsumed-word)
+      ;(displayln (take unconsumed-word 1))
+      ;(displayln "farthest consumed")
+      #;(displayln (imsg-state-farthest-consumed (informative-messages-component-state
+                                                (viz-state-informative-messages a-vs))))
+      ;(displayln "upci")
+      ;(displayln (append last-consumed-word (drop unconsumed-word 1)))
+      #;(displayln (cond [(empty? (imsg-state-upci (informative-messages-component-state
+                                                (viz-state-informative-messages a-vs))))
+                      (imsg-state-upci (informative-messages-component-state
+                                        (viz-state-informative-messages a-vs)))]
+                       [(not (empty? (imsg-state-farthest-consumed (informative-messages-component-state
+                                                (viz-state-informative-messages a-vs)))))
+                        (drop full-word (- (length full-word) (length (imsg-state-farthest-consumed (informative-messages-component-state
+                                                (viz-state-informative-messages a-vs))))))]
+                     #;[(and (not (equal? last-consumed-word full-word))
+                           (<= (length full-word) 2))
+                       unconsumed-word]
+                     #;[(not (equal? last-consumed-word full-word))
+                      (rest unconsumed-word)]
+                     [else '()]))
+      ;(displayln "pci")
+      #;(displayln (cond [(empty? (imsg-state-upci (informative-messages-component-state
+                                               (viz-state-informative-messages a-vs))))
+                     (imsg-state-pci (informative-messages-component-state
+                                      (viz-state-informative-messages a-vs)))]
+                       [(not (empty? (imsg-state-farthest-consumed (informative-messages-component-state
+                                                (viz-state-informative-messages a-vs)))))
+                        (take full-word (- (length full-word) (length (imsg-state-farthest-consumed (informative-messages-component-state
+                                                (viz-state-informative-messages a-vs))))))]
+                       #;[(and (not (equal? last-consumed-word full-word))
+                           (<= (length full-word) 2))
+                       (append last-consumed-word (take unconsumed-word 0))]
+                    #;[(not (equal? last-consumed-word full-word))
+                     (append last-consumed-word (take unconsumed-word 1))]
+                    [else full-word]))
+      (struct-copy
      viz-state
      a-vs
      [informative-messages
@@ -817,18 +863,46 @@ visited is a (listof configuration)
          imsg-state
          (informative-messages-component-state
           (viz-state-informative-messages a-vs))
-         [upci (cond [(empty? (imsg-state-upci (informative-messages-component-state
+         [upci #;(cond [(empty? (imsg-state-upci (informative-messages-component-state
                                                 (viz-state-informative-messages a-vs))))
                       (imsg-state-upci (informative-messages-component-state
                                         (viz-state-informative-messages a-vs)))]
                      [(not (equal? last-consumed-word full-word))
                       (rest unconsumed-word)]
+                     [else '()])
+               (cond [(empty? (imsg-state-upci (informative-messages-component-state
+                                                (viz-state-informative-messages a-vs))))
+                      (imsg-state-upci (informative-messages-component-state
+                                        (viz-state-informative-messages a-vs)))]
+                     [(not (empty? (imsg-state-farthest-consumed (informative-messages-component-state
+                                                (viz-state-informative-messages a-vs)))))
+                        (drop full-word (- (length full-word) (length (imsg-state-farthest-consumed (informative-messages-component-state
+                                                (viz-state-informative-messages a-vs))))))]
+                     #;[(and (not (equal? last-consumed-word full-word))
+                           (<= (length full-word) 2))
+                       unconsumed-word]
+                     #;[(not (equal? last-consumed-word full-word))
+                      (rest unconsumed-word)]
                      [else '()])]
-         [pci (cond [(empty? (imsg-state-upci (informative-messages-component-state
+         [pci #;(cond [(empty? (imsg-state-upci (informative-messages-component-state
                                                (viz-state-informative-messages a-vs))))
                      (imsg-state-pci (informative-messages-component-state
                                       (viz-state-informative-messages a-vs)))]
                     [(not (equal? last-consumed-word full-word))
+                     (append last-consumed-word (take unconsumed-word 1))]
+                    [else full-word])
+              (cond [(empty? (imsg-state-upci (informative-messages-component-state
+                                               (viz-state-informative-messages a-vs))))
+                     (imsg-state-pci (informative-messages-component-state
+                                      (viz-state-informative-messages a-vs)))]
+                    [(not (empty? (imsg-state-farthest-consumed (informative-messages-component-state
+                                                (viz-state-informative-messages a-vs)))))
+                        (take full-word (- (length full-word) (length (imsg-state-farthest-consumed (informative-messages-component-state
+                                                (viz-state-informative-messages a-vs))))))]
+                       #;[(and (not (equal? last-consumed-word full-word))
+                           (<= (length full-word) 2))
+                       (append last-consumed-word (take unconsumed-word 0))]
+                    #;[(not (equal? last-consumed-word full-word))
                      (append last-consumed-word (take unconsumed-word 1))]
                     [else full-word])]
          [acpt-trace (if (or (zipper-empty? (imsg-state-acpt-trace (informative-messages-component-state
@@ -852,7 +926,7 @@ visited is a (listof configuration)
                      [else (zipper-to-end (imsg-state-stack (informative-messages-component-state
                                                             (viz-state-informative-messages a-vs))))])]
          
-         [invs-zipper zip])])])))
+         [invs-zipper zip])])]))))
 
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization backward by one step
@@ -1043,7 +1117,9 @@ visited is a (listof configuration)
                                                  (viz-state-informative-messages a-vs)))
                                 (imsg-state-upci (informative-messages-component-state
                                                   (viz-state-informative-messages a-vs))))]
-             [partial-word (take full-word (zipper-current zip))])
+             [partial-word (if (> (zipper-current zip) (length full-word))
+                               full-word
+                               (take full-word (zipper-current zip)))])
         (struct-copy
          viz-state
          a-vs
@@ -1276,6 +1352,8 @@ visited is a (listof configuration)
                                          (make-inv-configs a-word accepting-computations)
                                          invs)
                                         a-word))])
+                ;(map displayln LoC)
+                (displayln (length graphs))
                 (run-viz graphs
                          (lambda () (graph->bitmap (first graphs)))
                          (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2))
