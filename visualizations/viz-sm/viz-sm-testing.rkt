@@ -668,6 +668,7 @@
 
 (define pd-numb>numa (grammar->sm numb>numa))
 (sm-viz pd-numb>numa '(a b) #:max-cmps 5)
+(sm-viz pd-numb>numa '(a b) #:max-cmps 1)
 ;(sm-viz pd-numb>numa '(a b) #:max-cmps 10) ;;needs to be looked into
 (sm-viz pd-numb>numa '(a b a) #:max-cmps 5)
 ;(sm-viz pd-numb>numa '(a b) #:max-cmps 0) ;;needs to be looked into 
