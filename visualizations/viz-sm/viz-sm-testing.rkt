@@ -667,13 +667,13 @@
                             'S))
 
 (define pd-numb>numa (grammar->sm numb>numa))
-(sm-viz pd-numb>numa '(a b) #:max-cmps 5)
-(sm-viz pd-numb>numa '(a b) #:max-cmps 1)
+;(sm-viz pd-numb>numa '(a b) #:max-cmps 5)
+;(sm-viz pd-numb>numa '(a b) #:max-cmps 1)
 ;(sm-viz pd-numb>numa '(a b) #:max-cmps 10) ;;needs to be looked into
-(sm-viz pd-numb>numa '(a b a) #:max-cmps 5)
+;(sm-viz pd-numb>numa '(a b a) #:max-cmps 5)
 ;(sm-viz pd-numb>numa '(a b) #:max-cmps 0) ;;needs to be looked into 
 ;(sm-viz pd-numb>numa '(a b) #:max-cmps -3)
-#;(sm-viz more-a-than-b '(a a a a a b b))
+;(sm-viz more-a-than-b '(a a a a a b b))
 #;(sm-viz a* '(a a a a a)
            (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (= (length w) 3)) (empty? s)))))
 #;(sm-viz aa* '(a a)
@@ -681,7 +681,7 @@
 #;(sm-viz a* '(a a)
            (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (empty? w)) (empty? s)))))
 ;(sm-viz P2 '(a a a b b) (list 'S P-S-INV) (list 'H P-H-INV))
-(sm-viz a* '(a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a
+#;(sm-viz a* '(a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a
                   a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a)
            (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (empty? w)) (empty? s))))) ;; look into
 ;(sm-viz P2 '(a a a b b) (list 'S P-S-INV) (list 'H P-H-INV)) ;;needs to be looked into

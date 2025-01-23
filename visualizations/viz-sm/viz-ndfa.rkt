@@ -378,7 +378,12 @@ triple is the entire of the ndfa rule
          
          ;;(listof symbols)
          ;;Purpose: The portion of the word that cannont be consumed
-         [unconsumed-word (drop entire-word (length last-consumed-word))]) ;;keep an eye on remove-similiarites
+         [unconsumed-word (drop entire-word (length last-consumed-word))]
+         [machine-decision (if (not (zipper-empty? (imsg-state-acpt-trace imsg-st)))
+                               'accept
+                               'reject)]) 
+
+   
     (overlay/align
      'left 'middle
      (above/align
@@ -389,11 +394,11 @@ triple is the entire of the ndfa rule
               'left
               (beside (text "aaaC" 20 'white)
                       (text "Word: " 20 'black)
-                      (if (equal? (apply-fsa (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'accept)
+                      (if (equal? machine-decision 'accept)
                           (text (format "~a" EMP) 20 'gray)
                           (text (format "~a" EMP) 20 'red)))
               (beside (text "Consumed: " 20 'black)
-                      (if (equal? (apply-fsa (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'accept)
+                      (if (equal? machine-decision 'accept)
                           (text (format "~a" EMP) 20 'black)
                           (text (format "~a" EMP) 20 'white))))]
             [(and (not (empty? (imsg-state-pci imsg-st))) (not completed-config?))
@@ -441,10 +446,10 @@ triple is the entire of the ndfa rule
       (cond [(not completed-config?)
               (text "All computations do not consume the entire word and the machine rejects." 20 'red)]
              [(and (empty? (imsg-state-upci imsg-st))
-                   (equal? (apply-fsa (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'accept))
+                   (equal? machine-decision 'accept))
               (text "There is a computation that accepts." 20 'forestgreen)]
              [(and (empty? (imsg-state-upci imsg-st))
-                   (equal? (apply-fsa (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'reject))
+                   (equal? machine-decision 'reject))
               (text "All computations end in a non-final state and the machine rejects." 20 'red)]
              [else (text "Word Status: accept " 20 'white)])
       )

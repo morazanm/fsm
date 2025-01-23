@@ -363,7 +363,7 @@ visited is a (listof configuration)
 (define (get-portion-configs word full-configs)
   (append-map (λ (config)
                 (filter (λ (configs)
-                              (equal? (second configs) word))
+                          (equal? (second configs) word))
                         (computation-LoC config)))
               full-configs))
 
@@ -373,7 +373,7 @@ visited is a (listof configuration)
   (filter-map (λ (config)
                 (and (>= (length config) max-cmps)
                      (first config)))
-       LoC))
+              LoC))
 
 ;; (listof configuration) (listof symbol) -> (listof symbol)
 ;; Purpose: Returns the most consumed input
@@ -486,17 +486,17 @@ visited is a (listof configuration)
          ;;Purpose: Returns all states whose invariants holds
          [held-invs (get-invariants get-invs id)])
     (make-edge-graph
-       (make-node-graph
-        (create-graph 'pdagraph #:atb (hash 'rankdir "LR"))
-        (building-viz-state-M a-vs)
-        (building-viz-state-dead a-vs)
-        held-invs
-        brkn-invs
-        cut-off-states)
-       all-rules
-       current-a-rules
-       current-r-rules
-       (building-viz-state-dead a-vs))))
+     (make-node-graph
+      (create-graph 'pdagraph #:atb (hash 'rankdir "LR"))
+      (building-viz-state-M a-vs)
+      (building-viz-state-dead a-vs)
+      held-invs
+      brkn-invs
+      cut-off-states)
+     all-rules
+     current-a-rules
+     current-r-rules
+     (building-viz-state-dead a-vs))))
     
 ;;viz-state (listof graph-thunks) -> (listof graph-thunks)
 ;;Purpose: Creates all the graphs needed for the visualization
@@ -507,7 +507,7 @@ visited is a (listof configuration)
          (reverse (cons (create-graph-thunk a-vs) acc))]
         [(and (eq? (building-viz-state-upci a-vs) (building-viz-state-farthest-consumed a-vs))
               (ormap (λ (comp-len) (>= comp-len (building-viz-state-max-cmps a-vs)))
-                 (map length (building-viz-state-computations a-vs))))
+                     (map length (building-viz-state-computations a-vs))))
          (reverse (cons (create-graph-thunk a-vs #:cut-off #t) acc))]
         [else (let ([next-graph (create-graph-thunk a-vs)])
                 (create-graph-thunks (struct-copy building-viz-state
@@ -559,7 +559,10 @@ visited is a (listof configuration)
          ;;Purpose: Holds what needs to displayed for the stack based off the upci
          [current-stack (if (zipper-empty? (imsg-state-stack imsg-st)) 
                             (imsg-state-stack imsg-st)
-                            (third (zipper-current (imsg-state-stack imsg-st))))])
+                            (third (zipper-current (imsg-state-stack imsg-st))))]
+         [machine-decision (if (not (zipper-empty? (imsg-state-acpt-trace imsg-st)))
+                               'accept
+                               'reject)])
     (overlay/align
      'left 'middle
      (above/align
@@ -568,21 +571,22 @@ visited is a (listof configuration)
                   (empty? (imsg-state-upci imsg-st)))
              (above/align
               'left
-              (beside (text "aaaC" 20 'white)
+              (beside (text "aaaa" 20 'white)
                       (text "Word: " 20 'black)
-                      (if (equal? (apply-pda (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'accept)
+                      (if (equal? machine-decision 'accept)
                           (text (format "~a" EMP) 20 'gray)
                           (text (format "~a" EMP) 20 'red)))
               (beside (text "Consumed: " 20 'black)
-                      (if (equal? (apply-pda (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'accept)
+                      (if (equal? machine-decision 'accept)
                           (text (format "~a" EMP) 20 'black)
                           (text (format "~a" EMP) 20 'white))))]
-            [(and (eq? (imsg-state-upci imsg-st) (imsg-state-farthest-consumed imsg-st))
+            [(and (not (empty? (imsg-state-upci imsg-st)))
+                  (eq? (imsg-state-upci imsg-st) (imsg-state-farthest-consumed imsg-st))
                   ;(<= (length (imsg-state-upci imsg-st)) (length (imsg-state-farthest-consumed imsg-st)))
                   (ormap (λ (comp) (>= (length comp) (imsg-state-max-cmps imsg-st)))
-                     (imsg-state-comps imsg-st)))
+                         (imsg-state-comps imsg-st)))
              (above/align 'left
-                          (beside (text "aaaC" 20 'white)
+                          (beside (text "aaaa" 20 'white)
                                   (text "Word: " 20 'black)
                                   (make-tape-img entire-word
                                                  (if (> (length entire-word) TAPE-SIZE)
@@ -601,7 +605,7 @@ visited is a (listof configuration)
             [(and (not (empty? (imsg-state-pci imsg-st))) (not completed-config?))
              (above/align
               'left
-              (beside (text "aaaC" 20 'white)
+              (beside (text "aaaa" 20 'white)
                       (text "Word: " 20 'black)
                       (make-tape-img entire-word
                                      (if (> (length entire-word) TAPE-SIZE)
@@ -620,7 +624,7 @@ visited is a (listof configuration)
                                              0)
                                          '()))))]
             [else (above/align 'left
-                               (beside (text "aaaC" 20 'white)
+                               (beside (text "aaaa" 20 'white)
                                        (text "Word: " 20 'black)
                                        (make-tape-img entire-word
                                                       (if (> (length entire-word) TAPE-SIZE)
@@ -646,30 +650,31 @@ visited is a (listof configuration)
                                              0)
                                          '()))])
       (text (format "The current number of possible computations is: ~a (without repeated configurations)."
-                     (number->string (if (= (length (imsg-state-pci imsg-st)) (imsg-state-max-cmps imsg-st))
-                                         (list-ref (imsg-state-comps-len imsg-st)
-                                               (sub1 (length (imsg-state-pci imsg-st))))
-                                         (list-ref (imsg-state-comps-len imsg-st)
-                                               (length (imsg-state-pci imsg-st))))))
-             20
-             'brown)
-      (cond [(and (eq? (imsg-state-upci imsg-st) (imsg-state-farthest-consumed imsg-st))
-                    (ormap (λ (comp) (>= (length comp) (imsg-state-max-cmps imsg-st)))
-                     (imsg-state-comps imsg-st)))
-              (text "There are computations that exceed the cut-off limit." 20 DARKGOLDENROD2)]
-             [(not completed-config?)
-              (text "All computations do not consume the entire word and the machine rejects." 20 'red)]
-             [(and (empty? (imsg-state-upci imsg-st))
-                   (or (zipper-empty? (imsg-state-stack imsg-st))
-                       (zipper-at-end? (imsg-state-stack imsg-st)))
-                   (equal? (apply-pda (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'accept))
-              (text "There is a computation that accepts." 20 'forestgreen)]
-             [(and (empty? (imsg-state-upci imsg-st))
-                   (or (zipper-empty? (imsg-state-stack imsg-st))
-                       (zipper-at-end? (imsg-state-stack imsg-st)))
-                   (equal? (apply-pda (imsg-state-M imsg-st) (imsg-state-pci imsg-st)) 'reject))
-              (text "All computations end in a non-final state and the machine rejects." 20 'red)]
-             [else (text "Word Status: accept " 20 'white)]))
+                    (number->string (if (= (length (imsg-state-pci imsg-st)) (imsg-state-max-cmps imsg-st))
+                                        (list-ref (imsg-state-comps-len imsg-st)
+                                                  (sub1 (length (imsg-state-pci imsg-st))))
+                                        (list-ref (imsg-state-comps-len imsg-st)
+                                                  (length (imsg-state-pci imsg-st))))))
+            20
+            'brown)
+      (cond [(and (not (empty? (imsg-state-upci imsg-st)))
+                  (eq? (imsg-state-upci imsg-st) (imsg-state-farthest-consumed imsg-st))
+                  (ormap (λ (comp) (>= (length comp) (imsg-state-max-cmps imsg-st)))
+                         (imsg-state-comps imsg-st)))
+             (text (format "There are computations that exceed the cut-off limit (~a)." (imsg-state-max-cmps imsg-st)) 20 DARKGOLDENROD2)]
+            [(not completed-config?)
+             (text "All computations do not consume the entire word and the machine rejects." 20 'red)]
+            [(and (empty? (imsg-state-upci imsg-st))
+                  (or (zipper-empty? (imsg-state-stack imsg-st))
+                      (zipper-at-end? (imsg-state-stack imsg-st)))
+                  (equal? machine-decision 'accept))
+             (text "There is a computation that accepts." 20 'forestgreen)]
+            [(and (empty? (imsg-state-upci imsg-st))
+                  (or (zipper-empty? (imsg-state-stack imsg-st))
+                      (zipper-at-end? (imsg-state-stack imsg-st)))
+                  (equal? machine-decision 'reject))
+             (text "All computations end in a non-final configuration and the machine rejects." 20 'red)]
+            [else (text "Word Status: accept " 20 'white)]))
      (rectangle 1250 50 'solid 'white))))
 
 ;;upci is the unprocessed consumed input (listof symbol)
@@ -693,13 +698,13 @@ visited is a (listof configuration)
 (define (right-key-pressed a-vs)
   (let* ([completed-config? (ormap (λ (config) (empty? (second (first (computation-LoC config)))))
                                    (get-computations (imsg-state-pci (informative-messages-component-state
-                                                                                           (viz-state-informative-messages a-vs)))
-                                                                          (pda-getrules (imsg-state-M (informative-messages-component-state
-                                                                                                   (viz-state-informative-messages a-vs))))
-                                                                          (pda-getstart (imsg-state-M (informative-messages-component-state
-                                                                                                   (viz-state-informative-messages a-vs))))
-                                                                          (imsg-state-max-cmps (informative-messages-component-state
-                                                                                                (viz-state-informative-messages a-vs)))))]
+                                                                      (viz-state-informative-messages a-vs)))
+                                                     (pda-getrules (imsg-state-M (informative-messages-component-state
+                                                                                  (viz-state-informative-messages a-vs))))
+                                                     (pda-getstart (imsg-state-M (informative-messages-component-state
+                                                                                  (viz-state-informative-messages a-vs))))
+                                                     (imsg-state-max-cmps (informative-messages-component-state
+                                                                           (viz-state-informative-messages a-vs)))))]
          ;;boolean
          ;;Purpose: Determines if the pci can be can be fully consumed
          [pci (if (or (not completed-config?)
@@ -748,13 +753,13 @@ visited is a (listof configuration)
                                      (zipper-next (imsg-state-acpt-trace (informative-messages-component-state
                                                                           (viz-state-informative-messages a-vs)))))]
                      [stack (if (or (zipper-empty? (imsg-state-stack (informative-messages-component-state
-                                                                    (viz-state-informative-messages a-vs))))
-                                   (zipper-at-end? (imsg-state-stack (informative-messages-component-state
-                                                                     (viz-state-informative-messages a-vs)))))
-                               (imsg-state-stack (informative-messages-component-state
-                                                 (viz-state-informative-messages a-vs)))
-                               (zipper-next (imsg-state-stack (informative-messages-component-state
-                                                              (viz-state-informative-messages a-vs)))))]
+                                                                      (viz-state-informative-messages a-vs))))
+                                    (zipper-at-end? (imsg-state-stack (informative-messages-component-state
+                                                                       (viz-state-informative-messages a-vs)))))
+                                (imsg-state-stack (informative-messages-component-state
+                                                   (viz-state-informative-messages a-vs)))
+                                (zipper-next (imsg-state-stack (informative-messages-component-state
+                                                                (viz-state-informative-messages a-vs)))))]
                      [invs-zipper (cond [(zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                                                                  (viz-state-informative-messages a-vs))))
                                          (imsg-state-invs-zipper (informative-messages-component-state
@@ -772,13 +777,13 @@ visited is a (listof configuration)
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization to the end
 (define (down-key-pressed a-vs)
-  (let* (;;(listof symbols)
+  (let* (;;(listof symbol)
          ;;Purpose: The entire given word
          [full-word (append (imsg-state-pci (informative-messages-component-state
                                              (viz-state-informative-messages a-vs)))
                             (imsg-state-upci (informative-messages-component-state
                                               (viz-state-informative-messages a-vs))))]
-         ;;(listof symbols)
+         ;;(listof symbol)
          ;;Purpose: The last word that could be fully consumed by the ndfa
          [last-consumed-word (last-fully-consumed
                               full-word
@@ -786,9 +791,11 @@ visited is a (listof configuration)
                                              (viz-state-informative-messages a-vs)))
                               (imsg-state-max-cmps (informative-messages-component-state
                                                     (viz-state-informative-messages a-vs))))]
-         ;;(listof symbols)
+         ;;(listof symbol)
          ;;Purpose: The portion of the word that cannont be consumed
          [unconsumed-word (remove-similarities last-consumed-word full-word '())]
+         ;;(zipperof invariant)
+         ;;Purpose: The index of the last failed invariant
          [zip (if (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                                           (viz-state-informative-messages a-vs))))
                   (imsg-state-invs-zipper (informative-messages-component-state
@@ -814,40 +821,40 @@ visited is a (listof configuration)
                       (imsg-state-upci (informative-messages-component-state
                                         (viz-state-informative-messages a-vs)))]
                      [(not (empty? (imsg-state-farthest-consumed (informative-messages-component-state
-                                                (viz-state-informative-messages a-vs)))))
-                        (drop full-word (- (length full-word) (length (imsg-state-farthest-consumed (informative-messages-component-state
-                                                (viz-state-informative-messages a-vs))))))]
+                                                                  (viz-state-informative-messages a-vs)))))
+                      (drop full-word (- (length full-word) (length (imsg-state-farthest-consumed (informative-messages-component-state
+                                                                                                   (viz-state-informative-messages a-vs))))))]
                      [else '()])]
          [pci 
-              (cond [(empty? (imsg-state-upci (informative-messages-component-state
-                                               (viz-state-informative-messages a-vs))))
-                     (imsg-state-pci (informative-messages-component-state
-                                      (viz-state-informative-messages a-vs)))]
-                    [(not (empty? (imsg-state-farthest-consumed (informative-messages-component-state
-                                                (viz-state-informative-messages a-vs)))))
-                        (take full-word (- (length full-word) (length (imsg-state-farthest-consumed (informative-messages-component-state
-                                                (viz-state-informative-messages a-vs))))))]
-                    [else full-word])]
+          (cond [(empty? (imsg-state-upci (informative-messages-component-state
+                                           (viz-state-informative-messages a-vs))))
+                 (imsg-state-pci (informative-messages-component-state
+                                  (viz-state-informative-messages a-vs)))]
+                [(not (empty? (imsg-state-farthest-consumed (informative-messages-component-state
+                                                             (viz-state-informative-messages a-vs)))))
+                 (take full-word (- (length full-word) (length (imsg-state-farthest-consumed (informative-messages-component-state
+                                                                                              (viz-state-informative-messages a-vs))))))]
+                [else full-word])]
          [acpt-trace (if (or (zipper-empty? (imsg-state-acpt-trace (informative-messages-component-state
                                                                     (viz-state-informative-messages a-vs))))
                              (zipper-at-end? (imsg-state-acpt-trace (informative-messages-component-state
                                                                      (viz-state-informative-messages a-vs)))))
                          (imsg-state-acpt-trace (informative-messages-component-state
-                                                       (viz-state-informative-messages a-vs)))
+                                                 (viz-state-informative-messages a-vs)))
                          (zipper-to-end (imsg-state-acpt-trace (informative-messages-component-state
-                                                       (viz-state-informative-messages a-vs)))))]
+                                                                (viz-state-informative-messages a-vs)))))]
          [stack (cond [(zipper-empty? (imsg-state-stack (informative-messages-component-state
-                                                       (viz-state-informative-messages a-vs))))
-                      (imsg-state-stack (informative-messages-component-state
-                                        (viz-state-informative-messages a-vs)))]
-                     [(or (zipper-empty? (imsg-state-stack (informative-messages-component-state
-                                                           (viz-state-informative-messages a-vs))))
-                          (zipper-at-end? (imsg-state-stack (informative-messages-component-state
-                                                            (viz-state-informative-messages a-vs)))))
-                      (imsg-state-stack (informative-messages-component-state
-                                        (viz-state-informative-messages a-vs)))]
-                     [else (zipper-to-end (imsg-state-stack (informative-messages-component-state
-                                                            (viz-state-informative-messages a-vs))))])]
+                                                         (viz-state-informative-messages a-vs))))
+                       (imsg-state-stack (informative-messages-component-state
+                                          (viz-state-informative-messages a-vs)))]
+                      [(or (zipper-empty? (imsg-state-stack (informative-messages-component-state
+                                                             (viz-state-informative-messages a-vs))))
+                           (zipper-at-end? (imsg-state-stack (informative-messages-component-state
+                                                              (viz-state-informative-messages a-vs)))))
+                       (imsg-state-stack (informative-messages-component-state
+                                          (viz-state-informative-messages a-vs)))]
+                      [else (zipper-to-end (imsg-state-stack (informative-messages-component-state
+                                                              (viz-state-informative-messages a-vs))))])]
          
          [invs-zipper zip])])])))
 
@@ -855,25 +862,25 @@ visited is a (listof configuration)
 ;;Purpose: Progresses the visualization backward by one step
 (define (left-key-pressed a-vs)
   (let* ([acpt-trace (if (or (zipper-empty? (imsg-state-acpt-trace (informative-messages-component-state
-                                                                            (viz-state-informative-messages a-vs))))
-                                         (zipper-at-begin? (imsg-state-acpt-trace (informative-messages-component-state
-                                                            (viz-state-informative-messages a-vs)))))
-                                     (imsg-state-acpt-trace (informative-messages-component-state
-                                                             (viz-state-informative-messages a-vs)))
-                                     (zipper-prev (imsg-state-acpt-trace (informative-messages-component-state
-                                                                          (viz-state-informative-messages a-vs)))))]
+                                                                    (viz-state-informative-messages a-vs))))
+                             (zipper-at-begin? (imsg-state-acpt-trace (informative-messages-component-state
+                                                                       (viz-state-informative-messages a-vs)))))
+                         (imsg-state-acpt-trace (informative-messages-component-state
+                                                 (viz-state-informative-messages a-vs)))
+                         (zipper-prev (imsg-state-acpt-trace (informative-messages-component-state
+                                                              (viz-state-informative-messages a-vs)))))]
          [next-rule (if (zipper-empty? (imsg-state-acpt-trace (informative-messages-component-state
-                                                                            (viz-state-informative-messages a-vs))))
+                                                               (viz-state-informative-messages a-vs))))
                         (imsg-state-acpt-trace (informative-messages-component-state
-                                                                            (viz-state-informative-messages a-vs)))
+                                                (viz-state-informative-messages a-vs)))
                         (first (trace-rule (zipper-current (imsg-state-acpt-trace (informative-messages-component-state
-                                                                            (viz-state-informative-messages a-vs)))))))]
+                                                                                   (viz-state-informative-messages a-vs)))))))]
          [rule (if (zipper-empty? (imsg-state-acpt-trace (informative-messages-component-state
-                                                                            (viz-state-informative-messages a-vs))))
+                                                          (viz-state-informative-messages a-vs))))
                    DUMMY-RULE
                    (list (rule-triple next-rule) (rule-pair next-rule)))]
          [pci (if (or (empty? (imsg-state-pci (informative-messages-component-state
-                                           (viz-state-informative-messages a-vs))))
+                                               (viz-state-informative-messages a-vs))))
                       (and (equal? (second (first rule)) EMP)
                            (not (empty-rule? rule))))
                   (imsg-state-pci (informative-messages-component-state
@@ -895,7 +902,7 @@ visited is a (listof configuration)
                      (informative-messages-component-state
                       (viz-state-informative-messages a-vs))
                      [upci (if (or (empty? (imsg-state-pci (informative-messages-component-state
-                                                        (viz-state-informative-messages a-vs))))
+                                                            (viz-state-informative-messages a-vs))))
                                    (and (equal? (second (first rule)) EMP)
                                         (not (empty-rule? rule))))
                                (imsg-state-upci (informative-messages-component-state
@@ -907,13 +914,13 @@ visited is a (listof configuration)
                      [pci pci]
                      [acpt-trace acpt-trace]
                      [stack (if (or (zipper-empty? (imsg-state-stack (informative-messages-component-state
-                                                                    (viz-state-informative-messages a-vs))))
-                                   (zipper-at-begin? (imsg-state-stack (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs)))))
-                               (imsg-state-stack (informative-messages-component-state
-                                                 (viz-state-informative-messages a-vs)))
-                               (zipper-prev (imsg-state-stack (informative-messages-component-state
-                                                              (viz-state-informative-messages a-vs)))))]
+                                                                      (viz-state-informative-messages a-vs))))
+                                    (zipper-at-begin? (imsg-state-stack (informative-messages-component-state
+                                                                         (viz-state-informative-messages a-vs)))))
+                                (imsg-state-stack (informative-messages-component-state
+                                                   (viz-state-informative-messages a-vs)))
+                                (zipper-prev (imsg-state-stack (informative-messages-component-state
+                                                                (viz-state-informative-messages a-vs)))))]
                      
                      [invs-zipper (cond [(zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                                                                  (viz-state-informative-messages a-vs))))
@@ -959,19 +966,19 @@ visited is a (listof configuration)
                    [acpt-trace (if (or (zipper-empty? (imsg-state-acpt-trace (informative-messages-component-state
                                                                               (viz-state-informative-messages a-vs))))
                                        (zipper-at-begin? (imsg-state-acpt-trace (informative-messages-component-state
-                                                                               (viz-state-informative-messages a-vs)))))
+                                                                                 (viz-state-informative-messages a-vs)))))
                                    (imsg-state-acpt-trace (informative-messages-component-state
                                                            (viz-state-informative-messages a-vs)))
                                    (zipper-to-begin (imsg-state-acpt-trace (informative-messages-component-state
                                                                             (viz-state-informative-messages a-vs)))))]
                    [stack (if (or (zipper-empty? (imsg-state-stack (informative-messages-component-state
-                                                                  (viz-state-informative-messages a-vs))))
-                                 (zipper-at-begin? (imsg-state-stack (informative-messages-component-state
-                                                                     (viz-state-informative-messages a-vs)))))
-                             (imsg-state-stack (informative-messages-component-state
-                                               (viz-state-informative-messages a-vs)))
-                             (zipper-to-begin (imsg-state-stack (informative-messages-component-state
-                                                                (viz-state-informative-messages a-vs)))))]
+                                                                    (viz-state-informative-messages a-vs))))
+                                  (zipper-at-begin? (imsg-state-stack (informative-messages-component-state
+                                                                       (viz-state-informative-messages a-vs)))))
+                              (imsg-state-stack (informative-messages-component-state
+                                                 (viz-state-informative-messages a-vs)))
+                              (zipper-to-begin (imsg-state-stack (informative-messages-component-state
+                                                                  (viz-state-informative-messages a-vs)))))]
                    [invs-zipper (if (or (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                                                                 (viz-state-informative-messages a-vs))))
                                         (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
@@ -1018,9 +1025,9 @@ visited is a (listof configuration)
   (if (or (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                                   (viz-state-informative-messages a-vs))))
           (and (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                           (viz-state-informative-messages a-vs))))
+                                                          (viz-state-informative-messages a-vs))))
                (not (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                           (viz-state-informative-messages a-vs))))))
+                                                             (viz-state-informative-messages a-vs))))))
           (< (length (imsg-state-pci (informative-messages-component-state
                                       (viz-state-informative-messages a-vs))))
              (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
@@ -1063,12 +1070,12 @@ visited is a (listof configuration)
                                                                                 (viz-state-informative-messages a-vs)))
                                                         (zipper-current zip)))]
                          [stack (if (zipper-empty? (imsg-state-stack (informative-messages-component-state
-                                                                    (viz-state-informative-messages a-vs))))
-                                   (imsg-state-stack (informative-messages-component-state
-                                                     (viz-state-informative-messages a-vs)))
-                                   (zipper-to-idx (imsg-state-stack (informative-messages-component-state
-                                                                    (viz-state-informative-messages a-vs)))
-                                                  (zipper-current zip)))]
+                                                                      (viz-state-informative-messages a-vs))))
+                                    (imsg-state-stack (informative-messages-component-state
+                                                       (viz-state-informative-messages a-vs)))
+                                    (zipper-to-idx (imsg-state-stack (informative-messages-component-state
+                                                                      (viz-state-informative-messages a-vs)))
+                                                   (zipper-current zip)))]
                          [pci partial-word]
                          [invs-zipper zip])])]))))
 
@@ -1078,9 +1085,9 @@ visited is a (listof configuration)
   (if (or (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                                   (viz-state-informative-messages a-vs))))
           (and (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                         (viz-state-informative-messages a-vs))))
+                                                        (viz-state-informative-messages a-vs))))
                (not (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                           (viz-state-informative-messages a-vs))))))
+                                                               (viz-state-informative-messages a-vs))))))
           (> (length (imsg-state-pci (informative-messages-component-state
                                       (viz-state-informative-messages a-vs))))
              (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
@@ -1089,9 +1096,9 @@ visited is a (listof configuration)
       (let* ([zip (if (and (not (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
                                                                          (viz-state-informative-messages a-vs)))))
                            (or (>= (length (imsg-state-pci (informative-messages-component-state
-                                                        (viz-state-informative-messages a-vs))))
-                               (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
-                                                                        (viz-state-informative-messages a-vs)))))))
+                                                            (viz-state-informative-messages a-vs))))
+                                   (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
+                                                                            (viz-state-informative-messages a-vs)))))))
                       (zipper-next (imsg-state-invs-zipper (informative-messages-component-state
                                                             (viz-state-informative-messages a-vs))))
                       (imsg-state-invs-zipper (informative-messages-component-state
@@ -1123,12 +1130,12 @@ visited is a (listof configuration)
                                                                                 (viz-state-informative-messages a-vs)))
                                                         (zipper-current zip)))]
                          [stack (if (zipper-empty? (imsg-state-stack (informative-messages-component-state
-                                                                    (viz-state-informative-messages a-vs))))
-                                   (imsg-state-stack (informative-messages-component-state
-                                                     (viz-state-informative-messages a-vs)))
-                                   (zipper-to-idx (imsg-state-stack (informative-messages-component-state
-                                                                    (viz-state-informative-messages a-vs)))
-                                                  (zipper-current zip)))]
+                                                                      (viz-state-informative-messages a-vs))))
+                                    (imsg-state-stack (informative-messages-component-state
+                                                       (viz-state-informative-messages a-vs)))
+                                    (zipper-to-idx (imsg-state-stack (informative-messages-component-state
+                                                                      (viz-state-informative-messages a-vs)))
+                                                   (zipper-current zip)))]
                          [pci partial-word]
                          [invs-zipper zip])])]))))
 
@@ -1144,7 +1151,7 @@ visited is a (listof configuration)
           (define new-read-rules
             (for*/list ([states (pda-getstates M)]
                         [sigma (pda-getalphabet M)])
-                (list states sigma)))
+              (list states sigma)))
         
           ;;(listof rules)
           ;;Purpose: Makes rules for that empty the stack and transition to the ds
@@ -1173,178 +1180,178 @@ visited is a (listof configuration)
             (map (λ (rule) (cons (append rule (list EMP)) (list (list dead EMP))))
                  get-rules-not-in-M))]
     (make-unchecked-ndpda (append (pda-getstates M) (list dead))
-                (pda-getalphabet M)
-                (pda-getgamma M)
-                (pda-getstart M)
-                (pda-getfinals M)
-                (append (pda-getrules M) rules-to-dead dead-read-rules dead-pop-rules))))
+                          (pda-getalphabet M)
+                          (pda-getgamma M)
+                          (pda-getstart M)
+                          (pda-getfinals M)
+                          (append (pda-getrules M) rules-to-dead dead-read-rules dead-pop-rules))))
 
 
 ;;pda word [boolean] [natnum] . -> (void) Throws error
 ;;Purpose: Visualizes the given ndfa processing the given word
 ;;Assumption: The given machine is a ndfa or dfa
 (define (pda-viz M a-word #:add-dead [add-dead #f] #:max-cmps [max-cmps 100] . invs)
-  (cond [(not (equal? (M 'whatami) 'pda)) (error "The given machine must be a pda.")]
-        [(<= max-cmps 0) (error (format "The maximum amount of computations, ~a, must be integer greater than 0" max-cmps))]
-        [else (let* (;;M ;;Purpose: A new machine with the dead state if add-dead is true
-                     [new-M (if add-dead (make-new-M M) M)]
-                     ;;symbol ;;Purpose: The name of the dead state
-                     [dead-state (if add-dead (last (pda-getstates new-M)) 'no-dead)]
-                     ;;(listof computations) ;;Purpose: All computations that the machine can have
-                     [computations (get-computations a-word (pda-getrules new-M) (pda-getstart new-M) max-cmps)]
-                     ;;(listof configurations) ;;Purpose: Extracts the configurations from the computation
-                     [LoC (map computation-LoC computations)]
-                     ;;number ;;Purpose: The length of the word
-                     [word-len (length a-word)]
-                     ;;(listof computation) ;;Purpose: Extracts all accepting computations
-                     [accepting-computations (filter (λ (comp)
-                                                       (and (member? (first (first (computation-LoC comp))) (pda-getfinals new-M) equal?)
-                                                            (empty? (second (first (computation-LoC comp))))
-                                                            (empty? (third (first (computation-LoC comp))))))
-                                                     computations)]
-                     ;;(listof trace) ;;Purpose: Makes traces from the accepting computations
-                     [accepting-traces (map (λ (acc-comp)
-                                              (make-trace (reverse (computation-LoC acc-comp))
-                                                          (reverse (computation-LoR acc-comp))
-                                                          '()))
-                                            accepting-computations)]
-                     ;;(listof trace) ;;Purpose: Gets the cut off trace if the the word length is greater than the cut
-                     [cut-accept-traces (if (> word-len max-cmps)
-                                            (map last accepting-traces)
-                                            '())]
-                     ;;(listof trace) ;;Purpose: Gets the cut off trace if the the word length is greater than the cut
-                     [accept-cmps (if (empty? cut-accept-traces)
-                                      accepting-traces
-                                      (map (λ (configs last-reject)
-                                             (append configs (list last-reject)))
-                                           accepting-traces
-                                           cut-accept-traces))]
-                     ;;(listof computation) ;;Purpose: Extracts all rejecting computations
-                     [rejecting-computations (filter (λ (config)
-                                                       (not (member? config accepting-computations equal?)))
-                                                     computations)]
-                     ;;(listof trace) ;;Purpose: Makes traces from the rejecting computations
-                     [rejecting-traces (map (λ (c)
-                                              (make-trace (reverse (computation-LoC c))
-                                                          (reverse (computation-LoR c))
-                                                          '()))
-                                            rejecting-computations)]
-                     ;;(zipperof computation) ;;Purpose: Gets the stack of the first accepting computation
-                     [stack (list->zipper (remove-empty (if (empty? accepting-computations)
-                                                            '()
-                                                            (reverse (computation-LoC (first accepting-computations))))
-                                                        '()))]
-                     ;;(listof rules) ;;Purpose: Returns the first accepting computations (listof rules)
-                     [accepting-trace (if (empty? accept-cmps) '() (first accept-cmps))]
-                     ;;(listof symbol) ;;Purpose: The portion of the ci ahat the machine can conusme the most 
-                     [most-consumed-word (get-farthest-consumed LoC a-word)]
-                     ;;building-state struct
-                     [building-state (building-viz-state a-word
-                                                         '()
-                                                         LoC
-                                                         accepting-computations
-                                                         stack
-                                                         accept-cmps
-                                                         rejecting-traces
-                                                         new-M
-                                                         (if (and add-dead (not (empty? invs))) (cons (list dead-state (λ (w s) #t)) invs) invs) 
-                                                         dead-state
-                                                         max-cmps
-                                                         most-consumed-word)]
+  (let* (;;M ;;Purpose: A new machine with the dead state if add-dead is true
+         [new-M (if add-dead (make-new-M M) M)]
+         ;;symbol ;;Purpose: The name of the dead state
+         [dead-state (if add-dead (last (pda-getstates new-M)) 'no-dead)]
+         ;;(listof computations) ;;Purpose: All computations that the machine can have
+         [computations (get-computations a-word (pda-getrules new-M) (pda-getstart new-M) max-cmps)]
+         ;;(listof configurations) ;;Purpose: Extracts the configurations from the computation
+         [LoC (map computation-LoC computations)]
+         ;;number ;;Purpose: The length of the word
+         [word-len (length a-word)]
+         ;;(listof computation) ;;Purpose: Extracts all accepting computations
+         [accepting-computations (filter (λ (comp)
+                                           (and (member? (first (first (computation-LoC comp))) (pda-getfinals new-M) equal?)
+                                                (empty? (second (first (computation-LoC comp))))
+                                                (empty? (third (first (computation-LoC comp))))))
+                                         computations)]
+         ;;(listof trace) ;;Purpose: Makes traces from the accepting computations
+         [accepting-traces (map (λ (acc-comp)
+                                  (make-trace (reverse (computation-LoC acc-comp))
+                                              (reverse (computation-LoR acc-comp))
+                                              '()))
+                                accepting-computations)]
+         ;;(listof trace) ;;Purpose: Gets the cut off trace if the the word length is greater than the cut
+         [cut-accept-traces (if (> word-len max-cmps)
+                                (map last accepting-traces)
+                                '())]
+         ;;(listof trace) ;;Purpose: Gets the cut off trace if the the word length is greater than the cut
+         [accept-cmps (if (empty? cut-accept-traces)
+                          accepting-traces
+                          (map (λ (configs last-reject)
+                                 (append configs (list last-reject)))
+                               accepting-traces
+                               cut-accept-traces))]
+         ;;(listof computation) ;;Purpose: Extracts all rejecting computations
+         [rejecting-computations (filter (λ (config)
+                                           (not (member? config accepting-computations equal?)))
+                                         computations)]
+         ;;(listof trace) ;;Purpose: Makes traces from the rejecting computations
+         [rejecting-traces (map (λ (c)
+                                  (make-trace (reverse (computation-LoC c))
+                                              (reverse (computation-LoR c))
+                                              '()))
+                                rejecting-computations)]
+         ;;(zipperof computation) ;;Purpose: Gets the stack of the first accepting computation
+         [stack (list->zipper (remove-empty (if (empty? accepting-computations)
+                                                '()
+                                                (reverse (computation-LoC (first accepting-computations))))
+                                            '()))]
+         ;;(listof rules) ;;Purpose: Returns the first accepting computations (listof rules)
+         [accepting-trace (if (empty? accept-cmps) '() (first accept-cmps))]
+         ;;(listof symbol) ;;Purpose: The portion of the ci ahat the machine can conusme the most 
+         [most-consumed-word (get-farthest-consumed LoC a-word)]
+         ;;building-state struct
+         [building-state (building-viz-state a-word
+                                             '()
+                                             LoC
+                                             accepting-computations
+                                             stack
+                                             accept-cmps
+                                             rejecting-traces
+                                             new-M
+                                             (if (and add-dead (not (empty? invs))) (cons (list dead-state (λ (w s) #t)) invs) invs) 
+                                             dead-state
+                                             max-cmps
+                                             most-consumed-word)]
                      
-                     ;;(listof graph-thunk) ;;Purpose: Gets all the graphs needed to run the viz
-                     [graphs (create-graph-thunks building-state '())]
-                     ;;(listof computation) ;;Purpose: Gets all the cut off computations if the length of the word is greater than max computations
-                     [get-cut-off-comp (if (> word-len max-cmps)
-                                           (map first LoC)
-                                           '())]
-                     ;;(listof computation) ;;Purpose: Makes the cut off computations if the length of the word is greater than max computations
-                     [cut-off-comp (if (empty? get-cut-off-comp)
-                                       LoC
-                                       (map (λ (cut-off-comp comp)
-                                              (append comp (list cut-off-comp)))
-                                            get-cut-off-comp
-                                            LoC))]
-                     ;;(listof number) ;;Purpose: Gets the number of computations for each step
-                     [computation-lens (count-computations a-word cut-off-comp '())]
-                     ;;(listof number) ;;Purpose: Gets the index of image where an invariant failed
-                     [inv-configs (map (λ (con)
-                                         (fourth con))
-                                       (return-brk-inv-configs
-                                        (get-inv-config-results
-                                         (make-inv-configs a-word accepting-computations)
-                                         invs)
-                                        a-word))])
-                (run-viz graphs
-                         (lambda () (graph->bitmap (first graphs)))
-                         (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2))
-                         DEFAULT-ZOOM
-                         DEFAULT-ZOOM-CAP
-                         DEFAULT-ZOOM-FLOOR
-                         (informative-messages create-draw-informative-message
-                                               (imsg-state new-M
-                                                           a-word
-                                                           '()
-                                                           (list->zipper accepting-trace)
-                                                           stack
-                                                           most-consumed-word
-                                                           (list->zipper inv-configs) 
-                                                           (sub1 (length inv-configs))
-                                                           computation-lens
-                                                           LoC
-                                                           max-cmps
-                                                           0
-                                                           (let ([offset-cap (- (length a-word) TAPE-SIZE)])
-                                                             (if (> 0 offset-cap) 0 offset-cap))
-                                                           0)
-                                               RULE-YIELD-DIMS)
-                         (instructions-graphic E-SCENE-TOOLS
-                                               (bounding-limits 0
-                                                                (image-width E-SCENE-TOOLS)
-                                                                (+ EXTRA-HEIGHT-FROM-CURSOR
-                                                                   E-SCENE-HEIGHT
-                                                                   (bounding-limits-height RULE-YIELD-DIMS)
-                                                                   INS-TOOLS-BUFFER)
-                                                                (+ EXTRA-HEIGHT-FROM-CURSOR
-                                                                   E-SCENE-HEIGHT
-                                                                   (bounding-limits-height RULE-YIELD-DIMS)
-                                                                   INS-TOOLS-BUFFER
-                                                                   (image-height ARROW-UP-KEY))))
-                         (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
-                         (create-viz-process-key [ "right" viz-go-next right-key-pressed]
-                                                 [ "left" viz-go-prev left-key-pressed]
-                                                 [ "up" viz-go-to-begin up-key-pressed]
-                                                 [ "down" viz-go-to-end down-key-pressed]
-                                                 [ "w" viz-zoom-in identity]
-                                                 [ "s" viz-zoom-out identity]
-                                                 [ "r" viz-max-zoom-out identity]
-                                                 [ "f" viz-max-zoom-in identity]
-                                                 [ "e" viz-reset-zoom identity]
-                                                 [ "a" identity a-key-pressed]
-                                                 [ "d" identity d-key-pressed]
-                                                 [ "wheel-down" viz-zoom-in identity]
-                                                 [ "wheel-up" viz-zoom-out identity]
-                                                 [ "j" jump-prev j-key-pressed]
-                                                 [ "l" jump-next l-key-pressed]
-                                                 )
-                         (create-viz-process-tick E-SCENE-BOUNDING-LIMITS
-                                                  NODE-SIZE
-                                                  E-SCENE-WIDTH
-                                                  E-SCENE-HEIGHT
-                                                  CLICK-BUFFER-SECONDS
-                                                  ( [RULE-YIELD-DIMS
-                                                     (lambda (a-imsgs x-diff y-diff) a-imsgs)])
-                                                  ( [ ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed]
-                                                    [ ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed]
-                                                    [ ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed]
-                                                    [ ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed]
-                                                    [ W-KEY-DIMS viz-zoom-in identity]
-                                                    [ S-KEY-DIMS viz-zoom-out identity]
-                                                    [ R-KEY-DIMS viz-max-zoom-out identity]
-                                                    [ E-KEY-DIMS viz-reset-zoom identity]
-                                                    [ F-KEY-DIMS viz-max-zoom-in identity]
-                                                    [ A-KEY-DIMS identity a-key-pressed]
-                                                    [ D-KEY-DIMS identity d-key-pressed]
-                                                    [ J-KEY-DIMS jump-prev j-key-pressed]
-                                                    [ L-KEY-DIMS jump-next l-key-pressed]))
-                         'pda-viz))]))
+         ;;(listof graph-thunk) ;;Purpose: Gets all the graphs needed to run the viz
+         [graphs (create-graph-thunks building-state '())]
+         ;;(listof computation) ;;Purpose: Gets all the cut off computations if the length of the word is greater than max computations
+         [get-cut-off-comp (if (> word-len max-cmps)
+                               (map first LoC)
+                               '())]
+         ;;(listof computation) ;;Purpose: Makes the cut off computations if the length of the word is greater than max computations
+         [cut-off-comp (if (empty? get-cut-off-comp)
+                           LoC
+                           (map (λ (cut-off-comp comp)
+                                  (append comp (list cut-off-comp)))
+                                get-cut-off-comp
+                                LoC))]
+         ;;(listof number) ;;Purpose: Gets the number of computations for each step
+         [computation-lens (count-computations a-word cut-off-comp '())]
+         ;;(listof number) ;;Purpose: Gets the index of image where an invariant failed
+         [inv-configs (map (λ (con)
+                             (fourth con))
+                           (return-brk-inv-configs
+                            (get-inv-config-results
+                             (make-inv-configs a-word accepting-computations)
+                             invs)
+                            a-word))])
+    (run-viz graphs
+             (lambda () (graph->bitmap (first graphs)))
+             (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2))
+             DEFAULT-ZOOM
+             DEFAULT-ZOOM-CAP
+             DEFAULT-ZOOM-FLOOR
+             (informative-messages create-draw-informative-message
+                                   (imsg-state new-M
+                                               a-word
+                                               '()
+                                               (list->zipper accepting-trace)
+                                               stack
+                                               most-consumed-word
+                                               (list->zipper inv-configs) 
+                                               (sub1 (length inv-configs))
+                                               computation-lens
+                                               LoC
+                                               max-cmps
+                                               0
+                                               (let ([offset-cap (- (length a-word) TAPE-SIZE)])
+                                                 (if (> 0 offset-cap) 0 offset-cap))
+                                               0)
+                                   RULE-YIELD-DIMS)
+             (instructions-graphic E-SCENE-TOOLS
+                                   (bounding-limits 0
+                                                    (image-width E-SCENE-TOOLS)
+                                                    (+ EXTRA-HEIGHT-FROM-CURSOR
+                                                       E-SCENE-HEIGHT
+                                                       (bounding-limits-height RULE-YIELD-DIMS)
+                                                       INS-TOOLS-BUFFER)
+                                                    (+ EXTRA-HEIGHT-FROM-CURSOR
+                                                       E-SCENE-HEIGHT
+                                                       (bounding-limits-height RULE-YIELD-DIMS)
+                                                       INS-TOOLS-BUFFER
+                                                       (image-height ARROW-UP-KEY))))
+             (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
+             (create-viz-process-key [ "right" viz-go-next right-key-pressed]
+                                     [ "left" viz-go-prev left-key-pressed]
+                                     [ "up" viz-go-to-begin up-key-pressed]
+                                     [ "down" viz-go-to-end down-key-pressed]
+                                     [ "w" viz-zoom-in identity]
+                                     [ "s" viz-zoom-out identity]
+                                     [ "r" viz-max-zoom-out identity]
+                                     [ "f" viz-max-zoom-in identity]
+                                     [ "e" viz-reset-zoom identity]
+                                     [ "a" identity a-key-pressed]
+                                     [ "d" identity d-key-pressed]
+                                     [ "wheel-down" viz-zoom-in identity]
+                                     [ "wheel-up" viz-zoom-out identity]
+                                     [ "j" jump-prev j-key-pressed]
+                                     [ "l" jump-next l-key-pressed]
+                                     )
+             (create-viz-process-tick E-SCENE-BOUNDING-LIMITS
+                                      NODE-SIZE
+                                      E-SCENE-WIDTH
+                                      E-SCENE-HEIGHT
+                                      CLICK-BUFFER-SECONDS
+                                      ( [RULE-YIELD-DIMS
+                                         (lambda (a-imsgs x-diff y-diff) a-imsgs)])
+                                      ( [ ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed]
+                                        [ ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed]
+                                        [ ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed]
+                                        [ ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed]
+                                        [ W-KEY-DIMS viz-zoom-in identity]
+                                        [ S-KEY-DIMS viz-zoom-out identity]
+                                        [ R-KEY-DIMS viz-max-zoom-out identity]
+                                        [ E-KEY-DIMS viz-reset-zoom identity]
+                                        [ F-KEY-DIMS viz-max-zoom-in identity]
+                                        [ A-KEY-DIMS identity a-key-pressed]
+                                        [ D-KEY-DIMS identity d-key-pressed]
+                                        [ J-KEY-DIMS jump-prev j-key-pressed]
+                                        [ L-KEY-DIMS jump-next l-key-pressed]))
+             'pda-viz)))
+
+;[(<= max-cmps 0) (error (format "The maximum amount of computations, ~a, must be integer greater than 0" max-cmps))] DONT FORGET
