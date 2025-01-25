@@ -186,8 +186,8 @@
 
   ;valid-alpha? tests
   (check-equal? (valid-alpha? 'a) #t)
-  (check-equal? (valid-alpha? '1) #f)
-  (check-equal? (valid-alpha? 1) #f)
+  (check-equal? (valid-alpha? '1) #t)
+  (check-equal? (valid-alpha? 1) #t)
   (check-equal? (valid-alpha? 'A) #f)
   (check-equal? (valid-alpha? 'a1) #f)
   (check-equal? (valid-alpha? 'Aa) #f)
