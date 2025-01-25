@@ -237,6 +237,11 @@
 
 (define-struct invalid-rule (rule errors) #:transparent)
 
+(define (valid-dfa-symbol? x)
+  (or (valid-alpha? x)
+      (and (symbol? x)
+           (equal? x EMP))))
+
 ;incorrect-dfa-rule-structures: (listof any) --> (listof invalid-rule)
 ;purpose: filters the input list of elements, such that any element that is not structured
 ; as a valid dfa-rule is returned as an invalid-rule struct containing all the offenses.
@@ -249,7 +254,7 @@
              (append (if (valid-state? (first elem))
                          '()
                          (list (format "The first element in the rule, ~a, is not a valid state." (first elem))))
-                     (if (valid-alpha? (second elem))
+                     (if (valid-dfa-symbol? (second elem))
                          '()
                          (list (format "The second element in the rule, ~a, is not a valid alphabet element." (second elem))))
                      (if (valid-state? (third elem))
@@ -311,7 +316,7 @@
            (append (if (valid-state? (first rule))
                        '()
                        (list (format "The first element in the first part of the rule, ~a, is not a valid state." (first rule))))
-                   (if (or (valid-alpha? (second rule))
+                   (if (or (valid-dfa-symbol? (second rule))
                            (equal? (second rule) EMP))
                        '()
                        (list (format "The second element in the first part of the rule, ~a, is not a valid alphabet element." (second rule))))
@@ -394,6 +399,14 @@
     (if (empty? all-errors) '() (list (make-invalid-rule rule all-errors))))
   (flatten (map rule-with-errors rules)))
 
+(define (valid-tm-action? x)
+  (or (valid-tm-alpha? x)
+      (and (symbol? x)
+           (or (equal? x LEFT)
+               (equal? x RIGHT)
+               (equal? x BLANK)
+               (equal? x LM)))))
+
 ;incorrect-tm-rule-structures: (listof any) --> (listof invalid-rule)
 ;purpose: Filters the given input list, and for every element that does
 ; not have the structure of tm, returns an invalid-rule with a list of every offense.
@@ -405,7 +418,7 @@
            (append (if (valid-state? (first rule))
                        '()
                        (list (format "The first element in the first part of the rule, ~a, is not a valid state." (first rule))))
-                   (if (valid-tm-alpha? (second rule))
+                   (if (valid-tm-action? (second rule))
                        '()
                        (list (format "The second element in the first part of the rule, ~a, is not a symbol." (second rule)))))]))
   (define (validate-tm-write rule)
@@ -415,7 +428,7 @@
            (append (if (valid-state? (first rule))
                        '()
                        (list (format "The first element in the second part of the rule, ~a, is not a valid state." (first rule))))
-                   (if (valid-tm-alpha? (second rule))
+                   (if (valid-tm-action? (second rule))
                        '()
                        (list (format "The second element in the second part of the rule, ~a, is not a symbol." (second rule)))))]))
   ;rule-with-errors: any --> (listof invalid-rule)
@@ -476,7 +489,7 @@
                        (list (format "The first element in the first part of the rule, ~a, is not a valid state." (first rule))))
                    (if (and (list? (second rule))
                             (= (length (second rule)) num-tapes)
-                            (andmap valid-tm-alpha? (second rule)))
+                            (andmap valid-tm-action? (second rule)))
                        '()
                        (list (format "The second element in the first part of the rule, ~a, is not a list of ~a symbols." (second rule) num-tapes))))]))
   (define (validate-mttm-write rule)
@@ -488,7 +501,7 @@
                        (list (format "The first element in the second part of the rule, ~a, is not a valid state." (first rule))))
                    (if (and (list (second rule))
                             (= (length (second rule)) num-tapes)
-                            (andmap valid-tm-alpha? (second rule)))
+                            (andmap valid-tm-action? (second rule)))
                        '()
                        (list (format "The second element in the second part of the rule, ~a, is not a list of ~a symbols." (second rule) num-tapes))))]))
   ;rule-with-errors: any --> (listof invalid-rule)
