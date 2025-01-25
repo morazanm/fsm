@@ -55,7 +55,7 @@
                   (lambda (x)
                     (current-blame-format format-error)
                     (if (and (string? x)
-                             (not (not (regexp-match (regexp "^[a-z]$") x))))
+                             (not (not (regexp-match (regexp "^[a-z0-9$&!*]$") x))))
                         x
                         (raise-blame-error
                          blame

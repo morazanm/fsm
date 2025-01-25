@@ -5,7 +5,8 @@
          "../../tm.rkt"
          "../../pda.rkt"
          "../../sm-apply.rkt"
-         "../../mtape-tm.rkt")
+         "../../mtape-tm.rkt"
+         "../shared/shared-predicates.rkt")
 (provide listof-words?
          listof-words-tm?
          words-in-sigma?
@@ -36,7 +37,7 @@
 (define (listof-words? words)
   (and (list? words)
        (andmap (lambda (word) (and (list? word)
-                                   (andmap (lambda (letter) (symbol? letter))
+                                   (andmap (lambda (letter) (valid-alpha? letter))
                                            word))) words))
   )
 
@@ -425,7 +426,7 @@
   ;listof-words? tests
   (check-equal? (listof-words? '((a a a a))) #t)
   (check-equal? (listof-words? '(a a a a)) #f)
-  (check-equal? (listof-words? '((a 1 2 e r))) #f)
+  (check-equal? (listof-words? '((a 1 2 e r))) #t)
 
   ;listof-words-tm? tests
   (check-equal? (listof-words-tm? '((a a a a) (b b b))) #t)
