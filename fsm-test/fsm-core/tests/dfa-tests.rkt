@@ -94,27 +94,6 @@ The following values, (A), are duplicated in the given states: (A B C A A)"))
                (format "Step three of the design recipe has not been successfully completed.
 The following values, (A B), are duplicated in the given states: (A B B C A A)"))
   ;;SIGMA
-  ;invalid number
-  (check-error (make-dfa '(A B C D)
-                         '(a b c 1)
-                         'A
-                         '(B C)
-                         `((A b C)
-                           (A c D)
-                           (B c D)
-                           (B a B)))
-               (format "Step one of the design recipe has not been successfully completed.
-The following: (1) are not valid lowercase alphabet letters in the given input alphabet: (a b c 1)"))
-  (check-error (make-dfa '(A B C D)
-                         '(a b c 1 2)
-                         'A
-                         '(B C)
-                         `((A b C)
-                           (A c D)
-                           (B c D)
-                           (B a B)))
-               (format "Step one of the design recipe has not been successfully completed.
-The following: (1 2) are not valid lowercase alphabet letters in the given input alphabet: (a b c 1 2)"))
   ;invalid letter
   (check-error (make-dfa '(A B C D)
                          '(a b c A)

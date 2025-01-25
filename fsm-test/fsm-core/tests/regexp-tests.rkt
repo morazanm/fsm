@@ -14,11 +14,11 @@
   (check-error
    (singleton-regexp "abc")
    "Step five of the design recipe for regular expressions has not been successfully completed.
-The argument to singleton-regexp must be a single lowercase Roman alphabet character, but found: \"abc\"")
+The argument to singleton-regexp must be a single lowercase Roman alphabet string, but found: \"abc\"")
   (check-error
    (singleton-regexp 5)
    "Step five of the design recipe for regular expressions has not been successfully completed.
-The argument to singleton-regexp must be a single lowercase Roman alphabet character, but found: 5")
+The argument to singleton-regexp must be a single lowercase Roman alphabet string, but found: 5")
 
   (define singleton-a (singleton-regexp "a"))
   (define singleton-b (singleton-regexp "b"))
