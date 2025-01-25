@@ -77,8 +77,9 @@
 ;; Returns the list of all singleton regexps in the input regexp (as symbols)
 ;; that are not in the input sigma.
 (define (find-extra-singleton-regexps regexp sigma)
-  (let [(regexp-sigma (sm-sigma (regexp->fsa regexp)))]
-    (filter (lambda (x) (not (member x sigma))) regexp-sigma)))
+  (let [(regexp-sigma (sm-sigma (regexp->fsa regexp)))
+        (converted-sigma (map (lambda (x) (if (symbol? x) x (string->symbol (number->string x)))) sigma))]
+    (filter (lambda (x) (not (member x converted-sigma))) regexp-sigma)))
 
 (define (valid-regexp-sigma/c regexp)
   (make-flat-contract
@@ -101,7 +102,9 @@
 ;; Returns true if all of the letters in the input word are part of the regular
 ;; expression's alphabet, and false otherwise.
 (define (word-in-regexp-sigma? regexp-sigma word)
-  (empty? (filter (lambda (x) (not (member x regexp-sigma))) word)))
+  (let ((converted-word (map (lambda (x) (if (symbol? x) x (string->symbol (number->string x)))) word)))
+    (empty? (filter (lambda (x) (not (member x regexp-sigma))) converted-word)))
+  )
 
 (define (words-in-sigma/c type regexp)
   (let [(regexp-sigma (sm-sigma (regexp->fsa regexp)))]
@@ -126,7 +129,8 @@
 ; if the word is expected to be accepted (#true) or rejected (#false) by
 ; the regexp.
 (define (check-word-accepts regexp word accepts?)
-  (let [(result (sm-apply (regexp->fsa regexp) word))]
+  (let* [(converted-word (map (lambda (x) (if (symbol? x) x (string->symbol (number->string x)))) word))
+        (result (sm-apply (regexp->fsa regexp) converted-word))]
     (if accepts?
         (equal? result 'accept)
         (equal? result 'reject))))
@@ -146,7 +150,7 @@
   (or
    (equal? word EMP)
    (and (list? word)
-        (andmap (lambda (letter) (symbol? letter))
+        (andmap (lambda (letter) (valid-alpha? letter))
                 word))))
 
 (define valid-word/c
