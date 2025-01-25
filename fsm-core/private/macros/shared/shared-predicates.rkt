@@ -109,10 +109,12 @@
 ;purpose: takes in anything and makes sure that it is a symbol that
 ; a lowercase roman letter
 (define (valid-tm-alpha? x)
-  (define regex-pattern (regexp "^[A-Za-z]$"))
-  (and (symbol? x)
-       (not (not (regexp-match regex-pattern (symbol->string x))))
-       )
+  (define regex-pattern (regexp "^[A-Za-z0-9$&!*]$"))
+  (and (or (symbol? x) (and (number? x) (<= 0 x 9)))
+       (not (not (regexp-match regex-pattern
+                               (if (symbol? x)
+                                   (symbol->string x)
+                                   (number->string x))))))
   )
 
 ;valid-gamma?: something --> boolean
