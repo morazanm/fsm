@@ -38,7 +38,7 @@
                         (raise-blame-error
                          blame
                          x
-                         (format "Step five of the design recipe for regular expressions has not been successfully completed.\nThe argument to singleton-regexp must be a single lowercase Roman alphabet character, but found")))))))
+                         (format "Step five of the design recipe for regular expressions has not been successfully completed.\nThe argument to singleton-regexp must be a single lowercase Roman alphabet string, but found")))))))
 
 ;; singleton-regexp/c
 (define singleton-regexp/c
