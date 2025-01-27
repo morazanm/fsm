@@ -274,10 +274,11 @@
                       (λ (i) (gen-function (kleenestar-regexp-r1 regexp) reps))))))]
     (if (empty? lst-words) EMP lst-words)))
 
-;; concat-regexp (regexp --> word) --> word
+;; concat-regexp (regexp --> word) natnum --> word
 ;; Purpose: Generate a word by concatenating a words generated
 ;;          from the sub-regexps in the given concat-regexp using
-;;          the given word-generting function
+;;          the given word-generting function limiting any
+;;          Kleene star repetions to the given natnum
 (define (gen-concat-word concat-rexp gen-function reps)
   (let [(res (filter (λ (w) (not (eq? w EMP)))
                      (flatten (map (λ (re) (gen-function re reps))
