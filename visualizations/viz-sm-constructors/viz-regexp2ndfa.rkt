@@ -16,8 +16,6 @@
 
 (provide regexp2ndfa-viz)
 
-(define FNAME "fsm")
-
 (define E-SCENE-TOOLS (e-scene-tools-generator HEIGHT-BUFFER LETTER-KEY-WIDTH-BUFFER FONT-SIZE
                                                (list (list ARROW-UP-KEY "Restart")
                                                      (list ARROW-RIGHT-KEY "Forward")
@@ -457,13 +455,13 @@
                                       E-SCENE-HEIGHT
                                       CLICK-BUFFER-SECONDS
                                       ()
-                                      ( [ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed]
-                                        [ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed]
-                                        [ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed]
-                                        [ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed]
-                                        [W-KEY-DIMS viz-zoom-in identity]
-                                        [S-KEY-DIMS viz-zoom-out identity]
-                                        [R-KEY-DIMS viz-max-zoom-out identity]
-                                        [E-KEY-DIMS viz-reset-zoom identity]
-                                        [F-KEY-DIMS viz-max-zoom-in identity]))
+                                      ([ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed]
+                                       [ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed]
+                                       [ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed]
+                                       [ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed]
+                                       [W-KEY-DIMS viz-zoom-in identity]
+                                       [S-KEY-DIMS viz-zoom-out identity]
+                                       [R-KEY-DIMS viz-max-zoom-out identity]
+                                       [E-KEY-DIMS viz-reset-zoom identity]
+                                       [F-KEY-DIMS viz-max-zoom-in identity]))
              'regexp2ndfa)))

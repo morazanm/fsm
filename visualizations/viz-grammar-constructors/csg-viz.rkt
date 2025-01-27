@@ -21,6 +21,37 @@
    (list (list 'S ARROW 'AaB) (list 'AaA ARROW 'aSb) (list 'AaA ARROW EMP) (list 'B ARROW 'A))
    'S))
 
+;; S - Equal number of A's, B's, and C's in left context
+
+;; BA - 
+;; This always holds true if BA exists because the B and A are not in their respective contexts
+
+;; CA - 
+;; This always holds true if CA exists because the C and A are not in their respective contexts
+
+;; CB - # of B's in left context is less than n, # of C's in right context is a natural num less than n
+;; This always hold true if CB exists because the B and C are not in their respective contexts
+
+;; How do I prove that the ordering always takes place before As Bs and Cs are replaced with terminals?
+
+;; CG - Zero or more C's in left context, right context = c^y where y = some natural num <= n
+;; This always holds true as the C in CG must generate a "c" before the # of c's in the right context can ever equal n
+
+;; BG - right context = c^n
+;; 
+
+;; BH - Zero or more B's in left context, right context = b^y c^n where y = some natural num <= n
+;; This always holds true as the B in BH must generate a "b" before the # of b's in the right context can ever equal n
+
+;; AH - right context = b^n c^n
+;;
+
+;; AI - Zero or more A's in left context, right context = a^y b^n c^n where y = some natural num <= n
+;; This always holds true as the A in AI must generate an "a" before the # of a's in the right context can ever equal n
+
+;; I - right context = a^n b^n c^n
+;;
+
 (define anbncn
   (make-unchecked-csg
    '(S A B C G H I)
@@ -38,6 +69,14 @@
      (I ,ARROW ,EMP)
      )
    'S))
+
+
+
+
+
+
+
+
 
 (define HEDGE-COLOR 'skyblue)
 
@@ -279,6 +318,13 @@
 ;; up-rules - unprocessed grammar rules
 ;; p-rules - processed grammar rules
 (struct dgrph
+  (levels nodes
+          hex-nodes
+          yield-nodes
+          hedges
+          rules))
+  
+#;(struct dgrph
   (up-levels p-levels
              nodes
              up-hex-nodes
@@ -354,46 +400,65 @@
 ;; dgrph (listof dgrph) boolean -> (listof dgrph)
 ;; Purpose: To create all the dgrphs for graph imgs
 (define (create-dgrphs a-dgrph lod hex?)
-  (if (empty? (dgrph-up-levels a-dgrph))
+  (if (zipper-at-end? (dgrph-levels a-dgrph))
       (cons a-dgrph lod)
-      (let* ([new-up-levels (rest (dgrph-up-levels a-dgrph))]
-             [new-ad-levels (cons (first (dgrph-up-levels a-dgrph)) (dgrph-p-levels a-dgrph))]
-             [new-nodes (extract-nodes (first (dgrph-up-levels a-dgrph)))]
-             [new-up-hex-nodes (rest (dgrph-up-hex-nodes a-dgrph))]
-             [new-p-hex-nodes (cons (first (dgrph-up-hex-nodes a-dgrph)) (dgrph-p-hex-nodes a-dgrph))]
-             [new-up-yield-nodes (rest (dgrph-up-yield-nodes a-dgrph))]
-             [new-p-yield-nodes (cons (first (dgrph-up-yield-nodes a-dgrph))
+      (let* (#;[new-up-levels (rest (dgrph-up-levels a-dgrph))]
+             #;[new-ad-levels (cons (first (dgrph-up-levels a-dgrph)) (dgrph-p-levels a-dgrph))]
+             [new-levels (zipper-next (dgrph-levels a-dgrph))]
+             [new-nodes (extract-nodes (zipper-current new-levels)#;(first (dgrph-up-levels a-dgrph)))]
+             #;[new-up-hex-nodes (rest (dgrph-up-hex-nodes a-dgrph))]
+             #;[new-p-hex-nodes (cons (first (dgrph-up-hex-nodes a-dgrph)) (dgrph-p-hex-nodes a-dgrph))]
+             [new-hex-nodes (zipper-next (dgrph-hex-nodes a-dgrph))]
+             #;[new-up-yield-nodes (rest (dgrph-up-yield-nodes a-dgrph))]
+             #;[new-p-yield-nodes (cons (first (dgrph-up-yield-nodes a-dgrph))
                                       (dgrph-p-yield-nodes a-dgrph))]
-             [new-up-hedges (rest (dgrph-up-hedges a-dgrph))]
-             [new-p-hedges (cons (first (dgrph-up-hedges a-dgrph)) (dgrph-p-hedges a-dgrph))])
+             [new-yield-nodes (zipper-next (dgrph-yield-nodes a-dgrph))]
+             #;[new-up-hedges (rest (dgrph-up-hedges a-dgrph))]
+             #;[new-p-hedges (cons (first (dgrph-up-hedges a-dgrph)) (dgrph-p-hedges a-dgrph))]
+             [new-hedges (zipper-next (dgrph-hedges a-dgrph))]
+             )
         (if hex?
-            (let ([new-up-rules (rest (dgrph-up-rules a-dgrph))]
-                  [new-p-rules (cons (first (dgrph-up-rules a-dgrph)) (dgrph-p-rules a-dgrph))])
-              (create-dgrphs (dgrph new-up-levels
-                                    new-ad-levels
+            (let (#;[new-up-rules (rest (dgrph-up-rules a-dgrph))]
+                  #;[new-p-rules (cons (first (dgrph-up-rules a-dgrph)) (dgrph-p-rules a-dgrph))]
+                  [new-rules (zipper-next (dgrph-rules a-dgrph))]
+                  )
+              (create-dgrphs (dgrph #;new-up-levels
+                                    #;new-ad-levels
+                                    new-levels
                                     new-nodes
-                                    new-up-hex-nodes
-                                    new-p-hex-nodes
-                                    new-up-yield-nodes
-                                    new-p-yield-nodes
-                                    new-up-hedges
-                                    new-p-hedges
-                                    new-up-rules
-                                    new-p-rules)
+                                    #;new-up-hex-nodes
+                                    #;new-p-hex-nodes
+                                    new-hex-nodes
+                                    #;new-up-yield-nodes
+                                    #;new-p-yield-nodes
+                                    new-yield-nodes
+                                    #;new-up-hedges
+                                    #;new-p-hedges
+                                    new-hedges
+                                    #;new-up-rules
+                                    #;new-p-rules
+                                    new-rules)
                              (cons a-dgrph lod)
                              #t))
-            (let ([new-up-rules (dgrph-up-rules a-dgrph)] [new-p-rules (dgrph-p-rules a-dgrph)])
-              (create-dgrphs (dgrph new-up-levels
-                                    new-ad-levels
+            (let (#;[new-up-rules (dgrph-up-rules a-dgrph)]
+                  #;[new-p-rules (dgrph-p-rules a-dgrph)])
+              (create-dgrphs (dgrph #;new-up-levels
+                                    #;new-ad-levels
+                                    new-levels
                                     new-nodes
-                                    new-up-hex-nodes
-                                    new-p-hex-nodes
-                                    new-up-yield-nodes
-                                    new-p-yield-nodes
-                                    new-up-hedges
-                                    new-p-hedges
-                                    new-up-rules
-                                    new-p-rules)
+                                    #;new-up-hex-nodes
+                                    #;new-p-hex-nodes
+                                    new-hex-nodes
+                                    #;new-up-yield-nodes
+                                    #;new-p-yield-nodes
+                                    new-yield-nodes
+                                    #;new-up-hedges
+                                    #;new-p-hedges
+                                    new-hedges
+                                    #;new-up-rules
+                                    #;new-p-rules
+                                    (dgrph-rules a-dgrph)
+                                    )
                              (cons a-dgrph lod)
                              #f))))))
 
@@ -410,12 +475,13 @@
 ;; dgprh -> img
 ;; Purpose: Creates the final graph structure that will be used to create the images in graphviz
 (define (create-graph-structs a-dgrph)
+  ;; Why are all of these using the first of processed?
   (let* ([nodes (dgrph-nodes a-dgrph)]
-         [levels (first (dgrph-p-levels a-dgrph))]
-         [hedges (first (dgrph-p-hedges a-dgrph))]
+         [levels (zipper-current (dgrph-levels a-dgrph)) #;(first (dgrph-p-levels a-dgrph))]
+         [hedges (zipper-current (dgrph-hedges a-dgrph)) #;(first (dgrph-p-hedges a-dgrph))]
          [hedge-nodes (extract-nodes hedges)]
-         [yield-nodes (first (dgrph-p-yield-nodes a-dgrph))]
-         [hex-nodes (first (dgrph-p-hex-nodes a-dgrph))])
+         [yield-nodes (zipper-current (dgrph-yield-nodes a-dgrph)) #;(first (dgrph-p-yield-nodes a-dgrph))]
+         [hex-nodes (zipper-current (dgrph-hex-nodes a-dgrph)) #;(first (dgrph-p-hex-nodes a-dgrph))])
     (make-invisible-edge-graph
      (make-edge-graph
       (make-node-graph
@@ -494,6 +560,7 @@
                                                                          '()
                                                                          y)))
                                      (cons frst (cons fourth (remove-every-second (drop (second renamed) 2))))
+                                     ;; Figure out what the fuck this was doing
                                      (let ([res (append (dgrph-up-hex-nodes (first lod)) (dgrph-p-hex-nodes (first lod)))])
                                        (drop-right (cons '() (cons (first res) (remove-every-second res))) 1))
                                        
