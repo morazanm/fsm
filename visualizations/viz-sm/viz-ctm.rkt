@@ -1,8 +1,7 @@
-#lang racket
+#lang racket/base
 
 (require "../../fsm-gviz/private/lib.rkt"
          "../../fsm-core/private/tm.rkt"
-         2htdp/universe
          2htdp/image
          "../../fsm-core/private/callgraphs/transdiagram-ctm6.rkt"
          "../../visualizations/viz-lib/zipper.rkt"
@@ -15,6 +14,8 @@
          "../../visualizations/viz-lib/viz-macros.rkt"
          "../../visualizations/viz-lib/viz-state.rkt"
          "../../visualizations/viz-lib/viz.rkt"
+         racket/list
+         racket/function
          )
 
 
@@ -39,6 +40,8 @@
                                                      (list F-KEY "Max zoom")
                                                      (list A-KEY "Tape left")
                                                      (list D-KEY "Tape right"))))
+
+(define TAPE-SIZE 20)
 
 (define beginning-imsg-img
   (let* [(tape '(A B C))
@@ -98,7 +101,7 @@
 
 ;; imsg-struct
 (struct imsg-struct (tapes vars))
-(define TAPE-SIZE 20)
+
 
 ;; graph is a structure that has
 ;; upimgs - unprocessed graph images

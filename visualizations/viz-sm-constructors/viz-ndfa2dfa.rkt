@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 
 (require "../../fsm-gviz/private/lib.rkt"
          rackunit
@@ -17,7 +17,9 @@
          "../viz-lib/default-viz-function-generators.rkt"
          "../viz-lib/viz.rkt"
          "../viz-lib/zipper.rkt"
-         "../viz-lib/bounding-limits.rkt")
+         "../viz-lib/bounding-limits.rkt"
+         racket/list
+         racket/function)
 
 ;; dummy
 

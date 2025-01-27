@@ -1,9 +1,8 @@
-(module flat-contracts racket
+#lang racket/base
   (require "shared-predicates.rkt"
            "../error-formatting.rkt"
-           "../../constants.rkt"
-           "../../fsa.rkt"
            racket/contract
+           racket/list
            )
   (provide
    is-nonempty-list/c
@@ -255,4 +254,3 @@
                        blame
                        val
                        (format "Step five of the design recipe has not been successfully completed.\nThe given number of tapes: ~a is not an integer greater than 0" val))))))
-  )

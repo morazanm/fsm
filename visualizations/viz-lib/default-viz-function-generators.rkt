@@ -34,6 +34,29 @@
                 (text (second (first rev-elems-lst)) (- FONT-SIZE 2) 'black))
          (rest rev-elems-lst))))
 
+;; img num>0 num num num -> viewport-limits
+;; Calculates the min and max values of x and y that keep the graph on the screen at all times
+(define (create-calculate-viewport-limits scaled-image scale NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT)
+  (let* [(img-width-node-diff (- (/ (image-width scaled-image) 2) (* NODE-SIZE scale)))
+         (img-height-node-diff (- (/ (image-height scaled-image) 2) (* NODE-SIZE scale)))
+         (scaled-node-size (* NODE-SIZE scale))
+         (MIN-X (if (< E-SCENE-WIDTH (/ (image-width scaled-image) 2))
+                    (- (* -1 (- (/ (image-width scaled-image) 2) E-SCENE-WIDTH)) (- E-SCENE-WIDTH scaled-node-size) )
+                    (* -1 img-width-node-diff)))
+         (MAX-X (if (< E-SCENE-WIDTH (/ (image-width scaled-image) 2))
+                    (+ (- (/ (image-width scaled-image) 2) E-SCENE-WIDTH) E-SCENE-WIDTH (- E-SCENE-WIDTH scaled-node-size) )
+                    (+ E-SCENE-WIDTH img-width-node-diff)))                                             
+         (MIN-Y (if (< E-SCENE-HEIGHT (/ (image-height scaled-image) 2))
+                    (- (* -1 (- (/ (image-height scaled-image) 2) E-SCENE-HEIGHT)) (- E-SCENE-HEIGHT scaled-node-size))
+                    (* -1 img-height-node-diff)))
+         (MAX-Y (if (< E-SCENE-HEIGHT (/ (image-height scaled-image) 2))
+                    (+ (- (/ (image-height scaled-image) 2) E-SCENE-HEIGHT) E-SCENE-HEIGHT (- E-SCENE-HEIGHT scaled-node-size))
+                    (+ E-SCENE-HEIGHT img-height-node-diff)))]
+    (bounding-limits MIN-X MAX-X MIN-Y MAX-Y))
+    
+  )
+
+
 (define (reposition-out-of-bounds-img a-vs viewport-lims new-img new-scale)
   (if (outside-north-side-bounding-limits? viewport-lims (viz-state-image-posn a-vs))
       (if (outside-west-side-bounding-limits? viewport-lims (viz-state-image-posn a-vs))
