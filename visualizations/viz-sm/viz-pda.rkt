@@ -313,8 +313,7 @@ visited is a (listof configuration)
       (ormap (λ (p)
                (and (equal? (first rule) (first p))
                     (or (equal? (third rule) (third p))
-                        (and (equal? (third rule) (third p))
-                             (equal? (third rule) dead)))))
+                        (equal? (third rule) dead))))
              lor)))
 
 ;;X -> X
@@ -1187,9 +1186,8 @@ visited is a (listof configuration)
                           (append (pda-getrules M) rules-to-dead dead-read-rules dead-pop-rules))))
 
 
-;;pda word [boolean] [natnum] . -> (void) Throws error
-;;Purpose: Visualizes the given ndfa processing the given word
-;;Assumption: The given machine is a ndfa or dfa
+;;pda word [boolean] [natnum] . -> (void)
+;;Purpose: Visualizes the given pda processing the given word
 (define (pda-viz M a-word #:add-dead [add-dead #f] #:max-cmps [max-cmps 100] . invs)
   (let* (;;M ;;Purpose: A new machine with the dead state if add-dead is true
          [new-M (if add-dead (make-new-M M) M)]
