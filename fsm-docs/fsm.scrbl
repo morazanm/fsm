@@ -219,7 +219,7 @@ A composed Turing machine.
                    [start state] 
                    [finals (listof state)] 
                    [delta (listof dfa-rule)]
-                   [add-dead symbol? 'add-dead]
+                   [add-dead (or/c 'no-dead (void))]
                    [#:rejects rejects (listof word) '()]
                    [#:accepts accepts (listof word) '()])
          dfa]{Builds a deterministic finite-state automaton.
