@@ -1,44 +1,29 @@
 #lang racket
 
 (require "../../fsm-gviz/private/lib.rkt"
-         2htdp/universe
-         rackunit
-         (rename-in racket/gui/base [make-color loc-make-color] [make-pen loc-make-pen])
          2htdp/image
          "../viz-lib/viz.rkt"
          "../viz-lib/zipper.rkt"
          "../viz-lib/bounding-limits.rkt"
-         "../viz-lib/bounding-limits-macro.rkt"
          "../viz-lib/viz-state.rkt"
          "../viz-lib/viz-macros.rkt"
+         "../viz-lib/viz-constants.rkt"
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "david-imsg-state.rkt"
          "david-viz-constants.rkt"
-         "../viz-lib/default-viz-function-generators.rkt"
-         math/matrix
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/fsa.rkt"
          "../../fsm-core/private/misc.rkt")
 
 (provide ndfa-viz)
 
-(define INFORMATIVE-MSG-HEIGHT 50)
+(define EXTRA-HEIGHT-FROM-CURSOR 4)
+(define NODE-SIZE 50)
 
-(create-bounding-limits E-SCENE-WIDTH E-SCENE-HEIGHT E-SCENE-TOOLS-WIDTH INFORMATIVE-MSG-HEIGHT FONT-SIZE LETTER-KEY-WIDTH-BUFFER INS-TOOLS-BUFFER
-((ARROW-UP-KEY "Restart")
- (ARROW-RIGHT-KEY "Forward")
- (ARROW-LEFT-KEY "Backward")
- (ARROW-DOWN-KEY "Finish")
- (CURSOR "Hold to drag")
- (W-KEY "Zoom in")
- (S-KEY "Zoom out")
- (R-KEY "Min zoom")
- (E-KEY "Mid zoom")
- (F-KEY "Max zoom")
- (A-KEY "Word start")
- (D-KEY "Word end")
- (J-KEY "Prv not inv")
- (L-KEY "Nxt not inv")))
+(define DEFAULT-ZOOM-FLOOR .6)
+
+
+(define INS-TOOLS-BUFFER 30)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -976,13 +961,13 @@ triple is the entire of the ndfa rule
                                        (imsg-state new-M
                                                    a-word
                                                    '()
-                                                   'no-acpt-trace
+                                                   (list->zipper accepting-traces)
                                                    'no-stck
                                                    'no-farthest-consumed
                                                    (list->zipper inv-configs)
                                                    (sub1 (length inv-configs))
                                                    computation-lens
-                                                   'no-comps
+                                                   LoC
                                                    'no-max-cmps
                                                    0
                                                    (let ([offset-cap (- (length a-word) TAPE-SIZE)])

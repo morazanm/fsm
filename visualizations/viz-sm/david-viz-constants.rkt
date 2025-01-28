@@ -6,11 +6,9 @@
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "../viz-lib/default-viz-function-generators.rkt"
          "../../fsm-core/private/constants.rkt"
-         )
+         "../viz-lib/viz-constants.rkt")
 
 (provide (all-defined-out))
-
-(define FNAME "fsm")
 
 (define HELD-INV-COLOR 'chartreuse4)
 (define BRKN-INV-COLOR 'red2)
@@ -19,74 +17,7 @@
 
 (define DUMMY-RULE (list (list EMP EMP EMP) (list EMP EMP)))
 
-(define E-SCENE-WIDTH 1250)
-(define E-SCENE-HEIGHT 490)
-(define E-SCENE-BOUNDING-LIMITS (bounding-limits 0 E-SCENE-WIDTH 0 E-SCENE-HEIGHT))
-(define FONT-SIZE 20)
-(define TAPE-SIZE 42)
-(define HEDGE-COLOR 'violet)
-(define YIELD-COLOR 'orange)
-(define PERCENT-BORDER-GAP 0.9)
-(define HEIGHT-BUFFER 20)
-(define LETTER-KEY-WIDTH-BUFFER 13)
-(define ARROW-KEY-WIDTH-BUFFER 20)
-(define INS-TOOLS-BUFFER 30)
-(define EXTRA-HEIGHT-FROM-CURSOR 4)
-(define NODE-SIZE 50)
-
-(define DEFAULT-ZOOM 1)
-(define DEFAULT-ZOOM-FLOOR .6)
-(define DEFAULT-ZOOM-CAP 2)
-(define ZOOM-INCREASE 1.1)
-(define ZOOM-DECREASE (/ 1 ZOOM-INCREASE))
-
-(define TICK-RATE 1/60)
-(define CLICK-BUFFER-SECONDS (/ (/ 1 TICK-RATE) 2))
-
-;; (listof symbol) natnum (listof (list natnum symbol)) -> image
-;; Returns an image of a tape of symbols, capable of sliding when its start-index is varied
-(define (make-tape-img tape start-index color-pair)
-  (define (make-tape-img loi start-index)
-    (if (empty? (rest loi))
-        (first loi)
-        (beside (first loi) (make-tape-img (rest loi) (add1 start-index)))))
-  (let ([letter-imgs
-         (build-list
-          TAPE-SIZE
-          (λ (i)
-            (if (< (+ start-index i) (length tape))
-                (overlay (text (symbol->string (list-ref tape (+ start-index i)))
-                               20
-                               (cond [(empty? color-pair) 'black]
-                                     [(and (not (empty? (first color-pair)))
-                                           (< (+ start-index i) (first (first color-pair))))
-                                      (second (first color-pair))]
-                                     [(and (not (empty? (second color-pair)))
-                                           (= (+ start-index i) (first (second color-pair))))
-                                      (second (second color-pair))]
-                                     [else 'black]))
-                         (overlay (square 21 'solid 'white) (square (add1 21) 'solid 'white)))
-                (overlay (square 21 'solid 'white) (square (add1 21) 'solid 'white)))))])
-    (make-tape-img letter-imgs start-index)))
-
-(define TAPE-IMG-HEIGHT (image-height (make-tape-img (list 'a) 0 '())))
-
-(define RULE-YIELD-DIMS
-  (let ([DREV (let ([drev-text (text "Deriving: " FONT-SIZE 'black)])
-                (overlay drev-text
-                         (rectangle (image-width drev-text) TAPE-IMG-HEIGHT 'solid 'white)))]
-        [YIELD (let ([yield-text (text "Current Yield: " FONT-SIZE 'black)])
-                 (overlay yield-text
-                          (rectangle (image-width yield-text) TAPE-IMG-HEIGHT 'solid 'white)))]
-        [RULE-USED (text "The rule used: " FONT-SIZE 'black)])
-    (bounding-limits (+ (image-width (rectangle 1 (* 2 FONT-SIZE) "solid" 'white))
-                        (image-width (beside (rectangle 1 (* 2 FONT-SIZE) "solid" 'white)
-                                             (above/align "right" RULE-USED DREV YIELD))))
-                     (* E-SCENE-WIDTH 0.9)
-                     (+ E-SCENE-HEIGHT)
-                     (+ E-SCENE-HEIGHT
-                        (image-height (beside (rectangle 1 (* 2 FONT-SIZE) "solid" 'white)
-                                              (above/align "right" RULE-USED DREV YIELD)))))))
+(define INFORMATIVE-MSG-HEIGHT 50)
 
 (define cursor
   (let ([cursor-rect (let ([inner-white (rectangle 5 17.5 'solid 'white)]
@@ -115,8 +46,6 @@
                                                   (triangle/sss 60 90 90 'solid 'black))])
            (scale 0.5 (rotate 310 (overlay/xy inner-white -9 -3 outer-black))))])
     (overlay/xy (rotate 25 cursor-rect) -7 -26 cursor-tri)))
-
-
 
 (define E-SCENE-TOOLS
   (let ([ARROW (above (triangle 30 'solid 'black) (rectangle 10 30 'solid 'black))])
@@ -183,11 +112,60 @@
                           (square HEIGHT-BUFFER 'solid 'white)
                           (text "Nxt not inv" (- FONT-SIZE 2) 'black))))))
 
+(define E-SCENE-HEIGHT (- (* 0.9 WINDOW-HEIGHT)
+                          INFORMATIVE-MSG-HEIGHT
+                          (image-height E-SCENE-TOOLS)))
+
+(define E-SCENE-BOUNDING-LIMITS (bounding-limits 0 E-SCENE-WIDTH 0 E-SCENE-HEIGHT))
+
+;; (listof symbol) natnum (listof (list natnum symbol)) -> image
+;; Returns an image of a tape of symbols, capable of sliding when its start-index is varied
+(define (make-tape-img tape start-index color-pair)
+  (define (make-tape-img loi start-index)
+    (if (empty? (rest loi))
+        (first loi)
+        (beside (first loi) (make-tape-img (rest loi) (add1 start-index)))))
+  (let ([letter-imgs
+         (build-list
+          TAPE-SIZE
+          (λ (i)
+            (if (< (+ start-index i) (length tape))
+                (overlay (text (symbol->string (list-ref tape (+ start-index i)))
+                               20
+                               (cond [(empty? color-pair) 'black]
+                                     [(and (not (empty? (first color-pair)))
+                                           (< (+ start-index i) (first (first color-pair))))
+                                      (second (first color-pair))]
+                                     [(and (not (empty? (second color-pair)))
+                                           (= (+ start-index i) (first (second color-pair))))
+                                      (second (second color-pair))]
+                                     [else 'black]))
+                         (overlay (square 21 'solid 'white) (square (add1 21) 'solid 'white)))
+                (overlay (square 21 'solid 'white) (square (add1 21) 'solid 'white)))))])
+    (make-tape-img letter-imgs start-index)))
+
+(define TAPE-IMG-HEIGHT (image-height (make-tape-img (list 'a) 0 '())))
+
+(define RULE-YIELD-DIMS
+  (let ([DREV (let ([drev-text (text "Deriving: " FONT-SIZE 'black)])
+                (overlay drev-text
+                         (rectangle (image-width drev-text) TAPE-IMG-HEIGHT 'solid 'white)))]
+        [YIELD (let ([yield-text (text "Current Yield: " FONT-SIZE 'black)])
+                 (overlay yield-text
+                          (rectangle (image-width yield-text) TAPE-IMG-HEIGHT 'solid 'white)))]
+        [RULE-USED (text "The rule used: " FONT-SIZE 'black)])
+    (bounding-limits (+ (image-width (rectangle 1 (* 2 FONT-SIZE) "solid" 'white))
+                        (image-width (beside (rectangle 1 (* 2 FONT-SIZE) "solid" 'white)
+                                             (above/align "right" RULE-USED DREV YIELD))))
+                     (* E-SCENE-WIDTH 0.9)
+                     (+ E-SCENE-HEIGHT)
+                     (+ E-SCENE-HEIGHT
+                        (image-height (beside (rectangle 1 (* 2 FONT-SIZE) "solid" 'white)
+                                              (above/align "right" RULE-USED DREV YIELD)))))))
+
 (define E-SCENE-TOOLS-WIDTH (image-width E-SCENE-TOOLS))
 
-(define INFORMATIVE-MSG-HEIGHT 50)
-
-(create-bounding-limits E-SCENE-WIDTH E-SCENE-HEIGHT E-SCENE-TOOLS-WIDTH INFORMATIVE-MSG-HEIGHT FONT-SIZE LETTER-KEY-WIDTH-BUFFER INS-TOOLS-BUFFER
+(create-bounding-limits E-SCENE-WIDTH E-SCENE-HEIGHT E-SCENE-TOOLS-WIDTH RULE-YIELD-DIMS FONT-SIZE LETTER-KEY-WIDTH-BUFFER INS-TOOLS-BUFFER
 ((ARROW-UP-KEY "Restart")
  (ARROW-RIGHT-KEY "Forward")
  (ARROW-LEFT-KEY "Backward")
