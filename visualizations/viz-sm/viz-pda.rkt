@@ -1188,7 +1188,7 @@ visited is a (listof configuration)
 
 ;;pda word [boolean] [natnum] . -> (void)
 ;;Purpose: Visualizes the given pda processing the given word
-(define (pda-viz M a-word #:add-dead [add-dead #f] #:max-cmps [max-cmps 100] . invs)
+(define (pda-viz M a-word #:add-dead [add-dead #f] #:max-cmps [max-cmps 100] invs)
   (let* (;;M ;;Purpose: A new machine with the dead state if add-dead is true
          [new-M (if add-dead (make-new-M M) M)]
          ;;symbol ;;Purpose: The name of the dead state

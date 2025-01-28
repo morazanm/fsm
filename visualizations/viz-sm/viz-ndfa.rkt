@@ -1,9 +1,6 @@
 #lang racket
 
 (require "../../fsm-gviz/private/lib.rkt"
-         2htdp/universe
-         rackunit
-         (rename-in racket/gui/base [make-color loc-make-color] [make-pen loc-make-pen])
          2htdp/image
          "../viz-lib/viz.rkt"
          "../viz-lib/zipper.rkt"
@@ -13,8 +10,6 @@
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "david-imsg-state.rkt"
          "david-viz-constants.rkt"
-         "../viz-lib/default-viz-function-generators.rkt"
-         math/matrix
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/fsa.rkt"
          "../../fsm-core/private/misc.rkt")
@@ -392,7 +387,7 @@ triple is the entire of the ndfa rule
                   (empty? (imsg-state-upci imsg-st)))
              (above/align
               'left
-              (beside (text "aaaC" 20 'white)
+              (beside (text "aaaa" 20 'white)
                       (text "Word: " 20 'black)
                       (if (equal? machine-decision 'accept)
                           (text (format "~a" EMP) 20 'gray)
@@ -404,7 +399,7 @@ triple is the entire of the ndfa rule
             [(and (not (empty? (imsg-state-pci imsg-st))) (not completed-config?))
              (above/align
               'left
-              (beside (text "aaaC" 20 'white)
+              (beside (text "aaaa" 20 'white)
                       (text "Word: " 20 'black)
                       (make-tape-img entire-word
                                      (if (> (length entire-word) TAPE-SIZE)
@@ -423,7 +418,7 @@ triple is the entire of the ndfa rule
                                              0)
                                          '()))))]
             [else (above/align 'left
-                               (beside (text "aaaC" 20 'white)
+                               (beside (text "aaaa" 20 'white)
                                        (text "Word: " 20 'black)
                                        (make-tape-img entire-word
                                                       (if (> (length entire-word) TAPE-SIZE)
@@ -885,7 +880,7 @@ triple is the entire of the ndfa rule
 ;;ndfa word [boolean] . -> (void) Throws error
 ;;Purpose: Visualizes the given ndfa processing the given word
 ;;Assumption: The given machine is a ndfa or dfa
-(define (ndfa-viz M a-word #:add-dead [add-dead #f] . invs)
+(define (ndfa-viz M a-word #:add-dead [add-dead #f] invs)
   (let* (;;M ;;Purpose: A new machine with the dead state if add-dead is true
              [new-M (if add-dead (make-new-M M) M)]
              ;;symbol ;;Purpose: The name of the dead state
@@ -942,11 +937,6 @@ triple is the entire of the ndfa rule
                                                         accepting-computations))
                                  invs)
                                 a-word))])
-        ;(struct building-viz-state (upci pci M inv dead))
-        ;(struct imsg-state (M upci pci))
-        ;;ANCHOR
-        ;rejecting-traces
-        ;inv-configs
         (run-viz graphs
                  (lambda () (graph->bitmap (first graphs)))
                  (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2))
@@ -957,13 +947,13 @@ triple is the entire of the ndfa rule
                                        (imsg-state new-M
                                                    a-word
                                                    '()
-                                                   'no-acpt-trace
+                                                   (list->zipper accepting-traces)
                                                    'no-stck
                                                    'no-farthest-consumed
                                                    (list->zipper inv-configs)
                                                    (sub1 (length inv-configs))
                                                    computation-lens
-                                                   'no-comps
+                                                   LoC
                                                    'no-max-cmps
                                                    0
                                                    (let ([offset-cap (- (length a-word) TAPE-SIZE)])
