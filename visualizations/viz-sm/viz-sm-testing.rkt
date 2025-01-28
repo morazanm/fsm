@@ -637,12 +637,12 @@
 ;;"edit A and D to scroll thru word, not jump to end"
 
 (define pd (make-ndpda '(S A)
-                                 '(a b)
-                                 '(a b)
-                                 'S
-                                 '(A)
-                                 `(((S a ,EMP) (A (a)))
-                                   ((S a ,EMP) (A (b))))))
+                       '(a b)
+                       '(a b)
+                       'S
+                       '(A)
+                       `(((S a ,EMP) (A (a)))
+                         ((S a ,EMP) (A (b))))))
 
 (define (pd-A-INV a-wrd a-stck)
   (andmap (λ (s) (eq? s 'a)) a-stck))
@@ -685,6 +685,8 @@
                   a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a)
            (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (empty? w)) (empty? s))))) ;; look into
 ;(sm-viz P2 '(a a a b b) (list 'S P-S-INV) (list 'H P-H-INV)) ;;needs to be looked into
+
+(sm-viz AB*B*UAB* '(a b b))
 #|
 ;;accept examples
 (sm-viz AB*B*UAB* '(a b b))

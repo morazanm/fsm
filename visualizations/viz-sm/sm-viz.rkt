@@ -6,11 +6,11 @@
 
 (provide sm-viz)
 
-(define (sm-viz M a-word #:add-dead [add-dead #f] #:max-cmps [max-cmps 100] . invs)
+(define (sm-viz M a-word #:add-dead [add-dead #f] #:cut-off [cut-off 100] . invs)
   (cond [(or (eq? (sm-type M) 'ndfa) (equal? (sm-type M) 'dfa))
-         (apply ndfa-viz M a-word #:add-dead add-dead invs)]
+         (ndfa-viz M a-word #:add-dead add-dead invs)]
         [(eq? (sm-type M) 'pda)
-         (apply pda-viz M a-word #:add-dead add-dead #:max-cmps max-cmps invs)]
+         (pda-viz M a-word #:add-dead add-dead #:cut-off cut-off invs)]
         [(or (eq? M 'tm) (eq? M 'tm-language-recognizer))
          (error (format "Stay tuned: sm-viz for tm and tm language recognizers is not yet implemented"))]
         [(or (eq? M 'mttm) (eq? M 'mttm-language-recognizer))
