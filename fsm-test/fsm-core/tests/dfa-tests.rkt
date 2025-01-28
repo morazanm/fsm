@@ -96,7 +96,7 @@ The following values, (A B), are duplicated in the given states: (A B B C A A)")
   ;;SIGMA
   ;invalid letter
   (check-error (make-dfa '(A B C D)
-                         '(a b c A)
+                         '(a b c AA)
                          'A
                          '(B C)
                          `((A b C)
@@ -104,9 +104,9 @@ The following values, (A B), are duplicated in the given states: (A B B C A A)")
                            (B c D)
                            (B a B)))
                (format "Step one of the design recipe has not been successfully completed.
-The following: (A) are not valid lowercase alphabet letters in the given input alphabet: (a b c A)"))
+The following: (AA) are not valid alphanumeric symbols in the given input alphabet: (a b c AA)"))
   (check-error (make-dfa '(A B C D)
-                         '(a b c A B)
+                         '(a b c AA BB)
                          'A
                          '(B C)
                          `((A b C)
@@ -114,7 +114,7 @@ The following: (A) are not valid lowercase alphabet letters in the given input a
                            (B c D)
                            (B a B)))
                (format "Step one of the design recipe has not been successfully completed.
-The following: (A B) are not valid lowercase alphabet letters in the given input alphabet: (a b c A B)"))
+The following: (AA BB) are not valid alphanumeric symbols in the given input alphabet: (a b c AA BB)"))
   ;duplicate letter
   (check-error (make-dfa '(A B C D)
                          '(a b c a)

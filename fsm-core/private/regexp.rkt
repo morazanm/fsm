@@ -55,12 +55,12 @@
                   (lambda (x)
                     (current-blame-format format-error)
                     (if (and (string? x)
-                             (not (not (regexp-match (regexp "^[a-z0-9$&!*]$") x))))
+                             (not (not (regexp-match (regexp "^[a-zA-Z0-9$&!*]$") x))))
                         x
                         (raise-blame-error
                          blame
                          x
-                         (format "A singleton regular expression must be a single lower-case Roman alphabet character, but found")))))))
+                         (format "Step five of the design recipe for regular expressions has not been successfully completed.\nThe argument to singleton-regexp must be a single lowercase Roman alphabet string, but found")))))))
 (define (make-unchecked-singleton a)
   (singleton-regexp a)
   )

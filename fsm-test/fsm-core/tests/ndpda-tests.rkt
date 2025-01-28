@@ -106,21 +106,21 @@ The following values, (A B), are duplicated in the given states: (A B B C A A)")
   ;;SIGMA
   ;invalid letter
   (check-error (make-ndpda '(A B C D)
-                           '(a b c A)
+                           '(a b c AA)
                            '(f g)
                            'A
                            '(B C)
                            `((A a (g)) (B (f)))
                            ) (format "Step one of the design recipe has not been successfully completed.
-The following: (A) are not valid lowercase alphabet letters in the given input alphabet: (a b c A)"))
+The following: (AA) are not valid alphanumeric symbols in the given input alphabet: (a b c AA)"))
   (check-error (make-ndpda '(A B C D)
-                           '(a b c A B)
+                           '(a b c AA BB)
                            '(f g)
                            'A
                            '(B C)
                            `((A a (g)) (B (f)))
                            ) (format "Step one of the design recipe has not been successfully completed.
-The following: (A B) are not valid lowercase alphabet letters in the given input alphabet: (a b c A B)"))
+The following: (AA BB) are not valid alphanumeric symbols in the given input alphabet: (a b c AA BB)"))
   ;duplicate letter
   (check-error (make-ndpda '(A B C D)
                            '(a b c a)

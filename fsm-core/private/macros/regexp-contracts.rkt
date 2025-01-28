@@ -22,7 +22,7 @@
 ;; purpose: Returns true if the given input is a single alphabet character string,
 ;;          and false for every other input.
 (define (valid-alpha-string? x)
-  (define regex-pattern (regexp "^[a-z0-9A-Z$&!*]$"))
+  (define regex-pattern (regexp "^[a-zA-Z0-9$&!*]$"))
   (not (false? (and (string? x)
                     (regexp-match regex-pattern x)))))
 
@@ -245,7 +245,7 @@
   (->i ([r1 (valid-regexp/c "The first argument to concat-regexp must be a regular expression, but found")]
         [r2 (valid-regexp/c "The second argument to concat-regexp must be a regular expression, but found")])
        (#:sigma [sigma (r1 r2) (and/c (is-a-list-regexp/c "regexp alphabet" "one")
-                                      (valid-listof/c valid-alpha? "lowercase alphabet letter" "input alphabet" #:rule "one" #:for-regexp? #true)
+                                      (valid-listof/c valid-alpha? "alphanumeric symbol" "input alphabet" #:rule "one" #:for-regexp? #true)
                                       (no-duplicates/c "sigma" "one" #:for-regexp? #true)
                                       (valid-regexp-sigma/c (make-unchecked-concat r1 r2)))]
         #:pred [pred (r1 r2 gen-cases) (and/c
@@ -271,7 +271,7 @@
         [r2 (valid-regexp/c "The second argument to union-regexp must be a regular expression, but found")])
        (#:sigma [sigma (r1 r2) (and/c
                                 (is-a-list-regexp/c "regexp alphabet" "one")
-                                (valid-listof/c valid-alpha? "lowercase alphabet letter" "input alphabet" #:rule "one" #:for-regexp? #true)
+                                (valid-listof/c valid-alpha? "alphanumeric symbol" "input alphabet" #:rule "one" #:for-regexp? #true)
                                 (no-duplicates/c "sigma" "one" #:for-regexp? #true)
                                 (valid-regexp-sigma/c (make-unchecked-union r1 r2)))]
         #:pred [pred (r1 r2 gen-cases) (and/c
@@ -296,7 +296,7 @@
   (->i ([r1 (valid-regexp/c "The argument to kleenestar-regexp must be a regular expression, but found")])
        (#:sigma [sigma (r1) (and/c
                              (is-a-list-regexp/c "regexp alphabet" "one")
-                             (valid-listof/c valid-alpha? "lowercase alphabet letter" "input alphabet" #:rule "one" #:for-regexp? #true)
+                             (valid-listof/c valid-alpha? "alphanumeric symbol" "input alphabet" #:rule "one" #:for-regexp? #true)
                              (no-duplicates/c "sigma" "one" #:for-regexp? #true)
                              (valid-regexp-sigma/c (make-unchecked-kleenestar r1)))]
         #:pred [pred (r1 gen-cases) (and/c
