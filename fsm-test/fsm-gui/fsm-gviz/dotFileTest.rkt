@@ -2,13 +2,13 @@
 
 (require
  rackunit
- "../test-machine.rkt"
- "../../main.rkt"
- "../../fsm-core/interface.rkt"
- "../../fsm-gviz/interface.rkt"
- "../../fsm-gui/globals.rkt"
- "../../fsm-gui/structs/state.rkt"
- "../../fsm-gui/structs/machine.rkt")
+ "../../test-machine.rkt"
+ "../../../main.rkt"
+ "../../../fsm-core/interface.rkt"
+ "../../../fsm-gviz/interface.rkt"
+ "../../../fsm-gui/globals.rkt"
+ "../../../fsm-gui/structs/state.rkt"
+ "../../../fsm-gui/structs/machine.rkt")
 
 ;; check-eq-snapshot-graph :: graph -> string -> bool (optional) -> bool
 ;; checks if the graph is equal to the given file. If rebuild is passed with true

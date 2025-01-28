@@ -5,12 +5,21 @@
          "../constants.rkt"
          "shared/shared-predicates.rkt"
          "../grammar-getters.rkt"
-         racket/contract
-         )
+         racket/contract)
 (provide make-cfg/c
          make-rg/c
-         make-csg/c
-         )
+         make-csg/c)
+
+
+(define (valid-alpha? x)
+  (define regex-pattern (regexp "^[a-z0-9$&!*]$"))
+  (and (or (symbol? x) (and (number? x) (<= 0 x 9)))
+       (not (not (regexp-match regex-pattern
+                               (if (symbol? x)
+                                   (symbol->string x)
+                                   (number->string x)))))))
+
+
 
 (define make-rg/c
   (->i ([states (and/c (is-a-list/c "nonterminals" "two")
@@ -33,8 +42,8 @@
        (#:accepts [accepts (states
                             sigma
                             delta
-                            start) (and/c (listof-words/c "accepts")
-                                          (words-in-sigma/c sigma 'accepts)
+                            start) (and/c (listof-words/c "accepts" "two")
+                                          (words-in-sigma/c sigma 'accepts "two")
                                           (rg-input/c states
                                                       sigma
                                                       delta
@@ -43,8 +52,8 @@
         #:rejects [rejects (states
                             sigma
                             delta
-                            start) (and/c (listof-words/c "rejects")
-                                          (words-in-sigma/c sigma 'rejects)
+                            start) (and/c (listof-words/c "rejects" "two")
+                                          (words-in-sigma/c sigma 'rejects "two")
                                           (rg-input/c states
                                                       sigma
                                                       delta
@@ -75,8 +84,8 @@
        (#:accepts [accepts (states
                             sigma
                             delta
-                            start) (and/c (listof-words/c "accepts")
-                                          (words-in-sigma/c sigma 'accepts)
+                            start) (and/c (listof-words/c "accepts" "two")
+                                          (words-in-sigma/c sigma 'accepts "two")
                                           (cfg-input/c states
                                                        sigma
                                                        delta
@@ -85,8 +94,8 @@
         #:rejects [rejects (states
                             sigma
                             delta
-                            start) (and/c (listof-words/c "rejects")
-                                          (words-in-sigma/c sigma 'rejects)
+                            start) (and/c (listof-words/c "rejects" "two")
+                                          (words-in-sigma/c sigma 'rejects "two")
                                           (cfg-input/c states
                                                        sigma
                                                        delta
@@ -118,8 +127,8 @@
        (#:accepts [accepts (states
                             sigma
                             delta
-                            start) (and/c (listof-words/c "accepts")
-                                          (words-in-sigma/c sigma 'accepts)
+                            start) (and/c (listof-words/c "accepts" "two")
+                                          (words-in-sigma/c sigma 'accepts "two")
                                           (csg-input/c states
                                                        sigma
                                                        delta
@@ -128,8 +137,8 @@
         #:rejects [rejects (states
                             sigma
                             delta
-                            start) (and/c (listof-words/c "rejects")
-                                          (words-in-sigma/c sigma 'rejects)
+                            start) (and/c (listof-words/c "rejects" "two")
+                                          (words-in-sigma/c sigma 'rejects "two")
                                           (csg-input/c states
                                                        sigma
                                                        delta
