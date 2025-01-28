@@ -430,7 +430,7 @@ visited is a (listof configuration)
                                  'style (cond [(equal? (third rule) dead) 'dashed]
                                               [(member? rule current-a-rules equal?) 'bold]
                                               [else 'solid])
-                                 'fontsize 20)))
+                                 'fontsize FONT-SIZE)))
          dgraph
          rules))
          
@@ -572,23 +572,23 @@ visited is a (listof configuration)
                   (empty? (imsg-state-upci imsg-st)))
              (above/align
               'left
-              (beside (text "aaaa" 20 'white)
-                      (text "Word: " 20 'black)
+              (beside (text "aaaa" FONT-SIZE 'white)
+                      (text "Word: " FONT-SIZE 'black)
                       (if (equal? machine-decision 'accept)
-                          (text (format "~a" EMP) 20 'gray)
-                          (text (format "~a" EMP) 20 'red)))
-              (beside (text "Consumed: " 20 'black)
+                          (text (format "~a" EMP) FONT-SIZE 'gray)
+                          (text (format "~a" EMP) FONT-SIZE 'red)))
+              (beside (text "Consumed: " FONT-SIZE 'black)
                       (if (equal? machine-decision 'accept)
-                          (text (format "~a" EMP) 20 'black)
-                          (text (format "~a" EMP) 20 'white))))]
+                          (text (format "~a" EMP) FONT-SIZE 'black)
+                          (text (format "~a" EMP) FONT-SIZE 'white))))]
             [(and (not (empty? (imsg-state-upci imsg-st)))
                   (eq? (imsg-state-upci imsg-st) (imsg-state-farthest-consumed imsg-st))
                   ;(<= (length (imsg-state-upci imsg-st)) (length (imsg-state-farthest-consumed imsg-st)))
                   (ormap (λ (comp) (>= (length comp) (imsg-state-max-cmps imsg-st)))
                          (imsg-state-comps imsg-st)))
              (above/align 'left
-                          (beside (text "aaaa" 20 'white)
-                                  (text "Word: " 20 'black)
+                          (beside (text "aaaa" FONT-SIZE 'white)
+                                  (text "Word: " FONT-SIZE 'black)
                                   (make-tape-img entire-word
                                                  (if (> (length entire-word) TAPE-SIZE)
                                                      (imsg-state-word-img-offset imsg-st)
@@ -597,7 +597,7 @@ visited is a (listof configuration)
                                                      '()
                                                      (list (list (length (imsg-state-pci imsg-st)) 'gray)
                                                            (list (length (imsg-state-pci imsg-st)) DARKGOLDENROD2)))))
-                          (beside (text "Consumed: " 20 'black)
+                          (beside (text "Consumed: " FONT-SIZE 'black)
                                   (make-tape-img (imsg-state-pci imsg-st)
                                                  (if (> (length (imsg-state-pci imsg-st)) TAPE-SIZE)
                                                      (imsg-state-word-img-offset imsg-st)
@@ -606,8 +606,8 @@ visited is a (listof configuration)
             [(and (not (empty? (imsg-state-pci imsg-st))) (not completed-config?))
              (above/align
               'left
-              (beside (text "aaaa" 20 'white)
-                      (text "Word: " 20 'black)
+              (beside (text "aaaa" FONT-SIZE 'white)
+                      (text "Word: " FONT-SIZE 'black)
                       (make-tape-img entire-word
                                      (if (> (length entire-word) TAPE-SIZE)
                                          (imsg-state-word-img-offset imsg-st)
@@ -616,17 +616,17 @@ visited is a (listof configuration)
                                          '()
                                          (list (list (length last-consumed-word) 'gray)
                                                (list (length last-consumed-word) 'red)))))
-              (beside (text "Consumed: " 20 'black)
+              (beside (text "Consumed: " FONT-SIZE 'black)
                       (if (empty? last-consumed-word)
-                          (text "" 20 'black)
+                          (text "" FONT-SIZE 'black)
                           (make-tape-img last-consumed-word
                                          (if (> (length last-consumed-word) TAPE-SIZE)
                                              (imsg-state-word-img-offset imsg-st)
                                              0)
                                          '()))))]
             [else (above/align 'left
-                               (beside (text "aaaa" 20 'white)
-                                       (text "Word: " 20 'black)
+                               (beside (text "aaaa" FONT-SIZE 'white)
+                                       (text "Word: " FONT-SIZE 'black)
                                        (make-tape-img entire-word
                                                       (if (> (length entire-word) TAPE-SIZE)
                                                           (imsg-state-word-img-offset imsg-st)
@@ -634,17 +634,17 @@ visited is a (listof configuration)
                                                       (if (empty? (imsg-state-pci imsg-st))
                                                           '()
                                                           (list (list (length (imsg-state-pci imsg-st)) 'gray) '()))))
-                               (beside (text "Consumed: " 20 'black)
+                               (beside (text "Consumed: " FONT-SIZE 'black)
                                        (make-tape-img (imsg-state-pci imsg-st)
                                                       (if (> (length (imsg-state-pci imsg-st)) TAPE-SIZE)
                                                           (imsg-state-word-img-offset imsg-st)
                                                           0)
                                                       '())))])
-      (cond [(zipper-empty? (imsg-state-stack imsg-st)) (text "aaaC" 20 'white)]
-            [(empty? current-stack) (beside (text "aaak" 20 'white)
-                                            (text "Stack: " 20 'black))]
-            [else (beside (text "aaak" 20 'white)
-                          (text "Stack: " 20 'black)
+      (cond [(zipper-empty? (imsg-state-stack imsg-st)) (text "aaaC" FONT-SIZE 'white)]
+            [(empty? current-stack) (beside (text "aaak" FONT-SIZE 'white)
+                                            (text "Stack: " FONT-SIZE 'black))]
+            [else (beside (text "aaak" FONT-SIZE 'white)
+                          (text "Stack: " FONT-SIZE 'black)
                           (make-tape-img current-stack
                                          (if (> (length current-stack) TAPE-SIZE)
                                              (imsg-state-word-img-offset imsg-st)
@@ -656,26 +656,26 @@ visited is a (listof configuration)
                                                   (sub1 (length (imsg-state-pci imsg-st))))
                                         (list-ref (imsg-state-comps-len imsg-st)
                                                   (length (imsg-state-pci imsg-st))))))
-            20
+            FONT-SIZE
             'brown)
       (cond [(and (not (empty? (imsg-state-upci imsg-st)))
                   (eq? (imsg-state-upci imsg-st) (imsg-state-farthest-consumed imsg-st))
                   (ormap (λ (comp) (>= (length comp) (imsg-state-max-cmps imsg-st)))
                          (imsg-state-comps imsg-st)))
-             (text (format "There are computations that exceed the cut-off limit (~a)." (imsg-state-max-cmps imsg-st)) 20 DARKGOLDENROD2)]
+             (text (format "There are computations that exceed the cut-off limit (~a)." (imsg-state-max-cmps imsg-st)) FONT-SIZE DARKGOLDENROD2)]
             [(not completed-config?)
-             (text "All computations do not consume the entire word and the machine rejects." 20 'red)]
+             (text "All computations do not consume the entire word and the machine rejects." FONT-SIZE 'red)]
             [(and (empty? (imsg-state-upci imsg-st))
                   (or (zipper-empty? (imsg-state-stack imsg-st))
                       (zipper-at-end? (imsg-state-stack imsg-st)))
                   (equal? machine-decision 'accept))
-             (text "There is a computation that accepts." 20 'forestgreen)]
+             (text "There is a computation that accepts." FONT-SIZE 'forestgreen)]
             [(and (empty? (imsg-state-upci imsg-st))
                   (or (zipper-empty? (imsg-state-stack imsg-st))
                       (zipper-at-end? (imsg-state-stack imsg-st)))
                   (equal? machine-decision 'reject))
-             (text "All computations end in a non-final configuration and the machine rejects." 20 'red)]
-            [else (text "Word Status: accept " 20 'white)]))
+             (text "All computations end in a non-final configuration and the machine rejects." FONT-SIZE 'red)]
+            [else (text "Word Status: accept " FONT-SIZE 'white)]))
      (rectangle 1250 50 'solid 'white))))
 
 ;;upci is the unprocessed consumed input (listof symbol)

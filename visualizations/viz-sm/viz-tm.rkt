@@ -190,7 +190,7 @@ visited is a (listof configuration)
              (member? (first (first (computation-LoC (qfirst QoC)))) finals equal?))
          (make-computations lor finals (dequeue QoC) (cons (qfirst QoC) path) max-cmps)]
         [else (let* (;;(listof rules)
-                     ;;Purpose: Holds all rules that consume a first letter in the given configurations
+                     ;;Purpose: Filters all the rules that can be applied to the configuration by reading the element in the rule
                      [connected-read-rules (filter (λ (rule)
                                                      (and (< (second (first (computation-LoC (qfirst QoC))))
                                                              (length (third (first (computation-LoC (qfirst QoC))))))
@@ -199,6 +199,7 @@ visited is a (listof configuration)
                                                                   (list-ref (third (first (computation-LoC (qfirst QoC))))
                                                                             (second (first (computation-LoC (qfirst QoC))))))))
                                                    lor)]
+                     ;;(listof computation)
                      [new-configs (filter (λ (new-c) 
                                             (not (member? (first (computation-LoC new-c)) (computation-visited new-c) equal?)))
                                           (map (λ (rule) (apply-rule (qfirst QoC) rule))
@@ -1046,7 +1047,7 @@ visited is a (listof configuration)
 ;;tm tape [natnum] [natnum] . -> (void) Throws error
 ;;Purpose: Visualizes the given ndfa processing the given word
 ;;Assumption: The given machine is a ndfa or dfa
-(define (tm-viz M a-word head-pos #:cut-off [cut-off 100] . invs)
+(define (tm-viz M a-word head-pos #:cut-off [cut-off 100] . invs) ;;GET RID OF . FOR TESTING
   (let* (;;(listof computations) ;;Purpose: All computations that the machine can have
          [computations (get-computations a-word (sm-rules M) (sm-start M) (sm-finals M) cut-off head-pos)]
          ;;(listof configurations) ;;Purpose: Extracts the configurations from the computation
