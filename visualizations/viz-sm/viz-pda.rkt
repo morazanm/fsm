@@ -1190,13 +1190,13 @@ visited is a (listof configuration)
 
 ;;pda word [boolean] [natnum] . -> (void)
 ;;Purpose: Visualizes the given pda processing the given word
-(define (pda-viz M a-word #:add-dead [add-dead #f] #:max-cmps [max-cmps 100] invs)
+(define (pda-viz M a-word #:add-dead [add-dead #f] #:cut-off [cut-off 100] invs)
   (let* (;;M ;;Purpose: A new machine with the dead state if add-dead is true
          [new-M (if add-dead (make-new-M M) M)]
          ;;symbol ;;Purpose: The name of the dead state
          [dead-state (if add-dead (last (pda-getstates new-M)) 'no-dead)]
          ;;(listof computations) ;;Purpose: All computations that the machine can have
-         [computations (get-computations a-word (pda-getrules new-M) (pda-getstart new-M) max-cmps)]
+         [computations (get-computations a-word (pda-getrules new-M) (pda-getstart new-M) cut-off)]
          ;;(listof configurations) ;;Purpose: Extracts the configurations from the computation
          [LoC (map computation-LoC computations)]
          ;;number ;;Purpose: The length of the word
@@ -1214,7 +1214,7 @@ visited is a (listof configuration)
                                               '()))
                                 accepting-computations)]
          ;;(listof trace) ;;Purpose: Gets the cut off trace if the the word length is greater than the cut
-         [cut-accept-traces (if (> word-len max-cmps)
+         [cut-accept-traces (if (> word-len cut-off)
                                 (map last accepting-traces)
                                 '())]
          ;;(listof trace) ;;Purpose: Gets the cut off trace if the the word length is greater than the cut
@@ -1254,13 +1254,13 @@ visited is a (listof configuration)
                                              new-M
                                              (if (and add-dead (not (empty? invs))) (cons (list dead-state (λ (w s) #t)) invs) invs) 
                                              dead-state
-                                             max-cmps
+                                             cut-off
                                              most-consumed-word)]
                      
          ;;(listof graph-thunk) ;;Purpose: Gets all the graphs needed to run the viz
          [graphs (create-graph-thunks building-state '())]
          ;;(listof computation) ;;Purpose: Gets all the cut off computations if the length of the word is greater than max computations
-         [get-cut-off-comp (if (> word-len max-cmps)
+         [get-cut-off-comp (if (> word-len cut-off)
                                (map first LoC)
                                '())]
          ;;(listof computation) ;;Purpose: Makes the cut off computations if the length of the word is greater than max computations
@@ -1297,7 +1297,7 @@ visited is a (listof configuration)
                                                (sub1 (length inv-configs))
                                                computation-lens
                                                LoC
-                                               max-cmps
+                                               cut-off
                                                0
                                                (let ([offset-cap (- (length a-word) TAPE-SIZE)])
                                                  (if (> 0 offset-cap) 0 offset-cap))

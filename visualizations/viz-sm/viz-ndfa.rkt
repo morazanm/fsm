@@ -396,13 +396,8 @@ triple is the entire of the ndfa rule
                   (empty? (imsg-state-upci imsg-st)))
              (above/align
               'left
-<<<<<<< Updated upstream
-              (beside (text "aaaC" 20 'white)
-                      (text "Word: " 20 'black)
-=======
               (beside (text "aaaa" FONT-SIZE 'white)
                       (text "Word: " FONT-SIZE 'black)
->>>>>>> Stashed changes
                       (if (equal? machine-decision 'accept)
                           (text (format "~a" EMP) FONT-SIZE 'gray)
                           (text (format "~a" EMP) FONT-SIZE 'red)))
@@ -413,13 +408,8 @@ triple is the entire of the ndfa rule
             [(and (not (empty? (imsg-state-pci imsg-st))) (not completed-config?))
              (above/align
               'left
-<<<<<<< Updated upstream
-              (beside (text "aaaC" 20 'white)
-                      (text "Word: " 20 'black)
-=======
               (beside (text "aaaa" FONT-SIZE 'white)
                       (text "Word: " FONT-SIZE 'black)
->>>>>>> Stashed changes
                       (make-tape-img entire-word
                                      (if (> (length entire-word) TAPE-SIZE)
                                          (imsg-state-word-img-offset imsg-st)
@@ -437,13 +427,8 @@ triple is the entire of the ndfa rule
                                              0)
                                          '()))))]
             [else (above/align 'left
-<<<<<<< Updated upstream
-                               (beside (text "aaaC" 20 'white)
-                                       (text "Word: " 20 'black)
-=======
                                (beside (text "aaaa" FONT-SIZE 'white)
                                        (text "Word: " FONT-SIZE 'black)
->>>>>>> Stashed changes
                                        (make-tape-img entire-word
                                                       (if (> (length entire-word) TAPE-SIZE)
                                                           (imsg-state-word-img-offset imsg-st)
