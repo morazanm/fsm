@@ -14,10 +14,12 @@
          "../../fsm-core/private/pda.rkt"
          "../../fsm-core/private/cfg.rkt"
          "../../fsm-core/private/misc.rkt"
+         "../viz-lib/viz-constants.rkt"
          "david-imsg-state.rkt"
          "david-viz-constants.rkt")
 
 (provide pda-viz)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 #|
 A rule is a structure:
