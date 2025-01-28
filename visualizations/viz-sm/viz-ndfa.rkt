@@ -1,20 +1,44 @@
 #lang racket
 
 (require "../../fsm-gviz/private/lib.rkt"
+         2htdp/universe
+         rackunit
+         (rename-in racket/gui/base [make-color loc-make-color] [make-pen loc-make-pen])
          2htdp/image
          "../viz-lib/viz.rkt"
          "../viz-lib/zipper.rkt"
          "../viz-lib/bounding-limits.rkt"
+         "../viz-lib/bounding-limits-macro.rkt"
          "../viz-lib/viz-state.rkt"
          "../viz-lib/viz-macros.rkt"
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "david-imsg-state.rkt"
          "david-viz-constants.rkt"
+         "../viz-lib/default-viz-function-generators.rkt"
+         math/matrix
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/fsa.rkt"
          "../../fsm-core/private/misc.rkt")
 
 (provide ndfa-viz)
+
+(define INFORMATIVE-MSG-HEIGHT 50)
+
+(create-bounding-limits E-SCENE-WIDTH E-SCENE-HEIGHT E-SCENE-TOOLS-WIDTH INFORMATIVE-MSG-HEIGHT FONT-SIZE LETTER-KEY-WIDTH-BUFFER INS-TOOLS-BUFFER
+((ARROW-UP-KEY "Restart")
+ (ARROW-RIGHT-KEY "Forward")
+ (ARROW-LEFT-KEY "Backward")
+ (ARROW-DOWN-KEY "Finish")
+ (CURSOR "Hold to drag")
+ (W-KEY "Zoom in")
+ (S-KEY "Zoom out")
+ (R-KEY "Min zoom")
+ (E-KEY "Mid zoom")
+ (F-KEY "Max zoom")
+ (A-KEY "Word start")
+ (D-KEY "Word end")
+ (J-KEY "Prv not inv")
+ (L-KEY "Nxt not inv")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -387,7 +411,7 @@ triple is the entire of the ndfa rule
                   (empty? (imsg-state-upci imsg-st)))
              (above/align
               'left
-              (beside (text "aaaa" 20 'white)
+              (beside (text "aaaC" 20 'white)
                       (text "Word: " 20 'black)
                       (if (equal? machine-decision 'accept)
                           (text (format "~a" EMP) 20 'gray)
@@ -399,7 +423,7 @@ triple is the entire of the ndfa rule
             [(and (not (empty? (imsg-state-pci imsg-st))) (not completed-config?))
              (above/align
               'left
-              (beside (text "aaaa" 20 'white)
+              (beside (text "aaaC" 20 'white)
                       (text "Word: " 20 'black)
                       (make-tape-img entire-word
                                      (if (> (length entire-word) TAPE-SIZE)
@@ -418,7 +442,7 @@ triple is the entire of the ndfa rule
                                              0)
                                          '()))))]
             [else (above/align 'left
-                               (beside (text "aaaa" 20 'white)
+                               (beside (text "aaaC" 20 'white)
                                        (text "Word: " 20 'black)
                                        (make-tape-img entire-word
                                                       (if (> (length entire-word) TAPE-SIZE)
@@ -937,6 +961,11 @@ triple is the entire of the ndfa rule
                                                         accepting-computations))
                                  invs)
                                 a-word))])
+        ;(struct building-viz-state (upci pci M inv dead))
+        ;(struct imsg-state (M upci pci))
+        ;;ANCHOR
+        ;rejecting-traces
+        ;inv-configs
         (run-viz graphs
                  (lambda () (graph->bitmap (first graphs)))
                  (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2))
@@ -947,13 +976,13 @@ triple is the entire of the ndfa rule
                                        (imsg-state new-M
                                                    a-word
                                                    '()
-                                                   (list->zipper accepting-traces)
+                                                   'no-acpt-trace
                                                    'no-stck
                                                    'no-farthest-consumed
                                                    (list->zipper inv-configs)
                                                    (sub1 (length inv-configs))
                                                    computation-lens
-                                                   LoC
+                                                   'no-comps
                                                    'no-max-cmps
                                                    0
                                                    (let ([offset-cap (- (length a-word) TAPE-SIZE)])
