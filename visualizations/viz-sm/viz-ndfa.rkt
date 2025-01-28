@@ -346,7 +346,7 @@ triple is the entire of the ndfa rule
                      #:atb (hash 'color (cond [(find-rule? rule dead current-a-rules) 'green]
                                               [(find-rule? rule dead current-rules) 'violetred]
                                               [else 'black])
-                                 'fontsize 20
+                                 'fontsize FONT-SIZE
                                  'style (cond [(equal? (third rule) dead) 'dashed]
                                               [(find-rule? rule dead current-a-rules) 'bold]
                                               [else 'solid]))))
@@ -396,20 +396,30 @@ triple is the entire of the ndfa rule
                   (empty? (imsg-state-upci imsg-st)))
              (above/align
               'left
+<<<<<<< Updated upstream
               (beside (text "aaaC" 20 'white)
                       (text "Word: " 20 'black)
+=======
+              (beside (text "aaaa" FONT-SIZE 'white)
+                      (text "Word: " FONT-SIZE 'black)
+>>>>>>> Stashed changes
                       (if (equal? machine-decision 'accept)
-                          (text (format "~a" EMP) 20 'gray)
-                          (text (format "~a" EMP) 20 'red)))
-              (beside (text "Consumed: " 20 'black)
+                          (text (format "~a" EMP) FONT-SIZE 'gray)
+                          (text (format "~a" EMP) FONT-SIZE 'red)))
+              (beside (text "Consumed: " FONT-SIZE 'black)
                       (if (equal? machine-decision 'accept)
-                          (text (format "~a" EMP) 20 'black)
-                          (text (format "~a" EMP) 20 'white))))]
+                          (text (format "~a" EMP) FONT-SIZE 'black)
+                          (text (format "~a" EMP) FONT-SIZE 'white))))]
             [(and (not (empty? (imsg-state-pci imsg-st))) (not completed-config?))
              (above/align
               'left
+<<<<<<< Updated upstream
               (beside (text "aaaC" 20 'white)
                       (text "Word: " 20 'black)
+=======
+              (beside (text "aaaa" FONT-SIZE 'white)
+                      (text "Word: " FONT-SIZE 'black)
+>>>>>>> Stashed changes
                       (make-tape-img entire-word
                                      (if (> (length entire-word) TAPE-SIZE)
                                          (imsg-state-word-img-offset imsg-st)
@@ -418,17 +428,22 @@ triple is the entire of the ndfa rule
                                          '()
                                          (list (list (length last-consumed-word) 'gray)
                                                (list (length last-consumed-word) 'red)))))
-              (beside (text "Consumed: " 20 'black)
+              (beside (text "Consumed: " FONT-SIZE 'black)
                       (if (empty? last-consumed-word)
-                          (text "" 20 'black)
+                          (text "" FONT-SIZE 'black)
                           (make-tape-img last-consumed-word
                                          (if (> (length last-consumed-word) TAPE-SIZE)
                                              (imsg-state-word-img-offset imsg-st)
                                              0)
                                          '()))))]
             [else (above/align 'left
+<<<<<<< Updated upstream
                                (beside (text "aaaC" 20 'white)
                                        (text "Word: " 20 'black)
+=======
+                               (beside (text "aaaa" FONT-SIZE 'white)
+                                       (text "Word: " FONT-SIZE 'black)
+>>>>>>> Stashed changes
                                        (make-tape-img entire-word
                                                       (if (> (length entire-word) TAPE-SIZE)
                                                           (imsg-state-word-img-offset imsg-st)
@@ -436,7 +451,7 @@ triple is the entire of the ndfa rule
                                                       (if (empty? (imsg-state-pci imsg-st))
                                                           '()
                                                           (list (list (length (imsg-state-pci imsg-st)) 'gray) '()))))
-                               (beside (text "Consumed: " 20 'black)
+                               (beside (text "Consumed: " FONT-SIZE 'black)
                                        (make-tape-img (imsg-state-pci imsg-st)
                                                       (if (> (length (imsg-state-pci imsg-st)) TAPE-SIZE)
                                                           (imsg-state-word-img-offset imsg-st)
@@ -445,17 +460,17 @@ triple is the entire of the ndfa rule
       (text (format "The current number of possible computations is ~a (without repeated configurations). "
                      (number->string (list-ref (imsg-state-comps-len imsg-st)
                                                (length (imsg-state-pci imsg-st)))))
-             20
+             FONT-SIZE
              'brown)
       (cond [(not completed-config?)
-              (text "All computations do not consume the entire word and the machine rejects." 20 'red)]
+              (text "All computations do not consume the entire word and the machine rejects." FONT-SIZE 'red)]
              [(and (empty? (imsg-state-upci imsg-st))
                    (equal? machine-decision 'accept))
-              (text "There is a computation that accepts." 20 'forestgreen)]
+              (text "There is a computation that accepts." FONT-SIZE 'forestgreen)]
              [(and (empty? (imsg-state-upci imsg-st))
                    (equal? machine-decision 'reject))
-              (text "All computations end in a non-final state and the machine rejects." 20 'red)]
-             [else (text "Word Status: accept " 20 'white)])
+              (text "All computations end in a non-final state and the machine rejects." FONT-SIZE 'red)]
+             [else (text "Word Status: accept " FONT-SIZE 'white)])
       )
      (rectangle 1250 50 'solid 'white))))
 
