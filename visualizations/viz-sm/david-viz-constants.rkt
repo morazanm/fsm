@@ -14,6 +14,7 @@
 (define BRKN-INV-COLOR 'red2)
 (define DARKGOLDENROD2 (make-color 238 173 14))
 (define GRAPHVIZ-CUTOFF-GOLD 'darkgoldenrod2)
+(define SM-VIZ-FONT-SIZE 18)
 
 (define DUMMY-RULE (list (list EMP EMP EMP) (list EMP EMP)))
 
@@ -47,7 +48,7 @@
            (scale 0.5 (rotate 310 (overlay/xy inner-white -9 -3 outer-black))))])
     (overlay/xy (rotate 25 cursor-rect) -7 -26 cursor-tri)))
 
-(define E-SCENE-TOOLS (e-scene-tools-generator HEIGHT-BUFFER LETTER-KEY-WIDTH-BUFFER 18
+(define E-SCENE-TOOLS (e-scene-tools-generator HEIGHT-BUFFER LETTER-KEY-WIDTH-BUFFER SM-VIZ-FONT-SIZE
                                                    (list (list ARROW-UP-KEY "Restart")
                                                          (list ARROW-RIGHT-KEY "Forward")
                                                          (list ARROW-LEFT-KEY "Backward")
@@ -68,66 +69,66 @@
   (let ([ARROW (above (triangle 30 'solid 'black) (rectangle 10 30 'solid 'black))])
     (beside/align
      "bottom"
-     (above ARROW-UP-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Restart" (- FONT-SIZE 2) 'black))
+     (above ARROW-UP-KEY (square HEIGHT-BUFFER 'solid 'white) (text "Restart" (- SM-VIZ-FONT-SIZE 2) 'black))
      (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
      (above ARROW-RIGHT-KEY
             (square HEIGHT-BUFFER 'solid 'white)
-            (text "Forward" (- FONT-SIZE 2) 'black))
+            (text "Forward" (- SM-VIZ-FONT-SIZE 2) 'black))
      (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
      (above ARROW-LEFT-KEY
             (square HEIGHT-BUFFER 'solid 'white)
-            (text "Backward" (- FONT-SIZE 2) 'black))
+            (text "Backward" (- SM-VIZ-FONT-SIZE 2) 'black))
      (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
      (above ARROW-DOWN-KEY
             (square HEIGHT-BUFFER 'solid 'white)
-            (text "Finish" (- FONT-SIZE 2) 'black))
+            (text "Finish" (- SM-VIZ-FONT-SIZE 2) 'black))
      (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
-     (above cursor (square HEIGHT-BUFFER 'solid 'white) (text "Hold to drag" (- FONT-SIZE 2) 'black))
+     (above cursor (square HEIGHT-BUFFER 'solid 'white) (text "Hold to drag" (- SM-VIZ-FONT-SIZE 2) 'black))
      (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
      (beside (above/align "middle"
                           W-KEY
                           (square HEIGHT-BUFFER 'solid 'white)
-                          (text "Zoom in" (- FONT-SIZE 2) 'black))
+                          (text "Zoom in" (- SM-VIZ-FONT-SIZE 2) 'black))
              (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
              (above/align "middle"
                           S-KEY
                           (square HEIGHT-BUFFER 'solid 'white)
-                          (text "Zoom out" (- FONT-SIZE 2) 'black))
+                          (text "Zoom out" (- SM-VIZ-FONT-SIZE 2) 'black))
              (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
              (above/align "middle"
                           R-KEY
                           (square HEIGHT-BUFFER 'solid 'white)
-                          (text "Min zoom" (- FONT-SIZE 2) 'black))
+                          (text "Min zoom" (- SM-VIZ-FONT-SIZE 2) 'black))
              (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
              (above/align "middle"
                           E-KEY
                           (square HEIGHT-BUFFER 'solid 'white)
-                          (text "Mid zoom" (- FONT-SIZE 2) 'black))
+                          (text "Mid zoom" (- SM-VIZ-FONT-SIZE 2) 'black))
              (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
              (above/align "middle"
                           F-KEY
                           (square HEIGHT-BUFFER 'solid 'white)
-                          (text "Max zoom" (- FONT-SIZE 2) 'black))
+                          (text "Max zoom" (- SM-VIZ-FONT-SIZE 2) 'black))
              (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
              (above/align "middle"
                           A-KEY
                           (square HEIGHT-BUFFER 'solid 'white)
-                          (text "Word start" (- FONT-SIZE 2) 'black))
+                          (text "Word start" (- SM-VIZ-FONT-SIZE 2) 'black))
              (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
              (above/align "middle"
                           D-KEY
                           (square HEIGHT-BUFFER 'solid 'white)
-                          (text "Word end" (- FONT-SIZE 2) 'black))
+                          (text "Word end" (- SM-VIZ-FONT-SIZE 2) 'black))
              (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
              (above/align "middle"
                           J-KEY
                           (square HEIGHT-BUFFER 'solid 'white)
-                          (text "Prv not inv" (- FONT-SIZE 2) 'black))
+                          (text "Prv not inv" (- SM-VIZ-FONT-SIZE 2) 'black))
              (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
              (above/align "middle"
                           L-KEY
                           (square HEIGHT-BUFFER 'solid 'white)
-                          (text "Nxt not inv" (- FONT-SIZE 2) 'black))))))
+                          (text "Nxt not inv" (- SM-VIZ-FONT-SIZE 2) 'black))))))
 
 (define E-SCENE-HEIGHT (- (* 0.9 WINDOW-HEIGHT)
                           INFORMATIVE-MSG-HEIGHT
@@ -164,25 +165,25 @@
 (define TAPE-IMG-HEIGHT (image-height (make-tape-img (list 'a) 0 '())))
 
 (define RULE-YIELD-DIMS
-  (let ([DREV (let ([drev-text (text "Deriving: " FONT-SIZE 'black)])
+  (let ([DREV (let ([drev-text (text "Deriving: " SM-VIZ-FONT-SIZE 'black)])
                 (overlay drev-text
                          (rectangle (image-width drev-text) TAPE-IMG-HEIGHT 'solid 'white)))]
-        [YIELD (let ([yield-text (text "Current Yield: " FONT-SIZE 'black)])
+        [YIELD (let ([yield-text (text "Current Yield: " SM-VIZ-FONT-SIZE 'black)])
                  (overlay yield-text
                           (rectangle (image-width yield-text) TAPE-IMG-HEIGHT 'solid 'white)))]
-        [RULE-USED (text "The rule used: " FONT-SIZE 'black)])
-    (bounding-limits (+ (image-width (rectangle 1 (* 2 FONT-SIZE) "solid" 'white))
-                        (image-width (beside (rectangle 1 (* 2 FONT-SIZE) "solid" 'white)
+        [RULE-USED (text "The rule used: " SM-VIZ-FONT-SIZE 'black)])
+    (bounding-limits (+ (image-width (rectangle 1 (* 2 SM-VIZ-FONT-SIZE) "solid" 'white))
+                        (image-width (beside (rectangle 1 (* 2 SM-VIZ-FONT-SIZE) "solid" 'white)
                                              (above/align "right" RULE-USED DREV YIELD))))
                      (* E-SCENE-WIDTH 0.9)
                      (+ E-SCENE-HEIGHT)
                      (+ E-SCENE-HEIGHT
-                        (image-height (beside (rectangle 1 (* 2 FONT-SIZE) "solid" 'white)
+                        (image-height (beside (rectangle 1 (* 2 SM-VIZ-FONT-SIZE) "solid" 'white)
                                               (above/align "right" RULE-USED DREV YIELD)))))))
 
 (define E-SCENE-TOOLS-WIDTH (image-width E-SCENE-TOOLS))
 
-(create-bounding-limits E-SCENE-WIDTH E-SCENE-HEIGHT E-SCENE-TOOLS-WIDTH RULE-YIELD-DIMS FONT-SIZE LETTER-KEY-WIDTH-BUFFER INS-TOOLS-BUFFER
+(create-bounding-limits E-SCENE-WIDTH E-SCENE-HEIGHT E-SCENE-TOOLS-WIDTH RULE-YIELD-DIMS SM-VIZ-FONT-SIZE LETTER-KEY-WIDTH-BUFFER INS-TOOLS-BUFFER
 ((ARROW-UP-KEY "Restart")
  (ARROW-RIGHT-KEY "Forward")
  (ARROW-LEFT-KEY "Backward")
