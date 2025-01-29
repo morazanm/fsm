@@ -48,13 +48,6 @@
                                             (current-continuation-marks)
                                             (map syntax-srcloc invalid-word-stx)))))))
 
-;; stx -> stx
-;; Purpose: Tests grammars
-(define-syntax (check-accept stx)
-  (syntax-parse stx
-    [(_ C:id G (~var w ) ...)
-     #'(accept C G #'G (list w ...) (list #'w ...))]))
-
 (define (reject C G G-stx unprocessed-word-lst unprocessed-word-stx-lst)
   (let* ([invalids (accumulate-invalid-words C unprocessed-word-lst unprocessed-word-stx-lst)]
          [invalid-words (map first invalids)]
@@ -89,32 +82,11 @@
                                             (current-continuation-marks)
                                             (map syntax-srcloc invalid-word-stx)))))))
 
-(define-syntax (check-reject stx)
-  (syntax-parse stx
-    [(_ C:id G (~var w ) ...)
-     #`(reject C G #'G (list w ...) (list #'w ...))]))
-
 ;; Syntax -> Syntax
 ;; Matches incorrect syntatic forms and provides specialized errors messages based on them
 (define-syntax (check-grammar stx)
-  #;(define-syntax-class
-    valid-word
-    (pattern (quote w)))
-  
-  #;(define-syntax-class
-    invalid-word
-    (pattern (~not (quote w))))
-  
   (syntax-parse stx
-    [(_ accept?:boolean C:id M (~var x #;valid-word) ...)
-     #'(if accept?
-           (check-accept C M x ...)
-           (check-reject C M x ...))]
-    
-    #;[(_ accept?:boolean C:id M (~or (~var valids valid-word)
-                                    (~var invalids invalid-word)) ...)
-     #'(raise (exn:fail:check-failed
-               (create-failure-str grammar-invalid-expression M (list invalids ...))
-               (current-continuation-marks)
-               (map syntax-srcloc (list #'invalids ...)))
-              #t)]))
+    [(_ #t C:id M (~var x) ...)
+     #'(accept C M #'M (list x ...) (list #'x ...))]
+    [(_ #f C:id M (~var x) ...)
+     #'(reject C M #'M (list x ...) (list #'x ...))]))

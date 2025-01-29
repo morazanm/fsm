@@ -275,7 +275,7 @@
 ;; Matches incorrect syntatic forms and provides specialized errors messages based on them
 (define-syntax (check-turing-machine stx)
   (syntax-parse stx
-    [(_ accept?:boolean C:id M (~var first-pairs) ... )
-     #'(if accept?
-           (check-accept C M (first-pairs ...) (first-pairs ...))
-           (check-reject C M (first-pairs ...) (first-pairs ...)))]))
+    [(_ #t C:id M (~var first-pairs) ... )
+     #'(check-accept C M (first-pairs ...) (first-pairs ...))]
+    [(_ #f C:id M (~var first-pairs) ... )
+     #'(check-reject C M (first-pairs ...) (first-pairs ...))]))

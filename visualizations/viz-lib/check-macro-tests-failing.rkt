@@ -34,7 +34,7 @@ E - ci = ab* final
 
 |#
 
-    
+
 (define AB*B*UAB*
   (make-ndfa '(S K B C H)
              '(a b)
@@ -47,6 +47,8 @@ E - ci = ab* final
                (B b K)
                (C ,EMP H)
                (H b H))))
+
+
 
 (check-reject AB*B*UAB* '(z))
 (check-reject AB*B*UAB*
