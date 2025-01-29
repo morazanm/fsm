@@ -16,9 +16,6 @@
          racket/local
          racket/string)
 
-
-
-
 (provide cfg-viz)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -101,7 +98,7 @@
   ;; Purpose: Determines if a symbol is down case
   (define (lower? symbol)
     (not (char-upper-case? (string-ref (symbol->string symbol) 0))))
-  #;(define subtree-copy (struct-copy tree subtree))
+  
   (define (get-yield-helper subtree)
     (foldl (lambda (node yield)
              (cond
@@ -138,9 +135,7 @@
                     (define (check-all-invariant-nodes nonterminals invar-func broken-nodes)
                       (if (empty? nonterminals)
                           (if (empty? broken-nodes) #t broken-nodes)
-                          (if (invariant-holds? (begin #;(displayln (format "tree:~s \n first nts: ~s \n\n\n" tree (first nonterminals)))
-                                                       (dfs tree (first nonterminals))
-                                                       ) invar-func)
+                          (if (invariant-holds? (dfs tree (first nonterminals)) invar-func)
                               (check-all-invariant-nodes (rest nonterminals) invar-func broken-nodes)
                               (check-all-invariant-nodes (rest nonterminals)
                                                          invar-func
@@ -239,44 +234,32 @@
   (foldl (λ (state result)
            (add-node result
                      state
-                     #:atb (hash 'color
-                                 (cond
-                                   [(member state hedge-nodes) HEDGE-COLOR]
-                                   [(member state yield-node) YIELD-COLOR]
-                                   [else 'black])
-                                 'style
-                                 'filled
-                                 #;(if (or (member state hedge-nodes)
-                                           (member state yield-node))
-                                       'dashed
-                                       'filled)
-                                 'fillcolor
-                                 (cond
-                                   [(not (member (undo-renaming state) has-invariant)) 'white]
-                                   [(and (member (undo-renaming state) has-invariant)
-                                         (not (member state producing-nodes)))
-                                    'white]
-                                   [(and (member (undo-renaming state) has-invariant)
-                                         (member state producing-nodes)
-                                         (member state broken-invariants?))
-                                    INVARIANT-BROKEN-COLOR]
-                                   [(and (member (undo-renaming state) has-invariant)
-                                         (member state producing-nodes)
-                                         (not (member state broken-invariants?)))
-                                    INVARIANT-HOLDS-COLOR])
-                                 'shape
-                                 'circle
-                                 'label
-                                 (string->symbol (string (string-ref (symbol->string state) 0)))
-                                 'fontcolor
-                                 'black
-                                 'font
-                                 "Sans"
-                                 'penwidth
-                                 (cond
-                                   [(member state hedge-nodes) 3.0]
-                                   [(member state yield-node) 3.0]
-                                   [else 1.0]))))
+                     #:atb (hash 'color (cond
+                                          [(member state hedge-nodes) HEDGE-COLOR]
+                                          [(member state yield-node) YIELD-COLOR]
+                                          [else 'black])
+                                 'style 'filled
+                                 'fillcolor (cond
+                                              [(not (member (undo-renaming state) has-invariant)) 'white]
+                                              [(and (member (undo-renaming state) has-invariant)
+                                                    (not (member state producing-nodes)))
+                                               'white]
+                                              [(and (member (undo-renaming state) has-invariant)
+                                                    (member state producing-nodes)
+                                                    (member state broken-invariants?))
+                                               INVARIANT-BROKEN-COLOR]
+                                              [(and (member (undo-renaming state) has-invariant)
+                                                    (member state producing-nodes)
+                                                    (not (member state broken-invariants?)))
+                                               INVARIANT-HOLDS-COLOR])
+                                 'shape 'circle
+                                 'label (string->symbol (string (string-ref (symbol->string state) 0)))
+                                 'fontcolor 'black
+                                 'font "Sans"
+                                 'penwidth (cond
+                                             [(member state hedge-nodes) 3.0]
+                                             [(member state yield-node) 3.0]
+                                             [else 1.0]))))
          graph
          (reverse lon)))
 
@@ -327,8 +310,6 @@
          [hedges (dgrph-hedges a-dgrph)]
          [invariant-nts (map first invariants)]
          [producing-nodes (map (lambda (edge) (first edge)) (append* levels))]
-         
-         
          [invariant-nodes
           (cons root-node
                 (append-map
@@ -363,7 +344,6 @@
   (let* ([nodes (dgrph-nodes a-dgrph)]
          [levels (map reverse (dgrph-ad-levels a-dgrph))]
          [producing-nodes (map (lambda (edge) (first edge)) (append* levels))]
-         #;[test0 (displayln (format "nodes:~s" nodes))]
          [invariant-nodes
           (let ([all-but-starting-nt
                  (append-map
@@ -379,7 +359,6 @@
             (if (member root-node producing-nodes)
                 (cons root-node all-but-starting-nt)
                 all-but-starting-nt))]
-         #;[test1 (displayln (format "invar-nodes: ~s" invariant-nodes))]
          [broken-invariants
           (check-all-invariants (first (dgrph-p-yield-trees a-dgrph)) invariant-nodes invariants)])
     broken-invariants))
@@ -780,7 +759,7 @@
 ;; cfg-viz
 ;; cfg (listof Symbol) Symbol . (listof (list Symbol ((listof Symbol) -> boolean))) -> visualization
 ;; Starts the visualization
-(define (cfg-viz cfg word [derv-type 'left] . invariants)
+(define (cfg-viz cfg word #:derv-type [derv-type 'left] #:cpu-cores [cpu-cores #f]. invariants)
   (if (or (eq? derv-type 'left) (eq? derv-type 'right))
       (let ([derivation (if (eq? derv-type 'left)
                             (cfg-derive-leftmost cfg word)
@@ -848,6 +827,7 @@
                         rules
                         graphs
                         broken-invariants
+                        #:cpu-cores cpu-cores
                         #:special-graphs? 'cfg
                         #:rank-node-lst rank-node-lvls))))
       (let ([derivation (if (equal? derv-type 'level-left)
@@ -891,14 +871,13 @@
                                                                       (cfg-get-alphabet cfg))))]
                    [w-der (convert-yield-deriv-to-word-deriv word derivation)]
                    [yield-trees (map (lambda (x) (create-yield-tree x (cfg-get-start cfg))) (map reverse (create-list-of-levels renamed)))]
-                   #;[test9 (displayln (format "yield-trees: ~s" yield-trees))]
                    [dgraph (dgrph renamed
                                   '()
                                   '()
                                   '()
                                   (append (rest rules) (list "" ""))
                                   (list (first rules))
-                                  (map (lambda (x) (first yield-trees)) yield-trees) #;(reverse yield-trees)
+                                  (map (lambda (x) (first yield-trees)) yield-trees)
                                   (list (tree (cfg-get-start cfg) '())))]
                    [lod (reverse (create-dgrphs dgraph '()))]
                    [invar-nodes
@@ -937,8 +916,7 @@
                         graphs
                         broken-invariants
                         #:special-graphs? 'cfg
-                        #:rank-node-lst rank-node-lvls)))))
-  )
+                        #:rank-node-lst rank-node-lvls))))))
 
 (define numb>numa
   (make-unchecked-cfg
@@ -990,171 +968,7 @@
    '(a b c d)
    `((S ,ARROW ,EMP) (S ,ARROW AB) (A ,ARROW aSb) (B ,ARROW cBd) (A ,ARROW ,EMP) (B ,ARROW ,EMP))
    'S))
-(cfg-viz numb>numa '(b b b b b b a a) 'level-left)
-#;(cfg-viz buggy-numb>numa '(a b a) 'left (list 'S S-INV) (list 'A A-INV))
-;(cfg-viz testcfg '(a a b b c c c d d d) 'left)
-#;
-(time (cfg-derive-queue-and-hash testcfg
-                                 '(a a a a a a a a b b b b b b b b b c c c c c c c c d d d d d d d d)
-                                 'left))
 
-
-
-#;'(
-    ((S))
-    ((S) (A0 B0))
-    ((S) (A0 B0) (a0 S0 b0)) ((S) (A0 B0) (a0 S0 b0) (A1 B1)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3) (A4 B4)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3) (A4 B4) (a4 S4 b4)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3) (A4 B4) (a4 S4 b4) (ε0)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3) (A4 B4) (a4 S4 b4) (ε0) (ε1)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3) (A4 B4) (a4 S4 b4) (ε0) (ε1) (ε2)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3) (A4 B4) (a4 S4 b4) (ε0) (ε1) (ε2) (ε3)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3) (A4 B4) (a4 S4 b4) (ε0) (ε1) (ε2) (ε3) (ε4)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3) (A4 B4) (a4 S4 b4) (ε0) (ε1) (ε2) (ε3) (ε4) (c0 B5 d0)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3) (A4 B4) (a4 S4 b4) (ε0) (ε1) (ε2) (ε3) (ε4) (c0 B5 d0) (c1 B6 d1)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3) (A4 B4) (a4 S4 b4) (ε0) (ε1) (ε2) (ε3) (ε4) (c0 B5 d0) (c1 B6 d1) (c2 B7 d2)) ((S) (A0 B0) (a0 S0 b0) (A1 B1) (a1 S1 b1) (A2 B2) (a2 S2 b2) (A3 B3) (a3 S3 b3) (A4 B4) (a4 S4 b4) (ε0) (ε1) (ε2) (ε3) (ε4) (c0 B5 d0) (c1 B6 d1) (c2 B7 d2) (ε5)))
-
-
-
-
-
-
-
-#;'(
-    #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 (#(struct:tree ε1 ()))))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 (#(struct:tree b4 ()) #(struct:tree A7 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()) #(struct:tree A4 (#(struct:tree A8 (#(struct:tree ε3 ()))) #(struct:tree b5 ()) #(struct:tree A9 (#(struct:tree ε4 ()))) #(struct:tree a1 ()) #(struct:tree A10 (#(struct:tree ε5 ()))))) #(struct:tree a0 ()) #(struct:tree A5 (#(struct:tree ε0 ())))))))
-    #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 (#(struct:tree ε1 ()))))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 (#(struct:tree b4 ()) #(struct:tree A7 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()) #(struct:tree A4 (#(struct:tree A8 (#(struct:tree ε3 ()))) #(struct:tree b5 ()) #(struct:tree A9 (#(struct:tree ε4 ()))) #(struct:tree a1 ()) #(struct:tree A10 ()))) #(struct:tree a0 ()) #(struct:tree A5 (#(struct:tree ε0 ())))))))
-    #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 (#(struct:tree ε1 ()))))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 (#(struct:tree b4 ()) #(struct:tree A7 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()) #(struct:tree A4 (#(struct:tree A8 (#(struct:tree ε3 ()))) #(struct:tree b5 ()) #(struct:tree A9 ()) #(struct:tree a1 ()) #(struct:tree A10 ()))) #(struct:tree a0 ()) #(struct:tree A5 (#(struct:tree ε0 ())))))))
-    #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 (#(struct:tree ε1 ()))))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 (#(struct:tree b4 ()) #(struct:tree A7 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()) #(struct:tree A4 (#(struct:tree A8 ()) #(struct:tree b5 ()) #(struct:tree A9 ()) #(struct:tree a1 ()) #(struct:tree A10 ()))) #(struct:tree a0 ()) #(struct:tree A5 (#(struct:tree ε0 ())))))))
-    #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 (#(struct:tree ε1 ()))))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 (#(struct:tree b4 ()) #(struct:tree A7 ()))) #(struct:tree b2 ()) #(struct:tree A4 (#(struct:tree A8 ()) #(struct:tree b5 ()) #(struct:tree A9 ()) #(struct:tree a1 ()) #(struct:tree A10 ()))) #(struct:tree a0 ()) #(struct:tree A5 (#(struct:tree ε0 ())))))))
-    #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 ()))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 (#(struct:tree b4 ()) #(struct:tree A7 ()))) #(struct:tree b2 ()) #(struct:tree A4 (#(struct:tree A8 ()) #(struct:tree b5 ()) #(struct:tree A9 ()) #(struct:tree a1 ()) #(struct:tree A10 ()))) #(struct:tree a0 ()) #(struct:tree A5 (#(struct:tree ε0 ())))))))
-    #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 ()))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 (#(struct:tree b4 ()) #(struct:tree A7 ()))) #(struct:tree b2 ()) #(struct:tree A4 (#(struct:tree A8 ()) #(struct:tree b5 ()) #(struct:tree A9 ()) #(struct:tree a1 ()) #(struct:tree A10 ()))) #(struct:tree a0 ()) #(struct:tree A5 ())))))
-    #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 ()))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 (#(struct:tree b4 ()) #(struct:tree A7 ()))) #(struct:tree b2 ()) #(struct:tree A4 ()) #(struct:tree a0 ()) #(struct:tree A5 ())))))
-    #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 (#(struct:tree b3 ()) #(struct:tree A6 ()))))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 ()) #(struct:tree b2 ()) #(struct:tree A4 ()) #(struct:tree a0 ()) #(struct:tree A5 ())))))
-    #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 ()))) #(struct:tree b0 ()) #(struct:tree A1 (#(struct:tree A3 ()) #(struct:tree b2 ()) #(struct:tree A4 ()) #(struct:tree a0 ()) #(struct:tree A5 ())))))
-    #(struct:tree S (#(struct:tree A0 (#(struct:tree b1 ()) #(struct:tree A2 ()))) #(struct:tree b0 ()) #(struct:tree A1 ())))
-    #(struct:tree S (#(struct:tree A0 ()) #(struct:tree b0 ()) #(struct:tree A1 ())))
-    )
-
-
-
-
-
-
-
-
-
-#;(define (test-cfg-viz cfg word derv-type num-trials . invariants)
-  (define thrd-box (make-vector 1 '()))
-  (let [(derivation (cfg-derive-leftmost cfg word))]
-    (if (string? derivation)
-        derivation
-        (let* ([der-with-rules (w-der-with-rules derivation)]
-                   [rules
-                    (cons ""
-                          (cond
-                            [(eq? derv-type 'left)
-                             (create-rules-leftmost (move-rule-applications-in-list der-with-rules))]
-                            [(eq? derv-type 'right)
-                             (create-rules-rightmost (move-rule-applications-in-list
-                                                      der-with-rules))]))]
-                   [w-der (list-of-states der-with-rules)]
-                   [renamed (generate-levels-list
-                             (first (first (first der-with-rules)))
-                             (list-of-rules (move-rule-applications-in-list der-with-rules))
-                             '()
-                             (make-hash)
-                             derv-type)]
-                   [rank-node-lvls (cons (list (list (cfg-get-start cfg)))
-                                         (accumulate-previous-ranks
-                                          (map (lambda (x) (map (lambda (y) (second y)) x)) renamed)
-                                          (list (list (cfg-get-start cfg)))))]
-                   [yield-trees (map (lambda (x) (create-yield-tree x (cfg-get-start cfg))) (map reverse (create-list-of-levels renamed)))]
-                   
-                   [dgraph (dgrph renamed
-                                  '()
-                                  '()
-                                  '()
-                                  (rest rules)
-                                  (list (first rules))
-                                  (map (lambda (x) (first yield-trees)) yield-trees)
-                                  (list (tree (cfg-get-start cfg) '())))]
-                   [lod (reverse (create-dgrphs dgraph '()))]
-                   [invar-nodes
-                    (map (lambda (a-dgrph)
-                           (create-invariant-nodes a-dgrph invariants (cfg-get-start cfg) derv-type))
-                         lod)]
-                   [ordered-nodes
-                    (reverse (map (if (eq? derv-type 'left) get-leftmost-order get-rightmost-order)
-                                  yield-trees))]
-                   [broken-invariants
-                    (if (empty? invariants)
-                        'NO-INV
-                        (list->zipper (cons '()
-                                            (map (lambda (lst) (map undo-renaming lst))
-                                                 (map reverse
-                                                      (rest (get-ordered-invariant-nodes
-                                                             (cons (list (cfg-get-start cfg)) ordered-nodes)
-                                                             invar-nodes)))))))]
-                   [graphs (map (lambda (dgrph node-lvls)
-                                  (create-graph-structs dgrph
-                                                        invariants
-                                                        derv-type
-                                                        (cfg-get-start cfg)
-                                                        node-lvls))
-                                lod
-                                rank-node-lvls)])
-              (testing-init-viz cfg
-                        word
-                        w-der
-                        rules
-                        graphs
-                        broken-invariants
-                        thrd-box
-                        #:special-graphs? 'cfg
-                        #:rank-node-lst rank-node-lvls))
-        #;(let* [(der-with-rules (w-der-with-rules derivation))
-               (rules (cons "" (create-rules-leftmost (move-rule-applications-in-list der-with-rules))))
-               (w-der (list-of-states der-with-rules))
-               (renamed (generate-levels-list (first (first (first der-with-rules)))
-                                              (list-of-rules (move-rule-applications-in-list der-with-rules))
-                                              '()
-                                              (make-hash)
-                                              'left))
-               (yield-trees (map (lambda (x) (create-yield-tree x (cfg-get-start cfg))) (map reverse (create-list-of-levels renamed))))
-               (dgraph (dgrph renamed '() '() '() (rest rules) (list (first rules)) (reverse yield-trees) (list (tree (cfg-get-start cfg) '()))))
-               (lod (reverse (create-dgrphs dgraph '())))]
-              
-          (define normal-graph-times (make-vector num-trials '()))
-          (define parallel-graph-times (make-vector num-trials '()))
-              
-          (define num-cores (find-number-of-cores))
-          (define cpu-1-core (make-vector num-trials '()))
-              
-          (define gstructs (map (lambda (dgrph node-lvl) (create-graph-structs dgrph '() 'left (cfg-get-start cfg) node-lvl)) lod (cons (list (list 'S))
-                                                                                                                                        (accumulate-previous-ranks
-                                                                                                                                         (map (lambda (x) (map (lambda (y) (second y)) x)) renamed)
-                                                                                                                                         (list (list 'S))))))
-
-          (define thrd-box (make-vector 1 '()))
-          (for ([i (range num-trials)])
-            (vector-set! cpu-1-core i
-                         (third (match/values (time-apply (lambda (lod) (vector-set! thrd-box 0 (testing-streaming-parallel-graphs->bitmap-thunks gstructs))) (list lod))
-                                              [(cpu-1-core-results (? number? cpu-time)
-                                                                   (? number? real-time)
-                                                                   (? number? gc-time))
-                                               (list cpu-1-core-results cpu-time real-time gc-time)])))
-            (thread-wait (vector-ref thrd-box 0))
-
-            #;(vector-set! normal-graph-times i (third (match/values (time-apply (lambda (lod) (parallel-graphs->bitmap-thunks gstructs #:cpu-cores 1)) (list lod))
-                                                                     [(ng-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list ng-results cpu-time real-time gc-time)]
-                                                                     )))
-            #;(vector-set! parallel-graph-times i (third (match/values (time-apply (lambda (lod) (parallel-graphs->bitmap-thunks gstructs)) (list lod))
-                                                                       [(cpufull-results (? number? cpu-time) (? number? real-time) (? number? gc-time)) (list cpufull-results cpu-time real-time gc-time)]
-                                                                       )))
-            )
-          ;(displayln "64")
-          (displayln (vector->list cpu-1-core))
-           
-          )
-        )
-    )
-  )
-
-;(test-cfg-viz 10)
-
-
-#;(cfg-viz numb>numa '(b b b b b b a a) 'level-left (list 'S S-INV) (list 'A A-INV))
 (define lang3-grammar (make-unchecked-cfg
                        '(P E)
                        '(n t f i m o c z)
@@ -1167,298 +981,3 @@
                          (E ,ARROW zoEo)
                          )
                        'P))
-#;(test-cfg-viz lang3-grammar '(m o n c n o) 10)
-;(cfg-viz lang3-grammar '(- op num cm num cp))
-(cfg-viz testcfg
-         '(a
-           a
-           a
-           a
-           a
-           a
-           a
-           a
-           a
-           a
-           a
-           a
-           a
-           a
-           a
-           a
-           b
-           b
-           b
-           b
-           b
-           b
-           b
-           b
-           b
-           b
-           b
-           b
-           b
-           b
-           b
-           b
-           c
-           c
-           c
-           c
-           c
-           c
-           c
-           c
-           c
-           c
-           c
-           c
-           c
-           c
-           c
-           c
-           d
-           d
-           d
-           d
-           d
-           d
-           d
-           d
-           d
-           d
-           d
-           d
-           d
-           d
-           d
-           d)
-         'left)
-
-#;'(
-    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 (#(struct:tree a4 ()) #(struct:tree S4 (#(struct:tree ε0 ()))) #(struct:tree b4 ()))) #(struct:tree B4 (#(struct:tree ε1 ()))))) #(struct:tree b3 ()))) #(struct:tree B3 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()))) #(struct:tree B2 (#(struct:tree ε3 ()))))) #(struct:tree b1 ()))) #(struct:tree B1 (#(struct:tree ε4 ()))))) #(struct:tree b0 ()))) #(struct:tree B0 (#(struct:tree c0 ()) #(struct:tree B5 (#(struct:tree c1 ()) #(struct:tree B6 (#(struct:tree c2 ()) #(struct:tree B7 (#(struct:tree ε5 ()))) #(struct:tree d2 ()))) #(struct:tree d1 ()))) #(struct:tree d0 ())))))
-    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 (#(struct:tree a4 ()) #(struct:tree S4 (#(struct:tree ε0 ()))) #(struct:tree b4 ()))) #(struct:tree B4 (#(struct:tree ε1 ()))))) #(struct:tree b3 ()))) #(struct:tree B3 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()))) #(struct:tree B2 (#(struct:tree ε3 ()))))) #(struct:tree b1 ()))) #(struct:tree B1 (#(struct:tree ε4 ()))))) #(struct:tree b0 ()))) #(struct:tree B0 (#(struct:tree c0 ()) #(struct:tree B5 (#(struct:tree c1 ()) #(struct:tree B6 (#(struct:tree c2 ()) #(struct:tree B7 ()) #(struct:tree d2 ()))) #(struct:tree d1 ()))) #(struct:tree d0 ())))))
-    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 (#(struct:tree a4 ()) #(struct:tree S4 (#(struct:tree ε0 ()))) #(struct:tree b4 ()))) #(struct:tree B4 (#(struct:tree ε1 ()))))) #(struct:tree b3 ()))) #(struct:tree B3 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()))) #(struct:tree B2 (#(struct:tree ε3 ()))))) #(struct:tree b1 ()))) #(struct:tree B1 (#(struct:tree ε4 ()))))) #(struct:tree b0 ()))) #(struct:tree B0 (#(struct:tree c0 ()) #(struct:tree B5 (#(struct:tree c1 ()) #(struct:tree B6 ()) #(struct:tree d1 ()))) #(struct:tree d0 ())))))
-    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 (#(struct:tree a4 ()) #(struct:tree S4 (#(struct:tree ε0 ()))) #(struct:tree b4 ()))) #(struct:tree B4 (#(struct:tree ε1 ()))))) #(struct:tree b3 ()))) #(struct:tree B3 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()))) #(struct:tree B2 (#(struct:tree ε3 ()))))) #(struct:tree b1 ()))) #(struct:tree B1 (#(struct:tree ε4 ()))))) #(struct:tree b0 ()))) #(struct:tree B0 (#(struct:tree c0 ()) #(struct:tree B5 ()) #(struct:tree d0 ())))))
-    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 (#(struct:tree a4 ()) #(struct:tree S4 (#(struct:tree ε0 ()))) #(struct:tree b4 ()))) #(struct:tree B4 (#(struct:tree ε1 ()))))) #(struct:tree b3 ()))) #(struct:tree B3 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()))) #(struct:tree B2 (#(struct:tree ε3 ()))))) #(struct:tree b1 ()))) #(struct:tree B1 (#(struct:tree ε4 ()))))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
-    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 (#(struct:tree a4 ()) #(struct:tree S4 (#(struct:tree ε0 ()))) #(struct:tree b4 ()))) #(struct:tree B4 (#(struct:tree ε1 ()))))) #(struct:tree b3 ()))) #(struct:tree B3 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()))) #(struct:tree B2 (#(struct:tree ε3 ()))))) #(struct:tree b1 ()))) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
-    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 (#(struct:tree a4 ()) #(struct:tree S4 (#(struct:tree ε0 ()))) #(struct:tree b4 ()))) #(struct:tree B4 (#(struct:tree ε1 ()))))) #(struct:tree b3 ()))) #(struct:tree B3 (#(struct:tree ε2 ()))))) #(struct:tree b2 ()))) #(struct:tree B2 ()))) #(struct:tree b1 ()))) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
-    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 (#(struct:tree a4 ()) #(struct:tree S4 (#(struct:tree ε0 ()))) #(struct:tree b4 ()))) #(struct:tree B4 (#(struct:tree ε1 ()))))) #(struct:tree b3 ()))) #(struct:tree B3 ()))) #(struct:tree b2 ()))) #(struct:tree B2 ()))) #(struct:tree b1 ()))) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
-    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 (#(struct:tree a4 ()) #(struct:tree S4 (#(struct:tree ε0 ()))) #(struct:tree b4 ()))) #(struct:tree B4 ()))) #(struct:tree b3 ()))) #(struct:tree B3 ()))) #(struct:tree b2 ()))) #(struct:tree B2 ()))) #(struct:tree b1 ()))) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
-    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 (#(struct:tree a4 ()) #(struct:tree S4 ()) #(struct:tree b4 ()))) #(struct:tree B4 ()))) #(struct:tree b3 ()))) #(struct:tree B3 ()))) #(struct:tree b2 ()))) #(struct:tree B2 ()))) #(struct:tree b1 ()))) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
-    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 (#(struct:tree A4 ()) #(struct:tree B4 ()))) #(struct:tree b3 ()))) #(struct:tree B3 ()))) #(struct:tree b2 ()))) #(struct:tree B2 ()))) #(struct:tree b1 ()))) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
-    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 (#(struct:tree a3 ()) #(struct:tree S3 ()) #(struct:tree b3 ()))) #(struct:tree B3 ()))) #(struct:tree b2 ()))) #(struct:tree B2 ()))) #(struct:tree b1 ()))) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
-    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 (#(struct:tree A3 ()) #(struct:tree B3 ()))) #(struct:tree b2 ()))) #(struct:tree B2 ()))) #(struct:tree b1 ()))) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
-    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 (#(struct:tree a2 ()) #(struct:tree S2 ()) #(struct:tree b2 ()))) #(struct:tree B2 ()))) #(struct:tree b1 ()))) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
-    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 (#(struct:tree A2 ()) #(struct:tree B2 ()))) #(struct:tree b1 ()))) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
-    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 (#(struct:tree a1 ()) #(struct:tree S1 ()) #(struct:tree b1 ()))) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
-    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 (#(struct:tree A1 ()) #(struct:tree B1 ()))) #(struct:tree b0 ()))) #(struct:tree B0 ())))
-    #(struct:tree S (#(struct:tree A0 (#(struct:tree a0 ()) #(struct:tree S0 ()) #(struct:tree b0 ()))) #(struct:tree B0 ())))
-    #(struct:tree S (#(struct:tree A0 ()) #(struct:tree B0 ())))
-    )
-
-#;(cfg-viz testcfg
-           '(a
-             a
-             a
-             a
-             a
-             b
-             b
-             b
-             b
-             b
-             c
-             c
-             c
-             d
-             d
-             d)
-           'left)
-
-#|
-( #:preview? #t #:svg-path "flamegraph2.svg")displayln "16")
-(test-cfg-viz testcfg
-              '(a
-                a
-                a
-                a
-                a
-                b
-                b
-                b
-                b
-                b
-                c
-                c
-                c
-                d
-                d
-                d)
-              200)
-
-
-(displayln "32")
-(test-cfg-viz testcfg
-              '(a
-                a
-                a
-                a
-                a
-                a
-                a
-                a
-                a
-                b
-                b
-                b
-                b
-                b
-                b
-                b
-                b
-                b
-                c
-                c
-                c
-                c
-                c
-                c
-                c
-                d
-                d
-                d
-                d
-                d
-                d
-                d)
-              200)
-
-
-
-(displayln "48")
-(test-cfg-viz testcfg
-              '(a
-                a
-                a
-                a
-                a
-                a
-                a
-                a
-                a
-                a
-                a
-                a
-                a
-                b
-                b
-                b
-                b
-                b
-                b
-                b
-                b
-                b
-                b
-                b
-                b
-                b
-                c
-                c
-                c
-                c
-                c
-                c
-                c
-                c
-                c
-                c
-                c
-                d
-                d
-                d
-                d
-                d
-                d
-                d
-                d
-                d
-                d
-                d)
-              200)
-
-(displayln "64")
-(test-cfg-viz testcfg
-              '(a
-                a
-                a
-                a
-                a
-                a
-                a
-                a
-                a
-                a
-                a
-                a
-                a
-                a
-                a
-                a
-                b
-                b
-                b
-                b
-                b
-                b
-                b
-                b
-                b
-                b
-                b
-                b
-                b
-                b
-                b
-                b
-                c
-                c
-                c
-                c
-                c
-                c
-                c
-                c
-                c
-                c
-                c
-                c
-                c
-                c
-                c
-                c
-                d
-                d
-                d
-                d
-                d
-                d
-                d
-                d
-                d
-                d
-                d
-                d
-                d
-                d
-                d
-                d)
-              200)
-|#
-;(grammar-derive numb>numa '(a b b a a b b a b b b))
-
-#;(define G (make-cfg '(S) '(a b) `((S ,ARROW ,EMP) (S ,ARROW aS)) 'S))
-;(cfg-derive-with-rule-application G '(a a a) 'left)
-#;(cfg-viz G '(a a a) 'right)

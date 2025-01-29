@@ -1,8 +1,7 @@
 #lang racket
-(require "../../fsm-core/interface.rkt"
-         rackunit
-         "../../fsm-core/private/callgraphs/transdiagram-ctm6.rkt"
-         "viz-ctm.rkt")
+(require "../../main.rkt")
+
+;; CAN ONLY BE TESTED IF PRECONDITION IS SATISFIED
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; tms
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

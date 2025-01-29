@@ -27,7 +27,6 @@
 (define ARROW-UP-KEY (bitmap/file ARROW-UP-KEY-PATH))
 (define ARROW-DOWN-KEY (bitmap/file ARROW-DOWN-KEY-PATH))
 
-
 (define CURSOR
   (scale 0.9 (let ([cursor-rect (let ([inner-white (rectangle 5 17.5 'solid 'white)]
                            [outer-black (rectangle 9 20 'solid 'black)]

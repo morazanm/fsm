@@ -58,6 +58,7 @@
                                [max-x (+ min-x (image-width first-pair.name))]
                                [min-y (+ E-SCENE-HEIGHT
                                          (bounding-limits-height INFORMATIVE-MSG-HEIGHT)
+                                         
                                          INS-TOOLS-BUFFER)]
                                [max-y (+ min-y (image-height first-pair.name))])
                           (bounding-limits min-x

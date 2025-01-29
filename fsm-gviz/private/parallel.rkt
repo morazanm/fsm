@@ -218,12 +218,10 @@
 
 ;; Listof graph -> Listof Thunk
 ;; Creates all the graph images needed in parallel, and returns a list of thunks that will load them from disk
-(define (streaming-parallel-graphs->bitmap-thunks graphs #:rank-node-lst [rank-node-lst '()] #:graph-type [graph-type 'rg] #:cpu-cores [cpu-cores (quotient (find-number-of-cores) 2)])
-  
-  
-  
-  
-  
+(define (streaming-parallel-graphs->bitmap-thunks graphs
+                                                  #:rank-node-lst [rank-node-lst '()]
+                                                  #:graph-type [graph-type 'rg]
+                                                  #:cpu-cores [cpu-cores (quotient (find-number-of-cores) 2)])
   (begin
     (define enumerated-graphs (make-pairs (range 0 (length graphs)) graphs))
     (define list-dot-files (for/list ([i enumerated-graphs])
@@ -237,26 +235,18 @@
           [else (error "invalid graph type")])
 
     (define flattened-list-dot-files (list->vector list-dot-files))
-    #;(displayln (format "~s ~s" (length flattened-list-dot-files) (length (flatten graphs))))
 
     (if (> (vector-length flattened-list-dot-files) (* NUM-PRELOAD 2))
         (begin
           (streaming-parallel-dots->pngs flattened-list-dot-files 0 (vector-length flattened-list-dot-files) cpu-cores)
           (force-promises flattened-list-dot-files 0 NUM-PRELOAD)
-          #;(for ([i (in-range 0 NUM-PRELOAD)])
-              (force (vector-ref flattened-list-dot-files i)))
           (force-promises flattened-list-dot-files (- (vector-length flattened-list-dot-files) NUM-PRELOAD) (vector-length flattened-list-dot-files))
-          #;(for ([i (in-range (- (vector-length flattened-list-dot-files) NUM-PRELOAD) (vector-length flattened-list-dot-files))])
-              (force (vector-ref flattened-list-dot-files i)))
-
           (thread (lambda () (for ([i (in-range NUM-PRELOAD (- (vector-length flattened-list-dot-files) NUM-PRELOAD))])
-                           (force (vector-ref flattened-list-dot-files i)))))
-          )
+                               (force (vector-ref flattened-list-dot-files i))))))
         (begin
           (streaming-parallel-dots->pngs flattened-list-dot-files 0 (vector-length flattened-list-dot-files) cpu-cores)
           (for ([i (in-range 0 (vector-length flattened-list-dot-files))])
-            (force (vector-ref flattened-list-dot-files i)))
-          ))
+            (force (vector-ref flattened-list-dot-files i)))))
     flattened-list-dot-files))
 
 ;; Listof graph -> Num

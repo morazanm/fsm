@@ -1,7 +1,5 @@
-#lang racket
-(require "viz-ctm.rkt"
-         "../../../fsm-core/interface.rkt"
-         rackunit)
+#lang racket/base
+(require "../../../main.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; tms
@@ -440,5 +438,3 @@
                     FBL
                     shiftr
                     FBR))
-
-(ctm-viz COPY COPYL '(@ _ a a a a a a a a a a a a a a _) 16)

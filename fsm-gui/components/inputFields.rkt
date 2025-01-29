@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 #|
 Created by Joshua Schappel on 12/19/19
   This file contaisn all the inputs that are rendered on the visualization tool

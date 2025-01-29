@@ -2,7 +2,7 @@
 ; Copyright (C) 2015 by Marco T. Morazan
 ; Written by: Marco T. Morazan, 2015
 
-#lang racket
+#lang racket/base
 
 (require
   "private/fsa.rkt"
@@ -32,9 +32,15 @@
   "private/callgraphs/callgraphs-mttm.rkt"
   "private/callgraphs/transdiagram-mttm.rkt"
   "../visualizations/viz-sm/viz-ctm.rkt"
+  "../visualizations/viz-grammar-constructors/rg-viz.rkt"
+  "../visualizations/viz-grammar-constructors/cfg-viz.rkt"
+  "../visualizations/viz-grammar-constructors/csg-viz.rkt"
   "private/Chomsky-Greibach-CFG-Transformations/chomsky.rkt"
   "private/Chomsky-Greibach-CFG-Transformations/greibach.rkt"
-  "private/fsmunit/check-accept-reject-macro.rkt")
+  "private/fsmunit/check-accept-reject-macro.rkt"
+  racket/list
+  racket/bool
+  racket/contract)
   
 (provide
  check-machine
@@ -115,9 +121,17 @@
 
  ;; FSM Unit Testing
  check-derive?
- )
+ 
+ ;; Grammar visualizations
+ grammar-viz)
 ; Primitive constructors imported from other modules
 
+(define (grammar-viz G w #:derv-type [derv-type 'left] #:cpu-cores [cpu-cores #f] . invariants)
+  (cond [(rg? G) (apply rg-viz G w #:cpu-cores cpu-cores invariants)]
+        [(cfg? G) (apply cfg-viz G w #:cpu-cores cpu-cores #:derv-type derv-type invariants)]
+        [(csg? G) (apply csg-viz G w #:cpu-cores cpu-cores invariants)]
+        [else (error "Unknown grammar type given to grammar-viz.")]))
+  
 ; sm word [natnum] --> image
 (define (sm-cmpgraph M w #:palette [p 'default] #:cutoff [c 100] . headpos)
   (let ((t1 (sm-type M)))
@@ -423,19 +437,19 @@
          (diffs (get-differences res1 res2 testlist)))
     (if (null? diffs) true diffs)))
 
-  ;; make-dfa: states alphabet state states rules (boolean) -> machine
-  ;; Purpose: Eventually, will construct a multi-tape turing-machine from the given
-  ;; DFA inputs, but for now just parses inputs and constructs an unchecked-dfa.
-  (define/contract (make-dfa states sigma start finals rules
-                              [add-dead '()]
-                              #:accepts [accepts '()]
-                              #:rejects [rejects '()])
-    make-dfa/c
-    (if (null? add-dead)
-        (make-unchecked-dfa states sigma start finals rules)
-        (make-unchecked-dfa states sigma start finals rules add-dead)
-        )
-    )
+;; make-dfa: states alphabet state states rules (boolean) -> machine
+;; Purpose: Eventually, will construct a multi-tape turing-machine from the given
+;; DFA inputs, but for now just parses inputs and constructs an unchecked-dfa.
+(define/contract (make-dfa states sigma start finals rules
+                           [add-dead '()]
+                           #:accepts [accepts '()]
+                           #:rejects [rejects '()])
+  make-dfa/c
+  (if (null? add-dead)
+      (make-unchecked-dfa states sigma start finals rules)
+      (make-unchecked-dfa states sigma start finals rules add-dead)
+      )
+  )
 
   
 
@@ -541,14 +555,30 @@
 ;; concat-regexp: regexp regexp --> concat-regexp
 ;; purpose: Constructs the regular expression whose language contains words
 ;;          that are the concatenation of one word from L(a) and a word from L(b).
-(define/contract (concat-regexp a b)
+(define/contract (concat-regexp
+                  a
+                  b
+                  #:sigma [sigma '()]
+                  #:pred [pred (lambda (x) #t)]
+                  #:gen-cases [gen-cases 10]
+                  #:in-lang [in-lang '()]
+                  #:not-in-lang [not-in-lang '()]
+                  )
   concat-regexp/c
   (make-unchecked-concat a b))
 
 ;; union-regexp: regexp regexp --> union-regexp
 ;; purpose: Constructs a regular expression whose language contains all the words
 ;;          from L(a) and L(b).
-(define/contract (union-regexp a b)
+(define/contract (union-regexp
+                  a
+                  b
+                  #:sigma [sigma '()]
+                  #:pred [pred (lambda (x) #true)]
+                  #:gen-cases [gen-cases 10]
+                  #:in-lang [in-lang '()]
+                  #:not-in-lang [not-in-lang '()]
+                  )
   union-regexp/c
   (make-unchecked-union a b)
   )
@@ -556,6 +586,13 @@
 ;; kleenestar-regexp: regexp --> kleenestar-regexp
 ;; purpose: Constructs a regular expression who language contains any word
 ;;          that is constructed by concatenating zero or more words from L(a).
-(define/contract (kleenestar-regexp a)
+(define/contract (kleenestar-regexp
+                  a
+                  #:sigma [sigma '()]
+                  #:pred [pred (lambda (x) #true)]
+                  #:gen-cases [gen-cases 10]
+                  #:in-lang [in-lang '()]
+                  #:not-in-lang [not-in-lang '()]
+                  )
   kleenestar-regexp/c
   (make-unchecked-kleenestar a))

@@ -1,10 +1,18 @@
 #lang racket/base
-(require "bounding-limits.rkt")
-(provide (all-defined-out))
+(require "bounding-limits.rkt"
+         (only-in racket/gui
+                  get-display-size
+                  get-display-count))
+(provide (all-defined-out)) 
 
-(define E-SCENE-WIDTH 1250)
-(define E-SCENE-HEIGHT 550)
-(define E-SCENE-BOUNDING-LIMITS (bounding-limits 0 E-SCENE-WIDTH 0 E-SCENE-HEIGHT))
+(define-values (WINDOW-WIDTH WINDOW-HEIGHT) (if (>= (get-display-count) 1)
+                                                (with-handlers ([exn:fail? (lambda (e) (values 1200 500))]) (get-display-size))
+                                                (values 1200 500)
+                                                )
+                                                )
+(define E-SCENE-WIDTH (* 0.95 WINDOW-WIDTH))
+;(define E-SCENE-HEIGHT (* 0.7 WINDOW-HEIGHT))
+;(define E-SCENE-BOUNDING-LIMITS (bounding-limits 0 E-SCENE-WIDTH 0 E-SCENE-HEIGHT))
 (define FONT-SIZE 20)
 (define TAPE-SIZE 42)
 (define HEDGE-COLOR 'violet)
@@ -16,7 +24,7 @@
 (define INS-TOOLS-BUFFER 1)
 (define EXTRA-HEIGHT-FROM-CURSOR 4)
 (define NODE-SIZE 50)
-(define MIDDLE-E-SCENE (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2)))
+;(define MIDDLE-E-SCENE (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2)))
 
 (define DEFAULT-ZOOM 1)
 (define DEFAULT-ZOOM-FLOOR 1)
