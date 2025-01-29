@@ -134,7 +134,7 @@ E - ci = ab* final
                            (C ,EMP H)
                            (H b H))) '(a b b b b))
 
-(check-not-in-lang? AB*B*UAB*
+(check-not-in-lang?' AB*B*UAB*
               '(a b a b a b b b b)
               '()
               '(a b b b b))

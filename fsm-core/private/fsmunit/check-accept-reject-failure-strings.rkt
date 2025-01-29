@@ -217,37 +217,69 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; GRAMMAR INVALID NONTERMINALS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (named-single-failure-grammar-invalid-nonterminal grammar-name invalid-nonterminal)
-  (format "Step 4 of the design recipe has not been successfully completed. The following word contains nonterminals not in the language of the constructed grammar, ~s:\n~a"
+  (format "Step 4 of the design recipe has not been successfully completed. The following word contains terminals not in the constructed grammar, ~s's alphabet :\n~a"
           grammar-name
           invalid-nonterminal))
 
 (define (named-multi-failure-grammar-invalid-nonterminal grammar-name invalid-nonterminals)
   (foldl (lambda (val accum)
            (string-append accum (format "\n~a" val)))
-         (format "Step 4 of the design recipe has not been successfully completed. The following word contains nonterminals not in the language of the constructed grammar, ~s:"
+         (format "Step 4 of the design recipe has not been successfully completed. The following words contain terminals not in the constructed grammar, ~s's alphabet:"
                  grammar-name)
          invalid-nonterminals))
 
 (define (anonymous-single-failure-grammar-invalid-nonterminal invalid-nonterminal)
-  (format "Step 4 of the design recipe has not been successfully completed. The following word contains nonterminals not in the language of the constructed grammar:\n~a"
+  (format "Step 4 of the design recipe has not been successfully completed. The following word contains terminals not in the constructed grammar's alphabet :\n~a"
           invalid-nonterminal))
 
 (define (anonymous-multi-failure-grammar-invalid-nonterminal invalid-nonterminals)
   (foldl (lambda (val accum)
            (string-append accum (format "\n~a" val)))
-         "Step 4 of the design recipe has not been successfully completed. The following word contains nonterminals not in the language of the constructed grammar:"
+         "Step 4 of the design recipe has not been successfully completed. The following words contain terminals not in the constructed grammar's alphabet:"
          invalid-nonterminals))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; GRAMMAR INVALID EXPRESSIONS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (named-single-failure-grammar-invalid-expression grammar-name invalid-expression)
+  (format "Step 4 of the design recipe has not been successfully completed. The following test case for the constructed grammar, ~s, is not a word:\n~a"
+          grammar-name
+          invalid-expression))
+
+(define (named-multi-failure-grammar-invalid-expression grammar-name invalid-expressions)
+  (foldl (lambda (val accum)
+           (string-append accum (format "\n~a" val)))
+         (format "Step 4 of the design recipe has not been successfully completed. The following test cases for the constructed grammar, ~s, are not words:"
+                 grammar-name)
+         invalid-expressions))
+
+(define (anonymous-single-failure-grammar-invalid-expression invalid-expression)
+  (format "Step 4 of the design recipe has not been successfully completed. The following test case for the constructed grammar is not a word:\n~a"
+          invalid-expression))
+
+(define (anonymous-multi-failure-grammar-invalid-expression invalid-expressions)
+  (foldl (lambda (val accum)
+           (string-append accum (format "\n~a" val)))
+         "Step 4 of the design recipe has not been successfully completed. The following test cases for the constructed grammar are not words:"
+         invalid-expressions))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; NO TEST CASES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (anonymous-no-test-cases fsm-val-type)
-  (format "The unit-test for the constructed ~a does not contain any cases to test"
-          fsm-val-type))
+  (if (equal? fsm-val-type 'grammar)
+      (format "Step 4 of the design recipe has not been successfully completed. The unit-test for the constructed ~a does not contain any cases to test."
+          fsm-val-type)
+      (format "Step 2 of the design recipe has not been successfully completed. The unit-test for the constructed ~a does not contain any cases to test."
+          fsm-val-type)))
 
 (define (named-no-test-cases fsm-val fsm-val-type)
-  (format "The unit-test for the constructed ~a, ~s, does not contain any cases to test"
+  (if (equal? fsm-val-type 'grammar)
+      (format "Step 4 of the design recipe has not been successfuly completed. The unit-test for the constructed ~a, ~s, does not contain any cases to test."
           fsm-val-type
-          fsm-val))
+          fsm-val)
+      (format "Step 2 of the design recipe has not been successfuly completed. The unit-test for the constructed ~a, ~s, does not contain any cases to test"
+          fsm-val-type
+          fsm-val)
+      ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; FAILURE STRING GENERATOR MACRO ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
