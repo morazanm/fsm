@@ -123,7 +123,7 @@
  check-derive? check-not-derive?
  ;check-gen? check-not-gen?
  check-accept? check-reject?
- check-in-lang? check-not-in-lang?
+ ;check-in-lang? check-not-in-lang?
  
  ;; Grammar visualizations
  grammar-viz)
