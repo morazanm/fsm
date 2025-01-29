@@ -18,7 +18,9 @@
          )
 
 (provide check-in-lang? check-not-in-lang?
-         check-derive?)
+         check-derive? check-not-derive?
+         check-gen? check-not-gen?
+         check-accept? check-reject?)
 
 (define (sm-word-lst/c sigma)
   (listof (apply or/c sigma)))
@@ -58,7 +60,7 @@
                                                failure-str
                                                (current-continuation-marks)
                                                (list #,(syntax-srcloc stx))))
-                  )
+             )
            (let ([failure-str (create-failure-str no-test-cases unknown-expr)])
              (display-failed-test failure-str (exn:fail:check-failed
                                                failure-str
@@ -77,11 +79,11 @@
                 #,(syntax/loc stx (check-grammar #t grammar-word-contract unknown-expr x ...)))]
              #,(quasisyntax/loc #'unknown-expr
                  [else (let ([failure-str (format "Step 2 of the design recipe has not been successfully completed. ~s is not a valid FSM value that can be tested." (syntax->datum #'unknown-expr))])
-                     (display-failed-test failure-str (exn:fail:check-failed
-                                                       failure-str
-                                                       (current-continuation-marks)
-                                                       (list (syntax-srcloc #'unknown-expr)))
-                                          ))]))]))
+                         (display-failed-test failure-str (exn:fail:check-failed
+                                                           failure-str
+                                                           (current-continuation-marks)
+                                                           (list (syntax-srcloc #'unknown-expr)))
+                                              ))]))]))
 
 ;; machine word [head-pos] -> Boolean
 ;; Purpose: To determine whether a given machine can reject a given word
@@ -104,7 +106,7 @@
                                                failure-str
                                                (current-continuation-marks)
                                                (list #,(syntax-srcloc stx))))
-                  )
+             )
            (let ([failure-str (create-failure-str no-test-cases unknown-expr)])
              (display-failed-test failure-str (exn:fail:check-failed
                                                failure-str
@@ -123,11 +125,17 @@
                 #,(syntax/loc stx (check-grammar #f grammar-word-contract unknown-expr x ...)))]
              #,(quasisyntax/loc #'unknown-expr
                  [else (let ([failure-str (format "Step 2 of the design recipe has not been successfully completed. ~s is not a valid FSM value that can be tested." (syntax->datum #'unknown-expr))])
-                     (display-failed-test failure-str (exn:fail:check-failed
-                                                       failure-str
-                                                       (current-continuation-marks)
-                                                       (list (syntax-srcloc #'unknown-expr)))
-                                          ))])
+                         (display-failed-test failure-str (exn:fail:check-failed
+                                                           failure-str
+                                                           (current-continuation-marks)
+                                                           (list (syntax-srcloc #'unknown-expr)))
+                                              ))])
              )]))
 
 (define-syntax check-derive? (make-rename-transformer #'check-in-lang?))
+(define-syntax check-gen? (make-rename-transformer #'check-in-lang?))
+(define-syntax check-accept? (make-rename-transformer #'check-in-lang?))
+
+(define-syntax check-not-derive? (make-rename-transformer #'check-not-in-lang?))
+(define-syntax check-not-gen? (make-rename-transformer #'check-not-in-lang?))
+(define-syntax check-reject? (make-rename-transformer #'check-not-in-lang?))

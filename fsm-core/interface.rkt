@@ -120,7 +120,10 @@
  sm-cmpgraph
 
  ;; FSM Unit Testing
- check-derive?
+ check-derive? check-not-derive?
+ check-gen? check-not-gen?
+ check-accept? check-reject?
+ check-in-lang? check-not-in-lang?
  
  ;; Grammar visualizations
  grammar-viz)
