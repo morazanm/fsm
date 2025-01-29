@@ -47,16 +47,6 @@ triple is the entire of the ndfa rule
 (define (member? x lst)
   (ormap (λ (L) (equal? x L)) lst))
 
-;;(listof X) (listof X) (listof X) -> (listof X)
-;;Purpose: Removes all similiarities between lst1 and lst2
-;;Acc = The differences between the previous path and the current path
-(define (remove-similarities prev-path curr-path acc)
-  (cond [(empty? prev-path) (cons curr-path acc)]
-        [(empty? curr-path) prev-path]
-        [(equal? (first prev-path) (first curr-path))
-         (remove-similarities (rest prev-path) (rest curr-path) acc)]
-        [(remove-similarities (rest prev-path) (rest curr-path) (cons (first curr-path) acc))]))
-
 (define qempty? empty?)
 
 (define E-QUEUE '())
@@ -119,7 +109,6 @@ triple is the entire of the ndfa rule
   (if (qempty? QoC)
       path
       (let* ([first-computation (first (computation-LoC (qfirst QoC)))]
-
              ;;(listof rules)
              ;;Purpose: Returns all rules that consume a letter using the given configurations
              [connected-read-rules (if (empty? (second first-computation))
@@ -250,8 +239,7 @@ triple is the entire of the ndfa rule
       (ormap (λ (p)
                (and (equal? (first rule) (first p))
                     (or (equal? (third rule) (third p))
-                        (and (equal? (third rule) (third p))
-                             (equal? (third rule) dead)))))
+                        (equal? (third rule) dead))))
              lor)))
 
 ;;(listof symbols) (listof configurations) -> (listof configurations)
@@ -455,8 +443,7 @@ triple is the entire of the ndfa rule
              [(and (empty? (imsg-state-upci imsg-st))
                    (equal? machine-decision 'reject))
               (text "All computations end in a non-final state and the machine rejects." FONT-SIZE 'red)]
-             [else (text "Word Status: accept " FONT-SIZE 'white)])
-      )
+             [else (text "Word Status: accept " FONT-SIZE 'white)]))
      (rectangle 1250 50 'solid 'white))))
 
 
@@ -843,46 +830,44 @@ triple is the entire of the ndfa rule
 ;;machine -> machine
 ;;Purpose: Produces an equivalent machine with the addition of the dead state and rules to the dead state
 (define (make-new-M M)
-  (cond
-    [(eq? '(M whatami) 'ndfa)
-     (local
-       [;;symbol
-        ;;Purpose: If ds is already used as a state in M, then generates a random seed symbol,
-        ;;         otherwise uses DEAD
-        (define dead (if (member? DEAD (fsa-getstates M)) (gen-state (fsa-getstates M)) DEAD))
-        ;;(listof symbols)
-        ;;Purpose: Makes partial rules for every combination of states in M and symbols in sigma of M
-        (define new-rules
-          (for*/list ([states (fsa-getstates M)]
-                      [sigma (fsa-getalphabet M)])
-            (list states sigma)))
-        ;;(listof rules)
-        ;;Purpose: Makes rules for every dead state transition to itself using the symbols in sigma of M
-        (define dead-rules
-          (for*/list ([ds (list dead)]
-                      [sigma (fsa-getalphabet M)])
-            (list ds sigma ds)))
-        ;;(listof rules)
-        ;;Purpose: Gets rules that are not currently in the original rules of M
-        (define get-rules-not-in-M  (local [(define partial-rules (map (λ (rule)
-                                                                         (append (list (first rule)) (list (second rule))))
-                                                                       (fsa-getrules M)))]
-                                      (filter (λ (rule)
-                                                (not (member? rule partial-rules)))
-                                              new-rules)))
-        ;;(listof rules)
-        ;;Purpose: Maps the dead state as a destination for all rules that are not currently in the original rules of M
-        (define rules-to-dead
-          (map (λ (rule) (append rule (list dead)))
-               get-rules-not-in-M))]
-       (make-unchecked-ndfa (append (fsa-getstates M) (list dead))
-                  (fsa-getalphabet M)
-                  (fsa-getstart M)
-                  (fsa-getfinals M)
-                  (append (fsa-getrules M) rules-to-dead dead-rules)))]
-    [(and (eq? '(M whatami) 'dfa) (not (member? DEAD (fsa-getstates M))))
-     (make-unchecked-dfa (fsa-getstates M) (fsa-getalphabet M) (fsa-getstart M) (fsa-getfinals M) (fsa-getrules M))]
-    [else M]))
+  (cond [(eq? (M 'whatami) 'ndfa)
+         (local
+           [;;symbol
+            ;;Purpose: If ds is already used as a state in M, then generates a random seed symbol,
+            ;;         otherwise uses DEAD
+            (define dead (if (member? DEAD (fsa-getstates M)) (gen-state (fsa-getstates M)) DEAD))
+            ;;(listof symbols)
+            ;;Purpose: Makes partial rules for every combination of states in M and symbols in sigma of M
+            (define new-rules
+              (for*/list ([states (fsa-getstates M)]
+                          [sigma (fsa-getalphabet M)])
+                (list states sigma)))
+            ;;(listof rules)
+            ;;Purpose: Makes rules for every dead state transition to itself using the symbols in sigma of M
+            (define dead-rules
+              (for*/list ([ds (list dead)]
+                          [sigma (fsa-getalphabet M)])
+                (list ds sigma ds)))
+            ;;(listof rules)
+            ;;Purpose: Gets rules that are not currently in the original rules of M
+            (define get-rules-not-in-M  (local [(define partial-rules (map (λ (rule)
+                                                                             (append (list (first rule)) (list (second rule))))
+                                                                           (fsa-getrules M)))]
+                                          (filter (λ (rule)
+                                                    (not (member? rule partial-rules)))
+                                                  new-rules)))
+            ;;(listof rules)
+            ;;Purpose: Maps the dead state as a destination for all rules that are not currently in the original rules of M
+            (define rules-to-dead
+              (map (λ (rule) (append rule (list dead)))
+                   get-rules-not-in-M))]
+           (make-unchecked-ndfa (append (fsa-getstates M) (list dead))
+                                (fsa-getalphabet M)
+                                (fsa-getstart M)
+                                (fsa-getfinals M)
+                                (append (fsa-getrules M) rules-to-dead dead-rules)))]
+        [(and (eq? (M 'whatami) 'dfa) (not (member? DEAD (fsa-getstates M))))
+         (make-unchecked-dfa (fsa-getstates M) (fsa-getalphabet M) (fsa-getstart M) (fsa-getfinals M) (fsa-getrules M))]))
 
 
 
@@ -890,62 +875,63 @@ triple is the entire of the ndfa rule
 ;;Purpose: Visualizes the given ndfa processing the given word
 ;;Assumption: The given machine is a ndfa or dfa
 (define (ndfa-viz M a-word #:add-dead [add-dead #f] invs)
+  (displayln add-dead)
   (let* (;;M ;;Purpose: A new machine with the dead state if add-dead is true
-             [new-M (if add-dead (make-new-M M) M)]
-             ;;symbol ;;Purpose: The name of the dead state
-             [dead-state (cond [(and add-dead (eq? '(M whatami) 'ndfa)) (last (fsa-getstates new-M))]
-                               [(and add-dead (eq? '(M whatami) 'dfa)) DEAD]
-                               [else 'no-dead])]
-             ;;(listof computations) ;;Purpose: All computations that the machine can have
-             [computations (trace-computations a-word (fsa-getrules new-M) (fsa-getstart new-M))]
-             ;;(listof configurations) ;;Purpose: Extracts the configurations from the computation
-             [LoC (map computation-LoC computations)]
-             ;;(listof computation) ;;Purpose: Extracts all accepting computations
-             [accepting-computations (filter (λ (comp)
-                                       (and (member? (first (first (computation-LoC comp))) (fsa-getfinals new-M))
-                                            (empty? (second (first (computation-LoC comp))))))
-                                     computations)]
-             ;;(listof trace) ;;Purpose: Makes traces from the accepting computations
-             [accepting-traces (map (λ (acc-comp)
-                                      (make-trace (reverse (computation-LoC acc-comp))
-                                                  (reverse (computation-LoR acc-comp))
-                                                  '()))
-                                    accepting-computations)]
-             ;;(listof computation) ;;Purpose: Extracts all rejecting computations
-             [rejecting-computations (filter (λ (config)
-                                               (not (member? config accepting-computations)))
-                                             computations)]
-             ;;(listof trace) ;;Purpose: Makes traces from the rejecting computations
-             [rejecting-traces (map (λ (rej-comp)
-                                      (make-trace (reverse (computation-LoC rej-comp))
-                                                  (reverse (computation-LoR rej-comp))
-                                                  '()))
-                                    rejecting-computations)]
-             ;;building-state struct
-             [building-state (building-viz-state a-word
-                                                 '()
-                                                 new-M
-                                                 (if (and add-dead (not (empty? invs))) (cons (list dead-state (λ (w) #t)) invs) invs) 
-                                                 dead-state
-                                                 (map reverse LoC)
-                                                 accepting-computations
-                                                 accepting-traces
-                                                 rejecting-traces)]
-             ;;(listof graph-thunk) ;;Purpose: Gets all the graphs needed to run the viz
-             [graphs (create-graph-thunks building-state '())]
-             ;;(listof number) ;;Purpose: Gets the number of computations for each step
-             [computation-lens (count-computations a-word (map computation-LoC computations) '())]
-             ;;(listof number) ;;Purpose: Gets the index of image where an invariant failed
-             [inv-configs (map (λ (con)
-                                 (length (second (first con))))
-                               (return-brk-inv-configs
-                                (get-inv-config-results
-                                 (make-inv-configs a-word
-                                                   (map (λ (comp)
-                                                          (reverse (computation-LoC comp)))
-                                                        accepting-computations))
-                                 invs)
-                                a-word))])
+         [new-M (if add-dead (make-new-M M) M)]
+         ;;symbol ;;Purpose: The name of the dead state
+         [dead-state (cond [(and add-dead (eq? (M 'whatami) 'ndfa)) (last (fsa-getstates new-M))]
+                           [(and add-dead (eq? (M 'whatami) 'dfa)) DEAD]
+                           [else 'no-dead])]
+         ;;(listof computations) ;;Purpose: All computations that the machine can have
+         [computations (trace-computations a-word (fsa-getrules new-M) (fsa-getstart new-M))]
+         ;;(listof configurations) ;;Purpose: Extracts the configurations from the computation
+         [LoC (map computation-LoC computations)]
+         ;;(listof computation) ;;Purpose: Extracts all accepting computations
+         [accepting-computations (filter (λ (comp)
+                                           (and (member? (first (first (computation-LoC comp))) (fsa-getfinals new-M))
+                                                (empty? (second (first (computation-LoC comp))))))
+                                         computations)]
+         ;;(listof trace) ;;Purpose: Makes traces from the accepting computations
+         [accepting-traces (map (λ (acc-comp)
+                                  (make-trace (reverse (computation-LoC acc-comp))
+                                              (reverse (computation-LoR acc-comp))
+                                              '()))
+                                accepting-computations)]
+         ;;(listof computation) ;;Purpose: Extracts all rejecting computations
+         [rejecting-computations (filter (λ (config)
+                                           (not (member? config accepting-computations)))
+                                         computations)]
+         ;;(listof trace) ;;Purpose: Makes traces from the rejecting computations
+         [rejecting-traces (map (λ (rej-comp)
+                                  (make-trace (reverse (computation-LoC rej-comp))
+                                              (reverse (computation-LoR rej-comp))
+                                              '()))
+                                rejecting-computations)]
+         ;;building-state struct
+         [building-state (building-viz-state a-word
+                                             '()
+                                             new-M
+                                             (if (and add-dead (not (empty? invs))) (cons (list dead-state (λ (w) #t)) invs) invs) 
+                                             dead-state
+                                             (map reverse LoC)
+                                             accepting-computations
+                                             accepting-traces
+                                             rejecting-traces)]
+         ;;(listof graph-thunk) ;;Purpose: Gets all the graphs needed to run the viz
+         [graphs (create-graph-thunks building-state '())]
+         ;;(listof number) ;;Purpose: Gets the number of computations for each step
+         [computation-lens (count-computations a-word (map computation-LoC computations) '())]
+         ;;(listof number) ;;Purpose: Gets the index of image where an invariant failed
+         [inv-configs (map (λ (con)
+                             (length (second (first con))))
+                           (return-brk-inv-configs
+                            (get-inv-config-results
+                             (make-inv-configs a-word
+                                               (map (λ (comp)
+                                                      (reverse (computation-LoC comp)))
+                                                    accepting-computations))
+                             invs)
+                            a-word))])
         ;(struct building-viz-state (upci pci M inv dead))
         ;(struct imsg-state (M upci pci))
         ;;ANCHOR

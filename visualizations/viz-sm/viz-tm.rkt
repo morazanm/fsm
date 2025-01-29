@@ -8,6 +8,7 @@
          "../viz-lib/bounding-limits.rkt"
          "../viz-lib/viz-state.rkt"
          "../viz-lib/viz-macros.rkt"
+         "../viz-lib/viz-constants.rkt"
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "../viz-lib/default-viz-function-generators.rkt"
          "../../fsm-core/private/constants.rkt"
@@ -219,12 +220,6 @@ visited is a (listof configuration)
          (let* ([rle (rule (first DUMMY-RULE) (second DUMMY-RULE))]
                 [res (trace (first configs) (list rle))])
            (make-trace(rest configs) rules (cons res acc)))]
-        #;[(and (not (empty? acc))
-              )
-         (let* ([rle (rule (first (first rules)) (second (first rules)))]
-                [res (struct-copy trace (first acc)
-                                  [rule (cons rle (trace-rule (first acc)))])])
-           (make-trace (rest configs) (rest rules) (cons res (rest acc))))]
         [else (let* ([rle (rule (first (first rules)) (second (first rules)))]
                      [res (trace (first configs) (list rle))])
                 (make-trace (rest configs) (rest rules) (cons res acc)))]))

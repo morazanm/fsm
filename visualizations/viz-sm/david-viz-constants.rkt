@@ -47,7 +47,24 @@
            (scale 0.5 (rotate 310 (overlay/xy inner-white -9 -3 outer-black))))])
     (overlay/xy (rotate 25 cursor-rect) -7 -26 cursor-tri)))
 
-(define E-SCENE-TOOLS
+(define E-SCENE-TOOLS (e-scene-tools-generator HEIGHT-BUFFER LETTER-KEY-WIDTH-BUFFER 18
+                                                   (list (list ARROW-UP-KEY "Restart")
+                                                         (list ARROW-RIGHT-KEY "Forward")
+                                                         (list ARROW-LEFT-KEY "Backward")
+                                                         (list ARROW-DOWN-KEY "Finish")
+                                                         (list CURSOR "Hold to drag")
+                                                         (list W-KEY "Zoom in")
+                                                         (list S-KEY "Zoom out")
+                                                         (list R-KEY "Min zoom")
+                                                         (list E-KEY "Mid zoom")
+                                                         (list F-KEY "Max zoom")
+                                                         (list A-KEY "Word start")
+                                                         (list D-KEY "Word end")
+                                                         (list J-KEY "Prv not inv")
+                                                         (list L-KEY "Nxt not inv"))))
+                                                   
+
+(define old-E-SCENE-TOOLS
   (let ([ARROW (above (triangle 30 'solid 'black) (rectangle 10 30 'solid 'black))])
     (beside/align
      "bottom"
