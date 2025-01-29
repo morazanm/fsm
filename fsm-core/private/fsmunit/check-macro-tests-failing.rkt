@@ -1,22 +1,8 @@
 #lang racket
 
-(require (for-syntax syntax/parse
-                     racket/base
-                     "viz-state.rkt"
-                     racket/struct-info)
-         "../../fsm-core/private/sm-getters.rkt"
-         2htdp/universe
-         2htdp/image
-         "../../fsm-core/private/sm-apply.rkt"
-         "../../fsm-core/private/tm.rkt"
-         "../../fsm-core/private/csg.rkt"
-         "../../fsm-core/private/cfg.rkt"
-         "../../fsm-core/interface.rkt"
-         "viz-state.rkt"
-         "check-accept-reject-macro.rkt"
-         rackunit
-         "../../fsm-core/interface.rkt"
-         "default-viz-functions.rkt")
+(require 
+         "../../interface.rkt"
+         "check-accept-reject-macro.rkt")
 
 ;; TESTING MACHINES
 
@@ -50,12 +36,12 @@ E - ci = ab* final
 
 
 
-(check-reject AB*B*UAB* '(z))
-(check-reject AB*B*UAB*
+(check-not-in-lang? AB*B*UAB* '(z))
+(check-not-in-lang? AB*B*UAB*
               '(z)
               '(x))
 
-(check-reject (make-ndfa '(S K B C H)
+(check-not-in-lang? (make-ndfa '(S K B C H)
              '(a b)
              'S
              '(H)
@@ -66,7 +52,7 @@ E - ci = ab* final
                (B b K)
                (C ,EMP H)
                (H b H))) '(z))
-(check-reject (make-ndfa '(S K B C H)
+(check-not-in-lang? (make-ndfa '(S K B C H)
              '(a b)
              'S
              '(H)
@@ -80,12 +66,12 @@ E - ci = ab* final
               '(z)
               '(x))
 
-(check-accept AB*B*UAB* '(z))
-(check-accept AB*B*UAB*
+(check-in-lang? AB*B*UAB* '(z))
+(check-in-lang? AB*B*UAB*
               '(z)
               '(x))
 
-(check-accept (make-ndfa '(S K B C H)
+(check-in-lang? (make-ndfa '(S K B C H)
              '(a b)
              'S
              '(H)
@@ -96,7 +82,7 @@ E - ci = ab* final
                (B b K)
                (C ,EMP H)
                (H b H))) '(z))
-(check-accept (make-ndfa '(S K B C H)
+(check-in-lang? (make-ndfa '(S K B C H)
              '(a b)
              'S
              '(H)
@@ -110,11 +96,11 @@ E - ci = ab* final
               '(z)
               '(x))
 
-(check-reject AB*B*UAB* '(a b a b a b b b b))
-(check-reject AB*B*UAB* '())
-(check-reject AB*B*UAB* '(a b b b b))
+(check-not-in-lang? AB*B*UAB* '(a b a b a b b b b))
+(check-not-in-lang? AB*B*UAB* '())
+(check-not-in-lang? AB*B*UAB* '(a b b b b))
 
-(check-reject (make-ndfa '(S K B C H)
+(check-not-in-lang? (make-ndfa '(S K B C H)
                          '(a b)
                          'S
                          '(H)
@@ -125,7 +111,7 @@ E - ci = ab* final
                            (B b K)
                            (C ,EMP H)
                            (H b H))) '(a b a b a b b b b))
-(check-reject (make-ndfa '(S K B C H)
+(check-not-in-lang? (make-ndfa '(S K B C H)
                          '(a b)
                          'S
                          '(H)
@@ -136,7 +122,7 @@ E - ci = ab* final
                            (B b K)
                            (C ,EMP H)
                            (H b H))) '())
-(check-reject (make-ndfa '(S K B C H)
+(check-not-in-lang? (make-ndfa '(S K B C H)
                          '(a b)
                          'S
                          '(H)
@@ -148,12 +134,12 @@ E - ci = ab* final
                            (C ,EMP H)
                            (H b H))) '(a b b b b))
 
-(check-reject AB*B*UAB*
+(check-not-in-lang? AB*B*UAB*
               '(a b a b a b b b b)
               '()
               '(a b b b b))
 
-(check-reject (make-ndfa '(S K B C H)
+(check-not-in-lang? (make-ndfa '(S K B C H)
                          '(a b)
                          'S
                          '(H)
@@ -168,11 +154,11 @@ E - ci = ab* final
               '()
               '(a b b b b))
 
-(check-accept AB*B*UAB* '(a b b b b b a b))
-(check-accept AB*B*UAB* '(a b b a b b a b b))
-(check-accept AB*B*UAB* '(a b b a b b a b b b b))
+(check-in-lang? AB*B*UAB* '(a b b b b b a b))
+(check-in-lang? AB*B*UAB* '(a b b a b b a b b))
+(check-in-lang? AB*B*UAB* '(a b b a b b a b b b b))
 
-(check-accept (make-ndfa '(S K B C H)
+(check-in-lang? (make-ndfa '(S K B C H)
                          '(a b)
                          'S
                          '(H)
@@ -183,7 +169,7 @@ E - ci = ab* final
                            (B b K)
                            (C ,EMP H)
                            (H b H))) '(a b b b b b a b))
-(check-accept (make-ndfa '(S K B C H)
+(check-in-lang? (make-ndfa '(S K B C H)
                          '(a b)
                          'S
                          '(H)
@@ -194,7 +180,7 @@ E - ci = ab* final
                            (B b K)
                            (C ,EMP H)
                            (H b H))) '(a b b a b b a b b))
-(check-accept (make-ndfa '(S K B C H)
+(check-in-lang? (make-ndfa '(S K B C H)
                          '(a b)
                          'S
                          '(H)
@@ -206,12 +192,12 @@ E - ci = ab* final
                            (C ,EMP H)
                            (H b H))) '(a b b a b b a b b b b))
 
-(check-accept AB*B*UAB*
+(check-in-lang? AB*B*UAB*
               '(a b b b b b a b)
               '(a b b a b b a b b)
               '(a b b a b b a b b b b))
 
-(check-accept (make-ndfa '(S K B C H)
+(check-in-lang? (make-ndfa '(S K B C H)
                          '(a b)
                          'S
                          '(H)
@@ -300,20 +286,20 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
 
 
 ;; need to check why this specifically has a syntax error
-;(check-reject equal-a-b-c `(,LM ,BLANK) 1)
+;(check-not-in-lang? equal-a-b-c `(,LM ,BLANK) 1)
 
 
-(check-reject equal-a-b-c `((,LM ,BLANK a) 11))
-(check-reject equal-a-b-c
+(check-not-in-lang? equal-a-b-c `((,LM ,BLANK a) 11))
+(check-not-in-lang? equal-a-b-c
               `((,LM ,BLANK a) 11)
               `((,LM ,BLANK a) 11))
 
-(check-accept equal-a-b-c `((,LM ,BLANK a) 11))
-(check-accept equal-a-b-c
+(check-in-lang? equal-a-b-c `((,LM ,BLANK a) 11))
+(check-in-lang? equal-a-b-c
               `((,LM ,BLANK a) 11)
               `((,LM ,BLANK a) 11))
 
-(check-reject (make-tm '(S X A B C D E F G H I P Y)
+(check-not-in-lang? (make-tm '(S X A B C D E F G H I P Y)
                              '(a b c x)
                              `(((S ,BLANK) (X ,RIGHT))
                                ((X x) (X ,RIGHT))
@@ -363,7 +349,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                ((P a) (P ,LEFT))
                                ((P ,BLANK) (X ,RIGHT)))
                              'S '(Y) 'Y) `((,LM ,BLANK a) 11))
-(check-reject (make-tm '(S X A B C D E F G H I P Y)
+(check-not-in-lang? (make-tm '(S X A B C D E F G H I P Y)
                              '(a b c x)
                              `(((S ,BLANK) (X ,RIGHT))
                                ((X x) (X ,RIGHT))
@@ -416,7 +402,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
               `((,LM ,BLANK a) 11)
               `((,LM ,BLANK a) 11))
 
-(check-accept (make-tm '(S X A B C D E F G H I P Y)
+(check-in-lang? (make-tm '(S X A B C D E F G H I P Y)
                              '(a b c x)
                              `(((S ,BLANK) (X ,RIGHT))
                                ((X x) (X ,RIGHT))
@@ -466,7 +452,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                ((P a) (P ,LEFT))
                                ((P ,BLANK) (X ,RIGHT)))
                              'S '(Y) 'Y) `((,LM ,BLANK a) 11))
-(check-accept (make-tm '(S X A B C D E F G H I P Y)
+(check-in-lang? (make-tm '(S X A B C D E F G H I P Y)
                              '(a b c x)
                              `(((S ,BLANK) (X ,RIGHT))
                                ((X x) (X ,RIGHT))
@@ -519,17 +505,17 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
               `((,LM ,BLANK a) 11)
               `((,LM ,BLANK a) 11))
 
-(check-reject equal-a-b-c `((,LM ,BLANK a) -1))
-(check-reject equal-a-b-c
+(check-not-in-lang? equal-a-b-c `((,LM ,BLANK a) -1))
+(check-not-in-lang? equal-a-b-c
               `((,LM ,BLANK a) -1)
               `((,LM ,BLANK a) -1))
 
-(check-accept equal-a-b-c `((,LM ,BLANK a) -1))
-(check-accept equal-a-b-c
+(check-in-lang? equal-a-b-c `((,LM ,BLANK a) -1))
+(check-in-lang? equal-a-b-c
               `((,LM ,BLANK a) -1)
               `((,LM ,BLANK a) -1))
 
-(check-reject (make-tm '(S X A B C D E F G H I P Y)
+(check-not-in-lang? (make-tm '(S X A B C D E F G H I P Y)
                              '(a b c x)
                              `(((S ,BLANK) (X ,RIGHT))
                                ((X x) (X ,RIGHT))
@@ -579,7 +565,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                ((P a) (P ,LEFT))
                                ((P ,BLANK) (X ,RIGHT)))
                              'S '(Y) 'Y) `((,LM ,BLANK a) -1))
-(check-reject (make-tm '(S X A B C D E F G H I P Y)
+(check-not-in-lang? (make-tm '(S X A B C D E F G H I P Y)
                              '(a b c x)
                              `(((S ,BLANK) (X ,RIGHT))
                                ((X x) (X ,RIGHT))
@@ -632,7 +618,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
               `((,LM ,BLANK a) -1)
               `((,LM ,BLANK a) -1))
 
-(check-accept (make-tm '(S X A B C D E F G H I P Y)
+(check-in-lang? (make-tm '(S X A B C D E F G H I P Y)
                              '(a b c x)
                              `(((S ,BLANK) (X ,RIGHT))
                                ((X x) (X ,RIGHT))
@@ -682,7 +668,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                ((P a) (P ,LEFT))
                                ((P ,BLANK) (X ,RIGHT)))
                              'S '(Y) 'Y) `((,LM ,BLANK a) -1))
-(check-accept (make-tm '(S X A B C D E F G H I P Y)
+(check-in-lang? (make-tm '(S X A B C D E F G H I P Y)
                              '(a b c x)
                              `(((S ,BLANK) (X ,RIGHT))
                                ((X x) (X ,RIGHT))
@@ -735,17 +721,17 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
               `((,LM ,BLANK a) -1)
               `((,LM ,BLANK a) -1))
 
-(check-reject equal-a-b-c `(( ,BLANK a) 1))
-(check-reject equal-a-b-c
+(check-not-in-lang? equal-a-b-c `(( ,BLANK a) 1))
+(check-not-in-lang? equal-a-b-c
               `(( ,BLANK a) 1)
               `(( ,BLANK a) 1))
 
-(check-accept equal-a-b-c `(( ,BLANK a) 1))
-(check-accept equal-a-b-c
+(check-in-lang? equal-a-b-c `(( ,BLANK a) 1))
+(check-in-lang? equal-a-b-c
               `(( ,BLANK a) 1)
               `(( ,BLANK a) 1))
 
-(check-reject (make-tm '(S X A B C D E F G H I P Y)
+(check-not-in-lang? (make-tm '(S X A B C D E F G H I P Y)
                              '(a b c x)
                              `(((S ,BLANK) (X ,RIGHT))
                                ((X x) (X ,RIGHT))
@@ -795,7 +781,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                ((P a) (P ,LEFT))
                                ((P ,BLANK) (X ,RIGHT)))
                              'S '(Y) 'Y) `(( ,BLANK a) 1))
-(check-reject (make-tm '(S X A B C D E F G H I P Y)
+(check-not-in-lang? (make-tm '(S X A B C D E F G H I P Y)
                              '(a b c x)
                              `(((S ,BLANK) (X ,RIGHT))
                                ((X x) (X ,RIGHT))
@@ -848,7 +834,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
               `(( ,BLANK a) 1)
               `(( ,BLANK a) 1))
 
-(check-accept (make-tm '(S X A B C D E F G H I P Y)
+(check-in-lang? (make-tm '(S X A B C D E F G H I P Y)
                              '(a b c x)
                              `(((S ,BLANK) (X ,RIGHT))
                                ((X x) (X ,RIGHT))
@@ -898,7 +884,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                ((P a) (P ,LEFT))
                                ((P ,BLANK) (X ,RIGHT)))
                              'S '(Y) 'Y) `(( ,BLANK a) 1))
-(check-accept (make-tm '(S X A B C D E F G H I P Y)
+(check-in-lang? (make-tm '(S X A B C D E F G H I P Y)
                              '(a b c x)
                              `(((S ,BLANK) (X ,RIGHT))
                                ((X x) (X ,RIGHT))
@@ -951,17 +937,17 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
               `(( ,BLANK a) 1)
               `(( ,BLANK a) 1))
 
-(check-reject equal-a-b-c `((,LM ,BLANK z) 1 2))
-(check-reject equal-a-b-c
+(check-not-in-lang? equal-a-b-c `((,LM ,BLANK z) 1 2))
+(check-not-in-lang? equal-a-b-c
               `((,LM ,BLANK z) 1 2)
               `((,LM ,BLANK y) 1 2))
 
-(check-accept equal-a-b-c `((,LM ,BLANK z) 1 2))
-(check-accept equal-a-b-c
+(check-in-lang? equal-a-b-c `((,LM ,BLANK z) 1 2))
+(check-in-lang? equal-a-b-c
               `((,LM ,BLANK z) 1 2)
               `((,LM ,BLANK y) 1 2))
 
-(check-reject (make-tm '(S X A B C D E F G H I P Y)
+(check-not-in-lang? (make-tm '(S X A B C D E F G H I P Y)
                              '(a b c x)
                              `(((S ,BLANK) (X ,RIGHT))
                                ((X x) (X ,RIGHT))
@@ -1011,7 +997,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                ((P a) (P ,LEFT))
                                ((P ,BLANK) (X ,RIGHT)))
                              'S '(Y) 'Y) `((,LM ,BLANK z) 1 2))
-(check-reject (make-tm '(S X A B C D E F G H I P Y)
+(check-not-in-lang? (make-tm '(S X A B C D E F G H I P Y)
                              '(a b c x)
                              `(((S ,BLANK) (X ,RIGHT))
                                ((X x) (X ,RIGHT))
@@ -1064,7 +1050,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
               `((,LM ,BLANK z) 1 2)
               `((,LM ,BLANK y) 1 2))
 
-(check-accept (make-tm '(S X A B C D E F G H I P Y)
+(check-in-lang? (make-tm '(S X A B C D E F G H I P Y)
                              '(a b c x)
                              `(((S ,BLANK) (X ,RIGHT))
                                ((X x) (X ,RIGHT))
@@ -1114,7 +1100,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                ((P a) (P ,LEFT))
                                ((P ,BLANK) (X ,RIGHT)))
                              'S '(Y) 'Y) `((,LM ,BLANK z) 1 2))
-(check-accept (make-tm '(S X A B C D E F G H I P Y)
+(check-in-lang? (make-tm '(S X A B C D E F G H I P Y)
                              '(a b c x)
                              `(((S ,BLANK) (X ,RIGHT))
                                ((X x) (X ,RIGHT))
@@ -1167,17 +1153,17 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
               `((,LM ,BLANK z) 1 2)
               `((,LM ,BLANK y) 1 2))
 
-(check-reject equal-a-b-c `((,LM ,BLANK z) 1))
-(check-reject equal-a-b-c
+(check-not-in-lang? equal-a-b-c `((,LM ,BLANK z) 1))
+(check-not-in-lang? equal-a-b-c
               `((,LM ,BLANK z) 1)
               `((,LM ,BLANK y) 1))
 
-(check-accept equal-a-b-c `((,LM ,BLANK z) 1))
-(check-accept equal-a-b-c
+(check-in-lang? equal-a-b-c `((,LM ,BLANK z) 1))
+(check-in-lang? equal-a-b-c
               `((,LM ,BLANK z) 1)
               `((,LM ,BLANK y) 1))
 
-(check-reject (make-tm '(S X A B C D E F G H I P Y)
+(check-not-in-lang? (make-tm '(S X A B C D E F G H I P Y)
                              '(a b c x)
                              `(((S ,BLANK) (X ,RIGHT))
                                ((X x) (X ,RIGHT))
@@ -1228,7 +1214,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                ((P ,BLANK) (X ,RIGHT)))
                              'S '(Y) 'Y) `((,LM ,BLANK z) 1))
 
-(check-reject (make-tm '(S X A B C D E F G H I P Y)
+(check-not-in-lang? (make-tm '(S X A B C D E F G H I P Y)
                              '(a b c x)
                              `(((S ,BLANK) (X ,RIGHT))
                                ((X x) (X ,RIGHT))
@@ -1281,7 +1267,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
               `((,LM ,BLANK z) 1)
               `((,LM ,BLANK y) 1))
 
-(check-accept (make-tm '(S X A B C D E F G H I P Y)
+(check-in-lang? (make-tm '(S X A B C D E F G H I P Y)
                              '(a b c x)
                              `(((S ,BLANK) (X ,RIGHT))
                                ((X x) (X ,RIGHT))
@@ -1331,7 +1317,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                ((P a) (P ,LEFT))
                                ((P ,BLANK) (X ,RIGHT)))
                              'S '(Y) 'Y) `((,LM ,BLANK z) 1))
-(check-accept (make-tm '(S X A B C D E F G H I P Y)
+(check-in-lang? (make-tm '(S X A B C D E F G H I P Y)
                              '(a b c x)
                              `(((S ,BLANK) (X ,RIGHT))
                                ((X x) (X ,RIGHT))
@@ -1385,13 +1371,13 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
               `((,LM ,BLANK y) 1))
 
 
-(check-reject equal-a-b-c `((,LM ,BLANK a c b) 1))
-(check-reject equal-a-b-c `((,LM ,BLANK a a b b c c a b c) 1))
-(check-reject equal-a-b-c `((,LM ,BLANK a b c) 1))
-(check-reject equal-a-b-c `((,LM ,BLANK a a b b c c) 1))
-(check-reject equal-a-b-c `((,LM ,BLANK a a a b b b c c c) 1))
+(check-not-in-lang? equal-a-b-c `((,LM ,BLANK a c b) 1))
+(check-not-in-lang? equal-a-b-c `((,LM ,BLANK a a b b c c a b c) 1))
+(check-not-in-lang? equal-a-b-c `((,LM ,BLANK a b c) 1))
+(check-not-in-lang? equal-a-b-c `((,LM ,BLANK a a b b c c) 1))
+(check-not-in-lang? equal-a-b-c `((,LM ,BLANK a a a b b b c c c) 1))
 
-(check-reject (make-tm '(S X A B C D E F G H I P Y)
+(check-not-in-lang? (make-tm '(S X A B C D E F G H I P Y)
                              '(a b c x)
                              `(((S ,BLANK) (X ,RIGHT))
                                ((X x) (X ,RIGHT))
@@ -1441,7 +1427,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                ((P a) (P ,LEFT))
                                ((P ,BLANK) (X ,RIGHT)))
                              'S '(Y) 'Y) `((,LM ,BLANK a c b) 1))
-(check-reject (make-tm '(S X A B C D E F G H I P Y)
+(check-not-in-lang? (make-tm '(S X A B C D E F G H I P Y)
                              '(a b c x)
                              `(((S ,BLANK) (X ,RIGHT))
                                ((X x) (X ,RIGHT))
@@ -1491,7 +1477,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                ((P a) (P ,LEFT))
                                ((P ,BLANK) (X ,RIGHT)))
                              'S '(Y) 'Y) `((,LM ,BLANK a a b b c c a b c) 1))
-(check-reject (make-tm '(S X A B C D E F G H I P Y)
+(check-not-in-lang? (make-tm '(S X A B C D E F G H I P Y)
                              '(a b c x)
                              `(((S ,BLANK) (X ,RIGHT))
                                ((X x) (X ,RIGHT))
@@ -1541,7 +1527,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                ((P a) (P ,LEFT))
                                ((P ,BLANK) (X ,RIGHT)))
                              'S '(Y) 'Y) `((,LM ,BLANK a b c) 1))
-(check-reject (make-tm '(S X A B C D E F G H I P Y)
+(check-not-in-lang? (make-tm '(S X A B C D E F G H I P Y)
                              '(a b c x)
                              `(((S ,BLANK) (X ,RIGHT))
                                ((X x) (X ,RIGHT))
@@ -1591,7 +1577,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                ((P a) (P ,LEFT))
                                ((P ,BLANK) (X ,RIGHT)))
                              'S '(Y) 'Y) `((,LM ,BLANK a a b b c c) 1))
-(check-reject (make-tm '(S X A B C D E F G H I P Y)
+(check-not-in-lang? (make-tm '(S X A B C D E F G H I P Y)
                              '(a b c x)
                              `(((S ,BLANK) (X ,RIGHT))
                                ((X x) (X ,RIGHT))
@@ -1642,14 +1628,14 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                ((P ,BLANK) (X ,RIGHT)))
                              'S '(Y) 'Y) `((,LM ,BLANK a a a b b b c c c) 1))
 
-(check-reject equal-a-b-c
+(check-not-in-lang? equal-a-b-c
               `((,LM ,BLANK a c b) 1)
               `((,LM ,BLANK a a b b c c a b c) 1)
               `((,LM ,BLANK a b c) 1)
               `((,LM ,BLANK a a b b c c) 1)
               `((,LM ,BLANK a a a b b b c c c) 1))
 
-(check-reject (make-tm '(S X A B C D E F G H I P Y)
+(check-not-in-lang? (make-tm '(S X A B C D E F G H I P Y)
                              '(a b c x)
                              `(((S ,BLANK) (X ,RIGHT))
                                ((X x) (X ,RIGHT))
@@ -1706,15 +1692,15 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
               `((,LM ,BLANK a a a b b b c c c) 1))
 
 
-(check-accept equal-a-b-c `((,LM ,BLANK a a) 1))
-(check-accept equal-a-b-c `((,LM ,BLANK b b b) 1))
-(check-accept equal-a-b-c `((,LM ,BLANK c) 1))
-(check-accept equal-a-b-c `((,LM ,BLANK b a b c) 1))
-(check-accept equal-a-b-c `((,LM ,BLANK a a b c) 1))
-(check-accept equal-a-b-c `((,LM ,BLANK a a b b b c c) 1))
-(check-accept equal-a-b-c `((,LM ,BLANK a b c c) 1))
+(check-in-lang? equal-a-b-c `((,LM ,BLANK a a) 1))
+(check-in-lang? equal-a-b-c `((,LM ,BLANK b b b) 1))
+(check-in-lang? equal-a-b-c `((,LM ,BLANK c) 1))
+(check-in-lang? equal-a-b-c `((,LM ,BLANK b a b c) 1))
+(check-in-lang? equal-a-b-c `((,LM ,BLANK a a b c) 1))
+(check-in-lang? equal-a-b-c `((,LM ,BLANK a a b b b c c) 1))
+(check-in-lang? equal-a-b-c `((,LM ,BLANK a b c c) 1))
 
-(check-accept (make-tm '(S X A B C D E F G H I P Y)
+(check-in-lang? (make-tm '(S X A B C D E F G H I P Y)
                              '(a b c x)
                              `(((S ,BLANK) (X ,RIGHT))
                                ((X x) (X ,RIGHT))
@@ -1764,7 +1750,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                ((P a) (P ,LEFT))
                                ((P ,BLANK) (X ,RIGHT)))
                              'S '(Y) 'Y) `((,LM ,BLANK a a) 1))
-(check-accept (make-tm '(S X A B C D E F G H I P Y)
+(check-in-lang? (make-tm '(S X A B C D E F G H I P Y)
                              '(a b c x)
                              `(((S ,BLANK) (X ,RIGHT))
                                ((X x) (X ,RIGHT))
@@ -1814,7 +1800,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                ((P a) (P ,LEFT))
                                ((P ,BLANK) (X ,RIGHT)))
                              'S '(Y) 'Y) `((,LM ,BLANK b b b) 1))
-(check-accept (make-tm '(S X A B C D E F G H I P Y)
+(check-in-lang? (make-tm '(S X A B C D E F G H I P Y)
                              '(a b c x)
                              `(((S ,BLANK) (X ,RIGHT))
                                ((X x) (X ,RIGHT))
@@ -1864,7 +1850,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                ((P a) (P ,LEFT))
                                ((P ,BLANK) (X ,RIGHT)))
                              'S '(Y) 'Y) `((,LM ,BLANK c) 1))
-(check-accept (make-tm '(S X A B C D E F G H I P Y)
+(check-in-lang? (make-tm '(S X A B C D E F G H I P Y)
                              '(a b c x)
                              `(((S ,BLANK) (X ,RIGHT))
                                ((X x) (X ,RIGHT))
@@ -1914,7 +1900,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                ((P a) (P ,LEFT))
                                ((P ,BLANK) (X ,RIGHT)))
                              'S '(Y) 'Y) `((,LM ,BLANK b a b c) 1))
-(check-accept (make-tm '(S X A B C D E F G H I P Y)
+(check-in-lang? (make-tm '(S X A B C D E F G H I P Y)
                              '(a b c x)
                              `(((S ,BLANK) (X ,RIGHT))
                                ((X x) (X ,RIGHT))
@@ -1964,7 +1950,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                ((P a) (P ,LEFT))
                                ((P ,BLANK) (X ,RIGHT)))
                              'S '(Y) 'Y) `((,LM ,BLANK a a b c) 1))
-(check-accept (make-tm '(S X A B C D E F G H I P Y)
+(check-in-lang? (make-tm '(S X A B C D E F G H I P Y)
                              '(a b c x)
                              `(((S ,BLANK) (X ,RIGHT))
                                ((X x) (X ,RIGHT))
@@ -2014,7 +2000,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                ((P a) (P ,LEFT))
                                ((P ,BLANK) (X ,RIGHT)))
                              'S '(Y) 'Y) `((,LM ,BLANK a a b b b c c) 1))
-(check-accept (make-tm '(S X A B C D E F G H I P Y)
+(check-in-lang? (make-tm '(S X A B C D E F G H I P Y)
                              '(a b c x)
                              `(((S ,BLANK) (X ,RIGHT))
                                ((X x) (X ,RIGHT))
@@ -2065,7 +2051,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                ((P ,BLANK) (X ,RIGHT)))
                              'S '(Y) 'Y) `((,LM ,BLANK a b c c) 1))
 
-(check-accept equal-a-b-c
+(check-in-lang? equal-a-b-c
               `((,LM ,BLANK a a) 1)
               `((,LM ,BLANK b b b) 1)
               `((,LM ,BLANK c) 1)
@@ -2074,7 +2060,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
               `((,LM ,BLANK a a b b b c c) 1)
               `((,LM ,BLANK a b c c) 1))
 
-(check-accept (make-tm '(S X A B C D E F G H I P Y)
+(check-in-lang? (make-tm '(S X A B C D E F G H I P Y)
                              '(a b c x)
                              `(((S ,BLANK) (X ,RIGHT))
                                ((X x) (X ,RIGHT))
@@ -2147,24 +2133,24 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                           (C a C)
                                           (C b C))))
 
-(check-reject AT-LEAST-ONE-MISSING '(a b c)) 
-(check-reject AT-LEAST-ONE-MISSING '(b b a b c b a)) 
-(check-reject AT-LEAST-ONE-MISSING '(b a c))
+(check-not-in-lang? AT-LEAST-ONE-MISSING '(a b c)) 
+(check-not-in-lang? AT-LEAST-ONE-MISSING '(b b a b c b a)) 
+(check-not-in-lang? AT-LEAST-ONE-MISSING '(b a c))
 
-(check-reject AT-LEAST-ONE-MISSING
+(check-not-in-lang? AT-LEAST-ONE-MISSING
               '(a b c)
               '(b b a b c b a)
               '(b a c))
 
-(check-accept AT-LEAST-ONE-MISSING '()) 
-(check-accept AT-LEAST-ONE-MISSING '(a))
-(check-accept AT-LEAST-ONE-MISSING '(b)) 
-(check-accept AT-LEAST-ONE-MISSING '(c))
-(check-accept AT-LEAST-ONE-MISSING '(c c a a)) 
-(check-accept AT-LEAST-ONE-MISSING '(b b c b b b)) 
-(check-accept AT-LEAST-ONE-MISSING '(a a a b b b))
+(check-in-lang? AT-LEAST-ONE-MISSING '()) 
+(check-in-lang? AT-LEAST-ONE-MISSING '(a))
+(check-in-lang? AT-LEAST-ONE-MISSING '(b)) 
+(check-in-lang? AT-LEAST-ONE-MISSING '(c))
+(check-in-lang? AT-LEAST-ONE-MISSING '(c c a a)) 
+(check-in-lang? AT-LEAST-ONE-MISSING '(b b c b b b)) 
+(check-in-lang? AT-LEAST-ONE-MISSING '(a a a b b b))
 
-(check-accept AT-LEAST-ONE-MISSING
+(check-in-lang? AT-LEAST-ONE-MISSING
               '()
               '(a)
               '(b)
@@ -2203,20 +2189,20 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                'A))
 
 ;; Tests for even-a-even-b
-(check-accept even-a-even-b `((,LM a a a a b b) 0))
-(check-accept even-a-even-b `((,LM) 0))
-(check-accept even-a-even-b `((,LM a a b b) 0))
+(check-in-lang? even-a-even-b `((,LM a a a a b b) 0))
+(check-in-lang? even-a-even-b `((,LM) 0))
+(check-in-lang? even-a-even-b `((,LM a a b b) 0))
 
-(check-accept even-a-even-b
+(check-in-lang? even-a-even-b
               `((,LM a a a a b b) 0)
               `((,LM) 0)
               `((,LM a a b b) 0))
 
-(check-reject even-a-even-b `((,LM a a a b b) 0))
-(check-reject even-a-even-b `((,LM a a a a b b b) 0))
-(check-reject even-a-even-b `((,LM a b) 0))
+(check-not-in-lang? even-a-even-b `((,LM a a a b b) 0))
+(check-not-in-lang? even-a-even-b `((,LM a a a a b b b) 0))
+(check-not-in-lang? even-a-even-b `((,LM a b) 0))
 
-(check-reject even-a-even-b
+(check-not-in-lang? even-a-even-b
               `((,LM a a a b b) 0)
               `((,LM a a a a b b b) 0)
               `((,LM a b) 0))
@@ -2224,7 +2210,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
 ;; TESTING GRAMMARS
 
 (define even-bs-odd-as
-  (make-unchecked-cfg '(S A B C)
+  (make-cfg '(S A B C)
                       '(a b)
                       `((S ,ARROW aA) (S ,ARROW bB)
                                       (S ,ARROW a)
@@ -2237,10 +2223,10 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                       (C ,ARROW b))
                       'S))
 
-(check-reject even-bs-odd-as '(b b b b a a a))
-(check-reject even-bs-odd-as '(a a a))
+(check-not-in-lang? even-bs-odd-as '(b b b b a a a))
+(check-not-in-lang? even-bs-odd-as '(a a a))
 
-(check-reject (make-unchecked-cfg '(S A B C)
+(check-not-in-lang? (make-cfg '(S A B C)
                       '(a b)
                       `((S ,ARROW aA) (S ,ARROW bB)
                                       (S ,ARROW a)
@@ -2253,7 +2239,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                       (C ,ARROW b))
                       'S) '(b b b b a a a))
 
-(check-reject (make-unchecked-cfg '(S A B C)
+(check-not-in-lang? (make-cfg '(S A B C)
                       '(a b)
                       `((S ,ARROW aA) (S ,ARROW bB)
                                       (S ,ARROW a)
@@ -2266,11 +2252,11 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                       (C ,ARROW b))
                       'S) '(a a a))
 
-(check-reject even-bs-odd-as
+(check-not-in-lang? even-bs-odd-as
               '(b b b b a a a)
               '(a a a))
 
-(check-reject (make-unchecked-cfg '(S A B C)
+(check-not-in-lang? (make-cfg '(S A B C)
                       '(a b)
                       `((S ,ARROW aA) (S ,ARROW bB)
                                       (S ,ARROW a)
@@ -2285,12 +2271,12 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
               '(b b b b a a a)
               '(a a a))
 
-(check-accept even-bs-odd-as '(b b b a a a))
-(check-accept even-bs-odd-as '(b a a a)) 
-(check-accept even-bs-odd-as '(b b b b))
-(check-accept even-bs-odd-as '(b b b b a a a a))
+(check-in-lang? even-bs-odd-as '(b b b a a a))
+(check-in-lang? even-bs-odd-as '(b a a a)) 
+(check-in-lang? even-bs-odd-as '(b b b b))
+(check-in-lang? even-bs-odd-as '(b b b b a a a a))
 
-(check-accept (make-unchecked-cfg '(S A B C)
+(check-in-lang? (make-cfg '(S A B C)
                       '(a b)
                       `((S ,ARROW aA) (S ,ARROW bB)
                                       (S ,ARROW a)
@@ -2302,7 +2288,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                       (C ,ARROW bA)
                                       (C ,ARROW b))
                       'S) '(b b b a a a))
-(check-accept (make-unchecked-cfg '(S A B C)
+(check-in-lang? (make-cfg '(S A B C)
                       '(a b)
                       `((S ,ARROW aA) (S ,ARROW bB)
                                       (S ,ARROW a)
@@ -2314,7 +2300,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                       (C ,ARROW bA)
                                       (C ,ARROW b))
                       'S) '(b a a a)) 
-(check-accept (make-unchecked-cfg '(S A B C)
+(check-in-lang? (make-cfg '(S A B C)
                       '(a b)
                       `((S ,ARROW aA) (S ,ARROW bB)
                                       (S ,ARROW a)
@@ -2326,7 +2312,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                       (C ,ARROW bA)
                                       (C ,ARROW b))
                       'S) '(b b b b))
-(check-accept (make-unchecked-cfg '(S A B C)
+(check-in-lang? (make-cfg '(S A B C)
                       '(a b)
                       `((S ,ARROW aA) (S ,ARROW bB)
                                       (S ,ARROW a)
@@ -2339,13 +2325,13 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                                       (C ,ARROW b))
                       'S) '(b b b b a a a a))
 
-(check-accept even-bs-odd-as
+(check-in-lang? even-bs-odd-as
               '(b b b a a a)
               '(b a a a)
               '(b b b b)
               '(b b b b a a a a))
 
-(check-accept (make-unchecked-cfg '(S A B C)
+(check-in-lang? (make-cfg '(S A B C)
                       '(a b)
                       `((S ,ARROW aA) (S ,ARROW bB)
                                       (S ,ARROW a)
@@ -2372,20 +2358,20 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
 
 
 
-(check-accept reverse-w '(a a a a a a)) 
-(check-accept reverse-w '(a a b b a a)) 
-(check-accept reverse-w '(b b b b))
+(check-in-lang? reverse-w '(a a a a a a)) 
+(check-in-lang? reverse-w '(a a b b a a)) 
+(check-in-lang? reverse-w '(b b b b))
 
-(check-accept reverse-w
+(check-in-lang? reverse-w
               '(a a a a a a)
               '(a a b b a a)
               '(b b b b))
 
-(check-reject reverse-w '(a a a b a a a))
-(check-reject reverse-w '(b b b b a a a)) 
-(check-reject reverse-w '(b b b b a a a a))
+(check-not-in-lang? reverse-w '(a a a b a a a))
+(check-not-in-lang? reverse-w '(b b b b a a a)) 
+(check-not-in-lang? reverse-w '(b b b b a a a a))
 
-(check-reject reverse-w
+(check-not-in-lang? reverse-w
               '(a a a b a a a)
               '(b b b b a a a)
               '(b b b b a a a a))
@@ -2403,13 +2389,13 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                              'S))
 
 
-(check-accept palindrome '(a a a a a a))
-(check-accept palindrome '(a a a b a a a)) 
-(check-accept palindrome '(a a b b a a))
-(check-accept palindrome '(b b a b b))
+(check-in-lang? palindrome '(a a a a a a))
+(check-in-lang? palindrome '(a a a b a a a)) 
+(check-in-lang? palindrome '(a a b b a a))
+(check-in-lang? palindrome '(b b a b b))
 
-(check-reject palindrome '(b b b b a a a))
-(check-reject palindrome '(b b b b a a a a))
+(check-not-in-lang? palindrome '(b b b b a a a))
+(check-not-in-lang? palindrome '(b b b b a a a a))
 
 ;; L = a^ib^j i<=j
 (define aibj (make-cfg '(S A)
@@ -2422,15 +2408,15 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                          (A -> bS)) 
                        'S))
 
-(check-accept aibj '(a a a a b b b b))
-(check-accept aibj '(a a a a b b b b b b b b))
+(check-in-lang? aibj '(a a a a b b b b))
+(check-in-lang? aibj '(a a a a b b b b b b b b))
 
-(check-reject aibj '(a a a a))
-(check-reject aibj '(a a a b a a a)) 
-(check-reject aibj '(a a b b a a))
-(check-reject aibj '(b b a b b))
+(check-not-in-lang? aibj '(a a a a))
+(check-not-in-lang? aibj '(a a a b a a a)) 
+(check-not-in-lang? aibj '(a a b b a a))
+(check-not-in-lang? aibj '(b b a b b))
 
-(check-accept (make-cfg '(S A)
+(check-in-lang? (make-cfg '(S A)
                        '(a b)
                        `((S -> b)
                          (S -> bS)
@@ -2439,7 +2425,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                          (A -> aAb)
                          (A -> bS)) 
                        'S) '(a a a a b b b b))
-(check-accept (make-cfg '(S A)
+(check-in-lang? (make-cfg '(S A)
                        '(a b)
                        `((S -> b)
                          (S -> bS)
@@ -2449,7 +2435,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                          (A -> bS)) 
                        'S) '(a a a a b b b b b b b b))
 
-(check-reject (make-cfg '(S A)
+(check-not-in-lang? (make-cfg '(S A)
                        '(a b)
                        `((S -> b)
                          (S -> bS)
@@ -2458,7 +2444,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                          (A -> aAb)
                          (A -> bS)) 
                        'S) '(a a a a))
-(check-reject (make-cfg '(S A)
+(check-not-in-lang? (make-cfg '(S A)
                        '(a b)
                        `((S -> b)
                          (S -> bS)
@@ -2467,7 +2453,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                          (A -> aAb)
                          (A -> bS)) 
                        'S) '(a a a b a a a)) 
-(check-reject (make-cfg '(S A)
+(check-not-in-lang? (make-cfg '(S A)
                        '(a b)
                        `((S -> b)
                          (S -> bS)
@@ -2476,7 +2462,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                          (A -> aAb)
                          (A -> bS)) 
                        'S) '(a a b b a a))
-(check-reject (make-cfg '(S A)
+(check-not-in-lang? (make-cfg '(S A)
                        '(a b)
                        `((S -> b)
                          (S -> bS)
@@ -2486,35 +2472,35 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                          (A -> bS)) 
                        'S) '(b b a b b))
 
-(check-accept aibj
+(check-in-lang? aibj
               '(a a a a b b b b)
               '(a a a a b b b b b b b b))
 
-(check-reject aibj
+(check-not-in-lang? aibj
               '(a a a a)
               '(a a a b a a a)
               '(a a b b a a)
               '(b b a b b))
 
-(check-accept aibj
+(check-in-lang? aibj
               '(z)
               '(z))
 
-(check-reject aibj
+(check-not-in-lang? aibj
               '(y)
               '(y)
               '(z)
               '(z))
 
-(check-accept aibj
+(check-in-lang? aibj
               '(z)
               )
 
-(check-reject aibj
+(check-not-in-lang? aibj
               '(y)
               )
 
-(check-accept (make-cfg '(S A)
+(check-in-lang? (make-cfg '(S A)
                        '(a b)
                        `((S -> b)
                          (S -> bS)
@@ -2526,7 +2512,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
               '(z)
               '(z))
 
-(check-reject (make-cfg '(S A)
+(check-not-in-lang? (make-cfg '(S A)
                        '(a b)
                        `((S -> b)
                          (S -> bS)
@@ -2540,7 +2526,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
               '(z)
               '(z))
 
-(check-accept (make-cfg '(S A)
+(check-in-lang? (make-cfg '(S A)
                        '(a b)
                        `((S -> b)
                          (S -> bS)
@@ -2552,7 +2538,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
               '(z)
               )
 
-(check-reject (make-cfg '(S A)
+(check-not-in-lang? (make-cfg '(S A)
                        '(a b)
                        `((S -> b)
                          (S -> bS)
@@ -2561,10 +2547,9 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
                          (A -> aAb)
                          (A -> bS)) 
                        'S)
-              '(y)
-              )
+              '(y))
 
-(check-accept (make-cfg '(S A)
+(check-in-lang? (make-cfg '(S A)
                        '(a b)
                        `((S -> b)
                          (S -> bS)
@@ -2576,7 +2561,7 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
               '(a a a a b b b b)
               '(a a a a b b b b b b b b))
 
-(check-reject (make-cfg '(S A)
+(check-not-in-lang? (make-cfg '(S A)
                        '(a b)
                        `((S -> b)
                          (S -> bS)

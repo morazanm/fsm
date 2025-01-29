@@ -3,7 +3,7 @@
 (require (for-syntax syntax/parse
                      racket/base)
          racket/syntax-srcloc
-         "../../fsm-core/private/sm-apply.rkt"
+         "../sm-apply.rkt"
          racket/list
          "check-exn.rkt"
          "check-utils.rkt"

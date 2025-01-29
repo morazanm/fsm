@@ -12,12 +12,13 @@
          "check-machine.rkt"
          "check-grammar.rkt"
          "check-exn.rkt"
-         "../../fsm-core/private/sm-getters.rkt"
-         "../../fsm-core/private/grammar-getters.rkt"
+         "../sm-getters.rkt"
+         "../grammar-getters.rkt"
          "check-accept-reject-failure-strings.rkt"
          )
 
-(provide check-accept check-reject)
+(provide check-in-lang? check-not-in-lang?
+         check-derive?)
 
 (define (sm-word-lst/c sigma)
   (listof (apply or/c sigma)))
@@ -39,7 +40,7 @@
 
 ;; Syntax -> Syntax
 ;; Purpose: To determine whether a given machine/grammar can accept/process a given word
-(define-syntax (check-accept stx)
+(define-syntax (check-in-lang? stx)
   (syntax-parse stx
     [(_)
      (quasisyntax/loc stx
@@ -65,13 +66,13 @@
                                                (list #,(syntax-srcloc stx)))
                                   ))))]
     [(_ unknown-expr x ...)
-     #`(cond [(is-turing-machine? unknown-expr)
+     #`(cond [(eq? (whatami? unknown-expr) 'turing-machine)
               (let ([tm-word-contract (new-tm-word/c (remove-duplicates (cons '@ (cons '_ (sm-sigma unknown-expr)))))])
                 #,(syntax/loc stx (check-turing-machine #t tm-word-contract unknown-expr x ...)))]
-             [(is-machine? unknown-expr)
+             [(eq? (whatami? unknown-expr) 'machine)
               (let [(sm-word-contract (sm-word-lst/c (sm-sigma unknown-expr)))]
                 #,(syntax/loc stx (check-machine #t sm-word-contract unknown-expr x ...)))]
-             [(is-grammar? unknown-expr)
+             [(eq? (whatami? unknown-expr) 'grammar)
               (let [(grammar-word-contract (new-grammar-word/c (grammar-sigma unknown-expr)))]
                 #,(syntax/loc stx (check-grammar #t grammar-word-contract unknown-expr x ...)))]
              #,(quasisyntax/loc #'unknown-expr
@@ -84,7 +85,7 @@
 
 ;; machine word [head-pos] -> Boolean
 ;; Purpose: To determine whether a given machine can reject a given word
-(define-syntax (check-reject stx)
+(define-syntax (check-not-in-lang? stx)
   (syntax-parse stx
     [(_)
      (quasisyntax/loc stx
@@ -111,13 +112,13 @@
                                                (list #,(syntax-srcloc stx)))
                                   ))))]
     [(_ unknown-expr x ...)
-     #`(cond [(is-turing-machine? unknown-expr)
+     #`(cond [(eq? (whatami? unknown-expr) 'turing-machine)
               (let ([tm-word-contract (new-tm-word/c (cons '_ (sm-sigma unknown-expr)))])
                 #,(syntax/loc stx (check-turing-machine #f tm-word-contract unknown-expr x ...)))]
-             [(is-machine? unknown-expr)
+             [(eq? (whatami? unknown-expr) 'machine)
               (let [(sm-word-contract (sm-word-lst/c (sm-sigma unknown-expr)))]
                 #,(syntax/loc stx (check-machine #f sm-word-contract unknown-expr x ...)))]
-             [(is-grammar? unknown-expr)
+             [(eq? (whatami? unknown-expr) 'grammar)
               (let [(grammar-word-contract (new-grammar-word/c (grammar-sigma unknown-expr)))]
                 #,(syntax/loc stx (check-grammar #f grammar-word-contract unknown-expr x ...)))]
              #,(quasisyntax/loc #'unknown-expr
@@ -128,3 +129,5 @@
                                                        (list (syntax-srcloc #'unknown-expr)))
                                           ))])
              )]))
+
+(define-syntax check-derive? (make-rename-transformer #'check-in-lang?))

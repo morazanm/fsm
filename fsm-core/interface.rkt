@@ -33,7 +33,8 @@
   "private/callgraphs/transdiagram-mttm.rkt"
   "../visualizations/viz-sm/viz-ctm.rkt"
   "private/Chomsky-Greibach-CFG-Transformations/chomsky.rkt"
-  "private/Chomsky-Greibach-CFG-Transformations/greibach.rkt")
+  "private/Chomsky-Greibach-CFG-Transformations/greibach.rkt"
+  "private/fsmunit/check-accept-reject-macro.rkt")
   
 (provide
  check-machine
@@ -110,7 +111,11 @@
  ctm-viz
 
  ; computation graphs
- sm-cmpgraph)
+ sm-cmpgraph
+
+ ;; FSM Unit Testing
+ check-derive?
+ )
 ; Primitive constructors imported from other modules
 
 ; sm word [natnum] --> image
@@ -124,8 +129,7 @@
           [(or (eq? t1 'tm) (eq? t1 'tm-language-recognizer))
            (computation-diagram-tm M w (if (empty? headpos) 0 (first headpos)) c p)]
           [(or (eq? t1 'mttm) (eq? t1 'mttm-language-recognizer))
-           (computation-diagram-mttm M w (if (empty? headpos) 0 (first headpos)) c p)
-           #;(error "Computation graphs for mttms coming soon!")]
+           (computation-diagram-mttm M w (if (empty? headpos) 0 (first headpos)) c p)]
           [else (error "Unknown machine type given to sm-cmpgraph.")])))
   
 ; (listof state) fsm --> fsm

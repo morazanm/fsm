@@ -5,9 +5,9 @@
                      racket/base)
          racket/syntax-srcloc
          racket/list
-         "../../fsm-core/private/csg.rkt"
-         "../../fsm-core/private/cfg.rkt"
-         "../../fsm-core/private/regular-grammar.rkt"
+         "../csg.rkt"
+         "../cfg.rkt"
+         "../regular-grammar.rkt"
          "check-accept-reject-failure-strings.rkt"
          "check-exn.rkt"
          "check-utils.rkt")

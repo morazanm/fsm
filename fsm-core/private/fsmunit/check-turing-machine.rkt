@@ -6,7 +6,7 @@
               "fsm-syntax-classes.rkt")
   racket/list
   racket/syntax-srcloc
-  "../../fsm-core/private/sm-apply.rkt"
+  "../sm-apply.rkt"
   "check-accept-reject-failure-strings.rkt"
   "check-exn.rkt"
   "check-utils.rkt")
