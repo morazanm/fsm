@@ -9,73 +9,73 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; MACHINE ACCEPT ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (named-multi-failure-machine-accept machine-name failed-words)
-  (format "Step 6 of the design recipe has not been succesfully completed. The constructed machine, ~s, does not accept the following words: ~a"
+  (format "Step 6 of the design recipe has not been successfully completed. The constructed machine, ~s, does not accept the following words: ~a"
           machine-name
           (apply string-append (cons (format "\n~s" (first failed-words))
                                      (map (lambda (n) (format "\n~s" n))
                                           (rest failed-words))))))
 
 (define (named-single-failure-machine-accept machine-name failed-word)
-  (format "Step 6 of the design recipe has not been succesfully completed. The constructed machine, ~s, does not accept the following word: ~a"
+  (format "Step 6 of the design recipe has not been successfully completed. The constructed machine, ~s, does not accept the following word: ~a"
           machine-name
           failed-word))
 
 (define (anonymous-multi-failure-machine-accept failed-words)
-  (format "Step 6 of the design recipe has not been succesfully completed. The constructed machine does not accept the following words: ~a"
+  (format "Step 6 of the design recipe has not been successfully completed. The constructed machine does not accept the following words: ~a"
           (apply string-append (cons (format "\n~s" (first failed-words))
                                      (map (lambda (n) (format "\n~s" n))
                                           (rest failed-words))))))
 
 (define (anonymous-single-failure-machine-accept failed-word)
-  (format "Step 6 of the design recipe has not been succesfully completed. The constructed machine does not accept the following word: ~a"
+  (format "Step 6 of the design recipe has not been successfully completed. The constructed machine does not accept the following word: ~a"
           failed-word))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; MACHINE REJECT ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (named-multi-failure-machine-reject machine-name failed-words)
-  (format "Step 6 of the design recipe has not been succesfully completed. The constructed machine, ~s, does not reject the following words: ~a"
+  (format "Step 6 of the design recipe has not been successfully completed. The constructed machine, ~s, does not reject the following words: ~a"
           machine-name
           (apply string-append (cons (format "\n~s" (first failed-words))
                                      (map (lambda (n) (format "\n~s" n))
                                           (rest failed-words))))))
 
 (define (named-single-failure-machine-reject machine-name failed-word)
-  (format "Step 6 of the design recipe has not been succesfully completed. The constructed machine, ~s, does not reject the following word: ~a"
+  (format "Step 6 of the design recipe has not been successfully completed. The constructed machine, ~s, does not reject the following word: ~a"
           machine-name
           failed-word))
 
 (define (anonymous-multi-failure-machine-reject failed-words)
-  (format "Step 6 of the design recipe has not been succesfully completed. The constructed machine does not reject the following words: ~a"
+  (format "Step 6 of the design recipe has not been successfully completed. The constructed machine does not reject the following words: ~a"
           (apply string-append (cons (format "\n~s" (first failed-words))
                                      (map (lambda (n) (format "\n~s" n))
                                           (rest failed-words))))))
 
 (define (anonymous-single-failure-machine-reject failed-word)
-  (format "Step 6 of the design recipe has not been succesfully completed. The constructed machine does not reject the following word: ~a"
+  (format "Step 6 of the design recipe has not been successfully completed. The constructed machine does not reject the following word: ~a"
           failed-word))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; MACHINE INVALID NONTERMINAL ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (named-single-failure-machine-invalid-nonterminal machine-name invalid-word)
-  (format "Step X of the design recipe has not been sucessfully completed. The following word contains elements not in the language of the constructed machine, ~s:\n~a"
+  (format "Step 2 of the design recipe has not been successfully completed. The following word contains elements not in the language of the constructed machine, ~s: ~a"
           machine-name
           invalid-word))
 
 (define (named-multi-failure-machine-invalid-nonterminal machine-name invalid-words)
   (foldl (lambda (val accum)
            (string-append accum (format "\n~a" val)))
-         (format "Step X of the design recipe has not been sucessfully completed. The following words contain elements not in the language of the constructed machine, ~s:"
+         (format "Step 2 of the design recipe has not been successfully completed. The following words contain elements not in the language of the constructed machine, ~s:"
                  machine-name)
          invalid-words))
 
 (define (anonymous-single-failure-machine-invalid-nonterminal invalid-word)
-  (format "Step X of the design recipe has not been sucessfully completed. The following word contains elements not in the language of the constructed machine:\n~a"
+  (format "Step 2 of the design recipe has not been successfully completed. The following word contains elements not in the language of the constructed machine: ~a"
           invalid-word))
 
 (define (anonymous-multi-failure-machine-invalid-nonterminal invalid-words)
   (foldl (lambda (val accum)
            (string-append accum (format "\n~a" val)))
-         "Step X of the design recipe has not been sucessfully completed. The following words contain elements not in the language of the constructed machine:"
+         "Step 2 of the design recipe has not been successfully completed. The following words contain elements not in the language of the constructed machine:"
          invalid-words))
 
 #|
@@ -103,7 +103,7 @@
   (void))
 
 (define (named-single-failure-machine-invalid-arity machine-name invalid-expression)
-  (format "Step X of the design recipe has not been successfully completed. The following test case for the constructed machine, ~s, has arity ~a but expected 2:\n~a"
+  (format "Step 2 of the design recipe has not been successfully completed. The following test case for the constructed machine, ~s, has arity ~a but expected 2: ~a"
           machine-name
           (length invalid-expression)
           invalid-expression))
@@ -112,7 +112,7 @@
   (void))
 
 (define (anonymous-single-failure-machine-invalid-arity invalid-expression)
-  (format "Step X of the design recipe has not been successfully completed. The following test case has arity ~a but expected 2:\n~a"
+  (format "Step 2 of the design recipe has not been successfully completed. The following test case has arity ~a but expected 2: ~a"
           (length invalid-expression)
           invalid-expression))
 
@@ -120,23 +120,23 @@
 
 (define (named-multi-failure-machine-invalid-head-pos machine-name invalid-expressions)
   (foldl (lambda (val accum) (string-append accum (format "\n~a" val)))
-         (format "Step X of the design recipe has not been successfully completed. The following test cases for the constructed machine, ~s, have a starting head position which is not a natural number:"
+         (format "Step 2 of the design recipe has not been successfully completed. The following test cases for the constructed machine, ~s, have a starting head position which is not a natural number:"
           machine-name)
          invalid-expressions))
 
 (define (named-single-failure-machine-invalid-head-pos machine-name invalid-expression)
-  (format "Step X of the design recipe has not been successfully completed. The following test case for the constructed machine, ~s, has a starting head position which is not a natural number:\n~a"
+  (format "Step 2 of the design recipe has not been successfully completed. The following test case for the constructed machine, ~s, has a starting head position which is not a natural number: ~a"
           machine-name
           invalid-expression))
 
 (define (anonymous-multi-failure-machine-invalid-head-pos invalid-expressions)
   (foldl (lambda (val accum) (string-append accum (format "\n~a" val)))
-         (format "Step X of the design recipe has not been successfully completed. The following test cases have a starting head position which is not a natural number:"
+         (format "Step 2 of the design recipe has not been successfully completed. The following test cases have a starting head position which is not a natural number:"
           )
          invalid-expressions))
 
 (define (anonymous-single-failure-machine-invalid-head-pos invalid-expression)
-  (format "Step X of the design recipe has not been successfully completed. The following test case has a starting head position which is not a natural number:\n~a"
+  (format "Step 2 of the design recipe has not been successfully completed. The following test case has a starting head position which is not a natural number: ~a"
           
           invalid-expression))
 
@@ -144,123 +144,123 @@
 
 (define (named-multi-failure-machine-invalid-head-pos-index machine-name invalid-expressions)
   (foldl (lambda (val accum) (string-append accum (format "\n~a" val)))
-         (format "Step X of the design recipe has not been successfully completed. The following test cases for the constructed machine, ~s, have a starting head position which is not a valid index into their respective test words:"
+         (format "Step 2 of the design recipe has not been successfully completed. The following test cases for the constructed machine, ~s, have a starting head position which is not a valid index into their respective test words:"
           machine-name)
          invalid-expressions))
 
 (define (named-single-failure-machine-invalid-head-pos-index machine-name invalid-expression)
-  (format "Step X of the design recipe has not been successfully completed. The following test case for the constructed machine, ~s, has a starting head position which is not a valid index into its respective test word:\n~a"
+  (format "Step 2 of the design recipe has not been successfully completed. The following test case for the constructed machine, ~s, has a starting head position which is not a valid index into its respective test word: ~a"
           machine-name
           invalid-expression))
 
 (define (anonymous-multi-failure-machine-invalid-head-pos-index invalid-expressions)
   (foldl (lambda (val accum) (string-append accum (format "\n~a" val)))
-         (format "Step X of the design recipe has not been successfully completed. The following test cases have a starting head position which is not a valid index into their respective test words:"
+         (format "Step 2 of the design recipe has not been successfully completed. The following test cases have a starting head position which is not a valid index into their respective test words:"
           )
          invalid-expressions))
 
 (define (anonymous-single-failure-machine-invalid-head-pos-index invalid-expression)
-  (format "Step X of the design recipe has not been successfully completed. The following test case has a starting head position which is not a valid index into its respective test word:\n~a"
+  (format "Step 2 of the design recipe has not been successfully completed. The following test case has a starting head position which is not a valid index into its respective test word: ~a"
           invalid-expression))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; MACHINE NO LEFT HAND MARKER WORDS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (named-multi-failure-machine-no-left-hand-marker machine-name invalid-expressions)
   (foldl (lambda (val accum) (string-append accum (format "\n~a" val)))
-         (format "Step X of the design recipe has not been successfully completed. The following test cases for the constructed machine, ~s, do not contain a left hand marker:"
+         (format "Step 2 of the design recipe has not been successfully completed. The following test cases for the constructed machine, ~s, do not contain a left hand marker:"
           machine-name)
          invalid-expressions))
 
 (define (named-single-failure-machine-no-left-hand-marker machine-name invalid-expression)
-  (format "Step X of the design recipe has not been successfully completed. The following test case for the constructed machine, ~s, does not contain a left hand marker:\n~a"
+  (format "Step 2 of the design recipe has not been successfully completed. The following test case for the constructed machine, ~s, does not contain a left hand marker: ~a"
           machine-name
           invalid-expression))
 
 (define (anonymous-multi-failure-machine-no-left-hand-marker invalid-expressions)
   (foldl (lambda (val accum) (string-append accum (format "\n~a" val)))
-         (format "Step X of the design recipe has not been successfully completed. The following test cases do not contain a left hand marker:")
+         (format "Step 2 of the design recipe has not been successfully completed. The following test cases do not contain a left hand marker:")
          invalid-expressions))
 
 (define (anonymous-single-failure-machine-no-left-hand-marker invalid-expression)
-  (format "Step X of the design recipe has not been successfully completed. The following test case does not contain a left hand marker:\n~a"
+  (format "Step 2 of the design recipe has not been successfully completed. The following test case does not contain a left hand marker: ~a"
           invalid-expression))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; GRAMMAR ACCEPT ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (named-single-failure-grammar-accept grammar-name invalid-word)
-  (format "Step 6 of the design recipe has not been succesfully completed. The constructed grammar, ~s, does not derive the following word: ~a"
+  (format "Step 6 of the design recipe has not been successfully completed. The constructed grammar, ~s, does not derive the following word: ~a"
           grammar-name
           invalid-word))
 
 (define (named-multi-failure-grammar-accept grammar-name invalid-words)
   (foldl (lambda (val accum)
            (string-append accum (format "\n~s" val)))
-         (format "Step 6 of the design recipe has not been succesfully completed. The constructed grammar, ~s, does not derive the following words:"
+         (format "Step 6 of the design recipe has not been successfully completed. The constructed grammar, ~s, does not derive the following words:"
                  grammar-name)
          invalid-words))
 
 (define (anonymous-single-failure-grammar-accept invalid-word)
-  (format "Step 6 of the design recipe has not been succesfully completed. The constructed grammar does not derive the following word: ~a"
+  (format "Step 6 of the design recipe has not been successfully completed. The constructed grammar does not derive the following word: ~a"
           invalid-word))
 
 (define (anonymous-multi-failure-grammar-accept invalid-words)
   (foldl (lambda (val accum)
            (string-append accum (format "\n~s" val)))
-         "Step 6 of the design recipe has not been succesfully completed. The constructed grammar does not derive the following words:"
+         "Step 6 of the design recipe has not been successfully completed. The constructed grammar does not derive the following words:"
          invalid-words))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; GRAMMAR REJECT ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (named-single-failure-grammar-reject grammar-name invalid-word)
-  (format "Step 6 of the design recipe has not been succesfully completed. The constructed machine, ~s, derives the following word: ~a"
+  (format "Step 6 of the design recipe has not been successfully completed. The constructed machine, ~s, derives the following word: ~a"
           grammar-name
           invalid-word))
 
 (define (named-multi-failure-grammar-reject grammar-name invalid-words)
   (foldl (lambda (val accum)
            (string-append accum (format "\n~s" val)))
-         (format "Step 6 of the design recipe has not been succesfully completed. The constructed machine, ~s, derives the following words:"
+         (format "Step 6 of the design recipe has not been successfully completed. The constructed machine, ~s, derives the following words:"
                  grammar-name)
          invalid-words))
 
 (define (anonymous-single-failure-grammar-reject invalid-word)
-  (format "Step 6 of the design recipe has not been succesfully completed. The constructed machine derives the following word: ~a"
+  (format "Step 6 of the design recipe has not been successfully completed. The constructed machine derives the following word: ~a"
           invalid-word))
 
 (define (anonymous-multi-failure-grammar-reject invalid-words)
   (foldl (lambda (val accum)
            (string-append accum (format "\n~s" val)))
-         "Step 6 of the design recipe has not been succesfully completed. The constructed machine derives the following words:"
+         "Step 6 of the design recipe has not been successfully completed. The constructed machine derives the following words:"
          invalid-words))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; GRAMMAR INVALID NONTERMINALS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (named-single-failure-grammar-invalid-nonterminal grammar-name invalid-nonterminal)
-  (format "Step X of the design recipe has not been sucessfully completed. The following word contains nonterminals not in the language of the constructed grammar, ~s:\n~a"
+  (format "Step 4 of the design recipe has not been successfully completed. The following word contains nonterminals not in the language of the constructed grammar, ~s: ~a"
           grammar-name
           invalid-nonterminal))
 
 (define (named-multi-failure-grammar-invalid-nonterminal grammar-name invalid-nonterminals)
   (foldl (lambda (val accum)
            (string-append accum (format "\n~a" val)))
-         (format "Step X of the design recipe has not been sucessfully completed. The following word contains nonterminals not in the language of the constructed grammar, ~s:"
+         (format "Step 4 of the design recipe has not been successfully completed. The following word contains nonterminals not in the language of the constructed grammar, ~s:"
                  grammar-name)
          invalid-nonterminals))
 
 (define (anonymous-single-failure-grammar-invalid-nonterminal invalid-nonterminal)
-  (format "Step X of the design recipe has not been sucessfully completed. The following word contains nonterminals not in the language of the constructed grammar:\n~a"
+  (format "Step 4 of the design recipe has not been successfully completed. The following word contains nonterminals not in the language of the constructed grammar: ~a"
           invalid-nonterminal))
 
 (define (anonymous-multi-failure-grammar-invalid-nonterminal invalid-nonterminals)
   (foldl (lambda (val accum)
            (string-append accum (format "\n~a" val)))
-         "Step X of the design recipe has not been sucessfully completed. The following word contains nonterminals not in the language of the constructed grammar:"
+         "Step 4 of the design recipe has not been successfully completed. The following word contains nonterminals not in the language of the constructed grammar:"
          invalid-nonterminals))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; GRAMMAR INVALID EXPRESSIONS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (named-single-failure-grammar-invalid-expression grammar-name invalid-expression)
-  (format "The constructed grammar, ~s, cannot testing the following word because it is invalid:\n~a"
+  (format "The constructed grammar, ~s, cannot testing the following word because it is invalid: ~a"
           grammar-name
           invalid-expression))
 
@@ -272,7 +272,7 @@
          invalid-expressions))
 
 (define (anonymous-single-failure-grammar-invalid-expression invalid-expression)
-  (format "The constructed grammar cannot testing the following word because it is invalid:\n~a"
+  (format "The constructed grammar cannot testing the following word because it is invalid: ~a"
           invalid-expression))
 
 (define (anonymous-multi-failure-grammar-invalid-expression invalid-expressions)
