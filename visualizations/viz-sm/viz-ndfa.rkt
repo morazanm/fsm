@@ -875,7 +875,6 @@ triple is the entire of the ndfa rule
 ;;Purpose: Visualizes the given ndfa processing the given word
 ;;Assumption: The given machine is a ndfa or dfa
 (define (ndfa-viz M a-word #:add-dead [add-dead #f] invs)
-  (displayln add-dead)
   (let* (;;M ;;Purpose: A new machine with the dead state if add-dead is true
          [new-M (if add-dead (make-new-M M) M)]
          ;;symbol ;;Purpose: The name of the dead state
@@ -932,11 +931,6 @@ triple is the entire of the ndfa rule
                                                     accepting-computations))
                              invs)
                             a-word))])
-        ;(struct building-viz-state (upci pci M inv dead))
-        ;(struct imsg-state (M upci pci))
-        ;;ANCHOR
-        ;rejecting-traces
-        ;inv-configs
         (run-viz graphs
                  (lambda () (graph->bitmap (first graphs)))
                  (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2))

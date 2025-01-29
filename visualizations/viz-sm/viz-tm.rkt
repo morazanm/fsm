@@ -121,15 +121,15 @@ visited is a (listof configuration)
 ;;ASSUMPTION: The given rule can be applied to the config
 (define (apply-rule a-comp a-rule)
   ;;config -> config
-  ;;Purpose: Applies the read portion of given rule to the given config
-  ;;ASSUMPTION: The given rule can be applied to the config
+  ;;Purpose: Applies the action portion of given rule to the given config
   (define (apply-action a-config)
     (list (first (second a-rule))
           (cond [(eq? (second (second a-rule)) RIGHT) (add1 (second a-config))]
                 [(eq? (second (second a-rule)) LEFT)  (sub1 (second a-config))]
                 [else (second a-config)])
           (mutate-tape a-config)))
-  
+  ;;config -> tape
+  ;;Purpose: "Mutates" the tape if possible 
   (define (mutate-tape a-config)
     (if (or (eq? (second (second a-rule)) BLANK)
             (eq? (second (second a-rule)) RIGHT)
@@ -139,28 +139,15 @@ visited is a (listof configuration)
                 (list (second (second a-rule)))
                 (rest (drop (third a-config) (second a-config))))))
    
-        
+  ;;config -> config
+  ;;Purpose: Adds a blank to the end of the tape
   (define (add-blank a-config)
     (if (not (= (second a-config) (length (third a-config))))
         a-config
         (list (first a-config)
               (second a-config)
               (append (third a-config) (list BLANK)))))
-  ;;config -> config
-  ;;Purpose: Applies the pop portion of given rule to the given config
-  ;;ASSUMPTION: The given rule can be applied to the config
-  (define (apply-pop a-config)
-    a-config)
-  ;;config -> config
-  ;;Purpose: Applies the push portion of given rule to the given config
-  ;;ASSUMPTION: The given rule can be applied to the config
-  (define (apply-push a-config)
-    a-config)
-  ;;config -> config
-  ;;Purpose: Updates the config's number if something gets applied to the config (e.i. read/pop/push)
-  ;;ASSUMPTION: The given rule can be applied to the config
-  (define (update-count a-config)
-    a-config)
+  
   (struct-copy computation a-comp
                [LoC (cons (add-blank (apply-action (first (computation-LoC a-comp)))) (computation-LoC a-comp))]
                [LoR (cons a-rule (computation-LoR a-comp))]
