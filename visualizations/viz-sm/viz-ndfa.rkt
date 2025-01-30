@@ -7,10 +7,12 @@
          "../viz-lib/bounding-limits.rkt"
          "../viz-lib/viz-state.rkt"
          "../viz-lib/viz-macros.rkt"
-         "../viz-lib/viz-constants.rkt"
+         (except-in "../viz-lib/viz-constants.rkt"
+                    INS-TOOLS-BUFFER)
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "david-imsg-state.rkt"
-         "david-viz-constants.rkt"
+         (except-in "david-viz-constants.rkt"
+                    FONT-SIZE)
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/fsa.rkt"
          "../../fsm-core/private/misc.rkt")
@@ -349,7 +351,7 @@ triple is the entire of the ndfa rule
 ;;M is a machine
 ;;inv is a the (listof (state (listof symbols -> boolean)))
 ;;dead is the sybmol of dead state
-(struct building-viz-state (upci pci M inv dead computations acc-comps accept-traces reject-traces))
+(struct building-viz-state (upci pci M inv dead computations acc-comps accept-traces reject-traces) #:transparent)
 
 ;;image-state -> image
 ;;Purpose: Determines which informative message is displayed to the user
@@ -1008,6 +1010,7 @@ triple is the entire of the ndfa rule
                  (if (eq? (M 'whatami) 'ndfa)
                           'ndfa-viz
                           'dfa-viz))))
+
 
 ;"notes to self:"
 ;"scroll thru word instead of jumping to end"

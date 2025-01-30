@@ -14,9 +14,11 @@
          "../../fsm-core/private/pda.rkt"
          "../../fsm-core/private/cfg.rkt"
          "../../fsm-core/private/misc.rkt"
-         "../viz-lib/viz-constants.rkt"
+         (except-in "../viz-lib/viz-constants.rkt"
+                    INS-TOOLS-BUFFER)
          "david-imsg-state.rkt"
-         "david-viz-constants.rkt")
+         (except-in "david-viz-constants.rkt"
+                    FONT-SIZE))
 
 (provide pda-viz)
 (define FONT-SIZE 18)

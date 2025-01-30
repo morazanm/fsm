@@ -6,8 +6,14 @@
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "../viz-lib/default-viz-function-generators.rkt"
          "../../fsm-core/private/constants.rkt"
-         "../viz-lib/viz-constants.rkt")
+         "default-informative-messages.rkt"
+         "../viz-lib/zipper.rkt"
+         "david-imsg-state.rkt"
+         "../viz-lib/viz-constants.rkt"
+         "../../fsm-core/private/fsa.rkt"
+         "../../fsm-core/private/misc.rkt")
 
+(define FONT-SIZE 18)
 (provide (all-defined-out))
 
 (define HELD-INV-COLOR 'chartreuse4)
@@ -15,12 +21,25 @@
 (define DARKGOLDENROD2 (make-color 238 173 14))
 (define GRAPHVIZ-CUTOFF-GOLD 'darkgoldenrod2)
 (define SM-VIZ-FONT-SIZE 18)
+(define INS-TOOLS-BUFFER 30)
+
+(define AB*B*UAB*
+  (make-unchecked-ndfa '(S K B C H)
+             '(a b)
+             'S
+             '(H)
+             `((S ,EMP K) (S a C)
+                          (K a B) (K ,EMP H)
+                          (B b K)
+                          (C ,EMP H)
+                          (H b H))))
+
 
 (define DUMMY-RULE (list (list EMP EMP EMP) (list EMP EMP)))
 
 (define INFORMATIVE-MSG-HEIGHT 50)
 
-(define cursor
+#;(define cursor
   (let ([cursor-rect (let ([inner-white (rectangle 5 17.5 'solid 'white)]
                            [outer-black (rectangle 9 20 'solid 'black)]
                            [white-triangle-infill (rectangle 9 5 'solid 'white)])
@@ -48,7 +67,7 @@
            (scale 0.5 (rotate 310 (overlay/xy inner-white -9 -3 outer-black))))])
     (overlay/xy (rotate 25 cursor-rect) -7 -26 cursor-tri)))
 
-(define E-SCENE-TOOLS (e-scene-tools-generator HEIGHT-BUFFER LETTER-KEY-WIDTH-BUFFER SM-VIZ-FONT-SIZE
+#;(define E-SCENE-TOOLS (e-scene-tools-generator HEIGHT-BUFFER LETTER-KEY-WIDTH-BUFFER SM-VIZ-FONT-SIZE
                                                    (list (list ARROW-UP-KEY "Restart")
                                                          (list ARROW-RIGHT-KEY "Forward")
                                                          (list ARROW-LEFT-KEY "Backward")
@@ -65,7 +84,7 @@
                                                          (list L-KEY "Nxt not inv"))))
                                                    
 
-(define old-E-SCENE-TOOLS
+(define E-SCENE-TOOLS
   (let ([ARROW (above (triangle 30 'solid 'black) (rectangle 10 30 'solid 'black))])
     (beside/align
      "bottom"
@@ -83,7 +102,7 @@
             (square HEIGHT-BUFFER 'solid 'white)
             (text "Finish" (- SM-VIZ-FONT-SIZE 2) 'black))
      (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
-     (above cursor (square HEIGHT-BUFFER 'solid 'white) (text "Hold to drag" (- SM-VIZ-FONT-SIZE 2) 'black))
+     (above CURSOR (square HEIGHT-BUFFER 'solid 'white) (text "Hold to drag" (- SM-VIZ-FONT-SIZE 2) 'black))
      (square ARROW-KEY-WIDTH-BUFFER 'solid 'white)
      (beside (above/align "middle"
                           W-KEY
@@ -163,6 +182,31 @@
     (make-tape-img letter-imgs start-index)))
 
 (define TAPE-IMG-HEIGHT (image-height (make-tape-img (list 'a) 0 '())))
+
+(define info-img (create-draw-informative-message (imsg-state AB*B*UAB*
+              '(a b b)
+              '()
+              (list->zipper '(((S (a b b)) (K (a b b)) (B (b b)) (K (b)) (H (b)) (H ())) ((S (a b b)) (C (b b)) (H (b b)) (H (b)) (H ())) ((S (a b b)) (K (a b b)) (H (a b b)))))
+              'no-stck
+              'no-farthest-consumed
+              (list->zipper '())
+              (sub1 (length '()))
+              '(1 2 3 2)
+              '((computation
+                 ((H ()) (H (b)) (K (b)) (B (b b)) (K (a b b)) (S (a b b)))
+                 ((H b H) (K ε H) (B b K) (K a B) (S ε K))
+                 ((H (b)) (K (b)) (B (b b)) (K (a b b)) (S (a b b))))
+                (computation ((H ()) (H (b)) (H (b b)) (C (b b)) (S (a b b))) ((H b H) (H b H) (C ε H) (S a C)) ((H (b)) (H (b b)) (C (b b)) (S (a b b)))))
+              'no-max-cmps
+              0
+              (let ([offset-cap (- (length '(a b b)) TAPE-SIZE)])
+                (if (> 0 offset-cap) 0 offset-cap))
+              0)))
+(define img-bounding-limit
+  (bounding-limits 0
+                  (image-width info-img)
+                  E-SCENE-HEIGHT
+                  (+ E-SCENE-HEIGHT (image-height info-img))))
 
 (define RULE-YIELD-DIMS
   (let ([DREV (let ([drev-text (text "Deriving: " SM-VIZ-FONT-SIZE 'black)])
