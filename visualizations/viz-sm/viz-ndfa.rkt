@@ -994,7 +994,7 @@ triple is the entire of the ndfa rule
                                           E-SCENE-WIDTH
                                           E-SCENE-HEIGHT
                                           CLICK-BUFFER-SECONDS
-                                          ([RULE-YIELD-DIMS
+                                          ([img-bounding-limit
                                             (lambda (a-imsgs x-diff y-diff) a-imsgs)])
                                           ( [ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed]
                                             [ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed]

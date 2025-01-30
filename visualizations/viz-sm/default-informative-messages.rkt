@@ -185,10 +185,6 @@ triple is the entire of the ndfa rule
          (last-fully-consumed (take a-word (sub1 (length a-word))) M)]
         [a-word]))
 
-
-
-
-
 ;;(listof trace-rule) -> (listof rules)
 ;;Purpose: Remakes the rule extracted from the rule-struct
 (define (extract-rules trace-rules)
