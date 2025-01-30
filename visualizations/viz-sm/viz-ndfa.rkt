@@ -17,13 +17,14 @@
 
 (provide ndfa-viz)
 
+(define FONT-SIZE 18)
 (define EXTRA-HEIGHT-FROM-CURSOR 4)
 (define NODE-SIZE 50)
 
 (define DEFAULT-ZOOM-FLOOR .6)
 
 
-(define INS-TOOLS-BUFFER 30)
+;(define INS-TOOLS-BUFFER 30)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
