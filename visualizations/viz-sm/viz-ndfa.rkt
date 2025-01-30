@@ -377,7 +377,8 @@ triple is the entire of the ndfa rule
          [unconsumed-word (drop entire-word (length last-consumed-word))]
          [machine-decision (if (not (zipper-empty? (imsg-state-acpt-trace imsg-st)))
                                'accept
-                               'reject)]) 
+                               'reject)]
+         [FONT-SIZE 20]) 
 
    
     (overlay/align

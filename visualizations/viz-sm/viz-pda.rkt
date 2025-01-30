@@ -566,7 +566,8 @@ visited is a (listof configuration)
                             (third (zipper-current (imsg-state-stack imsg-st))))]
          [machine-decision (if (not (zipper-empty? (imsg-state-acpt-trace imsg-st)))
                                'accept
-                               'reject)])
+                               'reject)]
+         [FONT-SIZE 20])
     (overlay/align
      'left 'middle
      (above/align
