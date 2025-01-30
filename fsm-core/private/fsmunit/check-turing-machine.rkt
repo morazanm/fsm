@@ -5,6 +5,9 @@
               racket/base
               "fsm-syntax-classes.rkt")
   racket/list
+  syntax/parse
+  "fsm-syntax-classes.rkt"
+  racket/syntax
   racket/syntax-srcloc
   "../sm-apply.rkt"
   "check-accept-reject-failure-strings.rkt"
@@ -97,30 +100,33 @@
 ;; Purpose: Checks turing machines
 (define-syntax (check-accept stx)
   (syntax-parse stx
-    [(_ C:id M ((~var x) ...) ((~or (~var list-two-exprs list-tm-word)
-                                    (~var quoted-two-exprs quoted-tm-word)
-                                    (~var quasiquoted-two-exprs quasiquoted-tm-word)
-                                    (~var one-exprs)) ...))
-     
-     #`(let* ([two-exprs-stx-lst (append (list #'list-two-exprs ...) (list #'quoted-two-exprs ...)
-                                         (list #'quasiquoted-two-exprs ...))]
-              [two-exprs-word-lst (append (list list-two-exprs.word ...) (list quoted-two-exprs.word ...)
-                                          (list quasiquoted-two-exprs.word ...))]
-              [two-exprs-word-stx-lst (append (list #'list-two-exprs.word ...) (list #'quoted-two-exprs.word ...)
-                                              (list #'quasiquoted-two-exprs.word ...))]
-              [two-exprs-head-pos-lst (append (list list-two-exprs.head-pos ...) (list quoted-two-exprs.head-pos ...)
-                                              (list quasiquoted-two-exprs.head-pos ...))]
-              [two-exprs-head-pos-stx-lst (append (list #'list-two-exprs.head-pos ...) (list #'quoted-two-exprs.head-pos ...)
-                                                  (list #'quasiquoted-two-exprs.head-pos ...))]
-              [two-exprs-lst (zip two-exprs-word-stx-lst two-exprs-head-pos-stx-lst)]
+    [(_ C:id M tests tests-stx)
+     #`(let* ([results (foldr (lambda (val accum)
+                                (let ([res (syntax-parse val
+                                             [(~var list-two-exprs list-tm-word)
+                                              (list #'list-two-exprs #'list-two-exprs.word #'list-two-exprs.head-pos)]
+                                             [(~var quoted-two-exprs quoted-tm-word)
+                                              (list #'quoted-two-exprs #'quoted-two-exprs.word #'quoted-two-exprs.head-pos)]
+                                             [(~var quasiquoted-two-exprs quasiquoted-tm-word)
+                                              (list #'quasiquoted-two-exprs #'quasiquoted-two-exprs.word #'quasiquoted-two-exprs.head-pos)]
+                                             [(~var else-clause)
+                                              '()])])
+                                  (if (empty? res)
+                                      accum
+                                      (cons res accum))))
+                              '()
+                              tests-stx)]
+              [two-exprs-stx-lst (map first results)]
+              [two-exprs-word-stx-lst (map second results)]
+              [two-exprs-head-pos-stx-lst (map third results)]
               [head-pos-stx-lst (map (lambda (orig-lst-val orig-lst-stx)
                                        (let ([res-idx (index-of (map syntax-srcloc two-exprs-stx-lst) (syntax-srcloc orig-lst-stx))])
                                          (if res-idx
                                              (list orig-lst-val
                                                    orig-lst-stx
-                                                   (list-ref two-exprs-word-lst res-idx)
+                                                   (first orig-lst-val)
                                                    (list-ref two-exprs-word-stx-lst res-idx)
-                                                   (list-ref two-exprs-head-pos-lst res-idx)
+                                                   (second orig-lst-val)
                                                    (list-ref two-exprs-head-pos-stx-lst res-idx))
                                              (list orig-lst-val
                                                    orig-lst-stx
@@ -138,8 +144,8 @@
                                                        '())
                                                        orig-lst-val)
                                                    orig-lst-stx))))
-                                     (list x ...)
-                                     (list #'x ...))])
+                                     tests
+                                     tests-stx)])
          (accept C
                  M
                  #'M
@@ -148,8 +154,7 @@
                  (map third head-pos-stx-lst)
                  (map fourth head-pos-stx-lst)
                  (map fifth head-pos-stx-lst)
-                 (map sixth head-pos-stx-lst)))]
-    ))
+                 (map sixth head-pos-stx-lst)))]))
 
 (define (reject c M M-stx  orig-val-lst orig-stx-lst unprocessed-word-lst unprocessed-word-stx-lst head-pos-lst head-pos-stx-lst)
   (let* ([wrong-arities (accumulate-invalid-words correct-tm-word-arity/c orig-val-lst orig-stx-lst)]
@@ -223,30 +228,33 @@
 
 (define-syntax (check-reject stx)
   (syntax-parse stx
-    [(_ C:id M ((~var x) ...) ((~or (~var list-two-exprs list-tm-word)
-                                    (~var quoted-two-exprs quoted-tm-word)
-                                    (~var quasiquoted-two-exprs quasiquoted-tm-word)
-                                    (~var one-exprs)) ...))
-     
-     #`(let* ([two-exprs-stx-lst (append (list #'list-two-exprs ...) (list #'quoted-two-exprs ...)
-                                         (list #'quasiquoted-two-exprs ...))]
-              [two-exprs-word-lst (append (list list-two-exprs.word ...) (list quoted-two-exprs.word ...)
-                                          (list quasiquoted-two-exprs.word ...))]
-              [two-exprs-word-stx-lst (append (list #'list-two-exprs.word ...) (list #'quoted-two-exprs.word ...)
-                                              (list #'quasiquoted-two-exprs.word ...))]
-              [two-exprs-head-pos-lst (append (list list-two-exprs.head-pos ...) (list quoted-two-exprs.head-pos ...)
-                                              (list quasiquoted-two-exprs.head-pos ...))]
-              [two-exprs-head-pos-stx-lst (append (list #'list-two-exprs.head-pos ...) (list #'quoted-two-exprs.head-pos ...)
-                                                  (list #'quasiquoted-two-exprs.head-pos ...))]
-              [two-exprs-lst (zip two-exprs-word-stx-lst two-exprs-head-pos-stx-lst)]
+    [(_ C:id M tests tests-stx)
+     #`(let* ([results (foldr (lambda (val accum)
+                                (let ([res (syntax-parse val
+                                             [(~var list-two-exprs list-tm-word)
+                                              (list #'list-two-exprs #'list-two-exprs.word #'list-two-exprs.head-pos)]
+                                             [(~var quoted-two-exprs quoted-tm-word)
+                                              (list #'quoted-two-exprs #'quoted-two-exprs.word #'quoted-two-exprs.head-pos)]
+                                             [(~var quasiquoted-two-exprs quasiquoted-tm-word)
+                                              (list #'quasiquoted-two-exprs #'quasiquoted-two-exprs.word #'quasiquoted-two-exprs.head-pos)]
+                                             [(~var else-clause)
+                                              '()])])
+                                  (if (empty? res)
+                                      accum
+                                      (cons res accum))))
+                              '()
+                              tests-stx)]
+              [two-exprs-stx-lst (map first results)]
+              [two-exprs-word-stx-lst (map second results)]
+              [two-exprs-head-pos-stx-lst (map third results)]
               [head-pos-stx-lst (map (lambda (orig-lst-val orig-lst-stx)
                                        (let ([res-idx (index-of (map syntax-srcloc two-exprs-stx-lst) (syntax-srcloc orig-lst-stx))])
                                          (if res-idx
                                              (list orig-lst-val
                                                    orig-lst-stx
-                                                   (list-ref two-exprs-word-lst res-idx)
+                                                   (first orig-lst-val)
                                                    (list-ref two-exprs-word-stx-lst res-idx)
-                                                   (list-ref two-exprs-head-pos-lst res-idx)
+                                                   (second orig-lst-val)
                                                    (list-ref two-exprs-head-pos-stx-lst res-idx))
                                              (list orig-lst-val
                                                    orig-lst-stx
@@ -259,8 +267,8 @@
                                                    (if (> (length orig-lst-val) 1)
                                                        (second orig-lst-val)
                                                        '()) orig-lst-stx))))
-                                     (list x ...)
-                                     (list #'x ...))])
+                                     tests
+                                     tests-stx)])
          (reject C
                  M
                  #'M
@@ -275,7 +283,7 @@
 ;; Matches incorrect syntatic forms and provides specialized errors messages based on them
 (define-syntax (check-turing-machine stx)
   (syntax-parse stx
-    [(_ #t C:id M (~var first-pairs) ... )
-     #'(check-accept C M (first-pairs ...) (first-pairs ...))]
-    [(_ #f C:id M (~var first-pairs) ... )
-     #'(check-reject C M (first-pairs ...) (first-pairs ...))]))
+    [(_ #t C:id M (~var first-pairs) (~var first-pairs-stx))
+     #'(check-accept C M first-pairs first-pairs-stx)]
+    [(_ #f C:id M (~var first-pairs) (~var first-pairs-stx))
+     #'(check-reject C M first-pairs first-pairs-stx)]))
