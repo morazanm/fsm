@@ -921,7 +921,7 @@ triple is the entire of the ndfa rule
          ;;(listof number) ;;Purpose: Gets the number of computations for each step
          [computation-lens (count-computations a-word (map computation-LoC computations) '())]
          ;;(listof number) ;;Purpose: Gets the index of image where an invariant failed
-         [inv-configs (map (λ (con)
+         [inv-configs (remove-duplicates (sort (map (λ (con)
                              (length (second (first con))))
                            (return-brk-inv-configs
                             (get-inv-config-results
@@ -930,7 +930,7 @@ triple is the entire of the ndfa rule
                                                       (reverse (computation-LoC comp)))
                                                     accepting-computations))
                              invs)
-                            a-word))])
+                            a-word)) <))])
         (run-viz graphs
                  (lambda () (graph->bitmap (first graphs)))
                  (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2))

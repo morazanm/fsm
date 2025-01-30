@@ -330,7 +330,7 @@
 (define (DNA-H-INV a-word)
   (let ([num-a (length (filter (λ (w) (equal? w 'a)) a-word))]
         [num-t (length (filter (λ (w) (equal? w 't)) a-word))])
-    (> num-a num-t)))
+    (< num-a num-t)))
 
 ;;word -> boolean
 ;;Purpose: Determines if the given word has an even amount of a's and t's
@@ -685,9 +685,9 @@
                   a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a)
            (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (empty? w)) (empty? s))))) ;; look into
 ;(sm-viz P2 '(a a a b b) (list 'S P-S-INV) (list 'H P-H-INV)) ;;needs to be looked into
-
-;(sm-viz AB*B*UAB* '(a b b))
 #|
+(sm-viz AB*B*UAB* '(a b b))
+
 ;;accept examples
 (sm-viz AB*B*UAB* '(a b b))
 (sm-viz p2-ndfa '(a b b))
@@ -701,7 +701,7 @@
 (sm-viz p2-ndfa '(a b b a))
 (sm-viz missing-exactly-one '(a a a a b b b b a a b b a a c))
 (sm-viz AT-LEAST-ONE-MISSING '(c c c c b b b b c b a))
-(sm-viz aa-ab'(a b b b a)
+(sm-viz aa-ab '(a b b b a))
 (sm-viz AT-LEAST-ONE-MISSING '(a b c))
 (sm-viz p2-ndfa '(a b a b))
 (sm-viz AB*B*UAB* '(a b a b))

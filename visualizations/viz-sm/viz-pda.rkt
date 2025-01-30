@@ -1273,13 +1273,13 @@ visited is a (listof configuration)
          ;;(listof number) ;;Purpose: Gets the number of computations for each step
          [computation-lens (count-computations a-word cut-off-comp '())]
          ;;(listof number) ;;Purpose: Gets the index of image where an invariant failed
-         [inv-configs (map (λ (con)
+         [inv-configs (remove-duplicates (sort (map (λ (con)
                              (fourth con))
                            (return-brk-inv-configs
                             (get-inv-config-results
                              (make-inv-configs a-word accepting-computations)
                              invs)
-                            a-word))])
+                            a-word)) <))])
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2))
