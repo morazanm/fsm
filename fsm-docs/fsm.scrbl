@@ -948,31 +948,31 @@ word are returned.
 
 @section{FSM Unit Testing}
 
-@defproc[(check-accept [M machine]
-                       [w word] ...)
+@defproc[(check-accept? [M machine]
+                        [w word] ...)
          (void)]
          Checks if the given machine accepts all the given words.
          If any word is rejected, the test fails. If M only semidecides
          a language, words not in the machine's language may cause
          the test to not terminate.
 
-@defproc[(check-reject [M machine]
-                       [w word] ...)
+@defproc[(check-reject? [M machine]
+                        [w word] ...)
          (void)]
          Checks if the given machine rejects all the given words.
          If any word is aceepted, the test fails. If M only semidecides
          a language, words not in the machine's language may cause
          the test to not terminate.
 
-@defproc[(check-derive [G grammar]
-                       [w word] ...)
+@defproc[(check-derive? [G grammar]
+                        [w word] ...)
          (void)]
          Checks if the given grammar generates all the given words.
          If any word is not generated, the test fails. If w is not
          in the grammar's language, the test may not terminate.
 
-@defproc[(check-not-derive [G grammar]
-                           [w word] ...)
+@defproc[(check-not-derive? [G grammar]
+                            [w word] ...)
          (void)]
          Checks if the given grammar does not generate all the given words.
          If any word is generated, the test fails. If w is not
