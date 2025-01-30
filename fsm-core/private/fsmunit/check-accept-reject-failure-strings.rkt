@@ -86,7 +86,6 @@
 (define (named-single-failure-machine-invalid-arity machine-name invalid-expression)
   (format "Step 2 of the design recipe has not been successfully completed. The following test case for the constructed machine, ~s, is not a pair consisting of a word and a head position:\n~a"
           machine-name
-          (length invalid-expression)
           invalid-expression))
 
 (define (anonymous-multi-failure-machine-invalid-arity invalid-expressions)
@@ -94,7 +93,6 @@
 
 (define (anonymous-single-failure-machine-invalid-arity invalid-expression)
   (format "Step 2 of the design recipe has not been successfully completed. The following test case is not a pair consisting of a word and a head position:\n~a"
-          (length invalid-expression)
           invalid-expression))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; MACHINE INVALID HEAD-POS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
