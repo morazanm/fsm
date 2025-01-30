@@ -37,6 +37,7 @@
   "../visualizations/viz-grammar-constructors/csg-viz.rkt"
   "private/Chomsky-Greibach-CFG-Transformations/chomsky.rkt"
   "private/Chomsky-Greibach-CFG-Transformations/greibach.rkt"
+  "private/fsmunit/check-accept-reject-macro.rkt"
   racket/list
   racket/bool
   racket/contract)
@@ -118,6 +119,12 @@
  ; computation graphs
  sm-cmpgraph
 
+ ;; FSM Unit Testing
+ check-derive? check-not-derive?
+ ;check-gen? check-not-gen?
+ check-accept? check-reject?
+ ;check-in-lang? check-not-in-lang?
+ 
  ;; Grammar visualizations
  grammar-viz)
 ; Primitive constructors imported from other modules

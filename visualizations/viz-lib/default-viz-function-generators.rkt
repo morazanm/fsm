@@ -1,9 +1,6 @@
 #lang racket/base
 (require (for-syntax syntax/parse
-                     racket/base
-                     "viz-state.rkt"
-                     )
-         "zipper.rkt"
+                     racket/base)
          "vector-zipper.rkt"
          "viz-state.rkt"
          math/matrix
@@ -13,8 +10,7 @@
          "../viz-sm/david-imsg-state.rkt"
          "typed-matrices.rkt"
          racket/promise
-         racket/list
-         )
+         racket/list)
 
 (provide (all-defined-out))
 
@@ -662,7 +658,6 @@
                                             new-pimgs-img
                                             (viz-state-scale-factor a-vs)))))))
 
-
 ;; viz-state -> viz-state
 ;; Purpose: Restarts the derivation in the visualization
 (define (go-to-begin E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR PERCENT-BORDER-GAP)
@@ -841,7 +836,6 @@
 ;; Purpose: Zooms all the way in on the visualization
 (define (max-zoom-in E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE PERCENT-BORDER-GAP DEFAULT-ZOOM-CAP DEFAULT-ZOOM) 
   (lambda (a-vs) ((zoom (/ DEFAULT-ZOOM-CAP (viz-state-scale-factor a-vs))  E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE) a-vs)))
-
 
 ;; viz-state -> viz-state
 ;; Purpose: Zooms in a moderate amount on the visualization

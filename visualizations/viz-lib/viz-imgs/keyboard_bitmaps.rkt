@@ -3,7 +3,6 @@
          racket/runtime-path)
 (provide (all-defined-out))
 
-
 (define-runtime-path S-KEY-PATH "KEYBOARD-S-KEY.png")
 (define-runtime-path W-KEY-PATH "KEYBOARD-W-KEY.png")
 (define-runtime-path R-KEY-PATH "KEYBOARD-R-KEY.png")
