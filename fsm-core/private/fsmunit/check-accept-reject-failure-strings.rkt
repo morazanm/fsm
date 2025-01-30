@@ -84,7 +84,7 @@
   (void))
 
 (define (named-single-failure-machine-invalid-arity machine-name invalid-expression)
-  (format "Step 2 of the design recipe has not been successfully completed. The following test case for the constructed machine, ~s, has arity ~a but expected 2:\n~a"
+  (format "Step 2 of the design recipe has not been successfully completed. The following test case for the constructed machine, ~s, is not a pair consisting of a word and a head position:\n~a"
           machine-name
           (length invalid-expression)
           invalid-expression))
@@ -93,7 +93,7 @@
   (void))
 
 (define (anonymous-single-failure-machine-invalid-arity invalid-expression)
-  (format "Step 2 of the design recipe has not been successfully completed. The following test case has arity ~a but expected 2:\n~a"
+  (format "Step 2 of the design recipe has not been successfully completed. The following test case is not a pair consisting of a word and a head position:\n~a"
           (length invalid-expression)
           invalid-expression))
 
@@ -125,23 +125,23 @@
 
 (define (named-multi-failure-machine-invalid-head-pos-index machine-name invalid-expressions)
   (foldl (lambda (val accum) (string-append accum (format "\n~a" val)))
-         (format "Step 2 of the design recipe has not been successfully completed. The following test cases for the constructed machine, ~s, have a starting head position which is not a valid index into their respective test words:"
+         (format "Step 2 of the design recipe has not been successfully completed. The following test cases for the constructed machine, ~s, have a starting head position which is not a valid index into their respective test cases:"
           machine-name)
          invalid-expressions))
 
 (define (named-single-failure-machine-invalid-head-pos-index machine-name invalid-expression)
-  (format "Step 2 of the design recipe has not been successfully completed. The following test case for the constructed machine, ~s, has a starting head position which is not a valid index into its respective test word:\n~a"
+  (format "Step 2 of the design recipe has not been successfully completed. The following test case for the constructed machine, ~s, has a starting head position which is not a valid index into it's test case:\n~a"
           machine-name
           invalid-expression))
 
 (define (anonymous-multi-failure-machine-invalid-head-pos-index invalid-expressions)
   (foldl (lambda (val accum) (string-append accum (format "\n~a" val)))
-         (format "Step 2 of the design recipe has not been successfully completed. The following test cases have a starting head position which is not a valid index into their respective test words:"
+         (format "Step 2 of the design recipe has not been successfully completed. The following test cases have a starting head position which is not a valid index into their respective test cases:"
           )
          invalid-expressions))
 
 (define (anonymous-single-failure-machine-invalid-head-pos-index invalid-expression)
-  (format "Step 2 of the design recipe has not been successfully completed. The following test case has a starting head position which is not a valid index into its respective test word:\n~a"
+  (format "Step 2 of the design recipe has not been successfully completed. The following test case has a starting head position which is not a valid index into it's test case:\n~a"
           invalid-expression))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; MACHINE NO LEFT HAND MARKER WORDS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
