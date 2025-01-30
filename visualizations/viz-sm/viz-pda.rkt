@@ -14,6 +14,7 @@
          "../../fsm-core/private/pda.rkt"
          "../../fsm-core/private/cfg.rkt"
          "../../fsm-core/private/misc.rkt"
+         "default-informative-messages.rkt"
          (except-in "../viz-lib/viz-constants.rkt"
                     INS-TOOLS-BUFFER)
          "david-imsg-state.rkt"
@@ -536,7 +537,7 @@ visited is a (listof configuration)
 
 ;;image-state -> image
 ;;Purpose: Determines which informative message is displayed to the user
-(define (create-draw-informative-message imsg-st)
+#;(define (create-draw-informative-message imsg-st)
   (let* (;;boolean
          ;;Purpose: Determines if the pci can be can be fully consumed
          [completed-config? (ormap (λ (config) (empty? (second (first config))))
@@ -1286,11 +1287,11 @@ visited is a (listof configuration)
                             a-word)) <))])
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
-             (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2))
+             (posn (/ E-SCENE-WIDTH 2) (/ PDA-E-SCENE-HEIGHT 2))
              DEFAULT-ZOOM
              DEFAULT-ZOOM-CAP
              DEFAULT-ZOOM-FLOOR
-             (informative-messages create-draw-informative-message
+             (informative-messages pda-create-draw-informative-message
                                    (imsg-state new-M
                                                a-word
                                                '()
@@ -1306,20 +1307,20 @@ visited is a (listof configuration)
                                                (let ([offset-cap (- (length a-word) TAPE-SIZE)])
                                                  (if (> 0 offset-cap) 0 offset-cap))
                                                0)
-                                   RULE-YIELD-DIMS)
+                                   pda-img-bounding-limit)
              (instructions-graphic E-SCENE-TOOLS
                                    (bounding-limits 0
                                                     (image-width E-SCENE-TOOLS)
                                                     (+ EXTRA-HEIGHT-FROM-CURSOR
-                                                       E-SCENE-HEIGHT
-                                                       (bounding-limits-height RULE-YIELD-DIMS)
+                                                       PDA-E-SCENE-HEIGHT
+                                                       (image-height pda-info-img)
                                                        INS-TOOLS-BUFFER)
                                                     (+ EXTRA-HEIGHT-FROM-CURSOR
-                                                       E-SCENE-HEIGHT
-                                                       (bounding-limits-height RULE-YIELD-DIMS)
+                                                       PDA-E-SCENE-HEIGHT
+                                                       (image-height pda-info-img)
                                                        INS-TOOLS-BUFFER
                                                        (image-height ARROW-UP-KEY))))
-             (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
+             (create-viz-draw-world E-SCENE-WIDTH PDA-E-SCENE-HEIGHT INS-TOOLS-BUFFER)
              (create-viz-process-key [ "right" viz-go-next right-key-pressed]
                                      [ "left" viz-go-prev left-key-pressed]
                                      [ "up" viz-go-to-begin up-key-pressed]
@@ -1336,12 +1337,12 @@ visited is a (listof configuration)
                                      [ "j" jump-prev j-key-pressed]
                                      [ "l" jump-next l-key-pressed]
                                      )
-             (create-viz-process-tick E-SCENE-BOUNDING-LIMITS
+             (create-viz-process-tick PDA-E-SCENE-BOUNDING-LIMITS
                                       NODE-SIZE
                                       E-SCENE-WIDTH
-                                      E-SCENE-HEIGHT
+                                      PDA-E-SCENE-HEIGHT
                                       CLICK-BUFFER-SECONDS
-                                      ( [RULE-YIELD-DIMS
+                                      ( [pda-img-bounding-limit
                                          (lambda (a-imsgs x-diff y-diff) a-imsgs)])
                                       ( [ ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed]
                                         [ ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed]

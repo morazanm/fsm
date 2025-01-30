@@ -938,11 +938,11 @@ triple is the entire of the ndfa rule
                             a-word)) <))])
         (run-viz graphs
                  (lambda () (graph->bitmap (first graphs)))
-                 (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2))
+                 (posn (/ E-SCENE-WIDTH 2) (/ NDFA-E-SCENE-HEIGHT 2))
                  DEFAULT-ZOOM
                  DEFAULT-ZOOM-CAP
                  DEFAULT-ZOOM-FLOOR
-                 (informative-messages create-draw-informative-message
+                 (informative-messages ndfa-create-draw-informative-message
                                        (imsg-state new-M
                                                    a-word
                                                    '()
@@ -958,22 +958,22 @@ triple is the entire of the ndfa rule
                                                    (let ([offset-cap (- (length a-word) TAPE-SIZE)])
                                                      (if (> 0 offset-cap) 0 offset-cap))
                                                    0)
-                                       img-bounding-limit)
+                                       ndfa-img-bounding-limit)
                  (instructions-graphic E-SCENE-TOOLS
                                        (bounding-limits 0
                                                         (image-width E-SCENE-TOOLS)
                                                         (+ EXTRA-HEIGHT-FROM-CURSOR
-                                                           E-SCENE-HEIGHT
-                                                           (image-height info-img)
+                                                           NDFA-E-SCENE-HEIGHT
+                                                           (image-height ndfa-info-img)
                                                            #;(bounding-limits-height RULE-YIELD-DIMS)
                                                            INS-TOOLS-BUFFER)
                                                         (+ EXTRA-HEIGHT-FROM-CURSOR
-                                                           E-SCENE-HEIGHT
-                                                           (image-height info-img)
+                                                           NDFA-E-SCENE-HEIGHT
+                                                           (image-height ndfa-info-img)
                                                            #;(bounding-limits-height RULE-YIELD-DIMS)
                                                            INS-TOOLS-BUFFER
                                                            (image-height ARROW-UP-KEY))))
-                 (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
+                 (create-viz-draw-world E-SCENE-WIDTH NDFA-E-SCENE-HEIGHT INS-TOOLS-BUFFER)
                  (create-viz-process-key ["right" viz-go-next right-key-pressed]
                                          ["left" viz-go-prev left-key-pressed]
                                          ["up" viz-go-to-begin up-key-pressed]
@@ -990,12 +990,12 @@ triple is the entire of the ndfa rule
                                          [ "j" jump-prev j-key-pressed]
                                          [ "l" jump-next l-key-pressed]
                                          )
-                 (create-viz-process-tick E-SCENE-BOUNDING-LIMITS
+                 (create-viz-process-tick NDFA-E-SCENE-BOUNDING-LIMITS
                                           NODE-SIZE
                                           E-SCENE-WIDTH
-                                          E-SCENE-HEIGHT
+                                          NDFA-E-SCENE-HEIGHT
                                           CLICK-BUFFER-SECONDS
-                                          ([img-bounding-limit
+                                          ([ndfa-img-bounding-limit
                                             (lambda (a-imsgs x-diff y-diff) a-imsgs)])
                                           ( [ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed]
                                             [ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed]
