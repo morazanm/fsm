@@ -3,8 +3,6 @@
 (require "sm-viz.rkt"
          "../../fsm-core/interface.rkt")
 
-
-
 (define aa*Uab* (make-ndfa '(K B D)
                            '(a b)
                            'K

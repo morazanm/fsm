@@ -67,7 +67,7 @@
            (scale 0.5 (rotate 310 (overlay/xy inner-white -9 -3 outer-black))))])
     (overlay/xy (rotate 25 cursor-rect) -7 -26 cursor-tri)))
 
-#;(define E-SCENE-TOOLS (e-scene-tools-generator HEIGHT-BUFFER LETTER-KEY-WIDTH-BUFFER SM-VIZ-FONT-SIZE
+(define E-SCENE-TOOLS (e-scene-tools-generator HEIGHT-BUFFER LETTER-KEY-WIDTH-BUFFER SM-VIZ-FONT-SIZE
                                                    (list (list ARROW-UP-KEY "Restart")
                                                          (list ARROW-RIGHT-KEY "Forward")
                                                          (list ARROW-LEFT-KEY "Backward")
@@ -82,9 +82,30 @@
                                                          (list D-KEY "Word end")
                                                          (list J-KEY "Prv not inv")
                                                          (list L-KEY "Nxt not inv"))))
+
+(define info-img (create-draw-informative-message (imsg-state AB*B*UAB*
+              '(a b b)
+              '()
+              (list->zipper '(((S (a b b)) (K (a b b)) (B (b b)) (K (b)) (H (b)) (H ())) ((S (a b b)) (C (b b)) (H (b b)) (H (b)) (H ())) ((S (a b b)) (K (a b b)) (H (a b b)))))
+              'no-stck
+              'no-farthest-consumed
+              (list->zipper '())
+              (sub1 (length '()))
+              '(1 2 3 2)
+              '((computation
+                 ((H ()) (H (b)) (K (b)) (B (b b)) (K (a b b)) (S (a b b)))
+                 ((H b H) (K ε H) (B b K) (K a B) (S ε K))
+                 ((H (b)) (K (b)) (B (b b)) (K (a b b)) (S (a b b))))
+                (computation ((H ()) (H (b)) (H (b b)) (C (b b)) (S (a b b))) ((H b H) (H b H) (C ε H) (S a C)) ((H (b)) (H (b b)) (C (b b)) (S (a b b)))))
+              'no-max-cmps
+              0
+              (let ([offset-cap (- (length '(a b b)) TAPE-SIZE)])
+                (if (> 0 offset-cap) 0 offset-cap))
+              0)))
+
                                                    
 
-(define E-SCENE-TOOLS
+#;(define E-SCENE-TOOLS
   (let ([ARROW (above (triangle 30 'solid 'black) (rectangle 10 30 'solid 'black))])
     (beside/align
      "bottom"
@@ -150,8 +171,14 @@
                           (text "Nxt not inv" (- SM-VIZ-FONT-SIZE 2) 'black))))))
 
 (define E-SCENE-HEIGHT (- (* 0.9 WINDOW-HEIGHT)
-                          INFORMATIVE-MSG-HEIGHT
+                          (image-height info-img)
                           (image-height E-SCENE-TOOLS)))
+(define img-bounding-limit
+  (bounding-limits 0
+                  (* E-SCENE-WIDTH 0.9)
+                  E-SCENE-HEIGHT
+                  (+ E-SCENE-HEIGHT (image-height info-img)
+                     )))
 
 (define E-SCENE-BOUNDING-LIMITS (bounding-limits 0 E-SCENE-WIDTH 0 E-SCENE-HEIGHT))
 
@@ -183,30 +210,7 @@
 
 (define TAPE-IMG-HEIGHT (image-height (make-tape-img (list 'a) 0 '())))
 
-(define info-img (create-draw-informative-message (imsg-state AB*B*UAB*
-              '(a b b)
-              '()
-              (list->zipper '(((S (a b b)) (K (a b b)) (B (b b)) (K (b)) (H (b)) (H ())) ((S (a b b)) (C (b b)) (H (b b)) (H (b)) (H ())) ((S (a b b)) (K (a b b)) (H (a b b)))))
-              'no-stck
-              'no-farthest-consumed
-              (list->zipper '())
-              (sub1 (length '()))
-              '(1 2 3 2)
-              '((computation
-                 ((H ()) (H (b)) (K (b)) (B (b b)) (K (a b b)) (S (a b b)))
-                 ((H b H) (K ε H) (B b K) (K a B) (S ε K))
-                 ((H (b)) (K (b)) (B (b b)) (K (a b b)) (S (a b b))))
-                (computation ((H ()) (H (b)) (H (b b)) (C (b b)) (S (a b b))) ((H b H) (H b H) (C ε H) (S a C)) ((H (b)) (H (b b)) (C (b b)) (S (a b b)))))
-              'no-max-cmps
-              0
-              (let ([offset-cap (- (length '(a b b)) TAPE-SIZE)])
-                (if (> 0 offset-cap) 0 offset-cap))
-              0)))
-(define img-bounding-limit
-  (bounding-limits 0
-                  (image-width info-img)
-                  E-SCENE-HEIGHT
-                  (+ E-SCENE-HEIGHT (image-height info-img))))
+
 
 (define RULE-YIELD-DIMS
   (let ([DREV (let ([drev-text (text "Deriving: " SM-VIZ-FONT-SIZE 'black)])
@@ -227,7 +231,7 @@
 
 (define E-SCENE-TOOLS-WIDTH (image-width E-SCENE-TOOLS))
 
-(create-bounding-limits E-SCENE-WIDTH E-SCENE-HEIGHT E-SCENE-TOOLS-WIDTH RULE-YIELD-DIMS SM-VIZ-FONT-SIZE LETTER-KEY-WIDTH-BUFFER INS-TOOLS-BUFFER
+(create-bounding-limits E-SCENE-WIDTH E-SCENE-HEIGHT E-SCENE-TOOLS-WIDTH img-bounding-limit SM-VIZ-FONT-SIZE LETTER-KEY-WIDTH-BUFFER INS-TOOLS-BUFFER
 ((ARROW-UP-KEY "Restart")
  (ARROW-RIGHT-KEY "Forward")
  (ARROW-LEFT-KEY "Backward")

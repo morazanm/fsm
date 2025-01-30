@@ -15,7 +15,8 @@
                     FONT-SIZE)
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/fsa.rkt"
-         "../../fsm-core/private/misc.rkt")
+         "../../fsm-core/private/misc.rkt"
+         "default-informative-messages.rkt")
 
 (provide ndfa-viz)
 
@@ -355,7 +356,7 @@ triple is the entire of the ndfa rule
 
 ;;image-state -> image
 ;;Purpose: Determines which informative message is displayed to the user
-(define (create-draw-informative-message imsg-st)
+#;(define (create-draw-informative-message imsg-st)
   (let* (;;boolean
          ;;Purpose: Determines if the pci can be can be fully consumed
          [completed-config? (ormap (λ (config) (empty? (second (first (computation-LoC config)))))
@@ -956,17 +957,19 @@ triple is the entire of the ndfa rule
                                                    (let ([offset-cap (- (length a-word) TAPE-SIZE)])
                                                      (if (> 0 offset-cap) 0 offset-cap))
                                                    0)
-                                       RULE-YIELD-DIMS)
+                                       img-bounding-limit)
                  (instructions-graphic E-SCENE-TOOLS
                                        (bounding-limits 0
                                                         (image-width E-SCENE-TOOLS)
                                                         (+ EXTRA-HEIGHT-FROM-CURSOR
                                                            E-SCENE-HEIGHT
-                                                           (bounding-limits-height RULE-YIELD-DIMS)
+                                                           (image-height info-img)
+                                                           #;(bounding-limits-height RULE-YIELD-DIMS)
                                                            INS-TOOLS-BUFFER)
                                                         (+ EXTRA-HEIGHT-FROM-CURSOR
                                                            E-SCENE-HEIGHT
-                                                           (bounding-limits-height RULE-YIELD-DIMS)
+                                                           (image-height info-img)
+                                                           #;(bounding-limits-height RULE-YIELD-DIMS)
                                                            INS-TOOLS-BUFFER
                                                            (image-height ARROW-UP-KEY))))
                  (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)

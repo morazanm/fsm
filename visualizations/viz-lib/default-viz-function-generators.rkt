@@ -2,6 +2,7 @@
 (require (for-syntax syntax/parse
                      racket/base)
          "vector-zipper.rkt"
+         "zipper.rkt"
          "viz-state.rkt"
          math/matrix
          "bounding-limits.rkt"
@@ -173,10 +174,8 @@
       (force (delay/thread (lambda () (apply above (map (lambda (img) ((force img))) (force new-img))))))
       (force (delay/thread ((force new-img))))))
 
-(define-syntax (jump-prev-inv stx)
-  (syntax-parse stx
-    [(_ E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR PERCENT-BORDER-GAP)
-     #'(lambda ( a-vs)
+(define (jump-prev-inv E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR PERCENT-BORDER-GAP)
+     (lambda ( a-vs)
   (if (or (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                           (viz-state-informative-messages a-vs))))
           (< (length (imsg-state-pci (informative-messages-component-state
@@ -316,15 +315,10 @@
                                           (viz-state-scale-factor a-vs)
                                           E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE)
                new-curr-img
-               (viz-state-scale-factor a-vs)))))))
-     ]
-    )
-  )
+               (viz-state-scale-factor a-vs))))))))
 
-(define-syntax (jump-next-inv stx)
-  (syntax-parse stx
-    [(_ E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR PERCENT-BORDER-GAP)
-     #'(lambda (a-vs)
+(define (jump-next-inv E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR PERCENT-BORDER-GAP)
+     (lambda (a-vs)
          (if (or (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                                  (viz-state-informative-messages a-vs))))
                  (> (length (imsg-state-pci (informative-messages-component-state
@@ -463,10 +457,7 @@
                                                  (viz-state-scale-factor a-vs)
                                                  E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE)
                       new-curr-img
-                      (viz-state-scale-factor a-vs)))))))
-     ]
-    )
-  )
+                      (viz-state-scale-factor a-vs))))))))
 
 ;; viz-state -> viz-state
 ;; Purpose: Moves the visualization to the next step of the derivation
