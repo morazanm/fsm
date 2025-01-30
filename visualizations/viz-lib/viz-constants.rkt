@@ -15,7 +15,7 @@
 (define HEDGE-COLOR 'violet)
 (define YIELD-COLOR 'orange)
 (define PERCENT-BORDER-GAP 0.9)
-(define HEIGHT-BUFFER 20)
+(define HEIGHT-BUFFER 10)
 (define LETTER-KEY-WIDTH-BUFFER 20)
 (define ARROW-KEY-WIDTH-BUFFER 40)
 (define INS-TOOLS-BUFFER 1)

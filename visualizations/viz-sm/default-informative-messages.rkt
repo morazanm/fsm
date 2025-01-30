@@ -240,8 +240,73 @@ triple is the entire of the ndfa rule
                                'accept
                                'reject)]) 
 
-   
-    (overlay/align
+   (above/align
+      'left
+      (cond [(and (empty? (imsg-state-pci imsg-st))
+                  (empty? (imsg-state-upci imsg-st)))
+             (above/align
+              'left
+              (beside (text "aaaa" FONT-SIZE 'white)
+                      (text "Word: " FONT-SIZE 'black)
+                      (if (equal? machine-decision 'accept)
+                          (text (format "~a" EMP) FONT-SIZE 'gray)
+                          (text (format "~a" EMP) FONT-SIZE 'red)))
+              (beside (text "Consumed: " FONT-SIZE 'black)
+                      (if (equal? machine-decision 'accept)
+                          (text (format "~a" EMP) FONT-SIZE 'black)
+                          (text (format "~a" EMP) FONT-SIZE 'white))))]
+            [(and (not (empty? (imsg-state-pci imsg-st))) (not completed-config?))
+             (above/align
+              'left
+              (beside (text "aaaa" FONT-SIZE 'white)
+                      (text "Word: " FONT-SIZE 'black)
+                      (make-tape-img entire-word
+                                     (if (> (length entire-word) TAPE-SIZE)
+                                         (imsg-state-word-img-offset imsg-st)
+                                         0)
+                                     (if (empty? (imsg-state-pci imsg-st))
+                                         '()
+                                         (list (list (length last-consumed-word) 'gray)
+                                               (list (length last-consumed-word) 'red)))))
+              (beside (text "Consumed: " FONT-SIZE 'black)
+                      (if (empty? last-consumed-word)
+                          (text "" FONT-SIZE 'black)
+                          (make-tape-img last-consumed-word
+                                         (if (> (length last-consumed-word) TAPE-SIZE)
+                                             (imsg-state-word-img-offset imsg-st)
+                                             0)
+                                         '()))))]
+            [else (above/align 'left
+                               (beside (text "aaaa" FONT-SIZE 'white)
+                                       (text "Word: " FONT-SIZE 'black)
+                                       (make-tape-img entire-word
+                                                      (if (> (length entire-word) TAPE-SIZE)
+                                                          (imsg-state-word-img-offset imsg-st)
+                                                          0)
+                                                      (if (empty? (imsg-state-pci imsg-st))
+                                                          '()
+                                                          (list (list (length (imsg-state-pci imsg-st)) 'gray) '()))))
+                               (beside (text "Consumed: " FONT-SIZE 'black)
+                                       (make-tape-img (imsg-state-pci imsg-st)
+                                                      (if (> (length (imsg-state-pci imsg-st)) TAPE-SIZE)
+                                                          (imsg-state-word-img-offset imsg-st)
+                                                          0)
+                                                      '())))])
+      (text (format "The current number of possible computations is ~a (without repeated configurations). "
+                     (number->string (list-ref (imsg-state-comps-len imsg-st)
+                                               (length (imsg-state-pci imsg-st)))))
+             FONT-SIZE
+             'brown)
+      (cond [(not completed-config?)
+              (text "All computations do not consume the entire word and the machine rejects." FONT-SIZE 'red)]
+             [(and (empty? (imsg-state-upci imsg-st))
+                   (equal? machine-decision 'accept))
+              (text "There is a computation that accepts." FONT-SIZE 'forestgreen)]
+             [(and (empty? (imsg-state-upci imsg-st))
+                   (equal? machine-decision 'reject))
+              (text "All computations end in a non-final state and the machine rejects." FONT-SIZE 'red)]
+             [else (text "Word Status: accept " FONT-SIZE 'white)]))
+    #;(overlay/align
      'left 'middle
      (above/align
       'left
@@ -309,7 +374,7 @@ triple is the entire of the ndfa rule
                    (equal? machine-decision 'reject))
               (text "All computations end in a non-final state and the machine rejects." FONT-SIZE 'red)]
              [else (text "Word Status: accept " FONT-SIZE 'white)]))
-     (rectangle 1250 50 'solid 'white))))
+     #;(rectangle 1250 50 'solid 'white))))
 
 
 (define AB*B*UAB*

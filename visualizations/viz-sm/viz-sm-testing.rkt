@@ -683,7 +683,7 @@
                   a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a)
            (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (empty? w)) (empty? s))))) ;; look into
 ;(sm-viz P2 '(a a a b b) (list 'S P-S-INV) (list 'H P-H-INV)) ;;needs to be looked into
-
+#|
 (sm-viz AB*B*UAB* '(a b b))
 
 ;;accept examples
@@ -738,4 +738,4 @@
 
 (sm-viz ND4 '(a b b b) #:add-dead #t)
 (sm-viz M2 '(a a b b b b) #:add-dead #t)
- 
+ |#
