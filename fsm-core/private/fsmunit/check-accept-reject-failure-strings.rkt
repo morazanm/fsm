@@ -78,6 +78,30 @@
          "Step 2 of the design recipe has not been successfully completed. The following words contain elements not in the language of the constructed machine:"
          invalid-words))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; MACHINE INVALID WORD ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (named-single-failure-machine-invalid-word machine-name invalid-word)
+  (format "Step 2 of the design recipe has not been successfully completed. The following test case for the constructed machine, ~s, is not a list of symbols in the machine's alphabet:\n~a"
+          machine-name
+          invalid-word))
+
+(define (named-multi-failure-machine-invalid-word machine-name invalid-words)
+  (foldl (lambda (val accum)
+           (string-append accum (format "\n~a" val)))
+         (format "Step 2 of the design recipe has not been successfully completed. The following test cases for the constructed machine, ~s, are not a list of symbols in the machine's alphabet:"
+                 machine-name)
+         invalid-words))
+
+(define (anonymous-single-failure-machine-invalid-word invalid-word)
+  (format "Step 2 of the design recipe has not been successfully completed. The following test case is not a list of symbols in the machine's alphabet:\n~a"
+          invalid-word))
+
+(define (anonymous-multi-failure-machine-invalid-word invalid-words)
+  (foldl (lambda (val accum)
+           (string-append accum (format "\n~a" val)))
+         "Step 2 of the design recipe has not been successfully completed. The following test cases are not a list of symbols in the machine's alphabet:"
+         invalid-words))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; MACHINE INVALID ARITY ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (named-multi-failure-machine-invalid-arity machine-name invalid-expressions)
