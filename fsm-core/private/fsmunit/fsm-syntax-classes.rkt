@@ -18,9 +18,11 @@
   
 (define-syntax-class quoted-tm-word
   #:literal-sets (lst-builders)
+  
   (pattern (quote ((~var word0 expr) (~var head-pos0 expr)))
     #:with word (syntax/loc #'word0 (quote word0))
-    #:with head-pos #'head-pos0))
+    #:with head-pos #'head-pos0)
+  )
   
 (define-syntax-class list-tm-word
   #:literal-sets (lst-builders)

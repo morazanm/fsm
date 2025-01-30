@@ -50,8 +50,7 @@
          (display-failed-test failure-str (exn:fail:check-failed
                                            failure-str
                                            (current-continuation-marks)
-                                           (list #,(syntax-srcloc stx)))
-                              )))]
+                                           (list #,(syntax-srcloc stx))))))]
     [(_ unknown-expr)
      (quasisyntax/loc #'unknown-expr
        (if (eq? 'notanfsmval (whatami? unknown-expr))
@@ -59,18 +58,16 @@
              (display-failed-test failure-str (exn:fail:check-failed
                                                failure-str
                                                (current-continuation-marks)
-                                               (list #,(syntax-srcloc stx))))
-             )
+                                               (list #,(syntax-srcloc stx)))))
            (let ([failure-str (create-failure-str no-test-cases unknown-expr)])
              (display-failed-test failure-str (exn:fail:check-failed
                                                failure-str
                                                (current-continuation-marks)
-                                               (list #,(syntax-srcloc stx)))
-                                  ))))]
+                                               (list #,(syntax-srcloc stx)))))))]
     [(_ unknown-expr x ...)
      #`(cond [(eq? (whatami? unknown-expr) 'turing-machine)
               (let ([tm-word-contract (new-tm-word/c (remove-duplicates (cons '@ (cons '_ (sm-sigma unknown-expr)))))])
-                #,(syntax/loc stx (check-turing-machine #t tm-word-contract unknown-expr x ...)))]
+                #,(syntax/loc stx (check-turing-machine #t tm-word-contract unknown-expr (list x ...) (list #'x ...))))]
              [(eq? (whatami? unknown-expr) 'machine)
               (let [(sm-word-contract (sm-word-lst/c (sm-sigma unknown-expr)))]
                 #,(syntax/loc stx (check-machine #t sm-word-contract unknown-expr x ...)))]
@@ -79,11 +76,10 @@
                 #,(syntax/loc stx (check-grammar #t grammar-word-contract unknown-expr x ...)))]
              #,(quasisyntax/loc #'unknown-expr
                  [else (let ([failure-str (format "Step 2 of the design recipe has not been successfully completed. ~s is not a valid FSM value that can be tested." (syntax->datum #'unknown-expr))])
-                         (display-failed-test failure-str (exn:fail:check-failed
-                                                           failure-str
-                                                           (current-continuation-marks)
-                                                           (list (syntax-srcloc #'unknown-expr)))
-                                              ))]))]))
+                     (display-failed-test failure-str (exn:fail:check-failed
+                                                       failure-str
+                                                       (current-continuation-marks)
+                                                       (list (syntax-srcloc #'unknown-expr)))))]))]))
 
 ;; machine word [head-pos] -> Boolean
 ;; Purpose: To determine whether a given machine can reject a given word
@@ -95,8 +91,7 @@
          (display-failed-test failure-str (exn:fail:check-failed
                                            failure-str
                                            (current-continuation-marks)
-                                           (list #,(syntax-srcloc stx)))
-                              )))]
+                                           (list #,(syntax-srcloc stx))))))]
     ;; Need to check if this is fsm val or test case, then return error string based on that
     [(_ unknown-expr)
      (quasisyntax/loc #'unknown-expr
@@ -105,18 +100,16 @@
              (display-failed-test failure-str (exn:fail:check-failed
                                                failure-str
                                                (current-continuation-marks)
-                                               (list #,(syntax-srcloc stx))))
-             )
+                                               (list #,(syntax-srcloc stx)))))
            (let ([failure-str (create-failure-str no-test-cases unknown-expr)])
              (display-failed-test failure-str (exn:fail:check-failed
                                                failure-str
                                                (current-continuation-marks)
-                                               (list #,(syntax-srcloc stx)))
-                                  ))))]
+                                               (list #,(syntax-srcloc stx)))))))]
     [(_ unknown-expr x ...)
      #`(cond [(eq? (whatami? unknown-expr) 'turing-machine)
               (let ([tm-word-contract (new-tm-word/c (cons '_ (sm-sigma unknown-expr)))])
-                #,(syntax/loc stx (check-turing-machine #f tm-word-contract unknown-expr x ...)))]
+                #,(syntax/loc stx (check-turing-machine #f tm-word-contract unknown-expr (list x ...) (list #'x ...))))]
              [(eq? (whatami? unknown-expr) 'machine)
               (let [(sm-word-contract (sm-word-lst/c (sm-sigma unknown-expr)))]
                 #,(syntax/loc stx (check-machine #f sm-word-contract unknown-expr x ...)))]
@@ -125,12 +118,10 @@
                 #,(syntax/loc stx (check-grammar #f grammar-word-contract unknown-expr x ...)))]
              #,(quasisyntax/loc #'unknown-expr
                  [else (let ([failure-str (format "Step 2 of the design recipe has not been successfully completed. ~s is not a valid FSM value that can be tested." (syntax->datum #'unknown-expr))])
-                         (display-failed-test failure-str (exn:fail:check-failed
-                                                           failure-str
-                                                           (current-continuation-marks)
-                                                           (list (syntax-srcloc #'unknown-expr)))
-                                              ))])
-             )]))
+                     (display-failed-test failure-str (exn:fail:check-failed
+                                                       failure-str
+                                                       (current-continuation-marks)
+                                                       (list (syntax-srcloc #'unknown-expr)))))]))]))
 
 (define-syntax check-derive? (make-rename-transformer #'check-in-lang?))
 (define-syntax check-gen? (make-rename-transformer #'check-in-lang?))
