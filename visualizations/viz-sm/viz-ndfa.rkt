@@ -240,10 +240,11 @@ triple is the entire of the ndfa rule
 ;;         or similiar to one of the rules in the given (listof rules) 
 (define (find-rule? rule dead lor)
   (or (member? rule lor)
-      (ormap (λ (p)
-               (and (equal? (first rule) (first p))
-                    (or (equal? (third rule) (third p))
-                        (equal? (third rule) dead))))
+      (ormap (λ (r)
+               (and (equal? (first rule) (first r))
+                    (or (equal? (third rule) (third r))
+                        (and (equal? (third rule) (third r))
+                             (equal? (third rule) dead)))))
              lor)))
 
 ;;(listof symbols) (listof configurations) -> (listof configurations)
@@ -872,7 +873,8 @@ triple is the entire of the ndfa rule
                                 (fsa-getfinals M)
                                 (append (fsa-getrules M) rules-to-dead dead-rules)))]
         [(and (eq? (M 'whatami) 'dfa) (not (member? DEAD (fsa-getstates M))))
-         (make-unchecked-dfa (fsa-getstates M) (fsa-getalphabet M) (fsa-getstart M) (fsa-getfinals M) (fsa-getrules M))]))
+         (make-unchecked-dfa (fsa-getstates M) (fsa-getalphabet M) (fsa-getstart M) (fsa-getfinals M) (fsa-getrules M))]
+        [else M]))
 
 
 

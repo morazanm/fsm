@@ -171,9 +171,10 @@
                      '(a b)
                      'S
                      '(F)
-                     `((S a A) (S b ,DEAD)
+                     `((S a A) (S b ,DEAD) (,DEAD a ,DEAD) (,DEAD b ,DEAD)
                                (A a ,DEAD) (A b F)
-                               (F a ,DEAD) (F b F))))
+                               (F a ,DEAD) (F b F))
+                     'no-dead))
 
 ;;word -> boolean
 ;;Purpose: Determines if the given word is missing an a
@@ -683,9 +684,9 @@
                   a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a)
            (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (empty? w)) (empty? s))))) ;; look into
 ;(sm-viz P2 '(a a a b b) (list 'S P-S-INV) (list 'H P-H-INV)) ;;needs to be looked into
-#|
-(sm-viz AB*B*UAB* '(a b b))
 
+;(sm-viz AB*B*UAB* '(a b b))
+#|
 ;;accept examples
 (sm-viz AB*B*UAB* '(a b b))
 (sm-viz p2-ndfa '(a b b))
@@ -713,12 +714,13 @@
 (sm-viz EVEN-NUM-Bs '(a b b b a b b) 
           (list 'S EVEN-NUM-Bs-S-INV)
           (list 'F EVEN-NUM-Bs-F-INV))
+
 (sm-viz AB*B*UAB* '(a b b b b)
           (list 'S S-INV)
-          (list 'K K-INV)
+          (list 'K ND-K-INV)
           (list 'B B-INV)
           (list 'C C-INV)
-          (list 'H H-INV))
+          (list 'H ND-H-INV))
 
 
 
@@ -737,5 +739,6 @@
           (list 'M DNA-M-INV) (list 'I DNA-I-INV) (list 'D DNA-D-INV)  (list 'B DNA-B-INV) (list 'S DNA-S-INV) (list 'R DNA-R-INV))
 
 (sm-viz ND4 '(a b b b) #:add-dead #t)
+
 (sm-viz M2 '(a a b b b b) #:add-dead #t)
- |#
+|#
