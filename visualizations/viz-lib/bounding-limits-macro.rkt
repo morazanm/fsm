@@ -61,16 +61,10 @@
                                          
                                          INS-TOOLS-BUFFER)]
                                [max-y (+ min-y (image-height first-pair.name))])
-                          (begin
-                            (displayln (format "~a ~a" first-pair.text (bounding-limits min-x
+                          (bounding-limits min-x
                                            max-x
                                            min-y
                                            max-y)))
-                            (bounding-limits min-x
-                                           max-x
-                                           min-y
-                                           max-y)
-                            )))
          (create-bounding-limits E-SCENE-WIDTH E-SCENE-HEIGHT E-SCENE-TOOLS-WIDTH INFORMATIVE-MSG-HEIGHT FONT-SIZE KEY-BUFFER-SIZE INS-TOOLS-BUFFER
                                  (rest-pairs ...) (first-pair processed-pairs ...))))]
     [(_  E-SCENE-WIDTH E-SCENE-HEIGHT E-SCENE-TOOLS-WIDTH INFORMATIVE-MSG-HEIGHT FONT-SIZE KEY-BUFFER-SIZE INS-TOOL-BUFFER
