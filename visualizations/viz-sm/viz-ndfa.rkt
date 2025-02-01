@@ -307,6 +307,14 @@ triple is the entire of the ndfa rule
 (define (get-next-traces LoT)
   (filter-map-acc empty? rest not id LoT))
 
+;; (listof configuration) (listof symbol) -> (listof symbol)
+;; Purpose: Returns the most consumed input
+(define (get-farthest-consumed LoC acc)
+  (cond [(empty? LoC) acc]
+        [(< (length (second (first (first LoC)))) (length acc))
+         (get-farthest-consumed (rest LoC) (second (first (first LoC))))]
+        [else (get-farthest-consumed (rest LoC) acc)]))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; graph machine (listof symbols) symbol (listof symbols) (listof symbols) -> graph
@@ -354,103 +362,6 @@ triple is the entire of the ndfa rule
 ;;inv is a the (listof (state (listof symbols -> boolean)))
 ;;dead is the sybmol of dead state
 (struct building-viz-state (upci pci M inv dead computations acc-comps accept-traces reject-traces) #:transparent)
-
-;;image-state -> image
-;;Purpose: Determines which informative message is displayed to the user
-#;(define (create-draw-informative-message imsg-st)
-  (let* (;;boolean
-         ;;Purpose: Determines if the pci can be can be fully consumed
-         [completed-config? (ormap (λ (config) (empty? (second (first (computation-LoC config)))))
-                                   (trace-computations (imsg-state-pci imsg-st)
-                                                (fsa-getrules (imsg-state-M imsg-st))
-                                                (fsa-getstart (imsg-state-M imsg-st))))]
-         
-         ;;(listof symbols)
-         ;;Purpose: The last word that could be fully consumed by the ndfa
-         [last-consumed-word (last-fully-consumed (imsg-state-pci imsg-st) (imsg-state-M imsg-st))]
-
-         ;;(listof symbols)
-         ;;Purpose: The entire given word
-         [entire-word (append (imsg-state-pci imsg-st) (imsg-state-upci imsg-st))]
-         
-         ;;(listof symbols)
-         ;;Purpose: The portion of the word that cannont be consumed
-         [unconsumed-word (drop entire-word (length last-consumed-word))]
-         [machine-decision (if (not (zipper-empty? (imsg-state-acpt-trace imsg-st)))
-                               'accept
-                               'reject)]
-         [FONT-SIZE 20]) 
-
-   
-    (overlay/align
-     'left 'middle
-     (above/align
-      'left
-      (cond [(and (empty? (imsg-state-pci imsg-st))
-                  (empty? (imsg-state-upci imsg-st)))
-             (above/align
-              'left
-              (beside (text "aaaa" FONT-SIZE 'white)
-                      (text "Word: " FONT-SIZE 'black)
-                      (if (equal? machine-decision 'accept)
-                          (text (format "~a" EMP) FONT-SIZE 'gray)
-                          (text (format "~a" EMP) FONT-SIZE 'red)))
-              (beside (text "Consumed: " FONT-SIZE 'black)
-                      (if (equal? machine-decision 'accept)
-                          (text (format "~a" EMP) FONT-SIZE 'black)
-                          (text (format "~a" EMP) FONT-SIZE 'white))))]
-            [(and (not (empty? (imsg-state-pci imsg-st))) (not completed-config?))
-             (above/align
-              'left
-              (beside (text "aaaa" FONT-SIZE 'white)
-                      (text "Word: " FONT-SIZE 'black)
-                      (make-tape-img entire-word
-                                     (if (> (length entire-word) TAPE-SIZE)
-                                         (imsg-state-word-img-offset imsg-st)
-                                         0)
-                                     (if (empty? (imsg-state-pci imsg-st))
-                                         '()
-                                         (list (list (length last-consumed-word) 'gray)
-                                               (list (length last-consumed-word) 'red)))))
-              (beside (text "Consumed: " FONT-SIZE 'black)
-                      (if (empty? last-consumed-word)
-                          (text "" FONT-SIZE 'black)
-                          (make-tape-img last-consumed-word
-                                         (if (> (length last-consumed-word) TAPE-SIZE)
-                                             (imsg-state-word-img-offset imsg-st)
-                                             0)
-                                         '()))))]
-            [else (above/align 'left
-                               (beside (text "aaaa" FONT-SIZE 'white)
-                                       (text "Word: " FONT-SIZE 'black)
-                                       (make-tape-img entire-word
-                                                      (if (> (length entire-word) TAPE-SIZE)
-                                                          (imsg-state-word-img-offset imsg-st)
-                                                          0)
-                                                      (if (empty? (imsg-state-pci imsg-st))
-                                                          '()
-                                                          (list (list (length (imsg-state-pci imsg-st)) 'gray) '()))))
-                               (beside (text "Consumed: " FONT-SIZE 'black)
-                                       (make-tape-img (imsg-state-pci imsg-st)
-                                                      (if (> (length (imsg-state-pci imsg-st)) TAPE-SIZE)
-                                                          (imsg-state-word-img-offset imsg-st)
-                                                          0)
-                                                      '())))])
-      (text (format "The current number of possible computations is ~a (without repeated configurations). "
-                     (number->string (list-ref (imsg-state-comps-len imsg-st)
-                                               (length (imsg-state-pci imsg-st)))))
-             FONT-SIZE
-             'brown)
-      (cond [(not completed-config?)
-              (text "All computations do not consume the entire word and the machine rejects." FONT-SIZE 'red)]
-             [(and (empty? (imsg-state-upci imsg-st))
-                   (equal? machine-decision 'accept))
-              (text "There is a computation that accepts." FONT-SIZE 'forestgreen)]
-             [(and (empty? (imsg-state-upci imsg-st))
-                   (equal? machine-decision 'reject))
-              (text "All computations end in a non-final state and the machine rejects." FONT-SIZE 'red)]
-             [else (text "Word Status: accept " FONT-SIZE 'white)]))
-     (rectangle 1250 50 'solid 'white))))
 
 
 ;;viz-state -> (list graph-thunk computation-length)
@@ -531,7 +442,7 @@ triple is the entire of the ndfa rule
 (define (right-key-pressed a-vs)
   (let* (;;boolean
          ;;Purpose: Determines if the pci can be can be fully consumed
-         [completed-config? (ormap (λ (config)
+         #;[completed-config? (ormap (λ (config)
                                      (empty? (second (first (computation-LoC config)))))
                                    (trace-computations (imsg-state-pci (informative-messages-component-state
                                                                  (viz-state-informative-messages a-vs))) 
@@ -541,7 +452,11 @@ triple is the entire of the ndfa rule
                                                                          (viz-state-informative-messages a-vs))))))]
          [pci (if (or (empty? (imsg-state-upci (informative-messages-component-state
                                                 (viz-state-informative-messages a-vs))))
-                      (not completed-config?))
+                      (eq? (imsg-state-upci (informative-messages-component-state
+                                             (viz-state-informative-messages a-vs)))
+                           (imsg-state-farthest-consumed (informative-messages-component-state
+                                                          (viz-state-informative-messages a-vs))))
+                      #;(not completed-config?))
                   (imsg-state-pci (informative-messages-component-state
                                    (viz-state-informative-messages a-vs)))
                   (append (imsg-state-pci (informative-messages-component-state
@@ -562,7 +477,11 @@ triple is the entire of the ndfa rule
                      (informative-messages-component-state (viz-state-informative-messages a-vs))
                      [upci (if (or (empty? (imsg-state-upci (informative-messages-component-state
                                                              (viz-state-informative-messages a-vs))))
-                                   (not completed-config?))
+                                   (eq? (imsg-state-upci (informative-messages-component-state
+                                             (viz-state-informative-messages a-vs)))
+                           (imsg-state-farthest-consumed (informative-messages-component-state
+                                                          (viz-state-informative-messages a-vs))))
+                                   #;(not completed-config?))
                                (imsg-state-upci (informative-messages-component-state
                                                  (viz-state-informative-messages a-vs)))
                                (rest (imsg-state-upci (informative-messages-component-state
@@ -593,13 +512,13 @@ triple is the entire of the ndfa rule
                                               (viz-state-informative-messages a-vs))))]
          ;;(listof symbols)
          ;;Purpose: The last word that could be fully consumed by the ndfa
-         [last-consumed-word (last-fully-consumed
+         #;[last-consumed-word (last-fully-consumed
                               full-word
                               (imsg-state-M (informative-messages-component-state
                                              (viz-state-informative-messages a-vs))))]
          ;;(listof symbols)
          ;;Purpose: The portion of the word that cannont be consumed
-         [unconsumed-word (drop full-word (length last-consumed-word))]
+         #;[unconsumed-word (drop full-word (length last-consumed-word))]
          [zip (if (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
                                                   (viz-state-informative-messages a-vs))))
                   (imsg-state-invs-zipper (informative-messages-component-state
@@ -624,14 +543,24 @@ triple is the entire of the ndfa rule
                                                 (viz-state-informative-messages a-vs))))
                       (imsg-state-upci (informative-messages-component-state
                                         (viz-state-informative-messages a-vs)))]
-                     [(not (equal? last-consumed-word full-word))
+                     [(not (empty? (imsg-state-farthest-consumed (informative-messages-component-state
+                                                                  (viz-state-informative-messages a-vs)))))
+                      (drop full-word (- (length full-word)
+                                         (length (imsg-state-farthest-consumed (informative-messages-component-state
+                                                                                (viz-state-informative-messages a-vs))))))]
+                     #;[(not (equal? last-consumed-word full-word))
                       (rest unconsumed-word)]
                      [else '()])]
          [pci (cond [(empty? (imsg-state-upci (informative-messages-component-state
                                                (viz-state-informative-messages a-vs))))
                      (imsg-state-pci (informative-messages-component-state
                                       (viz-state-informative-messages a-vs)))]
-                    [(not (equal? last-consumed-word full-word))
+                    [(not (empty? (imsg-state-farthest-consumed (informative-messages-component-state
+                                                             (viz-state-informative-messages a-vs)))))
+                 (take full-word (- (length full-word)
+                                    (length (imsg-state-farthest-consumed (informative-messages-component-state
+                                                                           (viz-state-informative-messages a-vs))))))]
+                    #;[(not (equal? last-consumed-word full-word))
                      (append last-consumed-word (take unconsumed-word 1))]
                     [else full-word])]
          [invs-zipper zip])])])))
@@ -772,8 +701,7 @@ triple is the entire of the ndfa rule
              [full-word (append (imsg-state-pci (informative-messages-component-state
                                                  (viz-state-informative-messages a-vs)))
                                 (imsg-state-upci (informative-messages-component-state
-                                                  (viz-state-informative-messages a-vs))))]
-             [partial-word (take full-word (zipper-current zip))])
+                                                  (viz-state-informative-messages a-vs))))])
         (struct-copy
          viz-state
          a-vs
@@ -786,7 +714,7 @@ triple is the entire of the ndfa rule
                          (informative-messages-component-state
                           (viz-state-informative-messages a-vs))
                          [upci (drop full-word (zipper-current zip))]
-                         [pci partial-word]
+                         [pci (take full-word (zipper-current zip))]
                          [invs-zipper zip])])]))))
 
 ;;viz-state -> viz-state
@@ -927,6 +855,8 @@ triple is the entire of the ndfa rule
          [graphs (create-graph-thunks building-state '())]
          ;;(listof number) ;;Purpose: Gets the number of computations for each step
          [computation-lens (count-computations a-word (map computation-LoC computations) '())]
+         ;;(listof symbol) ;;Purpose: The portion of the ci that the machine can conusme the most 
+         [most-consumed-word (get-farthest-consumed LoC a-word)]
          ;;(listof number) ;;Purpose: Gets the index of image where an invariant failed
          [inv-configs (remove-duplicates (sort (map (λ (con)
                              (length (second (first con))))
@@ -950,7 +880,7 @@ triple is the entire of the ndfa rule
                                                    '()
                                                    (list->zipper accepting-traces)
                                                    'no-stck
-                                                   'no-farthest-consumed
+                                                   most-consumed-word
                                                    (list->zipper inv-configs)
                                                    (sub1 (length inv-configs))
                                                    computation-lens

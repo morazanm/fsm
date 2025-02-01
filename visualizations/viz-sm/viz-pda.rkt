@@ -555,7 +555,7 @@ visited is a (listof configuration)
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization forward by one step
 (define (right-key-pressed a-vs)
-  (let* ([completed-config? (ormap (λ (config) (empty? (second (first (computation-LoC config)))))
+  (let* (#;[completed-config? (ormap (λ (config) (empty? (second (first (computation-LoC config)))))
                                    (get-computations (imsg-state-pci (informative-messages-component-state
                                                                       (viz-state-informative-messages a-vs)))
                                                      (pda-getrules (imsg-state-M (informative-messages-component-state
@@ -566,7 +566,7 @@ visited is a (listof configuration)
                                                                            (viz-state-informative-messages a-vs)))))]
          ;;boolean
          ;;Purpose: Determines if the pci can be can be fully consumed
-         [pci (if (or (not completed-config?)
+         [pci (if (or #;(not completed-config?)
                       (empty? (imsg-state-upci (informative-messages-component-state
                                                 (viz-state-informative-messages a-vs))))
                       (eq? (imsg-state-upci (informative-messages-component-state
@@ -590,7 +590,7 @@ visited is a (listof configuration)
        [component-state
         (struct-copy imsg-state
                      (informative-messages-component-state (viz-state-informative-messages a-vs))
-                     [upci (if (or (not completed-config?)
+                     [upci (if (or #;(not completed-config?)
                                    (empty? (imsg-state-upci (informative-messages-component-state
                                                              (viz-state-informative-messages a-vs))))
                                    (eq? (imsg-state-upci (informative-messages-component-state
@@ -644,7 +644,7 @@ visited is a (listof configuration)
                                               (viz-state-informative-messages a-vs))))]
          ;;(listof symbol)
          ;;Purpose: The last word that could be fully consumed by the ndfa
-         [last-consumed-word (last-fully-consumed
+         #;[last-consumed-word (last-fully-consumed
                               full-word
                               (imsg-state-M (informative-messages-component-state
                                              (viz-state-informative-messages a-vs)))
@@ -652,7 +652,7 @@ visited is a (listof configuration)
                                                     (viz-state-informative-messages a-vs))))]
          ;;(listof symbol)
          ;;Purpose: The portion of the word that cannont be consumed
-         [unconsumed-word (remove-similarities last-consumed-word full-word '())]
+         #;[unconsumed-word (remove-similarities last-consumed-word full-word '())]
          ;;(zipperof invariant)
          ;;Purpose: The index of the last failed invariant
          [zip (if (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
@@ -681,8 +681,9 @@ visited is a (listof configuration)
                                         (viz-state-informative-messages a-vs)))]
                      [(not (empty? (imsg-state-farthest-consumed (informative-messages-component-state
                                                                   (viz-state-informative-messages a-vs)))))
-                      (drop full-word (- (length full-word) (length (imsg-state-farthest-consumed (informative-messages-component-state
-                                                                                                   (viz-state-informative-messages a-vs))))))]
+                      (drop full-word (- (length full-word)
+                                         (length (imsg-state-farthest-consumed (informative-messages-component-state
+                                                                                (viz-state-informative-messages a-vs))))))]
                      [else '()])]
          [pci 
           (cond [(empty? (imsg-state-upci (informative-messages-component-state
@@ -691,8 +692,9 @@ visited is a (listof configuration)
                                   (viz-state-informative-messages a-vs)))]
                 [(not (empty? (imsg-state-farthest-consumed (informative-messages-component-state
                                                              (viz-state-informative-messages a-vs)))))
-                 (take full-word (- (length full-word) (length (imsg-state-farthest-consumed (informative-messages-component-state
-                                                                                              (viz-state-informative-messages a-vs))))))]
+                 (take full-word (- (length full-word)
+                                    (length (imsg-state-farthest-consumed (informative-messages-component-state
+                                                                           (viz-state-informative-messages a-vs))))))]
                 [else full-word])]
          [acpt-trace (if (or (zipper-empty? (imsg-state-acpt-trace (informative-messages-component-state
                                                                     (viz-state-informative-messages a-vs))))
@@ -1055,6 +1057,7 @@ visited is a (listof configuration)
          [dead-state (if add-dead (last (pda-getstates new-M)) 'no-dead)]
          ;;(listof computations) ;;Purpose: All computations that the machine can have
          [computations (get-computations a-word (pda-getrules new-M) (pda-getstart new-M) cut-off)]
+         
          ;;(listof configurations) ;;Purpose: Extracts the configurations from the computation
          [LoC (map computation-LoC computations)]
          ;;number ;;Purpose: The length of the word
@@ -1099,7 +1102,7 @@ visited is a (listof configuration)
                                             '()))]
          ;;(listof rules) ;;Purpose: Returns the first accepting computations (listof rules)
          [accepting-trace (if (empty? accept-cmps) '() (first accept-cmps))]
-         ;;(listof symbol) ;;Purpose: The portion of the ci ahat the machine can conusme the most 
+         ;;(listof symbol) ;;Purpose: The portion of the ci that the machine can conusme the most 
          [most-consumed-word (get-farthest-consumed LoC a-word)]
          ;;building-state struct
          [building-state (building-viz-state a-word

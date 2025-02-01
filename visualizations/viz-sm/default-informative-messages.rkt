@@ -500,22 +500,21 @@ triple is the entire of the ndfa rule
 (define (ndfa-create-draw-informative-message imsg-st)
   (let* (;;boolean
          ;;Purpose: Determines if the pci can be can be fully consumed
-         [completed-config? (ormap (λ (config) (empty? (second (first (computation-LoC config)))))
+         #;[completed-config? (ormap (λ (config) (empty? (second (first (computation-LoC config)))))
                                    (trace-computations (imsg-state-pci imsg-st)
                                                 (fsa-getrules (imsg-state-M imsg-st))
                                                 (fsa-getstart (imsg-state-M imsg-st))))]
          
          ;;(listof symbols)
          ;;Purpose: The last word that could be fully consumed by the ndfa
-         [last-consumed-word (last-fully-consumed (imsg-state-pci imsg-st) (imsg-state-M imsg-st))]
+         #;[last-consumed-word (last-fully-consumed (imsg-state-pci imsg-st) (imsg-state-M imsg-st))]
 
          ;;(listof symbols)
          ;;Purpose: The entire given word
          [entire-word (append (imsg-state-pci imsg-st) (imsg-state-upci imsg-st))]
          
-         ;;(listof symbols)
-         ;;Purpose: The portion of the word that cannont be consumed
-         [unconsumed-word (drop entire-word (length last-consumed-word))]
+         ;;boolean
+         ;;Purpose: Determines if the the machine should accept or reject the given word
          [machine-decision (if (not (zipper-empty? (imsg-state-acpt-trace imsg-st)))
                                'accept
                                'reject)]
@@ -536,7 +535,10 @@ triple is the entire of the ndfa rule
                       (if (equal? machine-decision 'accept)
                           (text (format "~a" EMP) FONT-SIZE 'black)
                           (text (format "~a" EMP) FONT-SIZE 'white))))]
-            [(and (not (empty? (imsg-state-pci imsg-st))) (not completed-config?))
+            [(and (not (empty? (imsg-state-pci imsg-st)))
+                  (eq? (imsg-state-upci imsg-st) (imsg-state-farthest-consumed imsg-st))
+                  (eq? machine-decision 'reject)
+                  #;(not completed-config?))
              (above/align
               'left
               (beside (text "aaaK" FONT-SIZE 'white)
@@ -547,13 +549,13 @@ triple is the entire of the ndfa rule
                                          0)
                                      (if (empty? (imsg-state-pci imsg-st))
                                          '()
-                                         (list (list (length last-consumed-word) 'gray)
-                                               (list (length last-consumed-word) 'red)))))
+                                         (list (list (length (imsg-state-pci imsg-st) #;last-consumed-word) 'gray)
+                                               (list (length (imsg-state-pci imsg-st) #;last-consumed-word) 'red)))))
               (beside (text "Consumed: " FONT-SIZE 'black)
-                      (if (empty? last-consumed-word)
+                      (if (empty? (imsg-state-pci imsg-st) #;last-consumed-word)
                           (text "" FONT-SIZE 'black)
-                          (make-tape-img last-consumed-word
-                                         (if (> (length last-consumed-word) TAPE-SIZE)
+                          (make-tape-img (imsg-state-pci imsg-st) #;last-consumed-word
+                                         (if (> (length (imsg-state-pci imsg-st) #;last-consumed-word) TAPE-SIZE)
                                              (imsg-state-word-img-offset imsg-st)
                                              0)
                                          '()))))]
@@ -578,13 +580,14 @@ triple is the entire of the ndfa rule
                                                (length (imsg-state-pci imsg-st)))))
              FONT-SIZE
              'brown)
-      (cond [(not completed-config?)
+      (cond #;[#;(not completed-config?)
               (text "All computations do not consume the entire word and the machine rejects." FONT-SIZE 'red)]
              [(and (empty? (imsg-state-upci imsg-st))
                    (equal? machine-decision 'accept))
               (text "There is a computation that accepts." FONT-SIZE 'forestgreen)]
              [(and (empty? (imsg-state-upci imsg-st))
-                   (equal? machine-decision 'reject))
+                   (equal? machine-decision 'reject)
+                   (eq? (imsg-state-upci imsg-st) (imsg-state-farthest-consumed imsg-st)))
               (text "All computations end in a non-final state and the machine rejects." FONT-SIZE 'red)]
              [else (text "Word Status: accept " FONT-SIZE 'white)]))
     ))
@@ -594,7 +597,7 @@ triple is the entire of the ndfa rule
 (define (pda-create-draw-informative-message imsg-st)
   (let* (;;boolean
          ;;Purpose: Determines if the pci can be can be fully consumed
-         [completed-config? (ormap (λ (config) (empty? (second (first config))))
+         #;[completed-config? (ormap (λ (config) (empty? (second (first config))))
                                    (map computation-LoC (get-computations (imsg-state-pci imsg-st)
                                                                           (pda-getrules (imsg-state-M imsg-st))
                                                                           (pda-getstart (imsg-state-M imsg-st))
@@ -602,7 +605,7 @@ triple is the entire of the ndfa rule
          
          ;;(listof symbols)
          ;;Purpose: The last word that could be fully consumed by the ndfa
-         [last-consumed-word (pda-last-fully-consumed (imsg-state-pci imsg-st)
+         #;[last-consumed-word (pda-last-fully-consumed (imsg-state-pci imsg-st)
                                                   (imsg-state-M imsg-st)
                                                   (imsg-state-max-cmps imsg-st))]
 
@@ -612,7 +615,7 @@ triple is the entire of the ndfa rule
          
          ;;(listof symbols)
          ;;Purpose: The portion of the word that cannont be consumed
-         [unconsumed-word (drop entire-word (length last-consumed-word))]
+         #;[unconsumed-word (drop entire-word (length last-consumed-word))]
          
          ;;(listof symbols)
          ;;Purpose: Holds what needs to displayed for the stack based off the upci
@@ -623,13 +626,18 @@ triple is the entire of the ndfa rule
                                'accept
                                'reject)]
          [FONT-SIZE 20])
+    (begin
+      ;(displayln "farthest consume")
+      ;(displayln (imsg-state-farthest-consumed imsg-st))
+      ;(displayln "last-consumed")
+      ;(displayln last-consumed-word)
     (above/align
       'left
       (cond [(and (empty? (imsg-state-pci imsg-st))
                   (empty? (imsg-state-upci imsg-st)))
              (above/align
               'left
-              (beside (text "aaaa" FONT-SIZE 'white)
+              (beside (text "aaaK" FONT-SIZE 'white)
                       (text "Word: " FONT-SIZE 'black)
                       (if (equal? machine-decision 'accept)
                           (text (format "~a" EMP) FONT-SIZE 'gray)
@@ -644,7 +652,7 @@ triple is the entire of the ndfa rule
                   (ormap (λ (comp) (>= (length comp) (imsg-state-max-cmps imsg-st)))
                          (imsg-state-comps imsg-st)))
              (above/align 'left
-                          (beside (text "aaaa" FONT-SIZE 'white)
+                          (beside (text "aaaK" FONT-SIZE 'white)
                                   (text "Word: " FONT-SIZE 'black)
                                   (make-tape-img entire-word
                                                  (if (> (length entire-word) TAPE-SIZE)
@@ -660,10 +668,13 @@ triple is the entire of the ndfa rule
                                                      (imsg-state-word-img-offset imsg-st)
                                                      0)
                                                  '())))]
-            [(and (not (empty? (imsg-state-pci imsg-st))) (not completed-config?))
+            [(and (not (empty? (imsg-state-pci imsg-st)))
+                  (eq? (imsg-state-upci imsg-st) (imsg-state-farthest-consumed imsg-st))
+                  (eq? machine-decision 'reject)
+                  #;(not completed-config?))
              (above/align
               'left
-              (beside (text "aaaa" FONT-SIZE 'white)
+              (beside (text "aaaK" FONT-SIZE 'white)
                       (text "Word: " FONT-SIZE 'black)
                       (make-tape-img entire-word
                                      (if (> (length entire-word) TAPE-SIZE)
@@ -671,18 +682,18 @@ triple is the entire of the ndfa rule
                                          0)
                                      (if (empty? (imsg-state-pci imsg-st))
                                          '()
-                                         (list (list (length last-consumed-word) 'gray)
-                                               (list (length last-consumed-word) 'red)))))
+                                         (list (list (length (imsg-state-pci imsg-st) #;(imsg-state-farthest-consumed imsg-st) #;last-consumed-word) 'gray)
+                                               (list (length (imsg-state-pci imsg-st) #;(imsg-state-farthest-consumed imsg-st) #;last-consumed-word) 'red)))))
               (beside (text "Consumed: " FONT-SIZE 'black)
-                      (if (empty? last-consumed-word)
+                      (if (empty? (imsg-state-pci imsg-st))
                           (text "" FONT-SIZE 'black)
-                          (make-tape-img last-consumed-word
-                                         (if (> (length last-consumed-word) TAPE-SIZE)
+                          (make-tape-img (imsg-state-pci imsg-st) #;last-consumed-word
+                                         (if (> (length (imsg-state-pci imsg-st) #;last-consumed-word) TAPE-SIZE)
                                              (imsg-state-word-img-offset imsg-st)
                                              0)
                                          '()))))]
             [else (above/align 'left
-                               (beside (text "aaaa" FONT-SIZE 'white)
+                               (beside (text "aaaK" FONT-SIZE 'white)
                                        (text "Word: " FONT-SIZE 'black)
                                        (make-tape-img entire-word
                                                       (if (> (length entire-word) TAPE-SIZE)
@@ -721,19 +732,19 @@ triple is the entire of the ndfa rule
                          (imsg-state-comps imsg-st)))
              (text (format "There are computations that exceed the cut-off limit (~a)."
                            (imsg-state-max-cmps imsg-st)) FONT-SIZE DARKGOLDENROD2)]
-            [(not completed-config?)
+            #;[(not completed-config?)
              (text "All computations do not consume the entire word and the machine rejects." FONT-SIZE 'red)]
             [(and (empty? (imsg-state-upci imsg-st))
                   (or (zipper-empty? (imsg-state-stack imsg-st))
                       (zipper-at-end? (imsg-state-stack imsg-st)))
                   (equal? machine-decision 'accept))
              (text "There is a computation that accepts." FONT-SIZE 'forestgreen)]
-            [(and (empty? (imsg-state-upci imsg-st))
+            [(and (eq? (imsg-state-upci imsg-st) (imsg-state-farthest-consumed imsg-st)) #;(empty? (imsg-state-upci imsg-st))
                   (or (zipper-empty? (imsg-state-stack imsg-st))
                       (zipper-at-end? (imsg-state-stack imsg-st)))
                   (equal? machine-decision 'reject))
              (text "All computations end in a non-final configuration and the machine rejects." FONT-SIZE 'red)]
-            [else (text "Word Status: accept " FONT-SIZE 'white)]))))
+            [else (text "Word Status: accept " FONT-SIZE 'white)])))))
 
 
 
