@@ -555,19 +555,9 @@ visited is a (listof configuration)
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization forward by one step
 (define (right-key-pressed a-vs)
-  (let* (#;[completed-config? (ormap (λ (config) (empty? (second (first (computation-LoC config)))))
-                                   (get-computations (imsg-state-pci (informative-messages-component-state
-                                                                      (viz-state-informative-messages a-vs)))
-                                                     (pda-getrules (imsg-state-M (informative-messages-component-state
-                                                                                  (viz-state-informative-messages a-vs))))
-                                                     (pda-getstart (imsg-state-M (informative-messages-component-state
-                                                                                  (viz-state-informative-messages a-vs))))
-                                                     (imsg-state-max-cmps (informative-messages-component-state
-                                                                           (viz-state-informative-messages a-vs)))))]
-         ;;boolean
+  (let* (;;boolean
          ;;Purpose: Determines if the pci can be can be fully consumed
-         [pci (if (or #;(not completed-config?)
-                      (empty? (imsg-state-upci (informative-messages-component-state
+         [pci (if (or (empty? (imsg-state-upci (informative-messages-component-state
                                                 (viz-state-informative-messages a-vs))))
                       (eq? (imsg-state-upci (informative-messages-component-state
                                              (viz-state-informative-messages a-vs)))
@@ -590,8 +580,7 @@ visited is a (listof configuration)
        [component-state
         (struct-copy imsg-state
                      (informative-messages-component-state (viz-state-informative-messages a-vs))
-                     [upci (if (or #;(not completed-config?)
-                                   (empty? (imsg-state-upci (informative-messages-component-state
+                     [upci (if (or (empty? (imsg-state-upci (informative-messages-component-state
                                                              (viz-state-informative-messages a-vs))))
                                    (eq? (imsg-state-upci (informative-messages-component-state
                                                           (viz-state-informative-messages a-vs)))
@@ -642,17 +631,6 @@ visited is a (listof configuration)
                                              (viz-state-informative-messages a-vs)))
                             (imsg-state-upci (informative-messages-component-state
                                               (viz-state-informative-messages a-vs))))]
-         ;;(listof symbol)
-         ;;Purpose: The last word that could be fully consumed by the ndfa
-         #;[last-consumed-word (last-fully-consumed
-                              full-word
-                              (imsg-state-M (informative-messages-component-state
-                                             (viz-state-informative-messages a-vs)))
-                              (imsg-state-max-cmps (informative-messages-component-state
-                                                    (viz-state-informative-messages a-vs))))]
-         ;;(listof symbol)
-         ;;Purpose: The portion of the word that cannont be consumed
-         #;[unconsumed-word (remove-similarities last-consumed-word full-word '())]
          ;;(zipperof invariant)
          ;;Purpose: The index of the last failed invariant
          [zip (if (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
