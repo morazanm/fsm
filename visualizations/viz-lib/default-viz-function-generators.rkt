@@ -6,7 +6,7 @@
          "viz-state.rkt"
          math/matrix
          "bounding-limits.rkt"
-         2htdp/image
+         "../2htdp/image.rkt"
          "resize-viz-image.rkt"
          "../viz-sm/david-imsg-state.rkt"
          "typed-matrices.rkt"

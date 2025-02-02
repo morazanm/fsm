@@ -314,10 +314,7 @@
                                           [(member state hedge-nodes) HEDGE-COLOR]
                                           [(member state yield-node) YIELD-COLOR]
                                           [else 'black])
-                                 'style 'filled #;(if (or (member state hedge-nodes)
-                                                (member state yield-node))
-                                            'dashed
-                                            'filled)
+                                 'style 'filled
                                  'fillcolor (cond
                                               [(not (member (undo-renaming state) has-invariant))
                                                'white]
