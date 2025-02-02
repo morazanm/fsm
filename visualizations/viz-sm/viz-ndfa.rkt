@@ -684,10 +684,14 @@ triple is the entire of the ndfa rule
                          (informative-messages-component-state
                           (viz-state-informative-messages a-vs))
                          [upci (cond [(and (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                                     (viz-state-informative-messages a-vs))))
-                                          (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                                   (viz-state-informative-messages a-vs)))))
-                                     (drop full-word (zipper-current zip))]
+                                                                                      (viz-state-informative-messages a-vs))))
+                                           (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                    (viz-state-informative-messages a-vs))))
+                                           (>= (length (imsg-state-pci (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs))))
+                                               (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                        (viz-state-informative-messages a-vs))))))
+                                      (drop full-word (zipper-current zip))]
                                     [(zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
                                                                                 (viz-state-informative-messages a-vs))))
                                      (imsg-state-upci (informative-messages-component-state
@@ -696,7 +700,11 @@ triple is the entire of the ndfa rule
                          [pci (cond [(and (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
                                                                                      (viz-state-informative-messages a-vs))))
                                           (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                                   (viz-state-informative-messages a-vs)))))
+                                                                                   (viz-state-informative-messages a-vs))))
+                                          (>= (length (imsg-state-pci (informative-messages-component-state
+                                                        (viz-state-informative-messages a-vs))))
+                               (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs))))))
                                      (take full-word (zipper-current zip))]
                                     [(zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
                                                                                 (viz-state-informative-messages a-vs))))
@@ -739,7 +747,11 @@ triple is the entire of the ndfa rule
                          [upci (cond [(and (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
                                                                                      (viz-state-informative-messages a-vs))))
                                           (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                                   (viz-state-informative-messages a-vs)))))
+                                                                                   (viz-state-informative-messages a-vs))))
+                                          (<= (length (imsg-state-pci (informative-messages-component-state
+                                                        (viz-state-informative-messages a-vs))))
+                               (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs))))))
                                      (drop full-word (zipper-current zip))]
                                     [(zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
                                                                             (viz-state-informative-messages a-vs))))
@@ -749,7 +761,11 @@ triple is the entire of the ndfa rule
                          [pci (cond [(and (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
                                                                                      (viz-state-informative-messages a-vs))))
                                           (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                                   (viz-state-informative-messages a-vs)))))
+                                                                                   (viz-state-informative-messages a-vs))))
+                                          (<= (length (imsg-state-pci (informative-messages-component-state
+                                                        (viz-state-informative-messages a-vs))))
+                               (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs))))))
                                      (take full-word (zipper-current zip))]
                                     [(zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
                                                                             (viz-state-informative-messages a-vs))))
