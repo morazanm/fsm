@@ -575,7 +575,7 @@ triple is the entire of the ndfa rule
                                                        (viz-state-informative-messages a-vs)))))]
                      [pci pci]
                      [invs-zipper (cond [(zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                         (viz-state-informative-messages a-vs))))
+                                                                                 (viz-state-informative-messages a-vs))))
                                          (imsg-state-invs-zipper (informative-messages-component-state
                                                                   (viz-state-informative-messages a-vs)))]
                                         [(and (not (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
