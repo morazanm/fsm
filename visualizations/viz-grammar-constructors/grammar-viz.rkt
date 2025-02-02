@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require "../viz-lib/viz-macros.rkt"
-         2htdp/image
+         "../2htdp/image.rkt"
          "../viz-lib/zipper.rkt"
          "../viz-lib/bounding-limits.rkt"
          "../viz-lib/viz.rkt"

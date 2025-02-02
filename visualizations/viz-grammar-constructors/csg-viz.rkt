@@ -10,7 +10,9 @@
          "../viz-lib/zipper.rkt"
          rackunit
          racket/list
-         racket/local)
+         racket/local
+         racket/set
+         racket/dict)
 
 (provide csg-viz)
 
@@ -42,6 +44,9 @@
 (define HEDGE-COLOR 'skyblue)
 
 (define YIELD-COLOR 'violet)
+
+(define FAILED-INV-COLOR 'red)
+(define INV-HELD-COLOR 'green)
 
 (define FONT-SIZE 12)
 (define HEXAGON-COLOR 'black)
@@ -247,7 +252,8 @@
   (levels
    nodes
    hex-nodes
-   yield-nodes
+   yield-nodes-lst
+   yield-nodes-set
    hedges))
 
 ;; extract-nodes
@@ -259,14 +265,22 @@
 ;; make-node-graph
 ;; graph lon -> graph
 ;; Purpose: To make a node graph
-(define (make-node-graph graph lon hedge-nodes hex-nodes yield-node)
+(define (make-node-graph graph lon hedge-nodes hex-nodes yield-node-lst yield-node-set invariants-set invariants-hash-map)
+  (define (remove-non-inv-chars inv-set yield-node-set)
+    (set-intersect yield-node-set inv-set))
   (foldl (λ (state result)
            (add-node result
                      state
-                     #:atb (hash 'color (cond
-                                          [(member state yield-node) YIELD-COLOR]
-                                          [(member state hedge-nodes) HEDGE-COLOR]
-                                          [else 'black])
+                     #:atb (hash 'color (let ([yield? (set-member? yield-node-set state)])
+                                          (cond
+                                            [yield? (let ([res (hash-ref invariants-hash-map (remove-non-inv-chars invariants-set yield-node-set) #f)])
+                                                      (if res
+                                                          (if (res yield-node-lst)
+                                                              INV-HELD-COLOR
+                                                              FAILED-INV-COLOR)
+                                                          YIELD-COLOR))]
+                                            [(member state hedge-nodes) HEDGE-COLOR]
+                                            [else 'black]))
                                  'style 'solid
                                  'shape (cond
                                           [(member state hex-nodes) 'hexagon]
@@ -320,6 +334,7 @@
           (extract-nodes level)
           hex-node
           yield-node
+          (list->set yield-node)
           hedge))
        levels hex-nodes yield-nodes hedges))
 
@@ -335,7 +350,7 @@
 ;; create-graph-structs
 ;; dgprh -> img
 ;; Purpose: Creates the final graph structure that will be used to create the images in graphviz
-(define (create-graph-structs a-dgrph)
+(define (create-graph-structs a-dgrph invariants-set invariants-hash-map)
   (make-invisible-edge-graph
    (make-edge-graph
     (make-node-graph
@@ -344,30 +359,39 @@
      (dgrph-nodes a-dgrph)
      (extract-nodes (dgrph-hedges a-dgrph))
      (dgrph-hex-nodes a-dgrph)
-     (dgrph-yield-nodes a-dgrph))
+     (dgrph-yield-nodes-lst a-dgrph)
+     (dgrph-yield-nodes-set a-dgrph)
+     invariants-set
+     invariants-hash-map)
     (dgrph-levels a-dgrph)
     (dgrph-hedges a-dgrph))
-   (create-line-of-edges (dgrph-yield-nodes a-dgrph))))
+   (create-line-of-edges (dgrph-yield-nodes-lst a-dgrph))))
 
 (define (csg-viz g w #:cpu-cores [cpu-cores #f] . invariants)
-  (local [(define derv (csg-derive-edited g w))
-          (define w-derv (map (lambda (x) (symbol->fsmlos (first x))) derv))
-          (define moved-rules
-            (map (lambda (x) (list (second x) (third x))) (move-rule-applications-in-list derv)))
-          (define rules
-            (cons ""
-                  (foldr (lambda (x accum)
-                           (if (empty? (first x))
-                               '()
-                               (append (list (string-append (symbol->string (first x))
-                                                            " → "
-                                                            (symbol->string (second x))))
-                                       accum)))
-                         '()
-                         moved-rules)))
-          (define renamed (generate-levels (list (csg-getstart g)) moved-rules (make-hash)))
-          (define lod (create-dgrphs (third renamed) (first renamed) (second renamed) (fourth renamed)))
-          (define graphs (map create-graph-structs lod))]
+  (let* [(derv (csg-derive-edited g w))
+         (w-derv (map (lambda (x) (symbol->fsmlos (first x))) derv))
+         (moved-rules
+          (map (lambda (x) (list (second x) (third x))) (move-rule-applications-in-list derv)))
+         (rules
+          (cons ""
+                (foldr (lambda (x accum)
+                         (if (empty? (first x))
+                             '()
+                             (append (list (string-append (symbol->string (first x))
+                                                          " → "
+                                                          (symbol->string (second x))))
+                                     accum)))
+                       '()
+                       moved-rules)))
+         (renamed (generate-levels (list (csg-getstart g)) moved-rules (make-hash)))
+         (lod (create-dgrphs (third renamed) (first renamed) (second renamed) (fourth renamed)))
+         (invariants-set (list->set (map first invariants)))
+         (invariants-hash-map (make-immutable-hash invariants)
+                              #;(foldr (lambda (val accum)
+                                       (dict-set accum (first val) (second val)))
+                                     (make-immutable-custom-hash set-equal?)
+                                     invariants))
+         (graphs (map (lambda (x) (create-graph-structs x invariants-set invariants-hash-map)) lod))]
     (init-viz g
               w
               w-derv 
@@ -379,7 +403,11 @@
               #:rank-node-lst (map (lambda (x y) (cons x (map list y)))
                                    (second renamed)
                                    (first renamed)))))
-
+(define (anbncn-csg-G-INV yield)
+  (let ([num-as (filter (lambda (x) (equal? x 'A)) yield)]
+        [num-bs (filter (lambda (x) (equal? x 'B)) yield)]
+        [num-cs (filter (lambda (x) (equal? x 'C)) yield)])
+    (= num-as num-bs num-cs)))
 (define anbncn-csg
   (make-unchecked-csg '(S A B C G H I) 
             '(a b c) 

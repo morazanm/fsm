@@ -1,6 +1,6 @@
 #lang racket/base
 (require "../../fsm-gviz/private/lib.rkt"
-         2htdp/image
+         "../2htdp/image.rkt"
          "../../fsm-core/private/misc.rkt"
          "../viz-lib/viz-constants.rkt"
          "../viz-lib/viz-state.rkt"

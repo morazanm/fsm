@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require "lib.rkt"
-         2htdp/image
+         "../../visualizations/2htdp/image.rkt"
          "dot.rkt"
          racket/list
          racket/future

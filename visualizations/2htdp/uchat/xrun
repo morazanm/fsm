@@ -1,0 +1,4 @@
+#!/nix/store/4fvc5fm8bszmkydng1ivrvr5cbvr1g60-bash-5.2p37/bin/sh
+
+gracket server.rkt &
+gracket chatter.rkt -e"(run* 'go)" &

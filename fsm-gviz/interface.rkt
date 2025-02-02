@@ -5,7 +5,7 @@
          "../fsm-core/private/sm-getters.rkt"
          "../fsm-gui/structs/machine.rkt"
          "../fsm-gui/structs/state.rkt"
-         2htdp/image
+         "../visualizations/2htdp/image.rkt"
          racket/match
          racket/contract/base)
 

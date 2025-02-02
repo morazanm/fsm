@@ -1,5 +1,5 @@
 #lang racket/base
-(require 2htdp/image)
+(require "../2htdp/image.rkt")
 (provide resize-sm-image)
 ;; resize-image :: image -> int -> int -> image
 ;; Scales a image to the given dimentions. This solution was adapted from
