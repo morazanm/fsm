@@ -1,7 +1,7 @@
 #lang racket
 
 (require "../../fsm-gviz/private/lib.rkt"
-         2htdp/image
+         "../2htdp/image.rkt"
          "../viz-lib/viz.rkt"
          "../viz-lib/zipper.rkt"
          "../viz-lib/viz-constants.rkt"

@@ -1,6 +1,6 @@
 #lang racket
 
-(require 2htdp/image
+(require "../2htdp/image.rkt"
          "../viz-lib/bounding-limits.rkt"
          "../viz-lib/bounding-limits-macro.rkt"
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
