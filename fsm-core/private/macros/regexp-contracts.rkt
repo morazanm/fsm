@@ -1,71 +1,317 @@
 #lang racket/base
-  (require "../regexp.rkt"
-           "error-formatting.rkt"
-           racket/contract
-           racket/list
-           racket/bool
-           )
-  (provide singleton-regexp/c
-           concat-regexp/c
-           union-regexp/c
-           kleenestar-regexp/c)
+(require racket/bool
+         racket/list
+         "../regexp.rkt"
+         "../constants.rkt"
+         "error-formatting.rkt"
+         racket/contract
+         "../../private/sm-getters.rkt"
+         "../../private/sm-apply.rkt"
+         "../../private/fsa.rkt"
+         "shared/shared-predicates.rkt"
+         "shared/shared-flat-contracts.rkt"
+         "validation/validation-flat-contracts.rkt"
+         )
+(provide singleton-regexp/c
+         concat-regexp/c
+         union-regexp/c
+         kleenestar-regexp/c)
 
 
-  ;; valid-alpha-string?: any --> boolean
-  ;; purpose: Returns true if the given input is a single alphabet character string,
-  ;;          and false for every other input.
-  (define (valid-alpha-string? x)
-    (define regex-pattern (regexp "^[a-z]$"))
-    (not (false? (and (string? x)
-                      (regexp-match regex-pattern x)))))
+;; valid-alpha-string?: any --> boolean
+;; purpose: Returns true if the given input is a single alphabet character string,
+;;          and false for every other input.
+(define (valid-alpha-string? x)
+  (define regex-pattern (regexp "^[a-zA-Z0-9$&!*]$"))
+  (not (false? (and (string? x)
+                    (regexp-match regex-pattern x)))))
 
-  (define valid-singleton/c
-    (make-flat-contract
-     #:name 'valid-singleton-regexp?
-     #:first-order valid-alpha-string?
-     #:projection (lambda (blame)
-                    (lambda (x)
-                      (current-blame-format format-error)
-                      (if (valid-alpha-string? x)
-                          x
+(define valid-singleton/c
+  (make-flat-contract
+   #:name 'valid-singleton-regexp?
+   #:first-order valid-alpha-string?
+   #:projection (lambda (blame)
+                  (lambda (x)
+                    (current-blame-format format-error)
+                    (if (valid-alpha-string? x)
+                        x
+                        (raise-blame-error
+                         blame
+                         x
+                         (format "Step five of the design recipe for regular expressions has not been successfully completed.\nThe argument to singleton-regexp must be a single lowercase Roman alphabet string, but found")))))))
+
+;; singleton-regexp/c
+(define singleton-regexp/c
+  (->i ([a valid-singleton/c])
+       [result singleton-regexp?]))
+
+;; valid-regexp/c: string --> (any --> boolean or error)
+;; Purpose: Constructs a flat contract for checking if an input value is a
+;;          valid regular expression. Takes as input a string to provide
+;;          details to the error message.
+(define (valid-regexp/c error-message)
+  (make-flat-contract
+   #:name 'valid-regexp?
+   #:first-order regexp?
+   #:projection (lambda (blame)
+                  (lambda (x)
+                    (current-blame-format format-error)
+                    (if (regexp? x)
+                        x
+                        (raise-blame-error
+                         blame
+                         x
+                         (format "Step five of the design recipe for regular expressions has not been successfully completed.\n~a" error-message)))))))
+
+(define (regexp-matches-pred/c regexp)
+  (make-flat-contract
+   #:name 'regexp-matches-pred?
+   #:projection (lambda (blame)
+                  (lambda (predicate)
+                    (current-blame-format format-error)
+                    (if (predicate regexp)
+                        predicate
+                        (raise-blame-error blame predicate "Predicate did not match regexp"))))))
+
+;; regexp (listof symbol) -> (listof symbol)
+;; Returns the list of all singleton regexps in the input regexp (as symbols)
+;; that are not in the input sigma.
+(define (find-extra-singleton-regexps regexp sigma)
+  (let [(regexp-sigma (sm-sigma (regexp->fsa regexp)))
+        (converted-sigma (map (lambda (x) (if (symbol? x) x (string->symbol (number->string x)))) sigma))]
+    (filter (lambda (x) (not (member x converted-sigma))) regexp-sigma)))
+
+(define (valid-regexp-sigma/c regexp)
+  (make-flat-contract
+   #:name 'valid-sigma?
+   #:first-order (lambda (sigma) (empty? (find-extra-singleton-regexps regexp sigma)))
+   #:projection (lambda (blame)
+                  (lambda (sigma)
+                    (current-blame-format format-error)
+                    (let [(extra-singletons (find-extra-singleton-regexps regexp sigma))]
+                      (if (empty? extra-singletons)
+                          sigma
                           (raise-blame-error
                            blame
-                           x
-                           (format "The argument to singleton-regexp must be a single lowercase Roman alphabet character, but found")))))))
+                           sigma
+                           (format "Step one of the design recipe for regular expressions has not been successfully completed.\nThe following singletons: ~a are found in words generated by the regular expression, but not in the specified alphabet"
+                                   extra-singletons))))
+                    ))))
 
-  ;; singleton-regexp/c
-  (define singleton-regexp/c
-    (->i ([a valid-singleton/c])
-         [result singleton-regexp?]))
+;; regexp (listof symbol) -> boolean
+;; Returns true if all of the letters in the input word are part of the regular
+;; expression's alphabet, and false otherwise.
+(define (word-in-regexp-sigma? regexp-sigma word)
+  (let ((converted-word (map (lambda (x) (if (symbol? x) x (string->symbol (number->string x)))) word)))
+    (empty? (filter (lambda (x) (not (member x regexp-sigma))) converted-word)))
+  )
 
-  ;; valid-regexp/c: string --> (any --> boolean or error)
-  ;; Purpose: Constructs a flat contract for checking if an input value is a
-  ;;          valid regular expression. Takes as input a string to provide
-  ;;          details to the error message.
-  (define (valid-regexp/c error-message)
+(define (words-in-sigma/c type regexp)
+  (let [(regexp-sigma (sm-sigma (regexp->fsa regexp)))]
     (make-flat-contract
-     #:name 'valid-regexp?
-     #:first-order regexp?
+     #:name 'words-in-sigma?
+     #:first-order (lambda (words) (empty? (filter (lambda (word) (not (word-in-regexp-sigma? regexp-sigma word))) words)))
      #:projection (lambda (blame)
-                    (lambda (x)
+                    (lambda (words)
                       (current-blame-format format-error)
-                      (if (regexp? x)
-                          x
-                          (raise-blame-error blame x error-message))))))
+                      (let [(words-not-in-regexp-sigma (filter (lambda (word) (not (word-in-regexp-sigma? regexp-sigma word))) words))]
+                        (if (empty? words-not-in-regexp-sigma)
+                            words
+                            (raise-blame-error
+                             blame
+                             regexp-sigma
+                             (format "Step six of the design recipe for regular expressions has not been successfully completed.\nThe following words ~a by the regular expression: ~a contain characters not in the regular expression's alphabet"
+                                     type
+                                     words-not-in-regexp-sigma)))))))))
 
-  ;; concat-regexp/c
-  (define concat-regexp/c
-    (->i ([r1 (valid-regexp/c "The first argument to concat-regexp must be a regular expression, but found")]
-          [r2 (valid-regexp/c "The second argument to concat-regexp must be a regular expression, but found")])
-         [result concat-regexp?]))
+; regexp (listof symbol) boolean -> boolean
+; Checks if the given word matches the regexp. The boolean input determines
+; if the word is expected to be accepted (#true) or rejected (#false) by
+; the regexp.
+(define (check-word-accepts regexp word accepts?)
+  (let* [(converted-word (map (lambda (x) (if (symbol? x) x (string->symbol (number->string x)))) word))
+        (result (sm-apply (regexp->fsa regexp) converted-word))]
+    (if accepts?
+        (equal? result 'accept)
+        (equal? result 'reject))))
 
-  ;; union-regexp/c
-  (define union-regexp/c
-    (->i ([r1 (valid-regexp/c "The first argument to union-regexp must be a regular expression, but found")]
-          [r2 (valid-regexp/c "The second argument to union-regexp must be a regular expression, but found")])
-         [result union-regexp?]))
+; string boolean -> string
+; Formats an error message for step six of the DR if the regexp incorrectly
+; rejects/accepts a word.
+(define (accepts/rejects-formatter type in-lang?)
+  (format "Step six of the design recipe for regular expressions has not been successfully completed.\nThe following words are ~a of the constructed ~a"
+          (if in-lang? "not in the language" "in the language")
+          type))
 
-  ;; kleenestar-regexp/c
-  (define kleenestar-regexp/c
-    (->i ([r1 (valid-regexp/c "The argument to kleenestar-regexp must be a regular expression, but found")])
-         [result kleenestar-regexp?]))
+; any -> boolean
+; Determines if the given input is a word, which is a list of symbols or the
+; empty set symbol (see EMP)
+(define (valid-word? word)
+  (or
+   (equal? word EMP)
+   (and (list? word)
+        (andmap (lambda (letter) (valid-alpha? letter))
+                word))))
+
+(define valid-word/c
+  (make-flat-contract
+   #:name 'valid-word
+   #:first-order valid-word?
+   #:projection (lambda (blame)
+                  (lambda (x)
+                    (current-blame-format format-error)
+                    (if (valid-word? x)
+                        x
+                        (raise-blame-error
+                         blame
+                         x
+                         (format "Step three of the design recipe for regular expressions has not been successfully completed.\nThe input to a regexp predicate should be a word, but found")))))))
+
+(define valid-regexp-predicate-result/c
+  (make-flat-contract
+   #:name 'valid-regexp-predicate-result
+   #:first-order boolean?
+   #:projection (lambda (blame)
+                  (lambda (x)
+                    (current-blame-format format-error)
+                    (if (boolean? x)
+                        x
+                        (raise-blame-error
+                         blame
+                         x
+                         (format "Step three of the design recipe for regular expressions has not been successfully completed.\nInstead of returning a Boolean, the function given as a predicate returned")))))))
+  
+
+(define valid-regexp-predicate/c
+  (-> valid-word/c valid-regexp-predicate-result/c))
+
+(define (regexp-input/c regexp type in-lang?)
+  (make-flat-contract
+   #:name 'regexp-accepting-correctly
+   #:first-order (lambda (words) (empty? (filter (lambda (word) (not (check-word-accepts regexp word in-lang?))) words)))
+   #:projection (lambda (blame)
+                  (lambda (words)
+                    (current-blame-format format-error)
+                    (let [(failing-words (filter (lambda (word) (not (check-word-accepts regexp word in-lang?))) words))]
+                      (if (empty? failing-words)
+                          words
+                          (raise-blame-error
+                           blame
+                           failing-words
+                           (format "Step six of the design recipe for regular expressions has not been successfully completed.\nThe following words are expected to ~a by the constructed ~a but are ~a"
+                                   (if in-lang? "be generated" "not be generated")
+                                   type
+                                   (if in-lang? "not generated" "generated")))))))))
+
+(define (predicate-passes/c regexp gen-cases)
+  (let [(words (remove-duplicates
+                (build-list (if (unsupplied-arg? gen-cases)
+                                10
+                                gen-cases)
+                            (lambda (x) (gen-regexp-word regexp)))))]
+    (make-flat-contract
+     #:name 'predicate-passes
+     #:first-order (lambda (predicate) (empty? (filter (lambda (word) (not (predicate word))) words)))
+     #:projection (lambda (blame)
+                    (lambda (predicate)
+                      (current-blame-format format-error)
+                      (let [(failing-words (filter (lambda (word) (not (predicate word))) words))]
+                        (if (empty? failing-words)
+                            predicate
+                            (raise-blame-error
+                             blame
+                             failing-words
+                             (format "Step three of the design recipe for regular expressions has not been successfully completed.\nThe given predicate does not hold for the following words generated using the regexp"))))
+                      )))))
+
+(define valid-gen-cases-count/c
+  (make-flat-contract
+   #:name 'valid-gen-cases-count
+   #:first-order (lambda (x) (and (integer? x) (> x 0)))
+   #:projection (lambda (blame)
+                  (lambda (x)
+                    (current-blame-format format-error)
+                    (if (and (integer? x) (> x 0))
+                        x
+                        (raise-blame-error
+                         blame
+                         x
+                         (format "Step six of the design recipe for regular expressions has not been successfully completed.\nThe number of generated test cases to check with the predicate must be a positive integer, but found")))))))
+
+  
+
+;; concat-regexp/c
+(define concat-regexp/c
+  (->i ([r1 (valid-regexp/c "The first argument to concat-regexp must be a regular expression, but found")]
+        [r2 (valid-regexp/c "The second argument to concat-regexp must be a regular expression, but found")])
+       (#:sigma [sigma (r1 r2) (and/c (is-a-list-regexp/c "regexp alphabet" "one")
+                                      (valid-listof/c valid-alpha? "alphanumeric symbol" "input alphabet" #:rule "one" #:for-regexp? #true)
+                                      (no-duplicates/c "sigma" "one" #:for-regexp? #true)
+                                      (valid-regexp-sigma/c (make-unchecked-concat r1 r2)))]
+        #:pred [pred (r1 r2 gen-cases) (and/c
+                                        valid-regexp-predicate/c
+                                        (predicate-passes/c (make-unchecked-concat r1 r2) gen-cases))]
+        #:gen-cases [gen-cases valid-gen-cases-count/c]
+        #:in-lang [in-lang (r1 r2) (let [(R (make-unchecked-concat r1 r2))]
+                                     (and/c
+                                      (listof-words-regexp/c "words generated by the regular expression" "four")
+                                      (words-in-sigma/c "to be generated" R)
+                                      (regexp-input/c R 'concat-regexp #t)))]
+        #:not-in-lang [not-in-lang (r1 r2) (let [(R (make-unchecked-concat r1 r2))]
+                                             (and/c
+                                              (listof-words-regexp/c "words not generated by the regular expression" "four")
+                                              (words-in-sigma/c "not to be generated" R)
+                                              (regexp-input/c R 'concat-regexp #f)))]
+        )
+       [result concat-regexp?]))
+
+;; union-regexp/c
+(define union-regexp/c
+  (->i ([r1 (valid-regexp/c "The first argument to union-regexp must be a regular expression, but found")]
+        [r2 (valid-regexp/c "The second argument to union-regexp must be a regular expression, but found")])
+       (#:sigma [sigma (r1 r2) (and/c
+                                (is-a-list-regexp/c "regexp alphabet" "one")
+                                (valid-listof/c valid-alpha? "alphanumeric symbol" "input alphabet" #:rule "one" #:for-regexp? #true)
+                                (no-duplicates/c "sigma" "one" #:for-regexp? #true)
+                                (valid-regexp-sigma/c (make-unchecked-union r1 r2)))]
+        #:pred [pred (r1 r2 gen-cases) (and/c
+                                        valid-regexp-predicate/c
+                                        (predicate-passes/c (make-unchecked-union r1 r2) gen-cases))]
+        #:gen-cases [gen-cases valid-gen-cases-count/c]
+        #:in-lang [in-lang (r1 r2) (let [(R (make-unchecked-union r1 r2))]
+                                     (and/c
+                                      (listof-words-regexp/c "words generated by the regular expression" "four")
+                                      (words-in-sigma/c "to be generated" R)
+                                      (regexp-input/c R 'union-regexp #true)))]
+        #:not-in-lang [not-in-lang (r1 r2) (let [(R (make-unchecked-union r1 r2))]
+                                             (and/c
+                                              (listof-words-regexp/c "words not generated by the regular expression" "four")
+                                              (words-in-sigma/c "not to be generated" R)
+                                              (regexp-input/c R 'union-regexp #false)))]
+        )
+       [result union-regexp?]))
+
+;; kleenestar-regexp/c
+(define kleenestar-regexp/c
+  (->i ([r1 (valid-regexp/c "The argument to kleenestar-regexp must be a regular expression, but found")])
+       (#:sigma [sigma (r1) (and/c
+                             (is-a-list-regexp/c "regexp alphabet" "one")
+                             (valid-listof/c valid-alpha? "alphanumeric symbol" "input alphabet" #:rule "one" #:for-regexp? #true)
+                             (no-duplicates/c "sigma" "one" #:for-regexp? #true)
+                             (valid-regexp-sigma/c (make-unchecked-kleenestar r1)))]
+        #:pred [pred (r1 gen-cases) (and/c
+                                     valid-regexp-predicate/c
+                                     (predicate-passes/c (make-unchecked-kleenestar r1) gen-cases))]
+        #:gen-cases [gen-cases valid-gen-cases-count/c]
+        #:in-lang [in-lang (r1) (let [(R (make-unchecked-kleenestar r1))]
+                                  (and/c
+                                   (listof-words-regexp/c "words generated by the regular expression" "four")
+                                   (words-in-sigma/c "to be generated" R)
+                                   (regexp-input/c R 'kleenestar-regexp #true)))]
+        #:not-in-lang [not-in-lang (r1) (let [(R (make-unchecked-kleenestar r1))]
+                                          (and/c
+                                           (listof-words-regexp/c "words not generated by the regular expression" "four")
+                                           (words-in-sigma/c "not to be generated" R)
+                                           (regexp-input/c R 'kleenestar-regexp #false)))]
+        )
+       [result kleenestar-regexp?]))

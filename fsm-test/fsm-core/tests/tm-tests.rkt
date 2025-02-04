@@ -83,48 +83,7 @@ The following values, (S), are duplicated in the given states: (S Y N S S)"))
                          ) (format "Step three of the design recipe has not been successfully completed.
 The following values, (S Y), are duplicated in the given states: (S Y Y N S S)"))
   ;;SIGMA
-  ;invalid number
-  (check-error (make-tm '(S Y N)
-                         `(a b 1)
-                         `(((S a) (S ,RIGHT))
-                           ((S b) (N b))
-                           ((S ,BLANK) (Y ,BLANK)))
-                         'S
-                         '(Y N)
-                         'Y
-                         ) (format "Step one of the design recipe has not been successfully completed.
-The following: (1) are not valid alphabet letters in the given input alphabet: (a b 1)"))
-  (check-error (make-tm '(S Y N)
-                         `(a b 1 2)
-                         `(((S a) (S ,RIGHT))
-                           ((S b) (N b))
-                           ((S ,BLANK) (Y ,BLANK)))
-                         'S
-                         '(Y N)
-                         'Y
-                         ) (format "Step one of the design recipe has not been successfully completed.
-The following: (1 2) are not valid alphabet letters in the given input alphabet: (a b 1 2)"))
   ;invalid letter
-  (check-error (make-tm '(S Y N)
-                         `(a b 1)
-                         `(((S a) (S ,RIGHT))
-                           ((S b) (N b))
-                           ((S ,BLANK) (Y ,BLANK)))
-                         'S
-                         '(Y N)
-                         'Y
-                         ) (format "Step one of the design recipe has not been successfully completed.
-The following: (1) are not valid alphabet letters in the given input alphabet: (a b 1)"))
-  (check-error (make-tm '(S Y N)
-                         `(a b 1 2)
-                         `(((S a) (S ,RIGHT))
-                           ((S b) (N b))
-                           ((S ,BLANK) (Y ,BLANK)))
-                         'S
-                         '(Y N)
-                         'Y
-                         ) (format "Step one of the design recipe has not been successfully completed.
-The following: (1 2) are not valid alphabet letters in the given input alphabet: (a b 1 2)"))
   ;duplicate letter
   (check-error (make-tm '(S Y N)
                          `(a b a)

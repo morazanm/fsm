@@ -218,62 +218,138 @@ A composed Turing machine.
                    [sigma alphabet] 
                    [start state] 
                    [finals (listof state)] 
-                   [delta (listof dfa-rule)])
-         dfa]{Builds a deterministic finite-state automaton. @italic{delta} is a transition function.}
+                   [delta (listof dfa-rule)]
+                   [add-dead (or/c 'no-dead (void))]
+                   [#:rejects rejects (listof word) '()]
+                   [#:accepts accepts (listof word) '()])
+         dfa]{Builds a deterministic finite-state automaton.
+              @italic{delta} is a transition function. The optional
+              argument @italic{add-dead} is used to signal the
+              constructor to add or not add a dead state and
+              transitions into it for any transitions in delta (to
+              make it a function). If the delta function is fully
+              specified providing 'no-dead prevents the
+              addition of such a dead state and associated
+              transitions. The optional
+              keyword parameters @italic{rejects} and @italic{accepts}
+              are used to integrate testing. They are both lists of
+              words using elements of @italic{sigma}. The first is a
+              list of words that ought to be rejected and the second is
+              a list of words that ought to be accepted. If any word
+              produces the wrong result the constructor fails and a
+              @italic{recipe-based} error is thrown.
+             }
 
 
 @defproc[(make-ndfa [sts (listof state)] 
                     [sigma alphabet] 
                     [start state] 
                     [finals (listof state)] 
-                    [delta (listof ndfa-rule)])
-         ndfa]{Builds a nondeterministic finite-state automaton. @italic{delta} is a transition relation.}
+                    [delta (listof ndfa-rule)]
+                    [#:rejects rejects (listof word) '()]
+                    [#:accepts accepts (listof word) '()])
+         ndfa]{Builds a nondeterministic finite-state automaton.
+               @italic{delta} is a transition relation.
+               The optional
+              keyword parameters @italic{rejects} and @italic{accepts}
+              are used to integrate testing. They are both lists of
+              words using elements of @italic{sigma}. The first is a
+              list of words that ought to be rejected and the second is
+              a list of words that ought to be accepted. If any word
+              produces the wrong result the constructor fails and a
+              @italic{recipe-based} error is thrown.
+              }
 
 @defproc[(make-ndpda [sts (listof state)] 
                      [sigma alphabet] 
                      [gamma (listof symbol)]
                      [start state] 
                      [finals (listof state)] 
-                     [delta (listof pda-rule)])
+                     [delta (listof pda-rule)]
+                     [#:rejects rejects (listof word) '()]
+                     [#:accepts accepts (listof word) '()])
          ndpda]{Builds a nondeterministic pushdown automaton from the
  given list of states, alphabet, list of stack symbols,
  start state, list of final states, and list of
- pda-rule. @italic{delta} is a transition relation.}
+ pda-rule. @italic{delta} is a transition relation.
+ The optional keyword parameters @italic{rejects} and @italic{accepts}
+ are used to integrate testing. They are both lists of
+ words using elements of @italic{sigma}. The first is a
+ list of words that ought to be rejected and the second is
+ a list of words that ought to be accepted. If any word
+ produces the wrong result the constructor fails and a
+ @italic{recipe-based} error is thrown.
+
+ Given that a nondeterministic pda may only semidecide a language,
+ use @italic{rejects} with caution. Words not in the machine's
+ language may cause the constructor to not terminate.
+}
 
 @defproc*[([(make-tm    [sts (listof state)] 
                         [sigma alphabet]
                         [delta (listof tm-rule)]
                         [start state] 
-                        [finals (listof state)]) tm]
+                        [finals (listof state)]
+                        [#:rejects rejects (listof word) '()]
+                        [#:accepts accepts (listof word) '()]) tm]
            [(make-tm    [sts (listof state)] 
                         [sigma alphabet]
                         [delta (listof tm-rule)]
                         [start state] 
                         [finals (listof state)]
-                        (accept state)) tm])]{Builds a nondeterministic Turing machine. 
+                        (accept state)
+                        [#:rejects rejects (listof word) '()]
+                        [#:accepts accepts (listof word) '()]) tm])]{Builds a nondeterministic Turing machine. 
  @italic{delta} is a transition relation.
  @italic{LM} is automatically added to the machine's alphabet.
  Rules for moving off the @italic{LM} are automatically added
  to the machine's rules.
- @italic{If the optional accept argument is given then the resulting
-  Turing machine is a language recognizer.}}
+ If the optional @italic{accept} argument is given then the resulting
+  Turing machine is a language recognizer. The optional
+              keyword parameters @italic{rejects} and @italic{accepts}
+              are used to integrate testing. They are both lists of
+              words using elements of @italic{sigma}. The first is a
+              list of words that ought to be rejected and the second is
+              a list of words that ought to be accepted. If any word
+              produces the wrong result the constructor fails and a
+              @italic{recipe-based} error is thrown.
+
+  Given that a tm may only semidecide a language,
+  use @italic{rejects} with caution. Words not in the machine's
+  language may cause the constructor to not terminate.
+  }
 
 @defproc*[([(make-mttm  [sts (listof state)] 
                         [sigma alphabet]
                         [start state]
                         [finals (listof state)]
                         [delta (listof mttm-rule)]
-                        [num-tapes number]) tm]
+                        [num-tapes number]
+                        [#:rejects rejects (listof word) '()]
+                        [#:accepts accepts (listof word) '()]) tm]
            [(make-mttm  [sts (listof state)] 
                         [sigma alphabet]
                         [start state]
                         [finals (listof state)]
                         [delta (listof mttm-rule)]
                         [num-tapes number]
-                        (accept state)) tm])]
+                        (accept state)
+                        [#:rejects rejects (listof word) '()]
+                        [#:accepts accepts (listof word) '()]) tm])]
 Builds a nondeterministic Multitape Turing machine with the given number of
-tapes. @italic{If the optional accept argument is given then the resulting multitape
-Turing machine is a language recognizer.}
+tapes. If the optional @italic{accept} argument is given then the resulting multitape
+Turing machine is a language recognizer. The optional
+              keyword parameters @italic{rejects} and @italic{accepts}
+              are used to integrate testing. They are both lists of
+              words using elements of @italic{sigma}. The first is a
+              list of words that ought to be rejected and the second is
+              a list of words that ought to be accepted. If any word
+              produces the wrong result the constructor fails and a
+              @italic{recipe-based} error is thrown.
+
+Given that a mttm may only semidecide a language,
+use @italic{rejects} with caution. Words not in the machine's
+language may cause the constructor to not terminate.
 
 @defproc[(ndfa->dfa [m ndfa])
          dfa]{Builds a @italic{deterministic} finite-state 
@@ -511,7 +587,12 @@ the language generated by the given regular expression.
       The up arrow moves the visualization to the beginning. The down arrow moves
       the visualization to the end}
 
-@defproc[(grammar-viz [g grammar] [w word] [#:derv-type derv-type (or/c 'left 'right 'level-left 'level-right) 'left] [#:cpu-cores cpu-cores (or/c number? #f) #f] [inv-list (listof (listof state? (-> word? boolean?))) (void)]) (or/c (void) string)]
+@defproc[(grammar-viz [g grammar]
+                      [w word]
+                      [#:derv-type derv-type (or/c 'left 'right 'level-left 'level-right) 'left]
+                      [#:cpu-cores cpu-cores (or/c number? #f) #f]
+                      [inv-list (listof (listof state? (-> word? boolean?))) (void)])
+         (or/c (void) string)]
 Launches a visualization tool for the construction of the derivation tree for the given
 word using the given grammar. If the given word is not in the language then the tool does
 not launch and a string is returned indicating that the given word is not in the given grammar's
@@ -554,20 +635,58 @@ and a predicate to determine if the word generated by the nonterminal satisfies 
 @defproc[(make-rg   [nt (listof nts)] 
                     [sigma alphabet] 
                     [delta (listof rrule)]
-                    [start nts])
-         rg]{Builds a regular grammar.}
+                    [start nts]
+                    [#:rejects rejects (listof word) '()]
+                    [#:accepts accepts (listof word) '()])
+         rg]{Builds a regular grammar. The optional
+             keyword parameters @italic{rejects} and @italic{accepts}
+             are used to integrate testing. They are both lists of
+             words using elements of @italic{sigma}. The first is a
+             list of words that ought not be generated and the second is
+             a list of words that ought to be generated. If any word
+             produces the wrong result the constructor fails and a
+             @italic{recipe-based} error is thrown.
+             }
 
 @defproc[(make-cfg  [nt (listof nts)] 
                     [sigma alphabet] 
                     [delta (listof cfrule)]
-                    [start nts])
-         cfg]{Builds a context-free grammar.}
+                    [start nts]
+                    [#:rejects rejects (listof word) '()]
+                    [#:accepts accepts (listof word) '()])
+         cfg]{Builds a context-free grammar. The optional
+             keyword parameters @italic{rejects} and @italic{accepts}
+             are used to integrate testing. They are both lists of
+             words using elements of @italic{sigma}. The first is a
+             list of words that ought not be generated and the second is
+             a list of words that ought to be generated. If any word
+             produces the wrong result the constructor fails and a
+             @italic{recipe-based} error is thrown.
+
+             Given that derivations may be infinite, use @italic{rejects}
+             with caution. For words not in the grammar's language, testing
+             may cause the constructor to not terminate.
+             }
 
 @defproc[(make-csg  [nt (listof nts)] 
                     [sigma alphabet] 
                     [delta (listof csrule)]
-                    [start nts])
-         csg]{Builds a context-sensitive grammar.}
+                    [start nts]
+                    [#:rejects rejects (listof word) '()]
+                    [#:accepts accepts (listof word) '()])
+         csg]{Builds a context-sensitive grammar. The optional
+             keyword parameters @italic{rejects} and @italic{accepts}
+             are used to integrate testing. They are both lists of
+             words using elements of @italic{sigma}. The first is a
+             list of words that ought not be generated and the second is
+             a list of words that ought to be generated. If any word
+             produces the wrong result the constructor fails and a
+             @italic{recipe-based} error is thrown.
+
+             Given that derivations may be infinite, use @italic{rejects}
+             with caution. For words not in the grammar's language, testing
+             may cause the constructor to not terminate.
+             }
 
 @defproc[(grammar-union  [g1 grammar] 
                          [g2 grammar])
@@ -675,21 +794,62 @@ word are returned.
          regexp]{Builds the regular expression for the language that only contains the
                  empty string.}
 
-@defproc[(singleton-regexp [a letter])
+@defproc[(singleton-regexp [a (or/c letter? special-char?)])
          regexp]{Builds the regular expression for the language that only has a single
-                 word of length 1 representing the given letter.}
+                 word of length 1 representing the given letter or special character: $, &, !, *.}
 
-@defproc[(union-regexp [r1 regexp] [r2 regexp])
+@defproc[(union-regexp [r1 regexp]
+                       [r2 regexp]
+                       [#:sigma sigma alphabet '()]
+                       [#:pred pred (-> word Boolean) (lambda (x) #t)]
+                       [#:gen-cases gen-cases natnum 10]
+                       [#:in-lang in-lang (listof word) empty]
+                       [#:not-in-lang not-in-lang (listof word) '()])
          regexp]{Builds a union regular expression from the given
- regular expressions.}
+ regular expressions. The optional keyword parameters are used to
+ automatically test the generated regular expression. The alphabet
+ is specified by @italic{sigma}. A predicate to determine if a random word
+ generated using @italic{sigma} is in the regular expression's language is
+ specified by @italic{pred}. The number of words random words to test is
+ specified by @italic{gen-cases}. Finally, @italic{in-lang} and @italic{non-in-lang} specify
+ lists of words that are and that are not in the regular expression's
+ language. If any of the tests fails the constructor fails and
+ throws a @italic{recipe-based error}.}
 
-@defproc[(concat-regexp [r1 regexp] [r2 regexp])
+@defproc[(concat-regexp [r1 regexp]
+                        [r2 regexp]
+                        [#:sigma sigma alphabet '()]
+                        [#:pred pred (-> word Boolean) (lambda (x) #t)]
+                        [#:gen-cases gen-cases natnum 10]
+                        [#:in-lang in-lang (listof word) empty]
+                        [#:not-in-lang not-in-lang (listof word) '()])
          regexp]{Builds a concatenation regular expression from the 
- given regular expressions.}
+ given regular expressions. The optional keyword parameters are used to
+ automatically test the generated regular expression. The alphabet
+ is specified by @italic{sigma}. A predicate to determine if a random word
+ generated using @italic{sigma} is in the regular expression's language is
+ specified by @italic{pred}. The number of words random words to test is
+ specified by @italic{gen-cases}. Finally, @italic{in-lang} and @italic{non-in-lang} specify
+ lists of words that are and that are not in the regular expression's
+ language. If any of the tests fails the constructor fails and
+ throws a @italic{recipe-based error}.}
 
-@defproc[(kleenestar-regexp [r regexp])
+@defproc[(kleenestar-regexp [r regexp]
+                            [#:sigma sigma alphabet '()]
+                            [#:pred pred (-> word Boolean) (lambda (x) #t)]
+                            [#:gen-cases gen-cases natnum 10]
+                            [#:in-lang in-lang (listof word) empty]
+                            [#:not-in-lang not-in-lang (listof word) '()])
          regexp]{Builds a Kleene star regular expression from the 
- given regular expression.}
+ given regular expression.The optional keyword parameters are used to
+ automatically test the generated regular expression. The alphabet
+ is specified by @italic{sigma}. A predicate to determine if a random word
+ generated using @italic{sigma} is in the regular expression's language is
+ specified by @italic{pred}. The number of words random words to test is
+ specified by @italic{gen-cases}. Finally, @italic{in-lang} and @italic{non-in-lang} specify
+ lists of words that are and that are not in the regular expression's
+ language. If any of the tests fails the constructor fails and
+ throws a @italic{recipe-based error}.}
 
 
 @defproc[(fsa->regexp [m ndfa])
@@ -747,19 +907,19 @@ word are returned.
         for a Kleene star is the the optional natural number if provided.
         Otherwise, it is 20.
 
-@defproc[(gen-concat-word [r concat-regexp] [f (regexp --> word)])
+@defproc[(gen-concat-word [r concat-regexp] [f (regexp --> word)] [n natnum])
          word]
         Generate a word by concatenating words generated
-        from the sub-regexps in the given concat-regexp using
-        the given word-generating function. This includes any
-        nested concat-regexps in r.
+        from the sub regular expressions in the given concat-regexp
+        using the given word-generating function. The given natnum
+        is used to limit the number of repetitions generated for
+        nested Kleene star regular expressions (if any).
 
 @defproc[(gen-ks-word [n natural?] [r regexp] [f (regexp --> word)])
          word]
-         Generate a word of arbitrary length in [0..n+1] using
-         given regular expression and the given word-generating function.
-         In essence, a word in the language of a Kleene star regexp
-         that has the given regexp nested is generated.
+         Generate a word in the language of the given Kleene star
+         regular expression using the given word-generation function.
+         The number of concatenated words generated using r is in [0..n+1].
 
 @defproc[(extract-concat-regexps [r concat-regexp])
          (listof regexp)]
@@ -773,11 +933,12 @@ word are returned.
 
 @defproc[(pick-regexp [r union-regexp])
          regexp]
-         Nondeterministically return a nested sub-regexp from the given union-regexp.
-         This includes any nested union-regexps in r.
+         Nondeterministically return a nested sub-regexp from the
+         given union-regexp. This includes any nested union-regexps
+         in r.
 
 @defproc[(pick-reps [n natural?])
-         regexp]
+         natnum]
          Nondeterministically return a natural number in [0..n].
 
 @defproc[(convert-singleton [r singleton-regexp])
@@ -785,6 +946,37 @@ word are returned.
          Convert the given singleton-regexp to a word of length 1
          containing r's nested symbol or number.
 
+@section{FSM Unit Testing}
+
+@defproc[(check-accept? [M machine]
+                        [w word] ...)
+         (void)]
+         Checks if the given machine accepts all the given words.
+         If any word is rejected, the test fails. If M only semidecides
+         a language, words not in the machine's language may cause
+         the test to not terminate.
+
+@defproc[(check-reject? [M machine]
+                        [w word] ...)
+         (void)]
+         Checks if the given machine rejects all the given words.
+         If any word is aceepted, the test fails. If M only semidecides
+         a language, words not in the machine's language may cause
+         the test to not terminate.
+
+@defproc[(check-derive? [G grammar]
+                        [w word] ...)
+         (void)]
+         Checks if the given grammar generates all the given words.
+         If any word is not generated, the test fails. If w is not
+         in the grammar's language, the test may not terminate.
+
+@defproc[(check-not-derive? [G grammar]
+                            [w word] ...)
+         (void)]
+         Checks if the given grammar does not generate all the given words.
+         If any word is generated, the test fails. If w is not
+         in the grammar's language, the test may not terminate.
 
 
 @section{Some Useful Functions}
@@ -827,4 +1019,6 @@ Names in no paticular order:
           @item{Joshua Schappel}
           @item{Shamil Dzhatdoyev}
           @item{Oliwia Kempinski}
-          @item{Tijana Minic}]
+          @item{Tijana Minic}
+          @item{Andres M. Garced}
+          @item{David Anthony K. Fields}]

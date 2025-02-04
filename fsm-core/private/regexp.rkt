@@ -55,12 +55,12 @@
                   (lambda (x)
                     (current-blame-format format-error)
                     (if (and (string? x)
-                             (not (not (regexp-match (regexp "^[a-z]$") x))))
+                             (not (not (regexp-match (regexp "^[a-zA-Z0-9$&!*]$") x))))
                         x
                         (raise-blame-error
                          blame
                          x
-                         (format "A singleton regular expression must be a single lower-case Roman alphabet character, but found")))))))
+                         (format "Step five of the design recipe for regular expressions has not been successfully completed.\nThe argument to singleton-regexp must be a single lowercase Roman alphabet string, but found")))))))
 (define (make-unchecked-singleton a)
   (singleton-regexp a)
   )
@@ -274,10 +274,11 @@
                       (λ (i) (gen-function (kleenestar-regexp-r1 regexp) reps))))))]
     (if (empty? lst-words) EMP lst-words)))
 
-;; concat-regexp (regexp --> word) --> word
+;; concat-regexp (regexp --> word) natnum --> word
 ;; Purpose: Generate a word by concatenating a words generated
 ;;          from the sub-regexps in the given concat-regexp using
-;;          the given word-generting function
+;;          the given word-generting function limiting any
+;;          Kleene star repetions to the given natnum
 (define (gen-concat-word concat-rexp gen-function reps)
   (let [(res (filter (λ (w) (not (eq? w EMP)))
                      (flatten (map (λ (re) (gen-function re reps))
@@ -296,7 +297,9 @@
         [(kleenestar-regexp? rexp)
          (gen-ks-word MAX-KLEENESTAR-REPS rexp gen-regexp-word)]
         [(union-regexp? rexp) (gen-regexp-word (pick-regexp rexp) MAX-KLEENESTAR-REPS)]
-        [else (gen-concat-word rexp gen-regexp-word MAX-KLEENESTAR-REPS)]))
+        [(concat-regexp? rexp) (gen-concat-word rexp gen-regexp-word MAX-KLEENESTAR-REPS)]
+        [(null-regexp? rexp) (error "A word cannot be generated using the null-regexp.")]
+        [else (error "The given input is not a regexp.")]))
 
   
   
