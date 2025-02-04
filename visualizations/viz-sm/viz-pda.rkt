@@ -157,7 +157,9 @@ visited is a (listof configuration)
 (define (make-computations lor finals QoC path max-cmps)
   (cond [(qempty? QoC) path]
         [(and (> (length (computation-LoC (qfirst QoC))) max-cmps)
-              (member? (first (first (computation-LoC (qfirst QoC)))) finals equal?))
+              (and (member? (first (first (computation-LoC (qfirst QoC)))) finals equal?)
+                   (empty? (second (first (computation-LoC (qfirst QoC)))) finals)
+                   (empty? (third (first (computation-LoC (qfirst QoC)))) finals)))
          (make-computations lor (dequeue QoC) (cons (qfirst QoC) path) max-cmps)]
         [else (let* ([stack (third (first (computation-LoC (qfirst QoC))))]
                      ;;(listof rules)

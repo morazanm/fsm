@@ -112,7 +112,8 @@ triple is the entire of the ndfa rule
 ;;Purpose: Traces all computations that the machine can make based on the starting state, word, and given rules
 (define (make-computations lor finals QoC path)
   (cond [(qempty? QoC) path]
-        [(member? (first (first (computation-LoC (qfirst QoC)))) finals)
+        [(and (member? (first (first (computation-LoC (qfirst QoC)))) finals)
+                (empty? (second (first (computation-LoC (qfirst QoC))))))
          (make-computations lor finals (dequeue QoC) (cons (qfirst QoC) path))]
         [else (let* ([first-computation (first (computation-LoC (qfirst QoC)))]
                      ;;(listof rules)
