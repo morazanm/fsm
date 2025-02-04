@@ -12,6 +12,7 @@
          "../viz-lib/viz-constants.rkt"
          "../../fsm-core/private/fsa.rkt"
          "../../fsm-core/private/pda.rkt"
+         "../../fsm-core/private/tm.rkt"
          "../../fsm-core/private/misc.rkt")
 
 (define FONT-SIZE 18)
@@ -41,6 +42,15 @@
                                  '(H)
                                  `(((K ,EMP ,EMP)(H ,EMP))
                                    ((H a ,EMP)(H ,EMP)))))
+
+(define EVEN-AS-&-BS (make-unchecked-tm '(K H I B S)
+                          '(a b)
+                          `(((K ,BLANK) (S ,BLANK))
+                            ((K a) (H ,RIGHT)) ((H a) (K ,RIGHT)) ((H b) (B ,RIGHT)) ((B b) (H ,RIGHT))
+                            ((K b) (I ,RIGHT)) ((I b) (K ,RIGHT)) ((I a) (B ,RIGHT)) ((B a) (I ,RIGHT)))
+                          'K
+                          '(S)
+                          'S))
 
 (define DUMMY-RULE (list (list EMP EMP EMP) (list EMP EMP)))
 
@@ -103,7 +113,21 @@
                 (if (> 0 offset-cap) 0 offset-cap))
               0)))
 
-                                                   
+
+(define tm-info-img (tm-create-draw-informative-message (imsg-state-tm EVEN-AS-&-BS
+                                                                    '(@ a a b)
+                                                                    (list->zipper '())
+                                                                    (list->zipper '())
+                                                                    0
+                                                                    '()
+                                                                    '()
+                                                                    1
+                                                                    0
+                                                                    0
+                                                                    (let ([offset-cap (- (length '(a b b)) TAPE-SIZE)])
+                                                                      (if (> 0 offset-cap) 0 offset-cap))
+                                                                    0)))
+                                                                    
 
 
 (define NDFA-E-SCENE-HEIGHT (- (* 0.9 WINDOW-HEIGHT)
@@ -112,6 +136,10 @@
 
 (define PDA-E-SCENE-HEIGHT (- (* 0.9 WINDOW-HEIGHT)
                           (image-height pda-info-img)
+                          (image-height E-SCENE-TOOLS)))
+
+(define TM-E-SCENE-HEIGHT (- (* 0.9 WINDOW-HEIGHT)
+                          (image-height tm-info-img)
                           (image-height E-SCENE-TOOLS)))
 
 (define ndfa-img-bounding-limit
@@ -128,38 +156,16 @@
                   (+ PDA-E-SCENE-HEIGHT (image-height pda-info-img)
                      )))
 
+
+(define tm-img-bounding-limit
+  (bounding-limits 0
+                  (* TM-E-SCENE-HEIGHT 0.9)
+                  TM-E-SCENE-HEIGHT
+                  (+ TM-E-SCENE-HEIGHT (image-height tm-info-img)
+                     )))
 (define NDFA-E-SCENE-BOUNDING-LIMITS (bounding-limits 0 E-SCENE-WIDTH 0 NDFA-E-SCENE-HEIGHT))
 (define PDA-E-SCENE-BOUNDING-LIMITS (bounding-limits 0 E-SCENE-WIDTH 0 PDA-E-SCENE-HEIGHT))
-
-;; (listof symbol) natnum (listof (list natnum symbol)) -> image
-;; Returns an image of a tape of symbols, capable of sliding when its start-index is varied
-(define (make-tape-img tape start-index color-pair)
-  (define (make-tape-img loi start-index)
-    (if (empty? (rest loi))
-        (first loi)
-        (beside (first loi) (make-tape-img (rest loi) (add1 start-index)))))
-  (let ([letter-imgs
-         (build-list
-          TAPE-SIZE
-          (λ (i)
-            (if (< (+ start-index i) (length tape))
-                (overlay (text (symbol->string (list-ref tape (+ start-index i)))
-                               20
-                               (cond [(empty? color-pair) 'black]
-                                     [(and (not (empty? (first color-pair)))
-                                           (< (+ start-index i) (first (first color-pair))))
-                                      (second (first color-pair))]
-                                     [(and (not (empty? (second color-pair)))
-                                           (= (+ start-index i) (first (second color-pair))))
-                                      (second (second color-pair))]
-                                     [else 'black]))
-                         (overlay (square 21 'solid 'white) (square (add1 21) 'solid 'white)))
-                (overlay (square 21 'solid 'white) (square (add1 21) 'solid 'white)))))])
-    (make-tape-img letter-imgs start-index)))
-
-(define TAPE-IMG-HEIGHT (image-height (make-tape-img (list 'a) 0 '())))
-
-
+(define TM-E-SCENE-BOUNDING-LIMITS (bounding-limits 0 E-SCENE-WIDTH 0 TM-E-SCENE-HEIGHT))
 
 (define E-SCENE-TOOLS-WIDTH (image-width E-SCENE-TOOLS))
 

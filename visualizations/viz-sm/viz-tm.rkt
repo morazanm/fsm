@@ -8,7 +8,8 @@
          "../viz-lib/bounding-limits.rkt"
          "../viz-lib/viz-state.rkt"
          "../viz-lib/viz-macros.rkt"
-         "../viz-lib/viz-constants.rkt"
+         (except-in "../viz-lib/viz-constants.rkt"
+                    INS-TOOLS-BUFFER)
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "../viz-lib/default-viz-function-generators.rkt"
          "../../fsm-core/private/constants.rkt"
@@ -16,7 +17,9 @@
          "../../fsm-core/private/misc.rkt"
           "../../fsm-core/interface.rkt"
          "david-imsg-state.rkt"
-         "david-viz-constants.rkt")
+         (except-in "david-viz-constants.rkt"
+                    FONT-SIZE)
+         "default-informative-messages.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -49,17 +52,6 @@ action is the second pair in a tm rule
 ;;head-pos is the beginning head position of the tape=
 (struct building-viz-state (tape computations acc-comp accept-traces reject-traces M inv max-cmps head-pos) #:transparent)
 
-(struct imsg-state (M tape
-                    acpt-trace 
-                    invs-zipper ;;(list->zipper inv-configs)
-                    inv-amt ;;(sub1 (length inv-configs))
-                    comps-len ;computation-lens
-                    comps 
-                    max-cmps
-                    head-pos
-                    word-img-offset
-                    word-img-offset-cap
-                    scroll-accum) #:transparent)
 
 
 #|
@@ -474,108 +466,6 @@ visited is a (listof configuration)
                                                   [accept-traces (get-next-traces (building-viz-state-accept-traces a-vs))]
                                                   [reject-traces (get-next-traces (building-viz-state-reject-traces a-vs))])
                                      (cons next-graph acc)))]))
-
-
-
-
-;;image-state -> image
-;;Purpose: Determines which informative message is displayed to the user
-(define (create-draw-informative-message imsg-st)
-  (let* (;;boolean
-         ;;Purpose: Determines if the pci can be can be fully consumed
-         #;[completed-config? (ormap (λ (config) (empty? (second (first config))))
-                                   (map computation-LoC (get-computations (imsg-state-pci imsg-st)
-                                                                          (pda-getrules (imsg-state-M imsg-st))
-                                                                          (pda-getstart (imsg-state-M imsg-st))
-                                                                          (imsg-state-max-cmps imsg-st))))]
-         
-         ;;(listof symbols)
-         ;;Purpose: The last word that could be fully consumed by the ndfa
-         #;[last-consumed-word (last-fully-consumed (imsg-state-pci imsg-st)
-                                                  (imsg-state-M imsg-st)
-                                                  (imsg-state-max-cmps imsg-st))]
-
-         ;;(listof symbols)
-         ;;Purpose: The entire given word
-         #;[entire-word (append (imsg-state-pci imsg-st) (imsg-state-upci imsg-st))]
-         
-         ;;(listof symbols)
-         ;;Purpose: The portion of the word that cannont be consumed
-         ;[unconsumed-word (drop entire-word (length last-consumed-word))]
-         
-         ;;(listof symbols)
-         ;;Purpose: Holds what needs to displayed for the stack based off the upci
-         #;[current-stack (if (zipper-empty? (imsg-state-stack imsg-st)) 
-                            (imsg-state-stack imsg-st)
-                            (third (zipper-current (imsg-state-stack imsg-st))))]
-         [machine-decision (if (not (zipper-empty? (imsg-state-acpt-trace imsg-st)))
-                               'accept
-                               'reject)])
-    (overlay/align
-     'left 'middle
-     (above/align
-      'left
-      
-      (cond [(ormap (λ (comp) (>= (length comp) (imsg-state-max-cmps imsg-st)))
-                         (imsg-state-comps imsg-st))
-             (beside (text "aaaa" 20 'white)
-                                  (text "Tape: " 20 'black)
-                                  (make-tape-img (imsg-state-tape imsg-st)
-                                                 (if (> (length (imsg-state-tape imsg-st)) TAPE-SIZE)
-                                                     (imsg-state-word-img-offset imsg-st)
-                                                     0)
-                                                 '()))]
-            #;[(and (not (empty? (imsg-state-pci imsg-st))) (not completed-config?))
-             (above/align
-              'left
-              (beside (text "aaaa" 20 'white)
-                      (text "Word: " 20 'black)
-                      (make-tape-img entire-word
-                                     (if (> (length entire-word) TAPE-SIZE)
-                                         (imsg-state-word-img-offset imsg-st)
-                                         0)
-                                     (if (empty? (imsg-state-pci imsg-st))
-                                         '()
-                                         (list (list (length last-consumed-word) 'gray)
-                                               (list (length last-consumed-word) 'red)))))
-              (beside (text "Consumed: " 20 'black)
-                      (if (empty? last-consumed-word)
-                          (text "" 20 'black)
-                          (make-tape-img last-consumed-word
-                                         (if (> (length last-consumed-word) TAPE-SIZE)
-                                             (imsg-state-word-img-offset imsg-st)
-                                             0)
-                                         '()))))]
-            [else (beside (text "aaaa" 20 'white)
-                          (text "Tape: " 20 'black)
-                          (make-tape-img (imsg-state-tape imsg-st)
-                                         (if (> (length (imsg-state-tape imsg-st)) TAPE-SIZE)
-                                             (imsg-state-word-img-offset imsg-st)
-                                             0)
-                                         '()))])
-      (text (format "The current number of possible computations is: ~a (without repeated configurations)."
-                    (number->string 0
-                                    #;(if (= (length (imsg-state-pci imsg-st)) (imsg-state-max-cmps imsg-st))
-                                        (list-ref (imsg-state-comps-len imsg-st)
-                                                  (sub1 (length (imsg-state-pci imsg-st))))
-                                        (list-ref (imsg-state-comps-len imsg-st)
-                                                  (length (imsg-state-pci imsg-st))))))
-            20
-            'brown)
-      (cond [(ormap (λ (comp) (>= (length comp) (imsg-state-max-cmps imsg-st)))
-                         (imsg-state-comps imsg-st))
-             (text (format "There are computations that exceed the cut-off limit (~a)."
-                           (imsg-state-max-cmps imsg-st)) 20 DARKGOLDENROD2)]
-            #;[(not completed-config?)
-             (text "All computations do not consume the entire word and the machine rejects." 20 'red)]
-            [(and (empty? (imsg-state-tape imsg-st))
-                  (equal? machine-decision 'accept))
-             (text "There is a computation that accepts." 20 'forestgreen)]
-            [(and (empty? (imsg-state-tape imsg-st))
-                  (equal? machine-decision 'reject))
-             (text "All computations end in a non-final configuration and the machine rejects." 20 'red)]
-            [else (text "Word Status: accept " 20 'white)]))
-     (rectangle 1250 50 'solid 'white))))
 
 
 
@@ -1107,12 +997,12 @@ visited is a (listof configuration)
     ;(displayln computations)
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
-             (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2))
+             (posn (/ E-SCENE-WIDTH 2) (/ TM-E-SCENE-HEIGHT 2))
              DEFAULT-ZOOM
              DEFAULT-ZOOM-CAP
              DEFAULT-ZOOM-FLOOR
-             (informative-messages create-draw-informative-message
-                                   (imsg-state M
+             (informative-messages tm-create-draw-informative-message
+                                   (imsg-state-tm M
                                                a-word
                                                (list->zipper accepting-trace)
                                                (list->zipper '() #;inv-configs) 
@@ -1125,20 +1015,20 @@ visited is a (listof configuration)
                                                (let ([offset-cap (- (length a-word) TAPE-SIZE)])
                                                  (if (> 0 offset-cap) 0 offset-cap))
                                                0)
-                                   RULE-YIELD-DIMS)
+                                   tm-img-bounding-limit)
              (instructions-graphic E-SCENE-TOOLS
                                    (bounding-limits 0
                                                     (image-width E-SCENE-TOOLS)
                                                     (+ EXTRA-HEIGHT-FROM-CURSOR
-                                                       E-SCENE-HEIGHT
-                                                       (bounding-limits-height RULE-YIELD-DIMS)
+                                                       TM-E-SCENE-HEIGHT
+                                                       (image-height tm-info-img)
                                                        INS-TOOLS-BUFFER)
                                                     (+ EXTRA-HEIGHT-FROM-CURSOR
-                                                       E-SCENE-HEIGHT
-                                                       (bounding-limits-height RULE-YIELD-DIMS)
+                                                       TM-E-SCENE-HEIGHT
+                                                       (image-height tm-info-img)
                                                        INS-TOOLS-BUFFER
                                                        (image-height ARROW-UP-KEY))))
-             (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
+             (create-viz-draw-world E-SCENE-WIDTH TM-E-SCENE-HEIGHT INS-TOOLS-BUFFER)
              (create-viz-process-key [ "right" viz-go-next right-key-pressed]
                                      [ "left" viz-go-prev left-key-pressed]
                                      [ "up" viz-go-to-begin up-key-pressed]
@@ -1155,12 +1045,12 @@ visited is a (listof configuration)
                                      [ "j" jump-prev j-key-pressed]
                                      [ "l" jump-next l-key-pressed]
                                      )
-             (create-viz-process-tick E-SCENE-BOUNDING-LIMITS
+             (create-viz-process-tick TM-E-SCENE-BOUNDING-LIMITS
                                       NODE-SIZE
                                       E-SCENE-WIDTH
-                                      E-SCENE-HEIGHT
+                                      TM-E-SCENE-HEIGHT
                                       CLICK-BUFFER-SECONDS
-                                      ( [RULE-YIELD-DIMS
+                                      ( [tm-img-bounding-limit
                                          (lambda (a-imsgs x-diff y-diff) a-imsgs)])
                                       ( [ ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed]
                                         [ ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed]
@@ -1295,3 +1185,5 @@ visited is a (listof configuration)
                                                    #:head-pos 1))))
 (sm-showtransitions anbncn `(,LM ,BLANK a b c) 1)
 |#
+;(tm-viz EVEN-AS-&-BS '(@ a b a b) 0)
+"fix informative messages"
