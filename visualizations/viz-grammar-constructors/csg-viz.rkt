@@ -1,18 +1,12 @@
 #lang racket/base
 
 (require "../../fsm-gviz/private/lib.rkt"
-         "../../fsm-gviz/private/parallel.rkt"
          "../../fsm-core/private/csg.rkt"
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/misc.rkt"
-         "../viz-lib/viz.rkt"
          "grammar-viz.rkt"
-         "../viz-lib/zipper.rkt"
-         rackunit
          racket/list
-         racket/local
-         racket/set
-         racket/dict)
+         racket/local)
 
 (provide csg-viz)
 
@@ -204,31 +198,31 @@
                     hex-nodes)
               ;; yield-nodes
               (cons (append all-before-to-be-replaced-symbols replacement-symbols after-replaced-symbols)
-                      yield-nodes)
+                    yield-nodes)
               
               ;; levels
               (let ([not-replaced-edges (filter (lambda (edge) (not (member (second edge) to-be-replaced-symbols)))
-                                                 (if (empty? levels) '() (first levels)))]
-                     [replaced-edges (if (empty? levels)
-                                         '()
-                                         (remove-duplicates
-                                          (map (lambda (edge)
-                                                 (list (first edge) replaced-combined-symbol))
-                                               (filter (lambda (edge) (member (second edge) to-be-replaced-symbols))
-                                                       (first levels)))))])
+                                                (if (empty? levels) '() (first levels)))]
+                    [replaced-edges (if (empty? levels)
+                                        '()
+                                        (remove-duplicates
+                                         (map (lambda (edge)
+                                                (list (first edge) replaced-combined-symbol))
+                                              (filter (lambda (edge) (member (second edge) to-be-replaced-symbols))
+                                                      (first levels)))))])
                 (cons (append (foldr (lambda (val accum)
-                                             (cons (list replaced-combined-symbol val) accum))
-                                           '()
-                                           replacement-symbols)
-                                    replaced-edges
-                                    not-replaced-edges)
-                            levels))
+                                       (cons (list replaced-combined-symbol val) accum))
+                                     '()
+                                     replacement-symbols)
+                              replaced-edges
+                              not-replaced-edges)
+                      levels))
               ;; hedge-nodes
               (cons (foldr (lambda (val accum)
-                         (cons (list replaced-combined-symbol val) accum))
-                       '()
-                       replacement-symbols)
-                      hedge-nodes)
+                             (cons (list replaced-combined-symbol val) accum))
+                           '()
+                           replacement-symbols)
+                    hedge-nodes)
               ))))]
     (map reverse (generate-levels-helper curr-state rules used-names (list '()) (list '()) (list '()) (list '())))))
 
@@ -270,43 +264,43 @@
   (let ([invariant-result (if (not (eq? 'NO-INV invariant))
                               (invariant (map undo-renaming yield-node))
                               '())])
-         (foldl (λ (state result)
-           (add-node result
-                     state
-                     #:atb (hash 'color (if (member state hedge-nodes)
-                                                    HEDGE-COLOR
-                                                    (if (member state yield-node)
-                                                        YIELD-COLOR
-                                                        'black))
-                                 'fillcolor (if (not (eq? 'NO-INV invariant))
-                                            (if (member state yield-node)
-                                                (if invariant-result
-                                                    INV-HELD-COLOR
-                                                    FAILED-INV-COLOR)
-                                                (if (member state hedge-nodes)
-                                                    HEDGE-COLOR
-                                                    'black))
-                                            (if (member state hedge-nodes)
-                                                    HEDGE-COLOR
-                                                    (if (member state yield-node)
-                                                        YIELD-COLOR
-                                                        'black)))
-                                            'style (if (not (eq? 'NO-INV invariant))
-                                                       (if (member state yield-node)
-                                                           'filled
-                                                           'solid)
-                                                       'solid)
-                                            'shape (cond
-                                                     [(member state hex-nodes) 'hexagon]
-                                                     [else 'circle])
-                                            'label (undo-renaming state)
-                                            'penwidth (cond
-                                                        [(member state hedge-nodes) 3.0]
-                                                        [else 1.0])
-                                            'fontcolor 'black
-                                            'font "Sans")))
-         graph
-         lon)))
+    (foldl (λ (state result)
+             (add-node result
+                       state
+                       #:atb (hash 'color (if (member state hedge-nodes)
+                                              HEDGE-COLOR
+                                              (if (member state yield-node)
+                                                  YIELD-COLOR
+                                                  'black))
+                                   'fillcolor (if (not (eq? 'NO-INV invariant))
+                                                  (if (member state yield-node)
+                                                      (if invariant-result
+                                                          INV-HELD-COLOR
+                                                          FAILED-INV-COLOR)
+                                                      (if (member state hedge-nodes)
+                                                          HEDGE-COLOR
+                                                          'black))
+                                                  (if (member state hedge-nodes)
+                                                      HEDGE-COLOR
+                                                      (if (member state yield-node)
+                                                          YIELD-COLOR
+                                                          'black)))
+                                   'style (if (not (eq? 'NO-INV invariant))
+                                              (if (member state yield-node)
+                                                  'filled
+                                                  'solid)
+                                              'solid)
+                                   'shape (cond
+                                            [(member state hex-nodes) 'hexagon]
+                                            [else 'circle])
+                                   'label (undo-renaming state)
+                                   'penwidth (cond
+                                               [(member state hedge-nodes) 3.0]
+                                               [else 1.0])
+                                   'fontcolor 'black
+                                   'font "Sans")))
+           graph
+           lon)))
 
 ;; graph (listof edges) -> graph
 ;; Creates invisible edges so that ordering of the yield nodes is always maintained
@@ -411,29 +405,53 @@
                                    (second renamed)
                                    (first renamed)))))
 
-(define (anbncn-csg-G-INV yield)
-  (if (member 'G yield)
-      (let ([num-as (length (filter (lambda (x) (equal? x 'A)) yield))]
-            [num-bs (length (filter (lambda (x) (equal? x 'B)) yield))]
-            [num-cs (length (filter (lambda (x) (equal? x 'C)) yield))])
-        (= num-as num-bs num-cs))
-      #f))
+(define (anbncn-csg-INV yield)
+  (define (S-INV yield)
+    (let ([num-as (length (filter (lambda (x) (eq? x 'A)) yield))]
+          [num-bs (length (filter (lambda (x) (eq? x 'B)) yield))]
+          [num-cs (length (filter (lambda (x) (eq? x 'C)) yield))])
+      (= num-as num-bs num-cs)))
+  (define (G-INV yield)
+    (let ([num-as (length (filter (lambda (x) (eq? x 'A)) yield))]
+          [num-bs (length (filter (lambda (x) (eq? x 'B)) yield))]
+          [num-cs (length (filter (lambda (x) (or (eq? x 'c) (eq? x 'C))) yield))])
+      (= num-as num-bs num-cs)))
+  (define (H-INV yield)
+    (let ([num-as (length (filter (lambda (x) (eq? x 'A)) yield))]
+          [num-bs (length (filter (lambda (x) (or (eq? x 'b) (eq? x 'B))) yield))]
+          [num-cs (length (filter (lambda (x) (eq? x 'c)) yield))])
+      (= num-as num-bs num-cs)))
+  (define (I-INV yield)
+    (let ([num-as (length (filter (lambda (x) (or (eq? x 'a) (eq? x 'A))) yield))]
+          [num-bs (length (filter (lambda (x) (eq? x 'b)) yield))]
+          [num-cs (length (filter (lambda (x) (eq? x 'c)) yield))])
+      (= num-as num-bs num-cs)))
+  (define (in-lang? yield)
+    (let ([num-as (length (filter (lambda (x) (eq? x 'a)) yield))]
+          [num-bs (length (filter (lambda (x) (eq? x 'b)) yield))]
+          [num-cs (length (filter (lambda (x) (eq? x 'c)) yield))])
+      (= num-as num-bs num-cs)))
+  (cond [(member 'S yield) (S-INV yield)]
+        [(member 'G yield) (G-INV yield)]
+        [(member 'H yield) (H-INV yield)]
+        [(member 'I yield) (I-INV yield)]
+        [else (in-lang? yield)]))
 
 (define anbncn-csg
   (make-unchecked-csg '(S A B C G H I) 
-            '(a b c) 
-            `((S ,ARROW ABCS) 
-              (S ,ARROW G)
-              (BA ,ARROW AB) 
-              (CA ,ARROW AC) 
-              (CB ,ARROW BC)
-              (CG ,ARROW Gc) 
-              (G  ,ARROW H) 
-              (BH ,ARROW Hb) 
-              (H ,ARROW I)
-              (AI ,ARROW Ia) 
-              (I ,ARROW ,EMP)) 
-            'S))
+                      '(a b c) 
+                      `((S ,ARROW ABCS) 
+                        (S ,ARROW G)
+                        (BA ,ARROW AB) 
+                        (CA ,ARROW AC) 
+                        (CB ,ARROW BC)
+                        (CG ,ARROW Gc) 
+                        (G  ,ARROW H) 
+                        (BH ,ARROW Hb) 
+                        (H ,ARROW I)
+                        (AI ,ARROW Ia) 
+                        (I ,ARROW ,EMP)) 
+                      'S))
 
 
 ;; generates word word-reversed word
