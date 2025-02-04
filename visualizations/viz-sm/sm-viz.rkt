@@ -1,10 +1,7 @@
 #lang racket/base
 
 (require "viz-ndfa.rkt"
-         "viz-pda.rkt"
-         "../../fsm-core/private/pda.rkt"
-         "../../fsm-core/private/fsa.rkt"
-         "../../fsm-core/private/tm.rkt")
+         "viz-pda.rkt")
 
 (provide sm-viz)
 

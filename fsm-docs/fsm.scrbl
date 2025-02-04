@@ -427,7 +427,9 @@ language may cause the constructor to not terminate.
         The optional argument @italic{headpos} specifies the initial head position on the main tape
         for Turing machines and multitape Turing machines. @(linebreak)
 
-
+@defproc[(sm-viz [m machine?] [w word?] [#:add-dead add-dead boolean? #f] [#:cut-off cut-off natural? 100] [invariant (-> word? boolean?)] ...)
+         void]
+        A description for sm-viz
 @defproc*[([(sm-visualize [sym (or/c 'dfa 'ndfa 'pda 'tm 'mttm 'tm-language-recognizer 'mttm-language-recognizer)]) void?]
            [(sm-visualize [m machine?]
                           [inv-list (listof (listof state? procedure?)) '()]) void])]{
