@@ -387,7 +387,9 @@
                        moved-rules)))
          (renamed (generate-levels (list (csg-getstart g)) moved-rules (make-hash)))
          (lod (create-dgrphs (third renamed) (first renamed) (second renamed) (fourth renamed)))
-         (graphs (map (lambda (x) (create-graph-structs x (first invariant))) lod))]
+         (graphs (map (lambda (x) (create-graph-structs x (if (empty? invariant)
+                                                              'NO-INV
+                                                              (first invariant)))) lod))]
     (init-viz g
               w
               w-derv 
@@ -399,13 +401,15 @@
               #:rank-node-lst (map (lambda (x y) (cons x (map list y)))
                                    (second renamed)
                                    (first renamed)))))
+
 (define (anbncn-csg-G-INV yield)
   (if (member 'G yield)
       (let ([num-as (length (filter (lambda (x) (equal? x 'A)) yield))]
-        [num-bs (length (filter (lambda (x) (equal? x 'B)) yield))]
-        [num-cs (length (filter (lambda (x) (equal? x 'C)) yield))])
-    (= num-as num-bs num-cs))
+            [num-bs (length (filter (lambda (x) (equal? x 'B)) yield))]
+            [num-cs (length (filter (lambda (x) (equal? x 'C)) yield))])
+        (= num-as num-bs num-cs))
       #f))
+
 (define anbncn-csg
   (make-unchecked-csg '(S A B C G H I) 
             '(a b c) 
