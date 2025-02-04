@@ -8,16 +8,13 @@
          "../../visualizations/viz-lib/viz-constants.rkt"
          "../../visualizations/viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "../viz-lib/bounding-limits-macro.rkt"
-         "../../visualizations/viz-lib/viz-imgs/cursor.rkt"
          "../../visualizations/viz-lib/bounding-limits.rkt"
          "../../visualizations/viz-lib/default-viz-function-generators.rkt"
          "../../visualizations/viz-lib/viz-macros.rkt"
          "../../visualizations/viz-lib/viz-state.rkt"
          "../../visualizations/viz-lib/viz.rkt"
          racket/list
-         racket/function
-         )
-
+         racket/function)
 
 (provide ctm-viz)
 

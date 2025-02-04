@@ -2,13 +2,11 @@
 (require math/matrix
          math/flonum
          (only-in typed/racket/gui
-                  Bitmap%)
-         )
+                  Bitmap%))
 (require/typed "bounding-limits.rkt"
                [#:struct posn
                 ([x : Real]
-                 [y : Real])]
-               )
+                 [y : Real])])
 (require/typed 2htdp/image
                [#:opaque htdp:image image?]
                [image-width (Image -> Nonnegative-Integer)]
@@ -39,9 +37,8 @@
                           #:point point)
   (let [(reflection (if reflect
                         -1.0
-                        1.0))
-        ]
-    (matrix* (matrix [[(fl* reflection x-scale (flcos rotate)) (fl* x-shear (fl* -1.0 (flsin rotate))) x-translate ]
+                        1.0))]
+    (matrix* (matrix [[(fl* reflection x-scale (flcos rotate)) (fl* x-shear (fl* -1.0 (flsin rotate))) x-translate]
                       [(fl* (flsin rotate) y-shear) (fl* y-scale (flcos rotate)) y-translate]
                       [0.0 0.0 1.0]])
              point)))

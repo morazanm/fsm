@@ -1,13 +1,11 @@
 #lang racket/base
 
 (require "../../fsm-gviz/private/lib.rkt"
-         rackunit
          "../../fsm-core/private/regular-grammar.rkt"
          "../../fsm-core/private/grammar-getters.rkt"
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/misc.rkt"
          "../../fsm-core/private/regular-grammar.rkt"
-         "../viz-lib/viz.rkt"
          "../viz-lib/zipper.rkt"
          "grammar-viz.rkt"
          racket/list
@@ -306,8 +304,6 @@
                          producing-nodes
                          has-invariant)
   (foldl (λ (state result)
-           #;(displayln (and (member (undo-renaming state) has-invariant)
-                                                    (not (member state producing-nodes))))
            (add-node result
                      state
                      #:atb (hash 'color (cond
@@ -479,6 +475,5 @@
                         lod)))]
              [graphs (map (lambda (dgrph) (create-graph-structs dgrph invariants (grammar-start rg)))
                           lod)])
-        (init-viz rg word w-der rules graphs broken-invariants #:special-graphs? 'rg #:cpu-cores cpu-cores)
-        )))
+        (init-viz rg word w-der rules graphs broken-invariants #:special-graphs? 'rg #:cpu-cores cpu-cores))))
 (define G (make-unchecked-rg '(S) '(a b) `((S ,ARROW ,EMP) (S ,ARROW aS)) 'S))
