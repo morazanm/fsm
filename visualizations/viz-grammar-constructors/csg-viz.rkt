@@ -10,7 +10,9 @@
          "../viz-lib/zipper.rkt"
          rackunit
          racket/list
-         racket/local)
+         racket/local
+         racket/set
+         racket/dict)
 
 (provide csg-viz)
 
@@ -20,6 +22,8 @@
    '(a b)
    (list (list 'S ARROW 'AaB) (list 'AaA ARROW 'aSb) (list 'AaA ARROW EMP) (list 'B ARROW 'A))
    'S))
+
+
 
 (define anbncn
   (make-unchecked-csg
@@ -43,28 +47,11 @@
 
 (define YIELD-COLOR 'violet)
 
+(define FAILED-INV-COLOR 'red)
+(define INV-HELD-COLOR 'green)
+
 (define FONT-SIZE 12)
 (define HEXAGON-COLOR 'black)
-
-
-
-
-
-;; tree Any -> (U #f tree)
-;; Finds the search value within the tree using a depth first search
-(define (dfs node search-val)
-  (if (equal? (tree-value node) search-val)
-      node
-      (ormap (lambda (node) (dfs node search-val)) (tree-subtrees node))))
-
-;; A tree has a value and subtrees
-;; A value is Any
-;; A subtree is a listof Any
-(struct tree (value [subtrees #:mutable]) #:transparent)
-
-
-
-
 
 
 ;; csg word -> Derivation with rules
@@ -197,63 +184,53 @@
                   [idx-of-replaced (index-of (map undo-renaming curr-state)
                                              (symbol->fsmlos (first curr-rule)))]
                   [replaced-str-length (string-length (symbol->string (first curr-rule)))]
-                  [before-replacement (take curr-state idx-of-replaced)]
-                  [before-replacement-removed (drop curr-state idx-of-replaced)]
-                  [removed (take before-replacement-removed replaced-str-length)]
-                  [removed-combined-symbol (rename-symbols (first curr-rule) used-names)]
+                  [all-before-to-be-replaced-symbols (take curr-state idx-of-replaced)]
+                  [to-be-replaced-symbols-plus-tail (drop curr-state idx-of-replaced)]
+                  
+                  [to-be-replaced-symbols (take to-be-replaced-symbols-plus-tail replaced-str-length)]
+                  [replaced-combined-symbol (rename-symbols (first curr-rule) used-names)]
                   [replacement-symbols (map (lambda (x) (rename-symbols x used-names))
                                             (symbol->fsmlos (second curr-rule)))]
-                  [after-removed (drop before-replacement-removed replaced-str-length)])
+                  [after-replaced-symbols (drop to-be-replaced-symbols-plus-tail replaced-str-length)])
              (generate-levels-helper
-              (append before-replacement replacement-symbols after-removed)
+              ;; curr-state
+              (append all-before-to-be-replaced-symbols replacement-symbols after-replaced-symbols)
+              ;; rules
               (rest rules)
+              ;; used-names
               used-names
-              (let ()
-                (cons (remove-duplicates (flatten (cons removed-combined-symbol hex-nodes)))
-                      (cons (remove-duplicates (flatten (cons removed-combined-symbol hex-nodes)))
-                            hex-nodes)))
-              (let* ([before-replace
-                      (cons (append before-replacement (list removed-combined-symbol) after-removed)
-                            yield-nodes)]
-                     [after-replace (cons (append before-replacement replacement-symbols after-removed)
-                                          before-replace)])
-                after-replace)
-              (let* ([before-replace (foldr (lambda (val accum)
-                                              (cons (list val removed-combined-symbol) accum))
-                                            '()
-                                            removed)]
-                     [not-replaced-edges (filter (lambda (edge) (not (member (second edge) removed)))
+              ;; hex-nodes
+              (cons (remove-duplicates (flatten (cons replaced-combined-symbol hex-nodes)))
+                    hex-nodes)
+              ;; yield-nodes
+              (cons (append all-before-to-be-replaced-symbols replacement-symbols after-replaced-symbols)
+                      yield-nodes)
+              
+              ;; levels
+              (let ([not-replaced-edges (filter (lambda (edge) (not (member (second edge) to-be-replaced-symbols)))
                                                  (if (empty? levels) '() (first levels)))]
                      [replaced-edges (if (empty? levels)
                                          '()
                                          (remove-duplicates
                                           (map (lambda (edge)
-                                                 (list (first edge) removed-combined-symbol))
-                                               (filter (lambda (edge) (member (second edge) removed))
-                                                       (first levels)))))]
-                     [after-replace
-                      (cons (append (foldr (lambda (val accum)
-                                             (cons (list removed-combined-symbol val) accum))
+                                                 (list (first edge) replaced-combined-symbol))
+                                               (filter (lambda (edge) (member (second edge) to-be-replaced-symbols))
+                                                       (first levels)))))])
+                (cons (append (foldr (lambda (val accum)
+                                             (cons (list replaced-combined-symbol val) accum))
                                            '()
                                            replacement-symbols)
                                     replaced-edges
                                     not-replaced-edges)
-                            (cons (append before-replace (if (empty? levels) '() (first levels)))
-                                  levels))]
-                     )
-                after-replace)
-              (let* ([before-replace (cons (foldr (lambda (val accum)
-                                                    (cons (list val removed-combined-symbol) accum))
-                                                  '()
-                                                  removed)
-                                           hedge-nodes)]
-                     [after-replace (cons (foldr (lambda (val accum)
-                                                   (cons (list removed-combined-symbol val) accum))
-                                                 '()
-                                                 replacement-symbols)
-                                          before-replace)])
-                after-replace)))))]
-    (map reverse (generate-levels-helper curr-state rules used-names '() '() '() '()))))
+                            levels))
+              ;; hedge-nodes
+              (cons (foldr (lambda (val accum)
+                         (cons (list replaced-combined-symbol val) accum))
+                       '()
+                       replacement-symbols)
+                      hedge-nodes)
+              ))))]
+    (map reverse (generate-levels-helper curr-state rules used-names (list '()) (list '()) (list '()) (list '())))))
 
 ;; deriv-with-rules -> deriv-with-rules
 ;; Purpose: This is just taking the list received and moving the rules like such:
@@ -268,27 +245,17 @@
             (move-rule-applications-in-list (rest lst)))))
 
 ;; dgrph is a structure that has
-;; up-levels - unprocessed levels
-;; p-levels - processed levels
-;; nodes - nodes in the graph
-;; up-hex-nodes - unprocessed hex nodes
-;; p-hex-nodes - processed hex nodes
-;; up-yield-nodes - unprocessed yield nodes
-;; p-yield-nodes - processed yield nodes
-;; hedges - highlighted edges of the graphs
-;; up-rules - unprocessed grammar rules
-;; p-rules - processed grammar rules
+;; levels - levels of a graph
+;; nodes - all nodes in the graph
+;; hex-nodes - hex nodes in the graph
+;; yield-nodes - yield nodes in the graph
+;; hedges - highlighted edges of the graph
 (struct dgrph
-  (up-levels p-levels
-             nodes
-             up-hex-nodes
-             p-hex-nodes
-             up-yield-nodes
-             p-yield-nodes
-             up-hedges
-             p-hedges
-             up-rules
-             p-rules))
+  (levels
+   nodes
+   hex-nodes
+   yield-nodes
+   hedges))
 
 ;; extract-nodes
 ;; (listof level) -> (listof node)
@@ -299,26 +266,47 @@
 ;; make-node-graph
 ;; graph lon -> graph
 ;; Purpose: To make a node graph
-(define (make-node-graph graph lon hedge-nodes hex-nodes yield-node)
-  (foldl (λ (state result)
+(define (make-node-graph graph lon hedge-nodes hex-nodes yield-node invariant)
+  (let ([invariant-result (if (not (eq? 'NO-INV invariant))
+                              (invariant (map undo-renaming yield-node))
+                              '())])
+         (foldl (λ (state result)
            (add-node result
                      state
-                     #:atb (hash 'color (cond
-                                          [(member state yield-node) YIELD-COLOR]
-                                          [(member state hedge-nodes) HEDGE-COLOR]
-                                          [else 'black])
-                                 'style 'solid
-                                 'shape (cond
-                                          [(member state hex-nodes) 'hexagon]
-                                          [else 'circle])
-                                 'label (undo-renaming state)
-                                 'penwidth (cond
-                                             [(member state hedge-nodes) 3.0]
-                                             [else 1.0])
-                                 'fontcolor 'black
-                                 'font "Sans")))
+                     #:atb (hash 'color (if (member state hedge-nodes)
+                                                    HEDGE-COLOR
+                                                    (if (member state yield-node)
+                                                        YIELD-COLOR
+                                                        'black))
+                                 'fillcolor (if (not (eq? 'NO-INV invariant))
+                                            (if (member state yield-node)
+                                                (if invariant-result
+                                                    INV-HELD-COLOR
+                                                    FAILED-INV-COLOR)
+                                                (if (member state hedge-nodes)
+                                                    HEDGE-COLOR
+                                                    'black))
+                                            (if (member state hedge-nodes)
+                                                    HEDGE-COLOR
+                                                    (if (member state yield-node)
+                                                        YIELD-COLOR
+                                                        'black)))
+                                            'style (if (not (eq? 'NO-INV invariant))
+                                                       (if (member state yield-node)
+                                                           'filled
+                                                           'solid)
+                                                       'solid)
+                                            'shape (cond
+                                                     [(member state hex-nodes) 'hexagon]
+                                                     [else 'circle])
+                                            'label (undo-renaming state)
+                                            'penwidth (cond
+                                                        [(member state hedge-nodes) 3.0]
+                                                        [else 1.0])
+                                            'fontcolor 'black
+                                            'font "Sans")))
          graph
-         lon))
+         lon)))
 
 ;; graph (listof edges) -> graph
 ;; Creates invisible edges so that ordering of the yield nodes is always maintained
@@ -353,55 +341,21 @@
 ;; create-dgraphs
 ;; dgrph (listof dgrph) boolean -> (listof dgrph)
 ;; Purpose: To create all the dgrphs for graph imgs
-(define (create-dgrphs a-dgrph lod hex?)
-  (if (empty? (dgrph-up-levels a-dgrph))
-      (cons a-dgrph lod)
-      (let* ([new-up-levels (rest (dgrph-up-levels a-dgrph))]
-             [new-ad-levels (cons (first (dgrph-up-levels a-dgrph)) (dgrph-p-levels a-dgrph))]
-             [new-nodes (extract-nodes (first (dgrph-up-levels a-dgrph)))]
-             [new-up-hex-nodes (rest (dgrph-up-hex-nodes a-dgrph))]
-             [new-p-hex-nodes (cons (first (dgrph-up-hex-nodes a-dgrph)) (dgrph-p-hex-nodes a-dgrph))]
-             [new-up-yield-nodes (rest (dgrph-up-yield-nodes a-dgrph))]
-             [new-p-yield-nodes (cons (first (dgrph-up-yield-nodes a-dgrph))
-                                      (dgrph-p-yield-nodes a-dgrph))]
-             [new-up-hedges (rest (dgrph-up-hedges a-dgrph))]
-             [new-p-hedges (cons (first (dgrph-up-hedges a-dgrph)) (dgrph-p-hedges a-dgrph))])
-        (if hex?
-            (let ([new-up-rules (rest (dgrph-up-rules a-dgrph))]
-                  [new-p-rules (cons (first (dgrph-up-rules a-dgrph)) (dgrph-p-rules a-dgrph))])
-              (create-dgrphs (dgrph new-up-levels
-                                    new-ad-levels
-                                    new-nodes
-                                    new-up-hex-nodes
-                                    new-p-hex-nodes
-                                    new-up-yield-nodes
-                                    new-p-yield-nodes
-                                    new-up-hedges
-                                    new-p-hedges
-                                    new-up-rules
-                                    new-p-rules)
-                             (cons a-dgrph lod)
-                             #t))
-            (let ([new-up-rules (dgrph-up-rules a-dgrph)] [new-p-rules (dgrph-p-rules a-dgrph)])
-              (create-dgrphs (dgrph new-up-levels
-                                    new-ad-levels
-                                    new-nodes
-                                    new-up-hex-nodes
-                                    new-p-hex-nodes
-                                    new-up-yield-nodes
-                                    new-p-yield-nodes
-                                    new-up-hedges
-                                    new-p-hedges
-                                    new-up-rules
-                                    new-p-rules)
-                             (cons a-dgrph lod)
-                             #f))))))
+(define (create-dgrphs levels hex-nodes yield-nodes hedges)
+  (map (lambda (level hex-node yield-node hedge)
+         (dgrph
+          level
+          (extract-nodes level)
+          hex-node
+          yield-node
+          hedge))
+       levels hex-nodes yield-nodes hedges))
 
 ;; (listof nodes) -> (listof edges)
 ;; Recursively creates an edge between the first and second element of the list until it empty
 ;; We use this list of edges to add invisble edges to the graph, guarenteeing ordering of the yield nodes at the bottom of the graph
 (define (create-line-of-edges yield-nodes)
-  (if (= (length yield-nodes) 1)
+  (if (<= (length yield-nodes) 1)
       '()
       (cons (list (first yield-nodes) (second yield-nodes))
             (create-line-of-edges (rest yield-nodes)))))
@@ -409,97 +363,61 @@
 ;; create-graph-structs
 ;; dgprh -> img
 ;; Purpose: Creates the final graph structure that will be used to create the images in graphviz
-(define (create-graph-structs a-dgrph)
-  (let* ([nodes (dgrph-nodes a-dgrph)]
-         [levels (first (dgrph-p-levels a-dgrph))]
-         [hedges (first (dgrph-p-hedges a-dgrph))]
-         [hedge-nodes (extract-nodes hedges)]
-         [yield-nodes (first (dgrph-p-yield-nodes a-dgrph))]
-         [hex-nodes (first (dgrph-p-hex-nodes a-dgrph))])
-    (make-invisible-edge-graph
-     (make-edge-graph
-      (make-node-graph
-       (create-graph 'dgraph
-                     #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in" 'splines "polyline" 'overlap "scale"))
-       nodes
-       hedge-nodes
-       hex-nodes
-       yield-nodes)
-      levels
-      hedges)
-     (create-line-of-edges yield-nodes))))
+(define (create-graph-structs a-dgrph invariant)
+  (make-invisible-edge-graph
+   (make-edge-graph
+    (make-node-graph
+     (create-graph 'dgraph
+                   #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in" 'splines "polyline" 'overlap "scale"))
+     (dgrph-nodes a-dgrph)
+     (extract-nodes (dgrph-hedges a-dgrph))
+     (dgrph-hex-nodes a-dgrph)
+     (dgrph-yield-nodes a-dgrph)
+     invariant)
+    (dgrph-levels a-dgrph)
+    (dgrph-hedges a-dgrph))
+   (create-line-of-edges (dgrph-yield-nodes a-dgrph))))
 
-(define (remove-every-second lst)
-  (if (empty? lst)
-      lst
-      (if (= (length lst) 1)
-          (cons (first lst) '())
-          (cons (second lst) (remove-every-second (rest (rest lst))))
-          )
-      )
-  )
-
-(define (copy lst)
-  (if (empty? lst)
-      '()
-      (cons (first lst) (cons (first lst) (copy (rest lst))))))
-
-(define (csg-viz g w #:cpu-cores [cpu-cores #f] . invariants)
-  (local [(define derv (csg-derive-edited g w))
-          (define w-derv (map (lambda (x) (symbol->fsmlos (first x))) derv))
-          (define moved-rules
-            (map (lambda (x) (list (second x) (third x))) (move-rule-applications-in-list derv)))
-          (define rules
-            (cons ""
-                  (foldr (lambda (x accum)
-                           (if (empty? (first x))
-                               '()
-                               (append (list (string-append (symbol->string (first x))
-                                                            " → "
-                                                            (symbol->string (second x))))
-                                       accum)))
-                         '()
-                         moved-rules)))
-          (define renamed (generate-levels (list (csg-getstart g)) moved-rules (make-hash)))
-          (define test-rules (copy rules))
-          (define dgraph
-            (dgrph (rest (third renamed))
-                   (list (first (third renamed)))
-                   '()
-                   (rest (first renamed))
-                   (list (first (first renamed)))
-                   (rest (second renamed))
-                   (list (first (second renamed)))
-                   (rest (fourth renamed))
-                   (list (first (fourth renamed)))
-                   (rest test-rules)
-                   (list (first test-rules))))
-          (define lod (reverse (create-dgrphs dgraph '() #f)))
-          (define graphs (map create-graph-structs lod))
-          (define test-w-derv (copy w-derv))
-          ]
+(define (csg-viz g w #:cpu-cores [cpu-cores #f] . invariant)
+  (let* [(derv (csg-derive-edited g w))
+         (w-derv (map (lambda (x) (symbol->fsmlos (first x))) derv))
+         (moved-rules
+          (map (lambda (x) (list (second x) (third x))) (move-rule-applications-in-list derv)))
+         (rules
+          (cons ""
+                (foldr (lambda (x accum)
+                         (if (empty? (first x))
+                             '()
+                             (append (list (string-append (symbol->string (first x))
+                                                          " → "
+                                                          (symbol->string (second x))))
+                                     accum)))
+                       '()
+                       moved-rules)))
+         (renamed (generate-levels (list (csg-getstart g)) moved-rules (make-hash)))
+         (lod (create-dgrphs (third renamed) (first renamed) (second renamed) (fourth renamed)))
+         (graphs (map (lambda (x) (create-graph-structs x (if (empty? invariant)
+                                                              'NO-INV
+                                                              (first invariant)))) lod))]
     (init-viz g
               w
               w-derv 
               rules
-              (let ([frst (first graphs)]
-                    [fourth (second graphs)])
-                (cons frst (cons fourth (remove-every-second (drop graphs 2)))))
+              graphs
               'NO-INV
               #:cpu-cores cpu-cores
               #:special-graphs? 'cfg
-              #:rank-node-lst (let ([frst (first (second renamed))]
-                                    [fourth (second (second renamed))])
-                                (map (lambda (x y) (cons x (foldr (lambda (val accum) (cons (list val) accum))
-                                                                         '()
-                                                                         y)))
-                                     (cons frst (cons fourth (remove-every-second (drop (second renamed) 2))))
-                                     (let ([res (append (dgrph-up-hex-nodes (first lod)) (dgrph-p-hex-nodes (first lod)))])
-                                       (drop-right (cons '() (cons (first res) (remove-every-second res))) 1))
-                                       
-                                     )
-                                ))
-    ))
+              #:rank-node-lst (map (lambda (x y) (cons x (map list y)))
+                                   (second renamed)
+                                   (first renamed)))))
+
+(define (anbncn-csg-G-INV yield)
+  (if (member 'G yield)
+      (let ([num-as (length (filter (lambda (x) (equal? x 'A)) yield))]
+            [num-bs (length (filter (lambda (x) (equal? x 'B)) yield))]
+            [num-cs (length (filter (lambda (x) (equal? x 'C)) yield))])
+        (= num-as num-bs num-cs))
+      #f))
 
 (define anbncn-csg
   (make-unchecked-csg '(S A B C G H I) 
@@ -516,3 +434,49 @@
               (AI ,ARROW Ia) 
               (I ,ARROW ,EMP)) 
             'S))
+
+
+;; generates word word-reversed word
+;; S - Generates K, G, right hand marker R
+;; K - generates word and promises to generate reversed word
+;; A - promise to generate a
+;; B - promise to generate b
+;; L - left hand marker
+;; R - right hand marker
+;; G - copies in order word next to reversed word
+
+
+;; Split into more phases?
+;; generate first w, then copy it to right. Have invariants for this.
+
+;; K - idx of K <= |w|
+;; L - idx of L = |W|
+;; G,L - if idx of G > idx of N
+;;            elements in (I-idx ... N-idx) == elements in ((L-idx - (N-idx - I-idx)) ... L-idx)
+;;            elements in (N-idx ... G-idx) == elements in (0 ... (G-idx - N-idx))
+;;            elements in (G-idx ... R-idx) == elements in ((G-idx - N-idx) ... (R-idx - (G-idx - N-idx)))
+;;       else
+;;            elements in (I-idx ... G-idx) == elements in
+;;            elements in (G-idx ... N-idx) == elements in
+;;            elements in (N-idx ... R-idx) == elements in
+
+(define w-w^r-w
+  (make-unchecked-csg '(S K A B C D L R G I N)
+                      '(a b)
+                      `((S ,ARROW KGR)
+                        (K ,ARROW aKA)
+                        (K ,ARROW bKB)
+                        (K ,ARROW L)
+                        (AIG ,ARROW IaGC)
+                        (BIG ,ARROW IbGD)
+                        (GCa ,ARROW aGC)
+                        (GCb ,ARROW bGC)
+                        (GDa ,ARROW aGD)
+                        (GDb ,ARROW bGD)
+                        (aG ,ARROW Ga)
+                        (bG ,ARROW Gb)
+                        (GCR ,ARROW GaR)
+                        (GDR ,ARROW GbR)
+                        (LIG ,ARROW ,EMP)
+                        (R ,ARROW ,EMP))
+                      'S))

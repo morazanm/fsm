@@ -1,5 +1,5 @@
 #lang racket/base
-(require 2htdp/image)
+(require "../2htdp/image.rkt")
 (provide resize-image)
 
 (define (resize-image img max-width max-height)

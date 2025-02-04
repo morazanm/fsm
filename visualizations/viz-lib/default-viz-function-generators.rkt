@@ -5,7 +5,7 @@
          "viz-state.rkt"
          math/matrix
          "bounding-limits.rkt"
-         2htdp/image
+         "../2htdp/image.rkt"
          "resize-viz-image.rkt"
          "typed-matrices.rkt"
          racket/promise

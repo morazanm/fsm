@@ -1,6 +1,6 @@
 #lang racket/base
 (require "../../fsm-gviz/interface.rkt"
-         2htdp/image
+         "../2htdp/image.rkt"
          "../../fsm-core/private/state.rkt"
          "../../fsm-core/private/rules.rkt"         
          "../../fsm-core/private/fsa.rkt"
