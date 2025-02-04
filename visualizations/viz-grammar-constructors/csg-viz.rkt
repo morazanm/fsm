@@ -273,7 +273,12 @@
          (foldl (λ (state result)
            (add-node result
                      state
-                     #:atb (hash 'color (if (not (eq? 'NO-INV invariant))
+                     #:atb (hash 'color (if (member state hedge-nodes)
+                                                    HEDGE-COLOR
+                                                    (if (member state yield-node)
+                                                        YIELD-COLOR
+                                                        'black))
+                                 'fillcolor (if (not (eq? 'NO-INV invariant))
                                             (if (member state yield-node)
                                                 (if invariant-result
                                                     INV-HELD-COLOR
@@ -286,7 +291,11 @@
                                                     (if (member state yield-node)
                                                         YIELD-COLOR
                                                         'black)))
-                                            'style 'solid
+                                            'style (if (not (eq? 'NO-INV invariant))
+                                                       (if (member state yield-node)
+                                                           'filled
+                                                           'solid)
+                                                       'solid)
                                             'shape (cond
                                                      [(member state hex-nodes) 'hexagon]
                                                      [else 'circle])
