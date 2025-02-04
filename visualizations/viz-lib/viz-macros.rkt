@@ -81,7 +81,7 @@
                       (buffer-held-click
                        (struct-copy viz-state a-vs
                                     [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])
-                       (lambda (a-vs) (imsg-key-func (viz-key-func a-vs))) CLICK-BUFFER-SECONDS)]
+                       (lambda (a-vs) (viz-key-func (imsg-key-func a-vs))) CLICK-BUFFER-SECONDS)]
                      ...
                      [else (struct-copy viz-state a-vs
                                         [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])]))
