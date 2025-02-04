@@ -138,13 +138,14 @@ visited is a (listof configuration)
 ;;word (listof rule) symbol number -> (listof computation)
 ;;Purpose: Returns all possible computations using the given word, (listof rule) and start symbol
 ;;   that are within the bounds of the max computation limit
-(define (get-computations a-word lor start max-cmps)
+(define (get-computations a-word lor start finals max-cmps)
   (let (;;computation
         ;;Purpose: The starting computation
         [starting-computation (computation (list (append (list start) (list a-word) (list '()) (list 0)))
                                            '()
                                            '())])
     (make-computations lor
+                       finals
                        (enqueue (list starting-computation) E-QUEUE)
                        '()
                        max-cmps)))
@@ -153,9 +154,10 @@ visited is a (listof configuration)
 ;;(listof rules) (queueof computation) (listof computation) number -> (listof computation)
 ;;Purpose: Makes all the computations based around the (queueof computation) and (listof rule)
 ;;     that are within the bounds of the max computation limit
-(define (make-computations lor QoC path max-cmps)
+(define (make-computations lor finals QoC path max-cmps)
   (cond [(qempty? QoC) path]
-        [(> (length (computation-LoC (qfirst QoC))) max-cmps)
+        [(and (> (length (computation-LoC (qfirst QoC))) max-cmps)
+              (member? (first (first (computation-LoC (qfirst QoC)))) finals equal?))
          (make-computations lor (dequeue QoC) (cons (qfirst QoC) path) max-cmps)]
         [else (let* ([stack (third (first (computation-LoC (qfirst QoC))))]
                      ;;(listof rules)
@@ -182,8 +184,8 @@ visited is a (listof configuration)
                                             (not (member? (first (computation-LoC new-c)) (computation-visited new-c) equal?)))
                                           (map (λ (rule) (apply-rule (qfirst QoC) rule)) connected-pop-rules))])
                 (if (empty? new-configs)
-                    (make-computations lor (dequeue QoC) (cons (qfirst QoC) path) max-cmps)
-                    (make-computations lor (enqueue new-configs (dequeue QoC)) path max-cmps)))]))
+                    (make-computations lor finals (dequeue QoC) (cons (qfirst QoC) path) max-cmps)
+                    (make-computations lor finals (enqueue new-configs (dequeue QoC)) path max-cmps)))]))
 
 ;;(listof configurations) (listof rules) (listof configurations) -> (listof configurations)
 ;;Purpose: Returns a propers trace for the given (listof configurations) that accurately
@@ -1103,7 +1105,7 @@ visited is a (listof configuration)
          ;;symbol ;;Purpose: The name of the dead state
          [dead-state (if add-dead (last (pda-getstates new-M)) 'no-dead)]
          ;;(listof computations) ;;Purpose: All computations that the machine can have
-         [computations (get-computations a-word (pda-getrules new-M) (pda-getstart new-M) cut-off)]
+         [computations (get-computations a-word (pda-getrules new-M) (pda-getstart new-M) (pda-getfinals new-M) cut-off)]
          
          ;;(listof configurations) ;;Purpose: Extracts the configurations from the computation
          [LoC (map computation-LoC computations)]

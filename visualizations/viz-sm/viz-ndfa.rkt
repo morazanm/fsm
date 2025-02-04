@@ -96,46 +96,48 @@ triple is the entire of the ndfa rule
 
 ;;(listof symbol) (listof rule) symbol -> (listof computation)
 ;;Purpose: Traces all computations that the machine can make based on the starting state, word, and given rules
-(define (trace-computations word lor start)
+(define (trace-computations word lor start finals)
   (let (;;configuration
         ;;Purpose: The starting configuration
         [starting-config (computation (list (append (list start) (list word)))
                                       '()
                                       '())])
     (make-computations lor
+                       finals
                        (enqueue (list starting-config) E-QUEUE)
                        '())))
 
 
 ;;(listof rule) -> (listof computation)
 ;;Purpose: Traces all computations that the machine can make based on the starting state, word, and given rules
-(define (make-computations lor QoC path)
-  (if (qempty? QoC)
-      path
-      (let* ([first-computation (first (computation-LoC (qfirst QoC)))]
-             ;;(listof rules)
-             ;;Purpose: Returns all rules that consume a letter using the given configurations
-             [connected-read-rules (if (empty? (second first-computation))
-                                       '()
-                                       (filter (λ (rule)
-                                                 (and (equal? (first rule) (first first-computation))
-                                                      (equal? (second rule) (first (second first-computation)))))
-                                               lor))]
-             ;;(listof rules)
-             ;;Purpose: Returns all rules that have an empty transition using the given configurations
-             [connected-emp-rules
-              (filter (λ (rule)
-                        (and (equal? (first rule) (first first-computation))
-                             (equal? (second rule) EMP)))
-                      lor)]
-             ;;(listof configurations)
-             ;;Purpose: Makes new configurations using given word and connected-rules
-             [new-configs (filter (λ (new-c)
-                                    (not (member? (first (computation-LoC new-c)) (computation-visited new-c))))
-                                  (map (λ (rule) (apply-rule (qfirst QoC) rule)) (append connected-read-rules connected-emp-rules)))])
-        (if  (empty? new-configs)
-             (make-computations lor (dequeue QoC) (cons (qfirst QoC) path))
-             (make-computations lor (enqueue new-configs (dequeue QoC)) path)))))
+(define (make-computations lor finals QoC path)
+  (cond [(qempty? QoC) path]
+        [(member? (first (first (computation-LoC (qfirst QoC)))) finals)
+         (make-computations lor finals (dequeue QoC) (cons (qfirst QoC) path))]
+        [else (let* ([first-computation (first (computation-LoC (qfirst QoC)))]
+                     ;;(listof rules)
+                     ;;Purpose: Returns all rules that consume a letter using the given configurations
+                     [connected-read-rules (if (empty? (second first-computation))
+                                               '()
+                                               (filter (λ (rule)
+                                                         (and (equal? (first rule) (first first-computation))
+                                                              (equal? (second rule) (first (second first-computation)))))
+                                                       lor))]
+                     ;;(listof rules)
+                     ;;Purpose: Returns all rules that have an empty transition using the given configurations
+                     [connected-emp-rules
+                      (filter (λ (rule)
+                                (and (equal? (first rule) (first first-computation))
+                                     (equal? (second rule) EMP)))
+                              lor)]
+                     ;;(listof configurations)
+                     ;;Purpose: Makes new configurations using given word and connected-rules
+                     [new-configs (filter (λ (new-c)
+                                            (not (member? (first (computation-LoC new-c)) (computation-visited new-c))))
+                                          (map (λ (rule) (apply-rule (qfirst QoC) rule)) (append connected-read-rules connected-emp-rules)))])
+                (if (empty? new-configs)
+                    (make-computations lor finals (dequeue QoC) (cons (qfirst QoC) path))
+                    (make-computations lor finals (enqueue new-configs (dequeue QoC)) path)))]))
   
 
 ;;(listof configurations) (listof rules) (listof configurations) -> (listof configurations)
@@ -830,7 +832,7 @@ triple is the entire of the ndfa rule
                            [(and add-dead (eq? (M 'whatami) 'dfa)) DEAD]
                            [else 'no-dead])]
          ;;(listof computations) ;;Purpose: All computations that the machine can have
-         [computations (trace-computations a-word (fsa-getrules new-M) (fsa-getstart new-M))]
+         [computations (trace-computations a-word (fsa-getrules new-M) (fsa-getstart new-M) (fsa-getfinals new-M))]
          ;;(listof configurations) ;;Purpose: Extracts the configurations from the computation
          [LoC (map computation-LoC computations)]
          ;;(listof computation) ;;Purpose: Extracts all accepting computations
