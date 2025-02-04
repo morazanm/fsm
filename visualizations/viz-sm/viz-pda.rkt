@@ -160,7 +160,7 @@ visited is a (listof configuration)
               (and (member? (first (first (computation-LoC (qfirst QoC)))) finals equal?)
                    (empty? (second (first (computation-LoC (qfirst QoC)))) finals)
                    (empty? (third (first (computation-LoC (qfirst QoC)))) finals)))
-         (make-computations lor (dequeue QoC) (cons (qfirst QoC) path) max-cmps)]
+         (make-computations lor finals (dequeue QoC) (cons (qfirst QoC) path) max-cmps)]
         [else (let* ([stack (third (first (computation-LoC (qfirst QoC))))]
                      ;;(listof rules)
                      ;;Purpose: Holds all rules that consume a first letter in the given configurations
@@ -270,6 +270,7 @@ visited is a (listof configuration)
                      (map computation-LoC (get-computations a-word
                                                             (pda-getrules M)
                                                             (pda-getstart M)
+                                                            (pda-getfinals M)
                                                             max-cmps))))
          (last-fully-consumed (take a-word (sub1 (length a-word))) M max-cmps)]
         [a-word]))
@@ -565,6 +566,8 @@ visited is a (listof configuration)
                                                      (pda-getrules (imsg-state-M (informative-messages-component-state
                                                                                   (viz-state-informative-messages a-vs))))
                                                      (pda-getstart (imsg-state-M (informative-messages-component-state
+                                                                                  (viz-state-informative-messages a-vs))))
+                                                     (pda-getfinals (imsg-state-M (informative-messages-component-state
                                                                                   (viz-state-informative-messages a-vs))))
                                                      (imsg-state-max-cmps (informative-messages-component-state
                                                                            (viz-state-informative-messages a-vs)))))]
@@ -885,16 +888,8 @@ visited is a (listof configuration)
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the previous broken invariant
 (define (j-key-pressed a-vs)
-  (if (or (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
-                                                  (viz-state-informative-messages a-vs))))
-          (and (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
-                                                          (viz-state-informative-messages a-vs))))
-               (not (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
-                                                             (viz-state-informative-messages a-vs))))))
-          (< (length (imsg-state-pci (informative-messages-component-state
-                                      (viz-state-informative-messages a-vs))))
-             (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
-                                                      (viz-state-informative-messages a-vs))))))
+  (if (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
+                                              (viz-state-informative-messages a-vs))))
       a-vs
       (let* ([zip (if (and (not (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
                                                                            (viz-state-informative-messages a-vs)))))
@@ -909,10 +904,7 @@ visited is a (listof configuration)
              [full-word (append (imsg-state-pci (informative-messages-component-state
                                                  (viz-state-informative-messages a-vs)))
                                 (imsg-state-upci (informative-messages-component-state
-                                                  (viz-state-informative-messages a-vs))))]
-             [partial-word (if (> (zipper-current zip) (length full-word))
-                               full-word
-                               (take full-word (zipper-current zip)))])
+                                                  (viz-state-informative-messages a-vs))))])
         (struct-copy
          viz-state
          a-vs
@@ -924,37 +916,73 @@ visited is a (listof configuration)
             (struct-copy imsg-state
                          (informative-messages-component-state
                           (viz-state-informative-messages a-vs))
-                         [upci (remove-similarities full-word partial-word '())]
-                         [acpt-trace (if (zipper-empty? (imsg-state-acpt-trace (informative-messages-component-state
+                         [upci (cond [(and (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                      (viz-state-informative-messages a-vs))))
+                                           (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                    (viz-state-informative-messages a-vs))))
+                                           (>= (length (imsg-state-pci (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs))))
+                                               (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                        (viz-state-informative-messages a-vs))))))
+                                      (drop full-word (zipper-current zip))]
+                                     [(zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                 (viz-state-informative-messages a-vs))))
+                                      (imsg-state-upci (informative-messages-component-state
+                                                        (viz-state-informative-messages a-vs)))]
+                                     [else (drop full-word (zipper-current zip))])]
+                         [acpt-trace (cond [(and (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                            (viz-state-informative-messages a-vs))))
+                                                 (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                          (viz-state-informative-messages a-vs))))
+                                                 (not (zipper-empty? (imsg-state-acpt-trace (informative-messages-component-state
+                                                                                             (viz-state-informative-messages a-vs))))))
+                                            (zipper-to-idx (imsg-state-acpt-trace (informative-messages-component-state
+                                                                                   (viz-state-informative-messages a-vs)))
+                                                           (zipper-current zip))]
+                                           [(and (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                            (viz-state-informative-messages a-vs))))
+                                                 (zipper-empty? (imsg-state-acpt-trace (informative-messages-component-state
+                                                                                        (viz-state-informative-messages a-vs)))))
+                                            (imsg-state-acpt-trace (informative-messages-component-state
+                                                                    (viz-state-informative-messages a-vs)))]
+                                           [else (zipper-to-idx (imsg-state-acpt-trace (informative-messages-component-state
+                                                                                        (viz-state-informative-messages a-vs)))
+                                                                (zipper-current zip))])]
+                         [stack (cond [(and (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                       (viz-state-informative-messages a-vs))))
+                                            (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                     (viz-state-informative-messages a-vs)))))
+                                       (zipper-to-idx (imsg-state-stack (informative-messages-component-state
+                                                                         (viz-state-informative-messages a-vs)))
+                                                      (zipper-current zip))]
+                                      [(zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                  (viz-state-informative-messages a-vs))))
+                                       (imsg-state-stack (informative-messages-component-state
+                                                          (viz-state-informative-messages a-vs)))]
+                                      [else (zipper-to-idx (imsg-state-stack (informative-messages-component-state
+                                                                              (viz-state-informative-messages a-vs)))
+                                                           (zipper-current zip))])]
+                         [pci (cond [(and (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                     (viz-state-informative-messages a-vs))))
+                                          (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                   (viz-state-informative-messages a-vs))))
+                                          (>= (length (imsg-state-pci (informative-messages-component-state
+                                                                       (viz-state-informative-messages a-vs))))
+                                              (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                       (viz-state-informative-messages a-vs))))))
+                                     (take full-word (zipper-current zip))]
+                                    [(zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
                                                                                 (viz-state-informative-messages a-vs))))
-                                         (imsg-state-acpt-trace (informative-messages-component-state
-                                                                 (viz-state-informative-messages a-vs)))
-                                         (zipper-to-idx (imsg-state-acpt-trace (informative-messages-component-state
-                                                                                (viz-state-informative-messages a-vs)))
-                                                        (zipper-current zip)))]
-                         [stack (if (zipper-empty? (imsg-state-stack (informative-messages-component-state
-                                                                      (viz-state-informative-messages a-vs))))
-                                    (imsg-state-stack (informative-messages-component-state
-                                                       (viz-state-informative-messages a-vs)))
-                                    (zipper-to-idx (imsg-state-stack (informative-messages-component-state
-                                                                      (viz-state-informative-messages a-vs)))
-                                                   (zipper-current zip)))]
-                         [pci partial-word]
+                                     (imsg-state-pci (informative-messages-component-state
+                                                      (viz-state-informative-messages a-vs)))]
+                                    [else (take full-word (zipper-current zip))])]
                          [invs-zipper zip])])]))))
 
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the next failed invariant
 (define (l-key-pressed a-vs)
-  (if (or (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
-                                                  (viz-state-informative-messages a-vs))))
-          (and (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
-                                                        (viz-state-informative-messages a-vs))))
-               (not (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
-                                                               (viz-state-informative-messages a-vs))))))
-          (> (length (imsg-state-pci (informative-messages-component-state
-                                      (viz-state-informative-messages a-vs))))
-             (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
-                                                      (viz-state-informative-messages a-vs))))))
+  (if (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
+                                              (viz-state-informative-messages a-vs))))
       a-vs
       (let* ([zip (if (and (not (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
                                                                          (viz-state-informative-messages a-vs)))))
@@ -984,22 +1012,66 @@ visited is a (listof configuration)
             (struct-copy imsg-state
                          (informative-messages-component-state
                           (viz-state-informative-messages a-vs))
-                         [upci (remove-similarities full-word partial-word '())]
-                         [acpt-trace (if (zipper-empty? (imsg-state-acpt-trace (informative-messages-component-state
-                                                                                (viz-state-informative-messages a-vs))))
-                                         (imsg-state-acpt-trace (informative-messages-component-state
-                                                                 (viz-state-informative-messages a-vs)))
-                                         (zipper-to-idx (imsg-state-acpt-trace (informative-messages-component-state
-                                                                                (viz-state-informative-messages a-vs)))
-                                                        (zipper-current zip)))]
-                         [stack (if (zipper-empty? (imsg-state-stack (informative-messages-component-state
-                                                                      (viz-state-informative-messages a-vs))))
-                                    (imsg-state-stack (informative-messages-component-state
-                                                       (viz-state-informative-messages a-vs)))
-                                    (zipper-to-idx (imsg-state-stack (informative-messages-component-state
-                                                                      (viz-state-informative-messages a-vs)))
-                                                   (zipper-current zip)))]
-                         [pci partial-word]
+                         [upci (cond [(and (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                      (viz-state-informative-messages a-vs))))
+                                           (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                    (viz-state-informative-messages a-vs))))
+                                           (<= (length (imsg-state-pci (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs))))
+                                               (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                        (viz-state-informative-messages a-vs))))))
+                                      (drop full-word (zipper-current zip))]
+                                     [(zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                               (viz-state-informative-messages a-vs))))
+                                      (imsg-state-upci (informative-messages-component-state
+                                                        (viz-state-informative-messages a-vs)))]
+                                     [else (drop full-word (zipper-current zip))])]
+                         [acpt-trace (cond [(and (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                            (viz-state-informative-messages a-vs))))
+                                                 (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                          (viz-state-informative-messages a-vs))))
+                                                 (not (zipper-empty? (imsg-state-acpt-trace (informative-messages-component-state
+                                                                                             (viz-state-informative-messages a-vs))))))
+                                            (zipper-to-idx (imsg-state-acpt-trace (informative-messages-component-state
+                                                                                   (viz-state-informative-messages a-vs)))
+                                                           (zipper-current zip))]
+                                           [(and (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                            (viz-state-informative-messages a-vs))))
+                                                 (zipper-empty? (imsg-state-acpt-trace (informative-messages-component-state
+                                                                                        (viz-state-informative-messages a-vs)))))
+                                            (imsg-state-acpt-trace (informative-messages-component-state
+                                                                    (viz-state-informative-messages a-vs)))]
+                                           [else (zipper-to-idx (imsg-state-acpt-trace (informative-messages-component-state
+                                                                                        (viz-state-informative-messages a-vs)))
+                                                                (zipper-current zip))])]
+                         [stack (cond [(and (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                       (viz-state-informative-messages a-vs))))
+                                            (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                     (viz-state-informative-messages a-vs)))))
+                                       (zipper-to-idx (imsg-state-stack (informative-messages-component-state
+                                                                         (viz-state-informative-messages a-vs)))
+                                                      (zipper-current zip))]
+                                      [(zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                  (viz-state-informative-messages a-vs))))
+                                       (imsg-state-stack (informative-messages-component-state
+                                                          (viz-state-informative-messages a-vs)))]
+                                      [else (zipper-to-idx (imsg-state-stack (informative-messages-component-state
+                                                                              (viz-state-informative-messages a-vs)))
+                                                           (zipper-current zip))])] 
+                         [pci (cond [(and (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                     (viz-state-informative-messages a-vs))))
+                                          (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                   (viz-state-informative-messages a-vs))))
+                                          (<= (length (imsg-state-pci (informative-messages-component-state
+                                                                       (viz-state-informative-messages a-vs))))
+                                              (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                       (viz-state-informative-messages a-vs))))))
+                                     (take full-word (zipper-current zip))]
+                                    [(zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                              (viz-state-informative-messages a-vs))))
+                                     (imsg-state-pci (informative-messages-component-state
+                                                      (viz-state-informative-messages a-vs)))]
+                                    [else (take full-word (zipper-current zip))])]
                          [invs-zipper zip])])]))))
 
 ;;machine -> machine

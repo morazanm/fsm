@@ -113,7 +113,7 @@ triple is the entire of the ndfa rule
 (define (make-computations lor finals QoC path)
   (cond [(qempty? QoC) path]
         [(and (member? (first (first (computation-LoC (qfirst QoC)))) finals)
-                (empty? (second (first (computation-LoC (qfirst QoC))))))
+              (empty? (second (first (computation-LoC (qfirst QoC))))))
          (make-computations lor finals (dequeue QoC) (cons (qfirst QoC) path))]
         [else (let* ([first-computation (first (computation-LoC (qfirst QoC)))]
                      ;;(listof rules)
@@ -175,7 +175,7 @@ triple is the entire of the ndfa rule
 ;;(listof symbols) (lisof configurations) -> (listof configurations)
 ;;Purpose: Makes configurations usable for invariant predicates
 (define (make-inv-configs a-word configs)
- (map (λ (config) (make-inv-configs-helper a-word config (length a-word))) configs))
+  (map (λ (config) (make-inv-configs-helper a-word config (length a-word))) configs))
 
 ;;(listof symbols) (lisof configurations) natnum -> (listof configurations)
 ;;Purpose: Makes configurations usable for invariant predicates
@@ -272,9 +272,9 @@ triple is the entire of the ndfa rule
                                      (equal? a-word (second config)))
                                    configs))
                          a-LoC))))
-    (if (empty? a-word)
-        (reverse (cons (get-config a-word) acc))
-        (count-computations (rest a-word) a-LoC (cons (get-config a-word) acc))))
+  (if (empty? a-word)
+      (reverse (cons (get-config a-word) acc))
+      (count-computations (rest a-word) a-LoC (cons (get-config a-word) acc))))
 
 ;;(listof trace-rule) -> (listof rules)
 ;;Purpose: Remakes the rule extracted from the rule-struct
@@ -398,9 +398,9 @@ triple is the entire of the ndfa rule
          ;;(listof (listof symbol ((listof symbols) -> boolean))) (listof symbols))
          ;;Purpose: Extracts all invariants for the states that the machine can be in
          [get-invs (for*/list ([invs (building-viz-state-inv a-vs)]
-                                 [curr all-configs]
-                                 #:when (equal? (first invs) (first curr)))
-                       (list invs (building-viz-state-pci a-vs)))]
+                               [curr all-configs]
+                               #:when (equal? (first invs) (first curr)))
+                     (list invs (building-viz-state-pci a-vs)))]
 
          ;;(listof symbols)
          ;;Purpose: Returns all states whose invariants holds
@@ -410,16 +410,16 @@ triple is the entire of the ndfa rule
          ;;Purpose: Returns all states whose invariants fail
          [brkn-invs (get-invariants get-invs not)])
     (edge-graph
-           (node-graph
-            (create-graph 'ndfagraph #:atb (hash 'rankdir "LR"))
-            (building-viz-state-M a-vs)
-            (building-viz-state-dead a-vs)
-            held-invs
-            brkn-invs)
-           (building-viz-state-M a-vs)
-           current-a-rules
-           current-rules
-           (building-viz-state-dead a-vs))))
+     (node-graph
+      (create-graph 'ndfagraph #:atb (hash 'rankdir "LR"))
+      (building-viz-state-M a-vs)
+      (building-viz-state-dead a-vs)
+      held-invs
+      brkn-invs)
+     (building-viz-state-M a-vs)
+     current-a-rules
+     current-rules
+     (building-viz-state-dead a-vs))))
 
 ;;viz-state (listof graph-thunks) -> (listof graph-thunks)
 ;;Purpose: Creates all the graphs needed for the visualization
@@ -445,13 +445,13 @@ triple is the entire of the ndfa rule
          [completed-config? (ormap (λ (config)
                                      (empty? (second (first (computation-LoC config)))))
                                    (trace-computations (imsg-state-pci (informative-messages-component-state
-                                                                 (viz-state-informative-messages a-vs))) 
-                                                (fsa-getrules (imsg-state-M (informative-messages-component-state
-                                                                         (viz-state-informative-messages a-vs))))
-                                                (fsa-getstart (imsg-state-M (informative-messages-component-state
-                                                                         (viz-state-informative-messages a-vs))))
-                                                (fsa-getfinals (imsg-state-M (informative-messages-component-state
-                                                                         (viz-state-informative-messages a-vs))))))]
+                                                                        (viz-state-informative-messages a-vs))) 
+                                                       (fsa-getrules (imsg-state-M (informative-messages-component-state
+                                                                                    (viz-state-informative-messages a-vs))))
+                                                       (fsa-getstart (imsg-state-M (informative-messages-component-state
+                                                                                    (viz-state-informative-messages a-vs))))
+                                                       (fsa-getfinals (imsg-state-M (informative-messages-component-state
+                                                                                     (viz-state-informative-messages a-vs))))))]
          [pci (if (or (empty? (imsg-state-upci (informative-messages-component-state
                                                 (viz-state-informative-messages a-vs))))
                       (not completed-config?))
@@ -482,7 +482,7 @@ triple is the entire of the ndfa rule
                                                        (viz-state-informative-messages a-vs)))))]
                      [pci pci]
                      [invs-zipper (cond [(zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                         (viz-state-informative-messages a-vs))))
+                                                                                 (viz-state-informative-messages a-vs))))
                                          (imsg-state-invs-zipper (informative-messages-component-state
                                                                   (viz-state-informative-messages a-vs)))]
                                         [(and (not (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
@@ -514,7 +514,7 @@ triple is the entire of the ndfa rule
          ;;Purpose: The portion of the word that cannont be consumed
          [unconsumed-word (drop full-word (length last-consumed-word))]
          [zip (if (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
-                                                  (viz-state-informative-messages a-vs))))
+                                                          (viz-state-informative-messages a-vs))))
                   (imsg-state-invs-zipper (informative-messages-component-state
                                            (viz-state-informative-messages a-vs)))
                   (zipper-to-idx (imsg-state-invs-zipper (informative-messages-component-state
@@ -582,7 +582,7 @@ triple is the entire of the ndfa rule
                                                        (viz-state-informative-messages a-vs)))))]
                      [pci pci]
                      [invs-zipper (cond [(zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                         (viz-state-informative-messages a-vs))))
+                                                                                 (viz-state-informative-messages a-vs))))
                                          (imsg-state-invs-zipper (informative-messages-component-state
                                                                   (viz-state-informative-messages a-vs)))]
                                         [(and (not (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
@@ -623,7 +623,7 @@ triple is the entire of the ndfa rule
                                              (viz-state-informative-messages a-vs)))
                             '())]
                    [invs-zipper (if (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                    (viz-state-informative-messages a-vs))))
+                                                                            (viz-state-informative-messages a-vs))))
                                     (imsg-state-invs-zipper (informative-messages-component-state
                                                              (viz-state-informative-messages a-vs)))
                                     (zipper-to-idx (imsg-state-invs-zipper (informative-messages-component-state
@@ -661,16 +661,8 @@ triple is the entire of the ndfa rule
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the previous broken invariant
 (define (j-key-pressed a-vs)
-  (if (or (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
-                                          (viz-state-informative-messages a-vs))))
-          (and (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                           (viz-state-informative-messages a-vs))))
-               (not (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                           (viz-state-informative-messages a-vs))))))
-          (< (length (imsg-state-pci (informative-messages-component-state
-                                      (viz-state-informative-messages a-vs))))
-             (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
-                                                      (viz-state-informative-messages a-vs))))))
+  (if (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
+                                              (viz-state-informative-messages a-vs))))
       a-vs
       (let* ([zip (if (and (not (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
                                                                            (viz-state-informative-messages a-vs)))))
@@ -685,8 +677,7 @@ triple is the entire of the ndfa rule
              [full-word (append (imsg-state-pci (informative-messages-component-state
                                                  (viz-state-informative-messages a-vs)))
                                 (imsg-state-upci (informative-messages-component-state
-                                                  (viz-state-informative-messages a-vs))))]
-             [partial-word (take full-word (zipper-current zip))])
+                                                  (viz-state-informative-messages a-vs))))])
         (struct-copy
          viz-state
          a-vs
@@ -698,23 +689,41 @@ triple is the entire of the ndfa rule
             (struct-copy imsg-state
                          (informative-messages-component-state
                           (viz-state-informative-messages a-vs))
-                         [upci (drop full-word (zipper-current zip))]
-                         [pci partial-word]
+                         [upci (cond [(and (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                      (viz-state-informative-messages a-vs))))
+                                           (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                    (viz-state-informative-messages a-vs))))
+                                           (>= (length (imsg-state-pci (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs))))
+                                               (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                        (viz-state-informative-messages a-vs))))))
+                                      (drop full-word (zipper-current zip))]
+                                     [(zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                 (viz-state-informative-messages a-vs))))
+                                      (imsg-state-upci (informative-messages-component-state
+                                                        (viz-state-informative-messages a-vs)))]
+                                     [else (drop full-word (zipper-current zip))])]
+                         [pci (cond [(and (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                     (viz-state-informative-messages a-vs))))
+                                          (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                   (viz-state-informative-messages a-vs))))
+                                          (>= (length (imsg-state-pci (informative-messages-component-state
+                                                                       (viz-state-informative-messages a-vs))))
+                                              (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                       (viz-state-informative-messages a-vs))))))
+                                     (take full-word (zipper-current zip))]
+                                    [(zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                (viz-state-informative-messages a-vs))))
+                                     (imsg-state-pci (informative-messages-component-state
+                                                      (viz-state-informative-messages a-vs)))]
+                                    [else (take full-word (zipper-current zip))])]
                          [invs-zipper zip])])]))))
 
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the next failed invariant
 (define (l-key-pressed a-vs)
-  (if (or (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
-                                          (viz-state-informative-messages a-vs))))
-          (and (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                         (viz-state-informative-messages a-vs))))
-               (not (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                           (viz-state-informative-messages a-vs))))))
-          (> (length (imsg-state-pci (informative-messages-component-state
-                                      (viz-state-informative-messages a-vs))))
-             (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
-                                                      (viz-state-informative-messages a-vs))))))
+  (if (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
+                                              (viz-state-informative-messages a-vs))))
       a-vs
       (let* ([zip (if (and (not (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
                                                                          (viz-state-informative-messages a-vs)))))
@@ -729,8 +738,7 @@ triple is the entire of the ndfa rule
              [full-word (append (imsg-state-pci (informative-messages-component-state
                                                  (viz-state-informative-messages a-vs)))
                                 (imsg-state-upci (informative-messages-component-state
-                                                  (viz-state-informative-messages a-vs))))]
-             [partial-word (take full-word (zipper-current zip))])
+                                                  (viz-state-informative-messages a-vs))))])
         (struct-copy
          viz-state
          a-vs
@@ -742,8 +750,34 @@ triple is the entire of the ndfa rule
             (struct-copy imsg-state
                          (informative-messages-component-state
                           (viz-state-informative-messages a-vs))
-                         [upci (drop full-word (zipper-current zip))]
-                         [pci partial-word]
+                         [upci (cond [(and (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                      (viz-state-informative-messages a-vs))))
+                                           (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                    (viz-state-informative-messages a-vs))))
+                                           (<= (length (imsg-state-pci (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs))))
+                                               (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                        (viz-state-informative-messages a-vs))))))
+                                      (drop full-word (zipper-current zip))]
+                                     [(zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                               (viz-state-informative-messages a-vs))))
+                                      (imsg-state-upci (informative-messages-component-state
+                                                        (viz-state-informative-messages a-vs)))]
+                                     [else (drop full-word (zipper-current zip))])]
+                         [pci (cond [(and (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                     (viz-state-informative-messages a-vs))))
+                                          (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                   (viz-state-informative-messages a-vs))))
+                                          (<= (length (imsg-state-pci (informative-messages-component-state
+                                                                       (viz-state-informative-messages a-vs))))
+                                              (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
+                                                                                       (viz-state-informative-messages a-vs))))))
+                                     (take full-word (zipper-current zip))]
+                                    [(zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
+                                                                              (viz-state-informative-messages a-vs))))
+                                     (imsg-state-pci (informative-messages-component-state
+                                                      (viz-state-informative-messages a-vs)))]
+                                    [else (take full-word (zipper-current zip))])]
                          [invs-zipper zip])])]))))
 
 ;;machine -> machine
@@ -845,91 +879,91 @@ triple is the entire of the ndfa rule
          [computation-lens (count-computations a-word (map computation-LoC computations) '())]
          ;;(listof number) ;;Purpose: Gets the index of image where an invariant failed
          [inv-configs (remove-duplicates (sort (map (λ (con)
-                             (length (second (first con))))
-                           (return-brk-inv-configs
-                            (get-inv-config-results
-                             (make-inv-configs a-word
-                                               (map (λ (comp)
-                                                      (reverse (computation-LoC comp)))
-                                                    accepting-computations))
-                             invs)
-                            a-word)) <))])
-        (run-viz graphs
-                 (lambda () (graph->bitmap (first graphs)))
-                 (posn (/ E-SCENE-WIDTH 2) (/ NDFA-E-SCENE-HEIGHT 2))
-                 DEFAULT-ZOOM
-                 DEFAULT-ZOOM-CAP
-                 DEFAULT-ZOOM-FLOOR
-                 (informative-messages ndfa-create-draw-informative-message
-                                       (imsg-state new-M
-                                                   a-word
-                                                   '()
-                                                   (list->zipper accepting-traces)
-                                                   'no-stck
-                                                   most-consumed-word
-                                                   (list->zipper inv-configs)
-                                                   (sub1 (length inv-configs))
-                                                   computation-lens
-                                                   LoC
-                                                   'no-max-cmps
-                                                   0
-                                                   (let ([offset-cap (- (length a-word) TAPE-SIZE)])
-                                                     (if (> 0 offset-cap) 0 offset-cap))
-                                                   0)
-                                       ndfa-img-bounding-limit)
-                 (instructions-graphic E-SCENE-TOOLS
-                                       (bounding-limits 0
-                                                        (image-width E-SCENE-TOOLS)
-                                                        (+ EXTRA-HEIGHT-FROM-CURSOR
-                                                           NDFA-E-SCENE-HEIGHT
-                                                           (image-height ndfa-info-img)
-                                                           INS-TOOLS-BUFFER)
-                                                        (+ EXTRA-HEIGHT-FROM-CURSOR
-                                                           NDFA-E-SCENE-HEIGHT
-                                                           (image-height ndfa-info-img)
-                                                           INS-TOOLS-BUFFER
-                                                           (image-height ARROW-UP-KEY))))
-                 (create-viz-draw-world E-SCENE-WIDTH NDFA-E-SCENE-HEIGHT INS-TOOLS-BUFFER)
-                 (create-viz-process-key ["right" viz-go-next right-key-pressed]
-                                         ["left" viz-go-prev left-key-pressed]
-                                         ["up" viz-go-to-begin up-key-pressed]
-                                         ["down" viz-go-to-end down-key-pressed]
-                                         [ "w" viz-zoom-in identity]
-                                         [ "s" viz-zoom-out identity]
-                                         [ "r" viz-max-zoom-out identity]
-                                         [ "f" viz-max-zoom-in identity]
-                                         [ "e" viz-reset-zoom identity]
-                                         [ "a" identity a-key-pressed]
-                                         [ "d" identity d-key-pressed]
-                                         [ "wheel-down" viz-zoom-in identity]
-                                         [ "wheel-up" viz-zoom-out identity]
-                                         [ "j" jump-prev j-key-pressed]
-                                         [ "l" jump-next l-key-pressed]
-                                         )
-                 (create-viz-process-tick NDFA-E-SCENE-BOUNDING-LIMITS
-                                          NODE-SIZE
-                                          E-SCENE-WIDTH
-                                          NDFA-E-SCENE-HEIGHT
-                                          CLICK-BUFFER-SECONDS
-                                          ([ndfa-img-bounding-limit
-                                            (lambda (a-imsgs x-diff y-diff) a-imsgs)])
-                                          ( [ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed]
-                                            [ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed]
-                                            [ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed]
-                                            [ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed]
-                                            [W-KEY-DIMS viz-zoom-in identity]
-                                            [S-KEY-DIMS viz-zoom-out identity]
-                                            [R-KEY-DIMS viz-max-zoom-out identity]
-                                            [E-KEY-DIMS viz-reset-zoom identity]
-                                            [ F-KEY-DIMS viz-max-zoom-in identity]
-                                            [ A-KEY-DIMS identity a-key-pressed]
-                                            [ D-KEY-DIMS identity d-key-pressed]
-                                            [ J-KEY-DIMS jump-prev j-key-pressed]
-                                            [ L-KEY-DIMS jump-next l-key-pressed])
-                                          )
-                 (if (eq? (M 'whatami) 'ndfa)
-                          'ndfa-viz
-                          'dfa-viz))))
+                                                      (length (second (first con))))
+                                                    (return-brk-inv-configs
+                                                     (get-inv-config-results
+                                                      (make-inv-configs a-word
+                                                                        (map (λ (comp)
+                                                                               (reverse (computation-LoC comp)))
+                                                                             accepting-computations))
+                                                      invs)
+                                                     a-word)) <))])
+    (run-viz graphs
+             (lambda () (graph->bitmap (first graphs)))
+             (posn (/ E-SCENE-WIDTH 2) (/ NDFA-E-SCENE-HEIGHT 2))
+             DEFAULT-ZOOM
+             DEFAULT-ZOOM-CAP
+             DEFAULT-ZOOM-FLOOR
+             (informative-messages ndfa-create-draw-informative-message
+                                   (imsg-state new-M
+                                               a-word
+                                               '()
+                                               (list->zipper accepting-traces)
+                                               'no-stck
+                                               most-consumed-word
+                                               (list->zipper inv-configs)
+                                               (sub1 (length inv-configs))
+                                               computation-lens
+                                               LoC
+                                               'no-max-cmps
+                                               0
+                                               (let ([offset-cap (- (length a-word) TAPE-SIZE)])
+                                                 (if (> 0 offset-cap) 0 offset-cap))
+                                               0)
+                                   ndfa-img-bounding-limit)
+             (instructions-graphic E-SCENE-TOOLS
+                                   (bounding-limits 0
+                                                    (image-width E-SCENE-TOOLS)
+                                                    (+ EXTRA-HEIGHT-FROM-CURSOR
+                                                       NDFA-E-SCENE-HEIGHT
+                                                       (image-height ndfa-info-img)
+                                                       INS-TOOLS-BUFFER)
+                                                    (+ EXTRA-HEIGHT-FROM-CURSOR
+                                                       NDFA-E-SCENE-HEIGHT
+                                                       (image-height ndfa-info-img)
+                                                       INS-TOOLS-BUFFER
+                                                       (image-height ARROW-UP-KEY))))
+             (create-viz-draw-world E-SCENE-WIDTH NDFA-E-SCENE-HEIGHT INS-TOOLS-BUFFER)
+             (create-viz-process-key ["right" viz-go-next right-key-pressed]
+                                     ["left" viz-go-prev left-key-pressed]
+                                     ["up" viz-go-to-begin up-key-pressed]
+                                     ["down" viz-go-to-end down-key-pressed]
+                                     [ "w" viz-zoom-in identity]
+                                     [ "s" viz-zoom-out identity]
+                                     [ "r" viz-max-zoom-out identity]
+                                     [ "f" viz-max-zoom-in identity]
+                                     [ "e" viz-reset-zoom identity]
+                                     [ "a" identity a-key-pressed]
+                                     [ "d" identity d-key-pressed]
+                                     [ "wheel-down" viz-zoom-in identity]
+                                     [ "wheel-up" viz-zoom-out identity]
+                                     [ "j" jump-prev j-key-pressed]
+                                     [ "l" jump-next l-key-pressed]
+                                     )
+             (create-viz-process-tick NDFA-E-SCENE-BOUNDING-LIMITS
+                                      NODE-SIZE
+                                      E-SCENE-WIDTH
+                                      NDFA-E-SCENE-HEIGHT
+                                      CLICK-BUFFER-SECONDS
+                                      ([ndfa-img-bounding-limit
+                                        (lambda (a-imsgs x-diff y-diff) a-imsgs)])
+                                      ( [ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed]
+                                        [ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed]
+                                        [ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed]
+                                        [ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed]
+                                        [W-KEY-DIMS viz-zoom-in identity]
+                                        [S-KEY-DIMS viz-zoom-out identity]
+                                        [R-KEY-DIMS viz-max-zoom-out identity]
+                                        [E-KEY-DIMS viz-reset-zoom identity]
+                                        [ F-KEY-DIMS viz-max-zoom-in identity]
+                                        [ A-KEY-DIMS identity a-key-pressed]
+                                        [ D-KEY-DIMS identity d-key-pressed]
+                                        [ J-KEY-DIMS jump-prev j-key-pressed]
+                                        [ L-KEY-DIMS jump-next l-key-pressed])
+                                      )
+             (if (eq? (M 'whatami) 'ndfa)
+                 'ndfa-viz
+                 'dfa-viz))))
 
 
 ;"notes to self:"
