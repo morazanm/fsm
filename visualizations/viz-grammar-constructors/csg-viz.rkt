@@ -23,6 +23,8 @@
    (list (list 'S ARROW 'AaB) (list 'AaA ARROW 'aSb) (list 'AaA ARROW EMP) (list 'B ARROW 'A))
    'S))
 
+
+
 (define anbncn
   (make-unchecked-csg
    '(S A B C G H I)
@@ -252,8 +254,7 @@
   (levels
    nodes
    hex-nodes
-   yield-nodes-lst
-   yield-nodes-set
+   yield-nodes
    hedges))
 
 ;; extract-nodes
@@ -265,34 +266,47 @@
 ;; make-node-graph
 ;; graph lon -> graph
 ;; Purpose: To make a node graph
-(define (make-node-graph graph lon hedge-nodes hex-nodes yield-node-lst yield-node-set invariants-set invariants-hash-map)
-  (define (remove-non-inv-chars inv-set yield-node-set)
-    (set-intersect yield-node-set inv-set))
-  (foldl (λ (state result)
+(define (make-node-graph graph lon hedge-nodes hex-nodes yield-node invariant)
+  (let ([invariant-result (if (not (eq? 'NO-INV invariant))
+                              (invariant (map undo-renaming yield-node))
+                              '())])
+         (foldl (λ (state result)
            (add-node result
                      state
-                     #:atb (hash 'color (let ([yield? (set-member? yield-node-set state)])
-                                          (cond
-                                            [yield? (let ([res (hash-ref invariants-hash-map (remove-non-inv-chars invariants-set yield-node-set) #f)])
-                                                      (if res
-                                                          (if (res yield-node-lst)
-                                                              INV-HELD-COLOR
-                                                              FAILED-INV-COLOR)
-                                                          YIELD-COLOR))]
-                                            [(member state hedge-nodes) HEDGE-COLOR]
-                                            [else 'black]))
-                                 'style 'solid
-                                 'shape (cond
-                                          [(member state hex-nodes) 'hexagon]
-                                          [else 'circle])
-                                 'label (undo-renaming state)
-                                 'penwidth (cond
-                                             [(member state hedge-nodes) 3.0]
-                                             [else 1.0])
-                                 'fontcolor 'black
-                                 'font "Sans")))
+                     #:atb (hash 'color (if (member state hedge-nodes)
+                                                    HEDGE-COLOR
+                                                    (if (member state yield-node)
+                                                        YIELD-COLOR
+                                                        'black))
+                                 'fillcolor (if (not (eq? 'NO-INV invariant))
+                                            (if (member state yield-node)
+                                                (if invariant-result
+                                                    INV-HELD-COLOR
+                                                    FAILED-INV-COLOR)
+                                                (if (member state hedge-nodes)
+                                                    HEDGE-COLOR
+                                                    'black))
+                                            (if (member state hedge-nodes)
+                                                    HEDGE-COLOR
+                                                    (if (member state yield-node)
+                                                        YIELD-COLOR
+                                                        'black)))
+                                            'style (if (not (eq? 'NO-INV invariant))
+                                                       (if (member state yield-node)
+                                                           'filled
+                                                           'solid)
+                                                       'solid)
+                                            'shape (cond
+                                                     [(member state hex-nodes) 'hexagon]
+                                                     [else 'circle])
+                                            'label (undo-renaming state)
+                                            'penwidth (cond
+                                                        [(member state hedge-nodes) 3.0]
+                                                        [else 1.0])
+                                            'fontcolor 'black
+                                            'font "Sans")))
          graph
-         lon))
+         lon)))
 
 ;; graph (listof edges) -> graph
 ;; Creates invisible edges so that ordering of the yield nodes is always maintained
@@ -334,7 +348,6 @@
           (extract-nodes level)
           hex-node
           yield-node
-          (list->set yield-node)
           hedge))
        levels hex-nodes yield-nodes hedges))
 
@@ -350,7 +363,7 @@
 ;; create-graph-structs
 ;; dgprh -> img
 ;; Purpose: Creates the final graph structure that will be used to create the images in graphviz
-(define (create-graph-structs a-dgrph invariants-set invariants-hash-map)
+(define (create-graph-structs a-dgrph invariant)
   (make-invisible-edge-graph
    (make-edge-graph
     (make-node-graph
@@ -359,15 +372,13 @@
      (dgrph-nodes a-dgrph)
      (extract-nodes (dgrph-hedges a-dgrph))
      (dgrph-hex-nodes a-dgrph)
-     (dgrph-yield-nodes-lst a-dgrph)
-     (dgrph-yield-nodes-set a-dgrph)
-     invariants-set
-     invariants-hash-map)
+     (dgrph-yield-nodes a-dgrph)
+     invariant)
     (dgrph-levels a-dgrph)
     (dgrph-hedges a-dgrph))
-   (create-line-of-edges (dgrph-yield-nodes-lst a-dgrph))))
+   (create-line-of-edges (dgrph-yield-nodes a-dgrph))))
 
-(define (csg-viz g w #:cpu-cores [cpu-cores #f] . invariants)
+(define (csg-viz g w #:cpu-cores [cpu-cores #f] . invariant)
   (let* [(derv (csg-derive-edited g w))
          (w-derv (map (lambda (x) (symbol->fsmlos (first x))) derv))
          (moved-rules
@@ -385,13 +396,9 @@
                        moved-rules)))
          (renamed (generate-levels (list (csg-getstart g)) moved-rules (make-hash)))
          (lod (create-dgrphs (third renamed) (first renamed) (second renamed) (fourth renamed)))
-         (invariants-set (list->set (map first invariants)))
-         (invariants-hash-map (make-immutable-hash invariants)
-                              #;(foldr (lambda (val accum)
-                                       (dict-set accum (first val) (second val)))
-                                     (make-immutable-custom-hash set-equal?)
-                                     invariants))
-         (graphs (map (lambda (x) (create-graph-structs x invariants-set invariants-hash-map)) lod))]
+         (graphs (map (lambda (x) (create-graph-structs x (if (empty? invariant)
+                                                              'NO-INV
+                                                              (first invariant)))) lod))]
     (init-viz g
               w
               w-derv 
@@ -403,11 +410,15 @@
               #:rank-node-lst (map (lambda (x y) (cons x (map list y)))
                                    (second renamed)
                                    (first renamed)))))
+
 (define (anbncn-csg-G-INV yield)
-  (let ([num-as (filter (lambda (x) (equal? x 'A)) yield)]
-        [num-bs (filter (lambda (x) (equal? x 'B)) yield)]
-        [num-cs (filter (lambda (x) (equal? x 'C)) yield)])
-    (= num-as num-bs num-cs)))
+  (if (member 'G yield)
+      (let ([num-as (length (filter (lambda (x) (equal? x 'A)) yield))]
+            [num-bs (length (filter (lambda (x) (equal? x 'B)) yield))]
+            [num-cs (length (filter (lambda (x) (equal? x 'C)) yield))])
+        (= num-as num-bs num-cs))
+      #f))
+
 (define anbncn-csg
   (make-unchecked-csg '(S A B C G H I) 
             '(a b c) 

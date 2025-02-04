@@ -297,7 +297,9 @@
         [(kleenestar-regexp? rexp)
          (gen-ks-word MAX-KLEENESTAR-REPS rexp gen-regexp-word)]
         [(union-regexp? rexp) (gen-regexp-word (pick-regexp rexp) MAX-KLEENESTAR-REPS)]
-        [else (gen-concat-word rexp gen-regexp-word MAX-KLEENESTAR-REPS)]))
+        [(concat-regexp? rexp) (gen-concat-word rexp gen-regexp-word MAX-KLEENESTAR-REPS)]
+        [(null-regexp? rexp) (error "A word cannot be generated using the null-regexp.")]
+        [else (error "The given input is not a regexp.")]))
 
   
   

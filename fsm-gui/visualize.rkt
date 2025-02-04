@@ -6,8 +6,8 @@
 |#
 
 (require
-  2htdp/image
-  2htdp/universe
+  "../visualizations/2htdp/image.rkt"
+  "../visualizations/2htdp/universe.rkt"
   "globals.rkt"
   "inputFactory.rkt"
   "inv.rkt"
