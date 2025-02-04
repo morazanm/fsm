@@ -11,12 +11,10 @@
 
 (provide check-machine)
 
-(define (accept C M M-stx unprocessed-word-lst unprocessed-word-stx-lst)
-  (let* ([invalids (accumulate-invalid-words C unprocessed-word-lst unprocessed-word-stx-lst)]
-         [invalid-words (map first invalids)]
-         [invalid-word-stx (map second invalids)])
-    (if (empty? invalids)
-        (let* ([res (foldr (lambda (word wordstx accum)
+;; machine machine-syntax (Listof word-expression) (Listof word-expression-syntax) (Listof head-position-expression)
+;; Checks if the machine accepts the words inside of the test cases
+(define (accept M M-stx unprocessed-word-lst unprocessed-word-stx-lst)
+  (let* ([res (foldr (lambda (word wordstx accum)
                              (if (equal? (sm-apply M word) 'accept)
                                  accum
                                  (cons (list word wordstx) accum)))
@@ -30,19 +28,12 @@
               (display-failed-test failure-str (exn:fail:check-failed
                                                 failure-str
                                                 (current-continuation-marks)
-                                                (map syntax-srcloc word-stx-lst))))))
-        (let ([failure-str (create-failure-str machine-invalid-nonterminal M-stx invalid-words)])
-          (display-failed-test failure-str (exn:fail:check-failed
-                                            failure-str
-                                            (current-continuation-marks)
-                                            (map syntax-srcloc invalid-word-stx)))))))
+                                                (map syntax-srcloc word-stx-lst)))))))
 
-(define (reject C M M-stx unprocessed-word-lst unprocessed-word-stx-lst)
-  (let* ([invalids (accumulate-invalid-words C unprocessed-word-lst unprocessed-word-stx-lst)]
-                [invalid-words (map first invalids)]
-                [invalid-word-stx (map second invalids)])
-           (if (empty? invalids)
-               (let* ([res (foldr (lambda (word wordstx accum)
+;; machine machine-syntax (Listof word-expression) (Listof word-expression-syntax) (Listof head-position-expression)
+;; Checks if the machine rejects the words inside of the test cases
+(define (reject M M-stx unprocessed-word-lst unprocessed-word-stx-lst)
+  (let* ([res (foldr (lambda (word wordstx accum)
                                     (if (equal? (sm-apply M word) 'reject)
                                         accum
                                         (cons (list word wordstx) accum)))
@@ -56,7 +47,18 @@
                      (display-failed-test failure-str (exn:fail:check-failed
                                                        failure-str
                                                        (current-continuation-marks)
-                                                       (map syntax-srcloc word-stx-lst))))))
+                                                       (map syntax-srcloc word-stx-lst)))))))
+
+;; Boolean flat-contract machine machine-syntax (Listof word) (Listof word-syntax)
+;; Checks the validity of the arguments given
+(define (check-validity-of-arguments accept? C M M-stx unprocessed-word-lst unprocessed-word-stx-lst)
+  (let* ([invalids (accumulate-invalid-words C unprocessed-word-lst unprocessed-word-stx-lst)]
+                [invalid-words (map first invalids)]
+                [invalid-word-stx (map second invalids)])
+           (if (empty? invalids)
+               (if accept?
+                   (accept M M-stx unprocessed-word-lst unprocessed-word-stx-lst)
+                   (reject M M-stx unprocessed-word-lst unprocessed-word-stx-lst))
                (let ([failure-str (create-failure-str machine-invalid-nonterminal M-stx invalid-words)])
                  (display-failed-test failure-str (exn:fail:check-failed
                                                    failure-str
@@ -67,7 +69,5 @@
 ;; Matches incorrect syntatic forms and provides specialized errors messages based on them
 (define-syntax (check-machine stx)
   (syntax-parse stx
-    [(_ #t C:id M (~var x) ...)
-     #'(accept C M #'M (list x ...) (list #'x ...))]
-    [(_ #f C:id M (~var x) ...)
-     #'(reject C M #'M (list x ...) (list #'x ...))]))
+    [(_ accept? C:id M (~var x) ...)
+     #'(check-validity-of-arguments accept? C M #'M (list x ...) (list #'x ...))]))

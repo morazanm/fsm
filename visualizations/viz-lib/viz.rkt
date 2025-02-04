@@ -1,15 +1,12 @@
 #lang racket/base
 (require 2htdp/universe
          "../../fsm-gviz/private/parallel.rkt"
-         "../../fsm-gviz/private/lib.rkt"
-         racket/async-channel
          "vector-zipper.rkt"
          "bounding-limits.rkt"
          "viz-state.rkt"
          2htdp/image
          racket/list
-         racket/promise
-         )
+         racket/promise)
 
 (provide run-viz)
 
@@ -23,8 +20,7 @@
       '()
       (if (not cpu-cores)
           (streaming-parallel-graphs->bitmap-thunks graphs #:graph-type graph-type #:rank-node-lst rank-node-lst)
-          (streaming-parallel-graphs->bitmap-thunks graphs #:graph-type graph-type #:rank-node-lst rank-node-lst #:cpu-cores cpu-cores)
-          )))
+          (streaming-parallel-graphs->bitmap-thunks graphs #:graph-type graph-type #:rank-node-lst rank-node-lst #:cpu-cores cpu-cores))))
 
 ;; viz-state int int MouseEvent
 ;; Updates viz-state as to whether the mouse is currently being pressed while on the visualization
@@ -83,9 +79,7 @@
   (define (load-image new-img)
     (if (list? new-img)
         (force (delay/thread (lambda () (apply above (map (lambda (img) ((force img))) new-img)))))
-        (force (delay/thread ((force new-img))))
-        )
-    )
+        (force (delay/thread ((force new-img))))))
   (let [(imgs (let ([res (create-graph-imgs graphs
                                             #:rank-node-lst rank-node-lst
                                             #:graph-type special-graphs?

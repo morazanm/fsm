@@ -1,7 +1,5 @@
 #lang racket/base
-(require (for-syntax syntax/parse
-                     racket/base)
-         "vector-zipper.rkt"
+(require "vector-zipper.rkt"
          "viz-state.rkt"
          math/matrix
          "bounding-limits.rkt"
@@ -48,9 +46,7 @@
          (MAX-Y (if (< E-SCENE-HEIGHT (/ (image-height scaled-image) 2))
                     (+ (- (/ (image-height scaled-image) 2) E-SCENE-HEIGHT) E-SCENE-HEIGHT (- E-SCENE-HEIGHT scaled-node-size))
                     (+ E-SCENE-HEIGHT img-height-node-diff)))]
-    (bounding-limits MIN-X MAX-X MIN-Y MAX-Y))
-    
-  )
+    (bounding-limits MIN-X MAX-X MIN-Y MAX-Y)))
 
 
 (define (reposition-out-of-bounds-img a-vs viewport-lims new-img new-scale)

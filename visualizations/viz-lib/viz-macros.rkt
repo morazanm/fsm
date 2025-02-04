@@ -2,29 +2,20 @@
 (require (for-syntax syntax/parse
                      racket/base
                      "viz-state.rkt"
-                     racket/struct-info)
-         (only-in racket/gui
-                  get-display-size
-                  get-display-count)
+                     )
          2htdp/universe
          2htdp/image
          "viz-state.rkt"
          "bounding-limits.rkt"
-         "default-viz-function-generators.rkt")
+         "default-viz-function-generators.rkt"
+         "viz-constants.rkt")
 
 (provide  create-viz-process-key
           create-viz-draw-world
           create-viz-process-tick)
 
-(define-values (WINDOW-WIDTH WINDOW-HEIGHT) (if (>= (get-display-count) 1)
-                                                (with-handlers ([exn:fail? (lambda (e) (values 1200 500))]) (get-display-size))
-                                                (values 1200 500)
-                                                )
-                                                )
-
 (define-syntax (create-viz-process-key stx)
   (syntax-parse stx
-    #:literals (list)
     [(_ [key viz-func imsg-func]...)
      #'(lambda (a-vs key-pressed)
          (cond [(key=? key key-pressed)
@@ -34,7 +25,6 @@
 
 (define-syntax (create-viz-process-tick stx)
   (syntax-parse stx
-    #:literals (list quote)
     [(_ E-SCENE-BOUNDING-LIMITS NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT
         CLICK-BUFFER-SECONDS ([imsg-b-limit imsg-process-tick-func]...)
         ([instruction-b-limit viz-key-func imsg-key-func]...))
@@ -87,28 +77,25 @@
              (struct-copy viz-state a-vs
                           [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])))]))
 
-(define-syntax (create-viz-draw-world stx)
-  (syntax-parse stx
-    #:literals (list)
-    [(_ E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
-     #'(lambda (a-vs)
-         (let* [(INFORMATIVE-MESSAGES ((informative-messages-draw-component (viz-state-informative-messages a-vs))
-                                       (informative-messages-component-state (viz-state-informative-messages a-vs))))
-                (INSTRUCTIONS-GRAPHIC (instructions-graphic-img (viz-state-instructions-graphic a-vs)))
-                (PARSE-TREE-IMG (place-image (scale (viz-state-scale-factor a-vs) (viz-state-curr-image a-vs))
-                                             (posn-x (viz-state-image-posn a-vs))
-                                             (posn-y (viz-state-image-posn a-vs))
-                                             (rectangle E-SCENE-WIDTH (- (* 0.9 WINDOW-HEIGHT)
-                                                                         (image-height INFORMATIVE-MESSAGES)
-                                                                         (image-height INSTRUCTIONS-GRAPHIC))
-                                                        'outline 'white)))
-                (WINDOW-FRAME (rectangle (* 0.95 WINDOW-WIDTH) (* 0.9 WINDOW-HEIGHT) 'outline 'white))]
-           (overlay/align
-            "middle"
-            "bottom"
-            (above PARSE-TREE-IMG
-                   ((informative-messages-draw-component (viz-state-informative-messages a-vs))
-                    (informative-messages-component-state (viz-state-informative-messages a-vs)))
-                   (square INS-TOOLS-BUFFER 'solid 'white)
-                   (instructions-graphic-img (viz-state-instructions-graphic a-vs)))
-            WINDOW-FRAME)))]))
+(define (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
+  (lambda (a-vs)
+    (let* [(INFORMATIVE-MESSAGES ((informative-messages-draw-component (viz-state-informative-messages a-vs))
+                                  (informative-messages-component-state (viz-state-informative-messages a-vs))))
+           (INSTRUCTIONS-GRAPHIC (instructions-graphic-img (viz-state-instructions-graphic a-vs)))
+           (PARSE-TREE-IMG (place-image (scale (viz-state-scale-factor a-vs) (viz-state-curr-image a-vs))
+                                        (posn-x (viz-state-image-posn a-vs))
+                                        (posn-y (viz-state-image-posn a-vs))
+                                        (rectangle E-SCENE-WIDTH (- (* 0.9 WINDOW-HEIGHT)
+                                                                    (image-height INFORMATIVE-MESSAGES)
+                                                                    (image-height INSTRUCTIONS-GRAPHIC))
+                                                   'outline 'white)))
+           (WINDOW-FRAME (rectangle (* 0.95 WINDOW-WIDTH) (* 0.9 WINDOW-HEIGHT) 'outline 'white))]
+      (overlay/align
+       "middle"
+       "bottom"
+       (above PARSE-TREE-IMG
+              ((informative-messages-draw-component (viz-state-informative-messages a-vs))
+               (informative-messages-component-state (viz-state-informative-messages a-vs)))
+              (square INS-TOOLS-BUFFER 'solid 'white)
+              (instructions-graphic-img (viz-state-instructions-graphic a-vs)))
+       WINDOW-FRAME))))

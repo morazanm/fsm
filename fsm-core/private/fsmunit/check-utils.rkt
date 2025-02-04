@@ -5,6 +5,8 @@
 
 (provide (all-defined-out))
 
+;; flat-contract (Listof Any) (Listof Syntax) -> (Listof (List Word Syntax))
+;; Returns a list of any value and their syntax if they fail the given contract check
 (define (accumulate-invalid-words contract word-lst word-stx-lst)
   (foldr (lambda (w w-stx accum)
            (if (contract w)
@@ -14,6 +16,8 @@
          word-lst
          word-stx-lst))
 
+;; dependent-flat-contract (Listof Any) (Listof Syntax) (Listof Any) -> (Listof (List Word Syntax))
+;; Returns a list of any value and their syntax if they fail their respective created contract
 (define (accumulate-invalid-words-dep contract-builder word-lst word-stx-lst . deps)
   (let* ([contracts (apply contract-builder deps)])
     (foldr (lambda (w w-stx contract accum)
@@ -24,11 +28,6 @@
          word-lst
          word-stx-lst
          contracts)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; GRAMMAR CONTRACTS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; grammar test case error precedence
-;; 1. Invalid word element(s)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; TURING MACHINE CONTRACTS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
