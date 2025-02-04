@@ -6,7 +6,7 @@ Created by Joshua Schappel on 12/19/19
 |#
 
 (require
-  2htdp/image
+  "../../visualizations/2htdp/image.rkt"
   "buttonFunctions.rkt"
   "./runProgram.rkt"
   "../structs/button.rkt"

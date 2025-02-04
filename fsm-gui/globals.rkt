@@ -1,12 +1,12 @@
 #lang racket/base
 (require racket/bool
-         racket/list)
+         racket/list
+         "../visualizations/2htdp/image.rkt")
 #|
 Created by Joshua Schappel on 12/19/19
    This file contains global variables for the visualization tool and its components
 |#
 
-(require 2htdp/image)
 (provide (all-defined-out))
 
 (define ORIGINAL-MACHINE-STRUCT (void))

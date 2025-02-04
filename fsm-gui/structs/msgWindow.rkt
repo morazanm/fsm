@@ -1,5 +1,5 @@
 #lang racket/base
-(require 2htdp/image
+(require "../../visualizations/2htdp/image.rkt"
          "posn.rkt"
          racket/list
          racket/string)
