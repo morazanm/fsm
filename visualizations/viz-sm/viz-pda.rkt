@@ -47,7 +47,6 @@ LoC is a (listof configuration)
 LoR is a (listof rule)
 visited is a (listof configuration)
 |#
-(struct computation (LoC LoR visited) #:transparent)
 
 ;; X (listof X) -> boolean
 ;;Purpose: Determine if X is in the given list

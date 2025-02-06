@@ -6,6 +6,7 @@
          "david-imsg-state.rkt"
          "../../fsm-core/private/fsa.rkt"
          "../../fsm-core/private/pda.rkt"
+         "../../fsm-core/private/tm.rkt"
          "../../fsm-core/private/constants.rkt")
 
 (provide ndfa-create-draw-informative-message
@@ -42,6 +43,39 @@
                          (overlay (square 21 'solid 'white) (square (add1 21) 'solid 'white)))
                 (overlay (square 21 'solid 'white) (square (add1 21) 'solid 'white)))))])
     (make-tape-img letter-imgs start-index)))
+
+
+(define (draw-imsg imsg-st)
+  (let* [(tape (imsg-state-tape imsg-st))
+         (start-index 0 #;(second a-tape))
+         (head-pos (imsg-state-head-pos imsg-st))
+         (TAPE-SIZE 24)]
+    (define (make-tape-img loi start-index)
+      (if (empty? (rest loi))
+          (above (first loi)
+                 (square 5 'solid 'white)
+                 (text (number->string start-index) 10 'black))
+          (beside (above (first loi)
+                         (square 5 'solid 'white)
+                         (text (number->string start-index) 10 'black))
+                  (make-tape-img (rest loi) (add1 start-index)))))
+    (let [(letter-imgs (build-list TAPE-SIZE
+                                   (λ (i) (if (< (+ start-index i) (length tape))
+                                              (overlay (text (symbol->string (list-ref tape (+ start-index i)))
+                                                             24
+                                                             (if (= i (- head-pos start-index))
+                                                                 'red
+                                                                 'black))
+                                                       (overlay (square 50 'solid 'white)
+                                                                (square (add1 50) 'solid 'black)))
+                                              (overlay (text (symbol->string BLANK)
+                                                             24
+                                                             (if (= i (- head-pos start-index))
+                                                                 'red
+                                                                 'black))
+                                                       (square 50 'solid 'white)
+                                                       (square (add1 50) 'solid 'black))))))]
+      (make-tape-img letter-imgs start-index))))
 
 #|
 A trace is a structure:
@@ -741,23 +775,14 @@ triple is the entire of the ndfa rule
      'left 'middle
      (above/align
       'left
-      
-      (cond [(ormap (λ (comp) (>= (length comp) (imsg-state-max-cmps imsg-st)))
+      ;(text "Tape: " 20 'black)
+      (draw-imsg imsg-st)
+      #;(cond [(ormap (λ (comp) (>= (length comp) (imsg-state-max-cmps imsg-st)))
                          (imsg-state-comps imsg-st))
-             (beside (text "aaaa" 20 'white)
-                                  (text "Tape: " 20 'black)
-                                  (make-tape-img (imsg-state-tape imsg-st)
-                                                 (if (> (length (imsg-state-tape imsg-st)) TAPE-SIZE)
-                                                     (imsg-state-word-img-offset imsg-st)
-                                                     0)
-                                                 '()))]
-            [else (beside (text "aaaa" 20 'white)
-                          (text "Tape: " 20 'black)
-                          (make-tape-img (imsg-state-tape imsg-st)
-                                         (if (> (length (imsg-state-tape imsg-st)) TAPE-SIZE)
-                                             (imsg-state-word-img-offset imsg-st)
-                                             0)
-                                         '()))])
+             (above (text "Tape: " 20 'black)
+                    (draw-imsg imsg-st))]
+            [else (above  (text "Tape: " 20 'black)
+                          (draw-imsg imsg-st))])
       (text (format "The current number of possible computations is: ~a (without repeated configurations)."
                     (number->string 0
                                     #;(if (= (length (imsg-state-pci imsg-st)) (imsg-state-max-cmps imsg-st))

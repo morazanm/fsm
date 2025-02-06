@@ -52,16 +52,6 @@ action is the second pair in a tm rule
 ;;head-pos is the beginning head position of the tape=
 (struct building-viz-state (tape computations acc-comp accept-traces reject-traces M inv max-cmps head-pos) #:transparent)
 
-
-
-#|
-A computation is a structure: (make-computation LoC LoR LoT visited)
-LoC is a (listof configuration)
-LoR is a (listof rule)
-visited is a (listof configuration)
-|#
-(struct computation (LoC LoR visited) #:transparent)
-
 (define DUMMY-RULE (list (list BLANK BLANK) (list BLANK BLANK)))
 
 (define qempty? empty?)
@@ -194,11 +184,11 @@ visited is a (listof configuration)
 ;;         tracks each transition
 (define (make-trace configs rules acc)
   (cond [(empty? rules) (reverse acc)]
-        [(and (empty? acc)
-              (not (equal? (second (first (first rules))) EMP)))
+        #;[(and (empty? acc)
+              (not (equal? (second (first (first rules))) BLANK)))
          (let* ([rle (rule (first DUMMY-RULE) (second DUMMY-RULE))]
                 [res (trace (first configs) (list rle))])
-           (make-trace(rest configs) rules (cons res acc)))]
+           (make-trace (rest configs) rules (cons res acc)))] ;;do i really need?
         [else (let* ([rle (rule (first (first rules)) (second (first rules)))]
                      [res (trace (first configs) (list rle))])
                 (make-trace (rest configs) (rest rules) (cons res acc)))]))
@@ -520,6 +510,8 @@ visited is a (listof configuration)
                                (rest (imsg-state-upci (informative-messages-component-state
                                                        (viz-state-informative-messages a-vs)))))]
                      #;[pci pci]
+                     [head-pos (add1 (imsg-state-head-pos (informative-messages-component-state
+                                                       (viz-state-informative-messages a-vs))))]
                      [acpt-trace (if (or (zipper-empty? (imsg-state-acpt-trace (informative-messages-component-state
                                                                                 (viz-state-informative-messages a-vs))))
                                          (zipper-at-end? (imsg-state-acpt-trace (informative-messages-component-state
@@ -611,6 +603,7 @@ visited is a (listof configuration)
                  (take full-word (- (length full-word) (length (imsg-state-farthest-consumed (informative-messages-component-state
                                                                                               (viz-state-informative-messages a-vs))))))]
                 [else full-word])]
+         [head-pos 1]
          [acpt-trace (if (or (zipper-empty? (imsg-state-acpt-trace (informative-messages-component-state
                                                                     (viz-state-informative-messages a-vs))))
                              (zipper-at-end? (imsg-state-acpt-trace (informative-messages-component-state
@@ -677,6 +670,12 @@ visited is a (listof configuration)
         (struct-copy imsg-state
                      (informative-messages-component-state
                       (viz-state-informative-messages a-vs))
+                     [head-pos (if (= (imsg-state-head-pos (informative-messages-component-state
+                                                       (viz-state-informative-messages a-vs))) 0)
+                                   (imsg-state-head-pos (informative-messages-component-state
+                                                       (viz-state-informative-messages a-vs)))
+                                   (sub1 (imsg-state-head-pos (informative-messages-component-state
+                                                       (viz-state-informative-messages a-vs)))))]
                      #;[upci (if (or (empty? (imsg-state-pci (informative-messages-component-state
                                                             (viz-state-informative-messages a-vs))))
                                    (and (equal? (second (first rule)) EMP)
@@ -739,6 +738,7 @@ visited is a (listof configuration)
                             (imsg-state-pci (informative-messages-component-state
                                              (viz-state-informative-messages a-vs)))
                             '())]
+                   [head-pos 0]
                    [acpt-trace (if (or (zipper-empty? (imsg-state-acpt-trace (informative-messages-component-state
                                                                               (viz-state-informative-messages a-vs))))
                                        (zipper-at-begin? (imsg-state-acpt-trace (informative-messages-component-state
@@ -994,6 +994,7 @@ visited is a (listof configuration)
                              (make-inv-configs a-word accepting-computations)
                              invs)
                             a-word))])
+    (displayln accepting-traces)
     ;(displayln computations)
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
@@ -1163,7 +1164,7 @@ visited is a (listof configuration)
                         '(Y)
                         'Y))
 
-
+"extract tape and headpos from accepting computations"
 
 #|
 (reverse (computation-LoC (first (get-computations '(@ a a b)

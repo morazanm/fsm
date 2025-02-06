@@ -76,8 +76,6 @@ triple is the entire of the ndfa rule
       (rest a-qox)))
 
 
-(struct computation (LoC LoR visited) #:transparent)
-
 
 ;;config rule -> config
 ;;Purpose: Applies the given rule to the given config

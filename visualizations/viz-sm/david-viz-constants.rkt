@@ -17,6 +17,13 @@
 
 (define FONT-SIZE 18)
 (provide (all-defined-out))
+#|
+A computation is a structure: (make-computation LoC LoR LoT visited)
+LoC is a (listof configuration)
+LoR is a (listof rule)
+visited is a (listof configuration)
+|#
+(struct computation (LoC LoR visited) #:transparent)
 
 (define HELD-INV-COLOR 'chartreuse4)
 (define BRKN-INV-COLOR 'red2)
