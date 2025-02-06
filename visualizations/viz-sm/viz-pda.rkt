@@ -1225,6 +1225,8 @@ visited is a (listof configuration)
                                    (imsg-state new-M
                                                a-word
                                                '()
+                                               '()
+                                               0
                                                (list->zipper accepting-trace)
                                                stack
                                                most-consumed-word

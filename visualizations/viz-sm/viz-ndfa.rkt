@@ -425,7 +425,11 @@ triple is the entire of the ndfa rule
 ;;Purpose: Creates all the graphs needed for the visualization
 (define (create-graph-thunks a-vs acc)
   (cond [(empty? (building-viz-state-upci a-vs)) (reverse (cons (create-graph-thunk a-vs) acc))]
-        [(eq? (building-viz-state-upci a-vs) (building-viz-state-farthest-consumed a-vs))
+        [(not (ormap (λ (config) (empty? (second (first (computation-LoC config)))))
+                     (trace-computations (building-viz-state-pci a-vs)
+                                  (fsa-getrules (building-viz-state-M a-vs))
+                                  (fsa-getstart (building-viz-state-M a-vs))
+                                  (fsa-getfinals (building-viz-state-M a-vs)))))
          (reverse (cons (create-graph-thunk a-vs) acc))]
         [else (let ([next-graph (create-graph-thunk a-vs)])
                 (create-graph-thunks (struct-copy building-viz-state
@@ -898,6 +902,8 @@ triple is the entire of the ndfa rule
                                    (imsg-state new-M
                                                a-word
                                                '()
+                                               '()
+                                               0
                                                (list->zipper accepting-traces)
                                                'no-stck
                                                most-consumed-word

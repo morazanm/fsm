@@ -76,6 +76,8 @@
 (define ndfa-info-img (ndfa-create-draw-informative-message (imsg-state AB*B*UAB*
               '(a b b)
               '()
+              '()
+              0
               (list->zipper '(((S (a b b)) (K (a b b)) (B (b b)) (K (b)) (H (b)) (H ())) ((S (a b b)) (C (b b)) (H (b b)) (H (b)) (H ())) ((S (a b b)) (K (a b b)) (H (a b b)))))
               'no-stck
               'no-farthest-consumed
@@ -96,6 +98,8 @@
 (define pda-info-img (pda-create-draw-informative-message (imsg-state a*
               '(a b b)
               '()
+              '()
+              0
               (list->zipper '())
               (list->zipper '())
               '(1)
@@ -114,19 +118,39 @@
               0)))
 
 
-(define tm-info-img (tm-create-draw-informative-message (imsg-state-tm EVEN-AS-&-BS
+(define tm-info-img (tm-create-draw-informative-message (imsg-state EVEN-AS-&-BS
+                                                                    '()
+                                                                    '()
                                                                     '(@ a a b)
+                                                                    1
                                                                     (list->zipper '())
+                                                                    (list->zipper '())
+                                                                    '()
                                                                     (list->zipper '())
                                                                     0
                                                                     '()
                                                                     '()
-                                                                    1
                                                                     0
                                                                     0
                                                                     (let ([offset-cap (- (length '(a b b)) TAPE-SIZE)])
                                                                       (if (> 0 offset-cap) 0 offset-cap))
                                                                     0)))
+
+#;(imsg-state EVEN-AS-&-BS
+            '()
+            '()
+            '(@ a a b)
+            1
+            (list->zipper '())
+            (list->zipper '())
+            0
+            '()
+            '()
+            0
+            0
+            (let ([offset-cap (- (length '(a b b)) TAPE-SIZE)])
+              (if (> 0 offset-cap) 0 offset-cap))
+            0)
                                                                     
 
 

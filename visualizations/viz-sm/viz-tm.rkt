@@ -1002,15 +1002,19 @@ visited is a (listof configuration)
              DEFAULT-ZOOM-CAP
              DEFAULT-ZOOM-FLOOR
              (informative-messages tm-create-draw-informative-message
-                                   (imsg-state-tm M
+                                   (imsg-state M
+                                                  '()
+                                                  '()
                                                a-word
+                                               head-pos                                               
                                                (list->zipper accepting-trace)
+                                               (list->zipper '())
+                                               '()
                                                (list->zipper '() #;inv-configs) 
                                                0 ;(sub1 (length inv-configs))
                                                computation-lens
                                                LoC
                                                cut-off
-                                               head-pos
                                                0
                                                (let ([offset-cap (- (length a-word) TAPE-SIZE)])
                                                  (if (> 0 offset-cap) 0 offset-cap))
