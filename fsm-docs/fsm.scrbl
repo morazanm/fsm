@@ -429,7 +429,14 @@ language may cause the constructor to not terminate.
 
 @defproc[(sm-viz [m machine?] [w word?] [#:add-dead add-dead boolean? #f] [#:cut-off cut-off natural? 100] [invariant (-> word? boolean?)] ...)
          void]
-        A description for sm-viz
+        Visualizes the given machine being applied to the given word. Currently only NDFAs and PDAs
+        are supported. Adds a dead state if the optional keyword argument @italic{add-dead} is set to true.
+        In the case that a pushdown automata is being visualized, due to the possibility of an infinite
+        recursion, a @italic{cutoff} threshold is defined and can be modified by the user setting the optional
+        keyword argument cut-off to the maximum number of steps a computation can take. Invariant predicates
+        can optionally be provided for each of the states of the machine, which when given will display
+        when the predicate holds and has been broken during the visualization.
+
 @defproc*[([(sm-visualize [sym (or/c 'dfa 'ndfa 'pda 'tm 'mttm 'tm-language-recognizer 'mttm-language-recognizer)]) void?]
            [(sm-visualize [m machine?]
                           [inv-list (listof (listof state? procedure?)) '()]) void])]{
