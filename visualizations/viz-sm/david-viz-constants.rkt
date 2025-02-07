@@ -128,8 +128,8 @@ visited is a (listof configuration)
 (define tm-info-img (tm-create-draw-informative-message (imsg-state EVEN-AS-&-BS
                                                                     '()
                                                                     '()
-                                                                    '(@ a a b)
-                                                                    1
+                                                                    (list->zipper '())
+                                                                    (list->zipper '(1))
                                                                     (list->zipper '())
                                                                     (list->zipper '())
                                                                     '()

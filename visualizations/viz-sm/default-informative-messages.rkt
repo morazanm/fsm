@@ -46,9 +46,9 @@
 
 
 (define (draw-imsg imsg-st)
-  (let* [(tape (imsg-state-tape imsg-st))
+  (let* [(tape (zipper-current (imsg-state-tape imsg-st)) #;(imsg-state-acpt-trace imsg-st))
          (start-index 0 #;(second a-tape))
-         (head-pos (imsg-state-head-pos imsg-st))
+         (head-pos (zipper-current (imsg-state-head-pos imsg-st)))
          (TAPE-SIZE 24)]
     (define (make-tape-img loi start-index)
       (if (empty? (rest loi))
@@ -770,11 +770,12 @@ triple is the entire of the ndfa rule
 (define (tm-create-draw-informative-message imsg-st)
   (let ([machine-decision (if (not (zipper-empty? (imsg-state-acpt-trace imsg-st)))
                                'accept
-                               'reject)])
-    (overlay/align
-     'left 'middle
-     (above/align
+                               'reject)]
+        [FONT-SIZE 20])
+    (above/align
       'left
+      (beside (text "Last rule used: " FONT-SIZE 'black)
+              (text "" FONT-SIZE 'black))
       ;(text "Tape: " 20 'black)
       (draw-imsg imsg-st)
       #;(cond [(ormap (λ (comp) (>= (length comp) (imsg-state-max-cmps imsg-st)))
@@ -790,20 +791,20 @@ triple is the entire of the ndfa rule
                                                   (sub1 (length (imsg-state-pci imsg-st))))
                                         (list-ref (imsg-state-comps-len imsg-st)
                                                   (length (imsg-state-pci imsg-st))))))
-            20
+            FONT-SIZE
             'brown)
       (cond [(ormap (λ (comp) (>= (length comp) (imsg-state-max-cmps imsg-st)))
                          (imsg-state-comps imsg-st))
              (text (format "There are computations that exceed the cut-off limit (~a)."
-                           (imsg-state-max-cmps imsg-st)) 20 DARKGOLDENROD2)]
-            [(and (empty? (imsg-state-tape imsg-st))
+                           (imsg-state-max-cmps imsg-st)) FONT-SIZE DARKGOLDENROD2)]
+            [(and (zipper-at-end? (imsg-state-tape imsg-st))
+                  (zipper-at-end? (imsg-state-head-pos imsg-st))
                   (equal? machine-decision 'accept))
-             (text "There is a computation that accepts." 20 'forestgreen)]
-            [(and (empty? (imsg-state-tape imsg-st))
+             (text "There is a computation that accepts." FONT-SIZE 'forestgreen)]
+            [(and (zipper-empty? (imsg-state-tape imsg-st))
                   (equal? machine-decision 'reject))
-             (text "All computations end in a non-final configuration and the machine rejects." 20 'red)]
-            [else (text "Word Status: accept " 20 'white)]))
-     (rectangle 1250 50 'solid 'white))))
+             (text "All computations end in a non-final configuration and the machine rejects." FONT-SIZE 'red)]
+            [else (text "Word Status: accept " FONT-SIZE 'white)]))))
 
 ;"notes to self:"
 ;"scroll thru word instead of jumping to end"
