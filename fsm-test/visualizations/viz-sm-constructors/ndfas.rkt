@@ -240,3 +240,20 @@
 ;; ndfa2dfa works
 ;; ndfa2regexp works
 ;; complement works
+
+
+(define NDMD (make-ndfa '(S A B C D E F G H I)
+                        '(a b)
+                        'S
+                        '(A B C D)
+                        `((S ,EMP A)
+                          (S ,EMP D)
+                          (A a B)
+                          (B ,EMP C)
+                          (C b I)
+                          (I ,EMP B)
+                          (D ,EMP E)
+                          (E a F)
+                          (F ,EMP G)
+                          (G b H)
+                          (H ,EMP D))))

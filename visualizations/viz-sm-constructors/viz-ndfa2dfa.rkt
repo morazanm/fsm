@@ -340,19 +340,20 @@
 ;; (listof ndfa-rules) superstate  super-state-edge -> (listof edges)
 ;; Purpose: To compute a list of edges that needs to be highlighted in the ndfa graph
 (define (compute-all-hedges ndfa-rules to-ss added-dfa-edge)
-  (if (empty? to-ss)
-      empty
-      (let ([new-hedges (if (empty? added-dfa-edge)
-                            empty
-                            (filter (λ (rule)
-                                      (and (eq? (second added-dfa-edge) (second rule))
-                                           (member (first rule) (first added-dfa-edge))))
-                                    ndfa-rules))])
-        (append (find-empty-transitions (list (first to-ss)) empty ndfa-rules)
-                new-hedges
-                (compute-all-hedges (filter (λ (rule) (not (member rule new-hedges))) ndfa-rules)
-                                    (rest to-ss)
-                                    added-dfa-edge)))))
+  (remove-duplicates
+   (if (empty? to-ss)
+       empty
+       (let ([new-hedges (if (empty? added-dfa-edge)
+                             empty
+                             (filter (λ (rule)
+                                       (and (eq? (second added-dfa-edge) (second rule))
+                                            (member (first rule) (first added-dfa-edge))))
+                                     ndfa-rules))])
+         (append (find-empty-transitions (list (first to-ss)) empty ndfa-rules)
+                 new-hedges
+                 (compute-all-hedges (filter (λ (rule) (not (member rule new-hedges))) ndfa-rules)
+                                     (rest to-ss)
+                                     added-dfa-edge))))))
 
 ;; remove-edges
 ;; (listof edges) (listof edges) -> (listof edges)
