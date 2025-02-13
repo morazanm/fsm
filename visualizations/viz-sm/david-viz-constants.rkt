@@ -27,6 +27,11 @@ visited is a (listof configuration)
 
 (define HELD-INV-COLOR 'chartreuse4)
 (define BRKN-INV-COLOR 'red2)
+(define TRACKED-ACCEPT-COLOR 'green)
+(define ALL-ACCEPT-COLOR 'darkgreen)
+(define SPLIT-ACCEPT-COLOR (string-append (symbol->string TRACKED-ACCEPT-COLOR)
+                                                              ":" (symbol->string ALL-ACCEPT-COLOR)))
+(define REJECT-COLOR 'violetred)
 (define GRAPHVIZ-CUTOFF-GOLD 'darkgoldenrod2)
 (define SM-VIZ-FONT-SIZE 18)
 (define INS-TOOLS-BUFFER 30)
@@ -63,6 +68,7 @@ visited is a (listof configuration)
 
 (define INFORMATIVE-MSG-HEIGHT 50)
 
+(define (id x) x)
 
 (define E-SCENE-TOOLS (e-scene-tools-generator HEIGHT-BUFFER LETTER-KEY-WIDTH-BUFFER SM-VIZ-FONT-SIZE
                                                    (list (list ARROW-UP-KEY "Restart")
@@ -80,33 +86,43 @@ visited is a (listof configuration)
                                                          (list J-KEY "Prv not inv")
                                                          (list L-KEY "Nxt not inv"))))
 
-(define ndfa-info-img (ndfa-create-draw-informative-message (imsg-state AB*B*UAB*
-              '(a b b)
-              '()
-              '()
-              0
-              (list->zipper '(((S (a b b)) (K (a b b)) (B (b b)) (K (b)) (H (b)) (H ())) ((S (a b b)) (C (b b)) (H (b b)) (H (b)) (H ())) ((S (a b b)) (K (a b b)) (H (a b b)))))
-              'no-stck
-              'no-farthest-consumed
-              (list->zipper '())
-              (sub1 (length '()))
-              '(1 2 3 2)
-              '((computation
-                 ((H ()) (H (b)) (K (b)) (B (b b)) (K (a b b)) (S (a b b)))
-                 ((H b H) (K ε H) (B b K) (K a B) (S ε K))
-                 ((H (b)) (K (b)) (B (b b)) (K (a b b)) (S (a b b))))
-                (computation ((H ()) (H (b)) (H (b b)) (C (b b)) (S (a b b))) ((H b H) (H b H) (C ε H) (S a C)) ((H (b)) (H (b b)) (C (b b)) (S (a b b)))))
-              'no-max-cmps
-              0
-              (let ([offset-cap (- (length '(a b b)) TAPE-SIZE)])
-                (if (> 0 offset-cap) 0 offset-cap))
-              0)))
+(define ndfa-info-img (ndfa-create-draw-informative-message (imsg-state-ndfa AB*B*UAB*
+                                                                             '(a b b)
+                                                                             '()
+                                                                             (list->zipper '(((S (a b b))
+                                                                                              (K (a b b))
+                                                                                              (B (b b))
+                                                                                              (K (b))
+                                                                                              (H (b))
+                                                                                              (H ()))
+                                                                                             ((S (a b b))
+                                                                                              (C (b b))
+                                                                                              (H (b b))
+                                                                                              (H (b))
+                                                                                              (H ()))
+                                                                                             ((S (a b b))
+                                                                                              (K (a b b))
+                                                                                              (H (a b b)))))
+                                                                             '()
+                                                                             (list->zipper '())
+                                                                             (sub1 (length '()))
+                                                                             '(1 2 3 2)
+                                                                             '((computation
+                                                                                ((H ()) (H (b)) (K (b)) (B (b b)) (K (a b b)) (S (a b b)))
+                                                                                ((H b H) (K ε H) (B b K) (K a B) (S ε K))
+                                                                                ((H (b)) (K (b)) (B (b b)) (K (a b b)) (S (a b b))))
+                                                                               (computation
+                                                                                ((H ()) (H (b)) (H (b b)) (C (b b)) (S (a b b)))
+                                                                                ((H b H) (H b H) (C ε H) (S a C))
+                                                                                ((H (b)) (H (b b)) (C (b b)) (S (a b b)))))
+                                                                             0
+                                                                             (let ([offset-cap (- (length '(a b b)) TAPE-SIZE)])
+                                                                               (if (> 0 offset-cap) 0 offset-cap))
+                                                                             0)))
 
-(define pda-info-img (pda-create-draw-informative-message (imsg-state a*
+(define pda-info-img (pda-create-draw-informative-message (imsg-state-pda a*
               '(a b b)
               '()
-              '()
-              0
               (list->zipper '())
               (list->zipper '())
               '(1)
@@ -117,7 +133,10 @@ visited is a (listof configuration)
                  ((H ()) (H (b)) (K (b)) (B (b b)) (K (a b b)) (S (a b b)))
                  ((H b H) (K ε H) (B b K) (K a B) (S ε K))
                  ((H (b)) (K (b)) (B (b b)) (K (a b b)) (S (a b b))))
-                (computation ((H ()) (H (b)) (H (b b)) (C (b b)) (S (a b b))) ((H b H) (H b H) (C ε H) (S a C)) ((H (b)) (H (b b)) (C (b b)) (S (a b b)))))
+                (computation
+                 ((H ()) (H (b)) (H (b b)) (C (b b)) (S (a b b)))
+                 ((H b H) (H b H) (C ε H) (S a C))
+                 ((H (b)) (H (b b)) (C (b b)) (S (a b b)))))
               1
               0
               (let ([offset-cap (- (length '(a b b)) TAPE-SIZE)])
@@ -125,42 +144,22 @@ visited is a (listof configuration)
               0)))
 
 
-(define tm-info-img (tm-create-draw-informative-message (imsg-state EVEN-AS-&-BS
-                                                                    '()
-                                                                    '()
-                                                                    (list->zipper '())
-                                                                    (list->zipper '(1))
-                                                                    (list->zipper '())
-                                                                    (list->zipper '())
-                                                                    '()
-                                                                    (list->zipper '())
-                                                                    0
-                                                                    '()
-                                                                    '()
-                                                                    0
-                                                                    0
-                                                                    (let ([offset-cap (- (length '(a b b)) TAPE-SIZE)])
-                                                                      (if (> 0 offset-cap) 0 offset-cap))
-                                                                    0)))
+(define tm-info-img (tm-create-draw-informative-message (imsg-state-tm EVEN-AS-&-BS
+                                                                       (list->zipper (list '(@ a a b)))
+                                                                       (list->zipper '(1))
+                                                                       (list->zipper '())
+                                                                       (list->zipper '())
+                                                                       (list->zipper '())
+                                                                       '()
+                                                                       (list->zipper '(1))
+                                                                       '()
+                                                                       '()
+                                                                       0
+                                                                       (let ([offset-cap (- (length '(a b b)) TAPE-SIZE)])
+                                                                         (if (> 0 offset-cap) 0 offset-cap))
+                                                                       0)))
 
-#;(imsg-state EVEN-AS-&-BS
-            '()
-            '()
-            '(@ a a b)
-            1
-            (list->zipper '())
-            (list->zipper '())
-            0
-            '()
-            '()
-            0
-            0
-            (let ([offset-cap (- (length '(a b b)) TAPE-SIZE)])
-              (if (> 0 offset-cap) 0 offset-cap))
-            0)
-                                                                    
-
-
+                                                                   
 (define NDFA-E-SCENE-HEIGHT (- (* 0.9 WINDOW-HEIGHT)
                           (image-height ndfa-info-img)
                           (image-height E-SCENE-TOOLS)))
@@ -234,20 +233,72 @@ visited is a (listof configuration)
  (J-KEY "Prv not inv")
  (L-KEY "Nxt not inv"))))
 
-(define jump-next
+(define pda-jump-next
   (jump-next-inv  E-SCENE-WIDTH
                   NDFA-E-SCENE-HEIGHT
                   NODE-SIZE
                   DEFAULT-ZOOM-CAP
                   DEFAULT-ZOOM-FLOOR
-                  PERCENT-BORDER-GAP))
-(define jump-prev
+                  PERCENT-BORDER-GAP
+                  imsg-state-pda-invs-zipper
+                  imsg-state-pda-pci
+                  fourth))
+
+(define pda-jump-prev
   (jump-prev-inv  E-SCENE-WIDTH
                   NDFA-E-SCENE-HEIGHT
                   NODE-SIZE
                   DEFAULT-ZOOM-CAP
                   DEFAULT-ZOOM-FLOOR
-                  PERCENT-BORDER-GAP))
+                  PERCENT-BORDER-GAP
+                  imsg-state-pda-invs-zipper
+                  imsg-state-pda-pci
+                  fourth))
+
+(define ndfa-jump-next
+  (jump-next-inv  E-SCENE-WIDTH
+                  NDFA-E-SCENE-HEIGHT
+                  NODE-SIZE
+                  DEFAULT-ZOOM-CAP
+                  DEFAULT-ZOOM-FLOOR
+                  PERCENT-BORDER-GAP
+                  imsg-state-ndfa-invs-zipper
+                  imsg-state-ndfa-pci
+                  id))
+
+(define ndfa-jump-prev
+  (jump-prev-inv  E-SCENE-WIDTH
+                  NDFA-E-SCENE-HEIGHT
+                  NODE-SIZE
+                  DEFAULT-ZOOM-CAP
+                  DEFAULT-ZOOM-FLOOR
+                  PERCENT-BORDER-GAP
+                  imsg-state-ndfa-invs-zipper
+                  imsg-state-ndfa-pci
+                  id))
+
+(define tm-jump-next
+  (jump-next-inv  E-SCENE-WIDTH
+                  NDFA-E-SCENE-HEIGHT
+                  NODE-SIZE
+                  DEFAULT-ZOOM-CAP
+                  DEFAULT-ZOOM-FLOOR
+                  PERCENT-BORDER-GAP
+                  imsg-state-tm-invs-zipper
+                  imsg-state-tm-tape
+                  id))
+
+(define tm-jump-prev
+  (jump-prev-inv  E-SCENE-WIDTH
+                  NDFA-E-SCENE-HEIGHT
+                  NODE-SIZE
+                  DEFAULT-ZOOM-CAP
+                  DEFAULT-ZOOM-FLOOR
+                  PERCENT-BORDER-GAP
+                  imsg-state-tm-invs-zipper
+                  imsg-state-tm-tape
+                  id))
+
 (define viz-go-next
   (go-next E-SCENE-WIDTH
            NDFA-E-SCENE-HEIGHT

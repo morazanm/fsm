@@ -17,6 +17,8 @@
 
 (define DARKGOLDENROD2 (make-color 238 173 14))
 
+(define ACCEPT-COLOR 'green)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
@@ -46,35 +48,53 @@
 
 
 (define (draw-imsg imsg-st)
-  (let* [(tape (zipper-current (imsg-state-tape imsg-st)) #;(imsg-state-acpt-trace imsg-st))
+  (let* [(tape (if (zipper-empty? (imsg-state-tm-shown-accepting-trace imsg-st)) '(_) (zipper-current (imsg-state-tm-tape imsg-st))))
          (start-index 0 #;(second a-tape))
-         (head-pos (zipper-current (imsg-state-head-pos imsg-st)))
+         (head-pos (if (zipper-empty? (imsg-state-tm-head-position imsg-st)) -1 (zipper-current (imsg-state-tm-head-position imsg-st))))
          (TAPE-SIZE 24)]
     (define (make-tape-img loi start-index)
       (if (empty? (rest loi))
           (above (first loi)
                  (square 5 'solid 'white)
-                 (text (number->string start-index) 10 'black))
+                 (text (number->string start-index) 10 (if (zipper-empty? (imsg-state-tm-shown-accepting-trace imsg-st))
+                                                           'white
+                                                           'black)))
           (beside (above (first loi)
                          (square 5 'solid 'white)
-                         (text (number->string start-index) 10 'black))
+                         (text (number->string start-index) 10 (if (zipper-empty? (imsg-state-tm-shown-accepting-trace imsg-st))
+                                                                   'white
+                                                                   'black)))
                   (make-tape-img (rest loi) (add1 start-index)))))
     (let [(letter-imgs (build-list TAPE-SIZE
                                    (λ (i) (if (< (+ start-index i) (length tape))
                                               (overlay (text (symbol->string (list-ref tape (+ start-index i)))
                                                              24
-                                                             (if (= i (- head-pos start-index))
+                                                             (cond [(zipper-empty? (imsg-state-tm-shown-accepting-trace imsg-st)) 'white]
+                                                                   [(= i (- head-pos start-index)) 'red]
+                                                                   [else 'black])
+
+                                                                   #;(if (= i (- head-pos start-index))
                                                                  'red
                                                                  'black))
                                                        (overlay (square 50 'solid 'white)
-                                                                (square (add1 50) 'solid 'black)))
+                                                                (square (add1 50) 'solid
+                                                                        (if (zipper-empty? (imsg-state-tm-shown-accepting-trace imsg-st))
+                                                                            'white
+                                                                            'black)
+                                                                        #;'black)))
                                               (overlay (text (symbol->string BLANK)
                                                              24
-                                                             (if (= i (- head-pos start-index))
+                                                             (cond [(= i (- head-pos start-index)) 'red]
+                                                                   [(zipper-empty? (imsg-state-tm-shown-accepting-trace imsg-st)) 'white]
+                                                                   [else 'black])
+                                                             #;(if (= i (- head-pos start-index))
                                                                  'red
                                                                  'black))
                                                        (square 50 'solid 'white)
-                                                       (square (add1 50) 'solid 'black))))))]
+                                                       (square (add1 50) 'solid
+                                                               (if (zipper-empty? (imsg-state-tm-shown-accepting-trace imsg-st))
+                                                                 'white
+                                                                 'black) #;'black))))))]
       (make-tape-img letter-imgs start-index))))
 
 #|
@@ -285,13 +305,16 @@ triple is the entire of the ndfa rule
                      ;;Purpose: Holds all rules that consume a first letter in the given configurations
                      [connected-read-rules (filter (λ (rule)
                                                      (and (not (empty? (second (first (computation-LoC (qfirst QoC))))))
-                                                          (equal? (first (first rule)) (first (first (computation-LoC (qfirst QoC)))))
-                                                          (equal? (second (first rule)) (first (second (first (computation-LoC (qfirst QoC))))))))
+                                                          (equal? (first (first rule))
+                                                                  (first (first (computation-LoC (qfirst QoC)))))
+                                                          (equal? (second (first rule))
+                                                                  (first (second (first (computation-LoC (qfirst QoC))))))))
                                                    lor)]
                      ;;(listof rules)
                      ;;Purpose: Holds all rules that consume no input for the given configurations
                      [connected-read-E-rules (filter (λ (rule)
-                                                       (and (equal? (first (first rule)) (first (first (computation-LoC (qfirst QoC)))))
+                                                       (and (equal? (first (first rule))
+                                                                    (first (first (computation-LoC (qfirst QoC)))))
                                                             (equal? (second (first rule)) EMP)))
                                                      lor)]
                      ;;(listof rules)
@@ -299,7 +322,8 @@ triple is the entire of the ndfa rule
                      [connected-pop-rules (filter (λ (rule)
                                                     (or (equal? (third (first rule)) EMP)
                                                         (and (>= (length stack) (length (third (first rule))))
-                                                             (equal? (take stack (length (third (first rule)))) (third (first rule))))))
+                                                             (equal? (take stack (length (third (first rule))))
+                                                                     (third (first rule))))))
                                                   (append connected-read-E-rules connected-read-rules))]
                      [new-configs (filter (λ (new-c) 
                                             (not (member? (first (computation-LoC new-c)) (computation-visited new-c))))
@@ -467,7 +491,8 @@ triple is the entire of the ndfa rule
 (define (get-trace-X LoT map-func)
   (filter-map-acc empty? map-func not first LoT))
 
-;(listof symbol ((listof symbol) (listof symbol) -> boolean))) (X -> Y) -> (listof symbol ((listof symbol) (listof symbol) -> boolean)))
+;; (listof symbol ((listof symbol) (listof symbol) -> boolean))) (X -> Y) ->
+;; (listof symbol ((listof symbol) (listof symbol) -> boolean)))
 ;;Purpose: Extracts the invariants from the (listof symbol ((listof symbols) (listof symbols) -> boolean)))
 (define (get-invariants LoI func)
   (filter-map-acc (λ (x) ((second (first x)) (second x) (third x))) first func first LoI))
@@ -532,30 +557,30 @@ triple is the entire of the ndfa rule
   (let* (;;boolean
          ;;Purpose: Determines if the pci can be can be fully consumed
          [completed-config? (ormap (λ (config) (empty? (second (first (computation-LoC config)))))
-                                   (trace-computations (imsg-state-pci imsg-st)
-                                                (fsa-getrules (imsg-state-M imsg-st))
-                                                (fsa-getstart (imsg-state-M imsg-st))))]
+                                   (trace-computations (imsg-state-ndfa-pci imsg-st)
+                                                (fsa-getrules (imsg-state-ndfa-M imsg-st))
+                                                (fsa-getstart (imsg-state-ndfa-M imsg-st))))]
          
          ;;(listof symbols)
          ;;Purpose: The last word that could be fully consumed by the ndfa
-         [last-consumed-word (last-fully-consumed (imsg-state-pci imsg-st) (imsg-state-M imsg-st))]
+         [last-consumed-word (last-fully-consumed (imsg-state-ndfa-pci imsg-st) (imsg-state-ndfa-M imsg-st))]
 
          ;;(listof symbols)
          ;;Purpose: The entire given word
-         [entire-word (append (imsg-state-pci imsg-st) (imsg-state-upci imsg-st))]
+         [entire-word (append (imsg-state-ndfa-pci imsg-st) (imsg-state-ndfa-upci imsg-st))]
          
          ;;(listof symbols)
          ;;Purpose: The portion of the word that cannont be consumed
          [unconsumed-word (drop entire-word (length last-consumed-word))]
-         [machine-decision (if (not (zipper-empty? (imsg-state-acpt-trace imsg-st)))
+         [machine-decision (if (not (zipper-empty? (imsg-state-ndfa-shown-accepting-trace imsg-st)))
                                'accept
                                'reject)]
          [FONT-SIZE 20]) 
 
    (above/align
       'left
-      (cond [(and (empty? (imsg-state-pci imsg-st))
-                  (empty? (imsg-state-upci imsg-st)))
+      (cond [(and (empty? (imsg-state-ndfa-pci imsg-st))
+                  (empty? (imsg-state-ndfa-upci imsg-st)))
              (above/align
               'left
               (beside (text "aaaK" FONT-SIZE 'white)
@@ -567,16 +592,16 @@ triple is the entire of the ndfa rule
                       (if (equal? machine-decision 'accept)
                           (text (format "~a" EMP) FONT-SIZE 'black)
                           (text (format "~a" EMP) FONT-SIZE 'white))))]
-            [(and (not (empty? (imsg-state-pci imsg-st))) (not completed-config?))
+            [(and (not (empty? (imsg-state-ndfa-pci imsg-st))) (not completed-config?))
              (above/align
               'left
               (beside (text "aaaK" FONT-SIZE 'white)
                       (text "Word: " FONT-SIZE 'black)
                       (make-tape-img entire-word
                                      (if (> (length entire-word) TAPE-SIZE)
-                                         (imsg-state-word-img-offset imsg-st)
+                                         (imsg-state-ndfa-word-img-offset imsg-st)
                                          0)
-                                     (if (empty? (imsg-state-pci imsg-st))
+                                     (if (empty? (imsg-state-ndfa-pci imsg-st))
                                          '()
                                          (list (list (length last-consumed-word) 'gray)
                                                (list (length last-consumed-word) 'red)))))
@@ -585,7 +610,7 @@ triple is the entire of the ndfa rule
                           (text "" FONT-SIZE 'black)
                           (make-tape-img last-consumed-word
                                          (if (> (length last-consumed-word) TAPE-SIZE)
-                                             (imsg-state-word-img-offset imsg-st)
+                                             (imsg-state-ndfa-word-img-offset imsg-st)
                                              0)
                                          '()))))]
             [else (above/align 'left
@@ -593,32 +618,31 @@ triple is the entire of the ndfa rule
                                        (text "Word: " FONT-SIZE 'black)
                                        (make-tape-img entire-word
                                                       (if (> (length entire-word) TAPE-SIZE)
-                                                          (imsg-state-word-img-offset imsg-st)
+                                                          (imsg-state-ndfa-word-img-offset imsg-st)
                                                           0)
-                                                      (if (empty? (imsg-state-pci imsg-st))
+                                                      (if (empty? (imsg-state-ndfa-pci imsg-st))
                                                           '()
-                                                          (list (list (length (imsg-state-pci imsg-st)) 'gray) '()))))
+                                                          (list (list (length (imsg-state-ndfa-pci imsg-st)) 'gray) '()))))
                                (beside (text "Consumed: " FONT-SIZE 'black)
-                                       (make-tape-img (imsg-state-pci imsg-st)
-                                                      (if (> (length (imsg-state-pci imsg-st)) TAPE-SIZE)
-                                                          (imsg-state-word-img-offset imsg-st)
+                                       (make-tape-img (imsg-state-ndfa-pci imsg-st)
+                                                      (if (> (length (imsg-state-ndfa-pci imsg-st)) TAPE-SIZE)
+                                                          (imsg-state-ndfa-word-img-offset imsg-st)
                                                           0)
                                                       '())))])
       (text (format "The current number of possible computations is ~a (without repeated configurations). "
-                     (number->string (list-ref (imsg-state-comps-len imsg-st)
-                                               (length (imsg-state-pci imsg-st)))))
+                     (number->string (list-ref (imsg-state-ndfa-computation-lengths imsg-st)
+                                               (length (imsg-state-ndfa-pci imsg-st)))))
              FONT-SIZE
              'brown)
       (cond [(not completed-config?)
               (text "All computations do not consume the entire word and the machine rejects." FONT-SIZE 'red)]
-             [(and (empty? (imsg-state-upci imsg-st))
+             [(and (empty? (imsg-state-ndfa-upci imsg-st))
                    (equal? machine-decision 'accept))
               (text "There is a computation that accepts." FONT-SIZE 'forestgreen)]
-             [(and (empty? (imsg-state-upci imsg-st))
+             [(and (empty? (imsg-state-ndfa-upci imsg-st))
                    (equal? machine-decision 'reject))
               (text "All computations end in a non-final state and the machine rejects." FONT-SIZE 'red)]
-             [else (text "Word Status: accept " FONT-SIZE 'white)]))
-    ))
+             [else (text "Word Status: accept " FONT-SIZE 'white)]))))
 
 
 
@@ -626,20 +650,20 @@ triple is the entire of the ndfa rule
   (let* (;;boolean
          ;;Purpose: Determines if the pci can be can be fully consumed
          [completed-config? (ormap (λ (config) (empty? (second (first config))))
-                                   (map computation-LoC (get-computations (imsg-state-pci imsg-st)
-                                                                          (pda-getrules (imsg-state-M imsg-st))
-                                                                          (pda-getstart (imsg-state-M imsg-st))
-                                                                          (imsg-state-max-cmps imsg-st))))]
+                                   (map computation-LoC (get-computations (imsg-state-pda-pci imsg-st)
+                                                                          (pda-getrules (imsg-state-pda-M imsg-st))
+                                                                          (pda-getstart (imsg-state-pda-M imsg-st))
+                                                                          (imsg-state-pda-max-cmps imsg-st))))]
          
          ;;(listof symbols)
          ;;Purpose: The last word that could be fully consumed by the ndfa
-         [last-consumed-word (pda-last-fully-consumed (imsg-state-pci imsg-st)
-                                                  (imsg-state-M imsg-st)
-                                                  (imsg-state-max-cmps imsg-st))]
+         [last-consumed-word (pda-last-fully-consumed (imsg-state-pda-pci imsg-st)
+                                                  (imsg-state-pda-M imsg-st)
+                                                  (imsg-state-pda-max-cmps imsg-st))]
 
          ;;(listof symbols)
          ;;Purpose: The entire given word
-         [entire-word (append (imsg-state-pci imsg-st) (imsg-state-upci imsg-st))]
+         [entire-word (append (imsg-state-pda-pci imsg-st) (imsg-state-pda-upci imsg-st))]
          
          ;;(listof symbols)
          ;;Purpose: The portion of the word that cannont be consumed
@@ -647,17 +671,17 @@ triple is the entire of the ndfa rule
          
          ;;(listof symbols)
          ;;Purpose: Holds what needs to displayed for the stack based off the upci
-         [current-stack (if (zipper-empty? (imsg-state-stack imsg-st)) 
-                            (imsg-state-stack imsg-st)
-                            (third (zipper-current (imsg-state-stack imsg-st))))]
-         [machine-decision (if (not (zipper-empty? (imsg-state-acpt-trace imsg-st)))
+         [current-stack (if (zipper-empty? (imsg-state-pda-stack imsg-st)) 
+                            (imsg-state-pda-stack imsg-st)
+                            (third (zipper-current (imsg-state-pda-stack imsg-st))))]
+         [machine-decision (if (not (zipper-empty? (imsg-state-pda-shown-accepting-trace imsg-st)))
                                'accept
                                'reject)]
          [FONT-SIZE 20])
     (above/align
       'left
-      (cond [(and (empty? (imsg-state-pci imsg-st))
-                  (empty? (imsg-state-upci imsg-st)))
+      (cond [(and (empty? (imsg-state-pda-pci imsg-st))
+                  (empty? (imsg-state-pda-upci imsg-st)))
              (above/align
               'left
               (beside (text "aaaa" FONT-SIZE 'white)
@@ -669,38 +693,38 @@ triple is the entire of the ndfa rule
                       (if (equal? machine-decision 'accept)
                           (text (format "~a" EMP) FONT-SIZE 'black)
                           (text (format "~a" EMP) FONT-SIZE 'white))))]
-            [(and (not (empty? (imsg-state-upci imsg-st)))
-                  (eq? (imsg-state-upci imsg-st) (imsg-state-farthest-consumed imsg-st))
-                  ;(<= (length (imsg-state-upci imsg-st)) (length (imsg-state-farthest-consumed imsg-st)))
-                  (ormap (λ (comp) (>= (length comp) (imsg-state-max-cmps imsg-st)))
-                         (imsg-state-comps imsg-st)))
+            [(and (not (empty? (imsg-state-pda-upci imsg-st)))
+                  (eq? (imsg-state-pda-upci imsg-st) (imsg-state-pda-farthest-consumed-input imsg-st))
+                  ;(<= (length (imsg-state-pda-upci imsg-st)) (length (imsg-state-pda-farthest-consumed-input imsg-st)))
+                  (ormap (λ (comp) (>= (length comp) (imsg-state-pda-max-cmps imsg-st)))
+                         (imsg-state-pda-computations imsg-st)))
              (above/align 'left
                           (beside (text "aaaa" FONT-SIZE 'white)
                                   (text "Word: " FONT-SIZE 'black)
                                   (make-tape-img entire-word
                                                  (if (> (length entire-word) TAPE-SIZE)
-                                                     (imsg-state-word-img-offset imsg-st)
+                                                     (imsg-state-pda-word-img-offset imsg-st)
                                                      0)
-                                                 (if (empty? (imsg-state-pci imsg-st))
+                                                 (if (empty? (imsg-state-pda-pci imsg-st))
                                                      '()
-                                                     (list (list (length (imsg-state-pci imsg-st)) 'gray)
-                                                           (list (length (imsg-state-pci imsg-st)) DARKGOLDENROD2)))))
+                                                     (list (list (length (imsg-state-pda-pci imsg-st)) 'gray)
+                                                           (list (length (imsg-state-pda-pci imsg-st)) DARKGOLDENROD2)))))
                           (beside (text "Consumed: " FONT-SIZE 'black)
-                                  (make-tape-img (imsg-state-pci imsg-st)
-                                                 (if (> (length (imsg-state-pci imsg-st)) TAPE-SIZE)
-                                                     (imsg-state-word-img-offset imsg-st)
+                                  (make-tape-img (imsg-state-pda-pci imsg-st)
+                                                 (if (> (length (imsg-state-pda-pci imsg-st)) TAPE-SIZE)
+                                                     (imsg-state-pda-word-img-offset imsg-st)
                                                      0)
                                                  '())))]
-            [(and (not (empty? (imsg-state-pci imsg-st))) (not completed-config?))
+            [(and (not (empty? (imsg-state-pda-pci imsg-st))) (not completed-config?))
              (above/align
               'left
               (beside (text "aaaa" FONT-SIZE 'white)
                       (text "Word: " FONT-SIZE 'black)
                       (make-tape-img entire-word
                                      (if (> (length entire-word) TAPE-SIZE)
-                                         (imsg-state-word-img-offset imsg-st)
+                                         (imsg-state-pda-word-img-offset imsg-st)
                                          0)
-                                     (if (empty? (imsg-state-pci imsg-st))
+                                     (if (empty? (imsg-state-pda-pci imsg-st))
                                          '()
                                          (list (list (length last-consumed-word) 'gray)
                                                (list (length last-consumed-word) 'red)))))
@@ -709,7 +733,7 @@ triple is the entire of the ndfa rule
                           (text "" FONT-SIZE 'black)
                           (make-tape-img last-consumed-word
                                          (if (> (length last-consumed-word) TAPE-SIZE)
-                                             (imsg-state-word-img-offset imsg-st)
+                                             (imsg-state-pda-word-img-offset imsg-st)
                                              0)
                                          '()))))]
             [else (above/align 'left
@@ -717,91 +741,95 @@ triple is the entire of the ndfa rule
                                        (text "Word: " FONT-SIZE 'black)
                                        (make-tape-img entire-word
                                                       (if (> (length entire-word) TAPE-SIZE)
-                                                          (imsg-state-word-img-offset imsg-st)
+                                                          (imsg-state-pda-word-img-offset imsg-st)
                                                           0)
-                                                      (if (empty? (imsg-state-pci imsg-st))
+                                                      (if (empty? (imsg-state-pda-pci imsg-st))
                                                           '()
-                                                          (list (list (length (imsg-state-pci imsg-st)) 'gray) '()))))
+                                                          (list (list (length (imsg-state-pda-pci imsg-st)) 'gray) '()))))
                                (beside (text "Consumed: " FONT-SIZE 'black)
-                                       (make-tape-img (imsg-state-pci imsg-st)
-                                                      (if (> (length (imsg-state-pci imsg-st)) TAPE-SIZE)
-                                                          (imsg-state-word-img-offset imsg-st)
+                                       (make-tape-img (imsg-state-pda-pci imsg-st)
+                                                      (if (> (length (imsg-state-pda-pci imsg-st)) TAPE-SIZE)
+                                                          (imsg-state-pda-word-img-offset imsg-st)
                                                           0)
                                                       '())))])
-      (cond [(zipper-empty? (imsg-state-stack imsg-st)) (text "aaaC" FONT-SIZE 'white)]
+      (cond [(zipper-empty? (imsg-state-pda-stack imsg-st)) (text "aaaC" FONT-SIZE 'white)]
             [(empty? current-stack) (beside (text "aaak" FONT-SIZE 'white)
                                             (text "Stack: " FONT-SIZE 'black))]
             [else (beside (text "aaak" FONT-SIZE 'white)
                           (text "Stack: " FONT-SIZE 'black)
                           (make-tape-img current-stack
                                          (if (> (length current-stack) TAPE-SIZE)
-                                             (imsg-state-word-img-offset imsg-st)
+                                             (imsg-state-pda-word-img-offset imsg-st)
                                              0)
                                          '()))])
       (text (format "The current number of possible computations is: ~a (without repeated configurations)."
-                    (number->string (if (= (length (imsg-state-pci imsg-st)) (imsg-state-max-cmps imsg-st))
-                                        (list-ref (imsg-state-comps-len imsg-st)
-                                                  (sub1 (length (imsg-state-pci imsg-st))))
-                                        (list-ref (imsg-state-comps-len imsg-st)
-                                                  (length (imsg-state-pci imsg-st))))))
+                    (number->string (if (= (length (imsg-state-pda-pci imsg-st)) (imsg-state-pda-max-cmps imsg-st))
+                                        (list-ref (imsg-state-pda-computation-lengths imsg-st)
+                                                  (sub1 (length (imsg-state-pda-pci imsg-st))))
+                                        (list-ref (imsg-state-pda-computation-lengths imsg-st)
+                                                  (length (imsg-state-pda-pci imsg-st))))))
             FONT-SIZE
             'brown)
-      (cond [(and (not (empty? (imsg-state-upci imsg-st)))
-                  (eq? (imsg-state-upci imsg-st) (imsg-state-farthest-consumed imsg-st))
-                  (ormap (λ (comp) (>= (length comp) (imsg-state-max-cmps imsg-st)))
-                         (imsg-state-comps imsg-st)))
+      (cond [(and (not (empty? (imsg-state-pda-upci imsg-st)))
+                  (eq? (imsg-state-pda-upci imsg-st) (imsg-state-pda-farthest-consumed-input imsg-st))
+                  (ormap (λ (comp) (>= (length comp) (imsg-state-pda-max-cmps imsg-st)))
+                         (imsg-state-pda-computations imsg-st)))
              (text (format "There are computations that exceed the cut-off limit (~a)."
-                           (imsg-state-max-cmps imsg-st)) FONT-SIZE DARKGOLDENROD2)]
+                           (imsg-state-pda-max-cmps imsg-st)) FONT-SIZE DARKGOLDENROD2)]
             [(not completed-config?)
              (text "All computations do not consume the entire word and the machine rejects." FONT-SIZE 'red)]
-            [(and (empty? (imsg-state-upci imsg-st))
-                  (or (zipper-empty? (imsg-state-stack imsg-st))
-                      (zipper-at-end? (imsg-state-stack imsg-st)))
+            [(and (empty? (imsg-state-pda-upci imsg-st))
+                  (or (zipper-empty? (imsg-state-pda-stack imsg-st))
+                      (zipper-at-end? (imsg-state-pda-stack imsg-st)))
                   (equal? machine-decision 'accept))
              (text "There is a computation that accepts." FONT-SIZE 'forestgreen)]
-            [(and (empty? (imsg-state-upci imsg-st))
-                  (or (zipper-empty? (imsg-state-stack imsg-st))
-                      (zipper-at-end? (imsg-state-stack imsg-st)))
+            [(and (empty? (imsg-state-pda-upci imsg-st))
+                  (or (zipper-empty? (imsg-state-pda-stack imsg-st))
+                      (zipper-at-end? (imsg-state-pda-stack imsg-st)))
                   (equal? machine-decision 'reject))
              (text "All computations end in a non-final configuration and the machine rejects." FONT-SIZE 'red)]
             [else (text "Word Status: accept " FONT-SIZE 'white)]))))
 
 
 (define (tm-create-draw-informative-message imsg-st)
-  (let ([machine-decision (if (not (zipper-empty? (imsg-state-acpt-trace imsg-st)))
+  (let ([machine-decision (if (not (zipper-empty? (imsg-state-tm-head-position imsg-st)))
                                'accept
                                'reject)]
         [FONT-SIZE 20])
     (above/align
       'left
-      (beside (text "Last rule used: " FONT-SIZE 'black)
-              (text "" FONT-SIZE 'black))
-      ;(text "Tape: " 20 'black)
+      (if (zipper-empty? (imsg-state-tm-shown-accepting-trace imsg-st))
+          (text "Tape: " 1 'white)
+          (beside (text "Last rule used: " FONT-SIZE 'black)
+                  (text (format "~a" (if (or (equal? (zipper-current (imsg-state-tm-rules imsg-st)) '((_ _)(_ _)))
+                                             (zipper-empty? (imsg-state-tm-rules imsg-st)))
+                                         ""
+                                         (zipper-current (imsg-state-tm-rules imsg-st)))) FONT-SIZE ACCEPT-COLOR)))
+              
+      (text "Tape: " 1 'white)
       (draw-imsg imsg-st)
+      #;(if (zipper-empty? (imsg-state-tm-shown-accepting-trace imsg-st))
+          (text "Tape: " 1 'white)
+          (draw-imsg imsg-st))
       #;(cond [(ormap (λ (comp) (>= (length comp) (imsg-state-max-cmps imsg-st)))
-                         (imsg-state-comps imsg-st))
+                         (imsg-state-computations imsg-st))
              (above (text "Tape: " 20 'black)
                     (draw-imsg imsg-st))]
             [else (above  (text "Tape: " 20 'black)
                           (draw-imsg imsg-st))])
       (text (format "The current number of possible computations is: ~a (without repeated configurations)."
-                    (number->string 0
-                                    #;(if (= (length (imsg-state-pci imsg-st)) (imsg-state-max-cmps imsg-st))
-                                        (list-ref (imsg-state-comps-len imsg-st)
-                                                  (sub1 (length (imsg-state-pci imsg-st))))
-                                        (list-ref (imsg-state-comps-len imsg-st)
-                                                  (length (imsg-state-pci imsg-st))))))
+                    (number->string (zipper-current (imsg-state-tm-computation-lengths imsg-st))))
             FONT-SIZE
             'brown)
-      (cond [(ormap (λ (comp) (>= (length comp) (imsg-state-max-cmps imsg-st)))
-                         (imsg-state-comps imsg-st))
+      (cond [(ormap (λ (comp) (>= (length comp) (imsg-state-tm-max-cmps imsg-st)))
+                         (imsg-state-tm-computations imsg-st))
              (text (format "There are computations that exceed the cut-off limit (~a)."
                            (imsg-state-max-cmps imsg-st)) FONT-SIZE DARKGOLDENROD2)]
-            [(and (zipper-at-end? (imsg-state-tape imsg-st))
-                  (zipper-at-end? (imsg-state-head-pos imsg-st))
+            [(and (zipper-at-end? (imsg-state-tm-tape imsg-st))
+                  (zipper-at-end? (imsg-state-tm-head-position imsg-st))
                   (equal? machine-decision 'accept))
              (text "There is a computation that accepts." FONT-SIZE 'forestgreen)]
-            [(and (zipper-empty? (imsg-state-tape imsg-st))
+            [(and (zipper-at-end? (imsg-state-tm-tape imsg-st))
                   (equal? machine-decision 'reject))
              (text "All computations end in a non-final configuration and the machine rejects." FONT-SIZE 'red)]
             [else (text "Word Status: accept " FONT-SIZE 'white)]))))
@@ -850,19 +878,19 @@ triple is the entire of the ndfa rule
 (define (ndfa-create-draw-informative-message imsg-st)
   (let* (;;(listof symbols)
          ;;Purpose: The entire given word
-         [entire-word (append (imsg-state-pci imsg-st) (imsg-state-upci imsg-st))]
+         [entire-word (append (imsg-state-ndfa-pci imsg-st) (imsg-state-ndfa-upci imsg-st))]
          
          ;;boolean
          ;;Purpose: Determines if the the machine should accept or reject the given word
-         [machine-decision (if (not (zipper-empty? (imsg-state-acpt-trace imsg-st)))
+         [machine-decision (if (not (zipper-empty? (imsg-state-ndfa-shown-accepting-trace imsg-st)))
                                'accept
                                'reject)]
          [FONT-SIZE 20]) 
 
    (above/align
       'left
-      (cond [(and (empty? (imsg-state-pci imsg-st))
-                  (empty? (imsg-state-upci imsg-st)))
+      (cond [(and (empty? (imsg-state-ndfa-pci imsg-st))
+                  (empty? (imsg-state-ndfa-upci imsg-st)))
              (above/align
               'left
               (beside (text "aaaK" FONT-SIZE 'white)
@@ -874,8 +902,8 @@ triple is the entire of the ndfa rule
                       (if (equal? machine-decision 'accept)
                           (text (format "~a" EMP) FONT-SIZE 'black)
                           (text (format "~a" EMP) FONT-SIZE 'white))))]
-            [(and (not (empty? (imsg-state-pci imsg-st)))
-                  (eq? (imsg-state-upci imsg-st) (imsg-state-farthest-consumed imsg-st))
+            [(and (not (empty? (imsg-state-ndfa-pci imsg-st)))
+                  (eq? (imsg-state-ndfa-upci imsg-st) (imsg-state-ndfa-farthest-consumed-input imsg-st))
                   (eq? machine-decision 'reject))
              (above/align
               'left
@@ -883,18 +911,18 @@ triple is the entire of the ndfa rule
                       (text "Word: " FONT-SIZE 'black)
                       (make-tape-img entire-word
                                      (if (> (length entire-word) TAPE-SIZE)
-                                         (imsg-state-word-img-offset imsg-st)
+                                         (imsg-state-ndfa-word-img-offset imsg-st)
                                          0)
-                                     (if (empty? (imsg-state-pci imsg-st))
+                                     (if (empty? (imsg-state-ndfa-pci imsg-st))
                                          '()
-                                         (list (list (length (imsg-state-pci imsg-st) ) 'gray)
-                                               (list (length (imsg-state-pci imsg-st) ) 'red)))))
+                                         (list (list (length (imsg-state-ndfa-pci imsg-st) ) 'gray)
+                                               (list (length (imsg-state-ndfa-pci imsg-st) ) 'red)))))
               (beside (text "Consumed: " FONT-SIZE 'black)
-                      (if (empty? (imsg-state-pci imsg-st))
+                      (if (empty? (imsg-state-ndfa-pci imsg-st))
                           (text "" FONT-SIZE 'black)
-                          (make-tape-img (imsg-state-pci imsg-st) 
-                                         (if (> (length (imsg-state-pci imsg-st)) TAPE-SIZE)
-                                             (imsg-state-word-img-offset imsg-st)
+                          (make-tape-img (imsg-state-ndfa-pci imsg-st) 
+                                         (if (> (length (imsg-state-ndfa-pci imsg-st)) TAPE-SIZE)
+                                             (imsg-state-ndfa-word-img-offset imsg-st)
                                              0)
                                          '()))))]
             [else (above/align 'left
@@ -902,27 +930,27 @@ triple is the entire of the ndfa rule
                                        (text "Word: " FONT-SIZE 'black)
                                        (make-tape-img entire-word
                                                       (if (> (length entire-word) TAPE-SIZE)
-                                                          (imsg-state-word-img-offset imsg-st)
+                                                          (imsg-state-ndfa-word-img-offset imsg-st)
                                                           0)
-                                                      (if (empty? (imsg-state-pci imsg-st))
+                                                      (if (empty? (imsg-state-ndfa-pci imsg-st))
                                                           '()
-                                                          (list (list (length (imsg-state-pci imsg-st)) 'gray) '()))))
+                                                          (list (list (length (imsg-state-ndfa-pci imsg-st)) 'gray) '()))))
                                (beside (text "Consumed: " FONT-SIZE 'black)
-                                       (make-tape-img (imsg-state-pci imsg-st)
-                                                      (if (> (length (imsg-state-pci imsg-st)) TAPE-SIZE)
-                                                          (imsg-state-word-img-offset imsg-st)
+                                       (make-tape-img (imsg-state-ndfa-pci imsg-st)
+                                                      (if (> (length (imsg-state-ndfa-pci imsg-st)) TAPE-SIZE)
+                                                          (imsg-state-ndfa-word-img-offset imsg-st)
                                                           0)
                                                       '())))])
       (text (format "The current number of possible computations is ~a (without repeated configurations). "
-                     (number->string (list-ref (imsg-state-comps-len imsg-st)
-                                               (length (imsg-state-pci imsg-st)))))
+                     (number->string (list-ref (imsg-state-ndfa-computation-lengths imsg-st)
+                                               (length (imsg-state-ndfa-pci imsg-st)))))
              FONT-SIZE
              'brown)
-      (cond [(and (empty? (imsg-state-upci imsg-st))
+      (cond [(and (empty? (imsg-state-ndfa-upci imsg-st))
                    (equal? machine-decision 'accept))
               (text "There is a computation that accepts." FONT-SIZE 'forestgreen)]
              [(and (equal? machine-decision 'reject)
-                   (eq? (imsg-state-upci imsg-st) (imsg-state-farthest-consumed imsg-st)))
+                   (eq? (imsg-state-ndfa-upci imsg-st) (imsg-state-ndfa-farthest-consumed-input imsg-st)))
               (text "All computations end in a non-final configuration and the machine rejects." FONT-SIZE 'red)]
              [else (text "Word Status: accept " FONT-SIZE 'white)]))))
 
@@ -931,20 +959,20 @@ triple is the entire of the ndfa rule
 (define (pda-create-draw-informative-message imsg-st)
   (let* (;;(listof symbols)
          ;;Purpose: The entire given word
-         [entire-word (append (imsg-state-pci imsg-st) (imsg-state-upci imsg-st))]
+         [entire-word (append (imsg-state-pda-pci imsg-st) (imsg-state-pda-upci imsg-st))]
          ;;(listof symbols)
          ;;Purpose: Holds what needs to displayed for the stack based off the upci
-         [current-stack (if (zipper-empty? (imsg-state-stack imsg-st)) 
-                            (imsg-state-stack imsg-st)
-                            (third (zipper-current (imsg-state-stack imsg-st))))]
-         [machine-decision (if (not (zipper-empty? (imsg-state-acpt-trace imsg-st)))
+         [current-stack (if (zipper-empty? (imsg-state-pda-stack imsg-st)) 
+                            (imsg-state-pda-stack imsg-st)
+                            (third (zipper-current (imsg-state-pda-stack imsg-st))))]
+         [machine-decision (if (not (zipper-empty? (imsg-state-pda-shown-accepting-trace imsg-st)))
                                'accept
                                'reject)]
          [FONT-SIZE 20])
     (above/align
       'left
-      (cond [(and (empty? (imsg-state-pci imsg-st))
-                  (empty? (imsg-state-upci imsg-st)))
+      (cond [(and (empty? (imsg-state-pda-pci imsg-st))
+                  (empty? (imsg-state-pda-upci imsg-st)))
              (above/align
               'left
               (beside (text "aaaK" FONT-SIZE 'white)
@@ -956,29 +984,29 @@ triple is the entire of the ndfa rule
                       (if (equal? machine-decision 'accept)
                           (text (format "~a" EMP) FONT-SIZE 'black)
                           (text (format "~a" EMP) FONT-SIZE 'white))))]
-            [(and (not (empty? (imsg-state-upci imsg-st)))
-                  (eq? (imsg-state-upci imsg-st) (imsg-state-farthest-consumed imsg-st))
-                  (ormap (λ (comp) (>= (length comp) (imsg-state-max-cmps imsg-st)))
-                         (imsg-state-comps imsg-st)))
+            [(and (not (empty? (imsg-state-pda-upci imsg-st)))
+                  (eq? (imsg-state-pda-upci imsg-st) (imsg-state-pda-farthest-consumed-input imsg-st))
+                  (ormap (λ (comp) (>= (length comp) (imsg-state-pda-max-cmps imsg-st)))
+                         (imsg-state-pda-computations imsg-st)))
              (above/align 'left
                           (beside (text "aaaK" FONT-SIZE 'white)
                                   (text "Word: " FONT-SIZE 'black)
                                   (make-tape-img entire-word
                                                  (if (> (length entire-word) TAPE-SIZE)
-                                                     (imsg-state-word-img-offset imsg-st)
+                                                     (imsg-state-pda-word-img-offset imsg-st)
                                                      0)
-                                                 (if (empty? (imsg-state-pci imsg-st))
+                                                 (if (empty? (imsg-state-pda-pci imsg-st))
                                                      '()
-                                                     (list (list (length (imsg-state-pci imsg-st)) 'gray)
-                                                           (list (length (imsg-state-pci imsg-st)) DARKGOLDENROD2)))))
+                                                     (list (list (length (imsg-state-pda-pci imsg-st)) 'gray)
+                                                           (list (length (imsg-state-pda-pci imsg-st)) DARKGOLDENROD2)))))
                           (beside (text "Consumed: " FONT-SIZE 'black)
-                                  (make-tape-img (imsg-state-pci imsg-st)
-                                                 (if (> (length (imsg-state-pci imsg-st)) TAPE-SIZE)
-                                                     (imsg-state-word-img-offset imsg-st)
+                                  (make-tape-img (imsg-state-pda-pci imsg-st)
+                                                 (if (> (length (imsg-state-pda-pci imsg-st)) TAPE-SIZE)
+                                                     (imsg-state-pda-word-img-offset imsg-st)
                                                      0)
                                                  '())))]
-            [(and #;(not (empty? (imsg-state-pci imsg-st)))
-                  (eq? (imsg-state-upci imsg-st) (imsg-state-farthest-consumed imsg-st))
+            [(and #;(not (empty? (imsg-state-pda-pci imsg-st)))
+                  (eq? (imsg-state-pda-upci imsg-st) (imsg-state-pda-farthest-consumed-input imsg-st))
                   (eq? machine-decision 'reject))
              (above/align
               'left
@@ -986,18 +1014,18 @@ triple is the entire of the ndfa rule
                       (text "Word: " FONT-SIZE 'black)
                       (make-tape-img entire-word
                                      (if (> (length entire-word) TAPE-SIZE)
-                                         (imsg-state-word-img-offset imsg-st)
+                                         (imsg-state-pda-word-img-offset imsg-st)
                                          0)
-                                     (if (empty? (imsg-state-pci imsg-st))
+                                     (if (empty? (imsg-state-pda-pci imsg-st))
                                          '()
-                                         (list (list (length (imsg-state-pci imsg-st)) 'gray)
-                                               (list (length (imsg-state-pci imsg-st)) 'red)))))
+                                         (list (list (length (imsg-state-pda-pci imsg-st)) 'gray)
+                                               (list (length (imsg-state-pda-pci imsg-st)) 'red)))))
               (beside (text "Consumed: " FONT-SIZE 'black)
-                      (if (empty? (imsg-state-pci imsg-st))
+                      (if (empty? (imsg-state-pda-pci imsg-st))
                           (text "" FONT-SIZE 'black)
-                          (make-tape-img (imsg-state-pci imsg-st)
-                                         (if (> (length (imsg-state-pci imsg-st)) TAPE-SIZE)
-                                             (imsg-state-word-img-offset imsg-st)
+                          (make-tape-img (imsg-state-pda-pci imsg-st)
+                                         (if (> (length (imsg-state-pda-pci imsg-st)) TAPE-SIZE)
+                                             (imsg-state-pda-word-img-offset imsg-st)
                                              0)
                                          '()))))]
             [else (above/align 'left
@@ -1005,55 +1033,55 @@ triple is the entire of the ndfa rule
                                        (text "Word: " FONT-SIZE 'black)
                                        (make-tape-img entire-word
                                                       (if (> (length entire-word) TAPE-SIZE)
-                                                          (imsg-state-word-img-offset imsg-st)
+                                                          (imsg-state-pda-word-img-offset imsg-st)
                                                           0)
-                                                      (if (empty? (imsg-state-pci imsg-st))
+                                                      (if (empty? (imsg-state-pda-pci imsg-st))
                                                           '()
-                                                          (list (list (length (imsg-state-pci imsg-st)) 'gray) '()))))
+                                                          (list (list (length (imsg-state-pda-pci imsg-st)) 'gray) '()))))
                                (beside (text "Consumed: " FONT-SIZE 'black)
-                                       (make-tape-img (imsg-state-pci imsg-st)
-                                                      (if (> (length (imsg-state-pci imsg-st)) TAPE-SIZE)
-                                                          (imsg-state-word-img-offset imsg-st)
+                                       (make-tape-img (imsg-state-pda-pci imsg-st)
+                                                      (if (> (length (imsg-state-pda-pci imsg-st)) TAPE-SIZE)
+                                                          (imsg-state-pda-word-img-offset imsg-st)
                                                           0)
                                                       '())))])
-      (cond [(zipper-empty? (imsg-state-stack imsg-st)) (text "aaaC" FONT-SIZE 'white)]
+      (cond [(zipper-empty? (imsg-state-pda-stack imsg-st)) (text "aaaC" FONT-SIZE 'white)]
             [(empty? current-stack) (beside (text "aaak" FONT-SIZE 'white)
                                             (text "Stack: " FONT-SIZE 'black))]
             [else (beside (text "aaak" FONT-SIZE 'white)
                           (text "Stack: " FONT-SIZE 'black)
                           (make-tape-img current-stack
                                          (if (> (length current-stack) TAPE-SIZE)
-                                             (imsg-state-word-img-offset imsg-st)
+                                             (imsg-state-pda-word-img-offset imsg-st)
                                              0)
                                          '()))])
       (text (format "The current number of possible computations is: ~a (without repeated configurations)."
-                    (number->string (if (= (length (imsg-state-pci imsg-st)) (imsg-state-max-cmps imsg-st))
-                                        (list-ref (imsg-state-comps-len imsg-st)
-                                                  (sub1 (length (imsg-state-pci imsg-st))))
-                                        (list-ref (imsg-state-comps-len imsg-st)
-                                                  (length (imsg-state-pci imsg-st))))))
+                    (number->string (if (= (length (imsg-state-pda-pci imsg-st)) (imsg-state-pda-max-cmps imsg-st))
+                                        (list-ref (imsg-state-pda-computation-lengths imsg-st)
+                                                  (sub1 (length (imsg-state-pda-pci imsg-st))))
+                                        (list-ref (imsg-state-pda-computation-lengths imsg-st)
+                                                  (length (imsg-state-pda-pci imsg-st))))))
             FONT-SIZE
             'brown)
-      (cond [(and (not (empty? (imsg-state-upci imsg-st)))
-                  (eq? (imsg-state-upci imsg-st) (imsg-state-farthest-consumed imsg-st))
-                  (ormap (λ (comp) (>= (length comp) (imsg-state-max-cmps imsg-st)))
-                         (imsg-state-comps imsg-st)))
+      (cond [(and (not (empty? (imsg-state-pda-upci imsg-st)))
+                  (eq? (imsg-state-pda-upci imsg-st) (imsg-state-pda-farthest-consumed-input imsg-st))
+                  (ormap (λ (comp) (>= (length comp) (imsg-state-pda-max-cmps imsg-st)))
+                         (imsg-state-pda-computations imsg-st)))
              (text (format "There are computations that exceed the cut-off limit (~a)."
-                           (imsg-state-max-cmps imsg-st)) FONT-SIZE DARKGOLDENROD2)]
-            [(and (empty? (imsg-state-upci imsg-st))
-                  (or (zipper-empty? (imsg-state-stack imsg-st))
-                      (zipper-at-end? (imsg-state-stack imsg-st)))
+                           (imsg-state-pda-max-cmps imsg-st)) FONT-SIZE DARKGOLDENROD2)]
+            [(and (empty? (imsg-state-pda-upci imsg-st))
+                  (or (zipper-empty? (imsg-state-pda-stack imsg-st))
+                      (zipper-at-end? (imsg-state-pda-stack imsg-st)))
                   (equal? machine-decision 'accept))
              (text "There is a computation that accepts." FONT-SIZE 'forestgreen)]
-            [(and (eq? (imsg-state-upci imsg-st) (imsg-state-farthest-consumed imsg-st))
-                  (or (zipper-empty? (imsg-state-stack imsg-st))
-                      (zipper-at-end? (imsg-state-stack imsg-st)))
+            [(and (eq? (imsg-state-pda-upci imsg-st) (imsg-state-pda-farthest-consumed-input imsg-st))
+                  (or (zipper-empty? (imsg-state-pda-stack imsg-st))
+                      (zipper-at-end? (imsg-state-pda-stack imsg-st)))
                   (equal? machine-decision 'reject))
              (text "All computations end in a non-final configuration and the machine rejects." FONT-SIZE 'red)]
             [else (text "Word Status: accept " FONT-SIZE 'white)]))))
 
 (define (tm-create-draw-informative-message imsg-st)
-  (let ([machine-decision (if (not (zipper-empty? (imsg-state-tm-acpt-trace imsg-st)))
+  (let ([machine-decision (if (not (zipper-empty? (imsg-state-tm-shown-accepting-trace imsg-st)))
                                'accept
                                'reject)])
     (overlay/align
@@ -1062,7 +1090,7 @@ triple is the entire of the ndfa rule
       'left
       
       (cond [(ormap (λ (comp) (>= (length comp) (imsg-state-tm-max-cmps imsg-st)))
-                         (imsg-state-tm-comps imsg-st))
+                         (imsg-state-tm-computations imsg-st))
              (beside (text "aaaa" 20 'white)
                                   (text "Tape: " 20 'black)
                                   (make-tape-img (imsg-state-tm-tape imsg-st)
@@ -1080,14 +1108,14 @@ triple is the entire of the ndfa rule
       (text (format "The current number of possible computations is: ~a (without repeated configurations)."
                     (number->string 0
                                     #;(if (= (length (imsg-state-tm-pci imsg-st)) (imsg-state-tm-max-cmps imsg-st))
-                                        (list-ref (imsg-state-tm-comps-len imsg-st)
+                                        (list-ref (imsg-state-tm-computation-lengths imsg-st)
                                                   (sub1 (length (imsg-state-tm-pci imsg-st))))
-                                        (list-ref (imsg-state-tm-comps-len imsg-st)
+                                        (list-ref (imsg-state-tm-computation-lengths imsg-st)
                                                   (length (imsg-state-tm-pci imsg-st))))))
             20
             'brown)
       (cond [(ormap (λ (comp) (>= (length comp) (imsg-state-tm-max-cmps imsg-st)))
-                         (imsg-state-tm-comps imsg-st))
+                         (imsg-state-tm-computations imsg-st))
              (text (format "There are computations that exceed the cut-off limit (~a)."
                            (imsg-state-tm-max-cmps imsg-st)) 20 DARKGOLDENROD2)]
             [(and (empty? (imsg-state-tm-tape imsg-st))

@@ -1,7 +1,27 @@
 #lang racket
 
 (require "sm-viz.rkt"
-         "../../fsm-core/interface.rkt")
+         "../../fsm-core/interface.rkt"
+         "../viz-sm-constructors/viz-ndfa2dfa.rkt")
+
+
+;; L = ab* U (ab)*
+(define M (make-ndfa '(S A B C D E F G H I)
+                     '(a b)
+                     'S
+                     '(A B C D)
+                     `((S ,EMP A)
+                       (S ,EMP D)
+                       (A a B)
+                       (B ,EMP C)
+                       (C b I)
+                       (I ,EMP B)
+                       (D ,EMP E)
+                       (E a F)
+                       (F ,EMP G)
+                       (G b H)
+                       (H ,EMP D))))
+
 
 (define aa*Uab* (make-ndfa '(K B D)
                            '(a b)
