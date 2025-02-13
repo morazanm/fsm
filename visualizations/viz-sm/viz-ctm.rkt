@@ -2,7 +2,7 @@
 
 (require "../../fsm-gviz/private/lib.rkt"
          "../../fsm-core/private/tm.rkt"
-         2htdp/image
+         "../2htdp/image.rkt"
          "../../fsm-core/private/callgraphs/transdiagram-ctm6.rkt"
          "../../visualizations/viz-lib/zipper.rkt"
          "../../visualizations/viz-lib/viz-constants.rkt"

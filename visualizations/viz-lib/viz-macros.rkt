@@ -2,9 +2,12 @@
 (require (for-syntax syntax/parse
                      racket/base
                      "viz-state.rkt"
-                     )
-         2htdp/universe
-         2htdp/image
+                     racket/struct-info)
+         (only-in racket/gui
+                  get-display-size
+                  get-display-count)
+         "../2htdp/universe.rkt"
+         "../2htdp/image.rkt"
          "viz-state.rkt"
          "bounding-limits.rkt"
          "default-viz-function-generators.rkt"
@@ -13,6 +16,13 @@
 (provide  create-viz-process-key
           create-viz-draw-world
           create-viz-process-tick)
+
+(define-values (WINDOW-WIDTH WINDOW-HEIGHT)
+  (if (>= (get-display-count) 1)
+      (let-values ([(pre-window-width pre-window-height)
+                    (with-handlers ([exn:fail? (lambda (e) (values 1200 500))]) (get-display-size))])
+        (values (min 2000 pre-window-width) (min 2000 pre-window-height)))
+      (values 1200 500)))
 
 (define-syntax (create-viz-process-key stx)
   (syntax-parse stx
@@ -70,7 +80,7 @@
                       (buffer-held-click
                        (struct-copy viz-state a-vs
                                     [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])
-                       (lambda (a-vs) (imsg-key-func (viz-key-func a-vs))) CLICK-BUFFER-SECONDS)]
+                       (lambda (a-vs) (viz-key-func (imsg-key-func a-vs))) CLICK-BUFFER-SECONDS)]
                      ...
                      [else (struct-copy viz-state a-vs
                                         [prev-mouse-posn (viz-state-curr-mouse-posn a-vs)])]))

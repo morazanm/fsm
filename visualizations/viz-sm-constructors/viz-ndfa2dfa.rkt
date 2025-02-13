@@ -2,7 +2,7 @@
 
 (require "../../fsm-gviz/private/lib.rkt"
          rackunit
-         2htdp/image
+         "../2htdp/image.rkt"
          "../viz-lib/resize-sm-image.rkt"
          "../../fsm-core/private/fsa.rkt"
          "../../fsm-core/private/constants.rkt"

@@ -1,5 +1,5 @@
 #lang racket
-(require 2htdp/image
+(require "../../2htdp/image.rkt"
          racket/runtime-path)
 (provide (all-defined-out))
 
@@ -14,6 +14,8 @@
 (define-runtime-path ARROW-LEFT-KEY-PATH "KEYBOARD-LEFT-KEY.png")
 (define-runtime-path ARROW-UP-KEY-PATH "KEYBOARD-UP-KEY.png")
 (define-runtime-path ARROW-DOWN-KEY-PATH "KEYBOARD-DOWN-KEY.png")
+(define-runtime-path J-KEY-PATH "KEYBOARD-J-KEY.png")
+(define-runtime-path L-KEY-PATH "KEYBOARD-L-KEY.png")
 
 (define S-KEY (bitmap/file S-KEY-PATH))
 (define W-KEY (bitmap/file W-KEY-PATH))
@@ -26,6 +28,8 @@
 (define ARROW-LEFT-KEY (bitmap/file ARROW-LEFT-KEY-PATH))
 (define ARROW-UP-KEY (bitmap/file ARROW-UP-KEY-PATH))
 (define ARROW-DOWN-KEY (bitmap/file ARROW-DOWN-KEY-PATH))
+(define J-KEY (bitmap/file J-KEY-PATH))
+(define L-KEY (bitmap/file L-KEY-PATH))
 
 (define CURSOR
   (scale 0.9 (let ([cursor-rect (let ([inner-white (rectangle 5 17.5 'solid 'white)]

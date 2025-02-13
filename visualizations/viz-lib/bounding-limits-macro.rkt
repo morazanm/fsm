@@ -2,7 +2,8 @@
 (require (for-syntax syntax/parse
                      racket/base
                      racket/syntax)
-         2htdp/image
+         "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
+         "../2htdp/image.rkt"
          "bounding-limits.rkt")
 
 (provide create-bounding-limits)

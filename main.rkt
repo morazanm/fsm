@@ -103,7 +103,9 @@
    gen-state gen-nt
 
    ; constants
-   EMP DEAD RIGHT LEFT LM BLANK BRANCH GOTO ARROW VAR)
+   EMP DEAD RIGHT LEFT LM BLANK BRANCH GOTO ARROW VAR
+
+   sm-viz)
 
 
   ;; sm-graph :: fsa optional(number) -> bitmap

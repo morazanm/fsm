@@ -1,10 +1,10 @@
 #lang racket/base
-(require 2htdp/universe
+(require "../2htdp/universe.rkt"
          "../../fsm-gviz/private/parallel.rkt"
          "vector-zipper.rkt"
          "bounding-limits.rkt"
          "viz-state.rkt"
-         2htdp/image
+         "../2htdp/image.rkt"
          racket/list
          racket/promise)
 
