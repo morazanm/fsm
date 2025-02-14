@@ -247,6 +247,8 @@
 (define (equal-parens? a-string)
   (not (or (equal? ")" (symbol->string a-string))
            (equal? "*" (symbol->string a-string))
+           (equal? "∪" (symbol->string a-string))
+           (equal? "∩" (symbol->string a-string))
            )))
 
 ;; find-parethesis
