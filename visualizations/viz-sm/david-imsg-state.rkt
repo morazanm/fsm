@@ -52,7 +52,7 @@
 
 (struct imsg-state-tm (M ;;TM
                        tape ;;(zipperof symbol)
-                       head-position ;;natnum
+                       head-position ;;(zipperof natnum)
                        rules ;;(zipperof tm-rule)
                        shown-accepting-trace ;;(zipperof trace)
                        invs-zipper ;;(zipperof inv-configs)
@@ -60,6 +60,7 @@
                        computation-lengths ;(zipperof natnum)
                        computations ;;(listof computation)
                        max-cmps ;;natnum
+                       machine-decision
                        word-img-offset
                        word-img-offset-cap
                        scroll-accum)

@@ -25,12 +25,25 @@ visited is a (listof configuration)
 |#
 (struct computation (LoC LoR visited) #:transparent)
 
+
 (define HELD-INV-COLOR 'chartreuse4)
 (define BRKN-INV-COLOR 'red2)
-(define TRACKED-ACCEPT-COLOR 'green)
-(define ALL-ACCEPT-COLOR 'darkgreen)
-(define SPLIT-ACCEPT-COLOR (string-append (symbol->string TRACKED-ACCEPT-COLOR)
-                                                              ":" (symbol->string ALL-ACCEPT-COLOR)))
+(define TRACKED-ACCEPT-COLOR 'forestgreen)
+(define ALL-ACCEPT-COLOR 'green)
+(define SPLIT-ACCEPT-COLOR #;"forestgreen:green;0.33:forestgreen"
+  (string-append (symbol->string TRACKED-ACCEPT-COLOR)
+                                          ":"
+                                          (symbol->string ALL-ACCEPT-COLOR))
+  #;(string-append (symbol->string TRACKED-ACCEPT-COLOR)
+                                          ":"
+                                          (symbol->string ALL-ACCEPT-COLOR)
+                                          ":"
+                                          (symbol->string TRACKED-ACCEPT-COLOR)
+                                          ":"
+                                          (symbol->string ALL-ACCEPT-COLOR)
+                                          ":"
+                                          (symbol->string TRACKED-ACCEPT-COLOR)
+                                          ";.25"))
 (define REJECT-COLOR 'violetred)
 (define GRAPHVIZ-CUTOFF-GOLD 'darkgoldenrod2)
 (define SM-VIZ-FONT-SIZE 18)
@@ -154,6 +167,7 @@ visited is a (listof configuration)
                                                                        (list->zipper '(1))
                                                                        '()
                                                                        '()
+                                                                       'accept
                                                                        0
                                                                        (let ([offset-cap (- (length '(a b b)) TAPE-SIZE)])
                                                                          (if (> 0 offset-cap) 0 offset-cap))
