@@ -13,7 +13,7 @@
          pda-create-draw-informative-message
          tm-create-draw-informative-message)
 
-(define FONT-SIZE 18)
+(define FONT-SIZE 20)
 
 (define DARKGOLDENROD2 (make-color 238 173 14))
 
@@ -436,8 +436,7 @@ triple is the entire of the ndfa rule
          [unconsumed-word (drop entire-word (length last-consumed-word))]
          [machine-decision (if (not (zipper-empty? (imsg-state-ndfa-shown-accepting-trace imsg-st)))
                                'accept
-                               'reject)]
-         [FONT-SIZE 20]) 
+                               'reject)]) 
 
    (above/align
       'left
@@ -540,8 +539,7 @@ triple is the entire of the ndfa rule
                             (third (zipper-current (imsg-state-pda-stack imsg-st))))]
          [machine-decision (if (not (zipper-empty? (imsg-state-pda-shown-accepting-trace imsg-st)))
                                'accept
-                               'reject)]
-         [FONT-SIZE 20])
+                               'reject)])
     (above/align
       'left
       (cond [(and (empty? (imsg-state-pda-pci imsg-st))
@@ -660,8 +658,7 @@ triple is the entire of the ndfa rule
 
 
 (define (tm-create-draw-informative-message imsg-st)
-  (let ([FONT-SIZE 20])
-    (above/align
+  (above/align
       'left
       (if (zipper-empty? (imsg-state-tm-shown-accepting-trace imsg-st))
           (text "Tape: " 1 BLANK-COLOR)
@@ -676,7 +673,9 @@ triple is the entire of the ndfa rule
                             REJECT-COMPUTATION-COLOR))))
               
       (text "Tape: " 1 BLANK-COLOR)
-      (draw-imsg imsg-st)
+      (if (not (zipper-empty? (imsg-state-tm-shown-accepting-trace imsg-st)))
+          (draw-imsg imsg-st)
+          (text "Tape is not shown when there are multiple rejecting computations." FONT-SIZE FONT-COLOR))
       #;(if (zipper-empty? (imsg-state-tm-shown-accepting-trace imsg-st))
           (text "Tape: " 1 BLANK-COLOR)
           (draw-imsg imsg-st))
@@ -702,7 +701,7 @@ triple is the entire of the ndfa rule
                   (zipper-at-end? (imsg-state-tm-head-position imsg-st))
                   (equal? (imsg-state-tm-machine-decision imsg-st) 'reject))
              (text "All computations end in a non-final configuration and the machine rejects." FONT-SIZE REJECT-COLOR)]
-            [else (text "Word Status: accept " FONT-SIZE BLANK-COLOR)]))))
+            [else (text "Word Status: accept " FONT-SIZE BLANK-COLOR)])))
 
 ;"notes to self:"
 ;"scroll thru word instead of jumping to end"

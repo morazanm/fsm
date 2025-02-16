@@ -15,7 +15,6 @@
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/tm.rkt"
          "../../fsm-core/private/misc.rkt"
-         "../../fsm-core/interface.rkt"
          "david-imsg-state.rkt"
          (except-in "david-viz-constants.rkt"
                     FONT-SIZE)
@@ -384,14 +383,14 @@ action is the second pair in a tm rule
   (foldl (λ (state graph)
            (add-node graph
                      state
-                     #:atb (hash 'color (if (eq? (sm-start M) state) 'green 'black)
+                     #:atb (hash 'color (if (eq? (tm-getstart M) state) 'green 'black)
                                  'style (cond [(and (member? state held-inv equal?) (member? state fail-inv equal?)) 'wedged]
                                               [(or (member? state held-inv equal?)
                                                    (member? state fail-inv equal?)
                                                    (member? state cut-off equal?)) 'filled]
                                               [else 'solid])
-                                 'shape (cond [(equal? state (sm-accept M)) 'doubleoctagon]
-                                              [(member? state (sm-finals M) equal?) 'doublecircle]
+                                 'shape (cond [(equal? state (tm-getaccept M)) 'doubleoctagon]
+                                              [(member? state (tm-getfinals M) equal?) 'doublecircle]
                                               [else 'circle])
                                  'fillcolor (cond [(member? state cut-off equal?) GRAPHVIZ-CUTOFF-GOLD]
                                                   [(and (member? state held-inv equal?) (member? state fail-inv equal?))
@@ -405,7 +404,7 @@ action is the second pair in a tm rule
                                                "times-bold"
                                                "Times-Roman"))))
          dgraph
-         (sm-states M)))
+         (tm-getstates M)))
 
 ;;graph machine -> graph
 ;;Purpose: Creates the edges for the given graph
@@ -476,7 +475,7 @@ action is the second pair in a tm rule
          ;;Purpose: All of the pda rules converted to triples
          [all-rules (make-rule-triples (filter (λ (rule)
                                                  (not (equal? (second (first rule)) LM)))
-                                               (sm-rules (building-viz-state-M a-vs))))]
+                                               (tm-getrules (building-viz-state-M a-vs))))]
          
          ;;(listof (listof symbol ((listof symbols) (listof symbols) -> boolean))) (listof symbols))
          ;;Purpose: Extracts all invariants for the states that the machine can be in
@@ -976,14 +975,14 @@ action is the second pair in a tm rule
 ;;Assumption: The given machine is a ndfa or dfa
 (define (tm-viz M a-word head-pos #:cut-off [cut-off 100] . invs) ;;GET RID OF . FOR TESTING
   (let* (;;(listof computations) ;;Purpose: All computations that the machine can have
-         [computations (get-computations a-word (sm-rules M) (sm-start M) (sm-finals M) cut-off head-pos)]
+         [computations (get-computations a-word (tm-getrules M) (tm-getstart M) (tm-getfinals M) cut-off head-pos)]
          ;;(listof configurations) ;;Purpose: Extracts the configurations from the computation
          [LoC (map computation-LoC computations)]
          ;;number ;;Purpose: The length of the word
          [word-len (length a-word)]
          ;;(listof computation) ;;Purpose: Extracts all accepting computations
          [accepting-computations (filter (λ (comp)
-                                           (equal? (first (first (computation-LoC comp))) (sm-accept M)))
+                                           (equal? (first (first (computation-LoC comp))) (tm-getaccept M)))
                                          computations)]
          ;;(listof trace) ;;Purpose: Makes traces from the accepting computations
          [accepting-traces (map (λ (acc-comp)
@@ -1030,11 +1029,11 @@ action is the second pair in a tm rule
                                               rejecting-trace
                                               accepting-trace)))]
          [machine-decision (if (not (empty? accepting-computations))
-                                                      'accept
-                                                      'reject)]
+                               'accept
+                               'reject)]
 
          [tracked-trace (cond [(and (empty? accepting-trace)
-                                    (= (length rejecting-traces) 1))
+                                    (= (length rejecting-computations) 1))
                                (list rejecting-trace)]
                               [(not (empty? accepting-trace)) (list accepting-trace)]
                               [else '()])]
@@ -1080,7 +1079,8 @@ action is the second pair in a tm rule
     ;tracked-trace
     ;(writeln (zipper->list all-head-pos))
     ;(writeln (count-computations (map reverse LoC) '()))
-    (run-viz graphs
+    (displayln rejecting-computations)
+     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ TM-E-SCENE-HEIGHT 2))
              DEFAULT-ZOOM
@@ -1178,7 +1178,7 @@ action is the second pair in a tm rule
 ;; S - tape[i] = blank AND tape[1..i-1] contains an even amount of a's and even bs, final state
 
 ;;Pre-condition = tape = LMw_ AND i = 0 
-(define EVEN-AS-&-BS (make-tm '(K H I B S)
+(define EVEN-AS-&-BS (make-unchecked-tm '(K H I B S)
                               '(a b)
                               `(((K ,BLANK) (S ,BLANK))
                                 ((K a) (H ,RIGHT)) ((H a) (K ,RIGHT)) ((H b) (B ,RIGHT)) ((B b) (H ,RIGHT))
@@ -1187,7 +1187,7 @@ action is the second pair in a tm rule
                               '(S)
                               'S))
 
-(define a* (make-tm '(S Y N)
+(define a* (make-unchecked-tm '(S Y N)
                     '(a b)
                     `(((S a) (S ,RIGHT))
                       ((S b) (N b))
@@ -1206,7 +1206,7 @@ action is the second pair in a tm rule
 ;; N: tape[1..i-1] != a* or a*b, final state
 ;; L = a* U a*b
 ;; PRE: tape = LMw ANDi=1
-(define a*Ua*b (make-tm '(S A B C Y N)
+(define a*Ua*b (make-unchecked-tm '(S A B C Y N)
                         '(a b)
                         `(((S ,BLANK) (Y ,BLANK))
                           ((S a) (A ,RIGHT))
@@ -1223,7 +1223,7 @@ action is the second pair in a tm rule
                         '(Y N)
                         'Y))
 
-(define anbncn (make-tm '(S A B C D E F G H I J K L Y)
+(define anbncn (make-unchecked-tm '(S A B C D E F G H I J K L Y)
                         '(a b c x)
                         `(((S ,BLANK) (J ,RIGHT))
                           ((J ,BLANK) (Y ,BLANK))
@@ -1262,7 +1262,7 @@ action is the second pair in a tm rule
 
 #|
 (reverse (computation-LoC (first (get-computations '(@ a a b)
-                                                   (sm-rules a*Ua*b)
+                                                   (tm-getrules a*Ua*b)
                                                    (sm-start a*Ua*b)
                                                    (sm-finals a*Ua*b)
                                                    100
