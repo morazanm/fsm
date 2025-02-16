@@ -77,6 +77,31 @@ visited is a (listof configuration)
                           '(S)
                           'S))
 
+
+(define qempty? empty?)
+
+(define E-QUEUE '())
+
+;; (qof X) → X throws error
+;; Purpose: Return first X of the given queue
+(define (qfirst a-qox)
+  (if (qempty? a-qox)
+      (error "qfirst applied to an empty queue")
+      (first a-qox)))
+
+;; (listof X) (qof X) → (qof X)
+;; Purpose: Add the given list of X to the given
+;;          queue of X
+(define (enqueue a-lox a-qox)
+  (append a-qox a-lox))
+
+;; (qof X) → (qof X) throws error
+;; Purpose: Return the rest of the given queue
+(define (dequeue a-qox)
+  (if (qempty? a-qox)
+      (error "dequeue applied to an empty queue")
+      (rest a-qox)))
+
 (define DUMMY-RULE (list (list EMP EMP EMP) (list EMP EMP)))
 
 (define INFORMATIVE-MSG-HEIGHT 50)

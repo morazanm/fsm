@@ -1079,7 +1079,7 @@ action is the second pair in a tm rule
     ;tracked-trace
     ;(writeln (zipper->list all-head-pos))
     ;(writeln (count-computations (map reverse LoC) '()))
-    (displayln rejecting-computations)
+    #;(displayln rejecting-computations)
      (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ TM-E-SCENE-HEIGHT 2))

@@ -2,17 +2,14 @@
 
 (require "../../fsm-gviz/private/lib.rkt"
          "../2htdp/image.rkt"
-         math/matrix
          "../viz-lib/viz.rkt"
          "../viz-lib/zipper.rkt"
          "../viz-lib/bounding-limits.rkt"
          "../viz-lib/viz-state.rkt"
          "../viz-lib/viz-macros.rkt"
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
-         "../viz-lib/default-viz-function-generators.rkt"
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/pda.rkt"
-         "../../fsm-core/private/cfg.rkt"
          "../../fsm-core/private/misc.rkt"
          "default-informative-messages.rkt"
          (except-in "../viz-lib/viz-constants.rkt"
@@ -22,9 +19,10 @@
                     FONT-SIZE))
 
 (provide pda-viz)
-(define FONT-SIZE 18)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define FONT-SIZE 18)
+
 #|
 A rule is a structure:
 (make-rule triple pair)
@@ -40,13 +38,6 @@ config is a single configuration
 rule is a rule-struct
 |#
 (struct trace (config rule) #:transparent)
-
-#|
-A computation is a structure: (make-computation LoC LoR LoT visited)
-LoC is a (listof configuration)
-LoR is a (listof rule)
-visited is a (listof configuration)
-|#
 
 ;; X (listof X) -> boolean
 ;;Purpose: Determine if X is in the given list
@@ -110,29 +101,7 @@ visited is a (listof configuration)
                [LoR (cons a-rule (computation-LoR a-comp))]
                [visited (cons (first (computation-LoC a-comp)) (computation-visited a-comp))]))
        
-(define qempty? empty?)
 
-(define E-QUEUE '())
-
-;; (qof X) → X throws error
-;; Purpose: Return first X of the given queue
-(define (qfirst a-qox)
-  (if (qempty? a-qox)
-      (error "qfirst applied to an empty queue")
-      (first a-qox)))
-
-;; (listof X) (qof X) → (qof X)
-;; Purpose: Add the given list of X to the given
-;;          queue of X
-(define (enqueue a-lox a-qox)
-  (append a-qox a-lox))
-
-;; (qof X) → (qof X) throws error
-;; Purpose: Return the rest of the given queue
-(define (dequeue a-qox)
-  (if (qempty? a-qox)
-      (error "dequeue applied to an empty queue")
-      (rest a-qox)))
 
 ;;word (listof rule) symbol number -> (listof computation)
 ;;Purpose: Returns all possible computations using the given word, (listof rule) and start symbol
@@ -755,38 +724,38 @@ visited is a (listof configuration)
 (define (left-key-pressed a-vs)
   (let* ([shown-accepting-trace (if (or (zipper-empty? (imsg-state-pda-shown-accepting-trace
                                                         (informative-messages-component-state
-                                                                    (viz-state-informative-messages a-vs))))
-                             (zipper-at-begin? (imsg-state-pda-shown-accepting-trace
-                                                (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs)))))
-                         (imsg-state-pda-shown-accepting-trace
-                          (informative-messages-component-state
-                                                 (viz-state-informative-messages a-vs)))
-                         (zipper-prev (imsg-state-pda-shown-accepting-trace
-                                       (informative-messages-component-state
-                                                              (viz-state-informative-messages a-vs)))))]
+                                                         (viz-state-informative-messages a-vs))))
+                                        (zipper-at-begin? (imsg-state-pda-shown-accepting-trace
+                                                           (informative-messages-component-state
+                                                            (viz-state-informative-messages a-vs)))))
+                                    (imsg-state-pda-shown-accepting-trace
+                                     (informative-messages-component-state
+                                      (viz-state-informative-messages a-vs)))
+                                    (zipper-prev (imsg-state-pda-shown-accepting-trace
+                                                  (informative-messages-component-state
+                                                   (viz-state-informative-messages a-vs)))))]
          [next-rule (if (zipper-empty? (imsg-state-pda-shown-accepting-trace
                                         (informative-messages-component-state
-                                                               (viz-state-informative-messages a-vs))))
+                                         (viz-state-informative-messages a-vs))))
                         (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
-                                                (viz-state-informative-messages a-vs)))
+                                                               (viz-state-informative-messages a-vs)))
                         (first (trace-rule (zipper-current (imsg-state-pda-shown-accepting-trace
                                                             (informative-messages-component-state
                                                              (viz-state-informative-messages a-vs)))))))]
          [rule (if (zipper-empty? (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
-                                                          (viz-state-informative-messages a-vs))))
+                                                                         (viz-state-informative-messages a-vs))))
                    DUMMY-RULE
                    (list (rule-triple next-rule) (rule-pair next-rule)))]
          [pci (if (or (empty? (imsg-state-pda-pci (informative-messages-component-state
-                                               (viz-state-informative-messages a-vs))))
+                                                   (viz-state-informative-messages a-vs))))
                       (and (equal? (second (first rule)) EMP)
                            (not (empty-rule? rule))))
                   (imsg-state-pda-pci (informative-messages-component-state
-                                   (viz-state-informative-messages a-vs)))
+                                       (viz-state-informative-messages a-vs)))
                   (take (imsg-state-pda-pci (informative-messages-component-state
-                                         (viz-state-informative-messages a-vs)))
+                                             (viz-state-informative-messages a-vs)))
                         (sub1 (length (imsg-state-pda-pci (informative-messages-component-state
-                                                       (viz-state-informative-messages a-vs)))))))]
+                                                           (viz-state-informative-messages a-vs)))))))]
          [pci-len (length pci)])
     (struct-copy
      viz-state
@@ -925,20 +894,24 @@ visited is a (listof configuration)
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the previous broken invariant
 (define (j-key-pressed a-vs)
-  (if (zipper-empty? (imsg-state-pda-invs-zipper (informative-messages-component-state
+  (begin
+    (displayln (imsg-state-pda-invs-zipper
+                                                        (informative-messages-component-state
+                                                         (viz-state-informative-messages a-vs))))
+    (if (zipper-empty? (imsg-state-pda-invs-zipper (informative-messages-component-state
                                               (viz-state-informative-messages a-vs))))
       a-vs
       (let* ([zip (if (and (not (zipper-at-begin? (imsg-state-pda-invs-zipper (informative-messages-component-state
                                                                                (viz-state-informative-messages a-vs)))))
-                           (<= (length (imsg-state-pda-pci (informative-messages-component-state
-                                                            (viz-state-informative-messages a-vs))))
-                               (length (second (zipper-current (imsg-state-pda-invs-zipper
-                                                                (informative-messages-component-state
-                                                                 (viz-state-informative-messages a-vs))))))))
+                           (<= (fourth (zipper-current (imsg-state-pda-stack (informative-messages-component-state
+                                                                              (viz-state-informative-messages a-vs)))))
+                               (fourth (zipper-current (imsg-state-pda-invs-zipper
+                                                        (informative-messages-component-state
+                                                         (viz-state-informative-messages a-vs)))))))
                       (zipper-prev (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                            (viz-state-informative-messages a-vs))))
+                                                                (viz-state-informative-messages a-vs))))
                       (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                               (viz-state-informative-messages a-vs))))]
+                                                   (viz-state-informative-messages a-vs))))]
              [full-word (append (imsg-state-pda-pci (informative-messages-component-state
                                                  (viz-state-informative-messages a-vs)))
                                 (imsg-state-pda-upci (informative-messages-component-state
@@ -961,16 +934,19 @@ visited is a (listof configuration)
                                                                                           (viz-state-informative-messages a-vs))))
                                            (zipper-at-end? (imsg-state-pda-invs-zipper (informative-messages-component-state
                                                                                         (viz-state-informative-messages a-vs))))
-                                           (>= (fourth (zipper-current (imsg-state-pda-stack (informative-messages-component-state
-                                                                                (viz-state-informative-messages a-vs)))))
-                                                (fourth (zipper-current (imsg-state-pda-invs-zipper
-                                                                (informative-messages-component-state
-                                                                 (viz-state-informative-messages a-vs)))))))
-                                     (imsg-state-pda-upci (informative-messages-component-state ;;i touched this
-                                                            (viz-state-informative-messages a-vs)))
-                                     #;partial-word]
-                                     [(zipper-at-begin? (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                                                     (viz-state-informative-messages a-vs))))
+                                           (< (fourth (zipper-current (imsg-state-pda-stack
+                                                                       (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs)))))
+                                              (fourth (zipper-current (imsg-state-pda-invs-zipper
+                                                                       (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs)))))))
+                                      (imsg-state-pda-upci (informative-messages-component-state
+                                                            (viz-state-informative-messages a-vs)))]
+                                     [(and (zipper-at-begin? (imsg-state-pda-invs-zipper (informative-messages-component-state
+                                                                                          (viz-state-informative-messages a-vs))))
+                                           (not (zipper-at-end? (imsg-state-pda-invs-zipper
+                                                                 (informative-messages-component-state
+                                                                  (viz-state-informative-messages a-vs))))))
                                       (imsg-state-pda-upci (informative-messages-component-state
                                                             (viz-state-informative-messages a-vs)))]
                                      [else partial-word])]
@@ -980,19 +956,24 @@ visited is a (listof configuration)
                                                             (zipper-at-end? (imsg-state-pda-invs-zipper
                                                                              (informative-messages-component-state
                                                                               (viz-state-informative-messages a-vs))))
+                                                            (< (fourth (zipper-current (imsg-state-pda-stack
+                                                                                        (informative-messages-component-state
+                                                                                         (viz-state-informative-messages a-vs)))))
+                                                               (fourth (zipper-current (imsg-state-pda-invs-zipper
+                                                                                        (informative-messages-component-state
+                                                                                         (viz-state-informative-messages a-vs))))))
                                                             (not (zipper-empty? (imsg-state-pda-shown-accepting-trace
                                                                                  (informative-messages-component-state
                                                                                   (viz-state-informative-messages a-vs))))))
-                                                       (zipper-to-idx (imsg-state-pda-shown-accepting-trace
-                                                                       (informative-messages-component-state
-                                                                        (viz-state-informative-messages a-vs)))
-                                                                      (fourth (zipper-current zip)))]
+                                                       (imsg-state-pda-shown-accepting-trace
+                                                        (informative-messages-component-state
+                                                         (viz-state-informative-messages a-vs)))]
                                                       [(and (zipper-at-begin? (imsg-state-pda-invs-zipper
                                                                                (informative-messages-component-state
                                                                                 (viz-state-informative-messages a-vs))))
-                                                            (zipper-empty? (imsg-state-pda-shown-accepting-trace
-                                                                            (informative-messages-component-state
-                                                                             (viz-state-informative-messages a-vs)))))
+                                                            (not (zipper-at-end? (imsg-state-pda-invs-zipper
+                                                                                  (informative-messages-component-state
+                                                                                   (viz-state-informative-messages a-vs))))))
                                                        (imsg-state-pda-shown-accepting-trace
                                                         (informative-messages-component-state
                                                          (viz-state-informative-messages a-vs)))]
@@ -1005,18 +986,21 @@ visited is a (listof configuration)
                                                                 (viz-state-informative-messages a-vs))))
                                             (zipper-at-end? (imsg-state-pda-invs-zipper
                                                              (informative-messages-component-state
-                                                              (viz-state-informative-messages a-vs)))) ;;and this
-                                            (>= (fourth (zipper-current
-                                                         (imsg-state-pda-stack (informative-messages-component-state
-                                                                                (viz-state-informative-messages a-vs)))))
-                                                (fourth (zipper-current (imsg-state-pda-invs-zipper
-                                                                (informative-messages-component-state
-                                                                 (viz-state-informative-messages a-vs)))))))
+                                                              (viz-state-informative-messages a-vs))))
+                                            (< (fourth (zipper-current (imsg-state-pda-stack
+                                                                        (informative-messages-component-state
+                                                                         (viz-state-informative-messages a-vs)))))
+                                               (fourth (zipper-current (imsg-state-pda-invs-zipper
+                                                                        (informative-messages-component-state
+                                                                         (viz-state-informative-messages a-vs)))))))
                                        (imsg-state-pda-stack (informative-messages-component-state
                                                               (viz-state-informative-messages a-vs)))]
-                                      [(zipper-at-begin? (imsg-state-pda-invs-zipper
-                                                          (informative-messages-component-state
-                                                           (viz-state-informative-messages a-vs))))
+                                      [(and (zipper-at-begin? (imsg-state-pda-invs-zipper (informative-messages-component-state
+                                                                                           (viz-state-informative-messages a-vs))))
+                                            (not (zipper-at-end? (imsg-state-pda-invs-zipper
+                                                                  (informative-messages-component-state
+                                                                   (viz-state-informative-messages a-vs))))))
+                                       
                                        (imsg-state-pda-stack (informative-messages-component-state
                                                               (viz-state-informative-messages a-vs)))]
                                       [else (zipper-to-idx (imsg-state-pda-stack
@@ -1029,22 +1013,23 @@ visited is a (listof configuration)
                                           (zipper-at-end? (imsg-state-pda-invs-zipper
                                                            (informative-messages-component-state
                                                             (viz-state-informative-messages a-vs))))
-                                          (>= (fourth (zipper-current (imsg-state-pda-stack (informative-messages-component-state
-                                                                                (viz-state-informative-messages a-vs)))))
-                                                (fourth (zipper-current (imsg-state-pda-invs-zipper
-                                                                (informative-messages-component-state ;;and this
-                                                                 (viz-state-informative-messages a-vs)))))))
-                                    (begin
-                                      (displayln "true ")
-                                      (imsg-state-pda-pci (informative-messages-component-state
-                                                          (viz-state-informative-messages a-vs))))
-                                    #;(second (zipper-current zip))  #;(take full-word (zipper-current zip))]
-                                    [(zipper-at-begin? (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                                                    (viz-state-informative-messages a-vs))))
+                                          (< (fourth (zipper-current (imsg-state-pda-stack
+                                                                      (informative-messages-component-state
+                                                                       (viz-state-informative-messages a-vs)))))
+                                             (fourth (zipper-current (imsg-state-pda-invs-zipper
+                                                                      (informative-messages-component-state
+                                                                       (viz-state-informative-messages a-vs)))))))
                                      (imsg-state-pda-pci (informative-messages-component-state
                                                           (viz-state-informative-messages a-vs)))]
-                                    [else (second (zipper-current zip)) #;(take full-word (zipper-current zip))])]
-                         [invs-zipper zip])])]))))
+                                    [(and (zipper-at-begin? (imsg-state-pda-invs-zipper (informative-messages-component-state
+                                                                                         (viz-state-informative-messages a-vs))))
+                                          (not (zipper-at-end? (imsg-state-pda-invs-zipper
+                                                                (informative-messages-component-state
+                                                                 (viz-state-informative-messages a-vs))))))
+                                     (imsg-state-pda-pci (informative-messages-component-state
+                                                          (viz-state-informative-messages a-vs)))]
+                                    [else (second (zipper-current zip))])]
+                         [invs-zipper zip])])])))))
 
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the next failed invariant
@@ -1054,11 +1039,11 @@ visited is a (listof configuration)
       a-vs
       (let* ([zip (if (and (not (zipper-at-end? (imsg-state-pda-invs-zipper (informative-messages-component-state
                                                                              (viz-state-informative-messages a-vs)))))
-                           (or (>= (length (imsg-state-pda-pci (informative-messages-component-state
-                                                                (viz-state-informative-messages a-vs))))
-                                   (length (second (zipper-current (imsg-state-pda-invs-zipper
-                                                                    (informative-messages-component-state
-                                                                     (viz-state-informative-messages a-vs)))))))))
+                           (>= (fourth (zipper-current (imsg-state-pda-stack (informative-messages-component-state
+                                                                              (viz-state-informative-messages a-vs)))))
+                               (fourth (zipper-current (imsg-state-pda-invs-zipper
+                                                        (informative-messages-component-state
+                                                         (viz-state-informative-messages a-vs)))))))
                       (zipper-next (imsg-state-pda-invs-zipper (informative-messages-component-state
                                                                 (viz-state-informative-messages a-vs))))
                       (imsg-state-pda-invs-zipper (informative-messages-component-state
@@ -1085,36 +1070,47 @@ visited is a (listof configuration)
                                                                                           (viz-state-informative-messages a-vs))))
                                            (zipper-at-end? (imsg-state-pda-invs-zipper (informative-messages-component-state
                                                                                         (viz-state-informative-messages a-vs))))
-                                           (<= (length (imsg-state-pda-pci (informative-messages-component-state
-                                                                            (viz-state-informative-messages a-vs))))
-                                               (length (second (zipper-current (imsg-state-pda-invs-zipper
-                                                                                (informative-messages-component-state
-                                                                                 (viz-state-informative-messages a-vs))))))))
-                                      partial-word]
-                                     [(zipper-at-end? (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                                                   (viz-state-informative-messages a-vs))))
+                                           (> (fourth (zipper-current (imsg-state-pda-stack
+                                                                       (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs)))))
+                                              (fourth (zipper-current (imsg-state-pda-invs-zipper
+                                                                       (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs)))))))
                                       (imsg-state-pda-upci (informative-messages-component-state
                                                             (viz-state-informative-messages a-vs)))]
-                                     [else partial-word #;(drop full-word (fourth (zipper-current zip)))])]
+                                     [(and (zipper-at-end? (imsg-state-pda-invs-zipper
+                                                            (informative-messages-component-state
+                                                             (viz-state-informative-messages a-vs))))
+                                           (not (zipper-at-begin? (imsg-state-pda-invs-zipper
+                                                                   (informative-messages-component-state
+                                                                    (viz-state-informative-messages a-vs))))))
+                                      (imsg-state-pda-upci (informative-messages-component-state
+                                                            (viz-state-informative-messages a-vs)))]
+                                     [else partial-word])]
                          [shown-accepting-trace (cond [(and (zipper-at-begin? (imsg-state-pda-invs-zipper
                                                                                (informative-messages-component-state
                                                                                 (viz-state-informative-messages a-vs))))
                                                             (zipper-at-end? (imsg-state-pda-invs-zipper
                                                                              (informative-messages-component-state
                                                                               (viz-state-informative-messages a-vs))))
+                                                            (> (fourth (zipper-current (imsg-state-pda-stack
+                                                                                        (informative-messages-component-state
+                                                                                         (viz-state-informative-messages a-vs)))))
+                                                               (fourth (zipper-current (imsg-state-pda-invs-zipper
+                                                                                        (informative-messages-component-state
+                                                                                         (viz-state-informative-messages a-vs))))))
                                                             (not (zipper-empty? (imsg-state-pda-shown-accepting-trace
                                                                                  (informative-messages-component-state
                                                                                   (viz-state-informative-messages a-vs))))))
-                                                       (zipper-to-idx (imsg-state-pda-shown-accepting-trace
-                                                                       (informative-messages-component-state
-                                                                        (viz-state-informative-messages a-vs)))
-                                                                      (fourth (zipper-current zip)))]
-                                                      [(and (zipper-at-begin? (imsg-state-pda-invs-zipper
-                                                                               (informative-messages-component-state
-                                                                                (viz-state-informative-messages a-vs))))
-                                                            (zipper-empty? (imsg-state-pda-shown-accepting-trace
-                                                                            (informative-messages-component-state
-                                                                             (viz-state-informative-messages a-vs)))))
+                                                       (imsg-state-pda-shown-accepting-trace
+                                                        (informative-messages-component-state
+                                                         (viz-state-informative-messages a-vs)))]
+                                                      [(and (zipper-at-end? (imsg-state-pda-invs-zipper
+                                                                             (informative-messages-component-state
+                                                                              (viz-state-informative-messages a-vs))))
+                                                            (not (zipper-at-begin? (imsg-state-pda-invs-zipper
+                                                                                    (informative-messages-component-state
+                                                                                     (viz-state-informative-messages a-vs))))))
                                                        (imsg-state-pda-shown-accepting-trace
                                                         (informative-messages-component-state
                                                          (viz-state-informative-messages a-vs)))]
@@ -1127,14 +1123,21 @@ visited is a (listof configuration)
                                                                 (viz-state-informative-messages a-vs))))
                                             (zipper-at-end? (imsg-state-pda-invs-zipper
                                                              (informative-messages-component-state
-                                                              (viz-state-informative-messages a-vs)))))
-                                       (zipper-to-idx (imsg-state-pda-stack
-                                                       (informative-messages-component-state
-                                                        (viz-state-informative-messages a-vs)))
-                                                      (fourth (zipper-current zip)))]
-                                      [(zipper-at-begin? (imsg-state-pda-invs-zipper
-                                                          (informative-messages-component-state
-                                                           (viz-state-informative-messages a-vs))))
+                                                              (viz-state-informative-messages a-vs))))
+                                            (> (fourth (zipper-current (imsg-state-pda-stack
+                                                                        (informative-messages-component-state
+                                                                         (viz-state-informative-messages a-vs)))))
+                                               (fourth (zipper-current (imsg-state-pda-invs-zipper
+                                                                        (informative-messages-component-state
+                                                                         (viz-state-informative-messages a-vs)))))))
+                                       (imsg-state-pda-stack (informative-messages-component-state
+                                                              (viz-state-informative-messages a-vs)))]
+                                      [(and (zipper-at-end? (imsg-state-pda-invs-zipper
+                                                      (informative-messages-component-state
+                                                       (viz-state-informative-messages a-vs))))
+                                          (not (zipper-at-begin? (imsg-state-pda-invs-zipper
+                                                      (informative-messages-component-state
+                                                       (viz-state-informative-messages a-vs))))))
                                        (imsg-state-pda-stack (informative-messages-component-state
                                                               (viz-state-informative-messages a-vs)))]
                                       [else (zipper-to-idx (imsg-state-pda-stack
@@ -1147,18 +1150,23 @@ visited is a (listof configuration)
                                           (zipper-at-end? (imsg-state-pda-invs-zipper
                                                            (informative-messages-component-state
                                                             (viz-state-informative-messages a-vs))))
-                                          (<= (length (imsg-state-pda-pci (informative-messages-component-state
-                                                                           (viz-state-informative-messages a-vs))))
-                                              (length (second (zipper-current (imsg-state-pda-invs-zipper
-                                                               (informative-messages-component-state
-                                                                (viz-state-informative-messages a-vs))))))))
-                                     (second (zipper-current zip)) #;(take full-word (fourth (zipper-current zip)))]
-                                    [(zipper-at-end? (imsg-state-pda-invs-zipper
-                                                      (informative-messages-component-state
-                                                       (viz-state-informative-messages a-vs))))
+                                          (> (fourth (zipper-current (imsg-state-pda-stack
+                                                                      (informative-messages-component-state
+                                                                       (viz-state-informative-messages a-vs)))))
+                                             (fourth (zipper-current (imsg-state-pda-invs-zipper
+                                                                      (informative-messages-component-state
+                                                                       (viz-state-informative-messages a-vs)))))))
                                      (imsg-state-pda-pci (informative-messages-component-state
                                                           (viz-state-informative-messages a-vs)))]
-                                    [else (second (zipper-current zip)) #;(take full-word (fourth (zipper-current zip)))])]
+                                    [(and (zipper-at-end? (imsg-state-pda-invs-zipper
+                                                      (informative-messages-component-state
+                                                       (viz-state-informative-messages a-vs))))
+                                          (not (zipper-at-begin? (imsg-state-pda-invs-zipper
+                                                      (informative-messages-component-state
+                                                       (viz-state-informative-messages a-vs))))))
+                                     (imsg-state-pda-pci (informative-messages-component-state
+                                                          (viz-state-informative-messages a-vs)))]
+                                    [else (second (zipper-current zip))])]
                          [invs-zipper zip])])]))))
 
 ;;machine -> machine
@@ -1282,11 +1290,13 @@ visited is a (listof configuration)
                      
          ;;(listof graph-thunk) ;;Purpose: Gets all the graphs needed to run the viz
          [graphs (create-graph-thunks building-state '())]
-         ;;(listof computation) ;;Purpose: Gets all the cut off computations if the length of the word is greater than max computations
+         ;;(listof computation)
+         ;;Purpose: Gets all the cut off computations if the length of the word is greater than max computations
          [get-cut-off-comp (if (> word-len cut-off)
                                (map first LoC)
                                '())]
-         ;;(listof computation) ;;Purpose: Makes the cut off computations if the length of the word is greater than max computations
+         ;;(listof computation)
+         ;;Purpose: Makes the cut off computations if the length of the word is greater than max computations
          [cut-off-comp (if (empty? get-cut-off-comp)
                            LoC
                            (map (λ (cut-off-comp comp)
@@ -1313,8 +1323,8 @@ visited is a (listof configuration)
                  (make-inv-configs a-word accepting-computations)
                  invs)
                 a-word))
-    (displayln "")
-    (displayln (length accepting-trace))
+    ;(displayln "")
+    ;(displayln (length accepting-trace))
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ PDA-E-SCENE-HEIGHT 2))
