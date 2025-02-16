@@ -557,7 +557,6 @@ triple is the entire of the ndfa rule
                           (text (format "~a" EMP) FONT-SIZE BLANK-COLOR))))]
             [(and (not (empty? (imsg-state-pda-upci imsg-st)))
                   (eq? (imsg-state-pda-upci imsg-st) (imsg-state-pda-farthest-consumed-input imsg-st))
-                  ;(<= (length (imsg-state-pda-upci imsg-st)) (length (imsg-state-pda-farthest-consumed-input imsg-st)))
                   (ormap (λ (comp) (>= (length comp) (imsg-state-pda-max-cmps imsg-st)))
                          (imsg-state-pda-computations imsg-st)))
              (above/align 'left

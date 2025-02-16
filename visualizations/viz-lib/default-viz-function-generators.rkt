@@ -332,8 +332,8 @@
                                                                                 (viz-state-informative-messages a-vs)))))
                                   (> (length (imsg-state-input-func (informative-messages-component-state
                                                               (viz-state-informative-messages a-vs))))
-                                     (zipper-current (imsg-state-invs-zipper-func (informative-messages-component-state
-                                                                              (viz-state-informative-messages a-vs))))))
+                                     (func (zipper-current (imsg-state-invs-zipper-func (informative-messages-component-state
+                                                      (viz-state-informative-messages a-vs)))))))
                              (func (zipper-current (zipper-next (imsg-state-invs-zipper-func (informative-messages-component-state
                                                                                    (viz-state-informative-messages a-vs))))))
                              (func (zipper-current (imsg-state-invs-zipper-func (informative-messages-component-state

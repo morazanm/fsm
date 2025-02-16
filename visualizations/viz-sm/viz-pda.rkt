@@ -894,11 +894,7 @@ rule is a rule-struct
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the previous broken invariant
 (define (j-key-pressed a-vs)
-  (begin
-    (displayln (imsg-state-pda-invs-zipper
-                                                        (informative-messages-component-state
-                                                         (viz-state-informative-messages a-vs))))
-    (if (zipper-empty? (imsg-state-pda-invs-zipper (informative-messages-component-state
+  (if (zipper-empty? (imsg-state-pda-invs-zipper (informative-messages-component-state
                                               (viz-state-informative-messages a-vs))))
       a-vs
       (let* ([zip (if (and (not (zipper-at-begin? (imsg-state-pda-invs-zipper (informative-messages-component-state
@@ -1029,7 +1025,7 @@ rule is a rule-struct
                                      (imsg-state-pda-pci (informative-messages-component-state
                                                           (viz-state-informative-messages a-vs)))]
                                     [else (second (zipper-current zip))])]
-                         [invs-zipper zip])])])))))
+                         [invs-zipper zip])])]))))
 
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the next failed invariant
@@ -1318,7 +1314,7 @@ rule is a rule-struct
                                                       (make-inv-configs a-word accepting-computations)
                                                       invs)
                                                      a-word)) <))])
-    (displayln (return-brk-inv-configs
+    #;(displayln (return-brk-inv-configs
                 (get-inv-config-results
                  (make-inv-configs a-word accepting-computations)
                  invs)
