@@ -78,44 +78,6 @@ action is the second pair in a tm rule
 
 (define DUMMY-RULE (list (list BLANK BLANK) (list BLANK BLANK)))
 
-(define qempty? empty?)
-
-(define E-QUEUE '())
-
-(define (tm-getalphabet m) (m '() 0 'get-alphabet)) 
-  
-(define (tm-getstates m) (m '() 0 'get-states))
-  
-(define (tm-getfinals m) (m '() 0 'get-finals))
-
-(define (tm-getdelta m) (m '() 0 'get-delta)) ;;; parsed rules
-
-(define (tm-getrules m) (m '() 0 'get-rules))  ;;; unparsed rules
-
-(define (tm-getstart m) (m '() 0 'get-start))
-  
-(define (tm-getaccept m) (m '() 0 'get-accept))
-
-;; (qof X) → X throws error
-;; Purpose: Return first X of the given queue
-(define (qfirst a-qox)
-  (if (qempty? a-qox)
-      (error "qfirst applied to an empty queue")
-      (first a-qox)))
-
-;; (listof X) (qof X) → (qof X)
-;; Purpose: Add the given list of X to the given
-;;          queue of X
-(define (enqueue a-lox a-qox)
-  (append a-qox a-lox))
-
-;; (qof X) → (qof X) throws error
-;; Purpose: Return the rest of the given queue
-(define (dequeue a-qox)
-  (if (qempty? a-qox)
-      (error "dequeue applied to an empty queue")
-      (rest a-qox)))
-
 ;; X (listof X) -> boolean
 ;;Purpose: Determine if X is in the given list
 (define (member? x lst eq-func)

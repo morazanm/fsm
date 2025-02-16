@@ -51,32 +51,6 @@ triple is the entire of the ndfa rule
 (define (member? x lst)
   (ormap (λ (L) (equal? x L)) lst))
 
-(define qempty? empty?)
-
-(define E-QUEUE '())
-
-;; (qof X) → X throws error
-;; Purpose: Return first X of the given queue
-(define (qfirst a-qox)
-  (if (qempty? a-qox)
-      (error "qfirst applied to an empty queue")
-      (first a-qox)))
-
-;; (listof X) (qof X) → (qof X)
-;; Purpose: Add the given list of X to the given
-;;          queue of X
-(define (enqueue a-lox a-qox)
-  (append a-qox a-lox))
-
-;; (qof X) → (qof X) throws error
-;; Purpose: Return the rest of the given queue
-(define (dequeue a-qox)
-  (if (qempty? a-qox)
-      (error "dequeue applied to an empty queue")
-      (rest a-qox)))
-
-
-
 ;;config rule -> config
 ;;Purpose: Applies the given rule to the given config
 ;;ASSUMPTION: the given rule is applicable to the given config
@@ -133,7 +107,8 @@ triple is the entire of the ndfa rule
                      ;;Purpose: Makes new configurations using given word and connected-rules
                      [new-configs (filter (λ (new-c)
                                             (not (member? (first (computation-LoC new-c)) (computation-visited new-c))))
-                                          (map (λ (rule) (apply-rule (qfirst QoC) rule)) (append connected-read-rules connected-emp-rules)))])
+                                          (map (λ (rule) (apply-rule (qfirst QoC) rule))
+                                               (append connected-read-rules connected-emp-rules)))])
                 (if (empty? new-configs)
                     (make-computations lor finals (dequeue QoC) (cons (qfirst QoC) path))
                     (make-computations lor finals (enqueue new-configs (dequeue QoC)) path)))]))
@@ -509,8 +484,9 @@ triple is the entire of the ndfa rule
                                         [(and (not (zipper-at-end? (imsg-state-ndfa-invs-zipper (informative-messages-component-state
                                                                                             (viz-state-informative-messages a-vs)))))
                                               (>= pci-len (first (zipper-unprocessed
-                                                                  (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                                                           (viz-state-informative-messages a-vs)))))))
+                                                                  (imsg-state-ndfa-invs-zipper
+                                                                   (informative-messages-component-state
+                                                                    (viz-state-informative-messages a-vs)))))))
                                          (zipper-next (imsg-state-ndfa-invs-zipper (informative-messages-component-state
                                                                                (viz-state-informative-messages a-vs))))]
                                         [else (imsg-state-ndfa-invs-zipper (informative-messages-component-state
@@ -606,11 +582,13 @@ triple is the entire of the ndfa rule
                                                                                  (viz-state-informative-messages a-vs))))
                                          (imsg-state-ndfa-invs-zipper (informative-messages-component-state
                                                                   (viz-state-informative-messages a-vs)))]
-                                        [(and (not (zipper-at-begin? (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                                                              (viz-state-informative-messages a-vs)))))
+                                        [(and (not (zipper-at-begin? (imsg-state-ndfa-invs-zipper
+                                                                      (informative-messages-component-state
+                                                                       (viz-state-informative-messages a-vs)))))
                                               (<= pci-len (first (zipper-processed
-                                                                  (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                                                           (viz-state-informative-messages a-vs)))))))
+                                                                  (imsg-state-ndfa-invs-zipper
+                                                                   (informative-messages-component-state
+                                                                    (viz-state-informative-messages a-vs)))))))
                                          (zipper-prev (imsg-state-ndfa-invs-zipper (informative-messages-component-state
                                                                                (viz-state-informative-messages a-vs))))]
                                         [else (imsg-state-ndfa-invs-zipper (informative-messages-component-state

@@ -78,6 +78,20 @@ visited is a (listof configuration)
                           'S))
 
 
+(define (tm-getalphabet m) (m '() 0 'get-alphabet)) 
+  
+(define (tm-getstates m) (m '() 0 'get-states))
+  
+(define (tm-getfinals m) (m '() 0 'get-finals))
+
+(define (tm-getdelta m) (m '() 0 'get-delta)) ;;; parsed rules
+
+(define (tm-getrules m) (m '() 0 'get-rules))  ;;; unparsed rules
+
+(define (tm-getstart m) (m '() 0 'get-start))
+  
+(define (tm-getaccept m) (m '() 0 'get-accept))
+
 (define qempty? empty?)
 
 (define E-QUEUE '())
