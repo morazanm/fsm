@@ -284,7 +284,10 @@
 ;;          news as the start state and newf as the final state
 (define (create-graphic los loe news newf)
   (create-edges
-   (create-nodes (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"
+   (create-nodes (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans" ;; Important: If you ever change the font or fontsize,
+                                                                              ;; you have to readjust the numbers in calculate-node-sep
+                                                                              ;; which you can do by googling the length of a single
+                                                                              ;; character in the desired font
                                                    'nodesep (if (ormap (λ (edge) (too-long? (second edge))) loe)
                                                                 (calculate-node-sep loe)
                                                                 0.25))) los news newf)
