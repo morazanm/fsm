@@ -256,6 +256,13 @@
 (define (too-long? a-regexp)
   (> (string-length (printable-regexp (simplify-regexp a-regexp))) CAP-NUMBER))
 
+
+;; calculate-node-sep
+;; loe -> natnum
+;; Purpose: To calculate nodesep based on the longest edge in the graphic
+(define (calculate-node-sep loe)
+  (/ (* (apply max (map (λ (edge) (string-length (printable-regexp (simplify-regexp (second edge))))) loe)) 8.4) 72))
+
 ;; create-edges
 ;; graph (listof edge) -> graph
 ;; Purpose: To create graph of edges
@@ -265,16 +272,13 @@
                      (printable-regexp (simplify-regexp (second rule)))                      
                      (first rule)
                      (third rule)
-                     #:atb (hash 'fontsize 14 'style 'solid 'fontname "Sans")))
+                     #:atb (hash 'fontsize 14 'style 'solid 'fontname "Sans"
+                                 ;; Important: Adjust the numbers in calculate-node-sep if you change font or fontsize. It's googleable.
+                                 'minlen (if (ormap (λ (edge) (too-long? (second edge))) loe)
+                                          (calculate-node-sep loe)
+                                          'default))))
          graph
          loe))
-
-
-;; calculate-node-sep
-;; loe -> natnum
-;; Purpose: To calculate nodesep based on the longest edge in the graphic
-(define (calculate-node-sep loe)
-  (/ (* (apply max (map (λ (edge) (string-length (printable-regexp (simplify-regexp (second edge))))) loe)) 8.4) 72))
 
 
 
@@ -284,13 +288,8 @@
 ;;          news as the start state and newf as the final state
 (define (create-graphic los loe news newf)
   (create-edges
-   (create-nodes (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans" ;; Important: If you ever change the font or fontsize,
-                                                                              ;; you have to readjust the numbers in calculate-node-sep
-                                                                              ;; which you can do by googling the length of a single
-                                                                              ;; character in the desired font
-                                                   'nodesep (if (ormap (λ (edge) (too-long? (second edge))) loe)
-                                                                (calculate-node-sep loe)
-                                                                0.25))) los news newf)
+   (create-nodes (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"
+                                                   )) los news newf)
    loe))
 
 
