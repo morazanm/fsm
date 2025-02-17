@@ -907,27 +907,27 @@
                             (A a B)
                             (B b S))))
 
-  (check-equal? (fsa->regexp KLEENESTAR-abUaba)
+  (check-equal? (printable-regexp (fsa->regexp KLEENESTAR-abUaba))
                 "((aba(aba)*a ∪ a)b((aba(aba)*a ∪ a)b)*(aba(aba)* ∪ ε) ∪ (aba(aba)* ∪ ε))")
 
-  (check-equal? (fsa->regexp KLEENESTAR-abUaba2)
+  (check-equal? (printable-regexp(fsa->regexp KLEENESTAR-abUaba2))
                 "((aba(aba)*a ∪ a)b((aba(aba)*a ∪ a)b)*(aba(aba)* ∪ ε) ∪ (aba(aba)* ∪ ε))")
 
-  (check-equal? (fsa->regexp a*) "a*")
+  (check-equal? (printable-regexp (fsa->regexp a*)) "a*")
 
-  (check-equal? (fsa->regexp a*b*) "a*b*")
+  (check-equal? (printable-regexp (fsa->regexp a*b*)) "a*b*")
 
-  (check-equal? (fsa->regexp aab*) "(aa(baa)*b ∪ ε)")
+  (check-equal? (printable-regexp (fsa->regexp aab*)) "(aa(baa)*b ∪ ε)")
 
 
   (define regexp-inter-a*-b* (fsa->regexp ndfa-inter-a*-b*)) 
-  (check-equal? regexp-inter-a*-b* (symbol->string EMP))
+  (check-equal? (printable-regexp regexp-inter-a*-b*) "ε")
 
   (define regexp-a*bab* (fsa->regexp ndfa-a*bab*))
-  (check-equal? regexp-a*bab* "a*bab*")
+  (check-equal? (printable-regexp regexp-a*bab*) "a*bab*")
 
   (define regexp-nota*Unotb* (fsa->regexp nota*Unotb*)) 
-  (check-equal? regexp-nota*Unotb* "(b*a(a ∪ b)* ∪ a*b(a ∪ b)*)")
+  (check-equal? (printable-regexp regexp-nota*Unotb*) "(b*a(a ∪ b)* ∪ a*b(a ∪ b)*)")
 
 
 
