@@ -236,46 +236,25 @@
                                    'fontcolor
                                    'black
                                    'font
-                                   "Sans")))
+                                   "Sans"
+                                   )))
            graph
            states-only)))
 
 
-;; equal-parens?
-;; string -> Boolean
-;; Purpose: To check if a string equals ")"
-(define (equal-parens? a-string)
-  (not (or (equal? ")" (symbol->string a-string))
-           (equal? "*" (symbol->string a-string))
-           (equal? "∪" (symbol->string a-string))
-           (equal? "∩" (symbol->string a-string))
-           )))
 
-;; find-parethesis
-;; string -> natnum
-;; Purpose: To find the parethesis closest to a cap numbe
-(define (find-parethesis a-string)
-  (length (dropf-right (symbol->list (string->symbol a-string)) equal-parens?)))
 
 
 ;; CAP-NUMBER for newlines
-(define CAP-NUMBER 10)
+(define CAP-NUMBER 15)
 
-;; insert-newlines
-;; string -> string
-;; Purpose: To insert newlines when the word gets too long
-(define (insert-newlines a-string)
-  (if (<= (string-length a-string) CAP-NUMBER)
-      a-string
-      (string-append (substring a-string 0 (find-parethesis (substring a-string 0 CAP-NUMBER))) "\n"
-                     (insert-newlines (substring a-string (find-parethesis (substring a-string 0 CAP-NUMBER)))))))
 
 
 ;; too-long?
-;; string -> Boolean
-;; Purpose: Determines whether the string is too long
-(define (too-long? a-string)
-  (> (string-length a-string) CAP-NUMBER))
+;; regexp -> Boolean
+;; Purpose: Determines whether the regexp is too long
+(define (too-long? a-regexp)
+  (> (string-length (printable-regexp (simplify-regexp a-regexp))) CAP-NUMBER))
 
 ;; create-edges
 ;; graph (listof edge) -> graph
@@ -283,14 +262,20 @@
 (define (create-edges graph loe)
   (foldr (λ (rule result)
            (add-edge result
-                     (if (too-long? (printable-regexp (simplify-regexp (second rule))))
-                         (insert-newlines (printable-regexp (simplify-regexp (second rule))))
-                         (printable-regexp (simplify-regexp (second rule))))                         
+                     (printable-regexp (simplify-regexp (second rule)))                      
                      (first rule)
                      (third rule)
                      #:atb (hash 'fontsize 14 'style 'solid 'fontname "Sans")))
          graph
          loe))
+
+
+;; calculate-node-sep
+;; loe -> natnum
+;; Purpose: To calculate nodesep based on the longest edge in the graphic
+(define (calculate-node-sep loe)
+  (/ (* (apply max (map (λ (edge) (string-length (printable-regexp (simplify-regexp (second edge))))) loe)) 8.4) 72))
+
 
 
 ;; create-graphic
@@ -299,7 +284,10 @@
 ;;          news as the start state and newf as the final state
 (define (create-graphic los loe news newf)
   (create-edges
-   (create-nodes (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans")) los news newf)
+   (create-nodes (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"
+                                                   'nodesep (if (ormap (λ (edge) (too-long? (second edge))) loe)
+                                                                (calculate-node-sep loe)
+                                                                0.25))) los news newf)
    loe))
 
 
