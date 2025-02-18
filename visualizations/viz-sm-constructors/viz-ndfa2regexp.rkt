@@ -261,6 +261,8 @@
 ;; loe -> natnum
 ;; Purpose: To calculate nodesep based on the longest edge in the graphic
 (define (calculate-node-sep loe)
+  ;; 8.4 is the length in points of a 15 character sans serif font size 14 string
+  ;; 72 is what you divide with to get a length in inches
   (/ (* (apply max (map (λ (edge) (string-length (printable-regexp (simplify-regexp (second edge))))) loe)) 8.4) 72))
 
 ;; create-edges
@@ -273,7 +275,7 @@
                      (first rule)
                      (third rule)
                      #:atb (hash 'fontsize 14 'style 'solid 'fontname "Sans"
-                                 ;; Important: Adjust the numbers in calculate-node-sep if you change font or fontsize. It's googleable.
+                                 ;; Important: Adjust the numbers in calculate-node-sep if you change font or fontsize.
                                  'minlen (if (ormap (λ (edge) (too-long? (second edge))) loe)
                                           (calculate-node-sep loe)
                                           'default))))
