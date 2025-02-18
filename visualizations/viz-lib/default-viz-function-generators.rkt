@@ -32,7 +32,7 @@
 
 ;; img num>0 num num num -> viewport-limits
 ;; Calculates the min and max values of x and y that keep the graph on the screen at all times
-(define (create-calculate-viewport-limits scaled-image scale NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT)
+#;(define (create-calculate-viewport-limits scaled-image scale NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT)
   (let* [(img-width-node-diff (- (/ (image-width scaled-image) 2) (* NODE-SIZE scale)))
          (img-height-node-diff (- (/ (image-height scaled-image) 2) (* NODE-SIZE scale)))
          (scaled-node-size (* NODE-SIZE scale))
@@ -101,7 +101,7 @@
 
 ;; img num>0 num num num -> viewport-limits
 ;; Calculates the min and max values of x and y that keep the graph on the screen at all times
-(define (calculate-viewport-limits scaled-image scale E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE)
+(define ((calculate-viewport-limits-generator E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE) scaled-image scale)
   (let [(img-width-node-diff (- (/ (image-width scaled-image) 2) (* NODE-SIZE scale)))
         (img-height-node-diff (- (/ (image-height scaled-image) 2) (* NODE-SIZE scale)))
         (scaled-node-size (* NODE-SIZE scale))]
@@ -123,13 +123,40 @@
 ;; Returns a a viz-state where zoomed in onto the current graph being displayed
 ;ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE E-SCENE-WIDTH E-SCENE-HEIGHT
 (define (zoom factor E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE)
+  (define calculate-viewport-limits (calculate-viewport-limits-generator E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE))
   (lambda (a-vs)
     (let* [(new-scale (* factor (viz-state-scale-factor a-vs)))
            (scalable? (cond [(eq? factor ZOOM-INCREASE) (> (viz-state-scale-factor-cap a-vs) new-scale)]
                             [(eq? factor ZOOM-DECREASE) (< (viz-state-scale-factor-floor a-vs) new-scale)]))]
       (if scalable?
           (let* [(scaled-image (scale new-scale (viz-state-curr-image a-vs)))
-                 (viewport-lims (calculate-viewport-limits scaled-image new-scale E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE))
+                 (viewport-lims (calculate-viewport-limits scaled-image new-scale))
+                 (scale-increase (/ new-scale (viz-state-scale-factor a-vs)))
+                 (affine-matrix (zoom-affine-transform (scale (viz-state-scale-factor a-vs) (viz-state-curr-image a-vs))
+                                                       (viz-state-image-posn a-vs)
+                                                       scale-increase
+                                                       E-SCENE-WIDTH E-SCENE-HEIGHT))]
+            (reposition-out-of-bounds-img (struct-copy viz-state a-vs
+                                                       [image-posn (posn (+ (posn-x (viz-state-image-posn a-vs))
+                                                                            (matrix-ref affine-matrix 0 0))
+                                                                         (+ (posn-y (viz-state-image-posn a-vs))
+                                                                            (matrix-ref affine-matrix 1 0)))]
+                                                       [scale-factor new-scale])
+                                          viewport-lims
+                                          (viz-state-curr-image a-vs)
+                                          new-scale))
+          a-vs))))
+
+(define (zoom-dep factor-func E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE)
+  (define calculate-viewport-limits (calculate-viewport-limits-generator E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE))
+  (lambda (a-vs)
+    (let* [(factor (factor-func a-vs))
+           (new-scale (* factor (viz-state-scale-factor a-vs)))
+           (scalable? (cond [(eq? factor ZOOM-INCREASE) (> (viz-state-scale-factor-cap a-vs) new-scale)]
+                            [(eq? factor ZOOM-DECREASE) (< (viz-state-scale-factor-floor a-vs) new-scale)]))]
+      (if scalable?
+          (let* [(scaled-image (scale new-scale (viz-state-curr-image a-vs)))
+                 (viewport-lims (calculate-viewport-limits scaled-image new-scale))
                  (scale-increase (/ new-scale (viz-state-scale-factor a-vs)))
                  (affine-matrix (zoom-affine-transform (scale (viz-state-scale-factor a-vs) (viz-state-curr-image a-vs))
                                                        (viz-state-image-posn a-vs)
@@ -148,7 +175,7 @@
 
 ;; viz-state ( Any* -> viz-state) -> viz-state
 ;; Purpose: Prevents holding down a left or right mouse click from spamming a function too fast
-(define (buffer-held-click a-vs func CLICK-BUFFER-SECONDS)
+(define ((buffer-held-click-generator CLICK-BUFFER-SECONDS) a-vs func)
   (if (= (viz-state-click-buffer a-vs) 0)
       (func (struct-copy viz-state a-vs
                          [click-buffer 1]
@@ -163,7 +190,7 @@
 
 ;; img -> boolean
 ;; Checks to see if an image needs to be resized
-(define (does-img-need-resizing? img E-SCENE-WIDTH E-SCENE-HEIGHT)
+(define ((does-img-need-resizing?-generator E-SCENE-WIDTH E-SCENE-HEIGHT) img)
   (or (< E-SCENE-WIDTH (image-width img))
       (< E-SCENE-HEIGHT (image-height img))))
 
@@ -175,7 +202,10 @@
 ;; viz-state -> viz-state
 ;; Purpose: Moves the visualization to the next step of the derivation
 (define (go-next E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR PERCENT-BORDER-GAP)
-  (lambda (a-vs)
+  (let ([does-img-need-resizing? (does-img-need-resizing?-generator E-SCENE-WIDTH E-SCENE-HEIGHT)]
+        [resize-image (resize-image-generator (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP))]
+        [calculate-viewport-limits (calculate-viewport-limits-generator E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE)])
+    (lambda (a-vs)
     (if (vector-zipper-at-end? (viz-state-imgs a-vs))
         a-vs
         (let* [(new-imgs (vector-zipper-next (viz-state-imgs a-vs)))
@@ -187,13 +217,12 @@
                                        (if (list? cache)
                                            (apply above (map (lambda (img) ((force img))) cache))
                                            (cache))))))
-               (curr-pimgs-img (viz-state-curr-image a-vs))
-               (img-resize (resize-image new-curr-img (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))
+               (img-resize (resize-image new-curr-img))
                (growth-x (- (/ (image-width (scale (viz-state-scale-factor a-vs) new-curr-img)) 2)
-                            (/ (image-width (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2)))
+                            (/ (image-width (scale (viz-state-scale-factor a-vs) (viz-state-curr-image a-vs))) 2)))
                (growth-y (- (/ (image-height (scale (viz-state-scale-factor a-vs) new-curr-img)) 2)
-                            (/ (image-height (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2)))]
-          (if (does-img-need-resizing? new-curr-img E-SCENE-WIDTH E-SCENE-HEIGHT)
+                            (/ (image-height (scale (viz-state-scale-factor a-vs) (viz-state-curr-image a-vs))) 2)))]
+          (if (does-img-need-resizing? new-curr-img)
               (let [(NEW-FLOOR (min (second img-resize) (third img-resize)))]
                 (cond [(> (viz-state-scale-factor a-vs) DEFAULT-ZOOM-CAP)
                        (let [(new-viz-state (struct-copy viz-state a-vs
@@ -210,8 +239,7 @@
                                                                          (load-image (vector-zipper-current (vector-zipper-next new-imgs))))]))]
                          (reposition-out-of-bounds-img new-viz-state
                                                        (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state) new-curr-img)
-                                                                                  (viz-state-scale-factor new-viz-state)
-                                                                                  E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE)
+                                                                                  (viz-state-scale-factor new-viz-state))
                                                        new-curr-img
                                                        (viz-state-scale-factor new-viz-state)))]
                       [(< (viz-state-scale-factor a-vs) NEW-FLOOR)
@@ -229,8 +257,7 @@
                                                                          (load-image (vector-zipper-current (vector-zipper-next new-imgs))))]))]
                          (reposition-out-of-bounds-img new-viz-state
                                                        (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state) new-curr-img)
-                                                                                  (viz-state-scale-factor new-viz-state)
-                                                                                  E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE)
+                                                                                  (viz-state-scale-factor new-viz-state))
                                                        new-curr-img
                                                        (viz-state-scale-factor new-viz-state)))]
                       [else (let [(new-viz-state (struct-copy viz-state a-vs
@@ -246,8 +273,7 @@
                                                                               (load-image (vector-zipper-current (vector-zipper-next new-imgs))))]))]
                               (reposition-out-of-bounds-img new-viz-state
                                                             (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state) new-curr-img)
-                                                                                       (viz-state-scale-factor new-viz-state)
-                                                                                       E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE)
+                                                                                       (viz-state-scale-factor new-viz-state))
                                                             new-curr-img
                                                             (viz-state-scale-factor new-viz-state)))]))
               (let [(new-viz-state (struct-copy viz-state a-vs
@@ -263,15 +289,17 @@
                                                                 (load-image (vector-zipper-current (vector-zipper-next new-imgs))))]))]
                 (reposition-out-of-bounds-img new-viz-state
                                               (calculate-viewport-limits (scale (viz-state-scale-factor a-vs) new-curr-img)
-                                                                         (viz-state-scale-factor a-vs)
-                                                                         E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE)
+                                                                         (viz-state-scale-factor a-vs))
                                               new-curr-img
-                                              (viz-state-scale-factor a-vs))))))))
+                                              (viz-state-scale-factor a-vs)))))))))
 
 ;; viz-state -> viz-state
 ;; Purpose: Moves the visualization one step back in the derivation
 (define (go-prev E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR PERCENT-BORDER-GAP)
-  (lambda (a-vs)
+  (let ([does-img-need-resizing? (does-img-need-resizing?-generator E-SCENE-WIDTH E-SCENE-HEIGHT)]
+        [resize-image (resize-image-generator (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP))]
+        [calculate-viewport-limits (calculate-viewport-limits-generator E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE)])
+    (lambda (a-vs)
     (if (vector-zipper-at-begin? (viz-state-imgs a-vs))
         a-vs
         (let* [(new-imgs (vector-zipper-prev (viz-state-imgs a-vs)))
@@ -284,12 +312,12 @@
                                             (apply above (map (lambda (img) ((force img))) cache))
                                             (cache))))))
                (curr-pimgs-img (viz-state-curr-image a-vs))
-               (img-resize (resize-image new-pimgs-img (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))
+               (img-resize (resize-image new-pimgs-img))
                (growth-x (- (/ (image-width (scale (viz-state-scale-factor a-vs) new-pimgs-img)) 2)
                             (/ (image-width (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2)))
                (growth-y (- (/ (image-height (scale (viz-state-scale-factor a-vs) new-pimgs-img)) 2)
                             (/ (image-height (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2)))]
-          (if (does-img-need-resizing? new-pimgs-img E-SCENE-WIDTH E-SCENE-HEIGHT)
+          (if (does-img-need-resizing? new-pimgs-img)
               (let [(NEW-FLOOR (min (second img-resize) (third img-resize)))]
                 (cond [(> (viz-state-scale-factor a-vs) DEFAULT-ZOOM-CAP)
                        (reposition-out-of-bounds-img (struct-copy viz-state a-vs
@@ -306,8 +334,7 @@
                                                                        (load-image (vector-zipper-current (vector-zipper-prev new-imgs))))]
                                                                   [next-image (viz-state-curr-image a-vs)])
                                                      (calculate-viewport-limits (scale (viz-state-scale-factor a-vs) new-pimgs-img)
-                                                                                (viz-state-scale-factor a-vs)
-                                                                                E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE)
+                                                                                (viz-state-scale-factor a-vs))
                                                      new-pimgs-img
                                                      (viz-state-scale-factor a-vs))]
                       [(< (viz-state-scale-factor a-vs) NEW-FLOOR)
@@ -323,8 +350,7 @@
                                                                        (load-image (vector-zipper-current (vector-zipper-prev new-imgs))))]
                                                                   [next-image (viz-state-curr-image a-vs)])
                                                      (calculate-viewport-limits (scale (viz-state-scale-factor a-vs) new-pimgs-img)
-                                                                                (viz-state-scale-factor a-vs)
-                                                                                E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE)
+                                                                                (viz-state-scale-factor a-vs))
                                                      new-pimgs-img
                                                      (viz-state-scale-factor a-vs))]
                       [else (reposition-out-of-bounds-img (struct-copy viz-state a-vs
@@ -340,8 +366,7 @@
                                                                             (load-image (vector-zipper-current (vector-zipper-prev new-imgs))))]
                                                                        [next-image (viz-state-curr-image a-vs)])
                                                           (calculate-viewport-limits (scale (viz-state-scale-factor a-vs) new-pimgs-img)
-                                                                                     (viz-state-scale-factor a-vs)
-                                                                                     E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE)
+                                                                                     (viz-state-scale-factor a-vs))
                                                           new-pimgs-img
                                                           (viz-state-scale-factor a-vs))]))
               (reposition-out-of-bounds-img (struct-copy viz-state a-vs
@@ -357,15 +382,19 @@
                                                               (load-image (vector-zipper-current (vector-zipper-prev new-imgs))))]
                                                          [next-image (viz-state-curr-image a-vs)])
                                             (calculate-viewport-limits (scale (viz-state-scale-factor a-vs) new-pimgs-img)
-                                                                       (viz-state-scale-factor a-vs)
-                                                                       E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE)
+                                                                       (viz-state-scale-factor a-vs))
                                             new-pimgs-img
-                                            (viz-state-scale-factor a-vs)))))))
+                                            (viz-state-scale-factor a-vs))))))
+  )
+  )
 
 ;; viz-state -> viz-state
 ;; Purpose: Restarts the derivation in the visualization
 (define (go-to-begin E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR PERCENT-BORDER-GAP)
-  (lambda (a-vs)
+  (let ([does-img-need-resizing? (does-img-need-resizing?-generator E-SCENE-WIDTH E-SCENE-HEIGHT)]
+        [resize-image (resize-image-generator (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP))]
+        [calculate-viewport-limits (calculate-viewport-limits-generator E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE)])
+    (lambda (a-vs)
     (if (vector-zipper-at-begin? (viz-state-imgs a-vs))
         a-vs
         (let* [(new-imgs (vector-zipper-to-begin (viz-state-imgs a-vs)))
@@ -373,12 +402,12 @@
                                   (apply above (map (lambda (img) ((force img))) (viz-state-begin-image a-vs)))
                                   (viz-state-begin-image a-vs)))
                (curr-pimgs-img (viz-state-curr-image a-vs))
-               (img-resize (resize-image new-pimgs-img (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))
+               (img-resize (resize-image new-pimgs-img))
                (growth-x (- (/ (image-width (scale (viz-state-scale-factor a-vs) new-pimgs-img)) 2)
                             (/ (image-width (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2)))
                (growth-y (- (/ (image-height (scale (viz-state-scale-factor a-vs) new-pimgs-img)) 2)
                             (/ (image-height (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2)))]
-          (if (does-img-need-resizing? new-pimgs-img E-SCENE-WIDTH E-SCENE-HEIGHT)
+          (if (does-img-need-resizing? new-pimgs-img)
               (let [(NEW-FLOOR (min (second img-resize) (third img-resize)))]
                 (cond [(> (viz-state-scale-factor a-vs) DEFAULT-ZOOM-CAP) 
                        (let [(new-viz-state (struct-copy viz-state a-vs
@@ -393,8 +422,7 @@
                                                          [prev-image 'BEGIN]))]
                          (reposition-out-of-bounds-img new-viz-state
                                                        (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state) new-pimgs-img)
-                                                                                  (viz-state-scale-factor new-viz-state)
-                                                                                  E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE)
+                                                                                  (viz-state-scale-factor new-viz-state))
                                                        new-pimgs-img
                                                        (viz-state-scale-factor new-viz-state)))]
                       [(< (viz-state-scale-factor a-vs) NEW-FLOOR)
@@ -410,8 +438,7 @@
                                                          [prev-image 'BEGIN]))]
                          (reposition-out-of-bounds-img new-viz-state
                                                        (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state) new-pimgs-img)
-                                                                                  (viz-state-scale-factor new-viz-state)
-                                                                                  E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE)
+                                                                                  (viz-state-scale-factor new-viz-state))
                                                        new-pimgs-img
                                                        (viz-state-scale-factor new-viz-state)))]
                       [else (let [(new-viz-state (struct-copy viz-state a-vs
@@ -425,8 +452,7 @@
                                                               [prev-image 'BEGIN]))]
                               (reposition-out-of-bounds-img new-viz-state
                                                             (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state) new-pimgs-img)
-                                                                                       (viz-state-scale-factor new-viz-state)
-                                                                                       E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE)
+                                                                                       (viz-state-scale-factor new-viz-state))
                                                             new-pimgs-img
                                                             (viz-state-scale-factor new-viz-state)))]))
               (let [(new-viz-state (struct-copy viz-state a-vs
@@ -440,15 +466,17 @@
                                                 [prev-image 'BEGIN]))]
                 (reposition-out-of-bounds-img new-viz-state
                                               (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state) new-pimgs-img)
-                                                                         (viz-state-scale-factor new-viz-state)
-                                                                         E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE)
+                                                                         (viz-state-scale-factor new-viz-state))
                                               new-pimgs-img
-                                              (viz-state-scale-factor new-viz-state))))))))
+                                              (viz-state-scale-factor new-viz-state)))))))))
 
 ;; viz-state -> viz-state
 ;; Purpose: Finishes the derivations in the visualization
 (define (go-to-end E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR PERCENT-BORDER-GAP)
-  (lambda (a-vs)
+  (let ([does-img-need-resizing? (does-img-need-resizing?-generator E-SCENE-WIDTH E-SCENE-HEIGHT)]
+        [resize-image (resize-image-generator (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP))]
+        [calculate-viewport-limits (calculate-viewport-limits-generator E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE)])
+    (lambda (a-vs)
     (if (vector-zipper-at-end? (viz-state-imgs a-vs))
         a-vs
         (let* [(new-imgs (vector-zipper-to-end (viz-state-imgs a-vs)))
@@ -456,12 +484,12 @@
                                   (apply above (map (lambda (img) ((force img))) (viz-state-end-image a-vs)))
                                   (viz-state-end-image a-vs)))
                (curr-pimgs-img (viz-state-curr-image a-vs))
-               (img-resize (resize-image new-pimgs-img (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))
+               (img-resize (resize-image new-pimgs-img))
                (growth-x (- (/ (image-width (scale (viz-state-scale-factor a-vs) new-pimgs-img)) 2)
                             (/ (image-width (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2)))
                (growth-y (- (/ (image-height (scale (viz-state-scale-factor a-vs) new-pimgs-img)) 2)
                             (/ (image-height (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2)))]
-          (if (does-img-need-resizing? new-pimgs-img E-SCENE-WIDTH E-SCENE-HEIGHT)
+          (if (does-img-need-resizing? new-pimgs-img)
               (let [(NEW-FLOOR (min (second img-resize) (third img-resize)))]
                 (cond [(> (viz-state-scale-factor a-vs) DEFAULT-ZOOM-CAP) 
                        (let [(new-viz-state (struct-copy viz-state a-vs
@@ -476,8 +504,7 @@
                                                          [next-image 'END]))]
                          (reposition-out-of-bounds-img new-viz-state
                                                        (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state) new-pimgs-img)
-                                                                                  (viz-state-scale-factor new-viz-state)
-                                                                                  E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE)
+                                                                                  (viz-state-scale-factor new-viz-state))
                                                        new-pimgs-img
                                                        (viz-state-scale-factor new-viz-state)))]
                       [(< (viz-state-scale-factor a-vs) NEW-FLOOR)
@@ -491,8 +518,7 @@
                                                          [next-image 'END]))]
                          (reposition-out-of-bounds-img new-viz-state
                                                        (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state) new-pimgs-img)
-                                                                                  (viz-state-scale-factor new-viz-state)
-                                                                                  E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE)
+                                                                                  (viz-state-scale-factor new-viz-state))
                                                        new-pimgs-img
                                                        (viz-state-scale-factor new-viz-state)))]
                       [else (let [(new-viz-state (struct-copy viz-state a-vs
@@ -506,8 +532,7 @@
                                                               [next-image 'END]))]
                               (reposition-out-of-bounds-img new-viz-state
                                                             (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state) new-pimgs-img)
-                                                                                       (viz-state-scale-factor new-viz-state)
-                                                                                       E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE)
+                                                                                       (viz-state-scale-factor new-viz-state))
                                                             new-pimgs-img
                                                             (viz-state-scale-factor new-viz-state)))]))
               (let [(new-viz-state (struct-copy viz-state a-vs
@@ -521,10 +546,9 @@
                                                 [next-image 'END]))]
                 (reposition-out-of-bounds-img new-viz-state
                                               (calculate-viewport-limits (scale (viz-state-scale-factor new-viz-state) new-pimgs-img)
-                                                                         (viz-state-scale-factor new-viz-state)
-                                                                         E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE)
+                                                                         (viz-state-scale-factor new-viz-state))
                                               new-pimgs-img
-                                              (viz-state-scale-factor new-viz-state))))))))
+                                              (viz-state-scale-factor new-viz-state)))))))))
 
 ;; viz-state -> viz-state
 ;; Purpose: Zooms in on the visualization
@@ -539,20 +563,23 @@
 ;; viz-state -> viz-state
 ;; Purpose: Zooms all the way in on the visualization
 (define (max-zoom-in E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE PERCENT-BORDER-GAP DEFAULT-ZOOM-CAP DEFAULT-ZOOM) 
-  (lambda (a-vs) ((zoom (/ DEFAULT-ZOOM-CAP (viz-state-scale-factor a-vs))  E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE) a-vs)))
+  (zoom-dep (lambda (a-vs) (/ DEFAULT-ZOOM-CAP (viz-state-scale-factor a-vs))) E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE))
 
 ;; viz-state -> viz-state
 ;; Purpose: Zooms in a moderate amount on the visualization
 (define (reset-zoom E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE PERCENT-BORDER-GAP DEFAULT-ZOOM-CAP DEFAULT-ZOOM)
-  (lambda (a-vs) ((zoom (/ (/ DEFAULT-ZOOM-CAP 2) (viz-state-scale-factor a-vs))  E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE) a-vs)))
+  (zoom-dep (lambda (a-vs) (/ (/ DEFAULT-ZOOM-CAP 2) (viz-state-scale-factor a-vs)))  E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE))
 
 ;; viz-state -> viz-state
 ;; Purpose: Zooms all the way out in the visualization
 (define (max-zoom-out E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE PERCENT-BORDER-GAP DEFAULT-ZOOM-CAP DEFAULT-ZOOM)
-  (lambda (a-vs)
-    (if (or (< E-SCENE-WIDTH (image-width (viz-state-curr-image a-vs)))
-            (< E-SCENE-HEIGHT (image-height (viz-state-curr-image a-vs))))
-        (let [(img-resize (resize-image (viz-state-curr-image a-vs) (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))]
-          ((zoom (/ (min (second img-resize) (third img-resize)) (viz-state-scale-factor a-vs)) E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE) a-vs))
-        (struct-copy viz-state a-vs
-                     [scale-factor DEFAULT-ZOOM]))))
+  (let* ([resize-image (resize-image-generator (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP))]
+         [zoom-func (zoom-dep (lambda (a-vs) (let [(img-resize (resize-image (viz-state-curr-image a-vs)))]
+                                              (/ (min (second img-resize) (third img-resize)) (viz-state-scale-factor a-vs))))
+                             E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE)])
+    (lambda (a-vs)
+      (if (or (< E-SCENE-WIDTH (image-width (viz-state-curr-image a-vs)))
+              (< E-SCENE-HEIGHT (image-height (viz-state-curr-image a-vs))))
+          (zoom-func a-vs)
+          (struct-copy viz-state a-vs
+                       [scale-factor DEFAULT-ZOOM])))))

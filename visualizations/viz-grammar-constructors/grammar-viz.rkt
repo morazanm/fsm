@@ -455,7 +455,7 @@
                                        0
                                        broken-invariants)
                            RULE-YIELD-DIMS)
-     (instructions-graphic E-SCENE-TOOLS
+     (instructions-graphic '() ;E-SCENE-TOOLS
                            (bounding-limits 0
                                             (image-width E-SCENE-TOOLS)
                                             (+ 
@@ -467,7 +467,7 @@
                                              (bounding-limits-height RULE-YIELD-DIMS)
                                              INS-TOOLS-BUFFER
                                              (image-height ARROW-UP-KEY))))
-     (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
+     (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER E-SCENE-TOOLS)
      (create-viz-process-key ["right" viz-go-next right-key-pressed]
                              ["left" viz-go-prev left-key-pressed]
                              [ "up" viz-go-to-begin up-key-pressed]
