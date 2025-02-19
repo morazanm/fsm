@@ -95,7 +95,8 @@ action is the second pair in a tm rule
           (cond [(eq? (second (second a-rule)) RIGHT) (add1 (second a-config))]
                 [(eq? (second (second a-rule)) LEFT)  (sub1 (second a-config))]
                 [else (second a-config)])
-          (mutate-tape a-config)))
+          (mutate-tape a-config)
+          (add1 (fourth a-config))))
   ;;config -> tape
   ;;Purpose: "Mutates" the tape if possible 
   (define (mutate-tape a-config)
@@ -114,7 +115,8 @@ action is the second pair in a tm rule
         a-config
         (list (first a-config)
               (second a-config)
-              (append (third a-config) (list BLANK)))))
+              (append (third a-config) (list BLANK))
+              (fourth a-config))))
   
   (struct-copy computation a-comp
                [LoC (cons (add-blank (apply-action (first (computation-LoC a-comp)))) (computation-LoC a-comp))]
@@ -127,7 +129,7 @@ action is the second pair in a tm rule
 (define (get-computations a-word lor start finals max-cmps head-pos)
   (let (;;computation
         ;;Purpose: The starting computation
-        [starting-computation (computation (list (append (list start) (list head-pos) (list a-word)))
+        [starting-computation (computation (list (append (list start) (list head-pos) (list a-word) (list 0)))
                                            '()
                                            '())])
     (make-computations lor
@@ -180,58 +182,35 @@ action is the second pair in a tm rule
                      [res (trace (first configs) rle)])
                 (make-trace (rest configs) (rest rules) (cons res acc)))]))
 
-
-;(listof symbols) (lisof configurations) -> (listof configurations)
-;;Purpose: Makes configurations usable for invariant predicates
-(define (make-inv-configs a-word configs)
-  (append-map (λ (comp)
-                (make-inv-configs-helper a-word (reverse (computation-LoC comp)) (length a-word)))
-              configs))
-
-;;(listof symbols) (lisof configurations) natnum -> (listof configurations)
-;;Purpose: Makes configurations usable for invariant predicates
-(define (make-inv-configs-helper a-word configs word-len)
-  (let* ([config (filter (λ (config) (= (length (second config)) word-len)) configs)]
-         [inv-config (map (λ (config)
-                            (append (list (first config))
-                                    (list (take a-word (- (length a-word) word-len)))
-                                    (list (third config))
-                                    (list (fourth config))))
-                          config)])
-    (if (empty? configs)
-        '()
-        (append inv-config
-                (make-inv-configs-helper a-word (rest configs) (sub1 word-len))))))
-
 ;;(listof configurations) (listof (listof symbol ((listof sybmols) -> boolean))) -> (listof configurations)
 ;;Purpose: Adds the results of each invariant oredicate to its corresponding invariant configuration 
-(define (get-inv-config-results inv-configs invs)
+(define (get-inv-config-results computations invs)
   (append-map (λ (comp)
-                (get-inv-config-results-helper comp invs))
-              inv-configs))
+                (get-inv-config-results-helper (computation-LoC comp) invs))
+              computations))
 
 ;;(listof configurations) (listof (listof symbol ((listof sybmols) -> boolean))) -> (listof configurations)
 ;;Purpose: Adds the results of each invariant oredicate to its corresponding invariant configuration
-(define (get-inv-config-results-helper inv-configs invs)
-  (if (empty? inv-configs)
+(define (get-inv-config-results-helper computations invs)
+  (if (empty? computations)
       '()
       (let* ([get-inv-for-inv-config (filter (λ (inv)
-                                               (equal? (first inv) (first inv-configs)))
+                                               (equal? (first inv) (first (first computations))))
                                              invs)]
              [inv-for-inv-config (if (empty? get-inv-for-inv-config)
                                      '()
                                      (second (first get-inv-for-inv-config)))]
              [inv-config-result (if (empty? inv-for-inv-config)
                                     '()
-                                    (list (append inv-configs
-                                                  (list (inv-for-inv-config (second inv-configs)
-                                                                            (third inv-configs))))))])
+                                    (list (append (first computations)
+                                                  (list (inv-for-inv-config (third (first computations))
+                                                                            (second (first computations)))))))])
         (append inv-config-result
-                (get-inv-config-results-helper (rest inv-configs) invs)))))
+                (get-inv-config-results-helper (rest computations) invs)))))
 
 ;;(listof configurations) (listof sybmols) -> (listof configurations)
 ;;Purpose: Extracts all the invariant configurations that failed
-(define (return-brk-inv-configs inv-config-results a-word)
+(define (return-brk-inv-configs inv-config-results)
   (remove-duplicates (filter (λ (config) (not (fifth config))) inv-config-results)))
 
 
@@ -241,13 +220,7 @@ action is the second pair in a tm rule
   (map (λ (rule)
          (list (rule-read rule)
                (rule-action rule)))
-       trace-rules)
-  #;(append-map (λ (lor)
-                  (map (λ (rule)
-                         (list (rule-read rule)
-                               (rule-action rule)))
-                       lor))
-                trace-rules))
+       trace-rules))
 
 
 ;(listof symbols) -> string
@@ -291,8 +264,12 @@ action is the second pair in a tm rule
 ;(listof symbol ((listof symbol) (listof symbol) -> boolean))) (X -> Y) ->
 ;(listof symbol ((listof symbol) (listof symbol) -> boolean)))
 ;;Purpose: Extracts the invariants from the (listof symbol ((listof symbols) (listof symbols) -> boolean)))
-(define (get-invariants LoI func)
-  (filter-map-acc (λ (x) ((second (first x)) (second x) (third x))) first func first LoI))
+(define (get-invariants inv func)
+  (if (func (fifth inv))
+      (list (first inv))
+      '()))
+  #;(cond [(empty? LoI) '()]
+        [(func (fifth inv)) inv])
 
 ;;(listof trace) -> (listof trace)
 ;;Purpose: Extracts the empty trace from the (listof trace) and maps rest onto the non-empty trace
@@ -336,6 +313,14 @@ action is the second pair in a tm rule
          (find-longest-computation (rest a-LoRT) (first a-LoRT))]
         [(find-longest-computation (rest a-LoRT) acc)]))
 
+;;configuration configuration -> boolean
+;;Purpose: Determines if the given invariant is the same as the given current config
+(define (same-config? inv-config current-config)
+  (and (equal? (first inv-config) (first current-config))
+       (equal? (second inv-config) (second current-config))
+       (equal? (third inv-config) (third current-config))
+       (equal? (fourth inv-config) (fourth current-config))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
@@ -346,7 +331,8 @@ action is the second pair in a tm rule
            (add-node graph
                      state
                      #:atb (hash 'color (if (eq? (tm-getstart M) state) 'green 'black)
-                                 'style (cond [(and (member? state held-inv equal?) (member? state fail-inv equal?)) 'wedged]
+                                 'style (cond [(and (member? state held-inv equal?)
+                                                    (member? state fail-inv equal?)) 'wedged]
                                               [(or (member? state held-inv equal?)
                                                    (member? state fail-inv equal?)
                                                    (member? state cut-off equal?)) 'filled]
@@ -399,8 +385,10 @@ action is the second pair in a tm rule
 (define (create-graph-thunk a-vs #:cut-off [cut-off #f])
   (let* (;;(listof configuration)
          ;;Purpose: Extracts all the configs from both the accepting and rejecting configs
-         [current-configs '()#;(get-portion-configs (building-viz-state-upci a-vs)
-                                                    (building-viz-state-acc-comp a-vs))]
+         [current-configs (begin
+                            (displayln (remove-duplicates (map first (building-viz-state-computations a-vs))))
+                            (remove-duplicates (map first (building-viz-state-computations a-vs))))
+                          #;(get-portion-configs (displayln (building-viz-state-computations a-vs)))]
 
          ;;(listof symbol)
          ;;Purpose: Gets the states where it's computation has cutoff
@@ -443,16 +431,19 @@ action is the second pair in a tm rule
          ;;Purpose: Extracts all invariants for the states that the machine can be in
          [get-invs (for*/list ([invs (building-viz-state-inv a-vs)]
                                [curr current-configs]
-                               #:when (equal? (first invs) (first curr)))
-                     (list invs '()  (third curr)))]
+                               #:when (same-config? invs curr))
+                     invs)]
 
          ;;(listof symbols)
          ;;Purpose: Returns all states whose invariants fail
-         [brkn-invs (get-invariants get-invs not)]
+         [brkn-invs (begin
+                      (displayln (append-map (λ (inv) (get-invariants inv not)) get-invs))
+                      (displayln (append-map (λ (inv) (get-invariants inv id)) get-invs))
+                      (append-map (λ (inv) (get-invariants inv not)) get-invs))]
          
          ;;(listof symbols)
          ;;Purpose: Returns all states whose invariants holds
-         [held-invs (get-invariants get-invs id)])
+         [held-invs (append-map (λ (inv) (get-invariants inv id)) get-invs)])
     (make-edge-graph
      (make-node-graph
       (create-graph 'tmgraph #:atb (hash 'rankdir "LR"))
@@ -481,6 +472,9 @@ action is the second pair in a tm rule
         [else (let ([next-graph (create-graph-thunk a-vs)])
                 (create-graph-thunks (struct-copy building-viz-state
                                                   a-vs
+                                                  [computations (filter-map (λ (comp) (and (not (empty? comp))
+                                                                                           (rest comp)))
+                                                                            (building-viz-state-computations a-vs))]
                                                   [tape (zipper-next (building-viz-state-tape a-vs))]
                                                   [head-pos (zipper-next (building-viz-state-head-pos a-vs))]
                                                   [tracked-accept-trace
@@ -568,10 +562,10 @@ action is the second pair in a tm rule
                                         [(and (not (zipper-at-end? (imsg-state-tm-invs-zipper
                                                                     (informative-messages-component-state
                                                                      (viz-state-informative-messages a-vs)))))
-                                              (>= pci-len (first (zipper-unprocessed
+                                              (>= pci-len (fourth (first (zipper-unprocessed
                                                                   (imsg-state-tm-invs-zipper
                                                                    (informative-messages-component-state
-                                                                    (viz-state-informative-messages a-vs)))))))
+                                                                    (viz-state-informative-messages a-vs))))))))
                                          (zipper-next (imsg-state-tm-invs-zipper (informative-messages-component-state
                                                                                   (viz-state-informative-messages a-vs))))]
                                         [else (imsg-state-tm-invs-zipper (informative-messages-component-state
@@ -723,10 +717,11 @@ action is the second pair in a tm rule
                                         [(and (not (zipper-at-begin? (imsg-state-tm-invs-zipper
                                                                       (informative-messages-component-state
                                                                        (viz-state-informative-messages a-vs)))))
-                                              (<= pci-len (first (zipper-processed
+                                              (<= pci-len (fourth
+                                                           (first (zipper-processed
                                                                   (imsg-state-tm-invs-zipper
                                                                    (informative-messages-component-state
-                                                                    (viz-state-informative-messages a-vs)))))))
+                                                                    (viz-state-informative-messages a-vs))))))))
                                          (zipper-prev (imsg-state-tm-invs-zipper (informative-messages-component-state
                                                                                   (viz-state-informative-messages a-vs))))]
                                         [else (imsg-state-tm-invs-zipper (informative-messages-component-state
@@ -939,7 +934,7 @@ action is the second pair in a tm rule
   (let* (;;(listof computations) ;;Purpose: All computations that the machine can have
          [computations (get-computations a-word (tm-getrules M) (tm-getstart M) (tm-getfinals M) cut-off head-pos)]
          ;;(listof configurations) ;;Purpose: Extracts the configurations from the computation
-         [LoC (map computation-LoC computations)]
+         [LoC (map (λ (comp) (reverse (computation-LoC comp))) computations)]
          ;;number ;;Purpose: The length of the word
          [word-len (length a-word)]
          ;;(listof computation) ;;Purpose: Extracts all accepting computations
@@ -999,6 +994,9 @@ action is the second pair in a tm rule
                                (list rejecting-trace)]
                               [(not (empty? accepting-trace)) (list accepting-trace)]
                               [else '()])]
+         ;;(listof number) ;;Purpose: Gets all the invariant configurations
+         [all-inv-configs (reverse (get-inv-config-results accepting-computations invs))]
+         [failed-inv-configs (remove-duplicates (return-brk-inv-configs all-inv-configs))]
          ;;building-state struct
          [building-state (building-viz-state all-tapes
                                              LoC
@@ -1006,7 +1004,7 @@ action is the second pair in a tm rule
                                              (if (empty? accept-cmps) '() (rest accept-cmps))
                                              rejecting-traces
                                              M
-                                             invs
+                                             all-inv-configs
                                              cut-off
                                              all-head-pos
                                              machine-decision)]
@@ -1027,22 +1025,15 @@ action is the second pair in a tm rule
                                 get-cut-off-comp
                                 LoC))]
          ;;(listof number) ;;Purpose: Gets the number of computations for each step
-         [computation-lengths (take (drop (count-computations (map reverse LoC) '()) head-pos) (length (zipper->list all-head-pos)))]
-         ;;(listof number) ;;Purpose: Gets the index of image where an invariant failed
-         #;[inv-configs (map (λ (con)
-                               (fourth con))
-                             (return-brk-inv-configs
-                              (get-inv-config-results
-                               (make-inv-configs a-word accepting-computations)
-                               invs)
-                              a-word))])
+         [computation-lengths (take (drop (count-computations (map reverse LoC) '()) head-pos)
+                                    (length (zipper->list all-head-pos)))])
     ;(first (map reverse LoC))
     ;rejecting-trace
     ;tracked-trace
     ;(writeln (zipper->list all-head-pos))
     ;(writeln (count-computations (map reverse LoC) '()))
-    #;(displayln rejecting-computations)
-     (run-viz graphs
+    (displayln all-inv-configs)
+    (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ TM-E-SCENE-HEIGHT 2))
              DEFAULT-ZOOM
@@ -1059,8 +1050,8 @@ action is the second pair in a tm rule
                                                                          tracked-trace
                                                                          (first tracked-trace))))
                                                   (list->zipper (if (empty? tracked-trace) tracked-trace (first tracked-trace)))
-                                                  (list->zipper '() #;inv-configs) 
-                                                  0 ;(sub1 (length inv-configs))
+                                                  (list->zipper failed-inv-configs) 
+                                                  (sub1 (length failed-inv-configs))
                                                   (list->zipper computation-lengths)
                                                   LoC
                                                   cut-off
@@ -1125,11 +1116,7 @@ action is the second pair in a tm rule
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-#|
-'(((S 1 (@ _ a b c c))  (J 2 (@ _ a b c c))  (A 3 (@ _ a b c c))  (B 4 (@ _ a b c c))  (C 5 (@ _ a b c c)) (C 6 (@ _ a b c c _))  (D 5 (@ _ a b c c _))  (D 4 (@ _ a b c c _))  (D 3 (@ _ a b c c _))  (D 2 (@ _ a b c c _))  (D 1 (@ _ a b c c _))  (E 2 (@ _ a b c c _))  (F 2 (@ _ x b c c _))  (F 3 (@ _ x b c c _))  (G 3 (@ _ x x c c _))  (G 4 (@ _ x x c c _))  (D 4 (@ _ x x x c _))  (D 3 (@ _ x x x c _))  (D 2 (@ _ x x x c _))  (D 1 (@ _ x x x c _))  (E 2 (@ _ x x x c _))  (E 3 (@ _ x x x c _))  (E 4 (@ _ x x x c _))  (E 5 (@ _ x x x c _)))
-  ((S 1 (@ _ a b c c))  (J 2 (@ _ a b c c))  (A 3 (@ _ a b c c))  (B 4 (@ _ a b c c))  (C 5 (@ _ a b c c)) (C 6 (@ _ a b c c _))  (D 5 (@ _ a b c c _))  (D 4 (@ _ a b c c _))  (D 3 (@ _ a b c c _))  (D 2 (@ _ a b c c _))  (D 1 (@ _ a b c c _))  (E 2 (@ _ a b c c _))  (H 2 (@ _ x b c c _))  (H 3 (@ _ x b c c _))  (I 3 (@ _ x x c c _))  (I 4 (@ _ x x c c _))  (K 4 (@ _ x x x c _))  (L 5 (@ _ x x x c _))))
-    '(                 1                  1                     1                      1                  1                  1                       1                          1                 1                      1                      1                      1                        2                     2                     2                       2                        2                  2                        1                       1                       1                         1                1                      1                       )
-|#
+
 
 
 ;;States (i = head's position)
@@ -1141,22 +1128,71 @@ action is the second pair in a tm rule
 
 ;;Pre-condition = tape = LMw_ AND i = 0 
 (define EVEN-AS-&-BS (make-unchecked-tm '(K H I B S)
-                              '(a b)
-                              `(((K ,BLANK) (S ,BLANK))
-                                ((K a) (H ,RIGHT)) ((H a) (K ,RIGHT)) ((H b) (B ,RIGHT)) ((B b) (H ,RIGHT))
-                                ((K b) (I ,RIGHT)) ((I b) (K ,RIGHT)) ((I a) (B ,RIGHT)) ((B a) (I ,RIGHT)))
-                              'K
-                              '(S)
-                              'S))
+                                        '(a b)
+                                        `(((K ,BLANK) (S ,BLANK))
+                                          ((K a) (H ,RIGHT)) ((H a) (K ,RIGHT)) ((H b) (B ,RIGHT)) ((B b) (H ,RIGHT))
+                                          ((K b) (I ,RIGHT)) ((I b) (K ,RIGHT)) ((I a) (B ,RIGHT)) ((B a) (I ,RIGHT)))
+                                        'K
+                                        '(S)
+                                        'S))
+
+;;tape headpos -> boolean
+;;Purpose: Determines if everything in the tape[1..i] is an even # of a's and b's
+(define (EVEN-K-INV tape headpos)
+  (or (= headpos 0)
+      (let [(num-as (length (filter (λ (w) (eq? w 'a)) (take (rest tape) (sub1 headpos)))))
+            (num-bs (length (filter (λ (w) (eq? w 'b)) (take (rest tape) (sub1 headpos)))))]
+        (and (even? num-as)
+             (even? num-bs)))))
+
+;;tape headpos -> boolean
+;;Purpose: Determines if everything in the tape[1..i] is an odd # of a's and even # of b's
+(define (EVEN-H-INV tape headpos)
+  (let [(num-as (length (filter (λ (w) (eq? w 'a)) (take (rest tape) (sub1 headpos)))))
+        (num-bs (length (filter (λ (w) (eq? w 'b)) (take (rest tape) (sub1 headpos)))))]
+    (and (odd? num-as)
+         (even? num-bs))))
+
+;;tape headpos -> boolean
+;;Purpose: Determines if everything in the tape[1..i] is an even # of a's and odd # of b's
+(define (EVEN-I-INV tape headpos)
+  (let [(num-as (length (filter (λ (w) (eq? w 'a)) (take (rest tape) (sub1 headpos)))))
+        (num-bs (length (filter (λ (w) (eq? w 'b)) (take (rest tape) (sub1 headpos)))))]
+    (and (even? num-as)
+         (odd? num-bs))))
+
+(define (BRK-EVEN-I-INV tape headpos)
+  (let [(num-as (length (filter (λ (w) (eq? w 'a)) (take (rest tape) (sub1 headpos)))))
+        (num-bs (length (filter (λ (w) (eq? w 'b)) (take (rest tape) (sub1 headpos)))))]
+    (and (not (even? num-as))
+         (odd? num-bs))))
+
+;;tape headpos -> boolean
+;;Purpose: Determines if everything in the tape[1..i] is an odd # of a's and odd # of b's
+(define (EVEN-B-INV tape headpos)
+  (let [(num-as (length (filter (λ (w) (eq? w 'a)) (take (rest tape) (sub1 headpos)))))
+        (num-bs (length (filter (λ (w) (eq? w 'b)) (take (rest tape) (sub1 headpos)))))]
+    (and (odd? num-as)
+         (odd? num-bs))))
+
+
+;;tape headpos -> boolean
+;;Purpose: Determines if everything in the tape[1..i] is an even # of a's and b's and tape[i] = BLANK
+(define (EVEN-S-INV tape headpos)
+  (let [(num-as (length (filter (λ (w) (eq? w 'a)) (take (rest tape) (sub1 headpos)))))
+        (num-bs (length (filter (λ (w) (eq? w 'b)) (take (rest tape) (sub1 headpos)))))]
+    (and (even? num-as)
+         (even? num-bs)
+         (eq? (list-ref tape headpos) BLANK))))
 
 (define a* (make-unchecked-tm '(S Y N)
-                    '(a b)
-                    `(((S a) (S ,RIGHT))
-                      ((S b) (N b))
-                      ((S ,BLANK) (Y ,BLANK)))
-                    'S
-                    '(Y N)
-                    'Y))
+                              '(a b)
+                              `(((S a) (S ,RIGHT))
+                                ((S b) (N b))
+                                ((S ,BLANK) (Y ,BLANK)))
+                              'S
+                              '(Y N)
+                              'Y))
 
 ;; States (i is the position of the head)
 ;; S: no tape elements read, starting sate
@@ -1169,57 +1205,319 @@ action is the second pair in a tm rule
 ;; L = a* U a*b
 ;; PRE: tape = LMw ANDi=1
 (define a*Ua*b (make-unchecked-tm '(S A B C Y N)
-                        '(a b)
-                        `(((S ,BLANK) (Y ,BLANK))
-                          ((S a) (A ,RIGHT))
-                          ((S a) (B ,RIGHT))
-                          ((S b) (C ,RIGHT))
-                          ((A a) (A ,RIGHT))
-                          ((A ,BLANK) (Y ,BLANK))
-                          ((B a) (B ,RIGHT))
-                          ((B b) (C ,RIGHT))
-                          ((C a) (N ,RIGHT))
-                          ((C b) (N ,RIGHT))
-                          ((C ,BLANK) (Y ,BLANK)))
-                        'S
-                        '(Y N)
-                        'Y))
+                                  '(a b)
+                                  `(((S ,BLANK) (Y ,BLANK))
+                                    ((S a) (A ,RIGHT))
+                                    ((S a) (B ,RIGHT))
+                                    ((S b) (C ,RIGHT))
+                                    ((A a) (A ,RIGHT))
+                                    ((A ,BLANK) (Y ,BLANK))
+                                    ((B a) (B ,RIGHT))
+                                    ((B b) (C ,RIGHT))
+                                    ((C a) (N ,RIGHT))
+                                    ((C b) (N ,RIGHT))
+                                    ((C ,BLANK) (Y ,BLANK)))
+                                  'S
+                                  '(Y N)
+                                  'Y))
 
-(define anbncn (make-unchecked-tm '(S A B C D E F G H I J K L Y)
-                        '(a b c x)
-                        `(((S ,BLANK) (J ,RIGHT))
-                          ((J ,BLANK) (Y ,BLANK))
-                          ((J a) (A ,RIGHT))
-                          ((A a) (A ,RIGHT))
-                          ((A b) (B ,RIGHT))
-                          ((B b) (B ,RIGHT))
-                          ((B c) (C ,RIGHT))
-                          ((C c) (C ,RIGHT))
-                          ((C ,BLANK) (D ,LEFT))
-                          ((D a) (D ,LEFT))
-                          ((D b) (D ,LEFT))
-                          ((D c) (D ,LEFT))
-                          ((D x) (D ,LEFT))
-                          ((D ,BLANK) (E ,RIGHT))
-                          ((E x) (E ,RIGHT))
-                          ((E a) (F x))
-                          ((E a) (H x))
-                          ((F a) (F ,RIGHT))
-                          ((F b) (G x))
-                          ((F x) (F ,RIGHT))
-                          ((G b) (G ,RIGHT))
-                          ((G x) (G ,RIGHT))
-                          ((G c) (D x))
-                          ((H x) (H ,RIGHT))
-                          ((H b) (I x))
-                          ((I x) (I ,RIGHT))
-                          ((I c) (K x))
-                          ((K x) (L ,RIGHT))
-                          ((L ,BLANK) (Y ,BLANK)))
-                        'S
-                        '(Y)
-                        'Y))
 
+;; tape natnum → Boolean
+;; Purpose: Determine that no tape elements read
+(define (S-INV t i) (= i 1))
+
+;; tape natnum → Boolean
+;; Purpose: Determine that tape[1..i-1] only has a
+(define (A-INV t i)
+  (and (>= i 2)
+       (andmap (λ (s) (eq? s 'a)) (take (rest t) (sub1 i)))))
+
+;; tape natnum → Boolean
+;; Purpose: Determine that tape[1..i-1] only has a
+(define (B-INV t i)
+  (and (>= i 2)
+       (andmap (λ (s) (eq? s 'a)) (take (rest t) (sub1 i)))))
+
+;; tape natnum → Boolean
+;; Purpose: Determine that tape[1..i-2] has only a and
+;; tape[i-1] = b
+(define (C-INV t i)
+  (and (>= i 2)
+       (andmap (λ (s) (eq? s 'a)) (take (rest t) (- i 2)))
+       (eq? (list-ref t (sub1 i)) 'b)))
+
+;; tape natnum → Boolean
+;; Purpose: Determine that tape[i] = BLANK and
+;; tape[1..i-1] = a* or tape[1..i-1] = a*b
+(define (Y-INV t i)
+  (or (and (= i 2) (eq? (list-ref t (sub1 i)) BLANK))
+      (andmap (λ (s) (eq? s 'a)) (take (rest t) (sub1 i)))
+      (let* [(front (takef (rest t) (λ (s) (eq? s 'a))))
+             (back (takef (drop t (add1 (length front)))
+                          (λ (s) (not (eq? s BLANK)))))]
+        (equal? back '(b)))))
+
+;; tape natnum → Boolean
+;; Purpose: Determine that tape[1..i-1] != a* or a*b
+(define (N-INV t i)
+  (and (not (andmap (λ (s) (eq? s 'a))
+                    (take (rest t) (sub1 i))))
+       (let* [(front (takef (rest t) (λ (s) (eq? s 'a))))
+              (back (takef (drop t (add1 (length front)))
+                           (λ (s) (not (eq? s BLANK)))))]
+         (not (equal? back '(b))))))
+
+(define anbncn (make-unchecked-tm
+                '(S A B C D E F G H I J K L Y)
+                '(a b c x)
+                `(((S ,BLANK) (J ,RIGHT))
+                  ((J ,BLANK) (Y ,BLANK))
+                  ((J a) (A ,RIGHT))
+                  ((A a) (A ,RIGHT))
+                  ((A b) (B ,RIGHT))
+                  ((B b) (B ,RIGHT))
+                  ((B c) (C ,RIGHT))
+                  ((C c) (C ,RIGHT))
+                  ((C ,BLANK) (D ,LEFT))
+                  ((D a) (D ,LEFT))
+                  ((D b) (D ,LEFT))
+                  ((D c) (D ,LEFT))
+                  ((D x) (D ,LEFT))
+                  ((D ,BLANK) (E ,RIGHT))
+                  ((E x) (E ,RIGHT))
+                  ((E a) (F x))
+                  ((E a) (H x))
+                  ((F a) (F ,RIGHT))
+                  ((F b) (G x))
+                  ((F x) (F ,RIGHT))
+                  ((G b) (G ,RIGHT))
+                  ((G x) (G ,RIGHT))
+                  ((G c) (D x))
+                  ((H x) (H ,RIGHT))
+                  ((H b) (I x))
+                  ((I x) (I ,RIGHT))
+                  ((I c) (K x))
+                  ((K x) (L ,RIGHT))
+                  ((L ,BLANK) (Y ,BLANK)))
+                'S
+                '(Y)
+                'Y))
+;; word symbol → word
+;; Purpose: Return the subword at the front of the
+;; given word that only contains the given
+;; symbol
+(define (front-symbs w s)
+  (takef w (λ (a) (eq? a s))))
+
+;; tape natnum → Boolean
+;; Purpose: Determine that head is in position 1 and
+;; tape[i] = BLANK
+(define (S-INV1 t i) (and (= i 1) (eq? (list-ref t i) BLANK)))
+
+(define (A-INV1 t i)
+  (and (> i 2)
+       (let* [(w (drop (take t i) 2))
+              (as (front-symbs w 'a))]
+         (equal? as w))))
+
+
+;; tape natnum → Boolean
+;; Purpose: Determine head in position > 2 and
+;; tape[2..i-1] = a+b+
+(define (B-INV1 t i)
+  (and (> i 3)
+       (let* [(w (drop (take t i) 2))
+              (as (front-symbs w 'a))
+              (w-as (drop w (length as)))
+              (bs (front-symbs w-as 'b))]
+         (and (equal? w (append as bs))
+              (not (empty? as))
+              (not (empty? bs))))))
+
+;; tape natnum → Boolean
+;; Purpose: Determine head in position > 3 and
+;; tape[2..i-1]=a+b+c+
+(define (C-INV1 t i)
+  (and (> i 4)
+       (let* [(w (drop (take t i) 2))
+              (as (front-symbs w 'a))
+              (w-as (drop w (length as)))
+              (bs (front-symbs w-as 'b))
+              (w-asbs (drop w-as (length bs)))
+              (cs (front-symbs w-asbs 'c))]
+         (and (equal? w (append as bs cs))
+              (not (empty? as))
+              (not (empty? bs))
+              (not (empty? cs))))))
+
+
+;; tape natnum → Boolean
+;; Purpose: Determine that head position is >= 1 and that
+;; tape[i]=xna+xnb+xnc+
+(define (D-INV t i)
+  (and (>= i 1)
+       (let* [(w (takef (drop t 2)
+                        (λ (s) (not (eq? s BLANK)))))
+              (xs1 (front-symbs w 'x))
+              (w-xs1 (drop w (length xs1)))
+              (as (front-symbs w-xs1 'a))
+              (w-xs1as (drop w-xs1 (length as)))
+              (xs2 (front-symbs w-xs1as 'x))
+              (w-xs1asxs2 (drop w-xs1as (length xs2)))
+              (bs (front-symbs w-xs1asxs2 'b))
+              (w-xs1asxs2bs (drop w-xs1asxs2 (length bs)))
+              (xs3 (front-symbs w-xs1asxs2bs 'x))
+              (w-xs1asbsxs3 (drop w-xs1asxs2bs (length xs3)))
+              (cs (front-symbs w-xs1asbsxs3 'c))]
+         (and (equal? w (append xs1 as xs2 bs xs3 cs))
+              (> (length as) 0)
+              (> (length bs) 0)
+              (> (length cs) 0)
+              (= (length xs1) (length xs2) (length xs3))))))
+
+
+;; tape natnum → Boolean
+;; Purpose: Determine head in position > 1 and
+;; input word = xna+xnb+xnc+
+(define (E-INV t i)
+  (and (> i 1)
+       (let* [(w (takef (drop t 2)
+                        (λ (s) (not (eq? s BLANK)))))
+              (xs1 (front-symbs w 'x))
+              (w-xs1 (drop w (length xs1)))
+              (as (front-symbs w-xs1 'a))
+              (w-xs1as (drop w-xs1 (length as)))
+              (xs2 (front-symbs w-xs1as 'x))
+              (w-xs1asxs2 (drop w-xs1as (length xs2)))
+              (bs (front-symbs w-xs1asxs2 'b))
+              (w-xs1asxs2bs (drop w-xs1asxs2 (length bs)))
+              (xs3 (front-symbs w-xs1asxs2bs 'x))
+              (w-xs1asbsxs3 (drop w-xs1asxs2bs (length xs3)))
+              (cs (front-symbs w-xs1asbsxs3 'c))]
+         (and (equal? w (append xs1 as xs2 bs xs3 cs))
+              (> (length as) 0)
+              (> (length bs) 0)
+              (> (length cs) 0)
+              (= (length xs1) (length xs2) (length xs3))))))
+
+;; tape natnum → Boolean
+;; Purpose: Determine head in position > 1 and
+;; input word = xn+1a+xnbb+xncc+
+(define (F-INV t i)
+  (and (> i 1)
+       (let* [(w (takef (drop t 2)
+                        (λ (s) (not (eq? s BLANK)))))
+              (xs1 (front-symbs w 'x))
+              (w-xs1 (drop w (length xs1)))
+              (as (front-symbs w-xs1 'a))
+              (w-xs1as (drop w-xs1 (length as)))
+              (xs2 (front-symbs w-xs1as 'x))
+              (w-xs1asxs2 (drop w-xs1as (length xs2)))
+              (bs (front-symbs w-xs1asxs2 'b))
+              (w-xs1asxs2bs (drop w-xs1asxs2 (length bs)))
+              (xs3 (front-symbs w-xs1asxs2bs 'x))
+              (w-xs1asbsxs3 (drop w-xs1asxs2bs (length xs3)))
+              (cs (front-symbs w-xs1asbsxs3 'c))]
+         (and (equal? w (append xs1 as xs2 bs xs3 cs))
+              (> (length as) 0)
+              (> (length bs) 1)
+              (> (length cs) 1)
+              (= (sub1 (length xs1))
+                 (length xs2)
+                 (length xs3))))))
+
+;; tape natnum → Boolean
+;; Purpose: Determine head in position > 2 and
+;; tape=xn+1a+xn+1b+xncc+
+(define (G-INV t i)
+  (and (> i 3)
+       (let* [(w (takef (drop t 2)
+                        (λ (s) (not (eq? s BLANK)))))
+              (xs1 (front-symbs w 'x))
+              (w-xs1 (drop w (length xs1)))
+              (as (front-symbs w-xs1 'a))
+              (w-xs1as (drop w-xs1 (length as)))
+              (xs2 (front-symbs w-xs1as 'x))
+              (w-xs1asxs2 (drop w-xs1as (length xs2)))
+              (bs (front-symbs w-xs1asxs2 'b))
+              (w-xs1asxs2bs (drop w-xs1asxs2 (length bs)))
+              (xs3 (front-symbs w-xs1asxs2bs 'x))
+              (w-xs1asbsxs3 (drop w-xs1asxs2bs (length xs3)))
+              (cs (front-symbs w-xs1asbsxs3 'c))]
+         (and (equal? w (append xs1 as xs2 bs xs3 cs))
+              (> (length as) 0)
+              (> (length bs) 0)
+              (> (length cs) 1)
+              (= (sub1 (length xs1))
+                 (sub1 (length xs2))
+                 (length xs3))))))
+
+
+;; tape natnum → Boolean
+;; Purpose: Determine tape[i]=x^+bx^+c and |xs|%3 = 1 and
+;; |x^+b| = 2*|x^+c|
+(define (H-INV t i)
+  (and (> i 1)
+       (let* [(w (drop-right (drop t 2) 1))
+              (xs1 (front-symbs w 'x))
+              (w-xs1 (drop w (length xs1)))
+              (b (front-symbs w-xs1 'b))
+              (w-xs1b (drop w-xs1 (length b)))
+              (xs2 (front-symbs w-xs1b 'x))
+              (w-xs1bxs2 (drop w-xs1b (length xs2)))
+              (c (front-symbs w-xs1bxs2 'c))]
+         (and (equal? w (append xs1 b xs2 c))
+              (= (add1 (length xs1)) (* 2 (add1 (length xs2))))
+              (= (length b) 1)
+              (= (length c) 1)
+              (= (remainder (length (append xs1 xs2)) 3) 1)))))
+
+;; tape natnum → Boolean
+;; Purpose: Determine tape[i]=x*c and |xs|%3 = 2
+(define (I-INV t i)
+  (and (> i 2)
+       (let* [(w (drop-right (drop t 2) 1))
+              (xs1 (front-symbs w 'x))
+              (w-xs1 (drop w (length xs1)))
+              (c (front-symbs w-xs1 'c))]
+         (and (equal? w (append xs1 c))
+              (= (length c) 1)
+              (= (remainder (length xs1) 3) 2)))))
+
+;; tape natnum → Boolean
+;; Purpose: Determine that head’s position is 2 and
+;; tape[1] = BLANK
+(define (J-INV tape i)
+  (and (= i 2) (eq? (list-ref tape (sub1 i)) BLANK)))
+
+
+;; tape natnum → Boolean
+;; Purpose: Determine if w = xxxx* and |xs|%3 = 0
+;; and tape[i] = x
+(define (K-INV t i)
+  (let [(w (drop-right (drop t 2) 1))]
+    (and (eq? (list-ref t i) 'x) ;;;
+         (andmap (λ (s) (eq? s 'x)) w)
+         (>= (length w) 3)
+         (= (remainder (length w) 3) 0)
+         (= i (add1 (length w))))))
+
+;; tape natnum → Boolean
+;; Purpose: Determine that w = xxxx* and |xs|%3 = 0 and
+;; i = |w| + 2
+(define (L-INV t i)
+  (let [(w (drop-right (drop t 2) 1))]
+    (and (andmap (λ (s) (eq? s 'x)) w)
+         (>= (length w) 3)
+         (= (remainder (length w) 3) 0)
+         (= i (+ (length w) 2)))))
+
+;; tape natnum → Boolean
+;; Purpose: Determine input word = x* and |xs|%3 = 0
+(define (Y-INV1 t i)
+  (let* [(w (drop-right (drop t 2) 1))]
+    (and (andmap (λ (s) (eq? s 'x)) w)
+         (= (remainder (length w) 3) 0))))
 
 
 #|

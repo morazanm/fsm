@@ -547,30 +547,30 @@ rule is a rule-struct
 (define (right-key-pressed a-vs)
   (let* ([completed-config? (ormap (λ (config) (empty? (second (first (computation-LoC config)))))
                                    (get-computations (imsg-state-pda-pci (informative-messages-component-state
-                                                                      (viz-state-informative-messages a-vs)))
+                                                                          (viz-state-informative-messages a-vs)))
                                                      (pda-getrules (imsg-state-pda-M (informative-messages-component-state
-                                                                                  (viz-state-informative-messages a-vs))))
+                                                                                      (viz-state-informative-messages a-vs))))
                                                      (pda-getstart (imsg-state-pda-M (informative-messages-component-state
-                                                                                  (viz-state-informative-messages a-vs))))
+                                                                                      (viz-state-informative-messages a-vs))))
                                                      (pda-getfinals (imsg-state-pda-M (informative-messages-component-state
-                                                                                   (viz-state-informative-messages a-vs))))
+                                                                                       (viz-state-informative-messages a-vs))))
                                                      (imsg-state-pda-max-cmps (informative-messages-component-state
-                                                                           (viz-state-informative-messages a-vs)))))]
+                                                                               (viz-state-informative-messages a-vs)))))]
          ;;boolean
          ;;Purpose: Determines if the pci can be can be fully consumed
          [pci (if (or (not completed-config?)
                       (empty? (imsg-state-pda-upci (informative-messages-component-state
-                                                (viz-state-informative-messages a-vs))))
+                                                    (viz-state-informative-messages a-vs))))
                       (eq? (imsg-state-pda-upci (informative-messages-component-state
-                                             (viz-state-informative-messages a-vs)))
+                                                 (viz-state-informative-messages a-vs)))
                            (imsg-state-pda-farthest-consumed-input (informative-messages-component-state
-                                                          (viz-state-informative-messages a-vs)))))
+                                                                    (viz-state-informative-messages a-vs)))))
                   (imsg-state-pda-pci (informative-messages-component-state
-                                   (viz-state-informative-messages a-vs)))
+                                       (viz-state-informative-messages a-vs)))
                   (append (imsg-state-pda-pci (informative-messages-component-state
-                                           (viz-state-informative-messages a-vs)))
+                                               (viz-state-informative-messages a-vs)))
                           (list (first (imsg-state-pda-upci (informative-messages-component-state
-                                                         (viz-state-informative-messages a-vs)))))))]
+                                                             (viz-state-informative-messages a-vs)))))))]
          [pci-len (length pci)])
     (struct-copy
      viz-state
@@ -584,16 +584,16 @@ rule is a rule-struct
                      (informative-messages-component-state (viz-state-informative-messages a-vs))
                      [upci (if (or (not completed-config?)
                                    (empty? (imsg-state-pda-upci (informative-messages-component-state
-                                                             (viz-state-informative-messages a-vs))))
+                                                                 (viz-state-informative-messages a-vs))))
                                    (eq? (imsg-state-pda-upci (informative-messages-component-state
-                                                          (viz-state-informative-messages a-vs)))
+                                                              (viz-state-informative-messages a-vs)))
                                         (imsg-state-pda-farthest-consumed-input (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs)))))
+                                                                                 (viz-state-informative-messages a-vs)))))
                                
                                (imsg-state-pda-upci (informative-messages-component-state
-                                                 (viz-state-informative-messages a-vs)))
+                                                     (viz-state-informative-messages a-vs)))
                                (rest (imsg-state-pda-upci (informative-messages-component-state
-                                                       (viz-state-informative-messages a-vs)))))]
+                                                           (viz-state-informative-messages a-vs)))))]
                      [pci pci]
                      [shown-accepting-trace (if (or (zipper-empty? (imsg-state-pda-shown-accepting-trace
                                                                     (informative-messages-component-state
@@ -601,22 +601,22 @@ rule is a rule-struct
                                                     (zipper-at-end? (imsg-state-pda-shown-accepting-trace
                                                                      (informative-messages-component-state
                                                                       (viz-state-informative-messages a-vs)))))
-                                     (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
-                                                             (viz-state-informative-messages a-vs)))
-                                     (zipper-next (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
-                                                                          (viz-state-informative-messages a-vs)))))]
+                                                (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
+                                                                                       (viz-state-informative-messages a-vs)))
+                                                (zipper-next (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
+                                                                                                    (viz-state-informative-messages a-vs)))))]
                      [stack (if (or (zipper-empty? (imsg-state-pda-stack (informative-messages-component-state
-                                                                      (viz-state-informative-messages a-vs))))
+                                                                          (viz-state-informative-messages a-vs))))
                                     (zipper-at-end? (imsg-state-pda-stack (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs)))))
+                                                                           (viz-state-informative-messages a-vs)))))
                                 (imsg-state-pda-stack (informative-messages-component-state
-                                                   (viz-state-informative-messages a-vs)))
+                                                       (viz-state-informative-messages a-vs)))
                                 (zipper-next (imsg-state-pda-stack (informative-messages-component-state
-                                                                (viz-state-informative-messages a-vs)))))]
+                                                                    (viz-state-informative-messages a-vs)))))]
                      [invs-zipper (cond [(zipper-empty? (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                                                 (viz-state-informative-messages a-vs))))
+                                                                                     (viz-state-informative-messages a-vs))))
                                          (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                                  (viz-state-informative-messages a-vs)))]
+                                                                      (viz-state-informative-messages a-vs)))]
                                         [(and (not (zipper-at-end? (imsg-state-pda-invs-zipper
                                                                     (informative-messages-component-state
                                                                      (viz-state-informative-messages a-vs)))))
@@ -625,9 +625,9 @@ rule is a rule-struct
                                                                            (informative-messages-component-state
                                                                             (viz-state-informative-messages a-vs))))))))
                                          (zipper-next (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                                               (viz-state-informative-messages a-vs))))]
+                                                                                   (viz-state-informative-messages a-vs))))]
                                         [else (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs)))])])])])))
+                                                                           (viz-state-informative-messages a-vs)))])])])])))
 
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization to the end
@@ -635,30 +635,30 @@ rule is a rule-struct
   (let* (;;(listof symbol)
          ;;Purpose: The entire given word
          [full-word (append (imsg-state-pda-pci (informative-messages-component-state
-                                             (viz-state-informative-messages a-vs)))
+                                                 (viz-state-informative-messages a-vs)))
                             (imsg-state-pda-upci (informative-messages-component-state
-                                              (viz-state-informative-messages a-vs))))]
+                                                  (viz-state-informative-messages a-vs))))]
          ;;(listof symbol)
          ;;Purpose: The last word that could be fully consumed by the ndfa
          [last-consumed-word (last-fully-consumed
                               full-word
                               (imsg-state-pda-M (informative-messages-component-state
-                                             (viz-state-informative-messages a-vs)))
+                                                 (viz-state-informative-messages a-vs)))
                               (imsg-state-pda-max-cmps (informative-messages-component-state
-                                                    (viz-state-informative-messages a-vs))))]
+                                                        (viz-state-informative-messages a-vs))))]
          ;;(listof symbol)
          ;;Purpose: The portion of the word that cannont be consumed
          [unconsumed-word (remove-similarities last-consumed-word full-word '())]
          ;;(zipperof invariant)
          ;;Purpose: The index of the last failed invariant
          [zip (if (zipper-empty? (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                          (viz-state-informative-messages a-vs))))
+                                                              (viz-state-informative-messages a-vs))))
                   (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                           (viz-state-informative-messages a-vs)))
+                                               (viz-state-informative-messages a-vs)))
                   (zipper-to-idx (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                          (viz-state-informative-messages a-vs)))
+                                                              (viz-state-informative-messages a-vs)))
                                  (imsg-state-pda-inv-amount (informative-messages-component-state
-                                                      (viz-state-informative-messages a-vs)))))])
+                                                             (viz-state-informative-messages a-vs)))))])
     (struct-copy
      viz-state
      a-vs
@@ -672,50 +672,50 @@ rule is a rule-struct
          (informative-messages-component-state
           (viz-state-informative-messages a-vs))
          [upci (cond [(empty? (imsg-state-pda-upci (informative-messages-component-state
-                                                (viz-state-informative-messages a-vs))))
+                                                    (viz-state-informative-messages a-vs))))
                       (imsg-state-pda-upci (informative-messages-component-state
-                                        (viz-state-informative-messages a-vs)))]
+                                            (viz-state-informative-messages a-vs)))]
                      [(not (empty? (imsg-state-pda-farthest-consumed-input (informative-messages-component-state
-                                                                  (viz-state-informative-messages a-vs)))))
+                                                                            (viz-state-informative-messages a-vs)))))
                       (drop full-word (- (length full-word) (length (imsg-state-pda-farthest-consumed-input
                                                                      (informative-messages-component-state
                                                                       (viz-state-informative-messages a-vs))))))]
                      [else '()])]
          [pci 
           (cond [(empty? (imsg-state-pda-upci (informative-messages-component-state
-                                           (viz-state-informative-messages a-vs))))
+                                               (viz-state-informative-messages a-vs))))
                  (imsg-state-pda-pci (informative-messages-component-state
-                                  (viz-state-informative-messages a-vs)))]
+                                      (viz-state-informative-messages a-vs)))]
                 [(not (empty? (imsg-state-pda-farthest-consumed-input (informative-messages-component-state
-                                                             (viz-state-informative-messages a-vs)))))
+                                                                       (viz-state-informative-messages a-vs)))))
                  (take full-word (- (length full-word) (length (imsg-state-pda-farthest-consumed-input
                                                                 (informative-messages-component-state
                                                                  (viz-state-informative-messages a-vs))))))]
                 [else full-word])]
          [shown-accepting-trace (if (or (zipper-empty? (imsg-state-pda-shown-accepting-trace
                                                         (informative-messages-component-state
-                                                                    (viz-state-informative-messages a-vs))))
+                                                         (viz-state-informative-messages a-vs))))
                                         (zipper-at-end? (imsg-state-pda-shown-accepting-trace
                                                          (informative-messages-component-state
                                                           (viz-state-informative-messages a-vs)))))
-                         (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
-                                                 (viz-state-informative-messages a-vs)))
-                         (zipper-to-end (imsg-state-pda-shown-accepting-trace
-                                         (informative-messages-component-state
-                                          (viz-state-informative-messages a-vs)))))]
+                                    (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
+                                                                           (viz-state-informative-messages a-vs)))
+                                    (zipper-to-end (imsg-state-pda-shown-accepting-trace
+                                                    (informative-messages-component-state
+                                                     (viz-state-informative-messages a-vs)))))]
          [stack (cond [(zipper-empty? (imsg-state-pda-stack
                                        (informative-messages-component-state
                                         (viz-state-informative-messages a-vs))))
                        (imsg-state-pda-stack (informative-messages-component-state
-                                          (viz-state-informative-messages a-vs)))]
+                                              (viz-state-informative-messages a-vs)))]
                       [(or (zipper-empty? (imsg-state-pda-stack (informative-messages-component-state
-                                                             (viz-state-informative-messages a-vs))))
+                                                                 (viz-state-informative-messages a-vs))))
                            (zipper-at-end? (imsg-state-pda-stack (informative-messages-component-state
-                                                              (viz-state-informative-messages a-vs)))))
+                                                                  (viz-state-informative-messages a-vs)))))
                        (imsg-state-pda-stack (informative-messages-component-state
-                                          (viz-state-informative-messages a-vs)))]
+                                              (viz-state-informative-messages a-vs)))]
                       [else (zipper-to-end (imsg-state-pda-stack (informative-messages-component-state
-                                                              (viz-state-informative-messages a-vs))))])]
+                                                                  (viz-state-informative-messages a-vs))))])]
          
          [invs-zipper zip])])])))
 
@@ -769,30 +769,30 @@ rule is a rule-struct
                      (informative-messages-component-state
                       (viz-state-informative-messages a-vs))
                      [upci (if (or (empty? (imsg-state-pda-pci (informative-messages-component-state
-                                                            (viz-state-informative-messages a-vs))))
+                                                                (viz-state-informative-messages a-vs))))
                                    (and (equal? (second (first rule)) EMP)
                                         (not (empty-rule? rule))))
                                (imsg-state-pda-upci (informative-messages-component-state
-                                                 (viz-state-informative-messages a-vs)))
+                                                     (viz-state-informative-messages a-vs)))
                                (cons (last (imsg-state-pda-pci (informative-messages-component-state
-                                                            (viz-state-informative-messages a-vs))))
+                                                                (viz-state-informative-messages a-vs))))
                                      (imsg-state-pda-upci (informative-messages-component-state
-                                                       (viz-state-informative-messages a-vs)))))]
+                                                           (viz-state-informative-messages a-vs)))))]
                      [pci pci]
                      [shown-accepting-trace shown-accepting-trace]
                      [stack (if (or (zipper-empty? (imsg-state-pda-stack (informative-messages-component-state
-                                                                      (viz-state-informative-messages a-vs))))
+                                                                          (viz-state-informative-messages a-vs))))
                                     (zipper-at-begin? (imsg-state-pda-stack (informative-messages-component-state
-                                                                         (viz-state-informative-messages a-vs)))))
+                                                                             (viz-state-informative-messages a-vs)))))
                                 (imsg-state-pda-stack (informative-messages-component-state
-                                                   (viz-state-informative-messages a-vs)))
+                                                       (viz-state-informative-messages a-vs)))
                                 (zipper-prev (imsg-state-pda-stack (informative-messages-component-state
-                                                                (viz-state-informative-messages a-vs)))))]
+                                                                    (viz-state-informative-messages a-vs)))))]
                      
                      [invs-zipper (cond [(zipper-empty? (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                                                 (viz-state-informative-messages a-vs))))
+                                                                                     (viz-state-informative-messages a-vs))))
                                          (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                                  (viz-state-informative-messages a-vs)))]
+                                                                      (viz-state-informative-messages a-vs)))]
                                         [(and (not (zipper-at-begin? (imsg-state-pda-invs-zipper
                                                                       (informative-messages-component-state
                                                                        (viz-state-informative-messages a-vs)))))
@@ -801,9 +801,9 @@ rule is a rule-struct
                                                                            (informative-messages-component-state
                                                                             (viz-state-informative-messages a-vs))))))))
                                          (zipper-prev (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                                               (viz-state-informative-messages a-vs))))]
+                                                                                   (viz-state-informative-messages a-vs))))]
                                         [else (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs)))])])])])))
+                                                                           (viz-state-informative-messages a-vs)))])])])])))
 
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization to the beginning
@@ -820,45 +820,45 @@ rule is a rule-struct
                    (informative-messages-component-state
                     (viz-state-informative-messages a-vs))
                    [upci (if (empty? (imsg-state-pda-pci (informative-messages-component-state
-                                                      (viz-state-informative-messages a-vs))))
+                                                          (viz-state-informative-messages a-vs))))
                              (imsg-state-pda-upci (informative-messages-component-state
-                                               (viz-state-informative-messages a-vs)))
+                                                   (viz-state-informative-messages a-vs)))
                              (append (imsg-state-pda-pci (informative-messages-component-state
-                                                      (viz-state-informative-messages a-vs)))
+                                                          (viz-state-informative-messages a-vs)))
                                      (imsg-state-pda-upci (informative-messages-component-state
-                                                       (viz-state-informative-messages a-vs)))))]
+                                                           (viz-state-informative-messages a-vs)))))]
                    [pci (if (empty? (imsg-state-pda-pci (informative-messages-component-state
-                                                     (viz-state-informative-messages a-vs))))
+                                                         (viz-state-informative-messages a-vs))))
                             (imsg-state-pda-pci (informative-messages-component-state
-                                             (viz-state-informative-messages a-vs)))
+                                                 (viz-state-informative-messages a-vs)))
                             '())]
                    [shown-accepting-trace (if (or (zipper-empty? (imsg-state-pda-shown-accepting-trace
                                                                   (informative-messages-component-state
-                                                                              (viz-state-informative-messages a-vs))))
-                                       (zipper-at-begin? (imsg-state-pda-shown-accepting-trace
-                                                          (informative-messages-component-state
-                                                                                 (viz-state-informative-messages a-vs)))))
-                                   (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
-                                                           (viz-state-informative-messages a-vs)))
-                                   (zipper-to-begin (imsg-state-pda-shown-accepting-trace
-                                                     (informative-messages-component-state
-                                                                            (viz-state-informative-messages a-vs)))))]
+                                                                   (viz-state-informative-messages a-vs))))
+                                                  (zipper-at-begin? (imsg-state-pda-shown-accepting-trace
+                                                                     (informative-messages-component-state
+                                                                      (viz-state-informative-messages a-vs)))))
+                                              (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
+                                                                                     (viz-state-informative-messages a-vs)))
+                                              (zipper-to-begin (imsg-state-pda-shown-accepting-trace
+                                                                (informative-messages-component-state
+                                                                 (viz-state-informative-messages a-vs)))))]
                    [stack (if (or (zipper-empty? (imsg-state-pda-stack (informative-messages-component-state
-                                                                    (viz-state-informative-messages a-vs))))
+                                                                        (viz-state-informative-messages a-vs))))
                                   (zipper-at-begin? (imsg-state-pda-stack (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs)))))
+                                                                           (viz-state-informative-messages a-vs)))))
                               (imsg-state-pda-stack (informative-messages-component-state
-                                                 (viz-state-informative-messages a-vs)))
+                                                     (viz-state-informative-messages a-vs)))
                               (zipper-to-begin (imsg-state-pda-stack (informative-messages-component-state
-                                                                  (viz-state-informative-messages a-vs)))))]
+                                                                      (viz-state-informative-messages a-vs)))))]
                    [invs-zipper (if (or (zipper-empty? (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                                                (viz-state-informative-messages a-vs))))
+                                                                                    (viz-state-informative-messages a-vs))))
                                         (zipper-at-begin? (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                                                   (viz-state-informative-messages a-vs)))))
+                                                                                       (viz-state-informative-messages a-vs)))))
                                     (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                             (viz-state-informative-messages a-vs)))
+                                                                 (viz-state-informative-messages a-vs)))
                                     (zipper-to-idx (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                                            (viz-state-informative-messages a-vs))) 0))])])]))
+                                                                                (viz-state-informative-messages a-vs))) 0))])])]))
 
 ;; viz-state -> viz-state
 ;; Purpose: Moves the deriving and current yield to the beginning of their current words
@@ -895,7 +895,7 @@ rule is a rule-struct
 ;;Purpose: Jumps to the previous broken invariant
 (define (j-key-pressed a-vs)
   (if (zipper-empty? (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                              (viz-state-informative-messages a-vs))))
+                                                  (viz-state-informative-messages a-vs))))
       a-vs
       (let* ([zip (if (and (not (zipper-at-begin? (imsg-state-pda-invs-zipper (informative-messages-component-state
                                                                                (viz-state-informative-messages a-vs)))))
@@ -909,9 +909,9 @@ rule is a rule-struct
                       (imsg-state-pda-invs-zipper (informative-messages-component-state
                                                    (viz-state-informative-messages a-vs))))]
              [full-word (append (imsg-state-pda-pci (informative-messages-component-state
-                                                 (viz-state-informative-messages a-vs)))
+                                                     (viz-state-informative-messages a-vs)))
                                 (imsg-state-pda-upci (informative-messages-component-state
-                                                  (viz-state-informative-messages a-vs))))]
+                                                      (viz-state-informative-messages a-vs))))]
              [partial-word (if (equal? (second (zipper-current zip)) full-word)
                                '()
                                (drop full-word (fourth (zipper-current zip))))])
@@ -1031,7 +1031,7 @@ rule is a rule-struct
 ;;Purpose: Jumps to the next failed invariant
 (define (l-key-pressed a-vs)
   (if (zipper-empty? (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                              (viz-state-informative-messages a-vs))))
+                                                  (viz-state-informative-messages a-vs))))
       a-vs
       (let* ([zip (if (and (not (zipper-at-end? (imsg-state-pda-invs-zipper (informative-messages-component-state
                                                                              (viz-state-informative-messages a-vs)))))
@@ -1129,11 +1129,11 @@ rule is a rule-struct
                                        (imsg-state-pda-stack (informative-messages-component-state
                                                               (viz-state-informative-messages a-vs)))]
                                       [(and (zipper-at-end? (imsg-state-pda-invs-zipper
-                                                      (informative-messages-component-state
-                                                       (viz-state-informative-messages a-vs))))
-                                          (not (zipper-at-begin? (imsg-state-pda-invs-zipper
-                                                      (informative-messages-component-state
-                                                       (viz-state-informative-messages a-vs))))))
+                                                             (informative-messages-component-state
+                                                              (viz-state-informative-messages a-vs))))
+                                            (not (zipper-at-begin? (imsg-state-pda-invs-zipper
+                                                                    (informative-messages-component-state
+                                                                     (viz-state-informative-messages a-vs))))))
                                        (imsg-state-pda-stack (informative-messages-component-state
                                                               (viz-state-informative-messages a-vs)))]
                                       [else (zipper-to-idx (imsg-state-pda-stack
@@ -1155,11 +1155,11 @@ rule is a rule-struct
                                      (imsg-state-pda-pci (informative-messages-component-state
                                                           (viz-state-informative-messages a-vs)))]
                                     [(and (zipper-at-end? (imsg-state-pda-invs-zipper
-                                                      (informative-messages-component-state
-                                                       (viz-state-informative-messages a-vs))))
+                                                           (informative-messages-component-state
+                                                            (viz-state-informative-messages a-vs))))
                                           (not (zipper-at-begin? (imsg-state-pda-invs-zipper
-                                                      (informative-messages-component-state
-                                                       (viz-state-informative-messages a-vs))))))
+                                                                  (informative-messages-component-state
+                                                                   (viz-state-informative-messages a-vs))))))
                                      (imsg-state-pda-pci (informative-messages-component-state
                                                           (viz-state-informative-messages a-vs)))]
                                     [else (second (zipper-current zip))])]
@@ -1303,22 +1303,22 @@ rule is a rule-struct
          [computation-lens (count-computations a-word cut-off-comp '())]
          ;;(listof number) ;;Purpose: Gets the index of image where an invariant failed
          [inv-configs (remove-duplicates (return-brk-inv-configs
-                                                     (get-inv-config-results
-                                                      (make-inv-configs a-word accepting-computations)
-                                                      invs)
-                                                     a-word)
+                                          (get-inv-config-results
+                                           (make-inv-configs a-word accepting-computations)
+                                           invs)
+                                          a-word)
                                          #;(sort (map (λ (con)
-                                                      (fourth con))
-                                                    (return-brk-inv-configs
-                                                     (get-inv-config-results
-                                                      (make-inv-configs a-word accepting-computations)
-                                                      invs)
-                                                     a-word)) <))])
+                                                        (fourth con))
+                                                      (return-brk-inv-configs
+                                                       (get-inv-config-results
+                                                        (make-inv-configs a-word accepting-computations)
+                                                        invs)
+                                                       a-word)) <))])
     #;(displayln (return-brk-inv-configs
-                (get-inv-config-results
-                 (make-inv-configs a-word accepting-computations)
-                 invs)
-                a-word))
+                  (get-inv-config-results
+                   (make-inv-configs a-word accepting-computations)
+                   invs)
+                  a-word))
     ;(displayln "")
     ;(displayln (length accepting-trace))
     (run-viz graphs
