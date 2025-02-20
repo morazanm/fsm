@@ -662,10 +662,10 @@ triple is the entire of the ndfa rule
       (if (zipper-empty? (imsg-state-tm-shown-accepting-trace imsg-st))
           (text "Tape: " 1 BLANK-COLOR)
           (beside (text "Last rule used: " FONT-SIZE FONT-COLOR)
-                  (text (format "~a" (if (or (equal? (zipper-current (imsg-state-tm-rules imsg-st)) '((_ _)(_ _)))
-                                             (zipper-empty? (imsg-state-tm-rules imsg-st)))
+                  (text (format "~a" (if (or (equal? (zipper-current (imsg-state-tm-rules-used imsg-st)) '((_ _)(_ _)))
+                                             (zipper-empty? (imsg-state-tm-rules-used imsg-st)))
                                          ""
-                                         (zipper-current (imsg-state-tm-rules imsg-st))))
+                                         (zipper-current (imsg-state-tm-rules-used imsg-st))))
                         FONT-SIZE
                         (if (equal? (imsg-state-tm-machine-decision imsg-st) 'accept)
                             ACCEPT-COLOR

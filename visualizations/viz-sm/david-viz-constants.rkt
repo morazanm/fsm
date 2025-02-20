@@ -25,6 +25,14 @@ visited is a (listof configuration)
 |#
 (struct computation (LoC LoR visited) #:transparent)
 
+#|
+A trace is a structure:
+(make-trace config rules)
+config is a single configuration
+rules are a (listof rule)
+|#
+(struct trace (config rules) #:transparent)
+
 
 (define HELD-INV-COLOR 'chartreuse4)
 (define BRKN-INV-COLOR 'red2)
@@ -48,6 +56,9 @@ visited is a (listof configuration)
 (define GRAPHVIZ-CUTOFF-GOLD 'darkgoldenrod2)
 (define SM-VIZ-FONT-SIZE 18)
 (define INS-TOOLS-BUFFER 30)
+
+(define TM-ACCESSOR-FUNC (compose fourth (compose trace-config zipper-current)))
+(define get-index (compose fourth zipper-current))
 
 (define AB*B*UAB*
   (make-unchecked-ndfa '(S K B C H)
@@ -160,7 +171,8 @@ visited is a (listof configuration)
                                                                              (sub1 (length '()))
                                                                              '(1 2 3 2)
                                                                              '((computation
-                                                                                ((H ()) (H (b)) (K (b)) (B (b b)) (K (a b b)) (S (a b b)))
+                                                                                ((H ()) (H (b)) (K (b)) (B (b b))
+                                                                                        (K (a b b)) (S (a b b)))
                                                                                 ((H b H) (K ε H) (B b K) (K a B) (S ε K))
                                                                                 ((H (b)) (K (b)) (B (b b)) (K (a b b)) (S (a b b))))
                                                                                (computation
@@ -253,7 +265,7 @@ visited is a (listof configuration)
 (define E-SCENE-TOOLS-WIDTH (image-width E-SCENE-TOOLS))
 
 (create-bounding-limits E-SCENE-WIDTH NDFA-E-SCENE-HEIGHT E-SCENE-TOOLS-WIDTH
-                                                     ndfa-img-bounding-limit SM-VIZ-FONT-SIZE LETTER-KEY-WIDTH-BUFFER INS-TOOLS-BUFFER
+                        ndfa-img-bounding-limit SM-VIZ-FONT-SIZE LETTER-KEY-WIDTH-BUFFER INS-TOOLS-BUFFER
 ((ARROW-UP-KEY "Restart")
  (ARROW-RIGHT-KEY "Forward")
  (ARROW-LEFT-KEY "Backward")
@@ -295,7 +307,8 @@ visited is a (listof configuration)
                   PERCENT-BORDER-GAP
                   imsg-state-pda-invs-zipper
                   imsg-state-pda-pci
-                  fourth))
+                  length
+                  get-index))
 
 (define pda-jump-prev
   (jump-prev-inv  E-SCENE-WIDTH
@@ -306,7 +319,8 @@ visited is a (listof configuration)
                   PERCENT-BORDER-GAP
                   imsg-state-pda-invs-zipper
                   imsg-state-pda-pci
-                  fourth))
+                  length
+                  get-index))
 
 (define ndfa-jump-next
   (jump-next-inv  E-SCENE-WIDTH
@@ -317,7 +331,8 @@ visited is a (listof configuration)
                   PERCENT-BORDER-GAP
                   imsg-state-ndfa-invs-zipper
                   imsg-state-ndfa-pci
-                  id))
+                  length
+                  zipper-current))
 
 (define ndfa-jump-prev
   (jump-prev-inv  E-SCENE-WIDTH
@@ -328,7 +343,8 @@ visited is a (listof configuration)
                   PERCENT-BORDER-GAP
                   imsg-state-ndfa-invs-zipper
                   imsg-state-ndfa-pci
-                  id))
+                  length
+                  zipper-current))
 
 (define tm-jump-next
   (jump-next-inv  E-SCENE-WIDTH
@@ -338,8 +354,9 @@ visited is a (listof configuration)
                   DEFAULT-ZOOM-FLOOR
                   PERCENT-BORDER-GAP
                   imsg-state-tm-invs-zipper
-                  imsg-state-tm-tape
-                  id))
+                  imsg-state-tm-shown-accepting-trace
+                  TM-ACCESSOR-FUNC 
+                  get-index))
 
 (define tm-jump-prev
   (jump-prev-inv  E-SCENE-WIDTH
@@ -349,8 +366,9 @@ visited is a (listof configuration)
                   DEFAULT-ZOOM-FLOOR
                   PERCENT-BORDER-GAP
                   imsg-state-tm-invs-zipper
-                  imsg-state-tm-tape
-                  id))
+                  imsg-state-tm-shown-accepting-trace
+                  TM-ACCESSOR-FUNC
+                  get-index))
 
 (define viz-go-next
   (go-next E-SCENE-WIDTH

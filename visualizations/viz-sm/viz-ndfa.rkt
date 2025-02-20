@@ -32,14 +32,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 #|
-A trace is a structure:
-(make-trace config rules)
-config is a single configuration
-rules are a (listof rule-structs)
-|#
-(struct trace (config rules) #:transparent)
-
-#|
 A rule is a structure:
 (make-rule triple)
 triple is the entire of the ndfa rule
@@ -664,19 +656,19 @@ triple is the entire of the ndfa rule
                                               (viz-state-informative-messages a-vs))))
       a-vs
       (let* ([zip (if (and (not (zipper-at-begin? (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                                           (viz-state-informative-messages a-vs)))))
+                                                                                (viz-state-informative-messages a-vs)))))
                            (<= (length (imsg-state-ndfa-pci (informative-messages-component-state
-                                                        (viz-state-informative-messages a-vs))))
+                                                             (viz-state-informative-messages a-vs))))
                                (zipper-current (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                                        (viz-state-informative-messages a-vs))))))
+                                                                             (viz-state-informative-messages a-vs))))))
                       (zipper-prev (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                            (viz-state-informative-messages a-vs))))
+                                                                 (viz-state-informative-messages a-vs))))
                       (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                               (viz-state-informative-messages a-vs))))]
+                                                    (viz-state-informative-messages a-vs))))]
              [full-word (append (imsg-state-ndfa-pci (informative-messages-component-state
-                                                 (viz-state-informative-messages a-vs)))
+                                                      (viz-state-informative-messages a-vs)))
                                 (imsg-state-ndfa-upci (informative-messages-component-state
-                                                  (viz-state-informative-messages a-vs))))])
+                                                       (viz-state-informative-messages a-vs))))])
         (struct-copy
          viz-state
          a-vs

@@ -34,16 +34,16 @@
                          word-img-offset-cap
                          scroll-accum)
   #:transparent)
-(struct imsg-state-pda (M  ;new-M
-                        upci ;;a-word
-                        pci ;;'()
-                        shown-accepting-trace ;;'N/A
-                        stack ;;'N/A
-                        farthest-consumed-input ;;'N/A
-                        invs-zipper ;;(list->zipper inv-configs)
-                        inv-amount ;;(sub1 (length inv-configs))
-                        computation-lengths ;computation-lens
-                        computations ;'N/A
+(struct imsg-state-pda (M  ;;PDA
+                        upci ;;(listof symbol)/word
+                        pci ;;(listof symbol)
+                        shown-accepting-trace ;;(zipperof trace)
+                        stack ;;(zipperof configuration)
+                        farthest-consumed-input ;;(listof symbol)
+                        invs-zipper ;;(zipperof inv-config)
+                        inv-amount ;;natnum
+                        computation-lengths ;natnum
+                        computations ;
                         max-cmps
                         word-img-offset
                         word-img-offset-cap
@@ -53,14 +53,14 @@
 (struct imsg-state-tm (M ;;TM
                        tape ;;(zipperof symbol)
                        head-position ;;(zipperof natnum)
-                       rules ;;(zipperof tm-rule)
+                       rules-used ;;(zipperof tm-rule)
                        shown-accepting-trace ;;(zipperof trace)
                        invs-zipper ;;(zipperof inv-configs)
                        inv-amount ;;natnum
                        computation-lengths ;(zipperof natnum)
                        computations ;;(listof computation)
                        max-cmps ;;natnum
-                       machine-decision
+                       machine-decision ;;symbol
                        word-img-offset
                        word-img-offset-cap
                        scroll-accum)
