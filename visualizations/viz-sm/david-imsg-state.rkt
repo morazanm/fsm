@@ -22,14 +22,14 @@
 ;(struct imsg-state-pda  (M upci pci               acpt-trace stack farthest-consumed invs-zipper inv-amt comps-len comps max-cmps word-img-offset word-img-offset-cap scroll-accum) #:transparent)
 ;(struct imsg-state-tm   (M          tape head-pos acpt-trace                         invs-zipper inv-amt comps-len comps max-cmps word-img-offset word-img-offset-cap scroll-accum) #:transparent)
 (struct imsg-state-ndfa (M  ;new-M
-                         upci ;;a-word
-                         pci ;;'()
+                         upci ;;(listof symbol)/a-word
+                         pci ;;(listof symbol)
                          shown-accepting-trace ;;'N/A
                          farthest-consumed-input ;;'N/A
                          invs-zipper ;;(list->zipper inv-configs)
                          inv-amount ;;(sub1 (length inv-configs))
-                         computation-lengths ;computation-lens
-                         computations ;'N/A
+                         computation-lengths ;natnum
+                         computations ;
                          word-img-offset
                          word-img-offset-cap
                          scroll-accum)

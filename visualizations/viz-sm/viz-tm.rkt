@@ -781,8 +781,8 @@ action is the second pair in a tm rule
                                                                                       (viz-state-informative-messages a-vs)))))
                                     (imsg-state-tm-invs-zipper (informative-messages-component-state
                                                                 (viz-state-informative-messages a-vs)))
-                                    (zipper-to-idx (imsg-state-tm-invs-zipper (informative-messages-component-state
-                                                                               (viz-state-informative-messages a-vs))) 0))])])]))
+                                    (zipper-to-begin (imsg-state-tm-invs-zipper (informative-messages-component-state
+                                                                               (viz-state-informative-messages a-vs)))))])])]))
 
 ;; viz-state -> viz-state
 ;; Purpose: Moves the deriving and current yield to the beginning of their current words

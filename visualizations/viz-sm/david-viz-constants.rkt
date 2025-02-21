@@ -59,7 +59,8 @@ rules are a (listof rule)
 
 (define TM-ACCESSOR-FUNC (compose fourth (compose trace-config zipper-current)))
 (define get-index (compose fourth zipper-current))
-
+(define get-index-ndfa (compose third zipper-current))
+(define ndfa-accessor-func (compose third (compose trace-config zipper-current)))
 (define AB*B*UAB*
   (make-unchecked-ndfa '(S K B C H)
              '(a b)
@@ -330,9 +331,9 @@ rules are a (listof rule)
                   DEFAULT-ZOOM-FLOOR
                   PERCENT-BORDER-GAP
                   imsg-state-ndfa-invs-zipper
-                  imsg-state-ndfa-pci
-                  length
-                  zipper-current))
+                  imsg-state-ndfa-shown-accepting-trace
+                  ndfa-accessor-func
+                  get-index-ndfa))
 
 (define ndfa-jump-prev
   (jump-prev-inv  E-SCENE-WIDTH
@@ -342,9 +343,9 @@ rules are a (listof rule)
                   DEFAULT-ZOOM-FLOOR
                   PERCENT-BORDER-GAP
                   imsg-state-ndfa-invs-zipper
-                  imsg-state-ndfa-pci
-                  length
-                  zipper-current))
+                  imsg-state-ndfa-shown-accepting-trace
+                  ndfa-accessor-func
+                  get-index-ndfa))
 
 (define tm-jump-next
   (jump-next-inv  E-SCENE-WIDTH
