@@ -58,9 +58,17 @@ rules are a (listof rule)
 (define INS-TOOLS-BUFFER 30)
 
 (define TM-ACCESSOR-FUNC (compose fourth (compose trace-config zipper-current)))
+(define ndfa-accessor-func (compose third (compose trace-config zipper-current)))
+
 (define get-index (compose fourth zipper-current))
 (define get-index-ndfa (compose third zipper-current))
-(define ndfa-accessor-func (compose third (compose trace-config zipper-current)))
+
+(define get-next-index (compose fourth (compose zipper-current zipper-next)))
+(define get-next-index-ndfa (compose third (compose zipper-current zipper-next)))
+
+(define get-prev-index (compose fourth (compose zipper-current zipper-prev)))
+(define get-prev-index-ndfa (compose third (compose zipper-current zipper-prev)))
+
 (define AB*B*UAB*
   (make-unchecked-ndfa '(S K B C H)
              '(a b)
@@ -309,7 +317,8 @@ rules are a (listof rule)
                   imsg-state-pda-invs-zipper
                   imsg-state-pda-pci
                   length
-                  get-index))
+                  get-index
+                  get-next-index))
 
 (define pda-jump-prev
   (jump-prev-inv  E-SCENE-WIDTH
@@ -321,7 +330,8 @@ rules are a (listof rule)
                   imsg-state-pda-invs-zipper
                   imsg-state-pda-pci
                   length
-                  get-index))
+                  get-index
+                  get-prev-index))
 
 (define ndfa-jump-next
   (jump-next-inv  E-SCENE-WIDTH
@@ -333,7 +343,8 @@ rules are a (listof rule)
                   imsg-state-ndfa-invs-zipper
                   imsg-state-ndfa-shown-accepting-trace
                   ndfa-accessor-func
-                  get-index-ndfa))
+                  get-index-ndfa
+                  get-next-index-ndfa))
 
 (define ndfa-jump-prev
   (jump-prev-inv  E-SCENE-WIDTH
@@ -345,7 +356,8 @@ rules are a (listof rule)
                   imsg-state-ndfa-invs-zipper
                   imsg-state-ndfa-shown-accepting-trace
                   ndfa-accessor-func
-                  get-index-ndfa))
+                  get-index-ndfa
+                  get-prev-index-ndfa))
 
 (define tm-jump-next
   (jump-next-inv  E-SCENE-WIDTH
@@ -357,7 +369,8 @@ rules are a (listof rule)
                   imsg-state-tm-invs-zipper
                   imsg-state-tm-shown-accepting-trace
                   TM-ACCESSOR-FUNC 
-                  get-index))
+                  get-index
+                  get-next-index))
 
 (define tm-jump-prev
   (jump-prev-inv  E-SCENE-WIDTH
@@ -369,7 +382,8 @@ rules are a (listof rule)
                   imsg-state-tm-invs-zipper
                   imsg-state-tm-shown-accepting-trace
                   TM-ACCESSOR-FUNC
-                  get-index))
+                  get-index
+                  get-prev-index))
 
 (define viz-go-next
   (go-next E-SCENE-WIDTH

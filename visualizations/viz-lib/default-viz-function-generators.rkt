@@ -175,10 +175,15 @@
       (force (delay/thread ((force new-img))))))
 
 (define (jump-prev-inv E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR PERCENT-BORDER-GAP
-                       imsg-state-invs-zipper-func imsg-state-input-func imsg-state-accessor-func inv-zipper-accessor-func)
+                       imsg-state-invs-zipper-func imsg-state-input-func imsg-state-accessor-func inv-zipper-accessor-func
+                       inv-zipper-prev-accessor-func)
      (lambda ( a-vs)
   (if (or (zipper-empty? (imsg-state-invs-zipper-func (informative-messages-component-state
                                           (viz-state-informative-messages a-vs))))
+          (and (zipper-at-begin? (imsg-state-invs-zipper-func (informative-messages-component-state
+                                          (viz-state-informative-messages a-vs))))
+               (not (zipper-at-end? (imsg-state-invs-zipper-func (informative-messages-component-state
+                                                                         (viz-state-informative-messages a-vs))))))
           (< (imsg-state-accessor-func (imsg-state-input-func (informative-messages-component-state
                                       (viz-state-informative-messages a-vs))))
              (inv-zipper-accessor-func (imsg-state-invs-zipper-func
@@ -192,7 +197,7 @@
                               (inv-zipper-accessor-func (imsg-state-invs-zipper-func
                                                           (informative-messages-component-state
                                                       (viz-state-informative-messages a-vs))))))
-                      (inv-zipper-accessor-func (imsg-state-invs-zipper-func
+                      (inv-zipper-prev-accessor-func (imsg-state-invs-zipper-func
                                                           (informative-messages-component-state
                                                       (viz-state-informative-messages a-vs))))
                       (inv-zipper-accessor-func (imsg-state-invs-zipper-func
@@ -323,10 +328,15 @@
                (viz-state-scale-factor a-vs))))))))
 
 (define (jump-next-inv E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR PERCENT-BORDER-GAP
-                       imsg-state-invs-zipper-func imsg-state-input-func imsg-state-accessor-func inv-zipper-accessor-func)
+                       imsg-state-invs-zipper-func imsg-state-input-func imsg-state-accessor-func inv-zipper-accessor-func
+                       inv-zipper-next-accessor-func)
      (lambda (a-vs)
          (if (or (zipper-empty? (imsg-state-invs-zipper-func (informative-messages-component-state
                                                  (viz-state-informative-messages a-vs))))
+                 (and (zipper-at-end? (imsg-state-invs-zipper-func (informative-messages-component-state
+                                                                      (viz-state-informative-messages a-vs))))
+                      (not (zipper-at-begin? (imsg-state-invs-zipper-func (informative-messages-component-state
+                                                                         (viz-state-informative-messages a-vs))))))
                  (> (imsg-state-accessor-func (imsg-state-input-func (informative-messages-component-state
                                              (viz-state-informative-messages a-vs))))
                     (inv-zipper-accessor-func (imsg-state-invs-zipper-func
@@ -340,7 +350,7 @@
                                      (inv-zipper-accessor-func (imsg-state-invs-zipper-func
                                                                        (informative-messages-component-state
                                                                         (viz-state-informative-messages a-vs))))))
-                             (inv-zipper-accessor-func (imsg-state-invs-zipper-func
+                             (inv-zipper-next-accessor-func (imsg-state-invs-zipper-func
                                                           (informative-messages-component-state
                                                       (viz-state-informative-messages a-vs))))
                              (inv-zipper-accessor-func (imsg-state-invs-zipper-func
