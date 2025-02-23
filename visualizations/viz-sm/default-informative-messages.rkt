@@ -691,7 +691,7 @@ triple is the entire of the ndfa rule
       (cond [(ormap (λ (comp) (>= (length comp) (imsg-state-tm-max-cmps imsg-st)))
                          (imsg-state-tm-computations imsg-st))
              (text (format "There are computations that exceed the cut-off limit (~a)."
-                           (imsg-state-max-cmps imsg-st)) FONT-SIZE DARKGOLDENROD2)]
+                           (imsg-state-tm-max-cmps imsg-st)) FONT-SIZE DARKGOLDENROD2)]
             [(and (zipper-at-end? (imsg-state-tm-tape imsg-st))
                   (zipper-at-end? (imsg-state-tm-head-position imsg-st))
                   (equal? (imsg-state-tm-machine-decision imsg-st) 'accept))
