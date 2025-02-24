@@ -330,6 +330,16 @@
                         (M ,EMP I)
                         (I ,EMP H))))
 
+
+(define PROP-BI (make-dfa '(S M N)
+                          '(0 1)
+                          'S
+                          '(N M)
+                          '((S 1 M)
+                            (S 0 N)
+                            (M 0 M)
+                            (M 1 M))))
+
 (define DNA-SEQUENCE (make-dfa '(K H F M I D B S R) ;C)
                                '(a t c g)
                                'K

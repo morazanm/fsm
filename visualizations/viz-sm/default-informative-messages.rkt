@@ -55,7 +55,10 @@
           TAPE-SIZE
           (λ (i)
             (if (< (+ start-index i) (length tape))
-                (overlay (text (symbol->string (list-ref tape (+ start-index i)))
+                (let [(tape-element (list-ref tape (+ start-index i)))]
+                  (overlay (text (if (symbol? tape-element)
+                                   (symbol->string tape-element)
+                                   (number->string tape-element))
                                20
                                (cond [(empty? color-pair) FONT-COLOR]
                                      [(and (not (empty? (first color-pair)))
@@ -65,7 +68,7 @@
                                            (= (+ start-index i) (first (second color-pair))))
                                       (second (second color-pair))]
                                      [else FONT-COLOR]))
-                         (overlay (square 21 'solid BLANK-COLOR) (square (add1 21) 'solid BLANK-COLOR)))
+                         (overlay (square 21 'solid BLANK-COLOR) (square (add1 21) 'solid BLANK-COLOR))))
                 (overlay (square 21 'solid BLANK-COLOR) (square (add1 21) 'solid BLANK-COLOR)))))])
     (make-tape-img letter-imgs start-index)))
 
