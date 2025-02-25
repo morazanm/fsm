@@ -162,9 +162,14 @@ action is the second pair in a tm rule
 ;;Purpose: Returns a propers trace for the given (listof configurations) that accurately
 ;;         tracks each transition
 (define (make-trace configs rules acc)
-  (cond [(empty? rules) (reverse acc)]
+  (cond [(empty? rules)
+         (reverse acc)
+         #;(let* ([rle (rule (first DUMMY-RULE) (second DUMMY-RULE))]
+                [res (trace (first configs) rle)])
+           (reverse (cons res acc)))]
         [(and (empty? acc)
-              (not (equal? (second (first (first rules))) BLANK)))
+              (or (not (equal? (second (first (first rules))) BLANK))
+                  (not (equal? (second (first (first rules))) LM))))
          (let* ([rle (rule (first DUMMY-RULE) (second DUMMY-RULE))]
                 [res (trace (first configs) rle)])
            (make-trace (rest configs) rules (cons res acc)))]
@@ -1015,7 +1020,7 @@ action is the second pair in a tm rule
                                 get-cut-off-comp
                                 LoC))]
          ;;(listof number) ;;Purpose: Gets the number of computations for each step
-         [computation-lengths (take (drop (count-computations (map reverse LoC) '()) head-pos)
+         [computation-lengths (take (count-computations (map reverse LoC) '()) #;(drop (count-computations (map reverse LoC) '()) head-pos)
                                     (length (zipper->list all-head-pos)))])
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
