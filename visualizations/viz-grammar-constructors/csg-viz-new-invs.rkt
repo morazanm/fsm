@@ -419,7 +419,7 @@
 ;; S -> K = L = S -> L = K
 
 ;; K - Promise to generate an equal number>=1 of A's B's and C's
-;; K -> ABCS = L = ( { star A, star B, star C } K ) ->
+;; K -> ABCK = L = ( { star A, star B, star C } K ) ->
 ;;             L = ( { plus A, plus B, plus C } K )
 ;; K -> G = L = ( { plus A, plus B, plus C } K ) ->
 ;;          L = ( {plus A, plus B, plus C } G )
@@ -427,6 +427,7 @@
 ;; A - Promise to generate an "a"
 ;; BA -> AB = L = ( {kleene-plus A's, kleene-plus B's, star C's} {kleene plus A's, star B's, C's} {K or {G star c} or {H star b plus c}}) ->
 ;;            L = ( {two or more A's, kleene-star B's, C's} {kleene-plus B's, kleene star A's, C's} {K or {G star c} or {H star b plus c}} )
+
 ;; CA -> AC = L = ( {kleene-plus A's, kleene-star B's, plus C's} {kleene plus A's, star B's, C's} {K or {G star c}} ) ->
 ;;            L = ( {two or more A's, kleene-star B's, C's} {kleene-plus C's, kleene star A's, B's} {K or {G star c}} )
 

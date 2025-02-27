@@ -17,8 +17,6 @@
    (list (list 'S ARROW 'AaB) (list 'AaA ARROW 'aSb) (list 'AaA ARROW EMP) (list 'B ARROW 'A))
    'S))
 
-
-
 (define anbncn
   (make-unchecked-csg
    '(S A B C G H I)
@@ -406,36 +404,46 @@
                                    (first renamed)))))
 
 (define (anbncn-csg-INV yield)
-  (define (S-INV yield)
-    (let ([num-as (length (filter (lambda (x) (eq? x 'A)) yield))]
-          [num-bs (length (filter (lambda (x) (eq? x 'B)) yield))]
-          [num-cs (length (filter (lambda (x) (eq? x 'C)) yield))])
-      (= num-as num-bs num-cs)))
   (define (G-INV yield)
-    (let ([num-as (length (filter (lambda (x) (eq? x 'A)) yield))]
-          [num-bs (length (filter (lambda (x) (eq? x 'B)) yield))]
-          [num-cs (length (filter (lambda (x) (or (eq? x 'c) (eq? x 'C))) yield))])
-      (= num-as num-bs num-cs)))
+    (= (length (filter (lambda (x) (not (eq? 'c x)))
+                       (rest (dropf yield (lambda (x) (not (eq? 'G x)))))))
+       0))
+  
   (define (H-INV yield)
-    (let ([num-as (length (filter (lambda (x) (eq? x 'A)) yield))]
-          [num-bs (length (filter (lambda (x) (or (eq? x 'b) (eq? x 'B))) yield))]
-          [num-cs (length (filter (lambda (x) (eq? x 'c)) yield))])
-      (= num-as num-bs num-cs)))
+    (let* ([bs-and-cs (rest (dropf yield (lambda (x) (not (eq? 'H x)))))]
+          [bs (takef bs-and-cs (lambda (x) (eq? x 'b)))]
+          [cs (dropf bs-and-cs (lambda (x) (eq? x 'b)))])
+      (andmap (lambda (x) (eq? x 'c)) cs)))
+  
   (define (I-INV yield)
-    (let ([num-as (length (filter (lambda (x) (or (eq? x 'a) (eq? x 'A))) yield))]
-          [num-bs (length (filter (lambda (x) (eq? x 'b)) yield))]
-          [num-cs (length (filter (lambda (x) (eq? x 'c)) yield))])
-      (= num-as num-bs num-cs)))
+    (let* ([as-bs-cs (rest (dropf yield (lambda (x) (not (eq? 'I x)))))]
+           [as (takef as-bs-cs (lambda (x) (eq? 'a x)))]
+           [bs-and-cs (dropf as-bs-cs (lambda (x) (eq? 'a x)))]
+           [bs (takef bs-and-cs (lambda (x) (eq? x 'b)))]
+           [cs (dropf bs-and-cs (lambda (x) (eq? x 'b)))])
+      (and (andmap (lambda (x) (eq? 'a x)) as)
+           (andmap (lambda (x) (eq? 'b x)) bs)
+           (andmap (lambda (x) (eq? 'c x)) cs))))
+  
   (define (in-lang? yield)
     (let ([num-as (length (filter (lambda (x) (eq? x 'a)) yield))]
           [num-bs (length (filter (lambda (x) (eq? x 'b)) yield))]
           [num-cs (length (filter (lambda (x) (eq? x 'c)) yield))])
       (= num-as num-bs num-cs)))
-  (cond [(member 'S yield) (S-INV yield)]
-        [(member 'G yield) (G-INV yield)]
-        [(member 'H yield) (H-INV yield)]
-        [(member 'I yield) (I-INV yield)]
-        [else (in-lang? yield)]))
+  
+  (define (equal-num-abc? word)
+    (= (+ (length (filter (lambda (x) (eq? 'c x)) word))
+          (length (filter (lambda (x) (eq? 'a x)) word)))
+       (+ (length (filter (lambda (x) (eq? 'B x)) word))
+          (length (filter (lambda (x) (eq? 'b x)) word)))
+       (+ (length (filter (lambda (x) (eq? 'C x)) word))
+          (length (filter (lambda (x) (eq? 'c x)) word)))))
+  
+  (and (equal-num-abc? yield)
+       (cond [(member 'G yield) (G-INV yield)]
+             [(member 'H yield) (H-INV yield)]
+             [(member 'I yield) (I-INV yield)]
+             [else (in-lang? yield)])))
 
 (define anbncn-csg
   (make-unchecked-csg '(S A B C G H I) 
