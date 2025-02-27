@@ -4,6 +4,7 @@
          "../2htdp/image.rkt"
          "../viz-lib/viz.rkt"
          "../viz-lib/zipper.rkt"
+         "../viz-lib/vector-zipper.rkt"
          "../viz-lib/bounding-limits.rkt"
          "../viz-lib/viz-state.rkt"
          "../viz-lib/viz-macros.rkt"
@@ -559,7 +560,7 @@ triple is the entire of the ndfa rule
                                               (viz-state-informative-messages a-vs)))
                         (sub1 (length (imsg-state-ndfa-pci (informative-messages-component-state
                                                             (viz-state-informative-messages a-vs)))))))]
-         [shown-accepting-trace (if (or (zipper-at-end? (imsg-state-ndfa-shown-accepting-trace
+         [shown-accepting-trace (if (or (zipper-at-begin? (imsg-state-ndfa-shown-accepting-trace
                                                          (informative-messages-component-state
                                                           (viz-state-informative-messages a-vs))))
                                         (zipper-empty? (imsg-state-ndfa-shown-accepting-trace
@@ -701,8 +702,16 @@ triple is the entire of the ndfa rule
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the previous broken invariant
 (define (j-key-pressed a-vs)
-  (if (zipper-empty? (imsg-state-ndfa-invs-zipper (informative-messages-component-state
+  (if (or (zipper-empty? (imsg-state-ndfa-invs-zipper (informative-messages-component-state
                                                    (viz-state-informative-messages a-vs))))
+          (and (zipper-at-begin? (imsg-state-ndfa-invs-zipper (informative-messages-component-state
+                                                               (viz-state-informative-messages a-vs))))
+               (not (zipper-at-end? (imsg-state-ndfa-invs-zipper (informative-messages-component-state
+                                                                  (viz-state-informative-messages a-vs))))))
+          (< (ndfa-accessor-func (imsg-state-ndfa-shown-accepting-trace (informative-messages-component-state
+                                                                   (viz-state-informative-messages a-vs))))
+             (get-index-ndfa (imsg-state-ndfa-invs-zipper (informative-messages-component-state
+                                                    (viz-state-informative-messages a-vs))))))
       a-vs
       (let* ([zip (if (and (not (zipper-at-begin? (imsg-state-ndfa-invs-zipper
                                                    (informative-messages-component-state
@@ -724,6 +733,7 @@ triple is the entire of the ndfa rule
         (struct-copy
          viz-state
          a-vs
+         [imgs (vector-zipper-to-idx (viz-state-imgs a-vs) (get-index-ndfa zip))]
          [informative-messages
           (struct-copy
            informative-messages
@@ -783,8 +793,16 @@ triple is the entire of the ndfa rule
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the next failed invariant
 (define (l-key-pressed a-vs)
-  (if (zipper-empty? (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                   (viz-state-informative-messages a-vs))))
+  (if (or (zipper-empty? (imsg-state-ndfa-invs-zipper (informative-messages-component-state
+                                                       (viz-state-informative-messages a-vs))))
+          (and (not (zipper-at-begin? (imsg-state-ndfa-invs-zipper (informative-messages-component-state
+                                                                    (viz-state-informative-messages a-vs)))))
+               (zipper-at-end? (imsg-state-ndfa-invs-zipper (informative-messages-component-state
+                                                             (viz-state-informative-messages a-vs)))))
+          (> (ndfa-accessor-func (imsg-state-ndfa-shown-accepting-trace (informative-messages-component-state
+                                                               (viz-state-informative-messages a-vs))))
+             (get-index-ndfa (imsg-state-ndfa-invs-zipper (informative-messages-component-state
+                                                           (viz-state-informative-messages a-vs))))))
       a-vs
       (let* ([zip (if (and (not (zipper-at-end? (imsg-state-ndfa-invs-zipper (informative-messages-component-state
                                                                               (viz-state-informative-messages a-vs)))))
@@ -804,6 +822,7 @@ triple is the entire of the ndfa rule
         (struct-copy
          viz-state
          a-vs
+         [imgs (vector-zipper-to-idx (viz-state-imgs a-vs) (get-index-ndfa zip))]
          [informative-messages
           (struct-copy
            informative-messages

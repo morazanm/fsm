@@ -57,7 +57,7 @@ rules are a (listof rule)
 (define SM-VIZ-FONT-SIZE 18)
 (define INS-TOOLS-BUFFER 30)
 
-(define TM-ACCESSOR-FUNC (compose fourth (compose trace-config zipper-current)))
+(define accessor-func (compose fourth (compose trace-config zipper-current)))
 (define ndfa-accessor-func (compose third (compose trace-config zipper-current)))
 
 (define get-index (compose fourth zipper-current))
@@ -368,7 +368,7 @@ rules are a (listof rule)
                   PERCENT-BORDER-GAP
                   imsg-state-tm-invs-zipper
                   imsg-state-tm-shown-accepting-trace
-                  TM-ACCESSOR-FUNC 
+                  accessor-func 
                   get-index
                   get-next-index))
 
@@ -381,7 +381,7 @@ rules are a (listof rule)
                   PERCENT-BORDER-GAP
                   imsg-state-tm-invs-zipper
                   imsg-state-tm-shown-accepting-trace
-                  TM-ACCESSOR-FUNC
+                  accessor-func
                   get-index
                   get-prev-index))
 

@@ -7,6 +7,7 @@
          "../viz-lib/bounding-limits.rkt"
          "../viz-lib/viz-state.rkt"
          "../viz-lib/viz-macros.rkt"
+         "../viz-lib/vector-zipper.rkt"
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/pda.rkt"
@@ -635,7 +636,7 @@ pair is the second of the pda rule
                             (imsg-state-pda-upci (informative-messages-component-state
                                                   (viz-state-informative-messages a-vs))))]
          ;;(listof symbol)
-         ;;Purpose: The last word that could be fully consumed by the ndfa
+         ;;Purpose: The last word that could be fully consumed by the pda
          [last-consumed-word (last-fully-consumed
                               full-word
                               (imsg-state-pda-M (informative-messages-component-state
@@ -890,8 +891,16 @@ pair is the second of the pda rule
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the previous broken invariant
 (define (j-key-pressed a-vs)
-  (if (zipper-empty? (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                  (viz-state-informative-messages a-vs))))
+  (if (or (zipper-empty? (imsg-state-pda-invs-zipper (informative-messages-component-state
+                                                   (viz-state-informative-messages a-vs))))
+          (and (zipper-at-begin? (imsg-state-pda-invs-zipper (informative-messages-component-state
+                                                               (viz-state-informative-messages a-vs))))
+               (not (zipper-at-end? (imsg-state-pda-invs-zipper (informative-messages-component-state
+                                                                  (viz-state-informative-messages a-vs))))))
+          (< (accessor-func (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
+                                                                   (viz-state-informative-messages a-vs))))
+             (get-index (imsg-state-pda-invs-zipper (informative-messages-component-state
+                                                    (viz-state-informative-messages a-vs))))))
       a-vs
       (let* ([zip (if (and (not (zipper-at-begin? (imsg-state-pda-invs-zipper (informative-messages-component-state
                                                                                (viz-state-informative-messages a-vs)))))
@@ -914,6 +923,7 @@ pair is the second of the pda rule
         (struct-copy
          viz-state
          a-vs
+         [imgs (vector-zipper-to-idx (viz-state-imgs a-vs) (get-index zip))]
          [informative-messages
           (struct-copy
            informative-messages
@@ -1026,8 +1036,16 @@ pair is the second of the pda rule
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the next failed invariant
 (define (l-key-pressed a-vs)
-  (if (zipper-empty? (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                  (viz-state-informative-messages a-vs))))
+  (if (or (zipper-empty? (imsg-state-pda-invs-zipper (informative-messages-component-state
+                                                   (viz-state-informative-messages a-vs))))
+          (and (zipper-at-begin? (imsg-state-pda-invs-zipper (informative-messages-component-state
+                                                               (viz-state-informative-messages a-vs))))
+               (not (zipper-at-end? (imsg-state-pda-invs-zipper (informative-messages-component-state
+                                                                  (viz-state-informative-messages a-vs))))))
+          (> (accessor-func (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
+                                                                   (viz-state-informative-messages a-vs))))
+             (get-index  (imsg-state-pda-invs-zipper (informative-messages-component-state
+                                                    (viz-state-informative-messages a-vs))))))
       a-vs
       (let* ([zip (if (and (not (zipper-at-end? (imsg-state-pda-invs-zipper (informative-messages-component-state
                                                                              (viz-state-informative-messages a-vs)))))
@@ -1050,6 +1068,7 @@ pair is the second of the pda rule
         (struct-copy
          viz-state
          a-vs
+         [imgs (vector-zipper-to-idx (viz-state-imgs a-vs) (get-index zip))]
          [informative-messages
           (struct-copy
            informative-messages
