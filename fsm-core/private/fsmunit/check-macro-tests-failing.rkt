@@ -20,7 +20,7 @@ E - ci = ab* final
 
 |#
 
-
+#|
 (define AB*B*UAB*
   (make-ndfa '(S K B C H)
              '(a b)
@@ -2574,3 +2574,5 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
               '(a a a b a a a)
               '(a a b b a a)
               '(b b a b b))
+
+|#
