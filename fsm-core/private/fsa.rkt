@@ -646,7 +646,8 @@
                                   new-start
                                   new-final)))
     
-    (printable-regexp (simplify-regexp (second (first final-graph))))))
+    ;(printable-regexp
+     (simplify-regexp (second (first final-graph)))));)
   
 ; regexp --> fsa
 (define (regexp->fsa r)
