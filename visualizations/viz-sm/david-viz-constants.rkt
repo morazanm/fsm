@@ -13,7 +13,8 @@
          "../../fsm-core/private/fsa.rkt"
          "../../fsm-core/private/pda.rkt"
          "../../fsm-core/private/tm.rkt"
-         "../../fsm-core/private/misc.rkt")
+         "../../fsm-core/private/misc.rkt"
+         racket/treelist)
 
 (define FONT-SIZE 18)
 (provide (all-defined-out))
@@ -116,29 +117,29 @@ rules are a (listof rule)
   
 (define (tm-getaccept m) (m '() 0 'get-accept))
 
-(define qempty? empty?)
+(define qempty? treelist-empty?)
 
-(define E-QUEUE '())
+(define E-QUEUE (treelist))
 
 ;; (qof X) → X throws error
 ;; Purpose: Return first X of the given queue
 (define (qfirst a-qox)
   (if (qempty? a-qox)
       (error "qfirst applied to an empty queue")
-      (first a-qox)))
+      (treelist-first a-qox)))
 
 ;; (listof X) (qof X) → (qof X)
 ;; Purpose: Add the given list of X to the given
 ;;          queue of X
 (define (enqueue a-lox a-qox)
-  (append a-qox a-lox))
+  (treelist-append a-qox (list->treelist a-lox)))
 
 ;; (qof X) → (qof X) throws error
 ;; Purpose: Return the rest of the given queue
 (define (dequeue a-qox)
   (if (qempty? a-qox)
       (error "dequeue applied to an empty queue")
-      (rest a-qox)))
+      (treelist-rest a-qox)))
 
 (define DUMMY-RULE (list (list EMP EMP EMP) (list EMP EMP)))
 
