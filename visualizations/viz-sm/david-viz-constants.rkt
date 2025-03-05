@@ -31,8 +31,8 @@ A trace is a structure:
 config is a single configuration
 rules are a (listof rule)
 |#
-(struct trace (config rules) #:transparent)
-
+;(struct trace (config rules) #:transparent)
+(struct rule (read action) #:transparent)
 
 (define HELD-INV-COLOR 'chartreuse4)
 (define BRKN-INV-COLOR 'red2)
@@ -221,12 +221,14 @@ rules are a (listof rule)
                                                                        (list->zipper (list '(@ a a b)))
                                                                        (list->zipper '(1))
                                                                        (list->zipper '())
-                                                                       (list->zipper '())
+                                                                       (list->zipper (list (trace `(S 1 (,LM ,BLANK a b c) 0)
+                                                                                                  (rule (list BLANK BLANK)
+                                                                                                        (list BLANK BLANK)))))
                                                                        (list->zipper '())
                                                                        '()
                                                                        (list->zipper '(1))
                                                                        '()
-                                                                       '()
+                                                                       1
                                                                        'accept
                                                                        0
                                                                        (let ([offset-cap (- (length '(a b b)) TAPE-SIZE)])

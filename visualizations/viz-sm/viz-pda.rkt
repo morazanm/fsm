@@ -70,15 +70,18 @@ pair is the second of the pda rule
   (define (apply-pop a-config)
     (if (equal? (third (first a-rule)) EMP)
         a-config
-        (list (first a-config) (second a-config)
-              (drop (third a-config) (length (third (first a-rule)))) (fourth a-config))))
+        (list (first a-config)
+              (second a-config)
+              (drop (third a-config) (length (third (first a-rule))))
+              (fourth a-config))))
   ;;config -> config
   ;;Purpose: Applies the push portion of given rule to the given config
   ;;ASSUMPTION: The given rule can be applied to the config
   (define (apply-push a-config)
     (if (equal? (second (second a-rule)) EMP)
         a-config
-        (list (first a-config) (second a-config)
+        (list (first a-config)
+              (second a-config)
               (append (second (second a-rule)) (third a-config))
               (fourth a-config))))
   ;;config -> config
@@ -117,10 +120,10 @@ pair is the second of the pda rule
 ;;     that are within the bounds of the max computation limit
 (define (make-computations lor finals QoC path max-cmps)
   (cond [(qempty? QoC) path]
-        [(and (> (length (computation-LoC (qfirst QoC))) max-cmps)
+        [(or (>= (length (computation-LoC (qfirst QoC))) max-cmps)
               (and (member? (first (first (computation-LoC (qfirst QoC)))) finals equal?)
-                   (empty? (second (first (computation-LoC (qfirst QoC)))) finals)
-                   (empty? (third (first (computation-LoC (qfirst QoC)))) finals)))
+                   (empty? (second (first (computation-LoC (qfirst QoC)))))
+                   (empty? (third (first (computation-LoC (qfirst QoC)))))))
          (make-computations lor finals (dequeue QoC) (cons (qfirst QoC) path) max-cmps)]
         [else (let* ([stack (third (first (computation-LoC (qfirst QoC))))]
                      ;;(listof rules)
@@ -326,7 +329,8 @@ pair is the second of the pda rule
 (define (get-trace-X LoT map-func)
   (filter-map-acc empty? map-func not first LoT))
 
-;(listof symbol ((listof symbol) (listof symbol) -> boolean))) (X -> Y) -> (listof symbol ((listof symbol) (listof symbol) -> boolean)))
+;;(listof symbol ((listof symbol) (listof symbol) -> boolean))) (X -> Y) ->
+;;(listof symbol ((listof symbol) (listof symbol) -> boolean)))
 ;;Purpose: Extracts the invariants from the (listof symbol ((listof symbols) (listof symbols) -> boolean)))
 (define (get-invariants LoI func)
   (filter-map-acc (λ (x) ((second (first x)) (second x) (third x))) first func first LoI))
@@ -361,7 +365,7 @@ pair is the second of the pda rule
          (get-farthest-consumed (rest LoC) (second (first (first LoC))))]
         [else (get-farthest-consumed (rest LoC) acc)]))
       
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;graph machine -> graph
 ;;Purpose: Creates the nodes for the given graph
@@ -414,7 +418,7 @@ pair is the second of the pda rule
          rules))
          
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;viz-state -> graph-thunk
 ;;Purpose: Creates a graph thunk for a given viz-state
@@ -600,8 +604,9 @@ pair is the second of the pda rule
                                                                       (viz-state-informative-messages a-vs)))))
                                                 (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
                                                                                        (viz-state-informative-messages a-vs)))
-                                                (zipper-next (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
-                                                                                                    (viz-state-informative-messages a-vs)))))]
+                                                (zipper-next (imsg-state-pda-shown-accepting-trace
+                                                              (informative-messages-component-state
+                                                               (viz-state-informative-messages a-vs)))))]
                      [stack (if (or (zipper-empty? (imsg-state-pda-stack (informative-messages-component-state
                                                                           (viz-state-informative-messages a-vs))))
                                     (zipper-at-end? (imsg-state-pda-stack (informative-messages-component-state
@@ -1294,7 +1299,7 @@ pair is the second of the pda rule
                                              (if (empty? accept-cmps) '() (rest accept-cmps))
                                              rejecting-traces
                                              new-M
-                                             (if (and add-dead (not (empty? invs))) (cons (list dead-state (λ (w s) #t)) invs) invs) 
+                                             (if (and add-dead (not (empty? invs))) (cons (list dead-state (λ (w s) #t)) invs) invs)
                                              dead-state
                                              cut-off
                                              most-consumed-word)]
@@ -1334,7 +1339,7 @@ pair is the second of the pda rule
                    (make-inv-configs a-word accepting-computations)
                    invs)
                   a-word))
-    ;(displayln "")
+    ;(map displayln LoC)
     ;(displayln (length accepting-trace))
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))

@@ -11,7 +11,26 @@
 
 (provide ndfa-create-draw-informative-message
          pda-create-draw-informative-message
-         tm-create-draw-informative-message)
+         tm-create-draw-informative-message
+         trace trace-config trace-rules)
+
+#|
+A trace is a structure:
+(make-trace config rules)
+config is a single configuration
+rules are a (listof rule-structs)
+|#
+(struct trace (config rules) #:transparent)
+(struct rule (read action) #:transparent)
+
+;; X (listof X) -> boolean
+;;Purpose: Determine if X is in the given list
+(define (member? x lst)
+  (ormap (λ (L) (equal? x L)) lst))
+
+(define qempty? empty?)
+
+(define E-QUEUE '())
 
 (define FONT-SIZE 20)
 
@@ -28,6 +47,19 @@
 (define FONT-COLOR 'black)
 
 (define COMPUTATION-LENGTH-COLOR 'brown)
+
+(define accessor-func (compose fourth (compose trace-config zipper-current)))
+(define ndfa-accessor-func (compose third (compose trace-config zipper-current)))
+
+(define get-index (compose fourth zipper-current))
+(define get-index-ndfa (compose third zipper-current))
+
+(define get-next-index (compose fourth (compose zipper-current zipper-next)))
+(define get-next-index-ndfa (compose third (compose zipper-current zipper-next)))
+
+(define get-prev-index (compose fourth (compose zipper-current zipper-prev)))
+(define get-prev-index-ndfa (compose third (compose zipper-current zipper-prev)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
@@ -128,30 +160,6 @@
                                                                  FONT-COLOR) #;FONT-COLOR))))))]
       (make-tape-img letter-imgs start-index))))
 
-#|
-A trace is a structure:
-(make-trace config rules)
-config is a single configuration
-rules are a (listof rule-structs)
-|#
-(struct trace (config rule) #:transparent)
-
-#|
-A rule is a structure:
-(make-rule triple)
-triple is the entire of the ndfa rule
-|#
-(struct rule (triple pair) #:transparent)
-
-
-;; X (listof X) -> boolean
-;;Purpose: Determine if X is in the given list
-(define (member? x lst)
-  (ormap (λ (L) (equal? x L)) lst))
-
-(define qempty? empty?)
-
-(define E-QUEUE '())
 
 ;; (qof X) → X throws error
 ;; Purpose: Return first X of the given queue
@@ -237,27 +245,7 @@ triple is the entire of the ndfa rule
              (make-ndfa-computations lor (enqueue new-configs (dequeue QoC)) path)))))
   
 
-;;(listof configurations) (listof rules) (listof configurations) -> (listof configurations)
-;;Purpose: Returns a propers trace for the given (listof configurations) that accurately
-;;         tracks each transition
-(define (make-ndfa-trace configs rules acc)
-  (cond [(or (empty? rules)
-             (empty? configs)) (reverse acc)]
-        [(and (empty? acc)
-              (not (equal? (second (first rules)) EMP)))
-         (let* ([rle (rule (list EMP EMP EMP))]
-                [res (trace (first configs) (list rle))])
-           (make-ndfa-trace (rest configs) rules (cons res acc)))]
-        [(and (not (empty? acc))
-              (equal? (second (first rules)) EMP))
-         (let* ([rle (rule (first rules))]
-                [res (struct-copy trace (first acc)
-                                  [rule (cons rle (trace-rule (first acc)))])])
-           (make-ndfa-trace configs (rest rules) (cons res (rest acc))))]
-        [else (let* ([rle (rule (first rules))]
-                     [res (trace (first configs)
-                                 (list rle))])
-                (make-ndfa-trace (rest configs) (rest rules) (cons res acc)))]))
+
 
 
 ;;rule -> boolean
@@ -691,7 +679,11 @@ triple is the entire of the ndfa rule
                     (number->string (zipper-current (imsg-state-tm-computation-lengths imsg-st))))
             FONT-SIZE
             COMPUTATION-LENGTH-COLOR)
-      (cond [(ormap (λ (comp) (>= (length comp) (imsg-state-tm-max-cmps imsg-st)))
+      (cond [(and (not (zipper-empty? (imsg-state-tm-shown-accepting-trace imsg-st)))
+                  (>= (accessor-func (imsg-state-tm-shown-accepting-trace imsg-st)) (imsg-state-tm-max-cmps imsg-st))
+                  (not (equal? (first (trace-config (zipper-current (imsg-state-tm-shown-accepting-trace imsg-st))))
+                               (tm-getaccept (imsg-state-tm-M imsg-st)))))
+             #;(ormap (λ (comp) (>= (length comp) (imsg-state-tm-max-cmps imsg-st)))
                          (imsg-state-tm-computations imsg-st))
              (text (format "There are computations that exceed the cut-off limit (~a)."
                            (imsg-state-tm-max-cmps imsg-st)) FONT-SIZE DARKGOLDENROD2)]

@@ -162,11 +162,7 @@ action is the second pair in a tm rule
 ;;Purpose: Returns a propers trace for the given (listof configurations) that accurately
 ;;         tracks each transition
 (define (make-trace configs rules acc)
-  (cond [(empty? rules)
-         (reverse acc)
-         #;(let* ([rle (rule (first DUMMY-RULE) (second DUMMY-RULE))]
-                [res (trace (first configs) rle)])
-           (reverse (cons res acc)))]
+  (cond [(empty? rules) (reverse acc)]
         [(and (empty? acc)
               (or (not (equal? (second (first (first rules))) BLANK))
                   (not (equal? (second (first (first rules))) LM))))
@@ -314,7 +310,7 @@ action is the second pair in a tm rule
        (equal? (third inv-config) (third current-config))
        (equal? (fourth inv-config) (fourth current-config))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 ;;graph machine -> graph
@@ -370,7 +366,7 @@ action is the second pair in a tm rule
          dgraph
          rules))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 ;;viz-state -> graph-thunk
@@ -383,7 +379,11 @@ action is the second pair in a tm rule
          ;;(listof symbol)
          ;;Purpose: Gets the states where it's computation has cutoff
          [cut-off-states (if cut-off
-                             (remove-duplicates (map first (get-cut-off (building-viz-state-computations a-vs)
+                             (remove-duplicates (filter (λ (state)
+                                                          (not (equal? state (tm-getaccept (building-viz-state-M a-vs)))))
+                                                        (map (λ (comp) (first (first comp)))
+                                                         (building-viz-state-computations a-vs))
+                                                #;(get-cut-off (building-viz-state-computations a-vs)
                                                                         (building-viz-state-max-cmps a-vs))))
                              '())]
 
@@ -450,16 +450,20 @@ action is the second pair in a tm rule
 ;;viz-state (listof graph-thunks) -> (listof graph-thunks)
 ;;Purpose: Creates all the graphs needed for the visualization
 (define (create-graph-thunks a-vs acc)
-  (cond [(and (zipper-at-end? (building-viz-state-tape a-vs))
+  ;(map displayln (building-viz-state-computations a-vs))
+  ;(displayln "")
+  (cond [(ormap (λ (comp-len) (>= (fourth comp-len) (building-viz-state-max-cmps a-vs)))
+                (map first (building-viz-state-computations a-vs)))
+         (reverse (cons (create-graph-thunk a-vs #:cut-off #t) acc))]
+        [(and (zipper-at-end? (building-viz-state-tape a-vs))
               (zipper-at-end? (building-viz-state-head-pos a-vs)))
          (reverse (cons (create-graph-thunk a-vs) acc))]
-        [(ormap (λ (comp-len) (>= comp-len (building-viz-state-max-cmps a-vs)))
-                (map length (building-viz-state-computations a-vs)))
-         (reverse (cons (create-graph-thunk a-vs #:cut-off #t) acc))]
         [else (let ([next-graph (create-graph-thunk a-vs)])
                 (create-graph-thunks (struct-copy building-viz-state
                                                   a-vs
-                                                  [computations (filter-map (λ (comp) (and (not (empty? comp))
+                                                  [computations (filter (λ (comp) (not (empty? comp)))
+                                                                        (map rest (building-viz-state-computations a-vs)))
+                                                                          #;(filter-map (λ (comp) (and (not (empty? comp))
                                                                                            (rest comp)))
                                                                             (building-viz-state-computations a-vs))]
                                                   [tape (zipper-next (building-viz-state-tape a-vs))]
@@ -475,244 +479,246 @@ action is the second pair in a tm rule
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization forward by one step
 (define (right-key-pressed a-vs)
-  (let* ([pci-len 0])
+  (struct-copy
+   viz-state
+   a-vs
+   [informative-messages
     (struct-copy
-     viz-state
-     a-vs
-     [informative-messages
-      (struct-copy
-       informative-messages
-       (viz-state-informative-messages a-vs)
-       [component-state
-        (struct-copy imsg-state-tm 
-                     (informative-messages-component-state (viz-state-informative-messages a-vs))
-                     [rules-used (if (or (zipper-empty? (imsg-state-tm-rules-used (informative-messages-component-state
-                                                                         (viz-state-informative-messages a-vs))))
-                                    (zipper-at-end? (imsg-state-tm-rules-used (informative-messages-component-state
-                                                                          (viz-state-informative-messages a-vs)))))
-                                (imsg-state-tm-rules-used (informative-messages-component-state
-                                                      (viz-state-informative-messages a-vs))) 
-                                (zipper-next (imsg-state-tm-rules-used (informative-messages-component-state
-                                                                   (viz-state-informative-messages a-vs)))))]
+     informative-messages
+     (viz-state-informative-messages a-vs)
+     [component-state
+      (struct-copy imsg-state-tm 
+                   (informative-messages-component-state (viz-state-informative-messages a-vs))
+                   [rules-used (if (or (zipper-empty? (imsg-state-tm-rules-used (informative-messages-component-state
+                                                                                 (viz-state-informative-messages a-vs))))
+                                       (zipper-at-end? (imsg-state-tm-rules-used (informative-messages-component-state
+                                                                                  (viz-state-informative-messages a-vs)))))
+                                   (imsg-state-tm-rules-used (informative-messages-component-state
+                                                              (viz-state-informative-messages a-vs))) 
+                                   (zipper-next (imsg-state-tm-rules-used (informative-messages-component-state
+                                                                           (viz-state-informative-messages a-vs)))))]
                      
-                     [tape (if (or (zipper-empty? (imsg-state-tm-tape (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs))))
-                                   (zipper-at-end? (imsg-state-tm-tape (informative-messages-component-state
-                                                                        (viz-state-informative-messages a-vs)))))
-                               (imsg-state-tm-tape (informative-messages-component-state
-                                                    (viz-state-informative-messages a-vs))) 
-                               (zipper-next (imsg-state-tm-tape (informative-messages-component-state
-                                                                 (viz-state-informative-messages a-vs)))))]
+                   [tape (if (or (zipper-empty? (imsg-state-tm-tape (informative-messages-component-state
+                                                                     (viz-state-informative-messages a-vs))))
+                                 (zipper-at-end? (imsg-state-tm-tape (informative-messages-component-state
+                                                                      (viz-state-informative-messages a-vs)))))
+                             (imsg-state-tm-tape (informative-messages-component-state
+                                                  (viz-state-informative-messages a-vs))) 
+                             (zipper-next (imsg-state-tm-tape (informative-messages-component-state
+                                                               (viz-state-informative-messages a-vs)))))]
                      
-                     [head-position (if (or (zipper-empty? (imsg-state-tm-head-position
-                                                            (informative-messages-component-state
-                                                             (viz-state-informative-messages a-vs))))
-                                            (zipper-at-end? (imsg-state-tm-head-position
-                                                             (informative-messages-component-state
-                                                              (viz-state-informative-messages a-vs)))))
-                                        (imsg-state-tm-head-position (informative-messages-component-state
-                                                                      (viz-state-informative-messages a-vs)))
-                                        (zipper-next (imsg-state-tm-head-position
-                                                      (informative-messages-component-state
-                                                       (viz-state-informative-messages a-vs)))))]
+                   [head-position (if (or (zipper-empty? (imsg-state-tm-head-position
+                                                          (informative-messages-component-state
+                                                           (viz-state-informative-messages a-vs))))
+                                          (zipper-at-end? (imsg-state-tm-head-position
+                                                           (informative-messages-component-state
+                                                            (viz-state-informative-messages a-vs)))))
+                                      (imsg-state-tm-head-position (informative-messages-component-state
+                                                                    (viz-state-informative-messages a-vs)))
+                                      (zipper-next (imsg-state-tm-head-position
+                                                    (informative-messages-component-state
+                                                     (viz-state-informative-messages a-vs)))))]
                      
-                     [computation-lengths (if (or (zipper-empty? (imsg-state-tm-computation-lengths
+                   [computation-lengths (if (or (zipper-empty? (imsg-state-tm-computation-lengths
+                                                                (informative-messages-component-state
+                                                                 (viz-state-informative-messages a-vs))))
+                                                (zipper-at-end? (imsg-state-tm-computation-lengths
+                                                                 (informative-messages-component-state
+                                                                  (viz-state-informative-messages a-vs)))))
+                                            (imsg-state-tm-computation-lengths
+                                             (informative-messages-component-state
+                                              (viz-state-informative-messages a-vs))) 
+                                            (zipper-next (imsg-state-tm-computation-lengths
+                                                          (informative-messages-component-state
+                                                           (viz-state-informative-messages a-vs)))))]
+                     
+                   [shown-accepting-trace (if (or (zipper-empty? (imsg-state-tm-shown-accepting-trace
                                                                   (informative-messages-component-state
                                                                    (viz-state-informative-messages a-vs))))
-                                                  (zipper-at-end? (imsg-state-tm-computation-lengths
+                                                  (zipper-at-end? (imsg-state-tm-shown-accepting-trace
                                                                    (informative-messages-component-state
                                                                     (viz-state-informative-messages a-vs)))))
-                                              (imsg-state-tm-computation-lengths
+                                              (imsg-state-tm-shown-accepting-trace
                                                (informative-messages-component-state
-                                                (viz-state-informative-messages a-vs))) 
-                                              (zipper-next (imsg-state-tm-computation-lengths
+                                                (viz-state-informative-messages a-vs)))
+                                              (zipper-next (imsg-state-tm-shown-accepting-trace
                                                             (informative-messages-component-state
                                                              (viz-state-informative-messages a-vs)))))]
                      
-                     [shown-accepting-trace (if (or (zipper-empty? (imsg-state-tm-shown-accepting-trace
-                                                                    (informative-messages-component-state
-                                                                     (viz-state-informative-messages a-vs))))
-                                                    (zipper-at-end? (imsg-state-tm-shown-accepting-trace
-                                                                     (informative-messages-component-state
-                                                                      (viz-state-informative-messages a-vs)))))
-                                                (imsg-state-tm-shown-accepting-trace
-                                                 (informative-messages-component-state
-                                                  (viz-state-informative-messages a-vs)))
-                                                (zipper-next (imsg-state-tm-shown-accepting-trace
-                                                              (informative-messages-component-state
-                                                               (viz-state-informative-messages a-vs)))))]
-                     
-                     [invs-zipper (cond [(zipper-empty? (imsg-state-tm-invs-zipper (informative-messages-component-state
-                                                                                    (viz-state-informative-messages a-vs))))
-                                         (imsg-state-tm-invs-zipper (informative-messages-component-state
-                                                                     (viz-state-informative-messages a-vs)))]
-                                        [(and (not (zipper-at-end? (imsg-state-tm-invs-zipper
-                                                                    (informative-messages-component-state
-                                                                     (viz-state-informative-messages a-vs)))))
-                                              (>= pci-len (fourth (first (zipper-unprocessed
-                                                                  (imsg-state-tm-invs-zipper
-                                                                   (informative-messages-component-state
-                                                                    (viz-state-informative-messages a-vs))))))))
-                                         (zipper-next (imsg-state-tm-invs-zipper (informative-messages-component-state
-                                                                                  (viz-state-informative-messages a-vs))))]
-                                        [else (imsg-state-tm-invs-zipper (informative-messages-component-state
-                                                                          (viz-state-informative-messages a-vs)))])])])])))
+                   [invs-zipper (cond [(zipper-empty? (imsg-state-tm-invs-zipper (informative-messages-component-state
+                                                                                  (viz-state-informative-messages a-vs))))
+                                       (imsg-state-tm-invs-zipper (informative-messages-component-state
+                                                                   (viz-state-informative-messages a-vs)))]
+                                      [(and (not (zipper-at-end? (imsg-state-tm-invs-zipper
+                                                                  (informative-messages-component-state
+                                                                   (viz-state-informative-messages a-vs)))))
+                                            (>= (accessor-func (imsg-state-tm-shown-accepting-trace
+                                                                (informative-messages-component-state
+                                                                 (viz-state-informative-messages a-vs))))                                                  
+                                                (fourth (first (zipper-unprocessed
+                                                                (imsg-state-tm-invs-zipper
+                                                                 (informative-messages-component-state
+                                                                  (viz-state-informative-messages a-vs))))))))
+                                       (zipper-next (imsg-state-tm-invs-zipper (informative-messages-component-state
+                                                                                (viz-state-informative-messages a-vs))))]
+                                      [else (imsg-state-tm-invs-zipper (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs)))])])])]))
 
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization to the end
 (define (down-key-pressed a-vs)
-  (let* (;;(zipperof invariant)
-         ;;Purpose: The index of the last failed invariant
-         [zip (if (zipper-empty? (imsg-state-tm-invs-zipper (informative-messages-component-state
-                                                             (viz-state-informative-messages a-vs))))
-                  (imsg-state-tm-invs-zipper (informative-messages-component-state
-                                              (viz-state-informative-messages a-vs)))
-                  (zipper-to-idx (imsg-state-tm-invs-zipper (informative-messages-component-state
-                                                             (viz-state-informative-messages a-vs)))
-                                 (imsg-state-tm-inv-amount (informative-messages-component-state
-                                                            (viz-state-informative-messages a-vs)))))])
+  (struct-copy
+   viz-state
+   a-vs
+   [informative-messages
     (struct-copy
-     viz-state
-     a-vs
-     [informative-messages
+     informative-messages
+     (viz-state-informative-messages a-vs)
+     [component-state
       (struct-copy
-       informative-messages
-       (viz-state-informative-messages a-vs)
-       [component-state
-        (struct-copy
-         imsg-state-tm
-         (informative-messages-component-state
-          (viz-state-informative-messages a-vs))
-         [rules-used (if (or (zipper-empty? (imsg-state-tm-rules-used (informative-messages-component-state
-                                                             (viz-state-informative-messages a-vs))))
-                        (zipper-at-end? (imsg-state-tm-rules-used (informative-messages-component-state
-                                                              (viz-state-informative-messages a-vs)))))
-                    (imsg-state-tm-rules-used (informative-messages-component-state
-                                          (viz-state-informative-messages a-vs))) 
-                    (zipper-to-end (imsg-state-tm-rules-used (informative-messages-component-state
-                                                         (viz-state-informative-messages a-vs)))))]
-         [tape (if (or (zipper-empty? (imsg-state-tm-tape (informative-messages-component-state
-                                                           (viz-state-informative-messages a-vs))))
-                       (zipper-at-end? (imsg-state-tm-tape (informative-messages-component-state
-                                                            (viz-state-informative-messages a-vs)))))
-                   (imsg-state-tm-tape (informative-messages-component-state
-                                        (viz-state-informative-messages a-vs)))
-                   (zipper-to-end (imsg-state-tm-tape (informative-messages-component-state
-                                                       (viz-state-informative-messages a-vs)))))]
-         [head-position (if (or (zipper-empty? (imsg-state-tm-head-position (informative-messages-component-state
-                                                                             (viz-state-informative-messages a-vs))))
-                                (zipper-at-end? (imsg-state-tm-head-position (informative-messages-component-state
-                                                                              (viz-state-informative-messages a-vs)))))
-                            (imsg-state-tm-head-position (informative-messages-component-state
-                                                          (viz-state-informative-messages a-vs)))
-                            (zipper-to-end (imsg-state-tm-head-position (informative-messages-component-state
-                                                                         (viz-state-informative-messages a-vs)))))]
+       imsg-state-tm
+       (informative-messages-component-state
+        (viz-state-informative-messages a-vs))
+       [rules-used (if (or (zipper-empty? (imsg-state-tm-rules-used (informative-messages-component-state
+                                                                     (viz-state-informative-messages a-vs))))
+                           (zipper-at-end? (imsg-state-tm-rules-used (informative-messages-component-state
+                                                                      (viz-state-informative-messages a-vs)))))
+                       (imsg-state-tm-rules-used (informative-messages-component-state
+                                                  (viz-state-informative-messages a-vs))) 
+                       (zipper-to-end (imsg-state-tm-rules-used (informative-messages-component-state
+                                                                 (viz-state-informative-messages a-vs)))))]
+       [tape (if (or (zipper-empty? (imsg-state-tm-tape (informative-messages-component-state
+                                                         (viz-state-informative-messages a-vs))))
+                     (zipper-at-end? (imsg-state-tm-tape (informative-messages-component-state
+                                                          (viz-state-informative-messages a-vs)))))
+                 (imsg-state-tm-tape (informative-messages-component-state
+                                      (viz-state-informative-messages a-vs)))
+                 (zipper-to-end (imsg-state-tm-tape (informative-messages-component-state
+                                                     (viz-state-informative-messages a-vs)))))]
+       [head-position (if (or (zipper-empty? (imsg-state-tm-head-position (informative-messages-component-state
+                                                                           (viz-state-informative-messages a-vs))))
+                              (zipper-at-end? (imsg-state-tm-head-position (informative-messages-component-state
+                                                                            (viz-state-informative-messages a-vs)))))
+                          (imsg-state-tm-head-position (informative-messages-component-state
+                                                        (viz-state-informative-messages a-vs)))
+                          (zipper-to-end (imsg-state-tm-head-position (informative-messages-component-state
+                                                                       (viz-state-informative-messages a-vs)))))]
          
-         [computation-lengths (if (or (zipper-empty? (imsg-state-tm-computation-lengths
+       [computation-lengths (if (or (zipper-empty? (imsg-state-tm-computation-lengths
+                                                    (informative-messages-component-state
+                                                     (viz-state-informative-messages a-vs))))
+                                    (zipper-at-end? (imsg-state-tm-computation-lengths
+                                                     (informative-messages-component-state
+                                                      (viz-state-informative-messages a-vs)))))
+                                (imsg-state-tm-computation-lengths (informative-messages-component-state
+                                                                    (viz-state-informative-messages a-vs))) 
+                                (zipper-to-end (imsg-state-tm-computation-lengths (informative-messages-component-state
+                                                                                   (viz-state-informative-messages a-vs)))))]
+       [shown-accepting-trace (if (or (zipper-empty? (imsg-state-tm-shown-accepting-trace
                                                       (informative-messages-component-state
                                                        (viz-state-informative-messages a-vs))))
-                                      (zipper-at-end? (imsg-state-tm-computation-lengths
+                                      (zipper-at-end? (imsg-state-tm-shown-accepting-trace
                                                        (informative-messages-component-state
                                                         (viz-state-informative-messages a-vs)))))
-                                  (imsg-state-tm-computation-lengths (informative-messages-component-state
-                                                                      (viz-state-informative-messages a-vs))) 
-                                  (zipper-to-end (imsg-state-tm-computation-lengths (informative-messages-component-state
-                                                                                     (viz-state-informative-messages a-vs)))))]
-         [shown-accepting-trace (if (or (zipper-empty? (imsg-state-tm-shown-accepting-trace
-                                                        (informative-messages-component-state
-                                                         (viz-state-informative-messages a-vs))))
-                                        (zipper-at-end? (imsg-state-tm-shown-accepting-trace
-                                                         (informative-messages-component-state
-                                                          (viz-state-informative-messages a-vs)))))
-                                    (imsg-state-tm-shown-accepting-trace (informative-messages-component-state
-                                                                          (viz-state-informative-messages a-vs)))
-                                    (zipper-to-end (imsg-state-tm-shown-accepting-trace (informative-messages-component-state
-                                                                                         (viz-state-informative-messages a-vs)))))]
+                                  (imsg-state-tm-shown-accepting-trace (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs)))
+                                  (zipper-to-end (imsg-state-tm-shown-accepting-trace (informative-messages-component-state
+                                                                                       (viz-state-informative-messages a-vs)))))]
          
-         
-         [invs-zipper zip])])])))
+       ;;(zipperof invariant)
+       ;;Purpose: The index of the last failed invariant
+       [invs-zipper (if (or (zipper-empty? (imsg-state-tm-invs-zipper (informative-messages-component-state
+                                                                       (viz-state-informative-messages a-vs))))
+                            (zipper-at-end? (imsg-state-tm-invs-zipper (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs)))))
+                        (imsg-state-tm-invs-zipper (informative-messages-component-state
+                                                    (viz-state-informative-messages a-vs)))
+                        (zipper-to-end (imsg-state-tm-invs-zipper (informative-messages-component-state
+                                                                   (viz-state-informative-messages a-vs)))))])])]))
 
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization backward by one step
 (define (left-key-pressed a-vs)
-  (let* ([pci-len 0])
+  (struct-copy
+   viz-state
+   a-vs
+   [informative-messages
     (struct-copy
-     viz-state
-     a-vs
-     [informative-messages
-      (struct-copy
-       informative-messages
-       (viz-state-informative-messages a-vs)
-       [component-state
-        (struct-copy imsg-state-tm
-                     (informative-messages-component-state
-                      (viz-state-informative-messages a-vs))
-                     [rules-used (if (or (zipper-empty? (imsg-state-tm-rules-used (informative-messages-component-state
-                                                                         (viz-state-informative-messages a-vs))))
-                                    (zipper-at-begin? (imsg-state-tm-rules-used (informative-messages-component-state
-                                                                            (viz-state-informative-messages a-vs)))))
-                                (imsg-state-tm-rules-used (informative-messages-component-state
-                                                      (viz-state-informative-messages a-vs))) 
-                                (zipper-prev (imsg-state-tm-rules-used (informative-messages-component-state
-                                                                   (viz-state-informative-messages a-vs)))))]
-                     [tape (if (or (zipper-empty? (imsg-state-tm-tape (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs))))
-                                   (zipper-at-begin? (imsg-state-tm-tape (informative-messages-component-state
-                                                                          (viz-state-informative-messages a-vs)))))
-                               (imsg-state-tm-tape (informative-messages-component-state
-                                                    (viz-state-informative-messages a-vs)))
-                               (zipper-prev (imsg-state-tm-tape (informative-messages-component-state
-                                                                 (viz-state-informative-messages a-vs)))))]
+     informative-messages
+     (viz-state-informative-messages a-vs)
+     [component-state
+      (struct-copy imsg-state-tm
+                   (informative-messages-component-state
+                    (viz-state-informative-messages a-vs))
+                   [rules-used (if (or (zipper-empty? (imsg-state-tm-rules-used (informative-messages-component-state
+                                                                                 (viz-state-informative-messages a-vs))))
+                                       (zipper-at-begin? (imsg-state-tm-rules-used (informative-messages-component-state
+                                                                                    (viz-state-informative-messages a-vs)))))
+                                   (imsg-state-tm-rules-used (informative-messages-component-state
+                                                              (viz-state-informative-messages a-vs))) 
+                                   (zipper-prev (imsg-state-tm-rules-used (informative-messages-component-state
+                                                                           (viz-state-informative-messages a-vs)))))]
+                   [tape (if (or (zipper-empty? (imsg-state-tm-tape (informative-messages-component-state
+                                                                     (viz-state-informative-messages a-vs))))
+                                 (zipper-at-begin? (imsg-state-tm-tape (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs)))))
+                             (imsg-state-tm-tape (informative-messages-component-state
+                                                  (viz-state-informative-messages a-vs)))
+                             (zipper-prev (imsg-state-tm-tape (informative-messages-component-state
+                                                               (viz-state-informative-messages a-vs)))))]
                      
-                     [head-position (if (or (zipper-empty? (imsg-state-tm-head-position
-                                                            (informative-messages-component-state
-                                                             (viz-state-informative-messages a-vs))))
-                                            (zipper-at-begin? (imsg-state-tm-head-position
-                                                               (informative-messages-component-state
-                                                                (viz-state-informative-messages a-vs)))))
-                                        (imsg-state-tm-head-position (informative-messages-component-state
-                                                                      (viz-state-informative-messages a-vs)))
-                                        (zipper-prev (imsg-state-tm-head-position (informative-messages-component-state
-                                                                                   (viz-state-informative-messages a-vs)))))]
+                   [head-position (if (or (zipper-empty? (imsg-state-tm-head-position
+                                                          (informative-messages-component-state
+                                                           (viz-state-informative-messages a-vs))))
+                                          (zipper-at-begin? (imsg-state-tm-head-position
+                                                             (informative-messages-component-state
+                                                              (viz-state-informative-messages a-vs)))))
+                                      (imsg-state-tm-head-position (informative-messages-component-state
+                                                                    (viz-state-informative-messages a-vs)))
+                                      (zipper-prev (imsg-state-tm-head-position (informative-messages-component-state
+                                                                                 (viz-state-informative-messages a-vs)))))]
                      
-                     [computation-lengths (if (or (zipper-empty? (imsg-state-tm-computation-lengths
+                   [computation-lengths (if (or (zipper-empty? (imsg-state-tm-computation-lengths
+                                                                (informative-messages-component-state
+                                                                 (viz-state-informative-messages a-vs))))
+                                                (zipper-at-begin? (imsg-state-tm-computation-lengths
+                                                                   (informative-messages-component-state
+                                                                    (viz-state-informative-messages a-vs)))))
+                                            (imsg-state-tm-computation-lengths (informative-messages-component-state
+                                                                                (viz-state-informative-messages a-vs))) 
+                                            (zipper-prev (imsg-state-tm-computation-lengths
+                                                          (informative-messages-component-state
+                                                           (viz-state-informative-messages a-vs)))))]
+                   [shown-accepting-trace (if (or (zipper-empty? (imsg-state-tm-shown-accepting-trace
                                                                   (informative-messages-component-state
                                                                    (viz-state-informative-messages a-vs))))
-                                                  (zipper-at-begin? (imsg-state-tm-computation-lengths
+                                                  (zipper-at-begin? (imsg-state-tm-shown-accepting-trace
                                                                      (informative-messages-component-state
                                                                       (viz-state-informative-messages a-vs)))))
-                                              (imsg-state-tm-computation-lengths (informative-messages-component-state
-                                                                                  (viz-state-informative-messages a-vs))) 
-                                              (zipper-prev (imsg-state-tm-computation-lengths
+                                              (imsg-state-tm-shown-accepting-trace (informative-messages-component-state
+                                                                                    (viz-state-informative-messages a-vs)))
+                                              (zipper-prev (imsg-state-tm-shown-accepting-trace
                                                             (informative-messages-component-state
                                                              (viz-state-informative-messages a-vs)))))]
-                     [shown-accepting-trace (if (or (zipper-empty? (imsg-state-tm-shown-accepting-trace
+                   [invs-zipper (cond [(zipper-empty? (imsg-state-tm-invs-zipper (informative-messages-component-state
+                                                                                  (viz-state-informative-messages a-vs))))
+                                       (imsg-state-tm-invs-zipper (informative-messages-component-state
+                                                                   (viz-state-informative-messages a-vs)))]
+                                      [(and (not (zipper-at-begin? (imsg-state-tm-invs-zipper
                                                                     (informative-messages-component-state
-                                                                     (viz-state-informative-messages a-vs))))
-                                                    (zipper-at-begin? (imsg-state-tm-shown-accepting-trace
-                                                                       (informative-messages-component-state
-                                                                        (viz-state-informative-messages a-vs)))))
-                                                (imsg-state-tm-shown-accepting-trace (informative-messages-component-state
-                                                                                      (viz-state-informative-messages a-vs)))
-                                                (zipper-prev (imsg-state-tm-shown-accepting-trace
-                                                              (informative-messages-component-state
-                                                               (viz-state-informative-messages a-vs)))))]
-                     [invs-zipper (cond [(zipper-empty? (imsg-state-tm-invs-zipper (informative-messages-component-state
-                                                                                    (viz-state-informative-messages a-vs))))
-                                         (imsg-state-tm-invs-zipper (informative-messages-component-state
-                                                                     (viz-state-informative-messages a-vs)))]
-                                        [(and (not (zipper-at-begin? (imsg-state-tm-invs-zipper
-                                                                      (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs)))))
-                                              (<= pci-len (fourth
-                                                           (first (zipper-processed
-                                                                  (imsg-state-tm-invs-zipper
-                                                                   (informative-messages-component-state
-                                                                    (viz-state-informative-messages a-vs))))))))
-                                         (zipper-prev (imsg-state-tm-invs-zipper (informative-messages-component-state
-                                                                                  (viz-state-informative-messages a-vs))))]
-                                        [else (imsg-state-tm-invs-zipper (informative-messages-component-state
-                                                                          (viz-state-informative-messages a-vs)))])])])])))
+                                                                     (viz-state-informative-messages a-vs)))))
+                                            (<= (accessor-func (imsg-state-tm-shown-accepting-trace
+                                                                (informative-messages-component-state
+                                                                 (viz-state-informative-messages a-vs))))
+                                                (fourth
+                                                 (first (zipper-processed
+                                                         (imsg-state-tm-invs-zipper
+                                                          (informative-messages-component-state
+                                                           (viz-state-informative-messages a-vs))))))))
+                                       (zipper-prev (imsg-state-tm-invs-zipper (informative-messages-component-state
+                                                                                (viz-state-informative-messages a-vs))))]
+                                      [else (imsg-state-tm-invs-zipper (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs)))])])])]))
 
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization to the beginning
@@ -730,13 +736,13 @@ action is the second pair in a tm rule
                     (viz-state-informative-messages a-vs))
                    ;;rules
                    [rules-used (if (or (zipper-empty? (imsg-state-tm-rules-used (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs))))
-                                  (zipper-at-begin? (imsg-state-tm-rules-used (informative-messages-component-state
-                                                                          (viz-state-informative-messages a-vs)))))
-                              (imsg-state-tm-rules-used (informative-messages-component-state
-                                                    (viz-state-informative-messages a-vs))) 
-                              (zipper-to-begin (imsg-state-tm-rules-used (informative-messages-component-state
-                                                                     (viz-state-informative-messages a-vs)))))]
+                                                                                 (viz-state-informative-messages a-vs))))
+                                       (zipper-at-begin? (imsg-state-tm-rules-used (informative-messages-component-state
+                                                                                    (viz-state-informative-messages a-vs)))))
+                                   (imsg-state-tm-rules-used (informative-messages-component-state
+                                                              (viz-state-informative-messages a-vs))) 
+                                   (zipper-to-begin (imsg-state-tm-rules-used (informative-messages-component-state
+                                                                               (viz-state-informative-messages a-vs)))))]
                    ;;tape
                    [tape (if (or (zipper-empty? (imsg-state-tm-tape (informative-messages-component-state
                                                                      (viz-state-informative-messages a-vs))))
@@ -787,7 +793,7 @@ action is the second pair in a tm rule
                                     (imsg-state-tm-invs-zipper (informative-messages-component-state
                                                                 (viz-state-informative-messages a-vs)))
                                     (zipper-to-begin (imsg-state-tm-invs-zipper (informative-messages-component-state
-                                                                               (viz-state-informative-messages a-vs)))))])])]))
+                                                                                 (viz-state-informative-messages a-vs)))))])])]))
 
 ;; viz-state -> viz-state
 ;; Purpose: Moves the deriving and current yield to the beginning of their current words
@@ -828,19 +834,15 @@ action is the second pair in a tm rule
           (and (zipper-at-begin? (imsg-state-tm-invs-zipper (informative-messages-component-state
                                                              (viz-state-informative-messages a-vs))))
                (not (zipper-at-end? (imsg-state-tm-invs-zipper (informative-messages-component-state
-                                                                (viz-state-informative-messages a-vs))))))
-          (< (accessor-func (imsg-state-tm-shown-accepting-trace (informative-messages-component-state
-                                                                   (viz-state-informative-messages a-vs))))
-             (get-index (imsg-state-tm-invs-zipper (informative-messages-component-state
-                                                    (viz-state-informative-messages a-vs))))))
+                                                                (viz-state-informative-messages a-vs)))))))
       a-vs
       (let ([zip (if (and (not (zipper-at-begin? (imsg-state-tm-invs-zipper (informative-messages-component-state
                                                                              (viz-state-informative-messages a-vs)))))
                           (<= (accessor-func (imsg-state-tm-shown-accepting-trace
-                                                      (informative-messages-component-state
-                                                       (viz-state-informative-messages a-vs))))
+                                              (informative-messages-component-state
+                                               (viz-state-informative-messages a-vs))))
                               (get-index (imsg-state-tm-invs-zipper (informative-messages-component-state
-                                                                          (viz-state-informative-messages a-vs))))))
+                                                                     (viz-state-informative-messages a-vs))))))
                      (zipper-prev (imsg-state-tm-invs-zipper (informative-messages-component-state
                                                               (viz-state-informative-messages a-vs))))
                      (imsg-state-tm-invs-zipper (informative-messages-component-state
@@ -889,7 +891,6 @@ action is the second pair in a tm rule
                          ;;invariant-zipper
                          [invs-zipper zip])])]))))
 
-;(define func (compose fourth (compose trace-config zipper-current)))
 
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the next failed invariant
@@ -899,23 +900,19 @@ action is the second pair in a tm rule
           (and (zipper-at-end? (imsg-state-tm-invs-zipper (informative-messages-component-state
                                                            (viz-state-informative-messages a-vs))))
                (not (zipper-at-begin? (imsg-state-tm-invs-zipper (informative-messages-component-state
-                                                                  (viz-state-informative-messages a-vs))))))
-          (> (accessor-func (imsg-state-tm-shown-accepting-trace (informative-messages-component-state
-                                                                     (viz-state-informative-messages a-vs))))
-             (get-index (imsg-state-tm-invs-zipper (informative-messages-component-state
-                                                    (viz-state-informative-messages a-vs))))))
+                                                                  (viz-state-informative-messages a-vs)))))))
       a-vs
-      (let* ([zip (if (and (not (zipper-at-end? (imsg-state-tm-invs-zipper (informative-messages-component-state
-                                                                            (viz-state-informative-messages a-vs)))))
-                           (or (>= (accessor-func (imsg-state-tm-shown-accepting-trace
-                                                      (informative-messages-component-state
-                                                       (viz-state-informative-messages a-vs))))
-                                   (get-index (imsg-state-tm-invs-zipper (informative-messages-component-state
-                                                                          (viz-state-informative-messages a-vs)))))))
-                      (zipper-next (imsg-state-tm-invs-zipper (informative-messages-component-state
-                                                               (viz-state-informative-messages a-vs))))
-                      (imsg-state-tm-invs-zipper (informative-messages-component-state
-                                                  (viz-state-informative-messages a-vs))))])
+      (let ([zip (if (and (not (zipper-at-end? (imsg-state-tm-invs-zipper (informative-messages-component-state
+                                                                           (viz-state-informative-messages a-vs)))))
+                          (>= (accessor-func (imsg-state-tm-shown-accepting-trace
+                                              (informative-messages-component-state
+                                               (viz-state-informative-messages a-vs))))
+                              (get-index (imsg-state-tm-invs-zipper (informative-messages-component-state
+                                                                     (viz-state-informative-messages a-vs))))))
+                     (zipper-next (imsg-state-tm-invs-zipper (informative-messages-component-state
+                                                              (viz-state-informative-messages a-vs))))
+                     (imsg-state-tm-invs-zipper (informative-messages-component-state
+                                                 (viz-state-informative-messages a-vs))))])
         (struct-copy
          viz-state
          a-vs
@@ -958,7 +955,18 @@ action is the second pair in a tm rule
                                                                    (get-index zip)))]
                          
                          ;;invariant-zipper
-                         [invs-zipper zip])])]))))
+                         [invs-zipper (if (and (not (zipper-at-end?
+                                                     (imsg-state-tm-invs-zipper (informative-messages-component-state
+                                                                                 (viz-state-informative-messages a-vs)))))
+                                               (>= (accessor-func (imsg-state-tm-shown-accepting-trace
+                                                                   (informative-messages-component-state
+                                                                    (viz-state-informative-messages a-vs))))
+                                                   (get-index (imsg-state-tm-invs-zipper (informative-messages-component-state
+                                                                                          (viz-state-informative-messages a-vs))))))
+                                          (zipper-next (imsg-state-tm-invs-zipper (informative-messages-component-state
+                                                                                   (viz-state-informative-messages a-vs))))
+                                          (imsg-state-tm-invs-zipper (informative-messages-component-state
+                                                                      (viz-state-informative-messages a-vs))))])])]))))
 
 
 ;;tm tape [natnum] [natnum] . -> (void) Throws error
@@ -981,6 +989,11 @@ action is the second pair in a tm rule
                                               (reverse (computation-LoR acc-comp))
                                               '()))
                                 accepting-computations)]
+         [computation-has-cut-off? (ormap (λ (comp-length)
+                                               (>= comp-length cut-off))
+                                             (if (empty? accepting-traces)
+                                                 (map length LoC)
+                                                 '()))]
          ;;(listof trace) ;;Purpose: Gets the cut off trace if the the word length is greater than the cut
          [cut-accept-traces '()
                             #;(if (> word-len max-cmps)
@@ -1006,33 +1019,58 @@ action is the second pair in a tm rule
          ;;(listof rules) ;;Purpose: Returns the first accepting computations (listof rules)
          [accepting-trace (if (empty? accept-cmps) '() (first accept-cmps))]
          [rejecting-trace (if (empty? accept-cmps) (find-longest-computation rejecting-traces '()) '())]
-         [all-tapes (list->zipper (map (λ (trace) (third (trace-config trace)))
-                                       (cond [(and (empty? accepting-trace)
-                                                   (= (length rejecting-traces) 1))
-                                              rejecting-trace]
-                                             [(not (empty? accepting-trace)) accepting-trace]
-                                             [else '()])
-                                       #;(if (empty? accepting-trace)
-                                             rejecting-trace
-                                             accepting-trace)))]
-         [all-head-pos (list->zipper (map (λ (trace) (second (trace-config trace)))
+         [displayed-tape (map (λ (trace) (third (trace-config trace)))
+                              (cond [(and (empty? accepting-trace)
+                                          (not computation-has-cut-off?)
+                                          (= (length rejecting-computations) 1))
+                                     rejecting-trace]
+                                    [(and (not computation-has-cut-off?) (not (empty? accepting-trace))) accepting-trace]
+                                    [else '()]))]
+         [all-displayed-tape (list->zipper displayed-tape
+                                           #;(if (ormap (λ (comp-length)
+                                               (>= comp-length cut-off))
+                                             (map length LoC))
+                                      (append displayed-tape (list (last displayed-tape)))
+                                      displayed-tape))]
+         [tracked-head-pos (map (λ (trace) (second (trace-config trace)))
                                           (if (empty? accepting-trace)
                                               rejecting-trace
-                                              accepting-trace)))]
+                                              accepting-trace))]
+         [all-head-pos (list->zipper tracked-head-pos
+                                     #;(if (ormap (λ (comp-length)
+                                               (>= comp-length cut-off))
+                                             (map length LoC))
+                                      (append tracked-head-pos (list (last tracked-head-pos)))
+                                      tracked-head-pos))]
          [machine-decision (if (not (empty? accepting-computations))
                                'accept
                                'reject)]
-
+         #;[computation-has-cut-off? (ormap (λ (comp-length)
+                                               (>= comp-length cut-off))
+                                             (map length LoC))]
          [tracked-trace (cond [(and (empty? accepting-trace)
+                                    (not computation-has-cut-off?)
                                     (= (length rejecting-computations) 1))
                                (list rejecting-trace)]
-                              [(not (empty? accepting-trace)) (list accepting-trace)]
+                              [(and (not computation-has-cut-off?) (not (empty? accepting-trace))) (list accepting-trace)]
+                              [computation-has-cut-off? (if (empty? accepting-trace)
+                                                            (list rejecting-trace)
+                                                            (list accepting-trace))]
                               [else '()])]
          ;;(listof number) ;;Purpose: Gets all the invariant configurations
          [all-inv-configs (reverse (get-inv-config-results accepting-computations invs))]
          [failed-inv-configs (remove-duplicates (return-brk-inv-configs all-inv-configs))]
+         
+         [cut-off-LoC (if (ormap (λ (comp-length)
+                                   (>= comp-length cut-off))
+                                 (map length LoC))
+                          (map (λ (comp)
+                                 (append comp (list (last comp))))
+                               LoC)
+                          LoC)]
+         
          ;;building-state struct
-         [building-state (building-viz-state all-tapes
+         [building-state (building-viz-state all-displayed-tape
                                              LoC
                                              tracked-trace
                                              (if (empty? accept-cmps) '() (rest accept-cmps))
@@ -1047,8 +1085,9 @@ action is the second pair in a tm rule
          [graphs (create-graph-thunks building-state '())]
          ;;(listof computation) ;;Purpose: Gets all the cut off computations if
          ;; the length of the word is greater than max computations
-         #|[get-cut-off-comp (if (> word-len cut-off)
-                               (map first LoC)
+         [get-cut-off-comp (if (ormap (λ (comp-length) (>= comp-length cut-off))
+                                      (map length LoC))
+                               (map last LoC)
                                '())]
          ;;(listof computation) ;;Purpose: Makes the cut off computations if
          ;;  the length of the word is greater than max computations
@@ -1057,11 +1096,22 @@ action is the second pair in a tm rule
                            (map (λ (cut-off-comp comp)
                                   (append comp (list cut-off-comp)))
                                 get-cut-off-comp
-                                LoC))]|#
+                                LoC))]
          ;;(listof number) ;;Purpose: Gets the number of computations for each step
-         [computation-lengths (take (count-computations (map reverse LoC) '()) #;(drop (count-computations (map reverse LoC) '()) head-pos)
-                                    (length (zipper->list all-head-pos)))])
-    #;(map displayln LoC)
+         [computation-lengths (take (count-computations (map reverse LoC) '())
+                                    (length (zipper->list all-head-pos)))]
+         [cut-off-computations-lengths computation-lengths
+                                       #;(if (ormap (λ (comp-length)
+                                                    (>= comp-length cut-off))
+                                                  (map length LoC))
+                                           (append computation-lengths (list (last computation-lengths)))
+                                           computation-lengths)]
+         )
+    (map displayln LoC)
+    ;(displayln (length graphs))
+    ;(displayln all-displayed-tape)
+    ;(displayln all-head-pos)
+    ;(displayln #;tracked-trace)
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ TM-E-SCENE-HEIGHT 2))
@@ -1070,18 +1120,19 @@ action is the second pair in a tm rule
              DEFAULT-ZOOM-FLOOR
              (informative-messages tm-create-draw-informative-message
                                    (imsg-state-tm M
-                                                  all-tapes
+                                                  all-displayed-tape
                                                   all-head-pos
                                                   (list->zipper (map (λ (trace)
                                                                        (list (rule-read (trace-rules trace))
                                                                              (rule-action (trace-rules trace))))
-                                                                     (if (empty? tracked-trace)
+                                                                     (if (and (not computation-has-cut-off?)
+                                                                              (empty? tracked-trace))
                                                                          tracked-trace
                                                                          (first tracked-trace))))
                                                   (list->zipper (if (empty? tracked-trace) tracked-trace (first tracked-trace)))
                                                   (list->zipper failed-inv-configs) 
                                                   (sub1 (length failed-inv-configs))
-                                                  (list->zipper computation-lengths)
+                                                  (list->zipper cut-off-computations-lengths)
                                                   LoC
                                                   cut-off
                                                   machine-decision
@@ -1146,8 +1197,6 @@ action is the second pair in a tm rule
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-
-
 ;;States (i = head's position)
 ;; K - tape[1..i-1] contains an even amount of a's and even bs
 ;; H - tape[1..i-1] contains an odd amount of a's and even bs
@@ -1180,6 +1229,14 @@ action is the second pair in a tm rule
   (let [(num-as (length (filter (λ (w) (eq? w 'a)) (take (rest tape) (sub1 headpos)))))
         (num-bs (length (filter (λ (w) (eq? w 'b)) (take (rest tape) (sub1 headpos)))))]
     (and (odd? num-as)
+         (even? num-bs))))
+
+;;tape headpos -> boolean
+;;Purpose: Determines if everything in the tape[1..i] is an odd # of a's and even # of b's
+(define (BRK-EVEN-H-INV tape headpos)
+  (let [(num-as (length (filter (λ (w) (eq? w 'a)) (take (rest tape) (sub1 headpos)))))
+        (num-bs (length (filter (λ (w) (eq? w 'b)) (take (rest tape) (sub1 headpos)))))]
+    (and (even? num-as)
          (even? num-bs))))
 
 ;;tape headpos -> boolean
@@ -1370,6 +1427,19 @@ action is the second pair in a tm rule
               (not (empty? bs))))))
 
 ;; tape natnum → Boolean
+;; Purpose: Determine head in position > 2 and
+;; tape[2..i-1] = a+b+
+(define (BRK-B-INV1 t i)
+  (not (and (> i 3)
+            (let* [(w (drop (take t i) 2))
+                   (as (front-symbs w 'a))
+                   (w-as (drop w (length as)))
+                   (bs (front-symbs w-as 'b))]
+              (and (equal? w (append as bs))
+                   (not (empty? as))
+                   (not (empty? bs)))))))
+
+;; tape natnum → Boolean
 ;; Purpose: Determine head in position > 3 and
 ;; tape[2..i-1]=a+b+c+
 (define (C-INV1 t i)
@@ -1434,6 +1504,29 @@ action is the second pair in a tm rule
               (> (length bs) 0)
               (> (length cs) 0)
               (= (length xs1) (length xs2) (length xs3))))))
+
+
+(define (BRK-E-INV t i)
+  (not (and (> i 1)
+            (let* [(w (takef (drop t 2)
+                             (λ (s) (not (eq? s BLANK)))))
+                   (xs1 (front-symbs w 'x))
+                   (w-xs1 (drop w (length xs1)))
+                   (as (front-symbs w-xs1 'a))
+                   (w-xs1as (drop w-xs1 (length as)))
+                   (xs2 (front-symbs w-xs1as 'x))
+                   (w-xs1asxs2 (drop w-xs1as (length xs2)))
+                   (bs (front-symbs w-xs1asxs2 'b))
+                   (w-xs1asxs2bs (drop w-xs1asxs2 (length bs)))
+                   (xs3 (front-symbs w-xs1asxs2bs 'x))
+                   (w-xs1asbsxs3 (drop w-xs1asxs2bs (length xs3)))
+                   (cs (front-symbs w-xs1asbsxs3 'c))]
+              (and (equal? w (append xs1 as xs2 bs xs3 cs))
+                   (> (length as) 0)
+                   (> (length bs) 0)
+                   (> (length cs) 0)
+                   (= (length xs1) (length xs2) (length xs3)))))))
+
 
 ;; tape natnum → Boolean
 ;; Purpose: Determine head in position > 1 and
@@ -1555,29 +1648,6 @@ action is the second pair in a tm rule
          (= (remainder (length w) 3) 0))))
 
 
-#|
-(reverse (computation-LoC (first (get-computations '(@ a a b)
-                                                   (tm-getrules a*Ua*b)
-                                                   (sm-start a*Ua*b)
-                                                   (sm-finals a*Ua*b)
-                                                   100
-                                                   #:head-pos 1))))
-(sm-showtransitions a*Ua*b '(@ a a b) 1)
-""
-(reverse (computation-LoC (first (get-computations '(@ a b a b)
-                                                   (sm-rules EVEN-AS-&-BS)
-                                                   (sm-start EVEN-AS-&-BS)
-                                                   (sm-finals EVEN-AS-&-BS)
-                                                   100))))
-(sm-showtransitions EVEN-AS-&-BS '(@ a b a b))
-""
-(reverse (computation-LoC (first (get-computations '(@ _ a b c)
-                                                   (sm-rules anbncn)
-                                                   (sm-start anbncn)
-                                                   (sm-finals anbncn)
-                                                   100
-                                                   #:head-pos 1))))
-(sm-showtransitions anbncn `(,LM ,BLANK a b c) 1)
-|#
+
 ;(tm-viz EVEN-AS-&-BS '(@ a b a b) 0)
 "fix informative messages"
