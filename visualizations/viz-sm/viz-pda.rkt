@@ -23,7 +23,7 @@
 
 (provide pda-viz)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define FONT-SIZE 18)
 
 #|
@@ -132,17 +132,21 @@ pair is the second of the pda rule
                                         ;;(listof rules)
                                         ;;Purpose: Holds all rules that consume a first letter in the given configurations
                                         [connected-read-rules (filter (λ (rule)
-                                                                        (and (not (empty? (config-word (first (computation-LoC (qfirst QoC))))))
+                                                                        (and (not (empty? (config-word
+                                                                                           (first (computation-LoC (qfirst QoC))))))
                                                                              (eq? (first (first rule))
-                                                                                  (config-state (first (computation-LoC (qfirst QoC)))))
+                                                                                  (config-state
+                                                                                   (first (computation-LoC (qfirst QoC)))))
                                                                              (eq? (second (first rule))
-                                                                                  (first (config-word (first (computation-LoC (qfirst QoC))))))))
+                                                                                  (first (config-word
+                                                                                          (first (computation-LoC (qfirst QoC))))))))
                                                                       lor)]
                                         ;;(listof rules)
                                         ;;Purpose: Holds all rules that consume no input for the given configurations
                                         [connected-read-E-rules (filter (λ (rule)
                                                                           (and (eq? (first (first rule))
-                                                                                    (config-state (first (computation-LoC (qfirst QoC)))))
+                                                                                    (config-state
+                                                                                     (first (computation-LoC (qfirst QoC)))))
                                                                                (eq? (second (first rule)) EMP)))
                                                                         lor)]
                                         ;;(listof rules)
@@ -154,7 +158,8 @@ pair is the second of the pda rule
                                                                                         (third (first rule))))))
                                                                      (append connected-read-E-rules connected-read-rules))]
                                         [new-configs (filter (λ (new-c) 
-                                                               (not (member? (first (computation-LoC new-c)) (computation-visited new-c) equal?)))
+                                                               (not (member? (first (computation-LoC new-c))
+                                                                             (computation-visited new-c) equal?)))
                                                              (map (λ (rule) (apply-rule (qfirst QoC) rule)) connected-pop-rules))])
                                    (if (empty? new-configs)
                                        (self (dequeue QoC) (cons (qfirst QoC) path))
@@ -327,7 +332,7 @@ pair is the second of the pda rule
          ;;(listof symbol)
          ;;Purpose: Gets the states where it's computation has cutoff
          [cut-off-states (if cut-off
-                             (remove-duplicates (map first (get-cut-off (building-viz-state-computations a-vs)
+                             (remove-duplicates (map config-state (get-cut-off (building-viz-state-computations a-vs)
                                                                         (building-viz-state-max-cmps a-vs))))
                              '())]
          
@@ -1344,13 +1349,12 @@ pair is the second of the pda rule
                                 get-cut-off-comp
                                 LoC))]
          ;;(listof number) ;;Purpose: Gets the number of computations for each step
-         [computation-lens (count-computations a-word cut-off-comp '())]
+         [computation-lens (count-computations a-word cut-off-comp)]
          ;;(listof number) ;;Purpose: Gets the index of image where an invariant failed
          [inv-configs (remove-duplicates (return-brk-inv-configs
                                           (get-inv-config-results
                                            (make-inv-configs a-word accepting-computations)
-                                           invs)
-                                          a-word))])
+                                           invs)))])
     #;(displayln #;(make-inv-configs a-word accepting-computations)
                  #;(get-inv-config-results
                     (make-inv-configs a-word accepting-computations)
@@ -1450,6 +1454,7 @@ pair is the second of the pda rule
 
 (define pd-numb>numa (cfg->pda numb>numa))
 
-(time (pda-viz pd-numb>numa '(a b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b) '() #:cut-off 15))
+(time (pda-viz pd-numb>numa '(a b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b) '()
+               #:cut-off 15))
 
 ;[(<= max-cmps 0) (error (format "The maximum amount of computations, ~a, must be integer greater than 0" max-cmps))] DONT FORGET
