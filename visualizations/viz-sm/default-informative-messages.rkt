@@ -650,7 +650,7 @@ rules are a (listof rule-structs)
 (define (tm-create-draw-informative-message imsg-st)
   (above/align
       'left
-      (if (zipper-empty? (imsg-state-tm-shown-accepting-trace imsg-st))
+      (if (zipper-empty? (imsg-state-tm-rules-used imsg-st))
           (text "Tape: " 1 BLANK-COLOR)
           (beside (text "Last rule used: " FONT-SIZE FONT-COLOR)
                   (text (format "~a" (if (or (equal? (zipper-current (imsg-state-tm-rules-used imsg-st)) '((_ _)(_ _)))
@@ -663,7 +663,7 @@ rules are a (listof rule-structs)
                             REJECT-COMPUTATION-COLOR))))
               
       (text "Tape: " 1 BLANK-COLOR)
-      (if (not (zipper-empty? (imsg-state-tm-shown-accepting-trace imsg-st)))
+      (if (not (zipper-empty? (imsg-state-tm-tape imsg-st) #;(imsg-state-tm-shown-accepting-trace imsg-st)))
           (draw-imsg imsg-st)
           (text "Tape is not shown when there are multiple rejecting computations." FONT-SIZE FONT-COLOR))
       #;(if (zipper-empty? (imsg-state-tm-shown-accepting-trace imsg-st))

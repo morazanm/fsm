@@ -1098,7 +1098,7 @@ action is the second pair in a tm rule
                                 get-cut-off-comp
                                 LoC))]
          ;;(listof number) ;;Purpose: Gets the number of computations for each step
-         [computation-lengths (take (count-computations (map reverse LoC) '())
+         [computation-lengths (take (count-computations LoC '())
                                     (length (zipper->list all-head-pos)))]
          [cut-off-computations-lengths computation-lengths
                                        #;(if (ormap (λ (comp-length)
@@ -1107,9 +1107,9 @@ action is the second pair in a tm rule
                                            (append computation-lengths (list (last computation-lengths)))
                                            computation-lengths)]
          )
-    (map displayln LoC)
+    ;;(map displayln LoC)
     ;(displayln (length graphs))
-    ;(displayln all-displayed-tape)
+    ;;(displayln all-displayed-tape)
     ;(displayln all-head-pos)
     ;(displayln #;tracked-trace)
     (run-viz graphs
@@ -1125,7 +1125,15 @@ action is the second pair in a tm rule
                                                   (list->zipper (map (λ (trace)
                                                                        (list (rule-read (trace-rules trace))
                                                                              (rule-action (trace-rules trace))))
-                                                                     (if (and (not computation-has-cut-off?)
+                                                                     (cond [(empty? tracked-trace) tracked-trace]
+                                                                           [(or (and (not computation-has-cut-off?)
+                                                                                     (not (empty? accepting-trace)))
+                                                                                (and (empty? accepting-trace)
+                                                                                     (not computation-has-cut-off?)
+                                                                                     (= (length rejecting-computations) 1)))
+                                                                            (first tracked-trace)]
+                                                                           [else '()])
+                                                                     #;(if (and (not computation-has-cut-off?)
                                                                               (empty? tracked-trace))
                                                                          tracked-trace
                                                                          (first tracked-trace))))
