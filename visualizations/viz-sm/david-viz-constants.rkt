@@ -25,6 +25,8 @@ visited is a (listof configuration)
 |#
 (struct computation (LoC LoR visited) #:transparent)
 
+;(struct config (state word stack index) #:transparent)
+
 #|
 A trace is a structure:
 (make-trace config rules)
@@ -58,9 +60,11 @@ rules are a (listof rule)
 (define INS-TOOLS-BUFFER 30)
 
 (define accessor-func (compose fourth (compose trace-config zipper-current)))
+(define pda-accessor-func (compose config-index (compose trace-config zipper-current)))
 (define ndfa-accessor-func (compose third (compose trace-config zipper-current)))
 
 (define get-index (compose fourth zipper-current))
+(define get-index-pda (compose1 config-index (compose1 first zipper-current)))
 (define get-index-ndfa (compose third zipper-current))
 
 (define get-next-index (compose fourth (compose zipper-current zipper-next)))

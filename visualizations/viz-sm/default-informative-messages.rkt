@@ -12,7 +12,9 @@
 (provide ndfa-create-draw-informative-message
          pda-create-draw-informative-message
          tm-create-draw-informative-message
-         trace trace-config trace-rules)
+         trace trace-config trace-rules
+         config config-state config-word
+         config-stack config-index)
 
 #|
 A trace is a structure:
@@ -22,11 +24,12 @@ rules are a (listof rule-structs)
 |#
 (struct trace (config rules) #:transparent)
 (struct rule (read action) #:transparent)
+(struct config (state word stack index) #:transparent)
 
 ;; X (listof X) -> boolean
 ;;Purpose: Determine if X is in the given list
-(define (member? x lst)
-  (ormap (λ (L) (equal? x L)) lst))
+(define (member? x lst eq-func)
+  (ormap (λ (L) (eq-func x L)) lst))
 
 (define qempty? empty?)
 
@@ -49,12 +52,14 @@ rules are a (listof rule-structs)
 (define COMPUTATION-LENGTH-COLOR 'brown)
 
 (define accessor-func (compose fourth (compose trace-config zipper-current)))
+(define pda-accessor-func (compose config-index (compose trace-config zipper-current)))
 (define ndfa-accessor-func (compose third (compose trace-config zipper-current)))
 
 (define get-index (compose fourth zipper-current))
 (define get-index-ndfa (compose third zipper-current))
 
 (define get-next-index (compose fourth (compose zipper-current zipper-next)))
+(define get-next-index-pda (compose config-index (compose zipper-current zipper-next)))
 (define get-next-index-ndfa (compose third (compose zipper-current zipper-next)))
 
 (define get-prev-index (compose fourth (compose zipper-current zipper-prev)))
@@ -237,7 +242,7 @@ rules are a (listof rule-structs)
              ;;(listof configurations)
              ;;Purpose: Makes new configurations using given word and connected-rules
              [new-configs (filter (λ (new-c)
-                                    (not (member? (first (computation-LoC new-c)) (computation-visited new-c))))
+                                    (not (member? (first (computation-LoC new-c)) (computation-visited new-c) equal?)))
                                   (map (λ (rule) (apply-ndfa-rule (qfirst QoC) rule))
                                        (append connected-read-rules connected-emp-rules)))])
         (if  (empty? new-configs)
@@ -264,24 +269,33 @@ rules are a (listof rule-structs)
   ;;Purpose: Applies the read portion of given rule to the given config
   ;;ASSUMPTION: The given rule can be applied to the config
   (define (apply-read a-config)
-    (if (equal? (second (first a-rule)) EMP)
-        (list (first (second a-rule)) (second a-config) (third a-config) (fourth a-config))
-        (list (first (second a-rule)) (rest (second a-config)) (third a-config) (fourth a-config))))
+    (if (eq? (second (first a-rule)) EMP)
+        (config (first (second a-rule)) (config-word a-config) (config-stack a-config) (config-index a-config))
+        (config (first (second a-rule)) (rest (config-word a-config)) (config-stack a-config) (config-index a-config))
+        ;(list (first (second a-rule)) (second a-config) (third a-config) (fourth a-config))
+        #;(list (first (second a-rule)) (rest (second a-config)) (third a-config) (fourth a-config))))
   ;;config -> config
   ;;Purpose: Applies the pop portion of given rule to the given config
   ;;ASSUMPTION: The given rule can be applied to the config
   (define (apply-pop a-config)
-    (if (equal? (third (first a-rule)) EMP)
+    (if (eq? (third (first a-rule)) EMP)
         a-config
-        (list (first a-config) (second a-config)
-              (drop (third a-config) (length (third (first a-rule)))) (fourth a-config))))
+        (struct-copy config a-config
+                     [stack (drop (config-stack a-config) (length (third (first a-rule))))])
+        #;(list (first a-config)
+              (second a-config)
+              (drop (third a-config) (length (third (first a-rule))))
+              (fourth a-config))))
   ;;config -> config
   ;;Purpose: Applies the push portion of given rule to the given config
   ;;ASSUMPTION: The given rule can be applied to the config
   (define (apply-push a-config)
-    (if (equal? (second (second a-rule)) EMP)
+    (if (eq? (second (second a-rule)) EMP)
         a-config
-        (list (first a-config) (second a-config)
+        (struct-copy config a-config
+                     [stack (append (second (second a-rule)) (config-stack a-config))])
+        #;(list (first a-config)
+              (second a-config)
               (append (second (second a-rule)) (third a-config))
               (fourth a-config))))
   ;;config -> config
@@ -290,23 +304,28 @@ rules are a (listof rule-structs)
   (define (update-count a-config)
     (if (empty-rule? a-rule)
         a-config
-        (list (first a-config) (second a-config) (third a-config) (add1 (fourth a-config)))))
+        (struct-copy config a-config [index (add1 (config-index a-config))])
+        #;(list (first a-config) (second a-config) (third a-config) (add1 (fourth a-config)))))
   (struct-copy computation a-comp
                [LoC (cons (update-count (apply-push (apply-pop (apply-read (first (computation-LoC a-comp))))))
                           (computation-LoC a-comp))]
                [LoR (cons a-rule (computation-LoR a-comp))]
                [visited (cons (first (computation-LoC a-comp)) (computation-visited a-comp))]))
+       
+
 
 ;;word (listof rule) symbol number -> (listof computation)
 ;;Purpose: Returns all possible computations using the given word, (listof rule) and start symbol
 ;;   that are within the bounds of the max computation limit
-(define (get-computations a-word lor start max-cmps)
+(define (get-computations a-word lor start finals max-cmps)
   (let (;;computation
         ;;Purpose: The starting computation
-        [starting-computation (computation (list (append (list start) (list a-word) (list '()) (list 0)))
+        [starting-computation (computation (list (config start a-word '() 0)
+                                                 #;(append (list start) (list a-word) (list '()) (list 0)))
                                            '()
                                            '())])
     (make-computations lor
+                       finals
                        (enqueue (list starting-computation) E-QUEUE)
                        '()
                        max-cmps)))
@@ -315,47 +334,59 @@ rules are a (listof rule-structs)
 ;;(listof rules) (queueof computation) (listof computation) number -> (listof computation)
 ;;Purpose: Makes all the computations based around the (queueof computation) and (listof rule)
 ;;     that are within the bounds of the max computation limit
-(define (make-computations lor QoC path max-cmps)
+(define (make-computations lor finals QoC path max-cmps)
   (cond [(qempty? QoC) path]
-        [(> (length (computation-LoC (qfirst QoC))) max-cmps)
-         (make-computations lor (dequeue QoC) (cons (qfirst QoC) path) max-cmps)]
-        [else (let* ([stack (third (first (computation-LoC (qfirst QoC))))]
+        [(or (>= (length (computation-LoC (qfirst QoC))) max-cmps)
+              (and (member? (config-state (first (computation-LoC (qfirst QoC)))) finals eq?)
+                   (empty? (config-word (first (computation-LoC (qfirst QoC)))))
+                   (empty? (config-stack (first (computation-LoC (qfirst QoC)))))))
+         (make-computations lor finals (dequeue QoC) (cons (qfirst QoC) path) max-cmps)]
+        [else (let* ([stack (config-stack (first (computation-LoC (qfirst QoC))))]
                      ;;(listof rules)
                      ;;Purpose: Holds all rules that consume a first letter in the given configurations
                      [connected-read-rules (filter (λ (rule)
-                                                     (and (not (empty? (second (first (computation-LoC (qfirst QoC))))))
-                                                          (equal? (first (first rule))
-                                                                  (first (first (computation-LoC (qfirst QoC)))))
-                                                          (equal? (second (first rule))
-                                                                  (first (second (first (computation-LoC (qfirst QoC))))))))
+                                                     (and (not (empty? (config-word (first (computation-LoC (qfirst QoC))))))
+                                                          (eq? (first (first rule))
+                                                                  (config-state (first (computation-LoC (qfirst QoC)))))
+                                                          (eq? (second (first rule))
+                                                                  (first (config-word (first (computation-LoC (qfirst QoC))))))))
                                                    lor)]
                      ;;(listof rules)
                      ;;Purpose: Holds all rules that consume no input for the given configurations
                      [connected-read-E-rules (filter (λ (rule)
-                                                       (and (equal? (first (first rule))
-                                                                    (first (first (computation-LoC (qfirst QoC)))))
-                                                            (equal? (second (first rule)) EMP)))
+                                                       (and (eq? (first (first rule))
+                                                                    (config-state (first (computation-LoC (qfirst QoC)))))
+                                                            (eq? (second (first rule)) EMP)))
                                                      lor)]
                      ;;(listof rules)
                      ;;Purpose: Holds all rules that can pop what is in the stack
                      [connected-pop-rules (filter (λ (rule)
-                                                    (or (equal? (third (first rule)) EMP)
+                                                    (or (eq? (third (first rule)) EMP)
                                                         (and (>= (length stack) (length (third (first rule))))
                                                              (equal? (take stack (length (third (first rule))))
                                                                      (third (first rule))))))
                                                   (append connected-read-E-rules connected-read-rules))]
                      [new-configs (filter (λ (new-c) 
-                                            (not (member? (first (computation-LoC new-c)) (computation-visited new-c))))
+                                            (not (member? (first (computation-LoC new-c)) (computation-visited new-c) equal?)))
                                           (map (λ (rule) (apply-rule (qfirst QoC) rule)) connected-pop-rules))])
                 (if (empty? new-configs)
-                    (make-computations lor (dequeue QoC) (cons (qfirst QoC) path) max-cmps)
-                    (make-computations lor (enqueue new-configs (dequeue QoC)) path max-cmps)))]))
+                    (make-computations lor finals (dequeue QoC) (cons (qfirst QoC) path) max-cmps)
+                    (make-computations lor finals (enqueue new-configs (dequeue QoC)) path max-cmps)))]))
 
 
 ;;(listof symbols) machine -> (listof symbols)
 ;;Purpose: Returns the last fully consumed word for the given machine
 (define (pda-last-fully-consumed a-word M max-cmps)
   (cond [(empty? a-word) '()]
+        [(not (ormap (λ (config) (empty? (config-word (first config))))
+                     (map computation-LoC (get-computations a-word
+                                                            (pda-getrules M)
+                                                            (pda-getstart M)
+                                                            (pda-getfinals M)
+                                                            max-cmps))))
+         (pda-last-fully-consumed (take a-word (sub1 (length a-word))) M max-cmps)]
+        [a-word])
+  #;(cond [(empty? a-word) '()]
         [(not (ormap (λ (config) (empty? (second (first config))))
                      (map computation-LoC (get-computations a-word
                                                             (pda-getrules M)
@@ -503,10 +534,11 @@ rules are a (listof rule-structs)
 (define (pda-create-draw-informative-message imsg-st)
   (let* (;;boolean
          ;;Purpose: Determines if the pci can be can be fully consumed
-         [completed-config? (ormap (λ (config) (empty? (second (first config))))
+         [completed-config? (ormap (λ (config) (empty? (config-word (first config))))
                                    (map computation-LoC (get-computations (imsg-state-pda-pci imsg-st)
                                                                           (pda-getrules (imsg-state-pda-M imsg-st))
                                                                           (pda-getstart (imsg-state-pda-M imsg-st))
+                                                                          (pda-getfinals (imsg-state-pda-M imsg-st))
                                                                           (imsg-state-pda-max-cmps imsg-st))))]
          
          ;;(listof symbols)
@@ -527,7 +559,7 @@ rules are a (listof rule-structs)
          ;;Purpose: Holds what needs to displayed for the stack based off the upci
          [current-stack (if (zipper-empty? (imsg-state-pda-stack imsg-st)) 
                             (imsg-state-pda-stack imsg-st)
-                            (third (zipper-current (imsg-state-pda-stack imsg-st))))]
+                            (config-stack (zipper-current (imsg-state-pda-stack imsg-st))))]
          [machine-decision (if (not (zipper-empty? (imsg-state-pda-shown-accepting-trace imsg-st)))
                                'accept
                                'reject)])
