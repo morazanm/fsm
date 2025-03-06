@@ -32,6 +32,7 @@
   "private/callgraphs/callgraphs-mttm.rkt"
   "private/callgraphs/transdiagram-mttm.rkt"
   "../visualizations/viz-sm/viz-ctm.rkt"
+  "../visualizations/viz-sm/sm-viz.rkt"
   "../visualizations/viz-grammar-constructors/rg-viz.rkt"
   "../visualizations/viz-grammar-constructors/cfg-viz.rkt"
   "../visualizations/viz-grammar-constructors/csg-viz.rkt"
@@ -126,7 +127,10 @@
  ;check-in-lang? check-not-in-lang?
  
  ;; Grammar visualizations
- grammar-viz)
+ grammar-viz
+
+ sm-viz
+ )
 ; Primitive constructors imported from other modules
 
 (define (grammar-viz G w #:derv-type [derv-type 'left] #:cpu-cores [cpu-cores #f] . invariants)

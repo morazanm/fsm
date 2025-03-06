@@ -215,25 +215,25 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; GRAMMAR REJECT ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (named-single-failure-grammar-reject grammar-name invalid-word)
-  (format "Step 6 of the design recipe has not been successfully completed. The constructed machine, ~s, derives the following word:\n~a"
+  (format "Step 6 of the design recipe has not been successfully completed. The constructed grammar, ~s, derives the following word:\n~a"
           grammar-name
           invalid-word))
 
 (define (named-multi-failure-grammar-reject grammar-name invalid-words)
   (foldl (lambda (val accum)
            (string-append accum (format "\n~s" val)))
-         (format "Step 6 of the design recipe has not been successfully completed. The constructed machine, ~s, derives the following words:"
+         (format "Step 6 of the design recipe has not been successfully completed. The constructed grammar, ~s, derives the following words:"
                  grammar-name)
          invalid-words))
 
 (define (anonymous-single-failure-grammar-reject invalid-word)
-  (format "Step 6 of the design recipe has not been successfully completed. The constructed machine derives the following word:\n~a"
+  (format "Step 6 of the design recipe has not been successfully completed. The constructed grammar derives the following word:\n~a"
           invalid-word))
 
 (define (anonymous-multi-failure-grammar-reject invalid-words)
   (foldl (lambda (val accum)
            (string-append accum (format "\n~s" val)))
-         "Step 6 of the design recipe has not been successfully completed. The constructed machine derives the following words:"
+         "Step 6 of the design recipe has not been successfully completed. The constructed grammar derives the following words:"
          invalid-words))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; GRAMMAR INVALID NONTERMINALS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
