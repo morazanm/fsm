@@ -15,7 +15,7 @@
          "../../fsm-core/private/cfg.rkt"
          "../../fsm-core/private/misc.rkt"
          "default-informative-messages.rkt"
-         profile-flame-graph
+         ;profile-flame-graph
          (except-in "../viz-lib/viz-constants.rkt"
                     INS-TOOLS-BUFFER)
          "david-imsg-state.rkt"
@@ -34,6 +34,12 @@ triple is the first of the pda rule
 pair is the second of the pda rule
 |#
 (struct rule (triple pair) #:transparent)
+
+(struct triple (source read pop) #:transparent)
+
+(struct pair (destination push) #:transparent)
+
+
 
 ;;upci is the unprocessed consumed input (listof symbol)
 ;;pci is the proccessed consumed input (listof symbol)
@@ -308,33 +314,54 @@ pair is the second of the pda rule
     ;;(listof symbols) -> string
     ;;Purpose: Converts the given los into a string
     (define (make-edge-label rule)
-      (format "\n[~a ~a ~a]" (second (first rule)) (third (first rule)) (second (second rule))))
+      (format "\n[~a ~a ~a]" (triple-read (rule-triple rule))
+                             (triple-pop (rule-triple rule))
+                             (pair-push (rule-pair rule))))
   
     (map (λ (rule)
-           (append (list (first (first rule)))
-                   (list (string->symbol (make-edge-label rule)))
-                   (list (first (second rule)))))
+           (append (list (triple-source (rule-triple (first rule))))
+                   (list (string->symbol (make-edge-label (first rule))))
+                   (list (pair-destination (rule-pair (first rule))) #;(first (second rule)))))
          rules))
 
+
+  (define (remake-rules lor)
+    (map (λ (pda-rule)
+           (list (rule (triple (first (first pda-rule))
+                               (second (first pda-rule))
+                               (third (first pda-rule)))
+                       (pair (first (second pda-rule))
+                             (second (second pda-rule))))))
+         lor))
+  
   ;;(listof rules) -> (listof rules)
 ;;Purpose: Converts the given (listof configurations)s to rules
   (define (configs->rules a-config)
   
     ;;(listof rule-struct) -> (listof rule)
     ;;Purpose: Remakes the rules extracted from the rule-struct
-    (define (remake-rules trace-rules)
-      (append-map (λ (lor)
+    (define (remake-rules lor)
+      (map (λ (rule)
+             (rule (triple (first (first rule))
+                           (second (first rule))
+                           (third (first rule)))
+                   (pair (first (second rule))
+                         (second (second rule))))
+             #;(list (triple rule)
+                   (rule-pair rule)))
+           lor)
+      #;(append-map (λ (lor)
                     (map (λ (rule)
                            (list (rule-triple rule)
                                  (rule-pair rule)))
                          lor))
                   trace-rules))
-  
+    ;(displayln (first a-config))
     (make-rule-triples
      (remove-duplicates
       (filter (λ (rule)
                 (not (equal? rule DUMMY-RULE)))
-              (remake-rules a-config)))))
+              a-config #;(remake-rules a-config)))))
 
   
   ;;(listof trace) (X -> Y) -> (listof rule)
@@ -380,7 +407,7 @@ pair is the second of the pda rule
          
          ;;(listof rules)
          ;;Purpose: All of the pda rules converted to triples
-         [all-rules (make-rule-triples (pda-getrules (building-viz-state-M a-vs)))]
+         [all-rules (make-rule-triples (remake-rules (pda-getrules (building-viz-state-M a-vs))))]
          
          ;;(listof (listof symbol ((listof symbols) (listof symbols) -> boolean))) (listof symbols))
          ;;Purpose: Extracts all invariants for the states that the machine can be in
@@ -1180,16 +1207,24 @@ pair is the second of the pda rule
     (cond [(empty? rules) (reverse acc)]
           [(and (empty? acc)
                 (not (eq? (second (first (first rules))) EMP)))
-           (let* ([rle (rule (list EMP EMP EMP) (list EMP EMP))]
+           (let* ([rle (rule (triple EMP EMP EMP) (pair EMP EMP))]
                   [res (trace (first configs) (list rle))])
              (make-trace (rest configs) rules (cons res acc)))]
           [(and (not (empty? acc))
                 (empty-rule? (first rules)))
-           (let* ([rle (rule (first (first rules)) (second (first rules)))]
+           (let* ([rle (rule (triple (first (first (first rules)))
+                                     (second (first (first rules)))
+                                     (third (first (first rules))))
+                             (pair (first (second (first rules)))
+                                   (second (second (first rules)))))]
                   [res (struct-copy trace (first acc)
                                     [rules (cons rle (trace-rules (first acc)))])])
              (make-trace (rest configs) (rest rules) (cons res (rest acc))))]
-          [else (let* ([rle (rule (first (first rules)) (second (first rules)))]
+          [else (let* ([rle (rule (triple (first (first (first rules)))
+                                          (second (first (first rules)))
+                                          (third (first (first rules))))
+                                  (pair (first (second (first rules)))
+                                        (second (second (first rules)))))]
                        [res (trace (first configs) (list rle))])
                   (make-trace (rest configs) (rest rules) (cons res acc)))]))
 
