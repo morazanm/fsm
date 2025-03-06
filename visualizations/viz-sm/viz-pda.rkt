@@ -66,7 +66,7 @@ pair is the second of the pda rule
        (eq? (second (second a-rule)) EMP)))
 
 
-;;word (listof rule) symbol number -> (listof computation)
+;;word (listof rule) symbol number -> (listof computation) hash table
 ;;Purpose: Returns all possible computations using the given word, (listof rule) and start symbol
 ;;   that are within the bounds of the max computation limit
 (define (get-computations a-word lor start finals max-cmps)
@@ -109,20 +109,36 @@ pair is the second of the pda rule
       (if (empty-rule? a-rule)
           a-config
           (struct-copy config a-config [index (add1 (config-index a-config))])))
-  
+    
+    
     (struct-copy computation a-comp
                  [LoC (cons (update-count (apply-push (apply-pop (apply-read (first (computation-LoC a-comp))))))
                             (computation-LoC a-comp))]
                  [LoR (cons a-rule (computation-LoR a-comp))]
                  [visited (cons (first (computation-LoC a-comp)) (computation-visited a-comp))]))
 
+
+  (define computation-number-hash (make-hash))
+
+  (define (update-hash a-computation)
+    (hash-set! computation-number-hash
+               (config-word (first (computation-LoC a-computation)))
+               (cons (first (computation-LoC a-computation))
+                     (hash-ref! computation-number-hash
+                                (config-word (first (computation-LoC a-computation)))
+                                '()))))
+  
+    #;(if (hash-has-key? computation-number-hash (config-word (first (computation-LoC a-computation))))
+        (hash-update! computation-number-hash (config-word (first (computation-LoC a-computation))) (λ (v) (cons v)
+        (hash-set! computation-number-hash (config-word (first (computation-LoC a-computation)))
+                   (list (first (computation-LoC a-computation)))))))
   
   ;;(listof rules) (queueof computation) (listof computation) number -> (listof computation)
   ;;Purpose: Makes all the computations based around the (queueof computation) and (listof rule)
   ;;     that are within the bounds of the max computation limit
   (define (make-computations lor finals QoC path max-cmps)
     (letrec ([self (lambda (QoC path)
-                     (cond [(qempty? QoC) path]
+                     (cond [(qempty? QoC) (list path computation-number-hash)]
                            [(or (>= (length (computation-LoC (qfirst QoC))) max-cmps)
                                 (and (member? (config-state (first (computation-LoC (qfirst QoC)))) finals eq?)
                                      (empty? (config-word (first (computation-LoC (qfirst QoC)))))
@@ -160,7 +176,9 @@ pair is the second of the pda rule
                                         [new-configs (filter (λ (new-c) 
                                                                (not (member? (first (computation-LoC new-c))
                                                                              (computation-visited new-c) equal?)))
-                                                             (map (λ (rule) (apply-rule (qfirst QoC) rule)) connected-pop-rules))])
+                                                             (map (λ (rule) (apply-rule (qfirst QoC) rule)) connected-pop-rules))]
+
+                                        [update-count (update-hash (qfirst QoC))])
                                    (if (empty? new-configs)
                                        (self (dequeue QoC) (cons (qfirst QoC) path))
                                        (self (enqueue new-configs (dequeue QoC)) path)))]))])
@@ -436,7 +454,7 @@ pair is the second of the pda rule
 ;;Purpose: Progresses the visualization forward by one step
 (define (right-key-pressed a-vs)
   (let* ([completed-config? (ormap (λ (config) (empty? (config-word (first (computation-LoC config)))))
-                                   (get-computations (imsg-state-pda-pci (informative-messages-component-state
+                                   (first (get-computations (imsg-state-pda-pci (informative-messages-component-state
                                                                           (viz-state-informative-messages a-vs)))
                                                      (pda-getrules (imsg-state-pda-M (informative-messages-component-state
                                                                                       (viz-state-informative-messages a-vs))))
@@ -445,7 +463,7 @@ pair is the second of the pda rule
                                                      (pda-getfinals (imsg-state-pda-M (informative-messages-component-state
                                                                                        (viz-state-informative-messages a-vs))))
                                                      (imsg-state-pda-max-cmps (informative-messages-component-state
-                                                                               (viz-state-informative-messages a-vs)))))]
+                                                                               (viz-state-informative-messages a-vs))))))]
          ;;boolean
          ;;Purpose: Determines if the pci can be can be fully consumed
          [pci (if (or (not completed-config?)
@@ -529,11 +547,11 @@ pair is the second of the pda rule
     (letrec ([self (lambda (a-word)
                      (cond [(empty? a-word) '()]
                            [(not (ormap (λ (config) (empty? (config-word (first config))))
-                                        (map computation-LoC (get-computations a-word
+                                        (map computation-LoC (first (get-computations a-word
                                                                                (pda-getrules M)
                                                                                (pda-getstart M)
                                                                                (pda-getfinals M)
-                                                                               max-cmps))))
+                                                                               max-cmps)))))
                             (self (take a-word (sub1 (length a-word))))]
                            [a-word]))])
       (self a-word)))
@@ -1181,15 +1199,14 @@ pair is the second of the pda rule
   (define (count-computations a-word a-LoC)
     ;;word -> number
     ;;Purpose: Counts the number of unique configurations based on the given word
-    (define (get-config a-word)
-      (length (remove-duplicates
+    (define (get-config a-word) 
+       (length (remove-duplicates
                (append-map (λ (configs)
                              (filter (λ (config)
                                        (equal? a-word (config-word config)))
                                      configs))
                            a-LoC))))
-
-    (define (count-computations-helper a-word a-LoC acc)
+(define (count-computations-helper a-word a-LoC acc)
       (if (empty? a-word)
           (reverse (cons (get-config a-word) acc))
           (count-computations-helper (rest a-word) a-LoC (cons (get-config a-word) acc))))
@@ -1271,7 +1288,9 @@ pair is the second of the pda rule
          ;;symbol ;;Purpose: The name of the dead state
          [dead-state (if add-dead (last (pda-getstates new-M)) 'no-dead)]
          ;;(listof computations) ;;Purpose: All computations that the machine can have
-         [computations (get-computations a-word (pda-getrules new-M) (pda-getstart new-M) (pda-getfinals new-M) cut-off)]
+         [computations+hash (get-computations a-word (pda-getrules new-M) (pda-getstart new-M) (pda-getfinals new-M) cut-off)]
+
+         [computations (first computations+hash)]
          
          ;;(listof configurations) ;;Purpose: Extracts the configurations from the computation
          [LoC (map computation-LoC computations)]
@@ -1349,7 +1368,10 @@ pair is the second of the pda rule
                                 get-cut-off-comp
                                 LoC))]
          ;;(listof number) ;;Purpose: Gets the number of computations for each step
-         [computation-lens (count-computations a-word cut-off-comp)]
+         [computation-lens (hash-map (second computations+hash) (λ (k v) (length v #;(remove-duplicates v))))]
+
+         [computation-lens2 (hash-map (second computations+hash) (λ (k v ) (length k #;(remove-duplicates k))))]
+         [old-computation-lens (count-computations a-word LoC)]
          ;;(listof number) ;;Purpose: Gets the index of image where an invariant failed
          [inv-configs (remove-duplicates (return-brk-inv-configs
                                           (get-inv-config-results
@@ -1366,6 +1388,11 @@ pair is the second of the pda rule
                     a-word))
     ;(map displayln LoC)
     ;(displayln (length accepting-trace))
+    (displayln computation-lens)
+    (displayln old-computation-lens)
+    ;(displayln computation-lens2)
+    ;;(displayln (length LoC))
+    ;(displayln accepting-trace)
     (void)
     #;(run-viz graphs
              (lambda () (graph->bitmap (first graphs)))

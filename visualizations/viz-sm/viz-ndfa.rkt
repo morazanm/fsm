@@ -42,6 +42,8 @@ triple is the entire of the ndfa rule
 (define (member? x lst)
   (ormap (λ (L) (equal? x L)) lst))
 
+
+
 ;;config rule -> config
 ;;Purpose: Applies the given rule to the given config
 ;;ASSUMPTION: the given rule is applicable to the given config
