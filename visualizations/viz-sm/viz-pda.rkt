@@ -115,7 +115,8 @@ pair is the second of the pda rule
                  [LoC (cons (update-count (apply-push (apply-pop (apply-read (first (computation-LoC a-comp))))))
                             (computation-LoC a-comp))]
                  [LoR (cons a-rule (computation-LoR a-comp))]
-                 [visited (cons (first (computation-LoC a-comp)) (computation-visited a-comp))]))
+                 [visited (hash-set (computation-visited a-comp) (first (computation-LoC a-comp)) #t)
+                          #;(cons (first (computation-LoC a-comp)) (computation-visited a-comp))]))
 
 
   (define computation-number-hash (make-hash))
@@ -124,7 +125,7 @@ pair is the second of the pda rule
     (hash-set! computation-number-hash
                (config-word (first (computation-LoC a-computation)))
                (cons (first (computation-LoC a-computation))
-                     (hash-ref! computation-number-hash
+                     (hash-ref computation-number-hash
                                 (config-word (first (computation-LoC a-computation)))
                                 '()))))
   
@@ -143,7 +144,8 @@ pair is the second of the pda rule
                                 (and (member? (config-state (first (computation-LoC (qfirst QoC)))) finals eq?)
                                      (empty? (config-word (first (computation-LoC (qfirst QoC)))))
                                      (empty? (config-stack (first (computation-LoC (qfirst QoC)))))))
-                            (self (dequeue QoC) (cons (qfirst QoC) path))]
+                            (let ([update-count (update-hash (qfirst QoC))])
+                              (self (dequeue QoC) (cons (qfirst QoC) path)))]
                            [else (let* ([stack (config-stack (first (computation-LoC (qfirst QoC))))]
                                         ;;(listof rules)
                                         ;;Purpose: Holds all rules that consume a first letter in the given configurations
@@ -174,7 +176,8 @@ pair is the second of the pda rule
                                                                                         (third (first rule))))))
                                                                      (append connected-read-E-rules connected-read-rules))]
                                         [new-configs (filter (λ (new-c) 
-                                                               (not (member? (first (computation-LoC new-c))
+                                                               (not (hash-ref (computation-visited new-c) (first (computation-LoC new-c)) #f))
+                                                               #;(not (member? (first (computation-LoC new-c))
                                                                              (computation-visited new-c) equal?)))
                                                              (map (λ (rule) (apply-rule (qfirst QoC) rule)) connected-pop-rules))]
 
@@ -188,7 +191,7 @@ pair is the second of the pda rule
         ;;Purpose: The starting computation
         [starting-computation (computation (list (config start a-word '() 0))
                                            '()
-                                           '())])
+                                           (hash))])
     (make-computations lor
                        finals
                        (enqueue (list starting-computation) E-QUEUE)
@@ -1243,7 +1246,7 @@ pair is the second of the pda rule
     ;;(listof configurations) (listof (listof symbol ((listof sybmols) -> boolean))) -> (listof configurations)
     ;;Purpose: Adds the results of each invariant oredicate to its corresponding invariant configuration
     (define (get-inv-config-results-helper inv-configs)
-      (if (empty? inv-configs)
+      (if (or (empty? invs) (empty? inv-configs))
           '()
           (let* ([get-inv-for-inv-config (filter (λ (inv)
                                                    (equal? (first inv) (config-state (first inv-configs))))
@@ -1257,7 +1260,7 @@ pair is the second of the pda rule
                                               (list (inv-for-inv-config (config-word (first inv-configs))
                                                                         (config-stack (first inv-configs))))))])
             (cons inv-config-result
-                  (get-inv-config-results-helper (rest inv-configs) invs)))))
+                  (get-inv-config-results-helper (rest inv-configs))))))
   
     (append-map (λ (comp)
                   (get-inv-config-results-helper comp))
@@ -1368,10 +1371,10 @@ pair is the second of the pda rule
                                 get-cut-off-comp
                                 LoC))]
          ;;(listof number) ;;Purpose: Gets the number of computations for each step
-         [computation-lens (hash-map (second computations+hash) (λ (k v) (length v #;(remove-duplicates v))))]
+         [computation-lens (hash-map (second computations+hash) (λ (k v) (length #;v (remove-duplicates v))))]
 
-         [computation-lens2 (hash-map (second computations+hash) (λ (k v ) (length k #;(remove-duplicates k))))]
-         [old-computation-lens (count-computations a-word LoC)]
+         ;[computation-lens2 (hash-map (second computations+hash) (λ (k v ) k #;(length k #;(remove-duplicates k))))]
+         ;[old-computation-lens (count-computations a-word LoC)]
          ;;(listof number) ;;Purpose: Gets the index of image where an invariant failed
          [inv-configs (remove-duplicates (return-brk-inv-configs
                                           (get-inv-config-results
@@ -1388,8 +1391,8 @@ pair is the second of the pda rule
                     a-word))
     ;(map displayln LoC)
     ;(displayln (length accepting-trace))
-    (displayln computation-lens)
-    (displayln old-computation-lens)
+    ;(displayln computation-lens)
+    ;(displayln old-computation-lens)
     ;(displayln computation-lens2)
     ;;(displayln (length LoC))
     ;(displayln accepting-trace)
@@ -1483,5 +1486,15 @@ pair is the second of the pda rule
 
 (time (pda-viz pd-numb>numa '(a b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b) '()
                #:cut-off 15))
+
+(define P3 (make-unchecked-ndpda '(S H)
+                      '(a b)
+                      '(b)
+                      'S
+                      '(H)
+                      `(((S ε ε)(H ε))     ((S a ε)(S (b b)))
+                        ((H b (b b))(H ε)) ((H b (b))(H ε)))))
+
+(time (pda-viz P3 '(a a b b b b) '()))
 
 ;[(<= max-cmps 0) (error (format "The maximum amount of computations, ~a, must be integer greater than 0" max-cmps))] DONT FORGET
