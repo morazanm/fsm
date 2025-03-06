@@ -15,6 +15,7 @@
          "../../fsm-core/private/cfg.rkt"
          "../../fsm-core/private/misc.rkt"
          "default-informative-messages.rkt"
+         profile-flame-graph
          (except-in "../viz-lib/viz-constants.rkt"
                     INS-TOOLS-BUFFER)
          "david-imsg-state.rkt"
@@ -115,7 +116,7 @@ pair is the second of the pda rule
                  [LoC (cons (update-count (apply-push (apply-pop (apply-read (first (computation-LoC a-comp))))))
                             (computation-LoC a-comp))]
                  [LoR (cons a-rule (computation-LoR a-comp))]
-                 [visited (hash-set (computation-visited a-comp) (first (computation-LoC a-comp)) #t)
+                 [visited (set-add (computation-visited a-comp) (first (computation-LoC a-comp)))
                           #;(cons (first (computation-LoC a-comp)) (computation-visited a-comp))]))
 
 
@@ -176,7 +177,7 @@ pair is the second of the pda rule
                                                                                         (third (first rule))))))
                                                                      (append connected-read-E-rules connected-read-rules))]
                                         [new-configs (filter (λ (new-c) 
-                                                               (not (hash-ref (computation-visited new-c) (first (computation-LoC new-c)) #f))
+                                                               (not (set-member? (computation-visited new-c) (first (computation-LoC new-c))))
                                                                #;(not (member? (first (computation-LoC new-c))
                                                                              (computation-visited new-c) equal?)))
                                                              (map (λ (rule) (apply-rule (qfirst QoC) rule)) connected-pop-rules))]
@@ -191,7 +192,7 @@ pair is the second of the pda rule
         ;;Purpose: The starting computation
         [starting-computation (computation (list (config start a-word '() 0))
                                            '()
-                                           (hash))])
+                                           (set))])
     (make-computations lor
                        finals
                        (enqueue (list starting-computation) E-QUEUE)
@@ -1487,7 +1488,12 @@ pair is the second of the pda rule
 (time (pda-viz pd-numb>numa '(a b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b) '()
                #:cut-off 15))
 
-(define P3 (make-unchecked-ndpda '(S H)
+#;(profile-thunk (lambda () (pda-viz pd-numb>numa '(a b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b) '()
+                                   #:cut-off 15))
+               #:repeat 10
+               #:svg-path (string->path "/home/sora/Pictures/test-flame.svg"))
+
+#;(define P3 (make-unchecked-ndpda '(S H)
                       '(a b)
                       '(b)
                       'S
@@ -1495,6 +1501,6 @@ pair is the second of the pda rule
                       `(((S ε ε)(H ε))     ((S a ε)(S (b b)))
                         ((H b (b b))(H ε)) ((H b (b))(H ε)))))
 
-(time (pda-viz P3 '(a a b b b b) '()))
+;(time (pda-viz P3 '(a a b b b b) '()))
 
 ;[(<= max-cmps 0) (error (format "The maximum amount of computations, ~a, must be integer greater than 0" max-cmps))] DONT FORGET
