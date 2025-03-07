@@ -68,9 +68,9 @@ pair is the second of the pda rule
 ;;rule -> boolean
 ;;Purpose: Determines if the given rule is an empty rule (e.i. reads, pops, and pushes empty)
 (define (empty-rule? a-rule)
-  (and (eq? (second (first a-rule)) EMP)
-       (eq? (third (first a-rule)) EMP)
-       (eq? (second (second a-rule)) EMP)))
+  (and (eq? (triple-read (rule-triple a-rule)) EMP)
+       (eq? (triple-pop  (rule-triple a-rule)) EMP)
+       (eq? (pair-push   (rule-pair a-rule))   EMP)))
 
 
 ;;word (listof rule) symbol number -> (listof computation) hash table
@@ -87,27 +87,27 @@ pair is the second of the pda rule
     ;;Purpose: Applies the read portion of given rule to the given config
     ;;ASSUMPTION: The given rule can be applied to the config
     (define (apply-read a-config)
-      (if (eq? (second (first a-rule)) EMP)
-          (config (first (second a-rule)) (config-word a-config) (config-stack a-config) (config-index a-config))
-          (config (first (second a-rule)) (rest (config-word a-config)) (config-stack a-config) (config-index a-config))))
+      (if (eq? (triple-read (rule-triple a-rule)) EMP)
+          (config (pair-destination (rule-pair a-rule)) (config-word a-config) (config-stack a-config) (config-index a-config))
+          (config (pair-destination (rule-pair a-rule)) (rest (config-word a-config)) (config-stack a-config) (config-index a-config))))
   
     ;;config -> config
     ;;Purpose: Applies the pop portion of given rule to the given config
     ;;ASSUMPTION: The given rule can be applied to the config
     (define (apply-pop a-config)
-      (if (eq? (third (first a-rule)) EMP)
+      (if (eq? (triple-pop (rule-triple a-rule)) EMP)
           a-config
           (struct-copy config a-config
-                       [stack (drop (config-stack a-config) (length (third (first a-rule))))])))
+                       [stack (drop (config-stack a-config) (length (triple-pop (rule-triple a-rule))))])))
   
     ;;config -> config
     ;;Purpose: Applies the push portion of given rule to the given config
     ;;ASSUMPTION: The given rule can be applied to the config
     (define (apply-push a-config)
-      (if (eq? (second (second a-rule)) EMP)
+      (if (eq? (pair-push (rule-pair a-rule)) EMP)
           a-config
           (struct-copy config a-config
-                       [stack (append (second (second a-rule)) (config-stack a-config))])))
+                       [stack (append (pair-push (rule-pair a-rule)) (config-stack a-config))])))
   
     ;;config -> config
     ;;Purpose: Updates the config's number if something gets applied to the config (e.i. read/pop/push)
@@ -163,36 +163,38 @@ pair is the second of the pda rule
                                    [connected-read-rules (filter (λ (rule)
                                                                    (and (not (empty? (config-word
                                                                                       (first (computation-LoC (qfirst QoC))))))
-                                                                        (eq? (first (first rule))
+                                                                        (eq? (triple-source (rule-triple (first rule)))
                                                                              (config-state
                                                                               (first (computation-LoC (qfirst QoC)))))
-                                                                        (eq? (second (first rule))
+                                                                        (eq? (triple-read (rule-triple (first rule)))
                                                                              (first (config-word
                                                                                      (first (computation-LoC (qfirst QoC))))))))
                                                                  lor)]
                                    ;;(listof rules)
                                    ;;Purpose: Holds all rules that consume no input for the given configurations
                                    [connected-read-E-rules (filter (λ (rule)
-                                                                     (and (eq? (first (first rule))
+                                                                     (and (eq? (triple-source (rule-triple (first rule)))
                                                                                (config-state
                                                                                 (first (computation-LoC (qfirst QoC)))))
-                                                                          (eq? (second (first rule)) EMP)))
+                                                                          (eq? (triple-read (rule-triple (first rule))) EMP)))
                                                                    lor)]
                                    ;;(listof rules)
                                    ;;Purpose: Holds all rules that can pop what is in the stack
                                    [connected-pop-rules (filter (λ (rule)
-                                                                  (or (eq? (third (first rule)) EMP)
-                                                                      (and (>= (length stack) (length (third (first rule))))
-                                                                           (equal? (take stack (length (third (first rule))))
-                                                                                   (third (first rule))))))
+                                                                  (or (eq? (triple-pop (rule-triple (first rule))) EMP)
+                                                                      (and (>= (length stack)
+                                                                               (length (triple-pop (rule-triple (first rule)))))
+                                                                           (equal? (take stack
+                                                                                         (length
+                                                                                          (triple-pop (rule-triple (first rule)))))
+                                                                                   (triple-pop (rule-triple (first rule)))))))
                                                                 (append connected-read-E-rules connected-read-rules))]
                                    [new-configs (filter (λ (new-c) 
                                                           (not (set-member? visited-configuration-set
                                                                             (first (computation-LoC new-c))))
                                                           #;(not (member? (first (computation-LoC new-c))
                                                                           (computation-visited new-c) equal?)))
-                                                        (map (λ (rule) (apply-rule (qfirst QoC) rule)) connected-pop-rules))]
-
+                                                        (map (λ (rule) (apply-rule (qfirst QoC) (first rule))) connected-pop-rules))]
                                    [update-count (update-hash (qfirst QoC))]
                                    [update-visited (update-visited (qfirst QoC))])
                               (if (empty? new-configs)
@@ -1185,13 +1187,23 @@ pair is the second of the pda rule
           ;;Purpose: Maps the dead state as a destination for all rules that are not currently in the original rules of M
           (define rules-to-dead
             (map (λ (rule) (cons (append rule (list EMP)) (list (list dead EMP))))
-                 get-rules-not-in-M))]
-    (make-unchecked-ndpda (append (pda-getstates M) (list dead))
-                          (pda-getalphabet M)
-                          (pda-getgamma M)
-                          (pda-getstart M)
-                          (pda-getfinals M)
-                          (append (pda-getrules M) rules-to-dead dead-read-rules dead-pop-rules))))
+                 get-rules-not-in-M))
+
+          
+          (define (remake-rules lor)
+            (map (λ (pda-rule)
+                   (list (rule (triple (first (first pda-rule))
+                                       (second (first pda-rule))
+                                       (third (first pda-rule)))
+                               (pair (first (second pda-rule))
+                                     (second (second pda-rule))))))
+                 lor))]
+    (pda (cons dead (pda-getstates M))
+         (pda-getalphabet M)
+         (pda-getgamma M)
+         (pda-getstart M)
+         (pda-getfinals M)
+         (remake-rules (append (pda-getrules M) rules-to-dead dead-read-rules dead-pop-rules)))))
 
 
 ;;pda word [boolean] [natnum] . -> (void)
@@ -1204,13 +1216,14 @@ pair is the second of the pda rule
   (define (make-trace configs rules acc)
     (cond [(empty? rules) (reverse acc)]
           [(and (empty? acc)
-                (not (eq? (second (first (first rules))) EMP)))
+                (not (eq? (triple-read (rule-triple (first rules))) EMP)))
            (let* ([rle (rule (triple EMP EMP EMP) (pair EMP EMP))]
                   [res (trace (first configs) (list rle))])
              (make-trace (rest configs) rules (cons res acc)))]
           [(and (not (empty? acc))
                 (empty-rule? (first rules)))
-           (let* ([rle (rule (triple (first (first (first rules)))
+           (let* ([rle (first rules)
+                       #;(rule (triple (first (first (first rules)))
                                      (second (first (first rules)))
                                      (third (first (first rules))))
                              (pair (first (second (first rules)))
@@ -1218,7 +1231,8 @@ pair is the second of the pda rule
                   [res (struct-copy trace (first acc)
                                     [rules (cons rle (trace-rules (first acc)))])])
              (make-trace (rest configs) (rest rules) (cons res (rest acc))))]
-          [else (let* ([rle (rule (triple (first (first (first rules)))
+          [else (let* ([rle (first rules)
+                            #;(rule (triple (first (first (first rules)))
                                           (second (first (first rules)))
                                           (third (first (first rules))))
                                   (pair (first (second (first rules)))
@@ -1321,20 +1335,39 @@ pair is the second of the pda rule
     (remove-empty-helper a-LoC '()))
 
   (define (remake-rules lor)
-    (map (λ (pda-rule)
-           (list (rule (triple (first (first pda-rule))
-                               (second (first pda-rule))
-                               (third (first pda-rule)))
-                       (pair (first (second pda-rule))
-                             (second (second pda-rule))))))
-         lor))
+            (map (λ (pda-rule)
+                   (list (rule (triple (first (first pda-rule))
+                                       (second (first pda-rule))
+                                       (third (first pda-rule)))
+                               (pair (first (second pda-rule))
+                                     (second (second pda-rule))))))
+                 lor))
   
   (let* (;;M ;;Purpose: A new machine with the dead state if add-dead is true
-         [new-M (if add-dead (make-new-M M) M)]
+         [new-M (if add-dead (make-new-M M)
+                    (pda (pda-getstates M)
+                         (pda-getalphabet M)
+                         (pda-getgamma M)
+                         (pda-getstart M)
+                         (pda-getfinals M)
+                         (remake-rules (pda-getrules M))))
+          #;(let ([P (if add-dead (make-new-M M) M)])
+                  (pda (pda-getstates P)
+                       (pda-getalphabet P)
+                       (pda-getgamma P)
+                       (pda-getstart P)
+                       (pda-getfinals P)
+                       (remake-rules (pda-getrules P))))]
          ;;symbol ;;Purpose: The name of the dead state
-         [dead-state (if add-dead (last (pda-getstates new-M)) 'no-dead)]
+         [dead-state (if add-dead (first (pda-states new-M)) 'no-dead)]
+         #;[pda (pda (pda-getstates new-M)
+                   (pda-getalphabet new-M)
+                   (pda-getgamma new-M)
+                   (pda-getstart new-M)
+                   (pda-getfinals new-M)
+                   (remake-rules (pda-getrules new-M)))]
          ;;(listof computations) ;;Purpose: All computations that the machine can have
-         [computations+hash (get-computations a-word (pda-getrules new-M) (pda-getstart new-M) (pda-getfinals new-M) cut-off)]
+         [computations+hash (get-computations a-word (pda-rules new-M) (pda-start new-M) (pda-finals new-M) cut-off)]
 
          [computations (first computations+hash)]
          
@@ -1344,7 +1377,7 @@ pair is the second of the pda rule
          [word-len (length a-word)]
          ;;(listof computation) ;;Purpose: Extracts all accepting computations
          [accepting-computations (filter (λ (comp)
-                                           (and (member? (config-state (first (computation-LoC comp))) (pda-getfinals new-M) eq?)
+                                           (and (member? (config-state (first (computation-LoC comp))) (pda-finals new-M) eq?)
                                                 (empty? (config-word (first (computation-LoC comp))))
                                                 (empty? (config-stack (first (computation-LoC comp))))))
                                          computations)]
@@ -1399,12 +1432,7 @@ pair is the second of the pda rule
                                              (list accepting-trace)
                                              (if (empty? accept-cmps) '() (rest accept-cmps))
                                              rejecting-traces
-                                             (pda (pda-getstates new-M)
-                                                  (pda-getalphabet M)
-                                                  (pda-getgamma M)
-                                                  (pda-getstart M)
-                                                  (pda-getfinals M)
-                                                  (remake-rules (pda-getrules M)))
+                                             new-M
                                              (if (and add-dead (not (empty? invs))) (cons (list dead-state (λ (w s) #t)) invs) invs)
                                              dead-state
                                              cut-off
@@ -1426,7 +1454,7 @@ pair is the second of the pda rule
                                 get-cut-off-comp
                                 LoC))]
          ;;(listof number) ;;Purpose: Gets the number of computations for each step
-         [computation-lengths (hash-map (second computations+hash) (λ (k v) (length #;v (remove-duplicates v))))]
+         [computation-lengths (hash-map (second computations+hash) (λ (k v) v))]
 
          ;[computation-lens2 (hash-map (second computations+hash) (λ (k v ) k #;(length k #;(remove-duplicates k))))]
          ;[old-computation-lens (count-computations a-word LoC)]
@@ -1435,15 +1463,6 @@ pair is the second of the pda rule
                                           (get-inv-config-results
                                            (make-inv-configs a-word accepting-computations)
                                            invs)))])
-    #;(displayln #;(make-inv-configs a-word accepting-computations)
-                 #;(get-inv-config-results
-                    (make-inv-configs a-word accepting-computations)
-                    invs)
-                 #;(return-brk-inv-configs
-                    (get-inv-config-results
-                     (make-inv-configs a-word accepting-computations)
-                     invs)
-                    a-word))
     ;(map displayln LoC)
     ;(displayln (length accepting-trace))
     ;(displayln computation-lengths)
@@ -1539,10 +1558,12 @@ pair is the second of the pda rule
 
 (define pd-numb>numa (cfg->pda numb>numa))
 
-(time (pda-viz pd-numb>numa '(a b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b) '()
+#;(time (pda-viz pd-numb>numa '(a b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b) '()
                #:cut-off 15))
-
-#;(profile-thunk (lambda () (pda-viz pd-numb>numa '(a b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b) '()
+(time (pda-viz pd-numb>numa '(a b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b) '()))
+#;(profile-thunk (lambda ()
+                   (pda-viz pd-numb>numa
+                            '(a b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b) '()
                                      #:cut-off 15))
                  #:repeat 10
                  #:svg-path (string->path "/home/sora/Pictures/test-flame.svg"))
