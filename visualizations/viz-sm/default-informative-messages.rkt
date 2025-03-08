@@ -65,7 +65,7 @@ rules are a (listof rule-structs)
 (define get-prev-index (compose fourth (compose zipper-current zipper-prev)))
 (define get-prev-index-ndfa (compose third (compose zipper-current zipper-prev)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 (define (tm-getalphabet m) (m '() 0 'get-alphabet)) 
@@ -562,7 +562,9 @@ rules are a (listof rule-structs)
                   (eq? (imsg-state-pda-upci imsg-st) (imsg-state-pda-farthest-consumed-input imsg-st))
                   (ormap (λ (comp) (>= (length comp) (imsg-state-pda-max-cmps imsg-st)))
                          (imsg-state-pda-computations imsg-st)))
-             (above/align 'left
+             (let* ([pci-length (length (imsg-state-pda-pci imsg-st))]
+                    [sub1-pci-length (sub1 pci-length)])
+               (above/align 'left
                           (beside (text "aaaK" FONT-SIZE BLANK-COLOR)
                                   (text "Word: " FONT-SIZE FONT-COLOR)
                                   (make-tape-img entire-word
@@ -571,37 +573,44 @@ rules are a (listof rule-structs)
                                                      0)
                                                  (if (empty? (imsg-state-pda-pci imsg-st))
                                                      '()
-                                                     (list (list (length (imsg-state-pda-pci imsg-st)) 'gray)
-                                                           (list (length (imsg-state-pda-pci imsg-st)) DARKGOLDENROD2)))))
+                                                     (list (list sub1-pci-length
+                                                                 #;(length (imsg-state-pda-pci imsg-st)) 'gray)
+                                                           (list sub1-pci-length
+                                                                 #;(length (imsg-state-pda-pci imsg-st)) DARKGOLDENROD2)))))
                           (beside (text "Consumed: " FONT-SIZE FONT-COLOR)
-                                  (make-tape-img (imsg-state-pda-pci imsg-st)
-                                                 (if (> (length (imsg-state-pda-pci imsg-st)) TAPE-SIZE)
+                                  (make-tape-img (take (imsg-state-pda-pci imsg-st) sub1-pci-length) #;(imsg-state-pda-pci imsg-st)
+                                                 (if (> sub1-pci-length
+                                                        #;(length (imsg-state-pda-pci imsg-st)) TAPE-SIZE)
                                                      (imsg-state-pda-word-img-offset imsg-st)
                                                      0)
-                                                 '())))]
+                                                 '()))))]
             [(and #;(not (empty? (imsg-state-pda-pci imsg-st)))
                   (eq? (imsg-state-pda-upci imsg-st) (imsg-state-pda-farthest-consumed-input imsg-st))
                   (eq? machine-decision 'reject))
-             (above/align
-              'left
-              (beside (text "aaaK" FONT-SIZE BLANK-COLOR)
-                      (text "Word: " FONT-SIZE FONT-COLOR)
-                      (make-tape-img entire-word
-                                     (if (> (length entire-word) TAPE-SIZE)
-                                         (imsg-state-pda-word-img-offset imsg-st)
-                                         0)
-                                     (if (empty? (imsg-state-pda-pci imsg-st))
-                                         '()
-                                         (list (list (length (imsg-state-pda-pci imsg-st)) 'gray)
-                                               (list (length (imsg-state-pda-pci imsg-st)) REJECT-COLOR)))))
-              (beside (text "Consumed: " FONT-SIZE FONT-COLOR)
-                      (if (empty? (imsg-state-pda-pci imsg-st))
-                          (text "" FONT-SIZE FONT-COLOR)
-                          (make-tape-img (imsg-state-pda-pci imsg-st)
-                                         (if (> (length (imsg-state-pda-pci imsg-st)) TAPE-SIZE)
-                                             (imsg-state-pda-word-img-offset imsg-st)
-                                             0)
-                                         '()))))]
+             (let* ([pci-length (length (imsg-state-pda-pci imsg-st))]
+                   [sub1-pci-length (sub1 pci-length)])
+               (above/align
+                'left
+                (beside (text "aaaK" FONT-SIZE BLANK-COLOR)
+                        (text "Word: " FONT-SIZE FONT-COLOR)
+                        (make-tape-img entire-word
+                                       (if (> (length entire-word) TAPE-SIZE)
+                                           (imsg-state-pda-word-img-offset imsg-st)
+                                           0)
+                                       (if (empty? (imsg-state-pda-pci imsg-st))
+                                           '()
+                                           (list (list sub1-pci-length
+                                                       #;(length (imsg-state-pda-pci imsg-st)) 'gray)
+                                                 (list sub1-pci-length
+                                                       #;(length (imsg-state-pda-pci imsg-st)) REJECT-COLOR)))))
+                (beside (text "Consumed: " FONT-SIZE FONT-COLOR)
+                        (if (empty? (imsg-state-pda-pci imsg-st))
+                            (text "" FONT-SIZE FONT-COLOR)
+                            (make-tape-img (take (imsg-state-pda-pci imsg-st) sub1-pci-length)
+                                           (if (> pci-length TAPE-SIZE)
+                                               (imsg-state-pda-word-img-offset imsg-st)
+                                               0)
+                                           '())))))]
             [else (above/align 'left
                                (beside (text "aaaK" FONT-SIZE BLANK-COLOR)
                                        (text "Word: " FONT-SIZE FONT-COLOR)
