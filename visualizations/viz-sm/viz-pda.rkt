@@ -27,6 +27,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define FONT-SIZE 18)
 
+
 #|
 A rule is a structure:
 (make-rule triple pair)
@@ -40,6 +41,8 @@ pair is the second of the pda rule
 (struct pair (destination push) #:transparent)
 
 (struct pda (states sigma gamma start finals rules) #:transparent)
+
+(define DUMMY-RULE (rule (triple EMP EMP EMP) (pair EMP EMP)))
 
 ;;upci is the unprocessed consumed input (listof symbol)
 ;;pci is the proccessed consumed input (listof symbol)
@@ -484,7 +487,7 @@ pair is the second of the pda rule
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization forward by one step
 (define (right-key-pressed a-vs)
-  (let* ([completed-config? (ormap (λ (config) (empty? (config-word (first (computation-LoC config)))))
+  (let* (#;[completed-config? (ormap (λ (config) (empty? (config-word (first (computation-LoC config)))))
                                    (first (get-computations (imsg-state-pda-pci (informative-messages-component-state
                                                                                  (viz-state-informative-messages a-vs)))
                                                             (pda-getrules (imsg-state-pda-M (informative-messages-component-state
@@ -497,7 +500,7 @@ pair is the second of the pda rule
                                                                                       (viz-state-informative-messages a-vs))))))]
          ;;boolean
          ;;Purpose: Determines if the pci can be can be fully consumed
-         [pci (if (or (not completed-config?)
+         [pci (if (or #;(not completed-config?)
                       (empty? (imsg-state-pda-upci (informative-messages-component-state
                                                     (viz-state-informative-messages a-vs))))
                       (eq? (imsg-state-pda-upci (informative-messages-component-state
@@ -521,7 +524,7 @@ pair is the second of the pda rule
        [component-state
         (struct-copy imsg-state-pda
                      (informative-messages-component-state (viz-state-informative-messages a-vs))
-                     [upci (if (or (not completed-config?)
+                     [upci (if (or #;(not completed-config?)
                                    (empty? (imsg-state-pda-upci (informative-messages-component-state
                                                                  (viz-state-informative-messages a-vs))))
                                    (eq? (imsg-state-pda-upci (informative-messages-component-state
@@ -574,7 +577,7 @@ pair is the second of the pda rule
 (define (down-key-pressed a-vs)
   ;;(listof symbols) machine -> (listof symbols)
   ;;Purpose: Returns the last fully consumed word for the given machine
-  (define (last-fully-consumed a-word M max-cmps)
+  #;(define (last-fully-consumed a-word M max-cmps)
     (letrec ([self (lambda (a-word)
                      (cond [(empty? a-word) '()]
                            [(not (ormap (λ (config) (empty? (config-word (first config))))
@@ -605,7 +608,7 @@ pair is the second of the pda rule
                                                   (viz-state-informative-messages a-vs))))]
          ;;(listof symbol)
          ;;Purpose: The last word that could be fully consumed by the pda
-         [last-consumed-word (last-fully-consumed
+         #;[last-consumed-word (last-fully-consumed
                               full-word
                               (imsg-state-pda-M (informative-messages-component-state
                                                  (viz-state-informative-messages a-vs)))
@@ -613,7 +616,7 @@ pair is the second of the pda rule
                                                         (viz-state-informative-messages a-vs))))]
          ;;(listof symbol)
          ;;Purpose: The portion of the word that cannont be consumed
-         [unconsumed-word (remove-similarities last-consumed-word full-word '())]
+         #;[unconsumed-word (remove-similarities last-consumed-word full-word '())]
          ;;(zipperof invariant)
          ;;Purpose: The index of the last failed invariant
          [zip (if (zipper-empty? (imsg-state-pda-invs-zipper (informative-messages-component-state
@@ -710,11 +713,11 @@ pair is the second of the pda rule
          [rule (if (zipper-empty? (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
                                                                          (viz-state-informative-messages a-vs))))
                    DUMMY-RULE
-                   (list (rule-triple next-rule) (rule-pair next-rule)))]
+                   next-rule #;(list (rule-triple next-rule) (rule-pair next-rule)))]
          [pci (if (or (empty? (imsg-state-pda-pci (informative-messages-component-state
                                                    (viz-state-informative-messages a-vs))))
-                      (and (eq? (second (first rule)) EMP)
-                           (not (empty-rule? rule))))
+                      (and (eq? (triple-read (rule-triple rule)) EMP)
+                           (not (empty-rule? #;(first rule) rule))))
                   (imsg-state-pda-pci (informative-messages-component-state
                                        (viz-state-informative-messages a-vs)))
                   (take (imsg-state-pda-pci (informative-messages-component-state
@@ -735,7 +738,9 @@ pair is the second of the pda rule
                       (viz-state-informative-messages a-vs))
                      [upci (if (or (empty? (imsg-state-pda-pci (informative-messages-component-state
                                                                 (viz-state-informative-messages a-vs))))
-                                   (and (eq? (second (first rule)) EMP)
+                                   (and (eq? (triple-read (rule-triple rule)) EMP)
+                                        (not (empty-rule? #;(first rule) rule)))
+                                   #;(and (eq? (second (first rule)) EMP)
                                         (not (empty-rule? rule))))
                                (imsg-state-pda-upci (informative-messages-component-state
                                                      (viz-state-informative-messages a-vs)))
@@ -1350,22 +1355,9 @@ pair is the second of the pda rule
                          (pda-getgamma M)
                          (pda-getstart M)
                          (pda-getfinals M)
-                         (remake-rules (pda-getrules M))))
-          #;(let ([P (if add-dead (make-new-M M) M)])
-                  (pda (pda-getstates P)
-                       (pda-getalphabet P)
-                       (pda-getgamma P)
-                       (pda-getstart P)
-                       (pda-getfinals P)
-                       (remake-rules (pda-getrules P))))]
+                         (remake-rules (pda-getrules M))))]
          ;;symbol ;;Purpose: The name of the dead state
          [dead-state (if add-dead (first (pda-states new-M)) 'no-dead)]
-         #;[pda (pda (pda-getstates new-M)
-                   (pda-getalphabet new-M)
-                   (pda-getgamma new-M)
-                   (pda-getstart new-M)
-                   (pda-getfinals new-M)
-                   (remake-rules (pda-getrules new-M)))]
          ;;(listof computations) ;;Purpose: All computations that the machine can have
          [computations+hash (get-computations a-word (pda-rules new-M) (pda-start new-M) (pda-finals new-M) cut-off)]
 
@@ -1454,7 +1446,7 @@ pair is the second of the pda rule
                                 get-cut-off-comp
                                 LoC))]
          ;;(listof number) ;;Purpose: Gets the number of computations for each step
-         [computation-lengths (hash-map (second computations+hash) (λ (k v) v))]
+         ;[computation-lengths (hash-map (second computations+hash) (λ (k v) v))]
 
          ;[computation-lens2 (hash-map (second computations+hash) (λ (k v ) k #;(length k #;(remove-duplicates k))))]
          ;[old-computation-lens (count-computations a-word LoC)]
@@ -1470,8 +1462,8 @@ pair is the second of the pda rule
     ;(displayln computation-lens2)
     ;;(displayln (length LoC))
     ;(displayln accepting-trace)
-    (void)
-    #;(run-viz graphs
+    ;(void)
+    (run-viz graphs
                (lambda () (graph->bitmap (first graphs)))
                (posn (/ E-SCENE-WIDTH 2) (/ PDA-E-SCENE-HEIGHT 2))
                DEFAULT-ZOOM
@@ -1486,7 +1478,7 @@ pair is the second of the pda rule
                                                      most-consumed-word 
                                                      (list->zipper inv-configs) 
                                                      (sub1 (length inv-configs)) 
-                                                     computation-lens 
+                                                     (second computations+hash) #;computation-lens 
                                                      LoC 
                                                      cut-off
                                                      0
@@ -1560,7 +1552,7 @@ pair is the second of the pda rule
 
 #;(time (pda-viz pd-numb>numa '(a b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b) '()
                #:cut-off 15))
-(time (pda-viz pd-numb>numa '(a b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b) '()))
+#;(time (pda-viz pd-numb>numa '(a b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b) '()))
 #;(profile-thunk (lambda ()
                    (pda-viz pd-numb>numa
                             '(a b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b) '()
@@ -1568,7 +1560,7 @@ pair is the second of the pda rule
                  #:repeat 10
                  #:svg-path (string->path "/home/sora/Pictures/test-flame.svg"))
 
-#;(define P3 (make-unchecked-ndpda '(S H)
+(define P3 (make-unchecked-ndpda '(S H)
                                    '(a b)
                                    '(b)
                                    'S
@@ -1576,6 +1568,6 @@ pair is the second of the pda rule
                                    `(((S ε ε)(H ε))     ((S a ε)(S (b b)))
                                                         ((H b (b b))(H ε)) ((H b (b))(H ε)))))
 
-;(time (pda-viz P3 '(a a b b b b) '()))
+(time (pda-viz P3 '(a a b a b b b) '()))
 
 ;[(<= max-cmps 0) (error (format "The maximum amount of computations, ~a, must be integer greater than 0" max-cmps))] DONT FORGET

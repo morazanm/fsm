@@ -166,8 +166,6 @@ rules are a (listof rule)
       (error "dequeue applied to an empty queue")
       (rest a-qox)))
 
-(define DUMMY-RULE (list (list EMP EMP EMP) (list EMP EMP)))
-
 (define INFORMATIVE-MSG-HEIGHT 50)
 
 (define (id x) x)
@@ -231,7 +229,7 @@ rules are a (listof rule)
               '(1)
               (list->zipper '())
               (sub1 (length '()))
-              '(1 2 3 2)
+              (hash) #;'(1 2 3 2)
               '((computation
                  ((H ()) (H (b)) (K (b)) (B (b b)) (K (a b b)) (S (a b b)))
                  ((H b H) (K ε H) (B b K) (K a B) (S ε K))
