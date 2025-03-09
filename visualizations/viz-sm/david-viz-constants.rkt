@@ -117,54 +117,29 @@ rules are a (listof rule)
   
 (define (tm-getaccept m) (m '() 0 'get-accept))
 
-(define qempty? treelist-empty? #;empty?)
-(define qempty-tree-list? treelist-empty?) 
+(define qempty? treelist-empty?)
 
-(define E-QUEUE empty-treelist #;'())
-(define E-QUEUE-TREE-LIST empty-treelist)
-
-(define (qtl-first a-qtlox)
-  (if (qempty-tree-list? a-qtlox)
-      (error "qtl-first applied to an empty queue")
-      (treelist-first a-qtlox)))
-
-
-(define (enqueue-tl a-lox a-qtlox)
-  (treelist-add a-qtlox a-lox))
-
-
-(define (dequeue-tl a-qox)
-  (if (qempty? a-qox)
-      (error "dequeue applied to an empty queue")
-      (treelist-rest a-qox)))
-
+(define E-QUEUE empty-treelist) 
 
 ;; (qof X) → X throws error
 ;; Purpose: Return first X of the given queue
 (define (qfirst a-qox)
-  (if (qempty-tree-list? a-qox)
+  (if (qempty? a-qox)
       (error "qfirst applied to an empty queue")
-      (treelist-first a-qox))
-  #;(if (qempty? a-qox)
-      (error "qfirst applied to an empty queue")
-      (first a-qox)))
+      (treelist-first a-qox)))
 
 ;; (listof X) (qof X) → (qof X)
 ;; Purpose: Add the given list of X to the given
 ;;          queue of X
 (define (enqueue a-lox a-qox)
-  (treelist-append a-qox (list->treelist a-lox))
-  #;(append a-qox a-lox))
+  (treelist-append a-qox a-lox #;(list->treelist a-lox)))
 
 ;; (qof X) → (qof X) throws error
 ;; Purpose: Return the rest of the given queue
 (define (dequeue a-qox)
-  (if (qempty-tree-list? a-qox)
+  (if (qempty? a-qox)
       (error "dequeue applied to an empty queue")
-      (treelist-rest a-qox))
-  #;(if (qempty? a-qox)
-      (error "dequeue applied to an empty queue")
-      (rest a-qox)))
+      (treelist-rest a-qox)))
 
 (define INFORMATIVE-MSG-HEIGHT 50)
 
