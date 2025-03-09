@@ -279,25 +279,25 @@ pair is the second of the pda rule
   (define (find-rule? rule dead lor)
     (or (member? rule lor equal?)
         (ormap (λ (r)
-                 (and (eq? (first rule) (first r))
-                      (or (eq? (third rule) (third r))
-                          (and (eq? (third rule) (third r))
-                               (eq? (third rule) dead)))))
+                 (and (eq? (triple-read rule) (triple-read r))
+                      (or (eq? (triple-pop rule) (triple-pop r))
+                          (and (eq? (triple-pop rule) (triple-pop r))
+                               (eq? (triple-pop rule) dead)))))
                lor)))
   
   (foldl (λ (rule graph)
            (add-edge graph
-                     (second rule)
-                     (first rule)
-                     (third rule)
-                     #:atb (hash 'color (cond [(and (member? rule current-shown-accept-rules eq?)
+                     (triple-read rule)
+                     (triple-source rule)
+                     (triple-pop rule)
+                     #:atb (hash 'color (cond [(and (member? rule current-shown-accept-rules equal?)
                                                     (member? rule current-accept-rules equal?))
                                                SPLIT-ACCEPT-COLOR]
                                               [(find-rule? rule dead current-shown-accept-rules) TRACKED-ACCEPT-COLOR]
                                               [(find-rule? rule dead current-accept-rules)       ALL-ACCEPT-COLOR]
                                               [(find-rule? rule dead current-reject-rules)       REJECT-COLOR]
                                               [else 'black])
-                                 'style (cond [(eq? (third rule) dead) 'dashed]
+                                 'style (cond [(eq? (triple-pop rule) dead) 'dashed]
                                               [(member? rule current-accept-rules equal?) 'bold]
                                               [else 'solid])
                                  'fontsize FONT-SIZE)))
@@ -345,9 +345,11 @@ pair is the second of the pda rule
               (pair-push (rule-pair rule))))
   
     (map (λ (rule)
-           (append (list (triple-source (rule-triple rule #;(first rule))))
-                   (list (string->symbol (make-edge-label rule #;(first rule))))
-                   (list (pair-destination (rule-pair rule #;(first rule))) #;(first (second rule)))))
+           (triple (triple-source (rule-triple rule #;(first rule))) #;(list (triple-source (rule-triple rule #;(first rule))))
+                   (string->symbol (make-edge-label rule #;(first rule)))
+                   #;(list (string->symbol (make-edge-label rule #;(first rule))))
+                   (pair-destination (rule-pair rule #;(first rule)))
+                   #;(list (pair-destination (rule-pair rule #;(first rule))) #;(first (second rule)))))
          rules))
 
 
@@ -421,7 +423,7 @@ pair is the second of the pda rule
 
          ;;(listof rules)
          ;;Purpose: Converts the current rules from the accepting computations and makes them usable for graphviz
-         [current-shown-accept-rules (configs->rules tracked-accepting-rules)]
+         [current-shown-accept-rules (configs->rules (flatten tracked-accepting-rules))]
          
          ;;(listof rules)
          ;;Purpose: All of the pda rules converted to triples
