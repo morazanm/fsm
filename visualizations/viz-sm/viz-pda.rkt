@@ -120,108 +120,116 @@ pair is the second of the pda rule
       (if (empty-rule? a-rule)
           a-config
           (struct-copy config a-config [index (add1 (config-index a-config))])))
-    
+
+    (define (apply-rule-helper a-config)
+      (let* ([apply-pop-result (if (eq? (triple-pop (rule-triple a-rule)) EMP)
+                                   (config-stack a-config)
+                                   (drop (config-stack a-config) (length (triple-pop (rule-triple a-rule)))))]
+             [apply-push-result (if (eq? (pair-push (rule-pair a-rule)) EMP)
+                                    apply-pop-result
+                                    (append (pair-push (rule-pair a-rule)) apply-pop-result))]
+             [apply-read-result (if (eq? (triple-read (rule-triple a-rule)) EMP)
+                                    (config-word a-config)
+                                    (rest (config-word a-config)))]
+             [update-count-result (if (empty-rule? a-rule)
+                                      (config-index a-config)
+                                      (add1 (config-index a-config)))])
+        (struct-copy config a-config
+                     [state (pair-destination (rule-pair a-rule))]
+                     [stack apply-push-result]
+                     [word apply-read-result]
+                     [index update-count-result])))
     
     (struct-copy computation a-comp
-                 [LoC (cons (update-count (apply-push (apply-pop (apply-read (first (computation-LoC a-comp))))))
+                 [LoC (cons (apply-rule-helper (first (computation-LoC a-comp)))
+                            #;(update-count (apply-push (apply-pop (apply-read (first (computation-LoC a-comp))))))
                             (computation-LoC a-comp))]
-                 [LoR (cons a-rule (computation-LoR a-comp))]
-                 #;[visited (set-add (computation-visited a-comp) (first (computation-LoC a-comp)))
-                          #;(cons (first (computation-LoC a-comp)) (computation-visited a-comp))]))
+                 [LoR (cons a-rule (computation-LoR a-comp))]))
 
 
-  (define visited-configuration-set (set))
+  (define visited-configuration-set (mutable-set))
 
-  (define (update-visited a-computation)
-    (set-add visited-configuration-set (first (computation-LoC a-computation))))
+  (define (update-visited a-config)
+    (set-add! visited-configuration-set a-config))
   
   
   (define computation-number-hash (make-hash))
-
-  (define (update-hash a-computation)
+  (define EMPTY-SET (set))
+  (define (update-hash a-config a-word)
     (hash-set! computation-number-hash
-               (config-word (first (computation-LoC a-computation)))
-               (cons (first (computation-LoC a-computation))
-                     (hash-ref computation-number-hash
-                               (config-word (first (computation-LoC a-computation)))
-                               '()))))
+               a-word
+               (set-add (hash-ref computation-number-hash
+                               a-word
+                               EMPTY-SET)
+                        a-config)))
   
-  
+  (define finals-set (list->seteq finals))
   
   ;;(listof rules) (queueof computation) (listof computation) number -> (listof computation)
   ;;Purpose: Makes all the computations based around the (queueof computation) and (listof rule)
   ;;     that are within the bounds of the max computation limit
-  (define (make-computations lor finals QoC path max-cmps)
-    (letrec ([self (lambda (QoC path)
-                     (cond [(qempty? QoC) (list path computation-number-hash)]
-                           [(or (> (length (computation-LoC (qfirst QoC))) max-cmps)
-                                (and (member? (config-state (first (computation-LoC (qfirst QoC)))) finals eq?)
-                                     (empty? (config-word (first (computation-LoC (qfirst QoC)))))
-                                     (empty? (config-stack (first (computation-LoC (qfirst QoC)))))))
-                            (let ([update-count (update-hash (qfirst QoC))])
-                              (self (dequeue QoC) (cons (qfirst QoC) path)))]
-                           [else
-                            (let* ([stack (config-stack (first (computation-LoC (qfirst QoC))))]
-                                   ;;(listof rules)
-                                   ;;Purpose: Holds all rules that consume a first letter in the given configurations
-                                   [connected-read-rules (filter (λ (rule)
-                                                                   (and (not (empty? (config-word
-                                                                                      (first (computation-LoC (qfirst QoC))))))
-                                                                        (eq? (triple-source (rule-triple rule #;(first rule)))
-                                                                             (config-state
-                                                                              (first (computation-LoC (qfirst QoC)))))
-                                                                        (eq? (triple-read (rule-triple rule #;(first rule)))
-                                                                             (first (config-word
-                                                                                     (first (computation-LoC (qfirst QoC))))))))
-                                                                 lor)]
-                                   ;;(listof rules)
-                                   ;;Purpose: Holds all rules that consume no input for the given configurations
-                                   [connected-read-E-rules (filter (λ (rule)
-                                                                     (and (eq? (triple-source (rule-triple rule #;(first rule)))
-                                                                               (config-state
-                                                                                (first (computation-LoC (qfirst QoC)))))
-                                                                          (eq? (triple-read (rule-triple rule #;(first rule)))
-                                                                               EMP)))
-                                                                   lor)]
-                                   ;;(listof rules)
-                                   ;;Purpose: Holds all rules that can pop what is in the stack
-                                   [connected-pop-rules (filter (λ (rule)
-                                                                  (or (eq? (triple-pop (rule-triple rule #;(first rule))) EMP)
-                                                                      (and (>= (length stack)
-                                                                               (length (triple-pop (rule-triple rule
-                                                                                                                #;(first rule)))))
-                                                                           (equal? (take stack
-                                                                                         (length
-                                                                                          (triple-pop (rule-triple rule
-                                                                                                                   #;(first rule)
-                                                                                                                   ))))
-                                                                                   (triple-pop (rule-triple rule
-                                                                                                            #;(first rule)))))))
-                                                                (append connected-read-E-rules connected-read-rules))]
-                                   [new-configs (filter (λ (new-c) 
-                                                          (not (set-member? visited-configuration-set
-                                                                            (first (computation-LoC new-c))))
-                                                          #;(not (member? (first (computation-LoC new-c))
-                                                                          (computation-visited new-c) equal?)))
-                                                        (map (λ (rule) (apply-rule (qfirst QoC) rule #;(first rule)))
-                                                             connected-pop-rules))]
-                                   [update-count (update-hash (qfirst QoC))]
-                                   [update-visited (update-visited (qfirst QoC))])
-                              (if (empty? new-configs)
-                                  (self (dequeue QoC) (cons (qfirst QoC) path))
-                                  (self (enqueue new-configs (dequeue QoC)) path)))]))])
-      (self QoC path)))
+  (define (make-computations starting-computation)
+    (define (make-computations-helper QoC path)
+      (if (qempty? QoC)
+          (list path computation-number-hash)
+          (let* ([curr-config (first (computation-LoC (qfirst QoC)))]
+                [curr-word (config-word curr-config)]
+                [curr-stack (config-stack curr-config)]
+                [curr-state (config-state
+                             curr-config)])
+            (if (or (and (empty? curr-word)
+                         (empty? curr-stack)
+                         (set-member? finals-set curr-state))
+                    (> (length (computation-LoC (qfirst QoC))) max-cmps))
+                (begin
+                  (update-hash curr-config curr-word)
+                  (make-computations-helper (dequeue QoC) (cons (qfirst QoC) path)))
+                (let* ([curr-rules (filter (lambda (rule) (eq? (triple-source (rule-triple rule))
+                                                                 curr-state))
+                                           lor)]
+                       ;;(listof rules)
+                       ;;Purpose: Holds all rules that consume a first letter in the given configurations
+                       [connected-read-rules (filter (λ (rule)
+                                                       (and (not (empty? curr-word))
+                                                            (eq? (triple-read (rule-triple rule))
+                                                                 (first curr-word))))
+                                                     curr-rules)]
+                       ;;(listof rules)
+                       ;;Purpose: Holds all rules that consume no input for the given configurations
+                       [connected-read-E-rules (filter (λ (rule)
+                                                         (eq? (triple-read (rule-triple rule))
+                                                                   EMP))
+                                                       curr-rules)]
+                       ;;(listof rules)
+                       ;;Purpose: Holds all rules that can pop what is in the stack
+                       [connected-pop-rules (filter (λ (rule)
+                                                      (or (eq? (triple-pop (rule-triple rule)) EMP)
+                                                          (and (>= (length curr-stack)
+                                                                   (length (triple-pop (rule-triple rule))))
+                                                               (equal? (take curr-stack
+                                                                             (length
+                                                                              (triple-pop (rule-triple rule))))
+                                                                       (triple-pop (rule-triple rule))))))
+                                                    (append connected-read-E-rules connected-read-rules))]
+                       [new-configs (filter (λ (new-c) 
+                                              (not (set-member? visited-configuration-set
+                                                                (first (computation-LoC new-c)))))
+                                            (map (λ (rule) (apply-rule (qfirst QoC) rule))
+                                                 connected-pop-rules))])
+                  (begin
+                    (update-hash curr-config curr-word)
+                    (update-visited curr-config)
+                    (if (empty? new-configs)
+                      (make-computations-helper (dequeue QoC) (cons (qfirst QoC) path))
+                      (make-computations-helper (enqueue new-configs (dequeue QoC)) path))))))))
+      (make-computations-helper (enqueue (list starting-computation) E-QUEUE) '()))
   
   (let (;;computation
         ;;Purpose: The starting computation
         [starting-computation (computation (list (config start a-word '() 0))
                                            '()
                                            (set))])
-    (make-computations lor
-                       finals
-                       (enqueue (list starting-computation) E-QUEUE)
-                       '()
-                       max-cmps)))
+    (make-computations starting-computation)))
 
 ;;(X -> Y) (X -> Y) (X -> Y) (X -> Y) (listof (listof X)) -> (listof (listof X))
 ;;Purpose: filtermaps the given f-on-x on the given (listof (listof X))
@@ -1445,11 +1453,11 @@ pair is the second of the pda rule
                                                 '()
                                                 (reverse (computation-LoC (first accepting-computations))))))]
 
-         [computation-lens (map (lambda (key) (hash-set! (second computations+hash)
+         [computation-lens (begin (for ([key (in-list (hash-keys (second computations+hash)))])
+                                    (hash-set! (second computations+hash)
                                                          key
-                                                         (length (remove-duplicates
-                                                                  (hash-ref (second computations+hash) key)))))
-                                (hash-keys (second computations+hash)))]
+                                                         (set-count (hash-ref (second computations+hash) key))))
+                                  (second computations+hash))]
          
          ;;(listof rules) ;;Purpose: Returns the first accepting computations (listof rules)
          [accepting-trace (if (empty? accept-cmps) '() (first accept-cmps))]
@@ -1514,8 +1522,8 @@ pair is the second of the pda rule
     
     ;(displayln (first LoC))
     ;(displayln accepting-trace)
-    ;(void)
-    (run-viz graphs
+    (void)
+    #;(run-viz graphs
                (lambda () (graph->bitmap (first graphs)))
                (posn (/ E-SCENE-WIDTH 2) (/ PDA-E-SCENE-HEIGHT 2))
                DEFAULT-ZOOM
@@ -1622,6 +1630,6 @@ pair is the second of the pda rule
                                    ((S a ε)(S (b b)))
                                    ((H b (b b))(H ε)) ((H b (b))(H ε)))))
 
-(time (pda-viz P3 '(a a b a b b b) '()))
+;(time (pda-viz P3 '(a a b a b b b) '()))
 
 ;[(<= max-cmps 0) (error (format "The maximum amount of computations, ~a, must be integer greater than 0" max-cmps))] DONT FORGET
