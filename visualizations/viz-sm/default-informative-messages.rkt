@@ -513,7 +513,8 @@ rules are a (listof rule-structs)
                                                           0) 
                                                       (if (zipper-empty? (imsg-state-ndfa-shown-accepting-trace imsg-st))
                                                           '()
-                                                          (list (list (length (imsg-state-ndfa-pci imsg-st)) ACCEPT-COLOR) '())))))])
+                                                          (list (list (length (imsg-state-ndfa-pci imsg-st)) ACCEPT-COLOR)
+                                                                '())))))])
       (text (format "The current number of possible computations is ~a (without repeated configurations). "
                      (number->string (list-ref (imsg-state-ndfa-computation-lengths imsg-st)
                                                (length (imsg-state-ndfa-pci imsg-st)))))
@@ -868,9 +869,9 @@ rules are a (listof rule-structs)
 ;"scroll thru word instead of jumping to end"
 ;"highlight which rule is being used when there are multiple rules on an edge"
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;!!!TO BE REINSTATED ONCE OPTIMIZATIONS ARE MADE!!!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;!!!TO BE REINSTATED ONCE OPTIMIZATIONS ARE MADE!!!;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 #;(
 (define (make-tape-img tape start-index color-pair)
   (define (make-tape-img loi start-index)
