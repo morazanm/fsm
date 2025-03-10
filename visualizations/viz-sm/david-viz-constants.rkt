@@ -62,7 +62,7 @@ rules are a (listof rule)
 (define INS-TOOLS-BUFFER 30)
 
 (define accessor-func (compose fourth (compose trace-config zipper-current)))
-(define pda-accessor-func (compose config-index (compose trace-config tl-zipper-current #;zipper-current)))
+(define pda-accessor-func (compose config-index (compose trace-config zipper-current)))
 (define ndfa-accessor-func (compose third (compose trace-config zipper-current)))
 
 (define get-index (compose fourth zipper-current))
@@ -200,20 +200,20 @@ rules are a (listof rule)
 (define pda-info-img (pda-create-draw-informative-message (imsg-state-pda a*
               '(a b b)
               '()
-              (tl->tl-zipper empty-treelist)
-              (tl->tl-zipper empty-treelist)
+              (list->zipper '())
+              (list->zipper '())
               '(1)
               (list->zipper '())
               (sub1 (length '()))
               (hash) #;'(1 2 3 2)
-              (list->treelist '() #;'((computation
-                 ((H ()) (H (b)) (K (b)) (B (b b)) (K (a b b)) (S (a b b)))
-                 ((H b H) (K ε H) (B b K) (K a B) (S ε K))
-                 ((H (b)) (K (b)) (B (b b)) (K (a b b)) (S (a b b))))
-                (computation
-                 ((H ()) (H (b)) (H (b b)) (C (b b)) (S (a b b)))
-                 ((H b H) (H b H) (C ε H) (S a C))
-                 ((H (b)) (H (b b)) (C (b b)) (S (a b b))))))
+              '() #;(list  (list->treelist (list (computation
+                                        '((H ()) (H (b)) (K (b)) (B (b b)) (K (a b b)) (S (a b b)))
+                                        '((H b H) (K ε H) (B b K) (K a B) (S ε K))
+                                        '((H (b)) (K (b)) (B (b b)) (K (a b b)) (S (a b b))))
+                                       (computation
+                                        '((H ()) (H (b)) (H (b b)) (C (b b)) (S (a b b)))
+                                        '((H b H) (H b H) (C ε H) (S a C))
+                                        '((H (b)) (H (b b)) (C (b b)) (S (a b b)))))))
               1
               0
               (let ([offset-cap (- (length '(a b b)) TAPE-SIZE)])

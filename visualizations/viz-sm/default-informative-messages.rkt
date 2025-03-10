@@ -539,16 +539,17 @@ rules are a (listof rule-structs)
          [entire-word (append (imsg-state-pda-pci imsg-st) (imsg-state-pda-upci imsg-st))]
          ;;(listof symbols)
          ;;Purpose: Holds what needs to displayed for the stack based off the upci
-         [current-stack (if (tl-zipper-empty? (imsg-state-pda-stack imsg-st)) 
+         [current-stack (if (zipper-empty? (imsg-state-pda-stack imsg-st)) 
                             (imsg-state-pda-stack imsg-st)
-                            (config-stack (tl-zipper-current (imsg-state-pda-stack imsg-st))))]
-         [machine-decision (if (not (tl-zipper-empty? (imsg-state-pda-shown-accepting-trace imsg-st)))
+                            (config-stack (zipper-current (imsg-state-pda-stack imsg-st))))]
+         [machine-decision (if (not (zipper-empty? (imsg-state-pda-shown-accepting-trace imsg-st)))
                                'accept
                                'reject)]
-         [computation-has-cut-off (let* ([accepting-trace (tl-zipper->tl (imsg-state-pda-shown-accepting-trace imsg-st))]
-                                         [res (when (treelist-empty? accepting-trace)
-                                                (for/or ([config (in-treelist (treelist-map (imsg-state-pda-computations imsg-st)
-                                                                                            treelist-last))])
+         [computation-has-cut-off (let ([res (when (zipper-empty? (imsg-state-pda-shown-accepting-trace imsg-st))
+                                               (for/or ([config (map
+                                                                 treelist-last
+                                                                 (imsg-state-pda-computations imsg-st)
+                                                                 )])
                                                   (>= (config-index config) (imsg-state-pda-max-cmps imsg-st))))])
                                     (if (void? res)
                                         #f
@@ -640,7 +641,7 @@ rules are a (listof rule-structs)
                                                           (imsg-state-pda-word-img-offset imsg-st)
                                                           0)
                                                       '())))])
-      (cond [(tl-zipper-empty? (imsg-state-pda-stack imsg-st)) (text "aaaC" FONT-SIZE BLANK-COLOR)]
+      (cond [(zipper-empty? (imsg-state-pda-stack imsg-st)) (text "aaaC" FONT-SIZE BLANK-COLOR)]
             [(empty? current-stack) (beside (text "aaak" FONT-SIZE BLANK-COLOR)
                                             (text "Stack: " FONT-SIZE FONT-COLOR))]
             [else (beside (text "aaak" FONT-SIZE BLANK-COLOR)
@@ -669,13 +670,13 @@ rules are a (listof rule-structs)
              (text (format "There are computations that exceed the cut-off limit (~a)."
                            (imsg-state-pda-max-cmps imsg-st)) FONT-SIZE DARKGOLDENROD2)]
             [(and (empty? (imsg-state-pda-upci imsg-st))
-                  (or (tl-zipper-empty? (imsg-state-pda-stack imsg-st))
-                      (tl-zipper-at-end? (imsg-state-pda-stack imsg-st)))
+                  (or (zipper-empty? (imsg-state-pda-stack imsg-st))
+                      (zipper-at-end? (imsg-state-pda-stack imsg-st)))
                   (equal? machine-decision 'accept))
              (text "There is a computation that accepts." FONT-SIZE ACCEPT-COLOR)]
             [(and (equal? (imsg-state-pda-upci imsg-st) (imsg-state-pda-farthest-consumed-input imsg-st))
-                  (or (tl-zipper-empty? (imsg-state-pda-stack imsg-st))
-                      (tl-zipper-at-end? (imsg-state-pda-stack imsg-st)))
+                  (or (zipper-empty? (imsg-state-pda-stack imsg-st))
+                      (zipper-at-end? (imsg-state-pda-stack imsg-st)))
                   (equal? machine-decision 'reject))
              (text "All computations end in a non-final configuration and the machine rejects." FONT-SIZE REJECT-COLOR)]
             [else (text "Word Status: accept " FONT-SIZE BLANK-COLOR)]))))
