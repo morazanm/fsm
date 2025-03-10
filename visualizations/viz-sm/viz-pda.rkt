@@ -90,7 +90,7 @@ pair is the second of the pda rule
     ;;config -> config
     ;;Purpose: Applies the read portion of given rule to the given config
     ;;ASSUMPTION: The given rule can be applied to the config
-    (define (apply-read a-config)
+    #|(define (apply-read a-config)
       (if (eq? (triple-read (rule-triple a-rule)) EMP)
           (config (pair-destination (rule-pair a-rule)) (config-word a-config) (config-stack a-config) (config-index a-config))
           (config (pair-destination (rule-pair a-rule)) (rest (config-word a-config)) (config-stack a-config)
@@ -120,7 +120,7 @@ pair is the second of the pda rule
     (define (update-count a-config)
       (if (empty-rule? a-rule)
           a-config
-          (struct-copy config a-config [index (add1 (config-index a-config))])))
+          (struct-copy config a-config [index (add1 (config-index a-config))])))|#
 
     (define (apply-rule-helper a-config)
       (let* ([apply-pop-result (if (eq? (triple-pop (rule-triple a-rule)) EMP)
@@ -142,7 +142,7 @@ pair is the second of the pda rule
                      [index update-count-result])))
     
     (struct-copy computation a-comp
-                 [LoC (treelist-add (computation-LoC a-comp) (apply-rule-helper (treelist-first (computation-LoC a-comp)))
+                 [LoC (treelist-add (computation-LoC a-comp) (apply-rule-helper (treelist-last (computation-LoC a-comp)))
                             #;(update-count (apply-push (apply-pop (apply-read (first (computation-LoC a-comp))))))
                             #;(computation-LoC a-comp))]
                  [LoR (treelist-add (computation-LoR a-comp) a-rule #;(computation-LoR a-comp))]))
@@ -173,17 +173,17 @@ pair is the second of the pda rule
     (define (make-computations-helper QoC path)
       (if (qempty? QoC)
           (treelist path computation-number-hash)
-          (let* ([curr-config (treelist-first (computation-LoC (qfirst QoC)))]
+          (let* ([curr-config (treelist-last (computation-LoC (qfirst QoC)))]
                  [curr-word (config-word curr-config)]
                  [curr-stack (config-stack curr-config)]
-                 [curr-state (config-state
-                              curr-config)])
+                 [curr-state (config-state curr-config)])
             (if (or (and (empty? curr-word)
                          (empty? curr-stack)
                          (set-member? finals-set curr-state))
                     (> (treelist-length (computation-LoC (qfirst QoC))) max-cmps))
                 (begin
                   (update-hash curr-config curr-word)
+                  ;(update-visited curr-config)
                   (make-computations-helper (dequeue QoC) (treelist-add path (qfirst QoC))))
                 (let* ([curr-rules (treelist-filter (lambda (rule) (eq? (triple-source (rule-triple rule))
                                                                  curr-state))
@@ -214,14 +214,14 @@ pair is the second of the pda rule
                                                     (treelist-append connected-read-E-rules connected-read-rules))]
                        [new-configs (treelist-filter (λ (new-c) 
                                               (not (set-member? visited-configuration-set
-                                                                (treelist-first (computation-LoC new-c)))))
+                                                                (treelist-last (computation-LoC new-c)))))
                                             (treelist-map connected-pop-rules
                                                           (λ (rule) (apply-rule (qfirst QoC) rule))
                                                  ))])
                   (begin
                     (update-hash curr-config curr-word)
                     (update-visited curr-config)
-                    (if (empty? new-configs)
+                    (if (treelist-empty? new-configs)
                       (make-computations-helper (dequeue QoC) (treelist-add path (qfirst QoC)))
                       (make-computations-helper (enqueue new-configs (dequeue QoC)) path))))))))
       (make-computations-helper (enqueue (treelist starting-computation) E-QUEUE) empty-treelist))
@@ -254,7 +254,7 @@ pair is the second of the pda rule
   (foldl (λ (state graph)
            (let ([member-of-held-inv (treelist-member? held-inv state eq?)]
                  [member-of-fail-inv (treelist-member? fail-inv state eq?)]
-                 [member-of-cut-off  (member? state cut-off eq?)])
+                 [member-of-cut-off  (treelist-member? cut-off state  eq?)])
              (add-node graph
                        state
                        #:atb (hash 'color (if (eq? (pda-start M) state) 'green 'black)
@@ -416,9 +416,13 @@ pair is the second of the pda rule
          ;;(listof symbol)
          ;;Purpose: Gets the states where it's computation has cutoff
          [cut-off-states (if cut-off
-                             (remove-duplicates (map (λ (configuration) (config-state (first configuration)))
-                                                     (building-viz-state-computations a-vs)))
-                             '())]
+                             (treelist-map (building-viz-state-computations a-vs)
+                                                 (λ (configuration) (config-state (treelist-first configuration)))
+                                                     )
+                             #;(remove-duplicates (treelist-map (building-viz-state-computations a-vs)
+                                                 (λ (configuration) (config-state (treelist-first configuration)))
+                                                     ))
+                             empty-treelist)]
          
          ;;(listof rule-struct)
          ;;Purpose: Extracts the rules from the first of the accepting computations
@@ -528,8 +532,7 @@ pair is the second of the pda rule
                                                           (zipper-next (building-viz-state-stack a-vs)))]
                                                [computations (treelist-filter (λ (comp) (not (treelist-empty? comp)))
                                                                         (treelist-map (building-viz-state-computations a-vs)
-                                                                                      treelist-rest
-                                                                                      ))
+                                                                                      treelist-rest))
                                                              #;(filter (λ (comp)    
                                                                        (not (eq? (config-word (first comp))
                                                                                  (building-viz-state-upci a-vs))))
@@ -598,7 +601,13 @@ pair is the second of the pda rule
                                (rest (imsg-state-pda-upci (informative-messages-component-state
                                                            (viz-state-informative-messages a-vs)))))]
                      [pci pci]
-                     [shown-accepting-trace (if (or (zipper-empty? (imsg-state-pda-shown-accepting-trace
+                     [shown-accepting-trace (tl-zipper-next (imsg-state-pda-shown-accepting-trace
+                                                              (informative-messages-component-state
+                                                               (viz-state-informative-messages a-vs))))
+                                            #;(if (tl-zipper-empty? (imsg-state-pda-shown-accepting-trace
+                                                                    (informative-messages-component-state
+                                                                     (viz-state-informative-messages a-vs))))
+                                                 #;(or (zipper-empty? (imsg-state-pda-shown-accepting-trace
                                                                     (informative-messages-component-state
                                                                      (viz-state-informative-messages a-vs))))
                                                     (zipper-at-end? (imsg-state-pda-shown-accepting-trace
@@ -606,7 +615,7 @@ pair is the second of the pda rule
                                                                       (viz-state-informative-messages a-vs)))))
                                                 (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
                                                                                        (viz-state-informative-messages a-vs)))
-                                                (zipper-next (imsg-state-pda-shown-accepting-trace
+                                                (tl-zipper-next (imsg-state-pda-shown-accepting-trace
                                                               (informative-messages-component-state
                                                                (viz-state-informative-messages a-vs)))))]
                      [stack (if (or (zipper-empty? (imsg-state-pda-stack (informative-messages-component-state
@@ -721,7 +730,10 @@ pair is the second of the pda rule
                                                                 (informative-messages-component-state
                                                                  (viz-state-informative-messages a-vs))))))]
                 [else full-word])]
-         [shown-accepting-trace (if (or (zipper-empty? (imsg-state-pda-shown-accepting-trace
+         [shown-accepting-trace (tl-zipper-to-end (imsg-state-pda-shown-accepting-trace
+                                                        (informative-messages-component-state
+                                                         (viz-state-informative-messages a-vs))))
+                                                      #;(if (or (zipper-empty? (imsg-state-pda-shown-accepting-trace
                                                         (informative-messages-component-state
                                                          (viz-state-informative-messages a-vs))))
                                         (zipper-at-end? (imsg-state-pda-shown-accepting-trace
@@ -751,28 +763,20 @@ pair is the second of the pda rule
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization backward by one step
 (define (left-key-pressed a-vs)
-  (let* ([shown-accepting-trace (if (or (zipper-empty? (imsg-state-pda-shown-accepting-trace
+  (let* ([shown-accepting-trace (tl-zipper-prev (imsg-state-pda-shown-accepting-trace
                                                         (informative-messages-component-state
-                                                         (viz-state-informative-messages a-vs))))
-                                        (zipper-at-begin? (imsg-state-pda-shown-accepting-trace
-                                                           (informative-messages-component-state
-                                                            (viz-state-informative-messages a-vs)))))
-                                    (imsg-state-pda-shown-accepting-trace
-                                     (informative-messages-component-state
-                                      (viz-state-informative-messages a-vs)))
-                                    (zipper-prev (imsg-state-pda-shown-accepting-trace
-                                                  (informative-messages-component-state
-                                                   (viz-state-informative-messages a-vs)))))]
-         [next-rule (if (zipper-empty? (imsg-state-pda-shown-accepting-trace
-                                        (informative-messages-component-state
-                                         (viz-state-informative-messages a-vs))))
+                                                         (viz-state-informative-messages a-vs))))]
+         [next-rule (if (tl-zipper-empty? (imsg-state-pda-shown-accepting-trace
+                                           (informative-messages-component-state
+                                            (viz-state-informative-messages a-vs))))
                         (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
                                                                (viz-state-informative-messages a-vs)))
-                        (first (trace-rules (zipper-current (imsg-state-pda-shown-accepting-trace
+                        (treelist-first (trace-rules (zipper-current (imsg-state-pda-shown-accepting-trace
                                                              (informative-messages-component-state
                                                               (viz-state-informative-messages a-vs)))))))]
-         [rule (if (zipper-empty? (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
-                                                                         (viz-state-informative-messages a-vs))))
+         [rule (if (tl-zipper-empty? (imsg-state-pda-shown-accepting-trace
+                                           (informative-messages-component-state
+                                            (viz-state-informative-messages a-vs))))
                    DUMMY-RULE
                    next-rule #;(list (rule-triple next-rule) (rule-pair next-rule)))]
          [pci (if (or (empty? (imsg-state-pda-pci (informative-messages-component-state
@@ -863,7 +867,10 @@ pair is the second of the pda rule
                             (imsg-state-pda-pci (informative-messages-component-state
                                                  (viz-state-informative-messages a-vs)))
                             '())]
-                   [shown-accepting-trace (if (or (zipper-empty? (imsg-state-pda-shown-accepting-trace
+                   [shown-accepting-trace (tl-zipper-to-begin (imsg-state-pda-shown-accepting-trace
+                                           (informative-messages-component-state
+                                            (viz-state-informative-messages a-vs))))
+                                          #;(if (or (zipper-empty? (imsg-state-pda-shown-accepting-trace
                                                                   (informative-messages-component-state
                                                                    (viz-state-informative-messages a-vs))))
                                                   (zipper-at-begin? (imsg-state-pda-shown-accepting-trace
@@ -992,19 +999,33 @@ pair is the second of the pda rule
                                                             (zipper-at-end? (imsg-state-pda-invs-zipper
                                                                              (informative-messages-component-state
                                                                               (viz-state-informative-messages a-vs))))
+                                                            #;(= (treelist-length
+                                                                (tl-zipper-tl (imsg-state-pda-shown-accepting-trace
+                                                                               (informative-messages-component-state
+                                                                                (viz-state-informative-messages a-vs))))) 1)
                                                             (< (get-index (imsg-state-pda-stack
                                                                            (informative-messages-component-state
                                                                             (viz-state-informative-messages a-vs))))
                                                                (get-index-pda (imsg-state-pda-invs-zipper
                                                                                (informative-messages-component-state
                                                                                 (viz-state-informative-messages a-vs)))))
-                                                            (not (zipper-empty? (imsg-state-pda-shown-accepting-trace
+                                                            (not (tl-zipper-empty? (imsg-state-pda-shown-accepting-trace
                                                                                  (informative-messages-component-state
                                                                                   (viz-state-informative-messages a-vs))))))
                                                        (imsg-state-pda-shown-accepting-trace
                                                         (informative-messages-component-state
                                                          (viz-state-informative-messages a-vs)))]
-                                                      [(and (zipper-at-begin? (imsg-state-pda-invs-zipper
+                                                      [#;(and (= (tl-zipper-idx (imsg-state-pda-shown-accepting-trace
+                                                                               (informative-messages-component-state
+                                                                                (viz-state-informative-messages a-vs)))) 0)
+                                                            (= (sub1 (treelist-length
+                                                                (tl-zipper-tl (imsg-state-pda-shown-accepting-trace
+                                                                               (informative-messages-component-state
+                                                                                (viz-state-informative-messages a-vs))))))
+                                                               (tl-zipper-idx (imsg-state-pda-shown-accepting-trace
+                                                                               (informative-messages-component-state
+                                                                                (viz-state-informative-messages a-vs))))))
+                                                       (and (zipper-at-begin? (imsg-state-pda-invs-zipper
                                                                                (informative-messages-component-state
                                                                                 (viz-state-informative-messages a-vs))))
                                                             (not (zipper-at-end? (imsg-state-pda-invs-zipper
@@ -1013,7 +1034,7 @@ pair is the second of the pda rule
                                                        (imsg-state-pda-shown-accepting-trace
                                                         (informative-messages-component-state
                                                          (viz-state-informative-messages a-vs)))]
-                                                      [else (zipper-to-idx (imsg-state-pda-shown-accepting-trace
+                                                      [else (tl-zipper-to-idx (imsg-state-pda-shown-accepting-trace
                                                                             (informative-messages-component-state
                                                                              (viz-state-informative-messages a-vs)))
                                                                            (get-index-pda zip))])]
@@ -1144,7 +1165,7 @@ pair is the second of the pda rule
                                                                (get-index-pda (imsg-state-pda-invs-zipper
                                                                                (informative-messages-component-state
                                                                                 (viz-state-informative-messages a-vs)))))
-                                                            (not (zipper-empty? (imsg-state-pda-shown-accepting-trace
+                                                            (not (tl-zipper-empty? (imsg-state-pda-shown-accepting-trace
                                                                                  (informative-messages-component-state
                                                                                   (viz-state-informative-messages a-vs))))))
                                                        (imsg-state-pda-shown-accepting-trace
@@ -1159,7 +1180,7 @@ pair is the second of the pda rule
                                                        (imsg-state-pda-shown-accepting-trace
                                                         (informative-messages-component-state
                                                          (viz-state-informative-messages a-vs)))]
-                                                      [else (zipper-to-idx (imsg-state-pda-shown-accepting-trace
+                                                      [else (tl-zipper-to-idx (imsg-state-pda-shown-accepting-trace
                                                                             (informative-messages-component-state
                                                                              (viz-state-informative-messages a-vs)))
                                                                            (get-index-pda zip))])]
@@ -1289,7 +1310,7 @@ pair is the second of the pda rule
           [(and (treelist-empty? acc)
                 (not (eq? (triple-read (rule-triple (treelist-first rules))) EMP)))
            (let* ([rle (rule (triple EMP EMP EMP) (pair EMP EMP))]
-                  [res (trace (first configs) (treelist rle))])
+                  [res (trace (treelist-first configs) (treelist rle))])
              (make-trace (treelist-rest configs) rules (treelist-cons acc res)))]
           [(and (not (treelist-empty? acc))
                 (empty-rule? (treelist-first rules)))
@@ -1301,7 +1322,8 @@ pair is the second of the pda rule
                                    (second (second (first rules)))))]
                   [res (struct-copy trace (treelist-first acc)
                                     [rules (treelist-cons (trace-rules (treelist-first acc)) rle)])])
-             (make-trace (treelist-rest configs) (treelist-rest rules) (treelist-cons acc res) #;(cons res (rest acc))))]
+             (make-trace (treelist-rest configs) (treelist-rest rules) (treelist-cons (treelist-rest acc) res)
+                         #;(cons res (rest acc))))]
           [else (let* ([rle (treelist-first rules)
                             #;(rule (triple (first (first (first rules)))
                                           (second (first (first rules)))
@@ -1442,14 +1464,14 @@ pair is the second of the pda rule
          [accepting-computations (treelist-filter (λ (comp)
                                                     (and (member? (config-state (treelist-first (computation-LoC comp)))
                                                                   (pda-finals new-M) eq?)
-                                                         (treelist-empty? (config-word (treelist-first (computation-LoC comp))))
-                                                         (treelist-empty? (config-stack (treelist-first (computation-LoC comp))))))
+                                                         (treelist-empty? (config-word (treelist-last (computation-LoC comp))))
+                                                         (treelist-empty? (config-stack (treelist-last (computation-LoC comp))))))
                                          computations)]
          ;;(listof trace) ;;Purpose: Makes traces from the accepting computations
          [accepting-traces (treelist-map accepting-computations
                             (λ (acc-comp)       
-                                  (make-trace (reverse (computation-LoC acc-comp))
-                                              (reverse (computation-LoR acc-comp))
+                                  (make-trace (computation-LoC acc-comp)
+                                              (computation-LoR acc-comp)
                                               empty-treelist)))]
          ;;(listof trace) ;;Purpose: Gets the cut off trace if the the word length is greater than the cut
          [cut-accept-traces '()
@@ -1473,8 +1495,8 @@ pair is the second of the pda rule
          [rejecting-traces (treelist-map
                             rejecting-computations
                             (λ (c)
-                                  (make-trace (treelist-reverse (computation-LoC c))
-                                              (treelist-reverse (computation-LoR c))
+                                  (make-trace (computation-LoC c)
+                                              (computation-LoR c)
                                               empty-treelist))
                                 )]
          ;;(zipperof computation) ;;Purpose: Gets the stack of the first accepting computation
@@ -1501,9 +1523,9 @@ pair is the second of the pda rule
          ;;(listof computation)
          ;;Purpose: Gets all the cut off computations if the length of the word is greater than max computations
          [get-cut-off-trace (let ([res (when (treelist-empty? accepting-trace)
-                              (for/treelist ([config (in-treelist (treelist-map LoC treelist-first))])
-                                #:final (>= (config-index config) cut-off)
-                                (treelist-map rejecting-traces treelist-first)))])
+                                         (for/treelist ([config (in-treelist (treelist-map LoC treelist-last))])
+                                           #:final (>= (config-index config) cut-off)
+                                           (treelist-first rejecting-traces) #;(treelist-map rejecting-traces treelist-first)))])
                               (if (void? res)
                                   empty-treelist
                                   res))
@@ -1519,7 +1541,7 @@ pair is the second of the pda rule
          [cut-off-traces (let ([res (unless (treelist-empty? get-cut-off-trace)
                            (for/treelist ([reject-trace (in-treelist rejecting-traces)]
                                           [cut-off-trace (in-treelist get-cut-off-trace)])
-                             (treelist-add reject-trace (treelist-first cut-off-trace))))])
+                             (treelist-cons reject-trace cut-off-trace #;(treelist-first cut-off-trace))))])
                            (if (void? res)
                                rejecting-traces
                                res))
@@ -1531,10 +1553,10 @@ pair is the second of the pda rule
                                   
                                   get-cut-off-trace))]
          ;;building-state struct
-         [building-state (building-viz-state a-word
+         #;[building-state (building-viz-state a-word
                                              '()
-                                             (treelist-map LoC treelist-reverse)
-                                             #;empty-treelist accepting-computations
+                                             LoC #;(treelist-map LoC treelist-reverse)
+                                             accepting-computations
                                              stack
                                              accepting-trace
                                              (if (treelist-empty? accept-cmps) empty-treelist (treelist-rest accept-cmps))
@@ -1546,7 +1568,7 @@ pair is the second of the pda rule
                                              most-consumed-word)]
                      
          ;;(listof graph-thunk) ;;Purpose: Gets all the graphs needed to run the viz
-         [graphs (create-graph-thunks building-state)]
+         ;[graphs (create-graph-thunks building-state)]
          
          ;;(listof number) ;;Purpose: Gets the number of computations for each step
          ;[computation-lengths (hash-map (second computations+hash) (λ (k v) v))]
@@ -1559,16 +1581,17 @@ pair is the second of the pda rule
                                            (make-inv-configs a-word (for/list ([computation (in-treelist accepting-computations)])
                                                                       (treelist->list computation)))
                                            invs)))])
-    ;(map displayln LoC)
+    #;(displayln accepting-traces
+               #;(treelist-first (get-computations a-word (pda-rules new-M) (pda-start new-M) (pda-finals new-M) cut-off)))
     ;(displayln (length accepting-trace))
     ;(displayln computation-lengths)
     ;(displayln old-computation-lens)
     ;(displayln "")
     ;(displayln most-consumed-word #;computation-lens2)
-    ;(displayln cut-off-traces)
+    (displayln (treelist-first get-cut-off-trace #;cut-off-traces))
     ;(displayln (first LoC))
     ;(displayln accepting-trace)
-    (void)
+    ;(void)
     #;(run-viz graphs
                (lambda () (graph->bitmap (first graphs)))
                (posn (/ E-SCENE-WIDTH 2) (/ PDA-E-SCENE-HEIGHT 2))
@@ -1579,12 +1602,12 @@ pair is the second of the pda rule
                                      (imsg-state-pda new-M  
                                                      a-word 
                                                      '() 
-                                                     (list->zipper accepting-trace)
+                                                     (tl->tl-zipper accepting-trace)
                                                      stack 
                                                      most-consumed-word 
                                                      (list->zipper inv-configs) 
                                                      (sub1 (length inv-configs)) 
-                                                     (second computations+hash) #;computation-lens 
+                                                     computation-lens 
                                                      LoC 
                                                      cut-off
                                                      0

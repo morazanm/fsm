@@ -2,7 +2,9 @@
 
 (require "../2htdp/image.rkt"
          "../viz-lib/zipper.rkt"
+         "../viz-lib/tl-zipper.rkt"
          "../viz-lib/viz-constants.rkt"
+         racket/treelist
          "david-imsg-state.rkt"
          "../../fsm-core/private/fsa.rkt"
          "../../fsm-core/private/pda.rkt"
@@ -540,9 +542,18 @@ rules are a (listof rule-structs)
          [current-stack (if (zipper-empty? (imsg-state-pda-stack imsg-st)) 
                             (imsg-state-pda-stack imsg-st)
                             (third (zipper-current (imsg-state-pda-stack imsg-st))))]
-         [machine-decision (if (not (zipper-empty? (imsg-state-pda-shown-accepting-trace imsg-st)))
+         [machine-decision (if (not (tl-zipper-empty? (imsg-state-pda-shown-accepting-trace imsg-st)))
                                'accept
                                'reject)]
+         [computation-has-cut-off (let* ([accepting-trace (tl-zipper->tl (imsg-state-pda-shown-accepting-trace imsg-st))]
+                                         [res (when (treelist-empty? accepting-trace)
+                                                (for/or ([config (in-treelist (treelist-map (imsg-state-pda-computations imsg-st)
+                                                                                            treelist-last))])
+                                                  (>= (config-index config) (imsg-state-pda-max-cmps imsg-st))))])
+                                    (if (void? res)
+                                        #f
+                                        res))]
+         
          [FONT-SIZE 20])
     (above/align
       'left
@@ -560,8 +571,9 @@ rules are a (listof rule-structs)
                           (text (format "~a" EMP) FONT-SIZE FONT-COLOR)
                           (text (format "~a" EMP) FONT-SIZE BLANK-COLOR))))]
             [(and (not (empty? (imsg-state-pda-upci imsg-st)))
-                  (eq? (imsg-state-pda-upci imsg-st) (imsg-state-pda-farthest-consumed-input imsg-st))
-                  (ormap (λ (comp) (>= (length comp) (imsg-state-pda-max-cmps imsg-st)))
+                  (equal? (imsg-state-pda-upci imsg-st) (imsg-state-pda-farthest-consumed-input imsg-st))
+                  computation-has-cut-off
+                  #;(ormap (λ (comp) (>= (length comp) (imsg-state-pda-max-cmps imsg-st)))
                          (imsg-state-pda-computations imsg-st)))
              (let* ([pci-length (length (imsg-state-pda-pci imsg-st))]
                     [sub1-pci-length (sub1 pci-length)])
@@ -586,7 +598,7 @@ rules are a (listof rule-structs)
                                                      0)
                                                  '()))))]
             [(and #;(not (empty? (imsg-state-pda-pci imsg-st)))
-                  (eq? (imsg-state-pda-upci imsg-st) (imsg-state-pda-farthest-consumed-input imsg-st))
+                  (equal? (imsg-state-pda-upci imsg-st) (imsg-state-pda-farthest-consumed-input imsg-st))
                   (eq? machine-decision 'reject))
              (let* ([pci-length (length (imsg-state-pda-pci imsg-st))]
                    [sub1-pci-length (sub1 pci-length)])
@@ -650,8 +662,9 @@ rules are a (listof rule-structs)
             FONT-SIZE
             COMPUTATION-LENGTH-COLOR)
       (cond [(and (not (empty? (imsg-state-pda-upci imsg-st)))
-                  (eq? (imsg-state-pda-upci imsg-st) (imsg-state-pda-farthest-consumed-input imsg-st))
-                  (ormap (λ (comp) (>= (length comp) (imsg-state-pda-max-cmps imsg-st)))
+                  (equal? (imsg-state-pda-upci imsg-st) (imsg-state-pda-farthest-consumed-input imsg-st))
+                  computation-has-cut-off
+                  #;(ormap (λ (comp) (>= (length comp) (imsg-state-pda-max-cmps imsg-st)))
                          (imsg-state-pda-computations imsg-st)))
              (text (format "There are computations that exceed the cut-off limit (~a)."
                            (imsg-state-pda-max-cmps imsg-st)) FONT-SIZE DARKGOLDENROD2)]
@@ -660,7 +673,7 @@ rules are a (listof rule-structs)
                       (zipper-at-end? (imsg-state-pda-stack imsg-st)))
                   (equal? machine-decision 'accept))
              (text "There is a computation that accepts." FONT-SIZE ACCEPT-COLOR)]
-            [(and (eq? (imsg-state-pda-upci imsg-st) (imsg-state-pda-farthest-consumed-input imsg-st))
+            [(and (equal? (imsg-state-pda-upci imsg-st) (imsg-state-pda-farthest-consumed-input imsg-st))
                   (or (zipper-empty? (imsg-state-pda-stack imsg-st))
                       (zipper-at-end? (imsg-state-pda-stack imsg-st)))
                   (equal? machine-decision 'reject))

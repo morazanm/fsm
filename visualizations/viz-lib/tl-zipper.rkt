@@ -41,3 +41,8 @@
 
 (define (tl-zipper->tl zip)
   (tl-zipper-tl zip))
+
+(define (tl-zipper-current zip)
+  (if (tl-zipper-empty? zip)
+      (error "tl zipper is empty")
+      (treelist-ref (tl-zipper-tl zip) (tl-zipper-idx zip))))
