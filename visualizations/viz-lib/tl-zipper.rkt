@@ -6,7 +6,7 @@
 ;; the list (a close analogy would be a functional version of a doubly linked list)
 ;;
 ;; (listof Any) (listof Any) (listof Any) -> zipper
-(struct tl-zipper (tl idx))
+(struct tl-zipper (tl idx) #:transparent)
 
 (define (tl-zipper-empty? zip) (treelist-empty? (tl-zipper-tl zip)))
 (define (tl-zipper-next zip) (if (tl-zipper-empty? zip)
@@ -46,3 +46,10 @@
   (if (tl-zipper-empty? zip)
       (error "tl zipper is empty")
       (treelist-ref (tl-zipper-tl zip) (tl-zipper-idx zip))))
+
+(define (tl-zipper-at-end? zip)
+  (= (sub1 (treelist-length (tl-zipper-tl zip)))
+     (tl-zipper-idx zip)))
+
+(define (tl-zipper-at-begin? zip)
+  (= (tl-zipper-idx zip) 0))
