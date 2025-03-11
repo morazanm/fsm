@@ -576,6 +576,8 @@ pair is the second of the pda rule
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization forward by one step
 (define (right-key-pressed a-vs)
+  #;(displayln (zipper-current (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
+                                                                                       (viz-state-informative-messages a-vs)))))
   (let* (#;[completed-config? (ormap (λ (config) (empty? (config-word (first (computation-LoC config)))))
                                      (first (get-computations (imsg-state-pda-pci (informative-messages-component-state
                                                                                    (viz-state-informative-messages a-vs)))
@@ -962,8 +964,10 @@ pair is the second of the pda rule
                                                               (viz-state-informative-messages a-vs))))
                (not (zipper-at-end? (imsg-state-pda-invs-zipper (informative-messages-component-state
                                                                  (viz-state-informative-messages a-vs))))))
-          (< (pda-accessor-func (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
+          (< #;(pda-accessor-func (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
                                                                        (viz-state-informative-messages a-vs))))
+             (get-index (imsg-state-pda-stack (informative-messages-component-state
+                                                                 (viz-state-informative-messages a-vs))))
              (get-index-pda (imsg-state-pda-invs-zipper (informative-messages-component-state
                                                          (viz-state-informative-messages a-vs))))))
       a-vs
@@ -1101,14 +1105,22 @@ pair is the second of the pda rule
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the next failed invariant
 (define (l-key-pressed a-vs)
+  #;(displayln (zipper-current (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
+                                                                       (viz-state-informative-messages a-vs)))))
+  #;(displayln (get-index (imsg-state-pda-stack (informative-messages-component-state
+                                                                 (viz-state-informative-messages a-vs)))))
+  #;(displayln (zipper-current  (imsg-state-pda-invs-zipper (informative-messages-component-state
+                                                          (viz-state-informative-messages a-vs)))))
   (if (or (zipper-empty? (imsg-state-pda-invs-zipper (informative-messages-component-state
                                                       (viz-state-informative-messages a-vs))))
-          (and (zipper-at-begin? (imsg-state-pda-invs-zipper (informative-messages-component-state
+          (and (zipper-at-end? (imsg-state-pda-invs-zipper (informative-messages-component-state
                                                               (viz-state-informative-messages a-vs))))
-               (not (zipper-at-end? (imsg-state-pda-invs-zipper (informative-messages-component-state
+               (not (zipper-at-begin? (imsg-state-pda-invs-zipper (informative-messages-component-state
                                                                  (viz-state-informative-messages a-vs))))))
-          (> (pda-accessor-func (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
+          (> #;(pda-accessor-func (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
                                                                        (viz-state-informative-messages a-vs))))
+             (get-index (imsg-state-pda-stack (informative-messages-component-state
+                                                                 (viz-state-informative-messages a-vs))))
              (get-index-pda  (imsg-state-pda-invs-zipper (informative-messages-component-state
                                                           (viz-state-informative-messages a-vs))))))
       a-vs
@@ -1606,7 +1618,7 @@ pair is the second of the pda rule
     ;(displayln (map treelist->list LoC) #;most-consumed-word #;computation-lens2)
     ;(displayln (pda-finals new-M))
     ;(displayln (first cut-off-traces #;LoC))
-    ;(displayln accepting-trace)
+    #;(displayln accepting-trace)
     #;(writeln (imsg-state-pda new-M  
                              a-word 
                              '() 
@@ -1622,8 +1634,8 @@ pair is the second of the pda rule
                              (let ([offset-cap (- (length a-word) TAPE-SIZE)])
                                (if (> 0 offset-cap) 0 offset-cap))
                              0))
-    (void)
-    #;(run-viz graphs
+    ;(void)
+    (run-viz graphs
                (lambda () (graph->bitmap (first graphs)))
                (posn (/ E-SCENE-WIDTH 2) (/ PDA-E-SCENE-HEIGHT 2))
                DEFAULT-ZOOM

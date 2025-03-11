@@ -1665,4 +1665,33 @@ action is the second pair in a tm rule
 
 
 ;(tm-viz EVEN-AS-&-BS '(@ a b a b) 0)
+#;(tm-viz anbncn `(,LM ,BLANK a b c) 1 (list 'S S-INV1)
+          (list 'A A-INV1)
+          (list 'B B-INV1)
+          (list 'C C-INV1)
+          (list 'D D-INV)
+          (list 'E E-INV)
+          (list 'F F-INV)
+          (list 'H H-INV)
+          (list 'I I-INV)
+          (list 'G G-INV)
+          (list 'J J-INV)
+          (list 'K K-INV)
+          (list 'L L-INV)
+          (list 'Y Y-INV1)
+          #:cut-off 15)
+
+#;(tm-viz EVEN-AS-&-BS `(,LM b a b a) 0 (list 'K EVEN-K-INV)
+          (list 'H EVEN-H-INV)
+          (list 'I BRK-EVEN-I-INV)
+          (list 'B EVEN-B-INV)
+          (list 'S EVEN-S-INV))
+
+#;(tm-viz anbncn `(,LM ,BLANK a b c) 1 (list 'S S-INV)
+          (list 'A A-INV)
+          (list 'B B-INV)
+          (list 'C C-INV)
+          (list 'Y Y-INV)
+          (list 'N N-INV))
+
 "fix informative messages"

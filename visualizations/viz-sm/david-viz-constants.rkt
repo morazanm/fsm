@@ -61,19 +61,19 @@ rules are a (listof rule)
 (define SM-VIZ-FONT-SIZE 18)
 (define INS-TOOLS-BUFFER 30)
 
-(define accessor-func (compose fourth (compose trace-config zipper-current)))
-(define pda-accessor-func (compose config-index (compose trace-config zipper-current)))
-(define ndfa-accessor-func (compose third (compose trace-config zipper-current)))
+(define accessor-func (compose1 fourth (compose1 trace-config zipper-current)))
+(define pda-accessor-func (compose1 config-index (compose1 trace-config zipper-current)))
+(define ndfa-accessor-func (compose1 third (compose1 trace-config zipper-current)))
 
-(define get-index (compose fourth zipper-current))
+(define get-index (compose1 fourth zipper-current))
 (define get-index-pda (compose1 config-index (compose1 first zipper-current)))
-(define get-index-ndfa (compose third zipper-current))
+(define get-index-ndfa (compose1 third zipper-current))
 
-(define get-next-index (compose fourth (compose zipper-current zipper-next)))
-(define get-next-index-ndfa (compose third (compose zipper-current zipper-next)))
+(define get-next-index (compose1 fourth (compose1 zipper-current zipper-next)))
+(define get-next-index-ndfa (compose1 third (compose1 zipper-current zipper-next)))
 
-(define get-prev-index (compose fourth (compose zipper-current zipper-prev)))
-(define get-prev-index-ndfa (compose third (compose zipper-current zipper-prev)))
+(define get-prev-index (compose1 fourth (compose1 zipper-current zipper-prev)))
+(define get-prev-index-ndfa (compose1 third (compose1 zipper-current zipper-prev)))
 
 (define AB*B*UAB*
   (make-unchecked-ndfa '(S K B C H)

@@ -754,7 +754,6 @@
           (list 'H ND-H-INV))
 
 
-
 (sm-viz n '(b a a))
 (sm-viz nk '(b a a))
 (sm-viz aa-ab '(a a a a b a))
