@@ -16,7 +16,7 @@
          "../../fsm-core/private/cfg.rkt"
          "../../fsm-core/private/misc.rkt"
          "default-informative-messages.rkt"
-         ;profile-flame-graph
+         profile-flame-graph
          (except-in "../viz-lib/viz-constants.rkt"
                     INS-TOOLS-BUFFER)
          "david-imsg-state.rkt"
@@ -512,7 +512,7 @@ pair is the second of the pda rule
 
   (define (create-graph-thunks-helper a-vs acc)
     (cond [(for/or ([config (building-viz-state-computations a-vs) #;(map first (building-viz-state-computations a-vs))])
-             (>= (config-index (first config)) (building-viz-state-max-cmps a-vs)))
+                  (>= (config-index (first config)) (building-viz-state-max-cmps a-vs)))
            #;(and #;(equal? (building-viz-state-upci a-vs) (building-viz-state-farthest-consumed-input a-vs))
                 (ormap (λ (computation) (>= (config-index computation) (building-viz-state-max-cmps a-vs)))
                        (begin
@@ -524,9 +524,10 @@ pair is the second of the pda rule
              ;(displayln "here" #;(first (map first (building-viz-state-computations a-vs))))
              (reverse (cons (create-graph-thunk a-vs #:cut-off #t) acc)))
            (reverse (cons (create-graph-thunk a-vs #:cut-off #t) acc))]
-          [(and (empty? (building-viz-state-upci a-vs))
-                (or (list? (building-viz-state-stack a-vs))
-                    (zipper-at-end? (building-viz-state-stack a-vs))))
+          [(or (equal? (building-viz-state-upci a-vs) (building-viz-state-farthest-consumed-input a-vs))
+               (and (empty? (building-viz-state-upci a-vs))
+                    (or (list? (building-viz-state-stack a-vs))
+                        (zipper-at-end? (building-viz-state-stack a-vs)))))
            (reverse (cons (create-graph-thunk a-vs) acc))]
           #;[(and (equal? (building-viz-state-upci a-vs) (building-viz-state-farthest-consumed-input a-vs))
                 (ormap (λ (comp-len) #t)
@@ -1526,9 +1527,16 @@ pair is the second of the pda rule
                                    last-word
                                    (rest last-word)))]
 
+         [computation-has-cut-off? (and (empty? accepting-trace)
+                                     (for/or ([computation LoC])
+                                       (>= (config-index (treelist-last computation)) cut-off))
+                                    #;(ormap (λ (comp-length)
+                                              (>= (config-index comp-length) cut-off))
+                                            (map treelist-last LoC)))]
          ;;(listof computation)
          ;;Purpose: Gets all the cut off computations if the length of the word is greater than max computations
-         [get-cut-off-trace (if (and (empty? accepting-trace)
+         [get-cut-off-trace (if computation-has-cut-off?
+                                #;(and (empty? accepting-trace)
                                      (for/or ([computation LoC])
                                        (>= (config-index (treelist-last computation)) cut-off))
                                     #;(ormap (λ (comp-length)
@@ -1559,7 +1567,7 @@ pair is the second of the pda rule
                                              (if (and add-dead (not (empty? invs))) (cons (list dead-state (λ (w s) #t)) invs) invs)
                                              dead-state
                                              cut-off
-                                             most-consumed-word)]
+                                             (if computation-has-cut-off? '() most-consumed-word))]
 
          ;;(listof graph-thunk) ;;Purpose: Gets all the graphs needed to run the viz
          [graphs (create-graph-thunks building-state)]
@@ -1700,7 +1708,7 @@ pair is the second of the pda rule
 
 (define pd-numb>numa (cfg->pda numb>numa))
 
-(time (pda-viz pd-numb>numa '(a b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b) '()
+#;(time (pda-viz pd-numb>numa '(a b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b) '()
                #:cut-off 15))
 #;(time (pda-viz pd-numb>numa
                  '(a b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b) '()))
@@ -1711,6 +1719,13 @@ pair is the second of the pda rule
                  #:repeat 10
                  #:svg-path (string->path "/home/sora/Pictures/test-flame.svg"))
 
+(profile-thunk (lambda ()
+                   (pda-viz pd-numb>numa
+                            '(a b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b) '()
+                                     #:cut-off 15))
+                 #:repeat 10
+                 #|#:svg-path (string->path "C:/Users/David/test-flame.svg")|# )
+
 (define P3 (make-unchecked-ndpda '(S H)
                                  '(a b)
                                  '(b)
@@ -1720,7 +1735,7 @@ pair is the second of the pda rule
                                    ((S a ε)(S (b b)))
                                    ((H b (b b))(H ε)) ((H b (b))(H ε)))))
 
-(time (pda-viz P3 '(a a b a b b b) '()))
+#;(time (pda-viz P3 '(a a b a b b b) '()))
 
 
 (define P2 (make-unchecked-ndpda '(S H)
@@ -1744,6 +1759,6 @@ pair is the second of the pda rule
          (andmap (λ (w) (eq? w 'b)) stck)
          (<= (length ci-as) (length (append ci-bs stck)) (* 2 (length ci-as))))))
 
-(time (pda-viz P2 '(a a a b b) (list (list 'S P-S-INV) (list 'H P-H-INV))))
+#;(time (pda-viz P2 '(a a a b b) (list (list 'S P-S-INV) (list 'H P-H-INV))))
 
 ;[(<= max-cmps 0) (error (format "The maximum amount of computations, ~a, must be integer greater than 0" max-cmps))] DONT FORGET
