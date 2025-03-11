@@ -3,7 +3,7 @@
          racket/list)
 (provide (all-defined-out))
 
-(define (treelist-filter pred tl)
+#;(define (treelist-filter pred tl)
   (define (treelist-filter-helper pred tl i)
   (if (= i -1)
       tl
