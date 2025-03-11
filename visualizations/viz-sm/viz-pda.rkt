@@ -16,7 +16,7 @@
          "../../fsm-core/private/cfg.rkt"
          "../../fsm-core/private/misc.rkt"
          "default-informative-messages.rkt"
-         profile-flame-graph
+         ;profile-flame-graph
          (except-in "../viz-lib/viz-constants.rkt"
                     INS-TOOLS-BUFFER)
          "david-imsg-state.rkt"
@@ -1557,7 +1557,9 @@ pair is the second of the pda rule
          ;;building-state struct
          [building-state (building-viz-state a-word
                                              '()
-                                             (map treelist->list LoC)
+                                             (for/list ([computation LoC])
+                                               (treelist->list computation))
+                                             ;(map treelist->list LoC)
                                              accepting-computations
                                              stack
                                              (list accepting-trace)
@@ -1719,13 +1721,6 @@ pair is the second of the pda rule
                  #:repeat 10
                  #:svg-path (string->path "/home/sora/Pictures/test-flame.svg"))
 
-(profile-thunk (lambda ()
-                   (pda-viz pd-numb>numa
-                            '(a b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b) '()
-                                     #:cut-off 15))
-                 #:repeat 10
-                 #|#:svg-path (string->path "C:/Users/David/test-flame.svg")|# )
-
 (define P3 (make-unchecked-ndpda '(S H)
                                  '(a b)
                                  '(b)
@@ -1760,5 +1755,6 @@ pair is the second of the pda rule
          (<= (length ci-as) (length (append ci-bs stck)) (* 2 (length ci-as))))))
 
 #;(time (pda-viz P2 '(a a a b b) (list (list 'S P-S-INV) (list 'H P-H-INV))))
+
 
 ;[(<= max-cmps 0) (error (format "The maximum amount of computations, ~a, must be integer greater than 0" max-cmps))] DONT FORGET
