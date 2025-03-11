@@ -266,7 +266,7 @@ rules are a (listof rule-structs)
 ;;config rule -> config
 ;;Purpose: Applys the given rule to the given config and returns the updated config
 ;;ASSUMPTION: The given rule can be applied to the config
-(define (apply-rule a-comp a-rule)
+#;(define (apply-rule a-comp a-rule)
   ;;config -> config
   ;;Purpose: Applies the read portion of given rule to the given config
   ;;ASSUMPTION: The given rule can be applied to the config
@@ -319,7 +319,7 @@ rules are a (listof rule-structs)
 ;;word (listof rule) symbol number -> (listof computation)
 ;;Purpose: Returns all possible computations using the given word, (listof rule) and start symbol
 ;;   that are within the bounds of the max computation limit
-(define (get-computations a-word lor start finals max-cmps)
+#;(define (get-computations a-word lor start finals max-cmps)
   (let (;;computation
         ;;Purpose: The starting computation
         [starting-computation (computation (list (config start a-word '() 0)
@@ -336,7 +336,7 @@ rules are a (listof rule-structs)
 ;;(listof rules) (queueof computation) (listof computation) number -> (listof computation)
 ;;Purpose: Makes all the computations based around the (queueof computation) and (listof rule)
 ;;     that are within the bounds of the max computation limit
-(define (make-computations lor finals QoC path max-cmps)
+#;(define (make-computations lor finals QoC path max-cmps)
   (cond [(qempty? QoC) path]
         [(or (>= (length (computation-LoC (qfirst QoC))) max-cmps)
               (and (member? (config-state (first (computation-LoC (qfirst QoC)))) finals eq?)
@@ -378,7 +378,7 @@ rules are a (listof rule-structs)
 
 ;;(listof symbols) machine -> (listof symbols)
 ;;Purpose: Returns the last fully consumed word for the given machine
-(define (pda-last-fully-consumed a-word M max-cmps)
+#;(define (pda-last-fully-consumed a-word M max-cmps)
   (cond [(empty? a-word) '()]
         [(not (ormap (λ (config) (empty? (config-word (first config))))
                      (map computation-LoC (get-computations a-word
@@ -405,7 +405,7 @@ rules are a (listof rule-structs)
 
 ;;(X -> Y) (X -> Y) (X -> Y) (X -> Y) (listof (listof X)) -> (listof (listof X))
 ;;Purpose: filtermaps the given f-on-x on the given (listof (listof X))
-(define (filter-map-acc filter-func map-func bool-func accessor a-lolox)
+#;(define (filter-map-acc filter-func map-func bool-func accessor a-lolox)
   (filter-map (λ (x)
                 (and (bool-func (filter-func x))
                      (map-func (accessor x))))
@@ -413,12 +413,12 @@ rules are a (listof rule-structs)
 
 ;;(listof symbols) -> string
 ;;Purpose: Converts the given los into a string
-(define (make-edge-label rule)
+#;(define (make-edge-label rule)
   (format "\n[~a ~a ~a]" (second (first rule)) (third (first rule)) (second (second rule))))
 
 ;;(listof rules)
 ;;Purpose: Transforms the pda rules into triples similiar to an ndfa 
-(define (make-rule-triples rules)
+#;(define (make-rule-triples rules)
   (map (λ (rule)
          (append (list (first (first rule)))
                  (list (string->symbol (make-edge-label rule)))
