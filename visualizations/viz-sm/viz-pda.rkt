@@ -44,21 +44,35 @@ pair is the second of the pda rule
 (struct pda (states sigma gamma start finals rules) #:transparent)
 
 (define DUMMY-RULE (rule (triple EMP EMP EMP) (pair EMP EMP)))
-
-;;upci is the unprocessed consumed input (listof symbol)
-;;pci is the proccessed consumed input (listof symbol)
-;;computations is a (listof computation) that attempt to consume the ci
-;;accepting computations is (listof computation) for all accepting computations
-;;stack is a (zipperof computation)
-;;accept-traces is a (listof configuration)
-;;reject-traces is a (listof configuration)
-;;M is the given machine
-;;inv is a the (listof (state (listof symbol -> boolean)))
-;;dead is the sybmol of dead state
-;;the max amount of transitions the machine can make
-;;farthest-consumed-input (listof symbol) => the portion the ci that the machine consumed the most of
-(struct building-viz-state (upci pci computations acc-comp stack tracked-accept-trace
-                                 accept-traces reject-traces M inv dead max-cmps farthest-consumed-input))
+#|
+upci                    | is the unprocessed consumed input (listof symbol)
+pci                     | is the proccessed consumed input (listof symbol)
+computations            | is all of the computations that attempt to consume the ci (listof computation)
+acc-comp                | is all of the accepting computations (listof computation)
+stack                   | is the first accepting computation (zipperof computation)
+tracked-accept-trace    | is the first accepting trace (which is also the first accepting computation) to be followed 
+accept-traces           | is all of the accepting traces => (listof trace)
+reject-traces           | is all of the rejecting traces => (listof trace)
+M                       | is the machine as a structure => pda
+inv                     | is the invariant predicates for the machine => (listof (list symbol (ci stack -> boolean)))
+dead                    | is the dead state symbol  => symbol 
+max-cmps                | is the cut off threshold for the machine => postive integer
+farthest-consumed-input | is the portion the ci that the machine consumed the most of => (listof symbol)
+|#
+(struct building-viz-state (upci 
+                            pci  
+                            computations 
+                            acc-comp 
+                            stack 
+                            tracked-accept-trace 
+                            accept-traces
+                            reject-traces
+                            M    
+                            inv
+                            dead
+                            max-cmps 
+                            farthest-consumed-input 
+                            ))
 
 (define get-index (compose1 config-index zipper-current))
 
@@ -67,7 +81,7 @@ pair is the second of the pda rule
 ;; X (listof X) -> boolean
 ;;Purpose: Determine if X is in the given list
 (define (member? x lst eq-func)
-  (for/or ([L lst]) (eq-func x L)))  #;((ormap (λ (L) (eq-func x L)) lst))
+  (for/or ([L lst]) (eq-func x L))) 
 
 ;;rule -> boolean
 ;;Purpose: Determines if the given rule is an empty rule (e.i. reads, pops, and pushes empty)
@@ -77,61 +91,34 @@ pair is the second of the pda rule
        (eq? (pair-push   (rule-pair a-rule))   EMP)))
 
 
-;;word (listof rule) symbol number -> (listof computation) hash table
+;;word (listof rule) symbol number -> (list (treelistof computation) hashtable)
 ;;Purpose: Returns all possible computations using the given word, (listof rule) and start symbol
 ;;   that are within the bounds of the max computation limit
 (define (get-computations a-word lor start finals max-cmps)
-
-  ;;config rule -> config
+  ;;computation rule -> computation
   ;;Purpose: Applys the given rule to the given config and returns the updated config
   ;;ASSUMPTION: The given rule can be applied to the config
   (define (apply-rule a-comp a-rule)
-
     ;;config -> config
-    ;;Purpose: Applies the read portion of given rule to the given config
-    ;;ASSUMPTION: The given rule can be applied to the config
-    #|(define (apply-read a-config)
-      (if (eq? (triple-read (rule-triple a-rule)) EMP)
-          (config (pair-destination (rule-pair a-rule)) (config-word a-config) (config-stack a-config) (config-index a-config))
-          (config (pair-destination (rule-pair a-rule)) (rest (config-word a-config)) (config-stack a-config)
-                  (config-index a-config))))
-
-    ;;config -> config
-    ;;Purpose: Applies the pop portion of given rule to the given config
-    ;;ASSUMPTION: The given rule can be applied to the config
-    (define (apply-pop a-config)
-      (if (eq? (triple-pop (rule-triple a-rule)) EMP)
-          a-config
-          (struct-copy config a-config
-                       [stack (drop (config-stack a-config) (length (triple-pop (rule-triple a-rule))))])))
-
-    ;;config -> config
-    ;;Purpose: Applies the push portion of given rule to the given config
-    ;;ASSUMPTION: The given rule can be applied to the config
-    (define (apply-push a-config)
-      (if (eq? (pair-push (rule-pair a-rule)) EMP)
-          a-config
-          (struct-copy config a-config
-                       [stack (append (pair-push (rule-pair a-rule)) (config-stack a-config))])))
-
-    ;;config -> config
-    ;;Purpose: Updates the config's number if something gets applied to the config (e.i. read/pop/push)
-    ;;ASSUMPTION: The given rule can be applied to the config
-    (define (update-count a-config)
-      (if (empty-rule? a-rule)
-          a-config
-          (struct-copy config a-config [index (add1 (config-index a-config))])))|#
-
+    ;;Purpose: Applys the given rule to the given config and returns the updated config    
     (define (apply-rule-helper a-config)
-      (let* ([apply-pop-result (if (eq? (triple-pop (rule-triple a-rule)) EMP)
+      (let* (;;config
+             ;;Purpose: Applies the read portion of given rule to the given config
+             [apply-pop-result (if (eq? (triple-pop (rule-triple a-rule)) EMP)
                                    (config-stack a-config)
                                    (drop (config-stack a-config) (length (triple-pop (rule-triple a-rule)))))]
+             ;;config
+             ;;Purpose: Applies the push portion of given rule to the given config
              [apply-push-result (if (eq? (pair-push (rule-pair a-rule)) EMP)
                                     apply-pop-result
                                     (append (pair-push (rule-pair a-rule)) apply-pop-result))]
+             ;;config
+             ;;Purpose: Applies the read portion of given rule to the given config
              [apply-read-result (if (eq? (triple-read (rule-triple a-rule)) EMP)
                                     (config-word a-config)
                                     (rest (config-word a-config)))]
+             ;;config
+             ;;Purpose: Updates the config's number if something gets applied to the config (e.i. read/pop/push)
              [update-count-result (if (empty-rule? a-rule)
                                       (config-index a-config)
                                       (add1 (config-index a-config)))])
@@ -142,28 +129,38 @@ pair is the second of the pda rule
                      [index update-count-result])))
 
     (struct-copy computation a-comp
-                 [LoC (treelist-add (computation-LoC a-comp) (apply-rule-helper (treelist-last (computation-LoC a-comp)))
-                            #;(update-count (apply-push (apply-pop (apply-read (first (computation-LoC a-comp))))))
-                            #;(computation-LoC a-comp))]
-                 [LoR (treelist-add (computation-LoR a-comp) a-rule #;(computation-LoR a-comp))]))
+                 [LoC (treelist-add (computation-LoC a-comp) (apply-rule-helper (treelist-last (computation-LoC a-comp))))]
+                 [LoR (treelist-add (computation-LoR a-comp) a-rule)]))
 
-
+  ;;mutable set
+  ;;Purpose: holds all of the visited configurations
   (define visited-configuration-set (mutable-set))
 
+  ;;configuration -> void
+  ;;Purpose: updates the set of visited configurations
   (define (update-visited a-config)
     (set-add! visited-configuration-set a-config))
 
-
+  ;;hash-set
+  ;;Purpose: accumulates the number of computations in a hashset
   (define computation-number-hash (make-hash))
+  
+  ;;set
+  ;;an empty set
   (define EMPTY-SET (set))
+
+  ;;configuration word -> void
+  ;;Purpose: updates the number of configurations using the given word as a key
   (define (update-hash a-config a-word)
     (hash-set! computation-number-hash
                a-word
                (set-add (hash-ref computation-number-hash
-                               a-word
-                               EMPTY-SET)
+                                  a-word
+                                  EMPTY-SET)
                         a-config)))
 
+  ;;set
+  ;;the set of final states
   (define finals-set (list->seteq finals))
 
   ;;(listof rules) (queueof computation) (listof computation) number -> (listof computation)
@@ -173,11 +170,18 @@ pair is the second of the pda rule
     (define (make-computations-helper QoC path)
       (if (qempty? QoC)
           (list path computation-number-hash)
-          (let* ([curr-config (treelist-last (computation-LoC (qfirst QoC)))]
+          (let* (;;configuraton
+                 ;;the current configuration
+                 [curr-config (treelist-last (computation-LoC (qfirst QoC)))]
+                 ;;word
+                 ;;the unconsumed input of the current configuration
                  [curr-word (config-word curr-config)]
+                 ;;stack
+                 ;;the current stack of the current configuration
                  [curr-stack (config-stack curr-config)]
-                 [curr-state (config-state
-                              curr-config)])
+                 ;;state
+                 ;;the current state of the current configuration
+                 [curr-state (config-state curr-config)])
             (if (or (and (empty? curr-word)
                          (empty? curr-stack)
                          (set-member? finals-set curr-state))
@@ -185,46 +189,50 @@ pair is the second of the pda rule
                 (begin
                   (update-hash curr-config curr-word)
                   (make-computations-helper (dequeue QoC) (treelist-add path (qfirst QoC))))
-                (let* ([curr-rules (treelist-filter (λ (rule) (eq? (triple-source (rule-triple rule))
-                                                                 curr-state))
-                                           lor)]
+                (let* (;;(listof rules)
+                       ;;Purpose: Filters the rules that match the current state 
+                       [curr-rules (treelist-filter (λ (rule) (eq? (triple-source (rule-triple rule))
+                                                                   curr-state))
+                                                    lor)]
                        ;;(listof rules)
                        ;;Purpose: Holds all rules that consume a first letter in the given configurations
                        [connected-read-rules (treelist-filter (λ (rule)
-                                                       (and (not (empty? curr-word))
-                                                            (eq? (triple-read (rule-triple rule))
-                                                                 (first curr-word))))
-                                                     curr-rules)]
+                                                                (and (not (empty? curr-word))
+                                                                     (eq? (triple-read (rule-triple rule))
+                                                                          (first curr-word))))
+                                                              curr-rules)]
                        ;;(listof rules)
                        ;;Purpose: Holds all rules that consume no input for the given configurations
                        [connected-read-E-rules (treelist-filter (λ (rule)
-                                                         (eq? (triple-read (rule-triple rule))
-                                                                   EMP))
-                                                       curr-rules)]
+                                                                  (eq? (triple-read (rule-triple rule))
+                                                                       EMP))
+                                                                curr-rules)]
                        ;;(listof rules)
                        ;;Purpose: Holds all rules that can pop what is in the stack
                        [connected-pop-rules (treelist-filter (λ (rule)
-                                                      (or (eq? (triple-pop (rule-triple rule)) EMP)
-                                                          (and (>= (length curr-stack)
-                                                                   (length (triple-pop (rule-triple rule))))
-                                                               (equal? (take curr-stack
-                                                                             (length
-                                                                              (triple-pop (rule-triple rule))))
-                                                                       (triple-pop (rule-triple rule))))))
-                                                    (treelist-append connected-read-E-rules connected-read-rules))]
+                                                               (or (eq? (triple-pop (rule-triple rule)) EMP)
+                                                                   (and (>= (length curr-stack)
+                                                                            (length (triple-pop (rule-triple rule))))
+                                                                        (equal? (take curr-stack
+                                                                                      (length
+                                                                                       (triple-pop (rule-triple rule))))
+                                                                                (triple-pop (rule-triple rule))))))
+                                                             (treelist-append connected-read-E-rules connected-read-rules))]
+                       ;;(listof coniguration)
+                       ;;Purpose: Holds all the new configurations generated from the appliciable rules
                        [new-configs (treelist-filter (λ (new-c) 
-                                              (not (set-member? visited-configuration-set
-                                                                (treelist-last (computation-LoC new-c)))))
-                                            (treelist-map connected-pop-rules
-                                                          (λ (rule) (apply-rule (qfirst QoC) rule))
-                                                 ))])
+                                                       (not (set-member? visited-configuration-set
+                                                                         (treelist-last (computation-LoC new-c)))))
+                                                     (treelist-map connected-pop-rules
+                                                                   (λ (rule) (apply-rule (qfirst QoC) rule))
+                                                                   ))])
                   (begin
                     (update-hash curr-config curr-word)
                     (update-visited curr-config)
                     (if (treelist-empty? new-configs)
-                      (make-computations-helper (dequeue QoC) (treelist-add path (qfirst QoC)))
-                      (make-computations-helper (enqueue new-configs (dequeue QoC)) path))))))))
-      (make-computations-helper (enqueue (treelist starting-computation) E-QUEUE) empty-treelist))
+                        (make-computations-helper (dequeue QoC) (treelist-add path (qfirst QoC)))
+                        (make-computations-helper (enqueue new-configs (dequeue QoC)) path))))))))
+    (make-computations-helper (enqueue (treelist starting-computation) E-QUEUE) empty-treelist))
 
   (let (;;computation
         ;;Purpose: The starting computation
@@ -248,21 +256,9 @@ pair is the second of the pda rule
                   (second (first pda-rule))
                   (third (first pda-rule)))
           (pair (first (second pda-rule))
-                (second (second pda-rule)))))
-  #;(map (λ (pda-rule)
-           (rule (triple (first (first pda-rule))
-                         (second (first pda-rule))
-                         (third (first pda-rule)))
-                 (pair (first (second pda-rule))
-                       (second (second pda-rule))))
-           #;(list (rule (triple (first (first pda-rule))
-                                 (second (first pda-rule))
-                                 (third (first pda-rule)))
-                         (pair (first (second pda-rule))
-                               (second (second pda-rule))))))
-         lor))
+                (second (second pda-rule))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;graph machine -> graph
 ;;Purpose: Creates the nodes for the given graph
@@ -305,39 +301,33 @@ pair is the second of the pda rule
   (define (find-rule? rule dead lor)
     (or (member? rule lor equal?)
         (for/or ([r lor])
-                 (and (eq? (triple-source rule) (triple-source r))
-                      (or (eq? (triple-pop rule) (triple-pop r))
-                          (and (eq? (triple-pop rule) (triple-pop r))
-                               (eq? (triple-pop rule) dead)))))
-        #;(ormap (λ (r)
-                 (and (eq? (triple-source rule) (triple-source r))
-                      (or (eq? (triple-pop rule) (triple-pop r))
-                          (and (eq? (triple-pop rule) (triple-pop r))
-                               (eq? (triple-pop rule) dead)))))
-               lor)))
+          (and (eq? (triple-source rule) (triple-source r))
+               (or (eq? (triple-pop rule) (triple-pop r))
+                   (and (eq? (triple-pop rule) (triple-pop r))
+                        (eq? (triple-pop rule) dead)))))))
 
   (foldl (λ (rule graph)
            (let ([member-of-current-accept-rules? (member? rule current-accept-rules equal?)])
              (add-edge graph
-                     (triple-read rule)
-                     (triple-source rule)
-                     (triple-pop rule)
-                     #:atb (hash 'color (cond [(and (member? rule current-shown-accept-rules equal?)
-                                                    member-of-current-accept-rules?)
-                                               SPLIT-ACCEPT-COLOR]
-                                              [(find-rule? rule dead current-shown-accept-rules) TRACKED-ACCEPT-COLOR]
-                                              [(find-rule? rule dead current-accept-rules)       ALL-ACCEPT-COLOR]
-                                              [(find-rule? rule dead current-reject-rules)       REJECT-COLOR]
-                                              [else 'black])
-                                 'style (cond [(eq? (triple-pop rule) dead) 'dashed]
-                                              [member-of-current-accept-rules? 'bold]
-                                              [else 'solid])
-                                 'fontsize FONT-SIZE))))
+                       (triple-read rule)
+                       (triple-source rule)
+                       (triple-pop rule)
+                       #:atb (hash 'color (cond [(and (member? rule current-shown-accept-rules equal?)
+                                                      member-of-current-accept-rules?)
+                                                 SPLIT-ACCEPT-COLOR]
+                                                [(find-rule? rule dead current-shown-accept-rules) TRACKED-ACCEPT-COLOR]
+                                                [(find-rule? rule dead current-accept-rules)       ALL-ACCEPT-COLOR]
+                                                [(find-rule? rule dead current-reject-rules)       REJECT-COLOR]
+                                                [else 'black])
+                                   'style (cond [(eq? (triple-pop rule) dead) 'dashed]
+                                                [member-of-current-accept-rules? 'bold]
+                                                [else 'solid])
+                                   'fontsize FONT-SIZE))))
          dgraph
          rules))
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;viz-state -> graph-thunk
 ;;Purpose: Creates a graph thunk for a given viz-state
@@ -349,19 +339,8 @@ pair is the second of the pda rule
     (append-map (λ (config)
                   (for/list ([config (in-treelist (computation-LoC config))]
                              #:when (equal? (config-word config) word))
-                    config)
-                    #;(filter (λ (configs)
-                            (equal? (config-word configs) word))
-                          (computation-LoC config)))
+                    config))
                 full-configs))
-
-  ;; (listof configuration) number -> (listof configuration)
-  ;; Purpose: Returns the first configuration in a (listof configuration) if it exceeds the cut-off amount
-  #;(define (get-cut-off LoC max-cmps)
-    (filter-map (λ (config)
-                  (and (>= (length config) max-cmps)
-                       (first config)))
-                LoC))
 
   ;;(listof symbol ((listof symbol) (listof symbol) -> boolean))) (X -> Y) ->
   ;;(listof symbol ((listof symbol) (listof symbol) -> boolean)))
@@ -383,48 +362,17 @@ pair is the second of the pda rule
     (for/list ([rule rules])
       (triple (triple-source (rule-triple rule)) 
               (string->symbol (make-edge-label rule))
-              (pair-destination (rule-pair rule))))
-    #;(map (λ (rule)
-           (triple (triple-source (rule-triple rule #;(first rule))) #;(list (triple-source (rule-triple rule #;(first rule))))
-                   (string->symbol (make-edge-label rule #;(first rule)))
-                   #;(list (string->symbol (make-edge-label rule #;(first rule))))
-                   (pair-destination (rule-pair rule #;(first rule)))
-                   #;(list (pair-destination (rule-pair rule #;(first rule))) #;(first (second rule)))))
-         rules))
-
-
-
+              (pair-destination (rule-pair rule)))))
+  
+ 
   ;;(listof rules) -> (listof rules)
   ;;Purpose: Converts the given (listof configurations)s to rules
   (define (configs->rules a-config)
-
-    ;;(listof rule-struct) -> (listof rule)
-    ;;Purpose: Remakes the rules extracted from the rule-struct
-    #;(define (remake-rules lor)
-      (map (λ (rule)
-             (rule (triple (first (first rule))
-                           (second (first rule))
-                           (third (first rule)))
-                   (pair (first (second rule))
-                         (second (second rule))))
-             #;(list (triple rule)
-                     (rule-pair rule)))
-           lor)
-      #;(append-map (λ (lor)
-                      (map (λ (rule)
-                             (list (rule-triple rule)
-                                   (rule-pair rule)))
-                           lor))
-                    trace-rules))
-    ;(displayln a-config #;(first a-config))
     (make-rule-triples
      (remove-duplicates
       (for/list ([rule a-config]
-        #:unless (equal? rule DUMMY-RULE))
-        rule)
-      #;(filter (λ (rule)
-                (not (equal? rule DUMMY-RULE)))
-              a-config))))
+                 #:unless (equal? rule DUMMY-RULE))
+        rule))))
 
 
   ;;(listof trace) (X -> Y) -> (listof rule)
@@ -445,9 +393,7 @@ pair is the second of the pda rule
          ;;Purpose: Gets the states where it's computation has cutoff
          [cut-off-states (if cut-off
                              (remove-duplicates (for/list ([computation (building-viz-state-computations a-vs)])
-                                                           (config-state (first computation)))
-                              #;(map (λ (configuration) (config-state (first configuration)))
-                                                     (building-viz-state-computations a-vs)))
+                                                  (config-state (first computation))))
                              '())]
 
          ;;(listof rule-struct)
@@ -502,44 +448,24 @@ pair is the second of the pda rule
      current-reject-rules
      (building-viz-state-dead a-vs))))
 
-;;viz-state (listof graph-thunks) -> (listof graph-thunks)
+;;viz-state -> (listof graph-thunks)
 ;;Purpose: Creates all the graphs needed for the visualization
 (define (create-graph-thunks a-vs)
   ;;(listof trace) -> (listof trace)
   ;;Purpose: Extracts the empty trace from the (listof trace) and maps rest onto the non-empty trace
   (define (get-next-traces LoT)
     (filter-map-acc empty? rest not id LoT))
-
+  ;;viz-state (listof graph-thunks) -> (listof graph-thunks)
+  ;;Purpose: Creates all the graphs needed for the visualization
   (define (create-graph-thunks-helper a-vs acc)
-    (cond [(for/or ([config (building-viz-state-computations a-vs) #;(map first (building-viz-state-computations a-vs))])
-                  (>= (config-index (first config)) (building-viz-state-max-cmps a-vs)))
-           #;(and #;(equal? (building-viz-state-upci a-vs) (building-viz-state-farthest-consumed-input a-vs))
-                (ormap (λ (computation) (>= (config-index computation) (building-viz-state-max-cmps a-vs)))
-                       (begin
-                         ;(displayln (config-index (first (map first (building-viz-state-computations a-vs)))))
-                         (map first (building-viz-state-computations a-vs)))))
-           #;(begin
-             ;(displayln (building-viz-state-farthest-consumed-input a-vs))
-             ;(displayln (first (building-viz-state-reject-traces a-vs)) #;(building-viz-state-upci a-vs))
-             ;(displayln "here" #;(first (map first (building-viz-state-computations a-vs))))
-             (reverse (cons (create-graph-thunk a-vs #:cut-off #t) acc)))
+    (cond [(for/or ([config (building-viz-state-computations a-vs)])
+             (>= (config-index (first config)) (building-viz-state-max-cmps a-vs)))
            (reverse (cons (create-graph-thunk a-vs #:cut-off #t) acc))]
           [(or (equal? (building-viz-state-upci a-vs) (building-viz-state-farthest-consumed-input a-vs))
                (and (empty? (building-viz-state-upci a-vs))
                     (or (list? (building-viz-state-stack a-vs))
                         (zipper-at-end? (building-viz-state-stack a-vs)))))
            (reverse (cons (create-graph-thunk a-vs) acc))]
-          #;[(and (equal? (building-viz-state-upci a-vs) (building-viz-state-farthest-consumed-input a-vs))
-                (ormap (λ (comp-len) #t)
-                       (begin
-                         (displayln (building-viz-state-farthest-consumed-input a-vs))
-                         (displayln (building-viz-state-upci a-vs))
-                         (displayln (building-viz-state-computations a-vs) #;(map first (building-viz-state-computations a-vs)))
-                         (map first (building-viz-state-computations a-vs)))))
-           #;(and (eq? (building-viz-state-upci a-vs) (building-viz-state-farthest-consumed-input a-vs))
-                (ormap (λ (comp-len) (>= (fourth comp-len) (building-viz-state-max-cmps a-vs)))
-                       (map length (building-viz-state-computations a-vs))))
-           (reverse (cons (create-graph-thunk a-vs #:cut-off #t) acc))]
           [else (let ([next-graph (create-graph-thunk a-vs)])
                   (create-graph-thunks-helper (struct-copy
                                                building-viz-state
@@ -558,13 +484,7 @@ pair is the second of the pda rule
                                                [computations (for/list ([computation (building-viz-state-computations a-vs)]
                                                                         #:do [(define rest-of-computation (rest computation))]
                                                                         #:unless (empty? rest-of-computation))
-                                                               rest-of-computation)
-                                                                 #;(filter (λ (comp) (not (empty? comp)))
-                                                                        (map rest (building-viz-state-computations a-vs)))
-                                                             #;(filter (λ (comp)    
-                                                                       (not (eq? (config-word (first comp))
-                                                                                 (building-viz-state-upci a-vs))))
-                                                                     (building-viz-state-computations a-vs))]
+                                                               rest-of-computation)]
                                                [tracked-accept-trace
                                                 (get-next-traces (building-viz-state-tracked-accept-trace a-vs))]
                                                [accept-traces (get-next-traces (building-viz-state-accept-traces a-vs))]
@@ -576,37 +496,22 @@ pair is the second of the pda rule
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization forward by one step
 (define (right-key-pressed a-vs)
-  #;(displayln (zipper-current (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
-                                                                                       (viz-state-informative-messages a-vs)))))
-  (let* (#;[completed-config? (ormap (λ (config) (empty? (config-word (first (computation-LoC config)))))
-                                     (first (get-computations (imsg-state-pda-pci (informative-messages-component-state
-                                                                                   (viz-state-informative-messages a-vs)))
-                                                              (pda-getrules
-                                                               (imsg-state-pda-M (informative-messages-component-state
-                                                                                  (viz-state-informative-messages a-vs))))
-                                                              (pda-getstart
-                                                               (imsg-state-pda-M (informative-messages-component-state
-                                                                                  (viz-state-informative-messages a-vs))))
-                                                              (pda-getfinals (imsg-state-pda-M
-                                                                              (informative-messages-component-state
-                                                                               (viz-state-informative-messages a-vs))))
-                                                              (imsg-state-pda-max-cmps (informative-messages-component-state
-                                                                                        (viz-state-informative-messages a-vs))))))]
-         ;;boolean
+  (let* (;;boolean
          ;;Purpose: Determines if the pci can be can be fully consumed
-         [pci (if (or #;(not completed-config?)
-                      (empty? (imsg-state-pda-upci (informative-messages-component-state
+         [pci (if (or (empty? (imsg-state-pda-upci (informative-messages-component-state
                                                     (viz-state-informative-messages a-vs))))
                       (equal? (imsg-state-pda-upci (informative-messages-component-state
-                                                 (viz-state-informative-messages a-vs)))
-                           (imsg-state-pda-farthest-consumed-input (informative-messages-component-state
-                                                                    (viz-state-informative-messages a-vs)))))
+                                                    (viz-state-informative-messages a-vs)))
+                              (imsg-state-pda-farthest-consumed-input (informative-messages-component-state
+                                                                       (viz-state-informative-messages a-vs)))))
                   (imsg-state-pda-pci (informative-messages-component-state
                                        (viz-state-informative-messages a-vs)))
                   (append (imsg-state-pda-pci (informative-messages-component-state
                                                (viz-state-informative-messages a-vs)))
                           (list (first (imsg-state-pda-upci (informative-messages-component-state
                                                              (viz-state-informative-messages a-vs)))))))]
+         ;;number
+         ;;the length of the pci
          [pci-len (length pci)])
     (struct-copy
      viz-state
@@ -618,13 +523,12 @@ pair is the second of the pda rule
        [component-state
         (struct-copy imsg-state-pda
                      (informative-messages-component-state (viz-state-informative-messages a-vs))
-                     [upci (if (or #;(not completed-config?)
-                                   (empty? (imsg-state-pda-upci (informative-messages-component-state
+                     [upci (if (or (empty? (imsg-state-pda-upci (informative-messages-component-state
                                                                  (viz-state-informative-messages a-vs))))
                                    (equal? (imsg-state-pda-upci (informative-messages-component-state
-                                                              (viz-state-informative-messages a-vs)))
-                                        (imsg-state-pda-farthest-consumed-input (informative-messages-component-state
-                                                                                 (viz-state-informative-messages a-vs)))))
+                                                                 (viz-state-informative-messages a-vs)))
+                                           (imsg-state-pda-farthest-consumed-input (informative-messages-component-state
+                                                                                    (viz-state-informative-messages a-vs)))))
 
                                (imsg-state-pda-upci (informative-messages-component-state
                                                      (viz-state-informative-messages a-vs)))
@@ -669,48 +573,12 @@ pair is the second of the pda rule
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization to the end
 (define (down-key-pressed a-vs)
-  ;;(listof symbols) machine -> (listof symbols)
-  ;;Purpose: Returns the last fully consumed word for the given machine
-  #;(define (last-fully-consumed a-word M max-cmps)
-    (letrec ([self (lambda (a-word)
-                     (cond [(empty? a-word) '()]
-                           [(not (ormap (λ (config) (empty? (config-word (first config))))
-                                        (map computation-LoC (first (get-computations a-word
-                                                                                      (pda-getrules M)
-                                                                                      (pda-getstart M)
-                                                                                      (pda-getfinals M)
-                                                                                      max-cmps)))))
-                            (self (take a-word (sub1 (length a-word))))]
-                           [a-word]))])
-      (self a-word)))
-
-  ;;(listof X) (listof X) (listof X) -> (listof X)
-  ;;Purpose: Removes all similiarities between lst1 and lst2
-  ;;Acc = The differences between the previous path and the current path
-  #;(define (remove-similarities prev-path curr-path acc)
-    (cond [(empty? prev-path) (append acc curr-path)]
-          [(empty? curr-path) prev-path]
-          [(equal? (first prev-path) (first curr-path))
-           (remove-similarities (rest prev-path) (rest curr-path) acc)]
-          [(remove-similarities (rest prev-path) (rest curr-path) (append acc (list (first curr-path))))]))
-
   (let* (;;(listof symbol)
          ;;Purpose: The entire given word
          [full-word (append (imsg-state-pda-pci (informative-messages-component-state
                                                  (viz-state-informative-messages a-vs)))
                             (imsg-state-pda-upci (informative-messages-component-state
                                                   (viz-state-informative-messages a-vs))))]
-         ;;(listof symbol)
-         ;;Purpose: The last word that could be fully consumed by the pda
-         #;[last-consumed-word (last-fully-consumed
-                              full-word
-                              (imsg-state-pda-M (informative-messages-component-state
-                                                 (viz-state-informative-messages a-vs)))
-                              (imsg-state-pda-max-cmps (informative-messages-component-state
-                                                        (viz-state-informative-messages a-vs))))]
-         ;;(listof symbol)
-         ;;Purpose: The portion of the word that cannont be consumed
-         #;[unconsumed-word (remove-similarities last-consumed-word full-word '())]
          ;;(zipperof invariant)
          ;;Purpose: The index of the last failed invariant
          [zip (if (zipper-empty? (imsg-state-pda-invs-zipper (informative-messages-component-state
@@ -743,14 +611,14 @@ pair is the second of the pda rule
                                                                      (informative-messages-component-state
                                                                       (viz-state-informative-messages a-vs))))))]
                      [else '()])]
-         [pci 
-          (cond [(empty? (imsg-state-pda-upci (informative-messages-component-state
+         [pci (cond [(empty? (imsg-state-pda-upci (informative-messages-component-state
                                                (viz-state-informative-messages a-vs))))
                  (imsg-state-pda-pci (informative-messages-component-state
                                       (viz-state-informative-messages a-vs)))]
                 [(not (empty? (imsg-state-pda-farthest-consumed-input (informative-messages-component-state
                                                                        (viz-state-informative-messages a-vs)))))
-                 (take full-word (- (length full-word) (length (imsg-state-pda-farthest-consumed-input
+                 (take full-word (- (length full-word)
+                                    (length (imsg-state-pda-farthest-consumed-input
                                                                 (informative-messages-component-state
                                                                  (viz-state-informative-messages a-vs))))))]
                 [else full-word])]
@@ -807,11 +675,11 @@ pair is the second of the pda rule
          [rule (if (zipper-empty? (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
                                                                          (viz-state-informative-messages a-vs))))
                    DUMMY-RULE
-                   next-rule #;(list (rule-triple next-rule) (rule-pair next-rule)))]
+                   next-rule)]
          [pci (if (or (empty? (imsg-state-pda-pci (informative-messages-component-state
                                                    (viz-state-informative-messages a-vs))))
                       (and (eq? (triple-read (rule-triple rule)) EMP)
-                           (not (empty-rule? #;(first rule) rule))))
+                           (not (empty-rule? rule))))
                   (imsg-state-pda-pci (informative-messages-component-state
                                        (viz-state-informative-messages a-vs)))
                   (take (imsg-state-pda-pci (informative-messages-component-state
@@ -833,8 +701,6 @@ pair is the second of the pda rule
                      [upci (if (or (empty? (imsg-state-pda-pci (informative-messages-component-state
                                                                 (viz-state-informative-messages a-vs))))
                                    (and (eq? (triple-read (rule-triple rule)) EMP)
-                                        (not (empty-rule? #;(first rule) rule)))
-                                   #;(and (eq? (second (first rule)) EMP)
                                         (not (empty-rule? rule))))
                                (imsg-state-pda-upci (informative-messages-component-state
                                                      (viz-state-informative-messages a-vs)))
@@ -964,10 +830,8 @@ pair is the second of the pda rule
                                                               (viz-state-informative-messages a-vs))))
                (not (zipper-at-end? (imsg-state-pda-invs-zipper (informative-messages-component-state
                                                                  (viz-state-informative-messages a-vs))))))
-          (< #;(pda-accessor-func (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs))))
-             (get-index (imsg-state-pda-stack (informative-messages-component-state
-                                                                 (viz-state-informative-messages a-vs))))
+          (< (get-index (imsg-state-pda-stack (informative-messages-component-state
+                                               (viz-state-informative-messages a-vs))))
              (get-index-pda (imsg-state-pda-invs-zipper (informative-messages-component-state
                                                          (viz-state-informative-messages a-vs))))))
       a-vs
@@ -1105,22 +969,14 @@ pair is the second of the pda rule
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the next failed invariant
 (define (l-key-pressed a-vs)
-  #;(displayln (zipper-current (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs)))))
-  #;(displayln (get-index (imsg-state-pda-stack (informative-messages-component-state
-                                                                 (viz-state-informative-messages a-vs)))))
-  #;(displayln (zipper-current  (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                          (viz-state-informative-messages a-vs)))))
   (if (or (zipper-empty? (imsg-state-pda-invs-zipper (informative-messages-component-state
                                                       (viz-state-informative-messages a-vs))))
           (and (zipper-at-end? (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                              (viz-state-informative-messages a-vs))))
+                                                            (viz-state-informative-messages a-vs))))
                (not (zipper-at-begin? (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                                 (viz-state-informative-messages a-vs))))))
-          (> #;(pda-accessor-func (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs))))
-             (get-index (imsg-state-pda-stack (informative-messages-component-state
-                                                                 (viz-state-informative-messages a-vs))))
+                                                                   (viz-state-informative-messages a-vs))))))
+          (> (get-index (imsg-state-pda-stack (informative-messages-component-state
+                                               (viz-state-informative-messages a-vs))))
              (get-index-pda  (imsg-state-pda-invs-zipper (informative-messages-component-state
                                                           (viz-state-informative-messages a-vs))))))
       a-vs
@@ -1296,38 +1152,23 @@ pair is the second of the pda rule
           ;;Purpose: Maps the dead state as a destination for all rules that are not currently in the original rules of M
           (define rules-to-dead
             (map (λ (rule) (cons (append rule (list EMP)) (list (list dead EMP))))
-                 get-rules-not-in-M))
-
-
-          #;(define (remake-rules lor)
-            (map (λ (pda-rule)
-                   (rule (triple (first (first pda-rule))
-                                       (second (first pda-rule))
-                                       (third (first pda-rule)))
-                               (pair (first (second pda-rule))
-                                     (second (second pda-rule))))
-                   #;(list (rule (triple (first (first pda-rule))
-                                       (second (first pda-rule))
-                                       (third (first pda-rule)))
-                               (pair (first (second pda-rule))
-                                     (second (second pda-rule))))))
-                 lor))]
+                 get-rules-not-in-M))]
     (pda (cons dead (pda-getstates M))
          (pda-getalphabet M)
          (pda-getgamma M)
          (pda-getstart M)
          (pda-getfinals M)
-         (remake-rules (append (pda-getrules M) rules-to-dead dead-read-rules dead-pop-rules))
-        #;(list->treelist (remake-rules (append (pda-getrules M) rules-to-dead dead-read-rules dead-pop-rules))))))
+         (remake-rules (append (pda-getrules M) rules-to-dead dead-read-rules dead-pop-rules)))))
 
 
 ;;pda word [boolean] [natnum] . -> (void)
 ;;Purpose: Visualizes the given pda processing the given word
 (define (pda-viz M a-word #:add-dead [add-dead #f] #:cut-off [cut-off 100] invs)
 
-  ;;(listof configurations) (listof rules) (listof configurations) -> (listof configurations)
+  ;;(listof configuration) (listof rules) (listof configurations) -> (listof configurations)
   ;;Purpose: Returns a propers trace for the given (listof configurations) that accurately
   ;;         tracks each transition
+  ;; acc = the trace of processed configurations and corresponding rules
   (define (make-trace configs rules acc)
     (cond [(empty? rules) (reverse acc)]
           [(and (empty? acc)
@@ -1337,21 +1178,11 @@ pair is the second of the pda rule
              (make-trace (rest configs) rules (cons res acc)))]
           [(and (not (empty? acc))
                 (empty-rule? (first rules)))
-           (let* ([rle (first rules)
-                       #;(rule (triple (first (first (first rules)))
-                                     (second (first (first rules)))
-                                     (third (first (first rules))))
-                             (pair (first (second (first rules)))
-                                   (second (second (first rules)))))]
+           (let* ([rle (first rules)]
                   [res (struct-copy trace (first acc)
                                     [rules (cons rle (trace-rules (first acc)))])])
              (make-trace (rest configs) (rest rules) (cons res (rest acc))))]
-          [else (let* ([rle (first rules)
-                            #;(rule (triple (first (first (first rules)))
-                                          (second (first (first rules)))
-                                          (third (first (first rules))))
-                                  (pair (first (second (first rules)))
-                                        (second (second (first rules)))))]
+          [else (let* ([rle (first rules)]
                        [res (trace (first configs) (list rle))])
                   (make-trace (rest configs) (rest rules) (cons res acc)))]))
 
@@ -1359,24 +1190,6 @@ pair is the second of the pda rule
   ;;Purpose: Extracts all the invariant configurations that failed
   (define (return-brk-inv-configs inv-config-results)
     (remove-duplicates (filter (λ (config) (not (second config))) inv-config-results)))
-
-  ;;word (listof configurations) (listof configurations) -> (listof configurations)
-  ;;Purpose: Counts the number of unique configurations for each stage of the word
-  #;(define (count-computations a-word a-LoC)
-    ;;word -> number
-    ;;Purpose: Counts the number of unique configurations based on the given word
-    (define (get-config a-word) 
-      (length (remove-duplicates
-               (append-map (λ (configs)
-                             (filter (λ (config)
-                                       (equal? a-word (config-word config)))
-                                     configs))
-                           a-LoC))))
-    (define (count-computations-helper a-word a-LoC acc)
-      (if (empty? a-word)
-          (reverse (cons (get-config a-word) acc))
-          (count-computations-helper (rest a-word) a-LoC (cons (get-config a-word) acc))))
-    (count-computations-helper a-word a-LoC '()))
 
   ;;(listof symbols) (lisof configurations) -> (listof configurations)
   ;;Purpose: Makes configurations usable for invariant predicates
@@ -1430,39 +1243,29 @@ pair is the second of the pda rule
                 inv-configs))
 
 
-  ;; (listof configuration) (listof symbol) -> (listof symbol)
+  ;; (listof computation) (listof symbol) -> (listof symbol)
   ;; Purpose: Returns the most consumed input
-   (define (get-farthest-consumed LoC acc)
+  ;;acc = the word with smallest unconsumed input
+  (define (get-farthest-consumed LoC acc)
     (cond [(empty? LoC) acc]
           [(< (length (config-word (treelist-last (first LoC)))) (length acc))
            (get-farthest-consumed (rest LoC) (config-word (treelist-last (first LoC))))]
           [else (get-farthest-consumed (rest LoC) acc)]))
 
-  ;;(listof configurations) -> (listof configurations)
-  ;;Purpose: filters the given list of any empty transitions
-  (define (remove-empty a-LoC)
-    (define (remove-empty-helper a-LoC acc)
-      (cond [(< (length a-LoC) 2) (reverse (append a-LoC acc))]
-            [(and (equal? (config-word (first a-LoC)) (config-word (second a-LoC)))
-                  (equal? (config-stack (first a-LoC)) (config-stack (second a-LoC))))
-             (remove-empty-helper (rest a-LoC) acc)]
-            [else (remove-empty-helper (rest a-LoC) (cons (first a-LoC) acc))]))
-    (remove-empty-helper a-LoC '()))
-
-  #;(define (remake-rules lor)
-            (map (λ (pda-rule)
-                   (rule (triple (first (first pda-rule))
-                                       (second (first pda-rule))
-                                       (third (first pda-rule)))
-                               (pair (first (second pda-rule))
-                                     (second (second pda-rule))))
-                   #;(list (rule (triple (first (first pda-rule))
-                                       (second (first pda-rule))
-                                       (third (first pda-rule)))
-                               (pair (first (second pda-rule))
-                                     (second (second pda-rule))))))
-                 lor))
-
+  ;;computation -> computation 
+  ;;Purpose: removes any empty transitions from given computation
+  (define (remove-empty a-computation)
+    ;;computation -> computation
+    ;;Purpose: removes any empty transitions from given computation
+    ;;acc = the traversed configurations in the computation
+    (define (remove-empty-helper computation acc)
+      (cond [(< (length computation) 2) (reverse (append computation acc))]
+            [(and (equal? (config-word (first computation)) (config-word (second computation)))
+                  (equal? (config-stack (first computation)) (config-stack (second computation))))
+             (remove-empty-helper (rest computation) acc)]
+            [else (remove-empty-helper (rest computation) (cons (first computation) acc))]))
+    (remove-empty-helper a-computation '()))
+  
   (let* (;;pda ;;Purpose: A pda (structure) with the dead state if add-dead is true
          [new-M (if add-dead (make-new-M M)
                     (pda (pda-getstates M)
@@ -1470,7 +1273,7 @@ pair is the second of the pda rule
                          (pda-getgamma M)
                          (pda-getstart M)
                          (pda-getfinals M)
-                         (remake-rules (pda-getrules M)) #;(list->treelist (remake-rules (pda-getrules M)))))]
+                         (remake-rules (pda-getrules M))))]
          ;;symbol ;;Purpose: The name of the dead state
          [dead-state (if add-dead (first (pda-states new-M)) 'no-dead)]
          ;;(listof computations) ;;Purpose: All computations that the machine can have
@@ -1490,32 +1293,19 @@ pair is the second of the pda rule
                                                 (empty? (config-stack (treelist-last (computation-LoC comp))))))
                                          computations)]
          ;;(listof trace) ;;Purpose: Makes traces from the accepting computations
-         [accepting-traces (map (λ (acc-comp)
-                                  (make-trace (treelist->list (computation-LoC acc-comp))
-                                              (treelist->list (computation-LoR acc-comp))
-                                              '()))
-                                accepting-computations)]
-         ;;(listof trace) ;;Purpose: Gets the cut off trace if the the word length is greater than the cut
-         #;[cut-accept-traces '()
-                            #;(if (> word-len cut-off)
-                                (map last accepting-traces)
-                                '())]
-         ;;(listof trace) ;;Purpose: Gets the cut off trace if the the word length is greater than the cut
-         [accept-cmps accepting-traces
-                      #;(if (empty? cut-accept-traces)
-                          accepting-traces
-                          (map (λ (configs last-reject)
-                                 (append configs (list last-reject)))
-                               accepting-traces
-                               cut-accept-traces))]
+         [accept-cmps (map (λ (acc-comp)
+                             (make-trace (treelist->list (computation-LoC acc-comp))
+                                         (treelist->list (computation-LoR acc-comp))
+                                         '()))
+                           accepting-computations)]
          ;;(listof computation) ;;Purpose: Extracts all rejecting computations
          [rejecting-computations (filter (λ (config)
                                            (not (member? config accepting-computations equal?)))
                                          computations)]
          ;;(listof trace) ;;Purpose: Makes traces from the rejecting computations
-         [rejecting-traces (map (λ (c)
-                                  (make-trace (treelist->list (computation-LoC c))
-                                              (treelist->list (computation-LoR c))
+         [rejecting-traces (map (λ (computation)
+                                  (make-trace (treelist->list (computation-LoC computation))
+                                              (treelist->list (computation-LoR computation))
                                               '()))
                                 rejecting-computations)]
          ;;(zipperof computation) ;;Purpose: Gets the stack of the first accepting computation
@@ -1523,11 +1313,12 @@ pair is the second of the pda rule
                                                 '()
                                                 (treelist->list (computation-LoC (first accepting-computations))))))]
 
-         [computation-lens (begin (for ([key (in-list (hash-keys (second computations+hash)))])
-                                    (hash-set! (second computations+hash)
-                                                         key
-                                                         (set-count (hash-ref (second computations+hash) key))))
-                                  (second computations+hash))]
+         [computation-lens (begin
+                             (for ([key (in-list (hash-keys (second computations+hash)))])
+                               (hash-set! (second computations+hash)
+                                          key
+                                          (set-count (hash-ref (second computations+hash) key))))
+                             (second computations+hash))]
 
          ;;(listof rules) ;;Purpose: Returns the first accepting computations (listof rules)
          [accepting-trace (if (empty? accept-cmps) '() (first accept-cmps))]
@@ -1540,22 +1331,11 @@ pair is the second of the pda rule
                                    (rest last-word)))]
 
          [computation-has-cut-off? (and (empty? accepting-trace)
-                                     (for/or ([computation LoC])
-                                       (>= (config-index (treelist-last computation)) cut-off))
-                                    #;(ormap (λ (comp-length)
-                                              (>= (config-index comp-length) cut-off))
-                                            (map treelist-last LoC)))]
+                                        (for/or ([computation LoC])
+                                          (>= (config-index (treelist-last computation)) cut-off)))]
          ;;(listof computation)
          ;;Purpose: Gets all the cut off computations if the length of the word is greater than max computations
-         [get-cut-off-trace (if computation-has-cut-off?
-                                #;(and (empty? accepting-trace)
-                                     (for/or ([computation LoC])
-                                       (>= (config-index (treelist-last computation)) cut-off))
-                                    #;(ormap (λ (comp-length)
-                                              (>= (config-index comp-length) cut-off))
-                                            (map treelist-last LoC)))
-                               (map last rejecting-traces)
-                               '())]
+         [get-cut-off-trace (if computation-has-cut-off? (map last rejecting-traces) '())]
          ;;(listof computation)
          ;;Purpose: Makes the cut off computations if the length of the word is greater than max computations
          [cut-off-traces (if (empty? get-cut-off-trace)
@@ -1569,9 +1349,7 @@ pair is the second of the pda rule
          ;;building-state struct
          [building-state (building-viz-state a-word
                                              '()
-                                             (for/list ([computation LoC])
-                                               (treelist->list computation))
-                                             ;(map treelist->list LoC)
+                                             (for/list ([computation LoC]) (treelist->list computation))
                                              accepting-computations
                                              stack
                                              (list accepting-trace)
@@ -1596,119 +1374,79 @@ pair is the second of the pda rule
                                           (get-inv-config-results
                                            (make-inv-configs a-word accepting-computations)
                                            invs)))])
-    ;(map displayln LoC)
-    ;(displayln "")
-    #;(time (ormap (λ (comp-length)
-                   (>= (config-index comp-length) cut-off))
-                 (map treelist-last LoC)))
-    #;(displayln (ormap (λ (comp-length)
-                   (>= (config-index comp-length) cut-off))
-                 (map treelist-last LoC)))
-    ;(displayln LoC)
-    #;(time #;(displayln (in-treelist LoC))
-          (for/or ([computation LoC])
-                   (>= (config-index (treelist-last computation)) cut-off)))
-    #;(displayln (for/or ([computation LoC])
-                   (>= (config-index (treelist-last computation)) cut-off)))
-    #;(displayln "")
-    ;(displayln (length accepting-trace))
-    ;(displayln computation-lengths)
-    ;(displayln (get-computations a-word (pda-rules new-M) (pda-start new-M) (pda-finals new-M) cut-off))
-    ;(displayln "")
-    ;(displayln (map treelist->list LoC) #;most-consumed-word #;computation-lens2)
-    ;(displayln (pda-finals new-M))
-    ;(displayln (first cut-off-traces #;LoC))
-    #;(displayln accepting-trace)
-    #;(writeln (imsg-state-pda new-M  
-                             a-word 
-                             '() 
-                             (list->zipper accepting-trace)
-                             stack 
-                             most-consumed-word 
-                             (list->zipper inv-configs) 
-                             (sub1 (length inv-configs)) 
-                             computation-lens 
-                             LoC 
-                             cut-off
-                             0
-                             (let ([offset-cap (- (length a-word) TAPE-SIZE)])
-                               (if (> 0 offset-cap) 0 offset-cap))
-                             0))
-    ;(void)
     (run-viz graphs
-               (lambda () (graph->bitmap (first graphs)))
-               (posn (/ E-SCENE-WIDTH 2) (/ PDA-E-SCENE-HEIGHT 2))
-               DEFAULT-ZOOM
-               DEFAULT-ZOOM-CAP
-               DEFAULT-ZOOM-FLOOR
-               (informative-messages pda-create-draw-informative-message
-                                     (imsg-state-pda new-M  
-                                                     a-word 
-                                                     '() 
-                                                     (list->zipper accepting-trace)
-                                                     stack 
-                                                     most-consumed-word 
-                                                     (list->zipper inv-configs) 
-                                                     (sub1 (length inv-configs)) 
-                                                     computation-lens 
-                                                     LoC 
-                                                     cut-off
-                                                     0
-                                                     (let ([offset-cap (- (length a-word) TAPE-SIZE)])
-                                                       (if (> 0 offset-cap) 0 offset-cap))
-                                                     0)
-
-                                     pda-img-bounding-limit)
-               (instructions-graphic E-SCENE-TOOLS
-                                     (bounding-limits 0
-                                                      (image-width E-SCENE-TOOLS)
-                                                      (+ EXTRA-HEIGHT-FROM-CURSOR
-                                                         PDA-E-SCENE-HEIGHT
-                                                         (image-height pda-info-img)
-                                                         INS-TOOLS-BUFFER)
-                                                      (+ EXTRA-HEIGHT-FROM-CURSOR
-                                                         PDA-E-SCENE-HEIGHT
-                                                         (image-height pda-info-img)
-                                                         INS-TOOLS-BUFFER
-                                                         (image-height ARROW-UP-KEY))))
-               (create-viz-draw-world E-SCENE-WIDTH PDA-E-SCENE-HEIGHT INS-TOOLS-BUFFER)
-               (create-viz-process-key [ "right" viz-go-next right-key-pressed]
-                                       [ "left" viz-go-prev left-key-pressed]
-                                       [ "up" viz-go-to-begin up-key-pressed]
-                                       [ "down" viz-go-to-end down-key-pressed]
-                                       [ "w" viz-zoom-in identity]
-                                       [ "s" viz-zoom-out identity]
-                                       [ "r" viz-max-zoom-out identity]
-                                       [ "f" viz-max-zoom-in identity]
-                                       [ "e" viz-reset-zoom identity]
-                                       [ "a" identity a-key-pressed]
-                                       [ "d" identity d-key-pressed]
-                                       [ "wheel-down" viz-zoom-in identity]
-                                       [ "wheel-up" viz-zoom-out identity]
-                                       [ "j" pda-jump-prev j-key-pressed]
-                                       [ "l" pda-jump-next l-key-pressed]
-                                       )
-               (create-viz-process-tick PDA-E-SCENE-BOUNDING-LIMITS
-                                        NODE-SIZE
-                                        E-SCENE-WIDTH
-                                        PDA-E-SCENE-HEIGHT
-                                        CLICK-BUFFER-SECONDS
-                                        ( [pda-img-bounding-limit
-                                           (lambda (a-imsgs x-diff y-diff) a-imsgs)])
-                                        ( [ ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed]
-                                          [ ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed]
-                                          [ ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed]
-                                          [ ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed]
-                                          [ W-KEY-DIMS viz-zoom-in identity]
-                                          [ S-KEY-DIMS viz-zoom-out identity]
-                                          [ R-KEY-DIMS viz-max-zoom-out identity]
-                                          [ E-KEY-DIMS viz-reset-zoom identity]
-                                          [ F-KEY-DIMS viz-max-zoom-in identity]
-                                          [ A-KEY-DIMS identity a-key-pressed]
-                                          [ D-KEY-DIMS identity d-key-pressed]
-                                          [ J-KEY-DIMS pda-jump-prev j-key-pressed]
-                                          [ L-KEY-DIMS pda-jump-next l-key-pressed]))
-               'pda-viz)))
+             (lambda () (graph->bitmap (first graphs)))
+             (posn (/ E-SCENE-WIDTH 2) (/ PDA-E-SCENE-HEIGHT 2))
+             DEFAULT-ZOOM
+             DEFAULT-ZOOM-CAP
+             DEFAULT-ZOOM-FLOOR
+             (informative-messages pda-create-draw-informative-message
+                                   (imsg-state-pda new-M  
+                                                   a-word 
+                                                   '() 
+                                                   (list->zipper accepting-trace)
+                                                   stack 
+                                                   most-consumed-word 
+                                                   (list->zipper inv-configs) 
+                                                   (sub1 (length inv-configs)) 
+                                                   computation-lens 
+                                                   LoC 
+                                                   cut-off
+                                                   0
+                                                   (let ([offset-cap (- (length a-word) TAPE-SIZE)])
+                                                     (if (> 0 offset-cap) 0 offset-cap))
+                                                   0)
+                                   pda-img-bounding-limit)
+             (instructions-graphic E-SCENE-TOOLS
+                                   (bounding-limits 0
+                                                    (image-width E-SCENE-TOOLS)
+                                                    (+ EXTRA-HEIGHT-FROM-CURSOR
+                                                       PDA-E-SCENE-HEIGHT
+                                                       (image-height pda-info-img)
+                                                       INS-TOOLS-BUFFER)
+                                                    (+ EXTRA-HEIGHT-FROM-CURSOR
+                                                       PDA-E-SCENE-HEIGHT
+                                                       (image-height pda-info-img)
+                                                       INS-TOOLS-BUFFER
+                                                       (image-height ARROW-UP-KEY))))
+             (create-viz-draw-world E-SCENE-WIDTH PDA-E-SCENE-HEIGHT INS-TOOLS-BUFFER)
+             (create-viz-process-key [ "right" viz-go-next right-key-pressed]
+                                     [ "left" viz-go-prev left-key-pressed]
+                                     [ "up" viz-go-to-begin up-key-pressed]
+                                     [ "down" viz-go-to-end down-key-pressed]
+                                     [ "w" viz-zoom-in identity]
+                                     [ "s" viz-zoom-out identity]
+                                     [ "r" viz-max-zoom-out identity]
+                                     [ "f" viz-max-zoom-in identity]
+                                     [ "e" viz-reset-zoom identity]
+                                     [ "a" identity a-key-pressed]
+                                     [ "d" identity d-key-pressed]
+                                     [ "wheel-down" viz-zoom-in identity]
+                                     [ "wheel-up" viz-zoom-out identity]
+                                     [ "j" pda-jump-prev j-key-pressed]
+                                     [ "l" pda-jump-next l-key-pressed]
+                                     )
+             (create-viz-process-tick PDA-E-SCENE-BOUNDING-LIMITS
+                                      NODE-SIZE
+                                      E-SCENE-WIDTH
+                                      PDA-E-SCENE-HEIGHT
+                                      CLICK-BUFFER-SECONDS
+                                      ( [pda-img-bounding-limit
+                                         (lambda (a-imsgs x-diff y-diff) a-imsgs)])
+                                      ( [ ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed]
+                                        [ ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed]
+                                        [ ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed]
+                                        [ ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed]
+                                        [ W-KEY-DIMS viz-zoom-in identity]
+                                        [ S-KEY-DIMS viz-zoom-out identity]
+                                        [ R-KEY-DIMS viz-max-zoom-out identity]
+                                        [ E-KEY-DIMS viz-reset-zoom identity]
+                                        [ F-KEY-DIMS viz-max-zoom-in identity]
+                                        [ A-KEY-DIMS identity a-key-pressed]
+                                        [ D-KEY-DIMS identity d-key-pressed]
+                                        [ J-KEY-DIMS pda-jump-prev j-key-pressed]
+                                        [ L-KEY-DIMS pda-jump-next l-key-pressed]))
+             'pda-viz)))
 
 (define numb>numa (make-unchecked-cfg '(S A)
                                       '(a b)
@@ -1723,13 +1461,13 @@ pair is the second of the pda rule
 (define pd-numb>numa (cfg->pda numb>numa))
 
 #;(time (pda-viz pd-numb>numa '(a b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b) '()
-               #:cut-off 15))
+                 #:cut-off 15))
 #;(time (pda-viz pd-numb>numa
                  '(a b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b) '()))
 #;(profile-thunk (lambda ()
                    (pda-viz pd-numb>numa
                             '(a b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b b) '()
-                                     #:cut-off 15))
+                            #:cut-off 15))
                  #:repeat 10
                  #:svg-path (string->path "/home/sora/Pictures/test-flame.svg"))
 
@@ -1746,12 +1484,12 @@ pair is the second of the pda rule
 
 
 (define P2 (make-unchecked-ndpda '(S H)
-                      '(a b)
-                      '(b)
-                      'S
-                      '(H)
-                      `(((S ε ε)(H ε))     ((S a ε)(S (b b)))
-                        ((H b (b b))(H ε)) ((H ε (b))(H ε)))))
+                                 '(a b)
+                                 '(b)
+                                 'S
+                                 '(H)
+                                 `(((S ε ε)(H ε))     ((S a ε)(S (b b)))
+                                                      ((H b (b b))(H ε)) ((H ε (b))(H ε)))))
 
 ;;purpose: to determine if the number of a's in the word is less than or equal the number of 'b's
 (define (P-S-INV a-word stck)
