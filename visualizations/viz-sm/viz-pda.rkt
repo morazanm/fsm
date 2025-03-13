@@ -157,10 +157,11 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
   ;;the set of final states
   (define finals-set (list->seteq finals))
 
-  ;;(listof rules) (queueof computation) (listof computation) number -> (listof computation)
+  ;;(queueof computation) -> (listof computation hashtable)
   ;;Purpose: Makes all the computations based around the (queueof computation) and (listof rule)
   ;;     that are within the bounds of the max computation limit
   (define (make-computations starting-computation)
+    ;;(queueof computation) (treelistof computation) -> 
     (define (make-computations-helper QoC path)
       (if (qempty? QoC)
           (list path computation-number-hash)

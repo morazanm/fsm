@@ -285,8 +285,8 @@ triple is the entire of the ndfa rule
 ;; Purpose: Returns the most consumed input
 (define (get-farthest-consumed LoC acc)
   (cond [(empty? LoC) acc]
-        [(< (length (ndfa-config-word (treelist-first (first LoC)))) (length acc))
-         (get-farthest-consumed (rest LoC) (ndfa-config-word (treelist-first (first LoC))))]
+        [(< (length (ndfa-config-word (treelist-last (first LoC)))) (length acc))
+         (get-farthest-consumed (rest LoC) (ndfa-config-word (treelist-last (first LoC))))]
         [else (get-farthest-consumed (rest LoC) acc)]))
 
 
@@ -447,6 +447,11 @@ triple is the entire of the ndfa rule
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization forward by one step
 (define (right-key-pressed a-vs)
+  (displayln "right key")
+  (displayln (ndfa-accessor-func (imsg-state-ndfa-shown-accepting-trace (informative-messages-component-state
+                                                                   (viz-state-informative-messages a-vs)))))
+  (displayln (get-index-ndfa (imsg-state-ndfa-invs-zipper (informative-messages-component-state
+                                                    (viz-state-informative-messages a-vs)))))
   (let* ([shown-accepting-trace (if (or (zipper-at-end? (imsg-state-ndfa-shown-accepting-trace
                                                          (informative-messages-component-state
                                                           (viz-state-informative-messages a-vs))))
@@ -505,7 +510,8 @@ triple is the entire of the ndfa rule
                                                                     (informative-messages-component-state
                                                                      (viz-state-informative-messages a-vs)))))
                                               (>= index (ndfa-config-index
-                                                         (first (first (zipper-unprocessed
+                                                         (first (first
+                                                                 (zipper-unprocessed
                                                                        (imsg-state-ndfa-invs-zipper
                                                                         (informative-messages-component-state
                                                                          (viz-state-informative-messages a-vs)))))))))
@@ -579,6 +585,11 @@ triple is the entire of the ndfa rule
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization backward by one step
 (define (left-key-pressed a-vs)
+  (displayln "left key")
+  (displayln (ndfa-accessor-func (imsg-state-ndfa-shown-accepting-trace (informative-messages-component-state
+                                                                   (viz-state-informative-messages a-vs)))))
+  (displayln (get-index-ndfa (imsg-state-ndfa-invs-zipper (informative-messages-component-state
+                                                    (viz-state-informative-messages a-vs)))))
   (let* ([pci (if (empty? (imsg-state-ndfa-pci (informative-messages-component-state
                                                 (viz-state-informative-messages a-vs))))
                   (imsg-state-ndfa-pci (informative-messages-component-state
@@ -730,6 +741,13 @@ triple is the entire of the ndfa rule
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the previous broken invariant
 (define (j-key-pressed a-vs)
+  (displayln "j key")
+  (displayln (ndfa-accessor-func (imsg-state-ndfa-shown-accepting-trace (informative-messages-component-state
+                                                                   (viz-state-informative-messages a-vs)))))
+  (displayln (get-index-ndfa (imsg-state-ndfa-invs-zipper (informative-messages-component-state
+                                                    (viz-state-informative-messages a-vs)))))
+
+  
   (if (or (zipper-empty? (imsg-state-ndfa-invs-zipper (informative-messages-component-state
                                                    (viz-state-informative-messages a-vs))))
           (and (zipper-at-begin? (imsg-state-ndfa-invs-zipper (informative-messages-component-state
@@ -821,6 +839,16 @@ triple is the entire of the ndfa rule
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the next failed invariant
 (define (l-key-pressed a-vs)
+  (displayln "l key")
+  (displayln (ndfa-accessor-func (imsg-state-ndfa-shown-accepting-trace (informative-messages-component-state
+                                                                   (viz-state-informative-messages a-vs)))))
+  (displayln (get-index-ndfa (imsg-state-ndfa-invs-zipper (informative-messages-component-state
+                                                    (viz-state-informative-messages a-vs)))))
+  (displayln (> (ndfa-accessor-func (imsg-state-ndfa-shown-accepting-trace
+                                      (informative-messages-component-state
+                                       (viz-state-informative-messages a-vs))))
+                 (get-index-ndfa (imsg-state-ndfa-invs-zipper (informative-messages-component-state
+                                                               (viz-state-informative-messages a-vs))))))
   (if (or (zipper-empty? (imsg-state-ndfa-invs-zipper (informative-messages-component-state
                                                        (viz-state-informative-messages a-vs))))
           (and (not (zipper-at-begin? (imsg-state-ndfa-invs-zipper (informative-messages-component-state
@@ -847,6 +875,7 @@ triple is the entire of the ndfa rule
                                                       (viz-state-informative-messages a-vs)))
                                 (imsg-state-ndfa-upci (informative-messages-component-state
                                                        (viz-state-informative-messages a-vs))))])
+        (displayln "here")
         (struct-copy
          viz-state
          a-vs
@@ -1024,7 +1053,7 @@ triple is the entire of the ndfa rule
                                                                     (treelist->list (computation-LoC comp)))
                                                                   accepting-computations))
                                            invs)))])
-    ;(map displayln LoC)
+    ;(displayln most-consumed-word)
     ;(void)
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))

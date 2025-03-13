@@ -68,12 +68,6 @@ action is the second pair in a tm rule
 
 (define DUMMY-RULE (list (list BLANK BLANK) (list BLANK BLANK)))
 
-;; X (listof X) -> boolean
-;;Purpose: Determine if X is in the given list
-(define (member? x lst eq-func)
-  (ormap (λ (L) (eq-func x L)) lst))
-
-
 ;;config rule -> config
 ;;Purpose: Applys the given rule to the given config and returns the updated config
 ;;ASSUMPTION: The given rule can be applied to the config
