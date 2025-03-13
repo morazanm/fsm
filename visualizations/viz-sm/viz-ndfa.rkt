@@ -59,10 +59,10 @@ triple is the entire of the ndfa rule
     (define (make-new-config a-config)
       (struct-copy ndfa-config a-config
                    [state (triple-destination rule)]
-                   [word (if (eq? (triple-read rule) EMP)
+                   [word (if (equal? (triple-read rule) EMP)
                              (ndfa-config-word a-config)
                              (rest (ndfa-config-word a-config)))]
-                   [index (if (eq? (triple-read rule) EMP)
+                   [index (if (equal? (triple-read rule) EMP)
                               (ndfa-config-index a-config)
                               (add1 (ndfa-config-index a-config)))]))
     
@@ -70,7 +70,7 @@ triple is the entire of the ndfa rule
                  [LoC (treelist-add (computation-LoC a-computation)
                                     (make-new-config (treelist-last (computation-LoC a-computation))))]
                  [LoR (treelist-add (computation-LoR a-computation) rule)]
-                 #;[visited (cons (first (computation-LoC a-computation)) (computation-visited a-computation))]))
+                 [visited (treelist-add (computation-visited a-computation) (treelist-last (computation-LoC a-computation)))]))
   
   ;;mutable set
   ;;Purpose: holds all of the visited configurations
@@ -121,8 +121,10 @@ triple is the entire of the ndfa rule
                                                               (and (not (empty? current-word))
                                                                    (eq? (triple-read rule) (first current-word))))
                                                             curr-rules)]
+                     
                      ;;(listof rules)
                      ;;Purpose: Returns all rules that have an empty transition using the given configurations
+                      
                      [connected-emp-rules (treelist-filter (λ (rule)
                                                              (eq? (triple-read rule) EMP))
                                                            curr-rules)]
@@ -131,12 +133,13 @@ triple is the entire of the ndfa rule
                      [new-configs (treelist-filter (λ (new-c)
                                                      (not (set-member? visited-configuration-set
                                                                        (treelist-last (computation-LoC new-c)))))
-                                                   (treelist-map (treelist-append connected-read-rules connected-emp-rules)
+                                                   
+                                                   (treelist-map (treelist-append connected-emp-rules connected-read-rules)
                                                                  (λ (rule) (apply-rule (qfirst QoC) rule))))])
                 (begin
                   (update-hash current-config current-word)
                   (update-visited current-config)
-                  (if (empty? new-configs)
+                  (if (treelist-empty? new-configs)
                       (make-computations (dequeue QoC) (treelist-add path (qfirst QoC)))
                       (make-computations (enqueue new-configs (dequeue QoC)) path))))))))
 
@@ -144,9 +147,8 @@ triple is the entire of the ndfa rule
         ;;Purpose: The starting configuration
         [starting-config (computation (treelist (ndfa-config start word 0))
                                       empty-treelist
-                                      '())])
-    (make-computations (enqueue (treelist starting-config) E-QUEUE)
-                       empty-treelist)))
+                                      empty-treelist)])
+    (make-computations (enqueue (treelist starting-config) E-QUEUE) empty-treelist)))
 
   
 ;;(listof configurations) (listof rules) (listof configurations) -> (listof configurations)
@@ -190,9 +192,6 @@ triple is the entire of the ndfa rule
 (define (make-inv-configs-helper a-word computation word-len)
   (let* ([config (filter (λ (config) (= (length (ndfa-config-word config)) word-len)) computation)]
          [inv-config (map (λ (config)
-                            #;(append (list (ndfa-config-word config))
-                                    (list (take a-word (- (length a-word) word-len)))
-                                    (list (ndfa-config-word config)))
                           (ndfa-config (ndfa-config-state config)
                                     (take a-word (- (length a-word) word-len))
                                     (ndfa-config-index config)))
@@ -392,12 +391,12 @@ triple is the entire of the ndfa rule
 
          ;;(listof rules)
          ;;Purpose: Converts the current rules from the accepting computations and makes them usable for graphviz
-         [current-shown-accept-rules (filter (λ (rule) (and (not (equal? rule dummy-rule)) rule))
+         [current-shown-accept-rules (filter (λ (rule) (not (equal? rule dummy-rule)))
                                              (append-map extract-rules tracked-accepting-rules))]
 
          ;;(listof rules)
          ;;Purpose: Reconstructs the rules from rule-structs
-         [current-a-rules (filter (λ (rule) (and (not (equal? rule dummy-rule)) rule))
+         [current-a-rules (filter (λ (rule) (not (equal? rule dummy-rule)))
                                   (append-map extract-rules a-configs))]
      
          ;;(listof (listof symbol ((listof symbols) -> boolean))) (listof symbols))
@@ -432,11 +431,6 @@ triple is the entire of the ndfa rule
 (define (create-graph-thunks a-vs acc)
   (cond [(empty? (building-viz-state-upci a-vs)) (reverse (cons (create-graph-thunk a-vs) acc))]
         [(equal? (building-viz-state-upci a-vs) (building-viz-state-farthest-consumed a-vs))
-         #;(not (ormap (λ (config) (empty? (second (first (computation-LoC config)))))
-                     (trace-computations (building-viz-state-pci a-vs)
-                                         (fsa-getrules (building-viz-state-M a-vs))
-                                         (fsa-getstart (building-viz-state-M a-vs))
-                                         (fsa-getfinals (building-viz-state-M a-vs)))))
          (reverse (cons (create-graph-thunk a-vs) acc))]
         [else (let ([next-graph (create-graph-thunk a-vs)])
                 (create-graph-thunks (struct-copy building-viz-state
@@ -945,7 +939,7 @@ triple is the entire of the ndfa rule
                  (define rules-to-dead
                    (map (λ (rule) (append rule (list dead)))
                         get-rules-not-in-M))]
-           (make-unchecked-ndfa (cons dead (fsa-getstates M)) #;(append (fsa-getstates M) (list dead))
+           (make-unchecked-ndfa (cons dead (fsa-getstates M))
                                 (fsa-getalphabet M)
                                 (fsa-getstart M)
                                 (fsa-getfinals M)
@@ -1030,7 +1024,7 @@ triple is the entire of the ndfa rule
                                                                     (treelist->list (computation-LoC comp)))
                                                                   accepting-computations))
                                            invs)))])
-    (displayln inv-configs)
+    ;(map displayln LoC)
     ;(void)
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
