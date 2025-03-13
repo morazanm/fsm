@@ -11,6 +11,7 @@
          (except-in "../viz-lib/viz-constants.rkt" INS-TOOLS-BUFFER)
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "david-imsg-state.rkt"
+         racket/treelist
          (except-in "david-viz-constants.rkt" FONT-SIZE)
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/fsa.rkt"
@@ -37,79 +38,117 @@ triple is the entire of the ndfa rule
 |#
 (struct rule (triple) #:transparent)
 
-;; X (listof X) -> boolean
-;;Purpose: Determine if X is in the given list
-(define (member? x lst)
-  (ormap (λ (L) (equal? x L)) lst))
+
+(struct triple (source read destination) #:transparent)
+
+(struct ndfa (states alphabet start finals rules) #:transparent)
 
 
-
-;;config rule -> config
-;;Purpose: Applies the given rule to the given config
-;;ASSUMPTION: the given rule is applicable to the given config
-(define (apply-rule config rule)
-  (let* ([new-config (list (third rule)
-                           (if (eq? (second rule) EMP)
-                               (second (first (computation-LoC config)))
-                               (rest (second (first (computation-LoC config)))))
-                           (if (eq? (second rule) EMP)
-                               (third (first (computation-LoC config)))
-                               (add1 (third (first (computation-LoC config))))))])
-    (struct-copy computation config
-                 [LoC (cons new-config (computation-LoC config))]
-                 [LoR (cons rule (computation-LoR config))]
-                 [visited (cons (first (computation-LoC config)) (computation-visited config))])))
 
 
 
 ;;(listof symbol) (listof rule) symbol -> (listof computation)
 ;;Purpose: Traces all computations that the machine can make based on the starting state, word, and given rules
 (define (trace-computations word lor start finals)
-  (let (;;configuration
-        ;;Purpose: The starting configuration
-        [starting-config (computation (list (append (list start) (list word) (list 0)))
-                                      '()
-                                      '())])
-    (make-computations lor
-                       finals
-                       (enqueue (list starting-config) E-QUEUE)
-                       '())))
 
+  ;;config rule -> config
+  ;;Purpose: Applies the given rule to the given config
+  ;;ASSUMPTION: the given rule is applicable to the given config
+  (define (apply-rule a-computation rule)
 
-;;(listof rule) -> (listof computation)
-;;Purpose: Traces all computations that the machine can make based on the starting state, word, and given rules
-(define (make-computations lor finals QoC path)
-  (cond [(qempty? QoC) path]
-        [(and (member? (first (first (computation-LoC (qfirst QoC)))) finals)
-              (empty? (second (first (computation-LoC (qfirst QoC))))))
-         (make-computations lor finals (dequeue QoC) (cons (qfirst QoC) path))]
-        [else (let* ([first-computation (first (computation-LoC (qfirst QoC)))]
+    (define (make-new-config a-config)
+      (struct-copy ndfa-config a-config
+                   [state (triple-destination rule)]
+                   [word (if (eq? (triple-read rule) EMP)
+                             (ndfa-config-word a-config)
+                             (rest (ndfa-config-word a-config)))]
+                   [index (if (eq? (triple-read rule) EMP)
+                              (ndfa-config-index a-config)
+                              (add1 (ndfa-config-index a-config)))]))
+    
+    (struct-copy computation a-computation
+                 [LoC (treelist-add (computation-LoC a-computation)
+                                    (make-new-config (treelist-last (computation-LoC a-computation))))]
+                 [LoR (treelist-add (computation-LoR a-computation) rule)]
+                 #;[visited (cons (first (computation-LoC a-computation)) (computation-visited a-computation))]))
+  
+  ;;mutable set
+  ;;Purpose: holds all of the visited configurations
+  (define visited-configuration-set (mutable-set))
+
+  ;;configuration -> void
+  ;;Purpose: updates the set of visited configurations
+  (define (update-visited a-config)
+    (set-add! visited-configuration-set a-config))
+
+  ;;hash-set
+  ;;Purpose: accumulates the number of computations in a hashset
+  (define computation-number-hash (make-hash))
+  
+  ;;set
+  ;;an empty set
+  (define EMPTY-SET (set))
+
+  ;;configuration word -> void
+  ;;Purpose: updates the number of configurations using the given word as a key
+  (define (update-hash a-config a-word)
+    (hash-set! computation-number-hash
+               a-word
+               (set-add (hash-ref computation-number-hash
+                                  a-word
+                                  EMPTY-SET)
+                        a-config)))
+
+  
+  ;;(listof rule) -> (listof computation)
+  ;;Purpose: Traces all computations that the machine can make based on the starting state, word, and given rules
+  (define (make-computations QoC path)
+    (if (qempty? QoC)
+        (list path computation-number-hash)
+        (let* ([current-config (treelist-last (computation-LoC (qfirst QoC)))]
+               [current-state (ndfa-config-state current-config)]
+               [current-word (ndfa-config-word current-config)])
+          (if (and (set-member? finals current-state) (empty? current-word))
+              (begin
+                (update-hash current-config current-word)
+                (make-computations (dequeue QoC) (treelist-add path (qfirst QoC))))
+              (let* (;;(listof rules)
+                     ;;Purpose: Filters the rules that match the current state 
+                     [curr-rules (treelist-filter (λ (rule) (eq? (triple-source rule) current-state)) lor)]
                      ;;(listof rules)
                      ;;Purpose: Returns all rules that consume a letter using the given configurations
-                     [connected-read-rules (if (empty? (second first-computation))
-                                               '()
-                                               (filter (λ (rule)
-                                                         (and (equal? (first rule) (first first-computation))
-                                                              (equal? (second rule) (first (second first-computation)))))
-                                                       lor))]
+                     [connected-read-rules (treelist-filter (λ (rule)
+                                                              (and (not (empty? current-word))
+                                                                   (eq? (triple-read rule) (first current-word))))
+                                                            curr-rules)]
                      ;;(listof rules)
                      ;;Purpose: Returns all rules that have an empty transition using the given configurations
-                     [connected-emp-rules
-                      (filter (λ (rule)
-                                (and (equal? (first rule) (first first-computation))
-                                     (equal? (second rule) EMP)))
-                              lor)]
+                     [connected-emp-rules (treelist-filter (λ (rule)
+                                                             (eq? (triple-read rule) EMP))
+                                                           curr-rules)]
                      ;;(listof configurations)
                      ;;Purpose: Makes new configurations using given word and connected-rules
-                     [new-configs (filter (λ (new-c)
-                                            (not (member? (first (computation-LoC new-c)) (computation-visited new-c))))
-                                          (map (λ (rule) (apply-rule (qfirst QoC) rule))
-                                               (append connected-read-rules connected-emp-rules)))])
-                (if (empty? new-configs)
-                    (make-computations lor finals (dequeue QoC) (cons (qfirst QoC) path))
-                    (make-computations lor finals (enqueue new-configs (dequeue QoC)) path)))]))
-  
+                     [new-configs (treelist-filter (λ (new-c)
+                                                     (not (set-member? visited-configuration-set
+                                                                       (treelist-last (computation-LoC new-c)))))
+                                                   (treelist-map (treelist-append connected-read-rules connected-emp-rules)
+                                                                 (λ (rule) (apply-rule (qfirst QoC) rule))))])
+                (begin
+                  (update-hash current-config current-word)
+                  (update-visited current-config)
+                  (if (empty? new-configs)
+                      (make-computations (dequeue QoC) (treelist-add path (qfirst QoC)))
+                      (make-computations (enqueue new-configs (dequeue QoC)) path))))))))
 
+  (let (;;configuration
+        ;;Purpose: The starting configuration
+        [starting-config (computation (treelist (ndfa-config start word 0))
+                                      empty-treelist
+                                      '())])
+    (make-computations (enqueue (treelist starting-config) E-QUEUE)
+                       empty-treelist)))
+
+  
 ;;(listof configurations) (listof rules) (listof configurations) -> (listof configurations)
 ;;Purpose: Returns a propers trace for the given (listof configurations) that accurately
 ;;         tracks each transition
@@ -117,12 +156,12 @@ triple is the entire of the ndfa rule
   (cond [(or (empty? rules)
              (empty? configs)) (reverse acc)]
         [(and (empty? acc)
-              (not (equal? (second (first rules)) EMP)))
-         (let* ([rle (rule (list EMP EMP EMP))]
+              (not (equal? (triple-read (first rules)) EMP)))
+         (let* ([rle (rule (triple EMP EMP EMP))]
                 [res (trace (first configs) (list rle))])
            (make-trace (rest configs) rules (cons res acc)))]
         [(and (not (empty? acc))
-              (equal? (second (first rules)) EMP))
+              (equal? (triple-read (first rules)) EMP))
          (let* ([rle (rule (first rules))]
                 [res (struct-copy trace (first acc)
                                   [rules (cons rle (trace-rules (first acc)))])])
@@ -143,22 +182,25 @@ triple is the entire of the ndfa rule
 
 ;;(listof symbols) (lisof configurations) -> (listof configurations)
 ;;Purpose: Makes configurations usable for invariant predicates
-(define (make-inv-configs a-word configs)
-  (append-map (λ (config) (make-inv-configs-helper a-word config (length a-word))) configs))
+(define (make-inv-configs a-word LoC)
+  (map (λ (computation) (make-inv-configs-helper a-word computation (length a-word))) LoC))
 
 ;;(listof symbols) (lisof configurations) natnum -> (listof configurations)
 ;;Purpose: Makes configurations usable for invariant predicates
-(define (make-inv-configs-helper a-word configs word-len)
-  (let* ([config (filter (λ (config) (= (length (second config)) word-len)) configs)]
+(define (make-inv-configs-helper a-word computation word-len)
+  (let* ([config (filter (λ (config) (= (length (ndfa-config-word config)) word-len)) computation)]
          [inv-config (map (λ (config)
-                            (append (list (first config))
+                            #;(append (list (ndfa-config-word config))
                                     (list (take a-word (- (length a-word) word-len)))
-                                    (list (third config))))
+                                    (list (ndfa-config-word config)))
+                          (ndfa-config (ndfa-config-state config)
+                                    (take a-word (- (length a-word) word-len))
+                                    (ndfa-config-index config)))
                           config)])
-    (if (empty? configs)
+    (if (empty? computation)
         '()
         (append inv-config
-                (make-inv-configs-helper a-word (rest configs) (sub1 word-len))))))
+                (make-inv-configs-helper a-word (rest computation) (sub1 word-len))))))
 
 ;;(listof configurations) (listof (listof symbol ((listof sybmols) -> boolean))) -> (listof configurations)
 ;;Purpose: Adds the results of each invariant oredicate to its corresponding invariant configuration 
@@ -173,60 +215,42 @@ triple is the entire of the ndfa rule
   (if (empty? inv-configs)
       '()
       (let* ([get-inv-for-inv-config (filter (λ (inv)
-                                               (equal? (first inv) (first inv-configs)))
+                                               (equal? (first inv) (ndfa-config-state (first inv-configs))))
                                              invs)]
              [inv-for-inv-config (if (empty? get-inv-for-inv-config)
                                      '()
                                      (second (first get-inv-for-inv-config)))]
              [inv-config-result (if (empty? inv-for-inv-config)
                                     '()
-                                    (list (append inv-configs
-                                                  (list (inv-for-inv-config (second inv-configs))))))])
-        (append inv-config-result
+                                    (list (first inv-configs) (inv-for-inv-config (ndfa-config-word (first inv-configs)))))])
+        (cons inv-config-result
                 (get-inv-config-results-helper (rest inv-configs) invs)))))
 
 ;;(listof configurations) (listof sybmols) -> (listof configurations)
 ;;Purpose: Extracts all the invariant configurations that failed
 (define (return-brk-inv-configs inv-config-results)
-  (filter (λ (config) (not (fourth config))) inv-config-results))
+  (filter (λ (config) (not (second config))) inv-config-results))
 
 ;;rule symbol (listof rules) -> boolean
 ;;Purpose: Determines if the given rule is a member of the given (listof rules)
 ;;         or similiar to one of the rules in the given (listof rules) 
 (define (find-rule? rule dead lor)
-  (or (member? rule lor)
-      (ormap (λ (r)
-               (and (equal? (first rule) (first r))
-                    (or (equal? (third rule) (third r))
-                        (and (equal? (third rule) (third r))
-                             (equal? (third rule) dead)))))
-             lor)))
+  (or (member? rule lor equal?)
+      (for/or ([r lor])
+        (and (eq? (triple-source rule) (triple-source r))
+             (or (eq? (triple-destination rule) (triple-destination r))
+                 (and (eq? (triple-destination rule) (triple-destination r))
+                      (eq? (triple-destination rule) dead)))))))
 
 ;;(listof symbols) (listof configurations) -> (listof configurations)
 ;;Purpose: Returns the configurations have the given word as unconsumed input
 (define (get-portion-configs word full-configs)
   (append-map (λ (config)
                 (filter (λ (configs)
-                          (equal? (second configs) word))
+                          (equal? (ndfa-config-word configs) word))
                         config))
               full-configs))
 
-
-;;word (listof configurations) (listof configurations) -> (listof configurations)
-;;Purpose: Counts the number of unique configurations for each stage of the word
-(define (count-computations a-word a-LoC acc)
-  ;;word -> number
-  ;;Purpose: Counts the number of unique configurations based on the given word
-  (define (get-config a-word)
-    (length (remove-duplicates
-             (append-map (λ (configs)
-                           (filter (λ (config)
-                                     (equal? a-word (second config)))
-                                   configs))
-                         a-LoC))))
-  (if (empty? a-word)
-      (reverse (cons (get-config a-word) acc))
-      (count-computations (rest a-word) a-LoC (cons (get-config a-word) acc))))
 
 ;;(listof trace-rule) -> (listof rules)
 ;;Purpose: Remakes the rule extracted from the rule-struct
@@ -262,53 +286,69 @@ triple is the entire of the ndfa rule
 ;; Purpose: Returns the most consumed input
 (define (get-farthest-consumed LoC acc)
   (cond [(empty? LoC) acc]
-        [(< (length (second (first (first LoC)))) (length acc))
-         (get-farthest-consumed (rest LoC) (second (first (first LoC))))]
+        [(< (length (ndfa-config-word (treelist-first (first LoC)))) (length acc))
+         (get-farthest-consumed (rest LoC) (ndfa-config-word (treelist-first (first LoC))))]
         [else (get-farthest-consumed (rest LoC) acc)]))
+
+
+(define (remake-rules lor)
+  (for/treelist ([ndfa-rule lor])
+    (triple (first ndfa-rule)
+            (second ndfa-rule)
+            (third ndfa-rule))))
+
+(define (remake-machine M)
+  (ndfa (fsa-getstates M)
+        (fsa-getalphabet M)
+        (fsa-getstart M)
+        (list->seteq (fsa-getfinals M))
+        (remake-rules (fsa-getrules M))))
+  
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; graph machine (listof symbols) symbol (listof symbols) (listof symbols) -> graph
 ;; Purpose: To create a graph of nodes from the given list of rules
-(define (node-graph cgraph M dead held-inv brkn-inv)
+(define (node-graph cgraph M dead held-inv fail-inv)
   (foldl (λ (state result)
-           (add-node result
+           (let ([member-of-held-inv? (member? state held-inv eq?)]
+                 [member-of-fail-inv? (member? state fail-inv eq?)])
+             (add-node result
                      state
-                     #:atb (hash 'color (if (eq? state (fsa-getstart M)) 'green 'black)
-                                 'style (cond [(or (member? state held-inv) (member? state brkn-inv)) 'filled]
+                     #:atb (hash 'color (if (eq? state (ndfa-start M)) 'green 'black)
+                                 'style (cond [(or member-of-held-inv? member-of-fail-inv?) 'filled]
                                               [(eq? state dead) 'dashed]
                                               [else 'solid])
-                                 'shape (if (member? state (fsa-getfinals M)) 'doublecircle 'circle)
-                                 'fillcolor (cond [(member? state held-inv) HELD-INV-COLOR]
-                                                  [(member? state brkn-inv) BRKN-INV-COLOR]
+                                 'shape (if (set-member? (ndfa-finals M) state) 'doublecircle 'circle)
+                                 'fillcolor (cond [member-of-held-inv? HELD-INV-COLOR]
+                                                  [member-of-fail-inv? BRKN-INV-COLOR]
                                                   [else 'white])
                                  'label state
-                                 'fontcolor 'black)))
+                                 'fontcolor 'black))))
          cgraph
-         (fsa-getstates M)))
+         (ndfa-states M)))
 
 ;; graph machine word (listof rules) (listof rules) symbol -> graph
 ;; Purpose: To create a graph of edges from the given list of rules
 (define (edge-graph cgraph M current-shown-accept-rules other-current-accept-rules current-reject-rules dead)
   (foldl (λ (rule result)
+           (let ([other-current-accept-rule-find-rule? (find-rule? rule dead other-current-accept-rules)])
            (add-edge result
-                     (second rule)
-                     (first rule)
-                     (third rule)
-                     #:atb (hash 'color (cond [(and (member? rule current-shown-accept-rules)
-                                                    (member? rule other-current-accept-rules))
-
-                                               SPLIT-ACCEPT-COLOR]
+                     (triple-read rule)
+                     (triple-source rule)
+                     (triple-destination rule)
+                     #:atb (hash 'color (cond [(and (member? rule current-shown-accept-rules eq?)
+                                                    (member? rule other-current-accept-rules eq?)) SPLIT-ACCEPT-COLOR]
                                               [(find-rule? rule dead current-shown-accept-rules) TRACKED-ACCEPT-COLOR]
-                                              [(find-rule? rule dead other-current-accept-rules) ALL-ACCEPT-COLOR]
+                                              [other-current-accept-rule-find-rule? ALL-ACCEPT-COLOR]
                                               [(find-rule? rule dead current-reject-rules) REJECT-COLOR]
                                               [else 'black])
                                  'fontsize FONT-SIZE
-                                 'style (cond [(equal? (third rule) dead) 'dashed]
-                                              [(find-rule? rule dead other-current-accept-rules) 'bold]
-                                              [else 'solid]))))
+                                 'style (cond [(equal? (triple-destination rule) dead) 'dashed]
+                                              [other-current-accept-rule-find-rule? 'bold]
+                                              [else 'solid])))))
          cgraph
-         (fsa-getrules M)))
+         (treelist->list (ndfa-rules M))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -328,7 +368,8 @@ triple is the entire of the ndfa rule
   (let* (;;(listof configurations)
          ;;Purpose: Returns all configurations using the given word
          [all-configs (get-portion-configs (building-viz-state-upci a-vs)
-                                           (map computation-LoC (building-viz-state-accepting-computations a-vs)))]
+                                           (map (λ (comp) (treelist->list (computation-LoC comp)))
+                                                (building-viz-state-accepting-computations a-vs)))]
 
          ;;(listof rule-struct)
          ;;Purpose: Extracts the rules from of shown accepting computation
@@ -347,7 +388,7 @@ triple is the entire of the ndfa rule
          [a-configs (get-trace-rule (building-viz-state-accept-traces a-vs))]
 
          ;;A dummy dfa/ndfa rule
-         [dummy-rule (list EMP EMP EMP)]
+         [dummy-rule (triple EMP EMP EMP)]
 
          ;;(listof rules)
          ;;Purpose: Converts the current rules from the accepting computations and makes them usable for graphviz
@@ -363,7 +404,7 @@ triple is the entire of the ndfa rule
          ;;Purpose: Extracts all invariants for the states that the machine can be in
          [get-invs (for*/list ([invs (building-viz-state-inv a-vs)]
                                [curr all-configs]
-                               #:when (equal? (first invs) (first curr)))
+                               #:when (equal? (first invs) (ndfa-config-state curr)))
                      (list invs (building-viz-state-pci a-vs)))]
 
          ;;(listof symbols)
@@ -390,7 +431,8 @@ triple is the entire of the ndfa rule
 ;;Purpose: Creates all the graphs needed for the visualization
 (define (create-graph-thunks a-vs acc)
   (cond [(empty? (building-viz-state-upci a-vs)) (reverse (cons (create-graph-thunk a-vs) acc))]
-        [(not (ormap (λ (config) (empty? (second (first (computation-LoC config)))))
+        [(equal? (building-viz-state-upci a-vs) (building-viz-state-farthest-consumed a-vs))
+         #;(not (ormap (λ (config) (empty? (second (first (computation-LoC config)))))
                      (trace-computations (building-viz-state-pci a-vs)
                                          (fsa-getrules (building-viz-state-M a-vs))
                                          (fsa-getstart (building-viz-state-M a-vs))
@@ -411,22 +453,7 @@ triple is the entire of the ndfa rule
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization forward by one step
 (define (right-key-pressed a-vs)
-  (let* (;;boolean
-         ;;Purpose: Determines if the pci can be can be fully consumed
-         [completed-config? (ormap (λ (config)
-                                     (empty? (second (first (computation-LoC config)))))
-                                   (trace-computations (imsg-state-ndfa-pci (informative-messages-component-state
-                                                                             (viz-state-informative-messages a-vs))) 
-                                                       (fsa-getrules (imsg-state-ndfa-M
-                                                                      (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs))))
-                                                       (fsa-getstart (imsg-state-ndfa-M
-                                                                      (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs))))
-                                                       (fsa-getfinals (imsg-state-ndfa-M
-                                                                       (informative-messages-component-state
-                                                                        (viz-state-informative-messages a-vs))))))]
-         [shown-accepting-trace (if (or (zipper-at-end? (imsg-state-ndfa-shown-accepting-trace
+  (let* ([shown-accepting-trace (if (or (zipper-at-end? (imsg-state-ndfa-shown-accepting-trace
                                                          (informative-messages-component-state
                                                           (viz-state-informative-messages a-vs))))
                                         (zipper-empty? (imsg-state-ndfa-shown-accepting-trace
@@ -454,7 +481,10 @@ triple is the entire of the ndfa rule
                      (informative-messages-component-state (viz-state-informative-messages a-vs))
                      [upci (if (or (empty? (imsg-state-ndfa-upci (informative-messages-component-state
                                                                   (viz-state-informative-messages a-vs))))
-                                   (not completed-config?))
+                                   (equal? (imsg-state-ndfa-upci (informative-messages-component-state
+                                                                  (viz-state-informative-messages a-vs)))
+                                           (imsg-state-ndfa-farthest-consumed-input (informative-messages-component-state
+                                                                                     (viz-state-informative-messages a-vs)))))
                                (imsg-state-ndfa-upci (informative-messages-component-state
                                                       (viz-state-informative-messages a-vs)))
                                (rest (imsg-state-ndfa-upci (informative-messages-component-state
@@ -462,7 +492,10 @@ triple is the entire of the ndfa rule
                      [shown-accepting-trace shown-accepting-trace]
                      [pci (if (or (empty? (imsg-state-ndfa-upci (informative-messages-component-state
                                                                  (viz-state-informative-messages a-vs))))
-                                  (not completed-config?))
+                                  (equal? (imsg-state-ndfa-upci (informative-messages-component-state
+                                                                  (viz-state-informative-messages a-vs)))
+                                           (imsg-state-ndfa-farthest-consumed-input (informative-messages-component-state
+                                                                                     (viz-state-informative-messages a-vs)))))
                               (imsg-state-ndfa-pci (informative-messages-component-state
                                                     (viz-state-informative-messages a-vs)))
                               (append (imsg-state-ndfa-pci (informative-messages-component-state
@@ -477,10 +510,11 @@ triple is the entire of the ndfa rule
                                         [(and (not (zipper-at-end? (imsg-state-ndfa-invs-zipper
                                                                     (informative-messages-component-state
                                                                      (viz-state-informative-messages a-vs)))))
-                                              (>= index (third (first (zipper-unprocessed
+                                              (>= index (ndfa-config-index
+                                                         (first (first (zipper-unprocessed
                                                                        (imsg-state-ndfa-invs-zipper
                                                                         (informative-messages-component-state
-                                                                         (viz-state-informative-messages a-vs))))))))
+                                                                         (viz-state-informative-messages a-vs)))))))))
                                          (zipper-next (imsg-state-ndfa-invs-zipper (informative-messages-component-state
                                                                                     (viz-state-informative-messages a-vs))))]
                                         [else (imsg-state-ndfa-invs-zipper (informative-messages-component-state
@@ -495,15 +529,6 @@ triple is the entire of the ndfa rule
                                                   (viz-state-informative-messages a-vs)))
                             (imsg-state-ndfa-upci (informative-messages-component-state
                                                    (viz-state-informative-messages a-vs))))]
-         ;;(listof symbols)
-         ;;Purpose: The last word that could be fully consumed by the ndfa
-         [last-consumed-word (last-fully-consumed
-                              full-word
-                              (imsg-state-ndfa-M (informative-messages-component-state
-                                                  (viz-state-informative-messages a-vs))))]
-         ;;(listof symbols)
-         ;;Purpose: The portion of the word that cannont be consumed
-         [unconsumed-word (drop full-word (length last-consumed-word))]
          [zip (if (zipper-empty? (imsg-state-ndfa-invs-zipper (informative-messages-component-state
                                                                (viz-state-informative-messages a-vs))))
                   (imsg-state-ndfa-invs-zipper (informative-messages-component-state
@@ -528,15 +553,21 @@ triple is the entire of the ndfa rule
                                                      (viz-state-informative-messages a-vs))))
                       (imsg-state-ndfa-upci (informative-messages-component-state
                                              (viz-state-informative-messages a-vs)))]
-                     [(not (equal? last-consumed-word full-word))
-                      (rest unconsumed-word)]
+                     [(not (empty? (imsg-state-ndfa-farthest-consumed-input (informative-messages-component-state
+                                                                             (viz-state-informative-messages a-vs)))))
+                      (imsg-state-ndfa-farthest-consumed-input (informative-messages-component-state
+                                                                             (viz-state-informative-messages a-vs)))]
                      [else '()])]
          [pci (cond [(empty? (imsg-state-ndfa-upci (informative-messages-component-state
                                                     (viz-state-informative-messages a-vs))))
                      (imsg-state-ndfa-pci (informative-messages-component-state
                                            (viz-state-informative-messages a-vs)))]
-                    [(not (equal? last-consumed-word full-word))
-                     (append last-consumed-word (take unconsumed-word 1))]
+                    [(not (empty? (imsg-state-ndfa-farthest-consumed-input (informative-messages-component-state
+                                                                            (viz-state-informative-messages a-vs)))))
+                     (take full-word (- (length full-word)
+                                        (length (imsg-state-ndfa-farthest-consumed-input
+                                                 (informative-messages-component-state
+                                                                            (viz-state-informative-messages a-vs))))))]
                     [else full-word])]
          [shown-accepting-trace (if (or (zipper-at-end? (imsg-state-ndfa-shown-accepting-trace
                                                          (informative-messages-component-state
@@ -618,10 +649,11 @@ triple is the entire of the ndfa rule
                                         [(and (not (zipper-at-begin? (imsg-state-ndfa-invs-zipper
                                                                       (informative-messages-component-state
                                                                        (viz-state-informative-messages a-vs)))))
-                                              (<= index (third (first (zipper-processed
+                                              (<= index (ndfa-config-index
+                                                         (first (first (zipper-processed
                                                                        (imsg-state-ndfa-invs-zipper
                                                                         (informative-messages-component-state
-                                                                         (viz-state-informative-messages a-vs))))))))
+                                                                         (viz-state-informative-messages a-vs)))))))))
                                          (zipper-prev (imsg-state-ndfa-invs-zipper (informative-messages-component-state
                                                                                     (viz-state-informative-messages a-vs))))]
                                         [else (imsg-state-ndfa-invs-zipper (informative-messages-component-state
@@ -750,7 +782,7 @@ triple is the entire of the ndfa rule
                                            (zipper-at-end? (imsg-state-ndfa-invs-zipper
                                                             (informative-messages-component-state
                                                              (viz-state-informative-messages a-vs))))
-                                           (>= (ndfa-accessor-func (imsg-state-ndfa-shown-accepting-trace
+                                           (< (ndfa-accessor-func (imsg-state-ndfa-shown-accepting-trace
                                                                     (informative-messages-component-state
                                                                      (viz-state-informative-messages a-vs))))
                                                (get-index-ndfa (imsg-state-ndfa-invs-zipper
@@ -769,7 +801,7 @@ triple is the entire of the ndfa rule
                                           (zipper-at-end? (imsg-state-ndfa-invs-zipper
                                                            (informative-messages-component-state
                                                             (viz-state-informative-messages a-vs))))
-                                          (>= (ndfa-accessor-func (imsg-state-ndfa-shown-accepting-trace
+                                          (< (ndfa-accessor-func (imsg-state-ndfa-shown-accepting-trace
                                                                    (informative-messages-component-state
                                                                     (viz-state-informative-messages a-vs))))
                                               (get-index-ndfa (imsg-state-ndfa-invs-zipper
@@ -839,7 +871,7 @@ triple is the entire of the ndfa rule
                                            (zipper-at-end? (imsg-state-ndfa-invs-zipper
                                                             (informative-messages-component-state
                                                              (viz-state-informative-messages a-vs))))
-                                           (<= (ndfa-accessor-func (imsg-state-ndfa-shown-accepting-trace
+                                           (> (ndfa-accessor-func (imsg-state-ndfa-shown-accepting-trace
                                                                     (informative-messages-component-state
                                                                      (viz-state-informative-messages a-vs))))
                                                (get-index-ndfa (imsg-state-ndfa-invs-zipper
@@ -856,7 +888,7 @@ triple is the entire of the ndfa rule
                                                               (viz-state-informative-messages a-vs))))
                                           (zipper-at-end? (imsg-state-ndfa-invs-zipper (informative-messages-component-state
                                                                                         (viz-state-informative-messages a-vs))))
-                                          (<= (ndfa-accessor-func (imsg-state-ndfa-shown-accepting-trace
+                                          (> (ndfa-accessor-func (imsg-state-ndfa-shown-accepting-trace
                                                                    (informative-messages-component-state
                                                                     (viz-state-informative-messages a-vs))))
                                               (get-index-ndfa (imsg-state-ndfa-invs-zipper
@@ -884,42 +916,41 @@ triple is the entire of the ndfa rule
 ;;Purpose: Produces an equivalent machine with the addition of the dead state and rules to the dead state
 (define (make-new-M M)
   (cond [(eq? (M 'whatami) 'ndfa)
-         (local
-           [;;symbol
-            ;;Purpose: If ds is already used as a state in M, then generates a random seed symbol,
-            ;;         otherwise uses DEAD
-            (define dead (if (member? DEAD (fsa-getstates M)) (gen-state (fsa-getstates M)) DEAD))
-            ;;(listof symbols)
-            ;;Purpose: Makes partial rules for every combination of states in M and symbols in sigma of M
-            (define new-rules
-              (for*/list ([states (fsa-getstates M)]
-                          [sigma (fsa-getalphabet M)])
-                (list states sigma)))
-            ;;(listof rules)
-            ;;Purpose: Makes rules for every dead state transition to itself using the symbols in sigma of M
-            (define dead-rules
-              (for*/list ([ds (list dead)]
-                          [sigma (fsa-getalphabet M)])
-                (list ds sigma ds)))
-            ;;(listof rules)
-            ;;Purpose: Gets rules that are not currently in the original rules of M
-            (define get-rules-not-in-M  (local [(define partial-rules (map (λ (rule)
-                                                                             (append (list (first rule)) (list (second rule))))
-                                                                           (fsa-getrules M)))]
-                                          (filter (λ (rule)
-                                                    (not (member? rule partial-rules)))
-                                                  new-rules)))
-            ;;(listof rules)
-            ;;Purpose: Maps the dead state as a destination for all rules that are not currently in the original rules of M
-            (define rules-to-dead
-              (map (λ (rule) (append rule (list dead)))
-                   get-rules-not-in-M))]
-           (make-unchecked-ndfa (append (fsa-getstates M) (list dead))
+         (local [;;symbol
+                 ;;Purpose: If ds is already used as a state in M, then generates a random seed symbol,
+                 ;;         otherwise uses DEAD
+                 (define dead (if (member? DEAD (fsa-getstates M) eq?) (gen-state (fsa-getstates M)) DEAD))
+                 ;;(listof symbols)
+                 ;;Purpose: Makes partial rules for every combination of states in M and symbols in sigma of M
+                 (define new-rules
+                   (for*/list ([states (fsa-getstates M)]
+                               [sigma (fsa-getalphabet M)])
+                     (list states sigma)))
+                 ;;(listof rules)
+                 ;;Purpose: Makes rules for every dead state transition to itself using the symbols in sigma of M
+                 (define dead-rules
+                   (for*/list ([ds (list dead)]
+                               [sigma (fsa-getalphabet M)])
+                     (list ds sigma ds)))
+                 ;;(listof rules)
+                 ;;Purpose: Gets rules that are not currently in the original rules of M
+                 (define get-rules-not-in-M  (local [(define partial-rules (map (λ (rule)
+                                                                                  (append (list (first rule)) (list (second rule))))
+                                                                                (fsa-getrules M)))]
+                                               (filter (λ (rule)
+                                                         (not (member? rule partial-rules equal?)))
+                                                       new-rules)))
+                 ;;(listof rules)
+                 ;;Purpose: Maps the dead state as a destination for all rules that are not currently in the original rules of M
+                 (define rules-to-dead
+                   (map (λ (rule) (append rule (list dead)))
+                        get-rules-not-in-M))]
+           (make-unchecked-ndfa (cons dead (fsa-getstates M)) #;(append (fsa-getstates M) (list dead))
                                 (fsa-getalphabet M)
                                 (fsa-getstart M)
                                 (fsa-getfinals M)
                                 (append (fsa-getrules M) rules-to-dead dead-rules)))]
-        [(and (eq? (M 'whatami) 'dfa) (not (member? DEAD (fsa-getstates M))))
+        [(and (eq? (M 'whatami) 'dfa) (not (member? DEAD (fsa-getstates M) equal?)))
          (make-unchecked-dfa (fsa-getstates M) (fsa-getalphabet M) (fsa-getstart M) (fsa-getfinals M) (fsa-getrules M))]
         [else M]))
 
@@ -930,38 +961,46 @@ triple is the entire of the ndfa rule
 ;;Assumption: The given machine is a ndfa or dfa
 (define (ndfa-viz M a-word #:add-dead [add-dead #f] invs)
   (let* (;;M ;;Purpose: A new machine with the dead state if add-dead is true
-         [new-M (if add-dead (make-new-M M) M)]
+         [new-M (remake-machine (if add-dead (make-new-M M) M))]
          ;;symbol ;;Purpose: The name of the dead state
-         [dead-state (cond [(and add-dead (eq? (M 'whatami) 'ndfa)) (last (fsa-getstates new-M))]
+         [dead-state (cond [(and add-dead (eq? (M 'whatami) 'ndfa)) (first (ndfa-states new-M))]
                            [(and add-dead (eq? (M 'whatami) 'dfa)) DEAD]
                            [else 'no-dead])]
          ;;(listof computations) ;;Purpose: All computations that the machine can have
-         [computations (trace-computations a-word (fsa-getrules new-M) (fsa-getstart new-M) (fsa-getfinals new-M))]
+         [computations+hash (trace-computations a-word (ndfa-rules new-M) (ndfa-start new-M) (ndfa-finals new-M))]
+
+         [computations (treelist->list (first computations+hash))]
          ;;(listof configurations) ;;Purpose: Extracts the configurations from the computation
          [LoC (map computation-LoC computations)]
          ;;(listof computation) ;;Purpose: Extracts all accepting computations
          [accepting-computations (filter (λ (comp)
-                                           (and (member? (first (first (computation-LoC comp))) (fsa-getfinals new-M))
-                                                (empty? (second (first (computation-LoC comp))))))
+                                           (and (set-member? (ndfa-finals new-M)
+                                                             (ndfa-config-state (treelist-last (computation-LoC comp))))
+                                                (empty? (ndfa-config-word (treelist-last (computation-LoC comp))))))
                                          computations)]
          ;;(listof trace) ;;Purpose: Makes traces from the accepting computations
          [accepting-traces (map (λ (accept-comp)
-                                  (make-trace (reverse (computation-LoC accept-comp))
-                                              (reverse (computation-LoR accept-comp))
+                                  (make-trace (treelist->list (computation-LoC accept-comp))
+                                              (treelist->list (computation-LoR accept-comp))
                                               '()))
                                 accepting-computations)]
          ;;(listof computation) ;;Purpose: Extracts all rejecting computations
          [rejecting-computations (filter (λ (config)
-                                           (not (member? config accepting-computations)))
+                                           (not (member? config accepting-computations equal?)))
                                          computations)]
          ;;(listof trace) ;;Purpose: Makes traces from the rejecting computations
          [rejecting-traces (map (λ (reject-comp)
-                                  (make-trace (reverse (computation-LoC reject-comp))
-                                              (reverse (computation-LoR reject-comp))
+                                  (make-trace (treelist->list (computation-LoC reject-comp))
+                                              (treelist->list (computation-LoR reject-comp))
                                               '()))
                                 rejecting-computations)]
          ;;(listof symbol) ;;Purpose: The portion of the ci that the machine can conusme the most 
-         [most-consumed-word (get-farthest-consumed LoC a-word)]
+         [most-consumed-word (let ([last-word (if (empty? accepting-traces)
+                                                  (get-farthest-consumed LoC a-word)
+                                                  '())])
+                               (if (empty? last-word)
+                                   last-word
+                                   (rest last-word)))]
          ;;building-state struct
          [building-state (building-viz-state a-word
                                              '()
@@ -976,15 +1015,23 @@ triple is the entire of the ndfa rule
          ;;(listof graph-thunk) ;;Purpose: Gets all the graphs needed to run the viz
          [graphs (create-graph-thunks building-state '())]
          ;;(listof number) ;;Purpose: Gets the number of computations for each step
-         [computation-lens (count-computations a-word (map computation-LoC computations) '())]
+         [computation-lens (begin
+                             (for ([key (in-list (hash-keys (second computations+hash)))])
+                               (hash-set! (second computations+hash)
+                                          key
+                                          (set-count (hash-ref (second computations+hash) key))))
+                             (second computations+hash))]
+         ;[computation-lens (count-computations a-word (map computation-LoC computations) '())]
          ;;(listof number) ;;Purpose: Gets the index of image where an invariant failed
          [inv-configs (remove-duplicates (return-brk-inv-configs
                                           (get-inv-config-results
                                            (make-inv-configs a-word
                                                              (map (λ (comp)
-                                                                    (reverse (computation-LoC comp)))
+                                                                    (treelist->list (computation-LoC comp)))
                                                                   accepting-computations))
                                            invs)))])
+    (displayln inv-configs)
+    ;(void)
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ NDFA-E-SCENE-HEIGHT 2))
@@ -1000,7 +1047,7 @@ triple is the entire of the ndfa rule
                                                     (list->zipper inv-configs)
                                                     (sub1 (length inv-configs))
                                                     computation-lens
-                                                    LoC
+                                                    (for/list ([computation LoC]) (treelist->list computation)) ;LoC
                                                     0
                                                     (let ([offset-cap (- (length a-word) TAPE-SIZE)])
                                                       (if (> 0 offset-cap) 0 offset-cap))

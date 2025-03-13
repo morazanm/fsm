@@ -38,6 +38,14 @@ rules are a (listof rule)
 ;(struct trace (config rules) #:transparent)
 (struct rule (read action) #:transparent)
 
+
+;; X (listof X) (X -> boolean) -> boolean
+;;Purpose: Determine if X is in the given list
+(define (member? x lst eq-func)
+  (for/or ([L lst]) (eq-func x L))) 
+
+
+
 (define HELD-INV-COLOR 'chartreuse4)
 (define BRKN-INV-COLOR 'red2)
 (define TRACKED-ACCEPT-COLOR 'forestgreen)
@@ -62,12 +70,12 @@ rules are a (listof rule)
 (define INS-TOOLS-BUFFER 30)
 
 (define accessor-func (compose1 fourth (compose1 trace-config zipper-current)))
-(define pda-accessor-func (compose1 config-index (compose1 trace-config zipper-current)))
-(define ndfa-accessor-func (compose1 third (compose1 trace-config zipper-current)))
+(define pda-accessor-func (compose1 pda-config-index (compose1 trace-config zipper-current)))
+(define ndfa-accessor-func (compose1 ndfa-config-index (compose1 trace-config zipper-current)))
 
 (define get-index (compose1 fourth zipper-current))
-(define get-index-pda (compose1 config-index (compose1 first zipper-current)))
-(define get-index-ndfa (compose1 third zipper-current))
+(define get-index-pda (compose1 pda-config-index (compose1 first zipper-current)))
+(define get-index-ndfa (compose1 ndfa-config-index (compose1 first zipper-current)))
 
 (define get-next-index (compose1 fourth (compose1 zipper-current zipper-next)))
 (define get-next-index-ndfa (compose1 third (compose1 zipper-current zipper-next)))
@@ -165,33 +173,12 @@ rules are a (listof rule)
 (define ndfa-info-img (ndfa-create-draw-informative-message (imsg-state-ndfa AB*B*UAB*
                                                                              '(a b b)
                                                                              '()
-                                                                             (list->zipper '(((S (a b b))
-                                                                                              (K (a b b))
-                                                                                              (B (b b))
-                                                                                              (K (b))
-                                                                                              (H (b))
-                                                                                              (H ()))
-                                                                                             ((S (a b b))
-                                                                                              (C (b b))
-                                                                                              (H (b b))
-                                                                                              (H (b))
-                                                                                              (H ()))
-                                                                                             ((S (a b b))
-                                                                                              (K (a b b))
-                                                                                              (H (a b b)))))
+                                                                             (list->zipper '())
                                                                              '()
                                                                              (list->zipper '())
                                                                              (sub1 (length '()))
-                                                                             '(1 2 3 2)
-                                                                             '((computation
-                                                                                ((H ()) (H (b)) (K (b)) (B (b b))
-                                                                                        (K (a b b)) (S (a b b)))
-                                                                                ((H b H) (K ε H) (B b K) (K a B) (S ε K))
-                                                                                ((H (b)) (K (b)) (B (b b)) (K (a b b)) (S (a b b))))
-                                                                               (computation
-                                                                                ((H ()) (H (b)) (H (b b)) (C (b b)) (S (a b b)))
-                                                                                ((H b H) (H b H) (C ε H) (S a C))
-                                                                                ((H (b)) (H (b b)) (C (b b)) (S (a b b)))))
+                                                                             (hash)
+                                                                             '()
                                                                              0
                                                                              (let ([offset-cap (- (length '(a b b)) TAPE-SIZE)])
                                                                                (if (> 0 offset-cap) 0 offset-cap))

@@ -71,17 +71,11 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                             inv
                             dead
                             max-cmps 
-                            farthest-consumed-input 
-                            ))
+                            farthest-consumed-input))
 
-(define get-index (compose1 config-index zipper-current))
+(define get-index (compose1 pda-config-index zipper-current))
 
 ;(struct config (state word stack index))
-
-;; X (listof X) -> boolean
-;;Purpose: Determine if X is in the given list
-(define (member? x lst eq-func)
-  (for/or ([L lst]) (eq-func x L))) 
 
 ;;rule -> boolean
 ;;Purpose: Determines if the given rule is an empty rule (e.i. reads, pops, and pushes empty)
@@ -105,8 +99,8 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
       (let* (;;config
              ;;Purpose: Applies the read portion of given rule to the given config
              [apply-pop-result (if (eq? (triple-pop (rule-triple a-rule)) EMP)
-                                   (config-stack a-config)
-                                   (drop (config-stack a-config) (length (triple-pop (rule-triple a-rule)))))]
+                                   (pda-config-stack a-config)
+                                   (drop (pda-config-stack a-config) (length (triple-pop (rule-triple a-rule)))))]
              ;;config
              ;;Purpose: Applies the push portion of given rule to the given config
              [apply-push-result (if (eq? (pair-push (rule-pair a-rule)) EMP)
@@ -115,14 +109,14 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
              ;;config
              ;;Purpose: Applies the read portion of given rule to the given config
              [apply-read-result (if (eq? (triple-read (rule-triple a-rule)) EMP)
-                                    (config-word a-config)
-                                    (rest (config-word a-config)))]
+                                    (pda-config-word a-config)
+                                    (rest (pda-config-word a-config)))]
              ;;config
              ;;Purpose: Updates the config's number if something gets applied to the config (e.i. read/pop/push)
              [update-count-result (if (empty-rule? a-rule)
-                                      (config-index a-config)
-                                      (add1 (config-index a-config)))])
-        (struct-copy config a-config
+                                      (pda-config-index a-config)
+                                      (add1 (pda-config-index a-config)))])
+        (struct-copy pda-config a-config
                      [state (pair-destination (rule-pair a-rule))]
                      [stack apply-push-result]
                      [word apply-read-result]
@@ -175,13 +169,13 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                  [curr-config (treelist-last (computation-LoC (qfirst QoC)))]
                  ;;word
                  ;;the unconsumed input of the current configuration
-                 [curr-word (config-word curr-config)]
+                 [curr-word (pda-config-word curr-config)]
                  ;;stack
                  ;;the current stack of the current configuration
-                 [curr-stack (config-stack curr-config)]
+                 [curr-stack (pda-config-stack curr-config)]
                  ;;state
                  ;;the current state of the current configuration
-                 [curr-state (config-state curr-config)])
+                 [curr-state (pda-config-state curr-config)])
             (if (or (and (empty? curr-word)
                          (empty? curr-stack)
                          (set-member? finals-set curr-state))
@@ -236,7 +230,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
 
   (let (;;computation
         ;;Purpose: The starting computation
-        [starting-computation (computation (treelist (config start a-word '() 0))
+        [starting-computation (computation (treelist (pda-config start a-word '() 0))
                                            empty-treelist
                                            (set))])
     (make-computations starting-computation)))
@@ -338,7 +332,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
   (define (get-portion-configs word full-configs)
     (append-map (λ (config)
                   (for/list ([config (in-treelist (computation-LoC config))]
-                             #:when (equal? (config-word config) word))
+                             #:when (equal? (pda-config-word config) word))
                     config))
                 full-configs))
 
@@ -393,7 +387,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
          ;;Purpose: Gets the states where it's computation has cutoff
          [cut-off-states (if cut-off
                              (remove-duplicates (for/list ([computation (building-viz-state-computations a-vs)])
-                                                  (config-state (first computation))))
+                                                  (pda-config-state (first computation))))
                              '())]
 
          ;;(listof rule-struct)
@@ -424,8 +418,8 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
          ;;Purpose: Extracts all invariants for the states that the machine can be in
          [get-invs (for*/list ([invs (building-viz-state-inv a-vs)]
                                [curr current-configs]
-                               #:when (eq? (first invs) (config-state curr)))
-                     (list invs (building-viz-state-pci a-vs) (config-stack curr)))]
+                               #:when (eq? (first invs) (pda-config-state curr)))
+                     (list invs (building-viz-state-pci a-vs) (pda-config-stack curr)))]
 
          ;;(listof symbols)
          ;;Purpose: Returns all states whose invariants fail
@@ -459,7 +453,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
   ;;Purpose: Creates all the graphs needed for the visualization
   (define (create-graph-thunks-helper a-vs acc)
     (cond [(for/or ([config (building-viz-state-computations a-vs)])
-             (>= (config-index (first config)) (building-viz-state-max-cmps a-vs)))
+             (>= (pda-config-index (first config)) (building-viz-state-max-cmps a-vs)))
            (reverse (cons (create-graph-thunk a-vs #:cut-off #t) acc))]
           [(or (equal? (building-viz-state-upci a-vs) (building-viz-state-farthest-consumed-input a-vs))
                (and (empty? (building-viz-state-upci a-vs))
@@ -850,7 +844,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                                      (viz-state-informative-messages a-vs)))
                                 (imsg-state-pda-upci (informative-messages-component-state
                                                       (viz-state-informative-messages a-vs))))]
-             [partial-word (if (equal? (config-word (first (zipper-current zip))) full-word)
+             [partial-word (if (equal? (pda-config-word (first (zipper-current zip))) full-word)
                                '()
                                (drop full-word (get-index-pda zip)))])
         (struct-copy
@@ -963,7 +957,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                                                  (viz-state-informative-messages a-vs))))))
                                      (imsg-state-pda-pci (informative-messages-component-state
                                                           (viz-state-informative-messages a-vs)))]
-                                    [else (config-word (first (zipper-current zip)))])]
+                                    [else (pda-config-word (first (zipper-current zip)))])]
                          [invs-zipper zip])])]))))
 
 ;;viz-state -> viz-state
@@ -995,7 +989,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                                      (viz-state-informative-messages a-vs)))
                                 (imsg-state-pda-upci (informative-messages-component-state
                                                       (viz-state-informative-messages a-vs))))]
-             [partial-word (if (equal? (config-word (first (zipper-current zip))) full-word)
+             [partial-word (if (equal? (pda-config-word (first (zipper-current zip))) full-word)
                                '()
                                (drop full-word (get-index-pda zip)))])
         (struct-copy
@@ -1110,7 +1104,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                                                    (viz-state-informative-messages a-vs))))))
                                      (imsg-state-pda-pci (informative-messages-component-state
                                                           (viz-state-informative-messages a-vs)))]
-                                    [else (config-word (first (zipper-current zip)))])]
+                                    [else (pda-config-word (first (zipper-current zip)))])]
                          [invs-zipper zip])])]))))
 
 ;;machine -> machine
@@ -1200,9 +1194,9 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
     (define (make-inv-configs-helper a-word configs word-len)
       (letrec ([a-word-len (length a-word)]
                [self (lambda (configs word-len)
-                       (let* ([current-config (filter (λ (config) (= (length (config-word config)) word-len)) configs)]
+                       (let* ([current-config (filter (λ (config) (= (length (pda-config-word config)) word-len)) configs)]
                               [inv-config (map (λ (configs)
-                                                 (struct-copy config configs
+                                                 (struct-copy pda-config configs
                                                               [word (take a-word (- a-word-len word-len))]))
                                                current-config)])
                          (if (empty? configs)
@@ -1225,7 +1219,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
       (if (or (empty? invs) (empty? inv-configs))
           '()
           (let* ([get-inv-for-inv-config (filter (λ (inv)
-                                                   (equal? (first inv) (config-state (first inv-configs))))
+                                                   (equal? (first inv) (pda-config-state (first inv-configs))))
                                                  invs)]
                  [inv-for-inv-config (if (empty? get-inv-for-inv-config)
                                          '()
@@ -1233,8 +1227,8 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                  [inv-config-result (if (empty? inv-for-inv-config)
                                         '()
                                         (cons (first inv-configs)
-                                              (list (inv-for-inv-config (config-word (first inv-configs))
-                                                                        (config-stack (first inv-configs))))))])
+                                              (list (inv-for-inv-config (pda-config-word (first inv-configs))
+                                                                        (pda-config-stack (first inv-configs))))))])
             (cons inv-config-result
                   (get-inv-config-results-helper (rest inv-configs))))))
 
@@ -1248,8 +1242,8 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
   ;;acc = the word with smallest unconsumed input
   (define (get-farthest-consumed LoC acc)
     (cond [(empty? LoC) acc]
-          [(< (length (config-word (treelist-last (first LoC)))) (length acc))
-           (get-farthest-consumed (rest LoC) (config-word (treelist-last (first LoC))))]
+          [(< (length (pda-config-word (treelist-last (first LoC)))) (length acc))
+           (get-farthest-consumed (rest LoC) (pda-config-word (treelist-last (first LoC))))]
           [else (get-farthest-consumed (rest LoC) acc)]))
 
   ;;computation -> computation 
@@ -1260,8 +1254,8 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
     ;;acc = the traversed configurations in the computation
     (define (remove-empty-helper computation acc)
       (cond [(< (length computation) 2) (reverse (append computation acc))]
-            [(and (equal? (config-word (first computation)) (config-word (second computation)))
-                  (equal? (config-stack (first computation)) (config-stack (second computation))))
+            [(and (equal? (pda-config-word (first computation)) (pda-config-word (second computation)))
+                  (equal? (pda-config-stack (first computation)) (pda-config-stack (second computation))))
              (remove-empty-helper (rest computation) acc)]
             [else (remove-empty-helper (rest computation) (cons (first computation) acc))]))
     (remove-empty-helper a-computation '()))
@@ -1287,10 +1281,10 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
          ;[word-len (length a-word)]
          ;;(listof computation) ;;Purpose: Extracts all accepting computations
          [accepting-computations (filter (λ (comp)
-                                           (and (member? (config-state (treelist-last (computation-LoC comp)))
+                                           (and (member? (pda-config-state (treelist-last (computation-LoC comp)))
                                                          (pda-finals new-M) eq?)
-                                                (empty? (config-word (treelist-last (computation-LoC comp))))
-                                                (empty? (config-stack (treelist-last (computation-LoC comp))))))
+                                                (empty? (pda-config-word (treelist-last (computation-LoC comp))))
+                                                (empty? (pda-config-stack (treelist-last (computation-LoC comp))))))
                                          computations)]
          ;;(listof trace) ;;Purpose: Makes traces from the accepting computations
          [accept-cmps (map (λ (acc-comp)
@@ -1332,7 +1326,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
 
          [computation-has-cut-off? (and (empty? accepting-trace)
                                         (for/or ([computation LoC])
-                                          (>= (config-index (treelist-last computation)) cut-off)))]
+                                          (>= (pda-config-index (treelist-last computation)) cut-off)))]
          ;;(listof computation)
          ;;Purpose: Gets all the cut off computations if the length of the word is greater than max computations
          [get-cut-off-trace (if computation-has-cut-off? (map last rejecting-traces) '())]

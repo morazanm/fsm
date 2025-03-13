@@ -15,8 +15,10 @@
          pda-create-draw-informative-message
          tm-create-draw-informative-message
          trace trace-config trace-rules
-         config config-state config-word
-         config-stack config-index)
+         ndfa-config ndfa-config-state ndfa-config-word ndfa-config-index
+         pda-config pda-config-state pda-config-word pda-config-stack pda-config-index
+         tm-config tm-config-state tm-config-head-position tm-config-tape tm-config-index)
+
 
 #|
 A trace is a structure:
@@ -26,9 +28,12 @@ rules are a (listof rule-structs)
 |#
 (struct trace (config rules) #:transparent)
 (struct rule (read action) #:transparent)
-(struct config (state word stack index) #:transparent)
+(struct pda-config (state word stack index) #:transparent)
+(struct ndfa-config (state word index) #:transparent)
+(struct tm-config (state head-position tape index) #:transparent)
 
-;; X (listof X) -> boolean
+
+;; X (listof X) (X -> boolean) -> boolean
 ;;Purpose: Determine if X is in the given list
 (define (member? x lst eq-func)
   (ormap (λ (L) (eq-func x L)) lst))
@@ -54,14 +59,14 @@ rules are a (listof rule-structs)
 (define COMPUTATION-LENGTH-COLOR 'brown)
 
 (define accessor-func (compose fourth (compose trace-config zipper-current)))
-(define pda-accessor-func (compose config-index (compose trace-config zipper-current)))
+(define pda-accessor-func (compose pda-config-index (compose trace-config zipper-current)))
 (define ndfa-accessor-func (compose third (compose trace-config zipper-current)))
 
 (define get-index (compose fourth zipper-current))
 (define get-index-ndfa (compose third zipper-current))
 
 (define get-next-index (compose fourth (compose zipper-current zipper-next)))
-(define get-next-index-pda (compose config-index (compose zipper-current zipper-next)))
+(define get-next-index-pda (compose pda-config-index (compose zipper-current zipper-next)))
 (define get-next-index-ndfa (compose third (compose zipper-current zipper-next)))
 
 (define get-prev-index (compose fourth (compose zipper-current zipper-prev)))
@@ -440,24 +445,15 @@ rules are a (listof rule-structs)
 ;;image-state -> image
 ;;Purpose: Determines which informative message is displayed to the user
 (define (ndfa-create-draw-informative-message imsg-st)
-  (let* (;;boolean
-         ;;Purpose: Determines if the pci can be can be fully consumed
-         [completed-config? (ormap (λ (config) (empty? (second (first (computation-LoC config)))))
-                                   (trace-computations (imsg-state-ndfa-pci imsg-st)
-                                                (fsa-getrules (imsg-state-ndfa-M imsg-st))
-                                                (fsa-getstart (imsg-state-ndfa-M imsg-st))))]
-         
-         ;;(listof symbols)
-         ;;Purpose: The last word that could be fully consumed by the ndfa
-         [last-consumed-word (last-fully-consumed (imsg-state-ndfa-pci imsg-st) (imsg-state-ndfa-M imsg-st))]
+  (let* (
 
          ;;(listof symbols)
          ;;Purpose: The entire given word
          [entire-word (append (imsg-state-ndfa-pci imsg-st) (imsg-state-ndfa-upci imsg-st))]
+         [pci-length (length (imsg-state-ndfa-pci imsg-st))]
+         [sub1-pci-length (sub1 pci-length)]
          
-         ;;(listof symbols)
-         ;;Purpose: The portion of the word that cannont be consumed
-         [unconsumed-word (drop entire-word (length last-consumed-word))]
+         
          [machine-decision (if (not (zipper-empty? (imsg-state-ndfa-shown-accepting-trace imsg-st)))
                                'accept
                                'reject)]) 
@@ -477,7 +473,8 @@ rules are a (listof rule-structs)
                       (if (equal? machine-decision 'accept)
                           (text (format "~a" EMP) FONT-SIZE FONT-COLOR)
                           (text (format "~a" EMP) FONT-SIZE BLANK-COLOR))))]
-            [(and (not (empty? (imsg-state-ndfa-pci imsg-st))) (not completed-config?))
+            [(and (not (empty? (imsg-state-ndfa-upci imsg-st)))
+                  (equal? (imsg-state-ndfa-upci imsg-st) (imsg-state-ndfa-farthest-consumed-input imsg-st)))
              (above/align
               'left
               (beside (text "aaaK" FONT-SIZE BLANK-COLOR)
@@ -488,13 +485,13 @@ rules are a (listof rule-structs)
                                          0)
                                      (if (empty? (imsg-state-ndfa-pci imsg-st))
                                          '()
-                                         (list (list (length last-consumed-word) 'gray)
-                                               (list (length last-consumed-word) REJECT-COLOR)))))
+                                         (list (list sub1-pci-length 'gray)
+                                               (list sub1-pci-length REJECT-COLOR)))))
               (beside (text "Consumed: " FONT-SIZE FONT-COLOR)
-                      (if (empty? last-consumed-word)
+                      (if (empty? (imsg-state-ndfa-pci imsg-st))
                           (text "" FONT-SIZE FONT-COLOR)
-                          (make-tape-img last-consumed-word
-                                         (if (> (length last-consumed-word) TAPE-SIZE)
+                          (make-tape-img (take (imsg-state-ndfa-pci imsg-st) sub1-pci-length)
+                                         (if (> (length sub1-pci-length) TAPE-SIZE)
                                              (imsg-state-ndfa-word-img-offset imsg-st)
                                              0)
                                          '()))))]
@@ -518,11 +515,13 @@ rules are a (listof rule-structs)
                                                           (list (list (length (imsg-state-ndfa-pci imsg-st)) ACCEPT-COLOR)
                                                                 '())))))])
       (text (format "The current number of possible computations is ~a (without repeated configurations). "
-                     (number->string (list-ref (imsg-state-ndfa-computation-lengths imsg-st)
-                                               (length (imsg-state-ndfa-pci imsg-st)))))
+                     (number->string (hash-ref (imsg-state-ndfa-computation-lengths imsg-st)
+                                              (imsg-state-ndfa-upci imsg-st)
+                                              0)))
              FONT-SIZE
              COMPUTATION-LENGTH-COLOR)
-      (cond [(not completed-config?)
+      (cond [(and (not (empty? (imsg-state-ndfa-upci imsg-st)))
+                  (equal? (imsg-state-ndfa-upci imsg-st) (imsg-state-ndfa-farthest-consumed-input imsg-st)))
               (text "All computations do not consume the entire word and the machine rejects." FONT-SIZE REJECT-COLOR)]
              [(and (empty? (imsg-state-ndfa-upci imsg-st))
                    (equal? machine-decision 'accept))
@@ -541,7 +540,7 @@ rules are a (listof rule-structs)
          ;;Purpose: Holds what needs to displayed for the stack based off the upci
          [current-stack (if (zipper-empty? (imsg-state-pda-stack imsg-st)) 
                             (imsg-state-pda-stack imsg-st)
-                            (config-stack (zipper-current (imsg-state-pda-stack imsg-st))))]
+                            (pda-config-stack (zipper-current (imsg-state-pda-stack imsg-st))))]
          [machine-decision (if (not (zipper-empty? (imsg-state-pda-shown-accepting-trace imsg-st)))
                                'accept
                                'reject)]
@@ -550,7 +549,7 @@ rules are a (listof rule-structs)
                                                                  treelist-last
                                                                  (imsg-state-pda-computations imsg-st)
                                                                  )])
-                                                  (>= (config-index config) (imsg-state-pda-max-cmps imsg-st))))])
+                                                  (>= (pda-config-index config) (imsg-state-pda-max-cmps imsg-st))))])
                                     (if (void? res)
                                         #f
                                         res))]
