@@ -635,6 +635,13 @@
                                  `(((K ,EMP ,EMP)(H ,EMP))
                                    ((H a ,EMP)(H ,EMP)))))
 
+(define nd-a* (make-ndfa '(K H)
+                         '(a b)
+                         'K
+                         '(H)
+                         `((K ,EMP H)
+                           (H a H))))
+
 (define aa* (make-ndpda '(K H)
                                   '(a b)
                                   '(a)

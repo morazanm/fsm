@@ -1031,15 +1031,13 @@ triple is the entire of the ndfa rule
                              (second computations+hash))]
          ;[computation-lens (count-computations a-word (map computation-LoC computations) '())]
          ;;(listof number) ;;Purpose: Gets the index of image where an invariant failed
-         [inv-configs (remove-duplicates (return-brk-inv-configs
+         [inv-configs (return-brk-inv-configs
                                           (get-inv-config-results
                                            (make-inv-configs a-word
                                                              (map (λ (comp)
                                                                     (treelist->list (computation-LoC comp)))
                                                                   accepting-computations))
-                                           invs)))])
-    ;(displayln most-consumed-word)
-    ;(void)
+                                           invs))])
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ NDFA-E-SCENE-HEIGHT 2))
