@@ -126,6 +126,8 @@ rules are a (listof rule)
   
 (define (tm-getaccept m) (m '() 0 'get-accept))
 
+(define (tm-whatami? m) (m 'whatami 0 'whatami))
+
 (define qempty? treelist-empty?)
 
 (define E-QUEUE empty-treelist) 
@@ -212,7 +214,7 @@ rules are a (listof rule)
                                                                        (list->zipper (list '(@ a a b)))
                                                                        (list->zipper '(1))
                                                                        (list->zipper '())
-                                                                       (list->zipper (list (trace `(S 1 (,LM ,BLANK a b c) 0)
+                                                                       (list->zipper '() #;(list (trace `(S 1 (,LM ,BLANK a b c) 0)
                                                                                                   (rule (list BLANK BLANK)
                                                                                                         (list BLANK BLANK)))))
                                                                        (list->zipper '())

@@ -4,6 +4,7 @@
          "../2htdp/image.rkt"
          "../viz-lib/viz.rkt"
          "../viz-lib/zipper.rkt"
+         racket/treelist
          "../viz-lib/bounding-limits.rkt"
          "../viz-lib/viz-state.rkt"
          "../viz-lib/viz-macros.rkt"
@@ -42,7 +43,33 @@ A rule is a structure:
 read is the first pair in a tm rule
 action is the second pair in a tm rule
 |#
-(struct rule (read action) #:transparent)
+(struct rule (source read destination action) #:transparent)
+
+;(struct read-pair (state read) #:transparent)
+
+;(struct action-pair (destination action) #:transparent)
+
+;(struct tm (states sigma rules start finals accepting-final) #:transparent)
+
+
+;;M -> tm-struct
+;;Purpose: Converts the given tm into a tm-struct
+(define (remake-tm M)
+  ;;(listof rules) -> (treelistof rule-struct)
+  ;;Purpose: Converts the rules from the given tm to rule-structs
+  (define (remake-rules a-lor)
+    (for/treelist ([tm-rule a-lor])
+      (rule (first (first tm-rule)) (second (first tm-rule))
+            (first (second tm-rule)) (second (second tm-rule)))))
+  
+  (tm (tm-getstates M)
+      (tm-getalphabet M)
+      (remake-rules (tm-getrules M))
+      (tm-getstart M)
+      (tm-getfinals M)
+      (if (eq? (tm-whatami? M) 'tm-language-recognizer) (tm-getaccept M) 'none)
+      (tm-whatami? M)))
+      
 
 
 ;;tape is the input the tape
@@ -71,7 +98,7 @@ action is the second pair in a tm rule
 ;;config rule -> config
 ;;Purpose: Applys the given rule to the given config and returns the updated config
 ;;ASSUMPTION: The given rule can be applied to the config
-(define (apply-rule a-comp a-rule)
+#;(define (apply-rule a-comp a-rule)
   ;;config -> config
   ;;Purpose: Applies the action portion of given rule to the given config
   (define (apply-action a-config)
@@ -110,7 +137,7 @@ action is the second pair in a tm rule
 ;;word (listof rule) symbol number -> (listof computation)
 ;;Purpose: Returns all possible computations using the given word, (listof rule) and start symbol
 ;;   that are within the bounds of the max computation limit
-(define (get-computations a-word lor start finals max-cmps head-pos)
+#;(define (get-computations a-word lor start finals max-cmps head-pos)
   (let (;;computation
         ;;Purpose: The starting computation
         [starting-computation (computation (list (append (list start) (list head-pos) (list a-word) (list 0)))
@@ -122,50 +149,157 @@ action is the second pair in a tm rule
                        '()
                        max-cmps)))
 
+;;word (listof rule) symbol number -> (listof computation)
+;;Purpose: Returns all possible computations using the given word, (listof rule) and start symbol
+;;   that are within the bounds of the max computation limit
+(define (get-computations a-word lor start finals max-cmps head-pos)
 
-;;(listof rules) (queueof computation) (listof computation) number -> (listof computation)
-;;Purpose: Makes all the computations based around the (queueof computation) and (listof rule)
-;;     that are within the bounds of the max computation limit
-(define (make-computations lor finals QoC path max-cmps)
-  (cond [(qempty? QoC) path]
-        [(or (> (length (computation-LoC (qfirst QoC))) max-cmps)
-             (member? (first (first (computation-LoC (qfirst QoC)))) finals equal?))
-         (make-computations lor finals (dequeue QoC) (cons (qfirst QoC) path) max-cmps)]
-        [else (let* (;;(listof rules)
+;;computation rule -> computation
+;;Purpose: Applys the given rule to the given config and returns the updated computation
+;;ASSUMPTION: The given rule can be applied to the config
+(define (apply-rule a-comp a-rule)
+
+  ;;configuration -> configuration
+  ;;Purpose: AppApplys the given rule to the given config and returns the updated configuraton 
+  (define (apply-rule-helper a-config)
+    ;;number -> number
+    ;;Purpose: Applies the action portion of given rule to the given config to update the head position
+    (define (apply-action head-pos)
+      (cond [(eq? (rule-action a-rule) RIGHT) (add1 head-pos)]
+            [(eq? (rule-action a-rule) LEFT)  (sub1 head-pos)]
+            [else head-pos])
+      #;(list (first (second a-rule))
+            (cond [(eq? (second (second a-rule)) RIGHT) (add1 (second a-config))]
+                  [(eq? (second (second a-rule)) LEFT)  (sub1 (second a-config))]
+                  [else (second a-config)])
+            (mutate-tape a-config)
+            (add1 (fourth a-config))))
+    ;;tape -> tape
+    ;;Purpose: "Mutates" the tape if possible 
+    (define (update-tape tape head-position)
+    
+
+     (define (mutate-tape tape)
+      (if (or (eq? (rule-action a-rule) BLANK)
+              (eq? (rule-action a-rule) RIGHT)
+              (eq? (rule-action a-rule) LEFT))
+          tape
+          (append (take tape head-position)
+                  (list (rule-action a-rule))
+                  (rest (drop tape head-position)))))
+   
+    ;;tape -> tape
+    ;;Purpose: Adds a blank to the end of the tape
+    (define (add-blank tape)
+      #;(display (tm-config-head-position a-config))
+      (if (not (= head-position (length tape)))
+          tape
+          (append tape (list BLANK))
+          #;(list (first a-config)
+                (second a-config)
+                (append (third a-config) (list BLANK))
+                (fourth a-config))))
+      
+      (add-blank (mutate-tape tape)))
+    
+    (let ([new-head-position (apply-action (tm-config-head-position a-config))])
+      (struct-copy tm-config a-config
+                 [state (rule-destination a-rule)]
+                 [head-position new-head-position]
+                 [tape (update-tape (tm-config-tape a-config) new-head-position)]
+                 [index (add1 (tm-config-index a-config))])))
+    
+  
+  
+  (struct-copy computation a-comp
+               [LoC (treelist-add (computation-LoC a-comp) (apply-rule-helper (treelist-last (computation-LoC a-comp))))]
+               [LoR (treelist-add (computation-LoR a-comp) a-rule)]
+               #;[visited (computation-visited a-comp) #;(cons (first (computation-LoC a-comp)) (computation-visited a-comp))]))
+  
+  ;;mutable set
+  ;;Purpose: holds all of the visited configurations
+  (define visited-configuration-set (mutable-set))
+
+  ;;configuration -> void
+  ;;Purpose: updates the set of visited configurations
+  (define (update-visited a-config)
+    (set-add! visited-configuration-set a-config))
+
+  ;;hash-set
+  ;;Purpose: accumulates the number of computations in a hashset
+  (define computation-number-hash (make-hash))
+  
+  ;;set
+  ;;an empty set
+  (define EMPTY-SET (set))
+
+  ;;configuration word -> void
+  ;;Purpose: updates the number of configurations using the given word as a key
+  (define (update-hash a-config a-word)
+    (hash-set! computation-number-hash
+               a-word
+               (set-add (hash-ref computation-number-hash
+                                  a-word
+                                  EMPTY-SET)
+                        a-config)))
+
+  ;;set
+  ;;the set of final states
+  (define finals-set (list->seteq finals))
+
+  
+  ;;(queueof computation) (treelistof computation) -> (list (listof computation) hashtable)
+  ;;Purpose: Makes all the computations based around the (queueof computation) and (listof rule)
+  ;;     that are within the bounds of the max computation limit
+  (define (make-computations QoC path)
+    (if (qempty? QoC)
+        (list path computation-number-hash)
+        (let* ([current-config (treelist-last (computation-LoC (qfirst QoC)))]
+               [current-state (tm-config-state current-config)]
+               [current-tape (tm-config-tape current-config)]
+               [current-head-position (tm-config-head-position current-config)])
+          (if (or (> (treelist-length (computation-LoC (qfirst QoC))) max-cmps)
+                  (member? current-state finals eq?))
+              (begin
+                (update-hash current-config current-tape)
+                (make-computations (dequeue QoC) (treelist-add path (qfirst QoC))))
+              (let* (;;(listof rules)
                      ;;Purpose: Filters all the rules that can be applied to the configuration by reading the element in the rule
-                     [connected-read-rules (filter (λ (rule)
-                                                     (and (< (second (first (computation-LoC (qfirst QoC))))
-                                                             (length (third (first (computation-LoC (qfirst QoC))))))
-                                                          (equal? (first (first rule))
-                                                                  (first (first (computation-LoC (qfirst QoC)))))
-                                                          (equal? (second (first rule))
-                                                                  (list-ref (third (first (computation-LoC (qfirst QoC))))
-                                                                            (second (first (computation-LoC (qfirst QoC))))))))
+                     [connected-read-rules (treelist-filter (λ (rule)
+                                                     (and (< current-head-position (length current-tape))
+                                                          (eq? (rule-source rule) current-state)
+                                                          (eq? (rule-read rule) (list-ref current-tape current-head-position))))
                                                    lor)]
                      ;;(listof computation)
-                     [new-configs (filter (λ (new-c) 
-                                            (not (member? (first (computation-LoC new-c)) (computation-visited new-c) equal?)))
-                                          (map (λ (rule) (apply-rule (qfirst QoC) rule))
-                                               connected-read-rules))])
-                (if (empty? new-configs)
-                    (make-computations lor finals (dequeue QoC) (cons (qfirst QoC) path) max-cmps)
-                    (make-computations lor finals (enqueue new-configs (dequeue QoC)) path max-cmps)))]))
+                     [new-configs (treelist-filter (λ (new-c) 
+                                            (not (set-member? visited-configuration-set (treelist-last (computation-LoC new-c)))))
+                                          (treelist-map connected-read-rules (λ (rule) (apply-rule (qfirst QoC) rule))))])
+                (begin
+                  (update-hash current-config current-tape)
+                  (update-visited current-config)
+                  (if (treelist-empty? new-configs)
+                      (make-computations (dequeue QoC) (treelist-add path (qfirst QoC)))
+                      (make-computations (enqueue new-configs (dequeue QoC)) path))))))))
+  (let (;;computation
+        ;;Purpose: The starting computation
+        [starting-computation (computation (treelist (tm-config start head-pos a-word 0))
+                                           empty-treelist
+                                           '())])
+    (make-computations (enqueue (treelist starting-computation) E-QUEUE) empty-treelist)))
 
 
 ;;(listof configurations) (listof rules) (listof configurations) -> (listof configurations)
 ;;Purpose: Returns a propers trace for the given (listof configurations) that accurately
 ;;         tracks each transition
 (define (make-trace configs rules acc)
-  (cond [(empty? rules) (reverse acc)]
+  (cond [(treelist-empty? rules) (reverse acc)]
         [(and (empty? acc)
-              (or (not (equal? (second (first (first rules))) BLANK))
-                  (not (equal? (second (first (first rules))) LM))))
-         (let* ([rle (rule (first DUMMY-RULE) (second DUMMY-RULE))]
-                [res (trace (first configs) rle)])
-           (make-trace (rest configs) rules (cons res acc)))]
-        [else (let* ([rle (rule (first (first rules)) (second (first rules)))]
-                     [res (trace (first configs) rle)])
-                (make-trace (rest configs) (rest rules) (cons res acc)))]))
+              (or (not (eq? (rule-read (treelist-first rules)) BLANK))
+                  (not (eq? (rule-read (treelist-first rules)) LM))))
+         (let ([res (trace (treelist-first configs) (rule BLANK BLANK BLANK BLANK))])
+           (make-trace (treelist-rest configs) rules (cons res acc)))]
+        [else (let ([res (trace (treelist-first configs) (treelist-first rules))])
+                (make-trace (treelist-rest configs) (treelist-rest rules) (cons res acc)))]))
 
 ;;(listof configurations) (listof (listof symbol ((listof sybmols) -> boolean))) -> (listof configurations)
 ;;Purpose: Adds the results of each invariant oredicate to its corresponding invariant configuration 
@@ -177,31 +311,34 @@ action is the second pair in a tm rule
 ;;(listof configurations) (listof (listof symbol ((listof sybmols) -> boolean))) -> (listof configurations)
 ;;Purpose: Adds the results of each invariant oredicate to its corresponding invariant configuration
 (define (get-inv-config-results-helper computations invs)
-  (if (empty? computations)
+  (if (treelist-empty? computations)
       '()
       (let* ([get-inv-for-inv-config (filter (λ (inv)
-                                               (equal? (first inv) (first (first computations))))
+                                               (equal? (first inv) (tm-config-state (treelist-first computations))))
                                              invs)]
              [inv-for-inv-config (if (empty? get-inv-for-inv-config)
                                      '()
                                      (second (first get-inv-for-inv-config)))]
              [inv-config-result (if (empty? inv-for-inv-config)
                                     '()
-                                    (list (append (first computations)
-                                                  (list (inv-for-inv-config (third (first computations))
-                                                                            (second (first computations)))))))])
-        (append inv-config-result
-                (get-inv-config-results-helper (rest computations) invs)))))
+                                    (list (treelist-first computations)
+                                          (inv-for-inv-config (tm-config-tape (treelist-first computations))
+                                                                            (tm-config-head-position (treelist-first computations)))
+                                          #;(append (treelist-first computations)
+                                                  (list (inv-for-inv-config (tm-config-tape (treelist-first computations))
+                                                                            (tm-config-head-position (treelist-first computations)))))))])
+        (cons inv-config-result
+                (get-inv-config-results-helper (treelist-rest computations) invs)))))
 
 ;;(listof configurations) (listof sybmols) -> (listof configurations)
 ;;Purpose: Extracts all the invariant configurations that failed
 (define (return-brk-inv-configs inv-config-results)
-  (remove-duplicates (filter (λ (config) (not (fifth config))) inv-config-results)))
+  (remove-duplicates (filter (λ (config) (not (second config))) inv-config-results)))
 
 
 ;;(listof rule-struct) -> (listof rule)
 ;;Purpose: Remakes the rules extracted from the rule-struct
-(define (remake-rules trace-rules)
+#;(define (remake-rules trace-rules)
   (map (λ (rule)
          (list (rule-read rule)
                (rule-action rule)))
@@ -211,15 +348,18 @@ action is the second pair in a tm rule
 ;(listof symbols) -> string
 ;;Purpose: Converts the given los into a string
 (define (make-edge-label rule)
-  (format "\n[~a ~a]" (second (first rule)) (second (second rule))))
+  (format "\n[~a ~a]" (rule-read rule) (rule-action rule)))
 
 ;;(listof rules)
 ;;Purpose: Transforms the pda rules into triples similiar to an ndfa 
 (define (make-rule-triples rules)
   (map (λ (rule)
-         (append (list (first (first rule)))
-                 (list (string->symbol (make-edge-label rule)))
-                 (list (first (second rule)))))
+         (list (rule-source rule)
+               (string->symbol (make-edge-label rule))
+               (rule-destination rule))
+         #;(append (list (first (first rule)))
+                   (list (string->symbol (make-edge-label rule)))
+                   (list (first (second rule)))))
        rules))
 
 
@@ -250,7 +390,7 @@ action is the second pair in a tm rule
 ;(listof symbol ((listof symbol) (listof symbol) -> boolean)))
 ;;Purpose: Extracts the invariants from the (listof symbol ((listof symbols) (listof symbols) -> boolean)))
 (define (get-invariants inv func)
-  (if (func (fifth inv))
+  (if (func (second inv))
       (list (first inv))
       '()))
 
@@ -273,18 +413,19 @@ action is the second pair in a tm rule
   (make-rule-triples
    (remove-duplicates (filter (λ (rule)
                                 (not (equal? rule DUMMY-RULE)))
-                              (remake-rules a-config)))))
+                              a-config
+                              #;(remake-rules a-config)))))
 
 ;;(listof configurations) (listof configurations) -> (listof configurations)
 ;;Purpose: Counts the number of unique configurations for each stage of the word
 (define (count-computations a-LoC acc)
   (if (empty? a-LoC)
       (reverse acc)
-      (let [(new-LoC (filter-map (λ (comp) (and (not (empty? comp))
-                                                (rest comp)))
+      (let [(new-LoC (filter-map (λ (comp) (and (not (treelist-empty? comp))
+                                                (treelist-rest comp)))
                                  a-LoC))
-            (comp-len (length (remove-duplicates (filter-map (λ (comp) (and (not (empty? comp))
-                                                                            (first comp)))
+            (comp-len (length (remove-duplicates (filter-map (λ (comp) (and (not (treelist-empty? comp))
+                                                                            (treelist-first comp)))
                                                              a-LoC))))]
         (count-computations new-LoC (cons comp-len acc)))))
 
@@ -299,10 +440,10 @@ action is the second pair in a tm rule
 ;;configuration configuration -> boolean
 ;;Purpose: Determines if the given invariant is the same as the given current config
 (define (same-config? inv-config current-config)
-  (and (equal? (first inv-config) (first current-config))
-       (equal? (second inv-config) (second current-config))
-       (equal? (third inv-config) (third current-config))
-       (equal? (fourth inv-config) (fourth current-config))))
+  (and (equal? (tm-config-state         (first inv-config)) (tm-config-state current-config))
+       (equal? (tm-config-head-position (first inv-config)) (tm-config-head-position current-config))
+       (equal? (tm-config-tape          (first inv-config)) (tm-config-tape current-config))
+       (equal? (tm-config-index         (first inv-config)) (tm-config-index current-config))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -311,31 +452,31 @@ action is the second pair in a tm rule
 ;;Purpose: Creates the nodes for the given graph
 (define (make-node-graph dgraph M held-inv fail-inv cut-off)
   (foldl (λ (state graph)
-           (add-node graph
-                     state
-                     #:atb (hash 'color (if (eq? (tm-getstart M) state) 'green 'black)
-                                 'style (cond [(and (member? state held-inv equal?)
-                                                    (member? state fail-inv equal?)) 'wedged]
-                                              [(or (member? state held-inv equal?)
-                                                   (member? state fail-inv equal?)
-                                                   (member? state cut-off equal?)) 'filled]
-                                              [else 'solid])
-                                 'shape (cond [(equal? state (tm-getaccept M)) 'doubleoctagon]
-                                              [(member? state (tm-getfinals M) equal?) 'doublecircle]
-                                              [else 'circle])
-                                 'fillcolor (cond [(member? state cut-off equal?) GRAPHVIZ-CUTOFF-GOLD]
-                                                  [(and (member? state held-inv equal?) (member? state fail-inv equal?))
-                                                   "red:chartreuse4"]
-                                                  [(member? state held-inv equal?) HELD-INV-COLOR ]
-                                                  [(member? state fail-inv equal?) BRKN-INV-COLOR]
-                                                  [else 'white])
-                                 'label state
-                                 'fontcolor 'black
-                                 'fontname (if (and (member? state held-inv equal?) (member? state fail-inv equal?))
-                                               "times-bold"
-                                               "Times-Roman"))))
+           (let ([member-of-held-inv? (member? state held-inv eq?)]
+                 [member-of-fail-inv? (member? state fail-inv eq?)])
+             (add-node graph
+                       state
+                       #:atb (hash 'color (if (eq? (tm-start M) state) 'green 'black)
+                                   'style (cond [(and member-of-held-inv? member-of-fail-inv?) 'wedged]
+                                                [(or member-of-held-inv? member-of-fail-inv?
+                                                     (member? state cut-off equal?)) 'filled]
+                                                [else 'solid])
+                                   'shape (cond [(eq? state (tm-accepting-final M)) 'doubleoctagon]
+                                                [(member? state (tm-finals M) equal?) 'doublecircle]
+                                                [else 'circle])
+                                   'fillcolor (cond [(member? state cut-off equal?) GRAPHVIZ-CUTOFF-GOLD]
+                                                    [(and member-of-held-inv? member-of-fail-inv?)
+                                                     "red:chartreuse4"]
+                                                    [member-of-held-inv? HELD-INV-COLOR ]
+                                                    [member-of-fail-inv? BRKN-INV-COLOR]
+                                                    [else 'white])
+                                   'label state
+                                   'fontcolor 'black
+                                   'fontname (if (and (member? state held-inv equal?) (member? state fail-inv equal?))
+                                                 "times-bold"
+                                                 "Times-Roman")))))
          dgraph
-         (tm-getstates M)))
+         (tm-states M)))
 
 ;;graph machine -> graph
 ;;Purpose: Creates the edges for the given graph
@@ -368,14 +509,14 @@ action is the second pair in a tm rule
 (define (create-graph-thunk a-vs #:cut-off [cut-off #f])
   (let* (;;(listof configuration)
          ;;Purpose: Extracts all the configs from both the accepting and rejecting configs
-         [current-configs (remove-duplicates (map first (building-viz-state-computations a-vs)))]
+         [current-configs (remove-duplicates (map treelist-first (building-viz-state-computations a-vs)))]
 
          ;;(listof symbol)
          ;;Purpose: Gets the states where it's computation has cutoff
          [cut-off-states (if cut-off
                              (remove-duplicates (filter (λ (state)
-                                                          (not (equal? state (tm-getaccept (building-viz-state-M a-vs)))))
-                                                        (map (λ (comp) (first (first comp)))
+                                                          (not (equal? state (tm-accepting-final (building-viz-state-M a-vs)))))
+                                                        (map (λ (comp) (tm-config-state (treelist-first comp)))
                                                              (building-viz-state-computations a-vs))
                                                         #;(get-cut-off (building-viz-state-computations a-vs)
                                                                        (building-viz-state-max-cmps a-vs))))
@@ -408,8 +549,8 @@ action is the second pair in a tm rule
          ;;(listof rules)
          ;;Purpose: All of the pda rules converted to triples
          [all-rules (make-rule-triples (filter (λ (rule)
-                                                 (not (equal? (second (first rule)) LM)))
-                                               (tm-getrules (building-viz-state-M a-vs))))]
+                                                 (not (equal? (rule-read rule) LM)))
+                                               (treelist->list (tm-rules (building-viz-state-M a-vs)))))]
          
          ;;(listof (listof symbol ((listof symbols) (listof symbols) -> boolean))) (listof symbols))
          ;;Purpose: Extracts all invariants for the states that the machine can be in
@@ -446,8 +587,8 @@ action is the second pair in a tm rule
 (define (create-graph-thunks a-vs acc)
   ;(map displayln (building-viz-state-computations a-vs))
   ;(displayln "")
-  (cond [(ormap (λ (comp-len) (>= (fourth comp-len) (building-viz-state-max-cmps a-vs)))
-                (map first (building-viz-state-computations a-vs)))
+  (cond [(ormap (λ (comp-len) (>= (tm-config-index comp-len) (building-viz-state-max-cmps a-vs)))
+                (map treelist-first (building-viz-state-computations a-vs)))
          (reverse (cons (create-graph-thunk a-vs #:cut-off #t) acc))]
         [(and (zipper-at-end? (building-viz-state-tape a-vs))
               (zipper-at-end? (building-viz-state-head-pos a-vs)))
@@ -456,8 +597,8 @@ action is the second pair in a tm rule
                 (create-graph-thunks (struct-copy
                                       building-viz-state
                                       a-vs
-                                      [computations (filter (λ (comp) (not (empty? comp)))
-                                                            (map rest (building-viz-state-computations a-vs)))
+                                      [computations (filter (λ (comp) (not (treelist-empty? comp)))
+                                                            (map treelist-rest (building-viz-state-computations a-vs)))
                                                     #;(filter-map (λ (comp) (and (not (empty? comp))
                                                                                  (rest comp)))
                                                                   (building-viz-state-computations a-vs))]
@@ -974,26 +1115,28 @@ action is the second pair in a tm rule
 ;;Purpose: Visualizes the given ndfa processing the given word
 ;;Assumption: The given machine is a ndfa or dfa
 (define (tm-viz M a-word head-pos #:cut-off [cut-off 100] . invs) ;;GET RID OF . FOR TESTING
-  (let* (;;(listof computations) ;;Purpose: All computations that the machine can have
-         [computations (get-computations a-word (tm-getrules M) (tm-getstart M) (tm-getfinals M) cut-off head-pos)]
+  (let* (;;tm-struct
+         [M (remake-tm M)]
+         ;;(listof computations) ;;Purpose: All computations that the machine can have
+         [computations+hash (get-computations a-word (tm-rules M) (tm-start M) (tm-finals M) cut-off head-pos)]
+
+         [computations (treelist->list (first computations+hash))]
          ;;(listof configurations) ;;Purpose: Extracts the configurations from the computation
-         [LoC (map (λ (comp) (reverse (computation-LoC comp))) computations)]
-         ;;number ;;Purpose: The length of the word
-         [word-len (length a-word)]
+         [LoC (map computation-LoC computations #;(λ (comp) (reverse (computation-LoC comp))))]
          ;;(listof computation) ;;Purpose: Extracts all accepting computations
          [accepting-computations (filter (λ (comp)
-                                           (equal? (first (first (computation-LoC comp))) (tm-getaccept M)))
+                                           (eq? (tm-config-state (treelist-last (computation-LoC comp))) (tm-accepting-final M)))
                                          computations)]
          ;;(listof trace) ;;Purpose: Makes traces from the accepting computations
          [accepting-traces (map (λ (acc-comp)
-                                  (make-trace (reverse (computation-LoC acc-comp))
-                                              (reverse (computation-LoR acc-comp))
+                                  (make-trace (computation-LoC acc-comp)
+                                              (computation-LoR acc-comp)
                                               '()))
                                 accepting-computations)]
          [computation-has-cut-off? (ormap (λ (comp-length)
                                             (>= comp-length cut-off))
                                           (if (empty? accepting-traces)
-                                              (map length LoC)
+                                              (map treelist-length LoC)
                                               '()))]
          ;;(listof trace) ;;Purpose: Gets the cut off trace if the the word length is greater than the cut
          [cut-accept-traces '()
@@ -1012,15 +1155,16 @@ action is the second pair in a tm rule
                                            (not (member? config accepting-computations equal?)))
                                          computations)]
          ;;(listof trace) ;;Purpose: Makes traces from the rejecting computations
-         [rejecting-traces (map (λ (c)
-                                  (make-trace (reverse (computation-LoC c))
-                                              (reverse (computation-LoR c))
+         [rejecting-traces (map (λ (comp)
+                                  (make-trace (computation-LoC comp)
+                                              (computation-LoR comp)
                                               '()))
                                 rejecting-computations)]
+         
          ;;(listof rules) ;;Purpose: Returns the first accepting computations (listof rules)
          [accepting-trace (if (empty? accept-cmps) '() (first accept-cmps))]
          [rejecting-trace (if (empty? accept-cmps) (find-longest-computation rejecting-traces '()) '())]
-         [displayed-tape (map (λ (trace) (third (trace-config trace)))
+         [displayed-tape (map (λ (trace) (tm-config-tape (trace-config trace)))
                               (cond [(and (empty? accepting-trace)
                                           (not computation-has-cut-off?)
                                           (= (length rejecting-computations) 1))
@@ -1033,7 +1177,7 @@ action is the second pair in a tm rule
                                                         (map length LoC))
                                                  (append displayed-tape (list (last displayed-tape)))
                                                  displayed-tape))]
-         [tracked-head-pos (map (λ (trace) (second (trace-config trace)))
+         [tracked-head-pos (map (λ (trace) (tm-config-head-position (trace-config trace)))
                                 (if (empty? accepting-trace)
                                     rejecting-trace
                                     accepting-trace))]
@@ -1062,11 +1206,11 @@ action is the second pair in a tm rule
          [all-inv-configs (reverse (get-inv-config-results accepting-computations invs))]
          [failed-inv-configs (remove-duplicates (return-brk-inv-configs all-inv-configs))]
          
-         [cut-off-LoC (if (ormap (λ (comp-length)
+         #;[cut-off-LoC (if (ormap (λ (comp-length)
                                    (>= comp-length cut-off))
-                                 (map length LoC))
+                                 (map treelist-length LoC))
                           (map (λ (comp)
-                                 (append comp (list (last comp))))
+                                 (append comp (list (treelist-last comp))))
                                LoC)
                           LoC)]
          
@@ -1086,22 +1230,27 @@ action is the second pair in a tm rule
          [graphs (create-graph-thunks building-state '())]
          ;;(listof computation) ;;Purpose: Gets all the cut off computations if
          ;; the length of the word is greater than max computations
-         [get-cut-off-comp (if (ormap (λ (comp-length) (>= comp-length cut-off))
-                                      (map length LoC))
-                               (map last LoC)
+         #;[get-cut-off-comp (if (ormap (λ (comp-length) (>= comp-length cut-off))
+                                      (map treelist-length LoC))
+                               (map treelist-last LoC)
                                '())]
          ;;(listof computation) ;;Purpose: Makes the cut off computations if
          ;;  the length of the word is greater than max computations
-         [cut-off-comp (if (empty? get-cut-off-comp)
+         #;[cut-off-comp (if (empty? get-cut-off-comp)
                            LoC
                            (map (λ (cut-off-comp comp)
                                   (append comp (list cut-off-comp)))
                                 get-cut-off-comp
                                 LoC))]
          ;;(listof number) ;;Purpose: Gets the number of computations for each step
-         [computation-lengths (take (count-computations LoC '())
-                                    (length (zipper->list all-head-pos)))]
-         [cut-off-computations-lengths computation-lengths
+         [cut-off-computations-lengths (take (count-computations LoC '())
+                                             (length tracked-head-pos))
+                                       #;(begin
+                                         (for ([key (in-list (hash-keys (second computations+hash)))])
+                                           (hash-set! (second computations+hash)
+                                                      key
+                                                      (set-count (hash-ref (second computations+hash) key))))
+                                         (second computations+hash))
                                        #;(if (ormap (λ (comp-length)
                                                       (>= comp-length cut-off))
                                                     (map length LoC))
@@ -1113,6 +1262,9 @@ action is the second pair in a tm rule
     ;;(displayln all-displayed-tape)
     ;(displayln all-head-pos)
     ;(displayln #;tracked-trace)
+    ;(void)
+    ;(displayln cut-off-computations-lengths)
+    ;(displayln computations)
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ TM-E-SCENE-HEIGHT 2))

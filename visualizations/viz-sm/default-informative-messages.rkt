@@ -17,7 +17,8 @@
          trace trace-config trace-rules
          ndfa-config ndfa-config-state ndfa-config-word ndfa-config-index
          pda-config pda-config-state pda-config-word pda-config-stack pda-config-index
-         tm-config tm-config-state tm-config-head-position tm-config-tape tm-config-index)
+         tm-config tm-config-state tm-config-head-position tm-config-tape tm-config-index
+         tm tm-states tm-sigma tm-rules tm-start tm-finals tm-accepting-final tm-type)
 
 
 #|
@@ -31,6 +32,7 @@ rules are a (listof rule-structs)
 (struct pda-config (state word stack index) #:transparent)
 (struct ndfa-config (state word index) #:transparent)
 (struct tm-config (state head-position tape index) #:transparent)
+(struct tm (states sigma rules start finals accepting-final type) #:transparent)
 
 
 (define FONT-SIZE 20)
@@ -49,7 +51,7 @@ rules are a (listof rule-structs)
 
 (define COMPUTATION-LENGTH-COLOR 'brown)
 
-(define accessor-func (compose fourth (compose trace-config zipper-current)))
+(define accessor-func (compose tm-config-index (compose trace-config zipper-current)))
 (define pda-accessor-func (compose pda-config-index (compose trace-config zipper-current)))
 (define ndfa-accessor-func (compose third (compose trace-config zipper-current)))
 
@@ -79,6 +81,8 @@ rules are a (listof rule-structs)
 (define (tm-getstart m) (m '() 0 'get-start))
   
 (define (tm-getaccept m) (m '() 0 'get-accept))
+
+(define (tm-whatami? m) (m 'whatami 0 'whatami))
 
 (define (make-tape-img tape start-index color-pair)
   (define (make-tape-img loi start-index)
@@ -388,7 +392,7 @@ rules are a (listof rule-structs)
       (if (zipper-empty? (imsg-state-tm-rules-used imsg-st))
           (text "Tape: " 1 BLANK-COLOR)
           (beside (text "Last rule used: " FONT-SIZE FONT-COLOR)
-                  (text (format "~a" (if (or (equal? (zipper-current (imsg-state-tm-rules-used imsg-st)) '((_ _)(_ _)))
+                  (text (format "~a" (if (or (equal? (zipper-current (imsg-state-tm-rules-used imsg-st)) '(_ _))
                                              (zipper-empty? (imsg-state-tm-rules-used imsg-st)))
                                          ""
                                          (zipper-current (imsg-state-tm-rules-used imsg-st))))
@@ -402,13 +406,16 @@ rules are a (listof rule-structs)
           (draw-imsg imsg-st)
           (text "Tape is not shown when there are multiple rejecting computations." FONT-SIZE FONT-COLOR))
       (text (format "The current number of possible computations is: ~a (without repeated configurations)."
-                    (number->string (zipper-current (imsg-state-tm-computation-lengths imsg-st))))
+                    (number->string #;(hash-ref ((imsg-state-tm-computation-lengths imsg-st) imsg-st)
+                                              (imsg-state-ndfa-upci imsg-st)
+                                              0)
+                                    (zipper-current (imsg-state-tm-computation-lengths imsg-st))))
             FONT-SIZE
             COMPUTATION-LENGTH-COLOR)
       (cond [(and (not (zipper-empty? (imsg-state-tm-shown-accepting-trace imsg-st)))
                   (>= (accessor-func (imsg-state-tm-shown-accepting-trace imsg-st)) (imsg-state-tm-max-cmps imsg-st))
-                  (not (equal? (first (trace-config (zipper-current (imsg-state-tm-shown-accepting-trace imsg-st))))
-                               (tm-getaccept (imsg-state-tm-M imsg-st)))))
+                  (not (equal? (tm-config-state (trace-config (zipper-current (imsg-state-tm-shown-accepting-trace imsg-st))))
+                               (tm-accepting-final (imsg-state-tm-M imsg-st)))))
              (text (format "There are computations that exceed the cut-off limit (~a)."
                            (imsg-state-tm-max-cmps imsg-st)) FONT-SIZE DARKGOLDENROD2)]
             [(and (zipper-at-end? (imsg-state-tm-tape imsg-st))

@@ -113,8 +113,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                     (rest (pda-config-word a-config)))]
              ;;config
              ;;Purpose: Updates the config's number if something gets applied to the config (e.i. read/pop/push)
-             [update-count-result (add1 (pda-config-index a-config))
-                                  #;(if (empty-rule? a-rule)
+             [update-count-result (if (empty-rule? a-rule)
                                       (pda-config-index a-config)
                                       (add1 (pda-config-index a-config)))])
         (struct-copy pda-config a-config
