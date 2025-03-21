@@ -103,7 +103,7 @@
                                   (no-duplicates/c "final states" "three"))]
           [rules (states
                   sigma) (and/c (is-a-list/c "machine rules" "four")
-                                correct-dfa-rule-structures/c
+                                correct-ndfa-rule-structures/c
                                 (correct-dfa-rules/c states (cons EMP sigma))
                                 (no-duplicates/c "rules" "four"))]
           )
