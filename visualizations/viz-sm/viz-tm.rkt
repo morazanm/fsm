@@ -180,7 +180,7 @@ action is the second pair in a tm rule
     
 
      (define (mutate-tape tape)
-      (if (or (eq? (rule-action a-rule) BLANK)
+      (if (or #;(eq? (rule-action a-rule) BLANK)
               (eq? (rule-action a-rule) RIGHT)
               (eq? (rule-action a-rule) LEFT))
           tape
@@ -1839,5 +1839,31 @@ action is the second pair in a tm rule
           (list 'C C-INV)
           (list 'Y Y-INV)
           (list 'N N-INV))
+
+(define FBR (make-unchecked-tm '(S A F)
+                     '(a b)
+                     `(((S a) (A ,RIGHT))
+                       ((S b) (A ,RIGHT))
+                       ((S ,BLANK) (A ,RIGHT))
+                       ((A a) (A ,RIGHT))
+                       ((A b) (A ,RIGHT))
+                       ((A ,BLANK) (F ,BLANK)))
+                     'S
+                     '(F)))
+
+(define ADD (make-unchecked-tm '(S A B C D E F G)
+                     '(d)
+                     `(((S ,BLANK) (A ,RIGHT))
+                       ((A d) (A ,RIGHT))
+                       ((A ,BLANK) (B d))
+                       ((B d) (B ,RIGHT))
+                       ((B ,BLANK) (C ,LEFT))
+                       ((C d) (D ,BLANK))
+                       ((D ,BLANK) (E ,LEFT))
+                       ((E d) (F ,RIGHT))
+                       ((E ,BLANK) (G ,RIGHT))
+                       ((G ,BLANK) (F ,RIGHT)))
+                     'S
+                     '(F)))
 
 "fix informative messages"
