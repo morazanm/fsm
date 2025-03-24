@@ -28,7 +28,6 @@ config is a single configuration
 rules are a (listof rule-structs)
 |#
 (struct trace (config rules) #:transparent)
-(struct rule (read action) #:transparent)
 (struct pda-config (state word stack index) #:transparent)
 (struct ndfa-config (state word index) #:transparent)
 (struct tm-config (state head-position tape index) #:transparent)
@@ -420,12 +419,19 @@ rules are a (listof rule-structs)
                            (imsg-state-tm-max-cmps imsg-st)) FONT-SIZE DARKGOLDENROD2)]
             [(and (zipper-at-end? (imsg-state-tm-tape imsg-st))
                   (zipper-at-end? (imsg-state-tm-head-position imsg-st))
-                  (equal? (imsg-state-tm-machine-decision imsg-st) 'accept))
+                  (eq? (imsg-state-tm-machine-decision imsg-st) 'accept)
+                  (eq? (tm-type (imsg-state-tm-M imsg-st)) 'tm-language-recognizer))
              (text "There is a computation that accepts." FONT-SIZE ACCEPT-COLOR)]
             [(and (zipper-at-end? (imsg-state-tm-tape imsg-st))
                   (zipper-at-end? (imsg-state-tm-head-position imsg-st))
-                  (equal? (imsg-state-tm-machine-decision imsg-st) 'reject))
+                  (eq? (imsg-state-tm-machine-decision imsg-st) 'reject)
+                  (eq? (tm-type (imsg-state-tm-M imsg-st)) 'tm-language-recognizer))
              (text "All computations end in a non-final configuration and the machine rejects." FONT-SIZE REJECT-COLOR)]
+            [(and (zipper-at-end? (imsg-state-tm-tape imsg-st))
+                  (zipper-at-end? (imsg-state-tm-head-position imsg-st))
+                  (eq? (imsg-state-tm-machine-decision imsg-st) 'reject)
+                  (eq? (tm-type (imsg-state-tm-M imsg-st)) 'tm))
+             (text "The machine reaches a final state and halts. (color subject to change)" FONT-SIZE REJECT-COLOR)]
             [else (text "Word Status: accept " FONT-SIZE BLANK-COLOR)])))
 
 ;"notes to self:"

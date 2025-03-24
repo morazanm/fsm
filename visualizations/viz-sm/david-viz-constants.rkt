@@ -36,8 +36,25 @@ config is a single configuration
 rules are a (listof rule)
 |#
 ;(struct trace (config rules) #:transparent)
-(struct rule (read action) #:transparent)
+;(struct rule (read action) #:transparent)
+(struct rule (source read destination action) #:transparent)
 
+
+(define (tm-getalphabet m) (m '() 0 'get-alphabet)) 
+  
+(define (tm-getstates m) (m '() 0 'get-states))
+  
+(define (tm-getfinals m) (m '() 0 'get-finals))
+
+(define (tm-getdelta m) (m '() 0 'get-delta)) ;;; parsed rules
+
+(define (tm-getrules m) (m '() 0 'get-rules))  ;;; unparsed rules
+
+(define (tm-getstart m) (m '() 0 'get-start))
+  
+(define (tm-getaccept m) (m '() 0 'get-accept))
+
+(define (tm-whatami? m) (m 'whatami 0 'whatami))
 
 ;; X (listof X) (X -> boolean) -> boolean
 ;;Purpose: Determine if X is in the given list
@@ -64,6 +81,23 @@ rules are a (listof rule)
                                           ":"
                                           (symbol->string TRACKED-ACCEPT-COLOR)
                                           ";.25"))
+
+(define (remake-tm M)
+  ;;(listof rules) -> (treelistof rule-struct)
+  ;;Purpose: Converts the rules from the given tm to rule-structs
+  (define (remake-rules a-lor)
+    (for/treelist ([tm-rule a-lor])
+      (rule (first (first tm-rule)) (second (first tm-rule))
+            (first (second tm-rule)) (second (second tm-rule)))))
+  
+  (tm (tm-getstates M)
+      (tm-getalphabet M)
+      (remake-rules (tm-getrules M))
+      (tm-getstart M)
+      (tm-getfinals M)
+      (if (eq? (tm-whatami? M) 'tm-language-recognizer) (tm-getaccept M) 'none)
+      (tm-whatami? M)))
+
 (define REJECT-COLOR 'violetred)
 (define GRAPHVIZ-CUTOFF-GOLD 'darkgoldenrod2)
 (define SM-VIZ-FONT-SIZE 18)
@@ -102,31 +136,16 @@ rules are a (listof rule)
                                  `(((K ,EMP ,EMP)(H ,EMP))
                                    ((H a ,EMP)(H ,EMP)))))
 
-(define EVEN-AS-&-BS (make-unchecked-tm '(K H I B S)
+(define EVEN-AS-&-BS (remake-tm (make-unchecked-tm '(K H I B S)
                           '(a b)
                           `(((K ,BLANK) (S ,BLANK))
                             ((K a) (H ,RIGHT)) ((H a) (K ,RIGHT)) ((H b) (B ,RIGHT)) ((B b) (H ,RIGHT))
                             ((K b) (I ,RIGHT)) ((I b) (K ,RIGHT)) ((I a) (B ,RIGHT)) ((B a) (I ,RIGHT)))
                           'K
                           '(S)
-                          'S))
+                          'S)))
 
 
-(define (tm-getalphabet m) (m '() 0 'get-alphabet)) 
-  
-(define (tm-getstates m) (m '() 0 'get-states))
-  
-(define (tm-getfinals m) (m '() 0 'get-finals))
-
-(define (tm-getdelta m) (m '() 0 'get-delta)) ;;; parsed rules
-
-(define (tm-getrules m) (m '() 0 'get-rules))  ;;; unparsed rules
-
-(define (tm-getstart m) (m '() 0 'get-start))
-  
-(define (tm-getaccept m) (m '() 0 'get-accept))
-
-(define (tm-whatami? m) (m 'whatami 0 'whatami))
 
 (define qempty? treelist-empty?)
 

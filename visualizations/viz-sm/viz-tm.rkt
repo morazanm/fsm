@@ -43,33 +43,13 @@ A rule is a structure:
 read is the first pair in a tm rule
 action is the second pair in a tm rule
 |#
-(struct rule (source read destination action) #:transparent)
+;(struct rule (source read destination action) #:transparent)
 
 ;(struct read-pair (state read) #:transparent)
 
 ;(struct action-pair (destination action) #:transparent)
 
 ;(struct tm (states sigma rules start finals accepting-final) #:transparent)
-
-
-;;M -> tm-struct
-;;Purpose: Converts the given tm into a tm-struct
-(define (remake-tm M)
-  ;;(listof rules) -> (treelistof rule-struct)
-  ;;Purpose: Converts the rules from the given tm to rule-structs
-  (define (remake-rules a-lor)
-    (for/treelist ([tm-rule a-lor])
-      (rule (first (first tm-rule)) (second (first tm-rule))
-            (first (second tm-rule)) (second (second tm-rule)))))
-  
-  (tm (tm-getstates M)
-      (tm-getalphabet M)
-      (remake-rules (tm-getrules M))
-      (tm-getstart M)
-      (tm-getfinals M)
-      (if (eq? (tm-whatami? M) 'tm-language-recognizer) (tm-getaccept M) 'none)
-      (tm-whatami? M)))
-      
 
 
 ;;tape is the input the tape
@@ -391,7 +371,7 @@ action is the second pair in a tm rule
 ;;Purpose: Extracts the invariants from the (listof symbol ((listof symbols) (listof symbols) -> boolean)))
 (define (get-invariants inv func)
   (if (func (second inv))
-      (list (first inv))
+      (tm-config-state (first inv))
       '()))
 
 ;;(listof trace) -> (listof trace)
@@ -561,11 +541,11 @@ action is the second pair in a tm rule
 
          ;;(listof symbols)
          ;;Purpose: Returns all states whose invariants fail
-         [brkn-invs (append-map (λ (inv) (get-invariants inv not)) get-invs)]
+         [brkn-invs (map (λ (inv) (get-invariants inv not)) get-invs)]
          
          ;;(listof symbols)
          ;;Purpose: Returns all states whose invariants holds
-         [held-invs (append-map (λ (inv) (get-invariants inv id)) get-invs)])
+         [held-invs (map (λ (inv) (get-invariants inv id)) get-invs)])
     (make-edge-graph
      (make-node-graph
       (create-graph 'tmgraph #:atb (hash 'rankdir "LR"))
@@ -1204,7 +1184,7 @@ action is the second pair in a tm rule
                               [else '()])]
          ;;(listof number) ;;Purpose: Gets all the invariant configurations
          [all-inv-configs (reverse (get-inv-config-results accepting-computations invs))]
-         [failed-inv-configs (remove-duplicates (return-brk-inv-configs all-inv-configs))]
+         [failed-inv-configs (return-brk-inv-configs all-inv-configs) #;(remove-duplicates (return-brk-inv-configs all-inv-configs))]
          
          #;[cut-off-LoC (if (ormap (λ (comp-length)
                                    (>= comp-length cut-off))
@@ -1265,6 +1245,7 @@ action is the second pair in a tm rule
     ;(void)
     ;(displayln cut-off-computations-lengths)
     ;(displayln computations)
+    ;(displayln failed-inv-configs)
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ TM-E-SCENE-HEIGHT 2))
@@ -1867,3 +1848,4 @@ action is the second pair in a tm rule
                      '(F)))
 
 "fix informative messages"
+"fix invariants"
