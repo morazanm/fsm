@@ -456,7 +456,8 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
     (cond [(for/or ([config (building-viz-state-computations a-vs)])
              (>= (pda-config-index (first config)) (building-viz-state-max-cmps a-vs)))
            (reverse (cons (create-graph-thunk a-vs #:cut-off #t) acc))]
-          [(or (equal? (building-viz-state-upci a-vs) (building-viz-state-farthest-consumed-input a-vs))
+          [(or (and (equal? (building-viz-state-upci a-vs) (building-viz-state-farthest-consumed-input a-vs))
+                    (not (empty? (building-viz-state-farthest-consumed-input a-vs))))
                (and (empty? (building-viz-state-upci a-vs))
                     (or (list? (building-viz-state-stack a-vs))
                         (zipper-at-end? (building-viz-state-stack a-vs)))))
@@ -953,9 +954,11 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
       a-vs
       (let* ([zip (if (and (not (zipper-at-end? (imsg-state-pda-invs-zipper (informative-messages-component-state
                                                                              (viz-state-informative-messages a-vs)))))
-                           (>= (pda-accessor-func (imsg-state-pda-shown-accepting-trace
-                                                    (informative-messages-component-state
-                                                     (viz-state-informative-messages a-vs))))                            
+                           (>= (get-index (imsg-state-pda-stack (informative-messages-component-state
+                                                           (viz-state-informative-messages a-vs))))
+                               #;(pda-accessor-func (imsg-state-pda-shown-accepting-trace
+                                                   (informative-messages-component-state
+                                                    (viz-state-informative-messages a-vs))))                            
                                (get-index-pda (imsg-state-pda-invs-zipper
                                                (informative-messages-component-state
                                                 (viz-state-informative-messages a-vs))))))
@@ -1157,7 +1160,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
            (let* ([rle (first rules)]
                   [res (struct-copy trace (first acc)
                                     [rules (cons rle (trace-rules (first acc)))])])
-             (make-trace configs #;(rest configs) (rest rules) (cons res (rest acc))))]
+             (make-trace #;configs (rest configs) (rest rules) (cons res (rest acc))))]
           [else (let* ([rle (first rules)]
                        [res (trace (first configs) (list rle))])
                   (make-trace (rest configs) (rest rules) (cons res acc)))]))
@@ -1340,10 +1343,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
          ;;(listof graph-thunk) ;;Purpose: Gets all the graphs needed to run the viz
          [graphs (create-graph-thunks building-state)]
          ;;(listof number) ;;Purpose: Gets the index of image where an invariant failed
-         [inv-configs (return-brk-inv-configs
-                                          (get-inv-config-results
-                                           (make-inv-configs a-word accepting-computations)
-                                           invs))])
+         [inv-configs (return-brk-inv-configs (get-inv-config-results (make-inv-configs a-word accepting-computations) invs))])
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ PDA-E-SCENE-HEIGHT 2))
