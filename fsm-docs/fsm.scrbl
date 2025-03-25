@@ -525,9 +525,6 @@ Empty Tool
          symbol]{Returns a symbol indicating the type of the given
  machine: dfa, ndfa, ndpda, tm, tm-language-recognizer, mttm, or mttm-language-recognizer.}
 
-@defproc[(sm-accept [m machine?])
-         state]{Returns the accept state of a tm-language-recognizer or a mttm-language-recognizer.}
-
 @defproc[(sm-numtapes [m machine?])
          symbol]{Returns the number of tapes in the given state machine.}
 
