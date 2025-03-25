@@ -1104,9 +1104,11 @@ action is the second pair in a tm rule
          ;;(listof configurations) ;;Purpose: Extracts the configurations from the computation
          [LoC (map computation-LoC computations #;(λ (comp) (reverse (computation-LoC comp))))]
          ;;(listof computation) ;;Purpose: Extracts all accepting computations
-         [accepting-computations (filter (λ (comp)
+         [accepting-computations (if (eq? (tm-type M) 'tm-language-recognizer)
+                                     (filter (λ (comp)
                                            (eq? (tm-config-state (treelist-last (computation-LoC comp))) (tm-accepting-final M)))
-                                         computations)]
+                                         computations)
+                                     '())]
          ;;(listof trace) ;;Purpose: Makes traces from the accepting computations
          [accepting-traces (map (λ (acc-comp)
                                   (make-trace (computation-LoC acc-comp)
@@ -1848,4 +1850,3 @@ action is the second pair in a tm rule
                      '(F)))
 
 "fix informative messages"
-"fix invariants"
