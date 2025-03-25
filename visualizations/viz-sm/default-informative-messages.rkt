@@ -431,7 +431,7 @@ rules are a (listof rule-structs)
                   (zipper-at-end? (imsg-state-tm-head-position imsg-st))
                   (eq? (imsg-state-tm-machine-decision imsg-st) 'reject)
                   (eq? (tm-type (imsg-state-tm-M imsg-st)) 'tm))
-             (text "The machine reaches a final state and halts. (color subject to change)" FONT-SIZE ACCEPT-COLOR)]
+             (text "The machine reaches a final state and halts." FONT-SIZE ACCEPT-COLOR)]
             [else (text "Word Status: accept " FONT-SIZE BLANK-COLOR)])))
 
 ;"notes to self:"
