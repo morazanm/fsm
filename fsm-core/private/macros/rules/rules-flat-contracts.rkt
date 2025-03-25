@@ -8,6 +8,7 @@
          correct-members/c
          correct-dfa-rules/c
          correct-dfa-rule-structures/c
+         correct-ndfa-rule-structures/c
          correct-ndpda-rules/c
          correct-ndpda-rule-structures/c
          correct-tm-rules/c
@@ -96,6 +97,25 @@
                      blame
                      (list (car (incorrect-dfa-rules states sigma rules)))
                      (format "~a\nThe following rules have errors" design-recipe-message))))))
+
+;correct-ndfa-rule-structures/c: contract
+;predicate: (listof x) -> boolean
+;purpose: Ensures that every element in the list is structured as a valid ndfa rule.
+; It checks each rule to see that it is a (list state alphabet state)
+(define correct-ndfa-rule-structures/c
+  (make-flat-contract
+   #:name 'correct-dfa-rule-structures
+   #:first-order (lambda (rules)  (empty? (incorrect-ndfa-rule-structures rules)))
+   #:projection (lambda (blame)
+                  (lambda (rules)
+                    (current-blame-format format-incorrect-rules-error)
+                    (if (empty? (incorrect-ndfa-rule-structures rules))
+                        rules
+                        (raise-blame-error
+                         blame
+                         (list (car (incorrect-ndfa-rule-structures rules)))
+                         (format "~a\nThe following rules have structural errors" design-recipe-message)))
+                    ))))
 
 ;correct-ndpda-rule-structures/c: contract
 ;predicate: (listof x) -> boolean
