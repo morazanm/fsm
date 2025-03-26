@@ -18,7 +18,8 @@
          ndfa-config ndfa-config-state ndfa-config-word ndfa-config-index
          pda-config pda-config-state pda-config-word pda-config-stack pda-config-index
          tm-config tm-config-state tm-config-head-position tm-config-tape tm-config-index
-         tm tm-states tm-sigma tm-rules tm-start tm-finals tm-accepting-final tm-type)
+         tm tm-states tm-sigma tm-rules tm-start tm-finals tm-accepting-final tm-type
+         ci ci-upci ci-pci)
 
 
 #|
@@ -32,7 +33,7 @@ rules are a (listof rule-structs)
 (struct ndfa-config (state word index) #:transparent)
 (struct tm-config (state head-position tape index) #:transparent)
 (struct tm (states sigma rules start finals accepting-final type) #:transparent)
-
+(struct ci (upci pci) #:transparent)
 
 (define FONT-SIZE 20)
 
@@ -166,10 +167,12 @@ rules are a (listof rule-structs)
 ;;image-state -> image
 ;;Purpose: Determines which informative message is displayed to the user
 (define (ndfa-create-draw-informative-message imsg-st)
-  (let* (;;(listof symbols)
+  (let* ([upci (ci-upci (zipper-current (imsg-state-ndfa-ci imsg-st)))]
+         [pci (ci-pci (zipper-current (imsg-state-ndfa-ci imsg-st)))]
+         ;;(listof symbols)
          ;;Purpose: The entire given word
-         [entire-word (append (imsg-state-ndfa-pci imsg-st) (imsg-state-ndfa-upci imsg-st))]
-         [pci-length (length (imsg-state-ndfa-pci imsg-st))]
+         [entire-word (append pci upci)]
+         [pci-length (length pci)]
          [sub1-pci-length (sub1 pci-length)]
          
          
@@ -179,8 +182,8 @@ rules are a (listof rule-structs)
 
    (above/align
       'left
-      (cond [(and (empty? (imsg-state-ndfa-pci imsg-st))
-                  (empty? (imsg-state-ndfa-upci imsg-st)))
+      (cond [(and (empty? pci)
+                  (empty? upci))
              (above/align
               'left
               (beside (text "aaaK" FONT-SIZE BLANK-COLOR)
@@ -192,8 +195,8 @@ rules are a (listof rule-structs)
                       (if (equal? machine-decision 'accept)
                           (text (format "~a" EMP) FONT-SIZE FONT-COLOR)
                           (text (format "~a" EMP) FONT-SIZE BLANK-COLOR))))]
-            [(and (not (empty? (imsg-state-ndfa-upci imsg-st)))
-                  (equal? (imsg-state-ndfa-upci imsg-st) (imsg-state-ndfa-farthest-consumed-input imsg-st)))
+            [(and (not (empty? upci))
+                  (equal? upci (ndfa-config-word (imsg-state-ndfa-farthest-consumed-input imsg-st))))
              (above/align
               'left
               (beside (text "aaaK" FONT-SIZE BLANK-COLOR)
@@ -202,14 +205,14 @@ rules are a (listof rule-structs)
                                      (if (> (length entire-word) TAPE-SIZE)
                                          (imsg-state-ndfa-word-img-offset imsg-st)
                                          0)
-                                     (if (empty? (imsg-state-ndfa-pci imsg-st))
+                                     (if (empty? pci)
                                          '()
                                          (list (list sub1-pci-length 'gray)
                                                (list sub1-pci-length REJECT-COLOR)))))
               (beside (text "Consumed: " FONT-SIZE FONT-COLOR)
-                      (if (empty? (imsg-state-ndfa-pci imsg-st))
+                      (if (empty? pci)
                           (text "" FONT-SIZE FONT-COLOR)
-                          (make-tape-img (take (imsg-state-ndfa-pci imsg-st) sub1-pci-length)
+                          (make-tape-img (take pci sub1-pci-length)
                                          (if (> sub1-pci-length TAPE-SIZE)
                                              (imsg-state-ndfa-word-img-offset imsg-st)
                                              0)
@@ -221,32 +224,30 @@ rules are a (listof rule-structs)
                                                       (if (> (length entire-word) TAPE-SIZE)
                                                           (imsg-state-ndfa-word-img-offset imsg-st)
                                                           0)
-                                                      (if (empty? (imsg-state-ndfa-pci imsg-st))
+                                                      (if (empty? pci)
                                                           '()
-                                                          (list (list (length (imsg-state-ndfa-pci imsg-st)) 'gray) '()))))
+                                                          (list (list (length pci) 'gray) '()))))
                                (beside (text "Consumed: " FONT-SIZE FONT-COLOR)
-                                       (make-tape-img (imsg-state-ndfa-pci imsg-st)
-                                                      (if (> (length (imsg-state-ndfa-pci imsg-st)) TAPE-SIZE)
+                                       (make-tape-img pci
+                                                      (if (> (length pci) TAPE-SIZE)
                                                           (imsg-state-ndfa-word-img-offset imsg-st)
                                                           0) 
                                                       (if (zipper-empty? (imsg-state-ndfa-shown-accepting-trace imsg-st))
                                                           '()
-                                                          (list (list (length (imsg-state-ndfa-pci imsg-st)) ACCEPT-COLOR)
+                                                          (list (list (length pci) ACCEPT-COLOR)
                                                                 '())))))])
       (text (format "The current number of possible computations is ~a (without repeated configurations). "
                      (number->string (hash-ref (imsg-state-ndfa-computation-lengths imsg-st)
-                                              (imsg-state-ndfa-upci imsg-st)
+                                              upci
                                               0)))
              FONT-SIZE
              COMPUTATION-LENGTH-COLOR)
-      (cond [(and (not (empty? (imsg-state-ndfa-upci imsg-st)))
-                  (equal? (imsg-state-ndfa-upci imsg-st) (imsg-state-ndfa-farthest-consumed-input imsg-st)))
+      (cond [(and (not (empty? upci))
+                  (equal? upci (ndfa-config-word (imsg-state-ndfa-farthest-consumed-input imsg-st))))
               (text "All computations do not consume the entire word and the machine rejects." FONT-SIZE REJECT-COLOR)]
-             [(and (empty? (imsg-state-ndfa-upci imsg-st))
-                   (equal? machine-decision 'accept))
+             [(and (empty? upci) (equal? machine-decision 'accept))
               (text "There is a computation that accepts." FONT-SIZE ACCEPT-COLOR)]
-             [(and (empty? (imsg-state-ndfa-upci imsg-st))
-                   (equal? machine-decision 'reject))
+             [(and (empty? upci) (equal? machine-decision 'reject))
               (text "All computations end in a non-final state and the machine rejects." FONT-SIZE REJECT-COLOR)]
              [else (text "Word Status: accept " FONT-SIZE BLANK-COLOR)]))))
 

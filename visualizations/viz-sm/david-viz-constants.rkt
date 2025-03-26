@@ -192,10 +192,11 @@ rules are a (listof rule)
                                                          (list L-KEY "Nxt not inv"))))
 
 (define ndfa-info-img (ndfa-create-draw-informative-message (imsg-state-ndfa AB*B*UAB*
+                                                                             (list->zipper (list (ci '() '())))
                                                                              '(a b b)
                                                                              '()
                                                                              (list->zipper '())
-                                                                             '()
+                                                                             (ndfa-config 'S '() 0)
                                                                              (list->zipper '())
                                                                              (sub1 (length '()))
                                                                              (hash)

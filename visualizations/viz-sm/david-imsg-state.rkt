@@ -4,6 +4,7 @@
 
 
 (struct imsg-state-ndfa (M                       ;;ndfa
+                         ci                      ;;(ci-struct (upci pci))
                          upci                    ;;(listof symbol)/a-word
                          pci                     ;;(listof symbol)
                          shown-accepting-trace   ;;(zipperof trace)
