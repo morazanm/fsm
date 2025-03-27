@@ -46,11 +46,12 @@ pair is the second of the pda rule
 
 (define DUMMY-RULE (rule (triple EMP EMP EMP) (pair EMP EMP)))
 #|
-upci                    | is the unprocessed consumed input (listof symbol)
-pci                     | is the proccessed consumed input (listof symbol)
-computations            | is all of the computations that attempt to consume the ci (listof computation)
-acc-comp                | is all of the accepting computations (listof computation)
-stack                   | is the first accepting computation (zipperof computation)
+ci                      | is a structure containing the unconsumed and consumed input => (zipperof ci)
+upci                    | is the unprocessed consumed input => (listof symbol)
+pci                     | is the proccessed consumed input => (listof symbol)
+computations            | is all of the computations that attempt to consume the ci => (listof computation)
+acc-comp                | is all of the accepting computations => (listof computation)
+stack                   | is the first accepting computation => (zipperof computation)
 tracked-accept-trace    | is the first accepting trace (which is also the first accepting computation) to be followed 
 accept-traces           | is all of the accepting traces => (listof trace)
 reject-traces           | is all of the rejecting traces => (listof trace)
@@ -582,11 +583,15 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                                   (viz-state-informative-messages a-vs))))]
          ;;(zipperof invariant)
          ;;Purpose: The index of the last failed invariant
-         [zip (if (zipper-empty? (imsg-state-pda-invs-zipper (informative-messages-component-state
+         [zip (if (or (zipper-empty? (imsg-state-pda-invs-zipper (informative-messages-component-state
                                                               (viz-state-informative-messages a-vs))))
+                      (zipper-at-end? (imsg-state-pda-invs-zipper (informative-messages-component-state
+                                                              (viz-state-informative-messages a-vs)))))
                   (imsg-state-pda-invs-zipper (informative-messages-component-state
                                                (viz-state-informative-messages a-vs)))
-                  (zipper-to-idx (imsg-state-pda-invs-zipper (informative-messages-component-state
+                  (zipper-to-end (imsg-state-pda-invs-zipper (informative-messages-component-state
+                                                              (viz-state-informative-messages a-vs))))
+                  #;(zipper-to-idx (imsg-state-pda-invs-zipper (informative-messages-component-state
                                                               (viz-state-informative-messages a-vs)))
                                  (imsg-state-pda-inv-amount (informative-messages-component-state
                                                              (viz-state-informative-messages a-vs)))))])
@@ -1362,8 +1367,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                                    (list->zipper accepting-trace)
                                                    stack 
                                                    most-consumed-word 
-                                                   (list->zipper inv-configs) 
-                                                   (sub1 (length inv-configs)) 
+                                                   (list->zipper inv-configs)
                                                    computation-lens 
                                                    LoC 
                                                    cut-off

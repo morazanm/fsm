@@ -193,12 +193,9 @@ rules are a (listof rule)
 
 (define ndfa-info-img (ndfa-create-draw-informative-message (imsg-state-ndfa AB*B*UAB*
                                                                              (list->zipper (list (ci '() '())))
-                                                                             '(a b b)
-                                                                             '()
                                                                              (list->zipper '())
                                                                              (ndfa-config 'S '() 0)
                                                                              (list->zipper '())
-                                                                             (sub1 (length '()))
                                                                              (hash)
                                                                              '()
                                                                              0
@@ -213,7 +210,6 @@ rules are a (listof rule)
               (list->zipper '())
               '(1)
               (list->zipper '())
-              (sub1 (length '()))
               (hash) #;'(1 2 3 2)
               '() #;(list  (list->treelist (list (computation
                                         '((H ()) (H (b)) (K (b)) (B (b b)) (K (a b b)) (S (a b b)))
