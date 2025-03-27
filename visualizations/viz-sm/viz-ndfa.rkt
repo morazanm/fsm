@@ -226,7 +226,7 @@ triple is the entire of the ndfa rule
 ;;(listof configurations) (listof (listof symbol ((listof sybmols) -> boolean))) -> (listof configurations)
 ;;Purpose: Adds the results of each invariant oredicate to its corresponding invariant configuration
 (define (get-inv-config-results-helper inv-configs invs)
-  (if (empty? inv-configs)
+  (if (or (emtpy? invs) (empty? inv-configs))
       '()
       (let* ([get-inv-for-inv-config (filter (λ (inv)
                                                (eq? (first inv) (ndfa-config-state (first inv-configs))))
@@ -1121,21 +1121,12 @@ triple is the entire of the ndfa rule
          ;[computation-lens (count-computations a-word (map computation-LoC computations) '())]
          ;;(listof number) ;;Purpose: Gets the index of image where an invariant failed
          [inv-configs (return-brk-inv-configs
-                                          (get-inv-config-results
-                                           (make-inv-configs a-word
-                                                             (map (λ (comp)
-                                                                    (treelist->list (computation-LoC comp)))
-                                                                  accepting-computations))
-                                           invs))
-                      #;(if (empty? invs)
-                          invs
-                          (return-brk-inv-configs
-                                          (get-inv-config-results
-                                           (make-inv-configs a-word
-                                                             (map (λ (comp)
-                                                                    (treelist->list (computation-LoC comp)))
-                                                                  accepting-computations))
-                                           invs)))])
+                       (get-inv-config-results
+                        (make-inv-configs a-word
+                                          (map (λ (comp)
+                                                 (treelist->list (computation-LoC comp)))
+                                               accepting-computations))
+                        invs))])
     
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))

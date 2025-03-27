@@ -1214,8 +1214,10 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                         (cons (first inv-configs)
                                               (list (inv-for-inv-config (pda-config-word (first inv-configs))
                                                                         (pda-config-stack (first inv-configs))))))])
-            (cons inv-config-result
-                  (get-inv-config-results-helper (rest inv-configs))))))
+            (if (empty? inv-config-result)
+                (get-inv-config-results-helper (rest inv-configs))
+                (cons inv-config-result
+                      (get-inv-config-results-helper (rest inv-configs)))))))
 
     (append-map (λ (comp)
                   (get-inv-config-results-helper comp))

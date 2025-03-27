@@ -291,7 +291,7 @@ action is the second pair in a tm rule
 ;;(listof configurations) (listof (listof symbol ((listof sybmols) -> boolean))) -> (listof configurations)
 ;;Purpose: Adds the results of each invariant oredicate to its corresponding invariant configuration
 (define (get-inv-config-results-helper computations invs)
-  (if (treelist-empty? computations)
+  (if (or (empty? invs) (treelist-empty? computations))
       '()
       (let* ([get-inv-for-inv-config (filter (λ (inv)
                                                (equal? (first inv) (tm-config-state (treelist-first computations))))
