@@ -226,7 +226,7 @@ triple is the entire of the ndfa rule
 ;;(listof configurations) (listof (listof symbol ((listof sybmols) -> boolean))) -> (listof configurations)
 ;;Purpose: Adds the results of each invariant oredicate to its corresponding invariant configuration
 (define (get-inv-config-results-helper inv-configs invs)
-  (if (or (emtpy? invs) (empty? inv-configs))
+  (if (or (empty? invs) (empty? inv-configs))
       '()
       (let* ([get-inv-for-inv-config (filter (λ (inv)
                                                (eq? (first inv) (ndfa-config-state (first inv-configs))))
