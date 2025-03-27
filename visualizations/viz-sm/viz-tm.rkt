@@ -307,8 +307,10 @@ action is the second pair in a tm rule
                                           #;(append (treelist-first computations)
                                                   (list (inv-for-inv-config (tm-config-tape (treelist-first computations))
                                                                             (tm-config-head-position (treelist-first computations)))))))])
-        (cons inv-config-result
-                (get-inv-config-results-helper (treelist-rest computations) invs)))))
+        (if (empty? inv-config-result)
+            (get-inv-config-results-helper (treelist-rest computations) invs)
+            (cons inv-config-result
+                (get-inv-config-results-helper (treelist-rest computations) invs))))))
 
 ;;(listof configurations) (listof sybmols) -> (listof configurations)
 ;;Purpose: Extracts all the invariant configurations that failed

@@ -229,7 +229,7 @@ triple is the entire of the ndfa rule
   (if (empty? inv-configs)
       '()
       (let* ([get-inv-for-inv-config (filter (λ (inv)
-                                               (equal? (first inv) (ndfa-config-state (first inv-configs))))
+                                               (eq? (first inv) (ndfa-config-state (first inv-configs))))
                                              invs)]
              [inv-for-inv-config (if (empty? get-inv-for-inv-config)
                                      '()
@@ -237,8 +237,10 @@ triple is the entire of the ndfa rule
              [inv-config-result (if (empty? inv-for-inv-config)
                                     '()
                                     (list (first inv-configs) (inv-for-inv-config (ndfa-config-word (first inv-configs)))))])
-        (cons inv-config-result
-                (get-inv-config-results-helper (rest inv-configs) invs)))))
+        (if (empty? inv-config-result)
+            (get-inv-config-results-helper (rest inv-configs) invs)
+            (cons inv-config-result
+                  (get-inv-config-results-helper (rest inv-configs) invs))))))
 
 ;;(listof configurations) (listof sybmols) -> (listof configurations)
 ;;Purpose: Extracts all the invariant configurations that failed
@@ -1124,7 +1126,17 @@ triple is the entire of the ndfa rule
                                                              (map (λ (comp)
                                                                     (treelist->list (computation-LoC comp)))
                                                                   accepting-computations))
-                                           invs))])
+                                           invs))
+                      #;(if (empty? invs)
+                          invs
+                          (return-brk-inv-configs
+                                          (get-inv-config-results
+                                           (make-inv-configs a-word
+                                                             (map (λ (comp)
+                                                                    (treelist->list (computation-LoC comp)))
+                                                                  accepting-computations))
+                                           invs)))])
+    
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ NDFA-E-SCENE-HEIGHT 2))
