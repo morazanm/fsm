@@ -16,6 +16,7 @@
          "../../fsm-core/private/cfg.rkt"
          "../../fsm-core/private/misc.rkt"
          "default-informative-messages.rkt"
+         "testing-parameter.rkt"
          ;profile-flame-graph
          (except-in "../viz-lib/viz-constants.rkt"
                     INS-TOOLS-BUFFER)
@@ -1346,7 +1347,9 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
          [graphs (create-graph-thunks building-state)]
          ;;(listof number) ;;Purpose: Gets the index of image where an invariant failed
          [inv-configs (return-brk-inv-configs (get-inv-config-results (make-inv-configs a-word accepting-computations) invs))])
-    (run-viz graphs
+    (if testing?
+        (void)
+        (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ PDA-E-SCENE-HEIGHT 2))
              DEFAULT-ZOOM
@@ -1418,7 +1421,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                         [ D-KEY-DIMS identity d-key-pressed]
                                         [ J-KEY-DIMS pda-jump-prev j-key-pressed]
                                         [ L-KEY-DIMS pda-jump-next l-key-pressed]))
-             'pda-viz)))
+             'pda-viz))))
 
 (define numb>numa (make-unchecked-cfg '(S A)
                                       '(a b)

@@ -1,9 +1,10 @@
 #lang racket
 
 (require "sm-viz.rkt"
+         "testing-parameter.rkt"
          "../../fsm-core/interface.rkt")
 
-
+(parameterize ([testing? #t])
 ;; L = ab* U (ab)*
 (define M (make-ndfa '(S A B C D E F G H I)
                      '(a b)
@@ -284,7 +285,7 @@
 ;; word -> Boolean
 ;; Purpose: To determine whether ci = aa*
 (define (A-INV1 ci)
-  (and (not (empty? ci))
+  #f #;(and (not (empty? ci))
        (andmap (λ (w) (eq? w 'a)) ci)))
 
 ;; word -> Boolean
@@ -702,28 +703,28 @@
                             'S))
 
 (define pd-numb>numa (grammar->sm numb>numa))
-;(sm-viz pd-numb>numa '(a b) #:cut-off 5)
-;(sm-viz pd-numb>numa '(a b) #:cut-off 1)
-;(sm-viz pd-numb>numa '(a b) #:cut-off 10) ;;needs to be looked into
-;(sm-viz pd-numb>numa '(a b a) #:cut-off 5)
-;(sm-viz pd-numb>numa '(a b) #:cut-off 0) ;;needs to be looked into 
-;(sm-viz pd-numb>numa '(a b) #:cut-off -3)
-;(sm-viz more-a-than-b '(a a a a a b b))
-#;(sm-viz a* '(a a a a a)
+(sm-viz pd-numb>numa '(a b) #:cut-off 5)
+(sm-viz pd-numb>numa '(a b) #:cut-off 1)
+(sm-viz pd-numb>numa '(a b) #:cut-off 10) ;;needs to be looked into
+(sm-viz pd-numb>numa '(a b a) #:cut-off 5)
+(sm-viz pd-numb>numa '(a b) #:cut-off 0) ;;needs to be looked into 
+(sm-viz pd-numb>numa '(a b) #:cut-off -3)
+(sm-viz more-a-than-b '(a a a a a b b))
+(sm-viz a* '(a a a a a)
            (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (= (length w) 3)) (empty? s)))))
-#;(sm-viz aa* '(a a)
+(sm-viz aa* '(a a)
            (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (empty? w) (empty? s)))))
-#;(sm-viz a* '(a a)
+(sm-viz a* '(a a)
            (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (empty? w)) (empty? s)))))
-;(sm-viz P2 '(a a a b b) (list 'S P-S-INV) (list 'H P-H-INV))
-#;(sm-viz a* '(a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a
+(sm-viz P2 '(a a a b b) (list 'S P-S-INV) (list 'H P-H-INV))
+(sm-viz a* '(a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a
                  a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a
                  a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a)
            (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (empty? w)) (empty? s))))) ;; look into
-;(sm-viz P2 '(a a a b b) (list 'S P-S-INV) (list 'H P-H-INV)) ;;needs to be looked into
+(sm-viz P2 '(a a a b b) (list 'S P-S-INV) (list 'H P-H-INV)) ;;needs to be looked into
 
-;(sm-viz AB*B*UAB* '(a b b))
-#|
+(sm-viz AB*B*UAB* '(a b b))
+
 ;;accept examples
 (sm-viz AB*B*UAB* '(a b b))
 (sm-viz p2-ndfa '(a b b))
@@ -777,6 +778,8 @@
 (sm-viz ND4 '(a b b b) #:add-dead #t)
 
 (sm-viz M2 '(a a b b b b) #:add-dead #t)
-|#
-#;(sm-viz DNA-SEQUENCE '(c g c g a t a t g c t a g c a t)  (list 'K DNA-K-INV) (list 'H DNA-H-INV) (list 'F DNA-F-INV)
+
+(sm-viz DNA-SEQUENCE '(c g c g a t a t g c t a g c a t)  (list 'K DNA-K-INV) (list 'H DNA-H-INV) (list 'F DNA-F-INV)
           (list 'M DNA-M-INV) (list 'I DNA-I-INV) (list 'D DNA-D-INV)  (list 'B DNA-B-INV) (list 'S DNA-S-INV) (list 'R DNA-R-INV))
+
+  )
