@@ -19,7 +19,8 @@
          pda-config pda-config-state pda-config-word pda-config-stack pda-config-index
          tm-config tm-config-state tm-config-head-position tm-config-tape tm-config-index
          tm tm-states tm-sigma tm-rules tm-start tm-finals tm-accepting-final tm-type
-         ci ci-upci ci-pci)
+         ci ci-upci ci-pci
+         pda-ci pda-ci-upci pda-ci-pci pda-ci-stack)
 
 
 #|
@@ -34,6 +35,7 @@ rules are a (listof rule-structs)
 (struct tm-config (state head-position tape index) #:transparent)
 (struct tm (states sigma rules start finals accepting-final type) #:transparent)
 (struct ci (upci pci) #:transparent)
+(struct pda-ci (upci pci stack) #:transparent)
 
 (define FONT-SIZE 20)
 
@@ -253,9 +255,11 @@ rules are a (listof rule-structs)
 
 
 (define (pda-create-draw-informative-message imsg-st)
-  (let* (;;(listof symbols)
+  (let* ([upci (pda-ci-upci (zipper-current (imsg-state-pda-ci imsg-st)))]
+         [pci (pda-ci-pci (zipper-current (imsg-state-pda-ci imsg-st)))]
+         ;;(listof symbols)
          ;;Purpose: The entire given word
-         [entire-word (append (imsg-state-pda-pci imsg-st) (imsg-state-pda-upci imsg-st))]
+         [entire-word (append pci upci)]
          ;;(listof symbols)
          ;;Purpose: Holds what needs to displayed for the stack based off the upci
          [current-stack (if (zipper-empty? (imsg-state-pda-stack imsg-st)) 
@@ -277,8 +281,8 @@ rules are a (listof rule-structs)
          [FONT-SIZE 20])
     (above/align
       'left
-      (cond [(and (empty? (imsg-state-pda-pci imsg-st))
-                  (empty? (imsg-state-pda-upci imsg-st)))
+      (cond [(and (empty? pci)
+                  (empty? upci))
              (above/align
               'left
               (beside (text "aaaK" FONT-SIZE BLANK-COLOR)
@@ -290,10 +294,10 @@ rules are a (listof rule-structs)
                       (if (equal? machine-decision 'accept)
                           (text (format "~a" EMP) FONT-SIZE FONT-COLOR)
                           (text (format "~a" EMP) FONT-SIZE BLANK-COLOR))))]
-            [(and (not (empty? (imsg-state-pda-upci imsg-st)))
-                  (equal? (imsg-state-pda-upci imsg-st) (imsg-state-pda-farthest-consumed-input imsg-st))
+            [(and (not (empty? upci))
+                  (equal? upci (imsg-state-pda-farthest-consumed-input imsg-st))
                   computation-has-cut-off)
-             (let* ([pci-length (length (imsg-state-pda-pci imsg-st))]
+             (let* ([pci-length (length pci)]
                     [sub1-pci-length (sub1 pci-length)])
                (above/align 'left
                           (beside (text "aaaK" FONT-SIZE BLANK-COLOR)
@@ -302,21 +306,21 @@ rules are a (listof rule-structs)
                                                  (if (> (length entire-word) TAPE-SIZE)
                                                      (imsg-state-pda-word-img-offset imsg-st)
                                                      0)
-                                                 (if (empty? (imsg-state-pda-pci imsg-st))
+                                                 (if (empty? pci)
                                                      '()
                                                      (list (list sub1-pci-length 'gray)
                                                            (list sub1-pci-length DARKGOLDENROD2)))))
                           (beside (text "Consumed: " FONT-SIZE FONT-COLOR)
-                                  (make-tape-img (take (imsg-state-pda-pci imsg-st) sub1-pci-length)
+                                  (make-tape-img (take pci sub1-pci-length)
                                                  (if (> sub1-pci-length
                                                          TAPE-SIZE)
                                                      (imsg-state-pda-word-img-offset imsg-st)
                                                      0)
                                                  '()))))]
-            [(and (equal? (imsg-state-pda-upci imsg-st) (imsg-state-pda-farthest-consumed-input imsg-st))
+            [(and (equal? upci (imsg-state-pda-farthest-consumed-input imsg-st))
                   (eq? machine-decision 'reject))
-             (let* ([pci-length (length (imsg-state-pda-pci imsg-st))]
-                   [sub1-pci-length (sub1 pci-length)])
+             (let* ([pci-length (length pci)]
+                    [sub1-pci-length (sub1 pci-length)])
                (above/align
                 'left
                 (beside (text "aaaK" FONT-SIZE BLANK-COLOR)
@@ -325,14 +329,14 @@ rules are a (listof rule-structs)
                                        (if (> (length entire-word) TAPE-SIZE)
                                            (imsg-state-pda-word-img-offset imsg-st)
                                            0)
-                                       (if (empty? (imsg-state-pda-pci imsg-st))
+                                       (if (empty? pci)
                                            '()
                                            (list (list sub1-pci-length 'gray)
                                                  (list sub1-pci-length REJECT-COLOR)))))
                 (beside (text "Consumed: " FONT-SIZE FONT-COLOR)
-                        (if (empty? (imsg-state-pda-pci imsg-st))
+                        (if (empty? pci)
                             (text "" FONT-SIZE FONT-COLOR)
-                            (make-tape-img (take (imsg-state-pda-pci imsg-st) sub1-pci-length)
+                            (make-tape-img (take pci sub1-pci-length)
                                            (if (> pci-length TAPE-SIZE)
                                                (imsg-state-pda-word-img-offset imsg-st)
                                                0)
@@ -344,12 +348,12 @@ rules are a (listof rule-structs)
                                                       (if (> (length entire-word) TAPE-SIZE)
                                                           (imsg-state-pda-word-img-offset imsg-st)
                                                           0)
-                                                      (if (empty? (imsg-state-pda-pci imsg-st))
+                                                      (if (empty? pci)
                                                           '()
-                                                          (list (list (length (imsg-state-pda-pci imsg-st)) 'gray) '()))))
+                                                          (list (list (length pci) 'gray) '()))))
                                (beside (text "Consumed: " FONT-SIZE FONT-COLOR)
-                                       (make-tape-img (imsg-state-pda-pci imsg-st)
-                                                      (if (> (length (imsg-state-pda-pci imsg-st)) TAPE-SIZE)
+                                       (make-tape-img pci
+                                                      (if (> (length pci) TAPE-SIZE)
                                                           (imsg-state-pda-word-img-offset imsg-st)
                                                           0)
                                                       '())))])
@@ -365,21 +369,21 @@ rules are a (listof rule-structs)
                                          '()))])
       (text (format "The current number of possible computations is: ~a (without repeated configurations)."
                     (number->string (hash-ref (imsg-state-pda-computation-lengths imsg-st)
-                                              (imsg-state-pda-upci imsg-st)
+                                              upci
                                               0)))
             FONT-SIZE
             COMPUTATION-LENGTH-COLOR)
-      (cond [(and (not (empty? (imsg-state-pda-upci imsg-st)))
-                  (equal? (imsg-state-pda-upci imsg-st) (imsg-state-pda-farthest-consumed-input imsg-st))
+      (cond [(and (not (empty? upci))
+                  (equal? upci (imsg-state-pda-farthest-consumed-input imsg-st))
                   computation-has-cut-off)
              (text (format "There are computations that exceed the cut-off limit (~a)."
                            (imsg-state-pda-max-cmps imsg-st)) FONT-SIZE DARKGOLDENROD2)]
-            [(and (empty? (imsg-state-pda-upci imsg-st))
+            [(and (empty? upci)
                   (or (zipper-empty? (imsg-state-pda-stack imsg-st))
                       (zipper-at-end? (imsg-state-pda-stack imsg-st)))
                   (equal? machine-decision 'accept))
              (text "There is a computation that accepts." FONT-SIZE ACCEPT-COLOR)]
-            [(and (equal? (imsg-state-pda-upci imsg-st) (imsg-state-pda-farthest-consumed-input imsg-st))
+            [(and (equal? upci (imsg-state-pda-farthest-consumed-input imsg-st))
                   (or (zipper-empty? (imsg-state-pda-stack imsg-st))
                       (zipper-at-end? (imsg-state-pda-stack imsg-st)))
                   (equal? machine-decision 'reject))

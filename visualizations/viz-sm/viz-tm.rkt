@@ -19,38 +19,7 @@
                     FONT-SIZE)
          "default-informative-messages.rkt")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-#;(struct imsg-state-tm (M ;;TM
-                         tape ;;(zipperof symbol)
-                         head-position ;;natnum
-                         rules-used ;;(zipperof tm-rule)
-                         shown-accepting-trace ;;(zipperof trace)
-                         invs-zipper ;;(zipperof inv-configs)
-                         inv-amount ;;natnum
-                         computation-lengths ;(zipperof natnum)
-                         computations ;;(listof computation)
-                         max-cmps ;;natnum
-                         machine-decision
-                         word-img-offset
-                         word-img-offset-cap
-                         scroll-accum)
-    #:transparent)
-
-#|
-A rule is a structure:
-(make-rule read action)
-read is the first pair in a tm rule
-action is the second pair in a tm rule
-|#
-;(struct rule (source read destination action) #:transparent)
-
-;(struct read-pair (state read) #:transparent)
-
-;(struct action-pair (destination action) #:transparent)
-
-;(struct tm (states sigma rules start finals accepting-final) #:transparent)
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;tape is the input the tape
 ;;computations is a (listof computation) that attempt to consume the ci
@@ -75,59 +44,6 @@ action is the second pair in a tm rule
 
 (define DUMMY-RULE (list (list BLANK BLANK) (list BLANK BLANK)))
 
-;;config rule -> config
-;;Purpose: Applys the given rule to the given config and returns the updated config
-;;ASSUMPTION: The given rule can be applied to the config
-#;(define (apply-rule a-comp a-rule)
-  ;;config -> config
-  ;;Purpose: Applies the action portion of given rule to the given config
-  (define (apply-action a-config)
-    (list (first (second a-rule))
-          (cond [(eq? (second (second a-rule)) RIGHT) (add1 (second a-config))]
-                [(eq? (second (second a-rule)) LEFT)  (sub1 (second a-config))]
-                [else (second a-config)])
-          (mutate-tape a-config)
-          (add1 (fourth a-config))))
-  ;;config -> tape
-  ;;Purpose: "Mutates" the tape if possible 
-  (define (mutate-tape a-config)
-    (if (or (eq? (second (second a-rule)) BLANK)
-            (eq? (second (second a-rule)) RIGHT)
-            (eq? (second (second a-rule)) LEFT))
-        (third a-config)
-        (append (take (third a-config) (second a-config))
-                (list (second (second a-rule)))
-                (rest (drop (third a-config) (second a-config))))))
-   
-  ;;config -> config
-  ;;Purpose: Adds a blank to the end of the tape
-  (define (add-blank a-config)
-    (if (not (= (second a-config) (length (third a-config))))
-        a-config
-        (list (first a-config)
-              (second a-config)
-              (append (third a-config) (list BLANK))
-              (fourth a-config))))
-  
-  (struct-copy computation a-comp
-               [LoC (cons (add-blank (apply-action (first (computation-LoC a-comp)))) (computation-LoC a-comp))]
-               [LoR (cons a-rule (computation-LoR a-comp))]
-               [visited (cons (first (computation-LoC a-comp)) (computation-visited a-comp))]))
-
-;;word (listof rule) symbol number -> (listof computation)
-;;Purpose: Returns all possible computations using the given word, (listof rule) and start symbol
-;;   that are within the bounds of the max computation limit
-#;(define (get-computations a-word lor start finals max-cmps head-pos)
-  (let (;;computation
-        ;;Purpose: The starting computation
-        [starting-computation (computation (list (append (list start) (list head-pos) (list a-word) (list 0)))
-                                           '()
-                                           '())])
-    (make-computations lor
-                       finals
-                       (enqueue (list starting-computation) E-QUEUE)
-                       '()
-                       max-cmps)))
 
 ;;word (listof rule) symbol number -> (listof computation)
 ;;Purpose: Returns all possible computations using the given word, (listof rule) and start symbol
@@ -147,21 +63,14 @@ action is the second pair in a tm rule
     (define (apply-action head-pos)
       (cond [(eq? (rule-action a-rule) RIGHT) (add1 head-pos)]
             [(eq? (rule-action a-rule) LEFT)  (sub1 head-pos)]
-            [else head-pos])
-      #;(list (first (second a-rule))
-            (cond [(eq? (second (second a-rule)) RIGHT) (add1 (second a-config))]
-                  [(eq? (second (second a-rule)) LEFT)  (sub1 (second a-config))]
-                  [else (second a-config)])
-            (mutate-tape a-config)
-            (add1 (fourth a-config))))
+            [else head-pos]))
     ;;tape -> tape
     ;;Purpose: "Mutates" the tape if possible 
     (define (update-tape tape head-position)
     
 
      (define (mutate-tape tape)
-      (if (or #;(eq? (rule-action a-rule) BLANK)
-              (eq? (rule-action a-rule) RIGHT)
+      (if (or (eq? (rule-action a-rule) RIGHT)
               (eq? (rule-action a-rule) LEFT))
           tape
           (append (take tape head-position)
@@ -171,14 +80,9 @@ action is the second pair in a tm rule
     ;;tape -> tape
     ;;Purpose: Adds a blank to the end of the tape
     (define (add-blank tape)
-      #;(display (tm-config-head-position a-config))
       (if (not (= head-position (length tape)))
           tape
-          (append tape (list BLANK))
-          #;(list (first a-config)
-                (second a-config)
-                (append (third a-config) (list BLANK))
-                (fourth a-config))))
+          (append tape (list BLANK))))
       
       (add-blank (mutate-tape tape)))
     
@@ -193,8 +97,7 @@ action is the second pair in a tm rule
   
   (struct-copy computation a-comp
                [LoC (treelist-add (computation-LoC a-comp) (apply-rule-helper (treelist-last (computation-LoC a-comp))))]
-               [LoR (treelist-add (computation-LoR a-comp) a-rule)]
-               #;[visited (computation-visited a-comp) #;(cons (first (computation-LoC a-comp)) (computation-visited a-comp))]))
+               [LoR (treelist-add (computation-LoR a-comp) a-rule)]))
   
   ;;mutable set
   ;;Purpose: holds all of the visited configurations
@@ -303,10 +206,7 @@ action is the second pair in a tm rule
                                     '()
                                     (list (treelist-first computations)
                                           (inv-for-inv-config (tm-config-tape (treelist-first computations))
-                                                                            (tm-config-head-position (treelist-first computations)))
-                                          #;(append (treelist-first computations)
-                                                  (list (inv-for-inv-config (tm-config-tape (treelist-first computations))
-                                                                            (tm-config-head-position (treelist-first computations)))))))])
+                                                                            (tm-config-head-position (treelist-first computations)))))])
         (if (empty? inv-config-result)
             (get-inv-config-results-helper (treelist-rest computations) invs)
             (cons inv-config-result
@@ -317,14 +217,6 @@ action is the second pair in a tm rule
 (define (return-brk-inv-configs inv-config-results)
   (remove-duplicates (filter (λ (config) (not (second config))) inv-config-results)))
 
-
-;;(listof rule-struct) -> (listof rule)
-;;Purpose: Remakes the rules extracted from the rule-struct
-#;(define (remake-rules trace-rules)
-  (map (λ (rule)
-         (list (rule-read rule)
-               (rule-action rule)))
-       trace-rules))
 
 
 ;(listof symbols) -> string
@@ -338,10 +230,7 @@ action is the second pair in a tm rule
   (map (λ (rule)
          (list (rule-source rule)
                (string->symbol (make-edge-label rule))
-               (rule-destination rule))
-         #;(append (list (first (first rule)))
-                   (list (string->symbol (make-edge-label rule)))
-                   (list (first (second rule)))))
+               (rule-destination rule)))
        rules))
 
 
@@ -395,8 +284,7 @@ action is the second pair in a tm rule
   (make-rule-triples
    (remove-duplicates (filter (λ (rule)
                                 (not (equal? rule DUMMY-RULE)))
-                              a-config
-                              #;(remake-rules a-config)))))
+                              a-config))))
 
 ;;(listof configurations) (listof configurations) -> (listof configurations)
 ;;Purpose: Counts the number of unique configurations for each stage of the word
@@ -499,9 +387,7 @@ action is the second pair in a tm rule
                              (remove-duplicates (filter (λ (state)
                                                           (not (equal? state (tm-accepting-final (building-viz-state-M a-vs)))))
                                                         (map (λ (comp) (tm-config-state (treelist-first comp)))
-                                                             (building-viz-state-computations a-vs))
-                                                        #;(get-cut-off (building-viz-state-computations a-vs)
-                                                                       (building-viz-state-max-cmps a-vs))))
+                                                             (building-viz-state-computations a-vs))))
                              '())]
 
          ;;(listof rule-struct)
@@ -580,10 +466,7 @@ action is the second pair in a tm rule
                                       building-viz-state
                                       a-vs
                                       [computations (filter (λ (comp) (not (treelist-empty? comp)))
-                                                            (map treelist-rest (building-viz-state-computations a-vs)))
-                                                    #;(filter-map (λ (comp) (and (not (empty? comp))
-                                                                                 (rest comp)))
-                                                                  (building-viz-state-computations a-vs))]
+                                                            (map treelist-rest (building-viz-state-computations a-vs)))]
                                       [tape (zipper-next (building-viz-state-tape a-vs))]
                                       [head-pos (zipper-next (building-viz-state-head-pos a-vs))]
                                       [tracked-accept-trace (get-next-traces (building-viz-state-tracked-accept-trace a-vs))]
@@ -1077,20 +960,7 @@ action is the second pair in a tm rule
                                                        (get-index zip)))]
                          
              ;;invariant-zipper
-             [invs-zipper (if (and (not (zipper-at-end?
-                                         (imsg-state-tm-invs-zipper
-                                          (informative-messages-component-state
-                                           (viz-state-informative-messages a-vs)))))
-                                   (>= (accessor-func (imsg-state-tm-shown-accepting-trace
-                                                       (informative-messages-component-state
-                                                        (viz-state-informative-messages a-vs))))
-                                       (get-index (imsg-state-tm-invs-zipper
-                                                   (informative-messages-component-state
-                                                    (viz-state-informative-messages a-vs))))))
-                              (zipper-next (imsg-state-tm-invs-zipper (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs))))
-                              (imsg-state-tm-invs-zipper (informative-messages-component-state
-                                                          (viz-state-informative-messages a-vs))))])])]))))
+             [invs-zipper zip])])]))))
 
 
 ;;tm tape [natnum] [natnum] . -> (void) Throws error
@@ -1104,7 +974,7 @@ action is the second pair in a tm rule
 
          [computations (treelist->list (first computations+hash))]
          ;;(listof configurations) ;;Purpose: Extracts the configurations from the computation
-         [LoC (map computation-LoC computations #;(λ (comp) (reverse (computation-LoC comp))))]
+         [LoC (map computation-LoC computations)]
          ;;(listof computation) ;;Purpose: Extracts all accepting computations
          [accepting-computations (if (eq? (tm-type M) 'tm-language-recognizer)
                                      (filter (λ (comp)
@@ -1123,10 +993,7 @@ action is the second pair in a tm rule
                                               (map treelist-length LoC)
                                               '()))]
          ;;(listof trace) ;;Purpose: Gets the cut off trace if the the word length is greater than the cut
-         [cut-accept-traces '()
-                            #;(if (> word-len max-cmps)
-                                  (map last accepting-traces)
-                                  '())]
+         [cut-accept-traces '()]
          ;;(listof trace) ;;Purpose: Gets the cut off trace if the the word length is greater than the cut
          [accept-cmps (if (empty? cut-accept-traces)
                           accepting-traces
@@ -1155,28 +1022,16 @@ action is the second pair in a tm rule
                                      rejecting-trace]
                                     [(and (not computation-has-cut-off?) (not (empty? accepting-trace))) accepting-trace]
                                     [else '()]))]
-         [all-displayed-tape (list->zipper displayed-tape
-                                           #;(if (ormap (λ (comp-length)
-                                                          (>= comp-length cut-off))
-                                                        (map length LoC))
-                                                 (append displayed-tape (list (last displayed-tape)))
-                                                 displayed-tape))]
+         [all-displayed-tape (list->zipper displayed-tape)]
          [tracked-head-pos (map (λ (trace) (tm-config-head-position (trace-config trace)))
                                 (if (empty? accepting-trace)
                                     rejecting-trace
                                     accepting-trace))]
-         [all-head-pos (list->zipper tracked-head-pos
-                                     #;(if (ormap (λ (comp-length)
-                                                    (>= comp-length cut-off))
-                                                  (map length LoC))
-                                           (append tracked-head-pos (list (last tracked-head-pos)))
-                                           tracked-head-pos))]
+         [all-head-pos (list->zipper tracked-head-pos)]
          [machine-decision (if (not (empty? accepting-computations))
                                'accept
                                'reject)]
-         #;[computation-has-cut-off? (ormap (λ (comp-length)
-                                              (>= comp-length cut-off))
-                                            (map length LoC))]
+         
          [tracked-trace (cond [(and (empty? accepting-trace)
                                     (not computation-has-cut-off?)
                                     (= (length rejecting-computations) 1))
@@ -1188,15 +1043,9 @@ action is the second pair in a tm rule
                               [else '()])]
          ;;(listof number) ;;Purpose: Gets all the invariant configurations
          [all-inv-configs (reverse (get-inv-config-results accepting-computations invs))]
-         [failed-inv-configs (return-brk-inv-configs all-inv-configs) #;(remove-duplicates (return-brk-inv-configs all-inv-configs))]
+         [failed-inv-configs (return-brk-inv-configs all-inv-configs)]
          
-         #;[cut-off-LoC (if (ormap (λ (comp-length)
-                                   (>= comp-length cut-off))
-                                 (map treelist-length LoC))
-                          (map (λ (comp)
-                                 (append comp (list (treelist-last comp))))
-                               LoC)
-                          LoC)]
+         
          
          ;;building-state struct
          [building-state (building-viz-state all-displayed-tape
@@ -1212,44 +1061,9 @@ action is the second pair in a tm rule
                      
          ;;(listof graph-thunk) ;;Purpose: Gets all the graphs needed to run the viz
          [graphs (create-graph-thunks building-state '())]
-         ;;(listof computation) ;;Purpose: Gets all the cut off computations if
-         ;; the length of the word is greater than max computations
-         #;[get-cut-off-comp (if (ormap (λ (comp-length) (>= comp-length cut-off))
-                                      (map treelist-length LoC))
-                               (map treelist-last LoC)
-                               '())]
-         ;;(listof computation) ;;Purpose: Makes the cut off computations if
-         ;;  the length of the word is greater than max computations
-         #;[cut-off-comp (if (empty? get-cut-off-comp)
-                           LoC
-                           (map (λ (cut-off-comp comp)
-                                  (append comp (list cut-off-comp)))
-                                get-cut-off-comp
-                                LoC))]
          ;;(listof number) ;;Purpose: Gets the number of computations for each step
-         [cut-off-computations-lengths (take (count-computations LoC '())
-                                             (length tracked-head-pos))
-                                       #;(begin
-                                         (for ([key (in-list (hash-keys (second computations+hash)))])
-                                           (hash-set! (second computations+hash)
-                                                      key
-                                                      (set-count (hash-ref (second computations+hash) key))))
-                                         (second computations+hash))
-                                       #;(if (ormap (λ (comp-length)
-                                                      (>= comp-length cut-off))
-                                                    (map length LoC))
-                                             (append computation-lengths (list (last computation-lengths)))
-                                             computation-lengths)]
+         [cut-off-computations-lengths (take (count-computations LoC '()) (length tracked-head-pos))]
          )
-    ;;(map displayln LoC)
-    ;(displayln (length graphs))
-    ;;(displayln all-displayed-tape)
-    ;(displayln all-head-pos)
-    ;(displayln #;tracked-trace)
-    ;(void)
-    ;(displayln cut-off-computations-lengths)
-    ;(displayln computations)
-    ;(displayln failed-inv-configs)
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ TM-E-SCENE-HEIGHT 2))
@@ -1271,13 +1085,9 @@ action is the second pair in a tm rule
                                                                                      (= (length rejecting-computations) 1)))
                                                                             (first tracked-trace)]
                                                                            [else '()])
-                                                                     #;(if (and (not computation-has-cut-off?)
-                                                                                (empty? tracked-trace))
-                                                                           tracked-trace
-                                                                           (first tracked-trace))))
+                                                                     ))
                                                   (list->zipper (if (empty? tracked-trace) tracked-trace (first tracked-trace)))
                                                   (list->zipper failed-inv-configs) 
-                                                  (sub1 (length failed-inv-configs))
                                                   (list->zipper cut-off-computations-lengths)
                                                   LoC
                                                   cut-off

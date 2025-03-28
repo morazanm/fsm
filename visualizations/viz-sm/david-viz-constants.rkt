@@ -19,6 +19,9 @@
 
 (define FONT-SIZE 18)
 (provide (all-defined-out))
+
+
+
 #|
 A computation is a structure: (make-computation LoC LoR LoT visited)
 LoC is a (listof configuration)
@@ -107,7 +110,7 @@ rules are a (listof rule)
 (define pda-accessor-func (compose1 pda-config-index (compose1 trace-config zipper-current)))
 (define ndfa-accessor-func (compose1 ndfa-config-index (compose1 trace-config zipper-current)))
 
-(define get-index (compose1 fourth zipper-current))
+(define get-index (compose1 tm-config-index (compose1 first zipper-current)))
 (define get-index-pda (compose1 pda-config-index (compose1 first zipper-current)))
 (define get-index-ndfa (compose1 ndfa-config-index (compose1 first zipper-current)))
 
@@ -191,39 +194,33 @@ rules are a (listof rule)
                                                          (list J-KEY "Prv not inv")
                                                          (list L-KEY "Nxt not inv"))))
 
-(define ndfa-info-img (ndfa-create-draw-informative-message (imsg-state-ndfa AB*B*UAB*
-                                                                             (list->zipper (list (ci '() '())))
-                                                                             (list->zipper '())
-                                                                             (ndfa-config 'S '() 0)
-                                                                             (list->zipper '())
-                                                                             (hash)
-                                                                             '()
-                                                                             0
-                                                                             (let ([offset-cap (- (length '(a b b)) TAPE-SIZE)])
-                                                                               (if (> 0 offset-cap) 0 offset-cap))
-                                                                             0)))
+(define ndfa-info-img (ndfa-create-draw-informative-message
+                       (imsg-state-ndfa AB*B*UAB*
+                                        (list->zipper (list (ci '() '())))
+                                        (list->zipper '())
+                                        (ndfa-config 'S '() 0)
+                                        (list->zipper '())
+                                        (hash)
+                                        '()
+                                        0
+                                        (let ([offset-cap (- (length '(a b b)) TAPE-SIZE)])
+                                          (if (> 0 offset-cap) 0 offset-cap))
+                                        0)))
 
-(define pda-info-img (pda-create-draw-informative-message (imsg-state-pda a*
-              '(a b b)
-              '()
-              (list->zipper '())
-              (list->zipper '())
-              '(1)
-              (list->zipper '())
-              (hash) #;'(1 2 3 2)
-              '() #;(list  (list->treelist (list (computation
-                                        '((H ()) (H (b)) (K (b)) (B (b b)) (K (a b b)) (S (a b b)))
-                                        '((H b H) (K ε H) (B b K) (K a B) (S ε K))
-                                        '((H (b)) (K (b)) (B (b b)) (K (a b b)) (S (a b b))))
-                                       (computation
-                                        '((H ()) (H (b)) (H (b b)) (C (b b)) (S (a b b)))
-                                        '((H b H) (H b H) (C ε H) (S a C))
-                                        '((H (b)) (H (b b)) (C (b b)) (S (a b b)))))))
-              1
-              0
-              (let ([offset-cap (- (length '(a b b)) TAPE-SIZE)])
-                (if (> 0 offset-cap) 0 offset-cap))
-              0)))
+(define pda-info-img (pda-create-draw-informative-message
+                      (imsg-state-pda a*
+                                      (list->zipper (list (pda-ci '() '() '())))
+                                      (list->zipper '())
+                                      (list->zipper '())
+                                      '(1)
+                                      (list->zipper '())
+                                      (hash) 
+                                      '() 
+                                      1
+                                      0
+                                      (let ([offset-cap (- (length '(a b b)) TAPE-SIZE)])
+                                        (if (> 0 offset-cap) 0 offset-cap))
+                                      0)))
 
 
 (define tm-info-img (tm-create-draw-informative-message (imsg-state-tm EVEN-AS-&-BS
@@ -234,7 +231,7 @@ rules are a (listof rule)
                                                                                                   (rule (list BLANK BLANK)
                                                                                                         (list BLANK BLANK)))))
                                                                        (list->zipper '())
-                                                                       '()
+                                                                       
                                                                        (list->zipper '(1))
                                                                        '()
                                                                        1
@@ -325,11 +322,7 @@ rules are a (listof rule)
                   DEFAULT-ZOOM-CAP
                   DEFAULT-ZOOM-FLOOR
                   PERCENT-BORDER-GAP
-                  imsg-state-pda-invs-zipper
-                  imsg-state-pda-pci
-                  length
-                  get-index
-                  get-next-index))
+                  imsg-state-pda-invs-zipper))
 
 (define pda-jump-prev
   (jump-prev-inv  E-SCENE-WIDTH
@@ -338,11 +331,7 @@ rules are a (listof rule)
                   DEFAULT-ZOOM-CAP
                   DEFAULT-ZOOM-FLOOR
                   PERCENT-BORDER-GAP
-                  imsg-state-pda-invs-zipper
-                  imsg-state-pda-pci
-                  length
-                  get-index
-                  get-prev-index))
+                  imsg-state-pda-invs-zipper))
 
 (define ndfa-jump-next
   (jump-next-inv  E-SCENE-WIDTH
@@ -351,11 +340,7 @@ rules are a (listof rule)
                   DEFAULT-ZOOM-CAP
                   DEFAULT-ZOOM-FLOOR
                   PERCENT-BORDER-GAP
-                  imsg-state-ndfa-invs-zipper
-                  imsg-state-ndfa-shown-accepting-trace
-                  ndfa-accessor-func
-                  get-index-ndfa
-                  get-next-index-ndfa))
+                  imsg-state-ndfa-invs-zipper))
 
 (define ndfa-jump-prev
   (jump-prev-inv  E-SCENE-WIDTH
@@ -364,11 +349,7 @@ rules are a (listof rule)
                   DEFAULT-ZOOM-CAP
                   DEFAULT-ZOOM-FLOOR
                   PERCENT-BORDER-GAP
-                  imsg-state-ndfa-invs-zipper
-                  imsg-state-ndfa-shown-accepting-trace
-                  ndfa-accessor-func
-                  get-index-ndfa
-                  get-prev-index-ndfa))
+                  imsg-state-ndfa-invs-zipper))
 
 (define tm-jump-next
   (jump-next-inv  E-SCENE-WIDTH
@@ -377,11 +358,7 @@ rules are a (listof rule)
                   DEFAULT-ZOOM-CAP
                   DEFAULT-ZOOM-FLOOR
                   PERCENT-BORDER-GAP
-                  imsg-state-tm-invs-zipper
-                  imsg-state-tm-shown-accepting-trace
-                  accessor-func 
-                  get-index
-                  get-next-index))
+                  imsg-state-tm-invs-zipper))
 
 (define tm-jump-prev
   (jump-prev-inv  E-SCENE-WIDTH
@@ -390,11 +367,7 @@ rules are a (listof rule)
                   DEFAULT-ZOOM-CAP
                   DEFAULT-ZOOM-FLOOR
                   PERCENT-BORDER-GAP
-                  imsg-state-tm-invs-zipper
-                  imsg-state-tm-shown-accepting-trace
-                  accessor-func
-                  get-index
-                  get-prev-index))
+                  imsg-state-tm-invs-zipper))
 
 (define viz-go-next
   (go-next E-SCENE-WIDTH

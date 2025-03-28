@@ -175,40 +175,11 @@
       (force (delay/thread ((force new-img))))))
 
 (define (jump-prev-inv E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR PERCENT-BORDER-GAP
-                       imsg-state-invs-zipper-func imsg-state-input-func imsg-state-accessor-func inv-zipper-accessor-func
-                       inv-zipper-prev-accessor-func)
+                       imsg-state-invs-zipper-func)
   (lambda ( a-vs)
-    (if(zipper-empty? (imsg-state-invs-zipper-func (informative-messages-component-state
-                                                         (viz-state-informative-messages a-vs))))
-       #;(or (zipper-empty? (imsg-state-invs-zipper-func (informative-messages-component-state
-                                                         (viz-state-informative-messages a-vs))))
-            #;(and (zipper-at-begin? (imsg-state-invs-zipper-func (informative-messages-component-state
-                                                                 (viz-state-informative-messages a-vs))))
-                 (not (zipper-at-end? (imsg-state-invs-zipper-func (informative-messages-component-state
-                                                                    (viz-state-informative-messages a-vs))))))
-            #;(< (imsg-state-accessor-func (imsg-state-input-func (informative-messages-component-state
-                                                                 (viz-state-informative-messages a-vs))))
-               (inv-zipper-accessor-func (imsg-state-invs-zipper-func
-                                          (informative-messages-component-state
-                                           (viz-state-informative-messages a-vs))))))
+    (if (zipper-empty? (imsg-state-invs-zipper-func (informative-messages-component-state (viz-state-informative-messages a-vs))))
         a-vs
-        (let* (#;[idx (inv-zipper-accessor-func (imsg-state-invs-zipper-func
-                                                   (informative-messages-component-state
-                                                    (viz-state-informative-messages a-vs))))
-                    #;(if (and (not (zipper-at-end? (imsg-state-invs-zipper-func (informative-messages-component-state
-                                                                                (viz-state-informative-messages a-vs)))))
-                             (< (imsg-state-accessor-func (imsg-state-input-func (informative-messages-component-state
-                                                                                  (viz-state-informative-messages a-vs))))
-                                (inv-zipper-accessor-func (imsg-state-invs-zipper-func
-                                                           (informative-messages-component-state
-                                                            (viz-state-informative-messages a-vs))))))
-                        (inv-zipper-prev-accessor-func (imsg-state-invs-zipper-func
-                                                        (informative-messages-component-state
-                                                         (viz-state-informative-messages a-vs))))
-                        (inv-zipper-accessor-func (imsg-state-invs-zipper-func
-                                                   (informative-messages-component-state
-                                                    (viz-state-informative-messages a-vs)))))]
-               [new-imgs (viz-state-imgs a-vs) #;(vector-zipper-to-idx (viz-state-imgs a-vs) idx)]
+        (let* ([new-imgs (viz-state-imgs a-vs)]
                [new-curr-img (if (image? (vector-zipper-current new-imgs))
                                  (vector-zipper-current new-imgs)
                                  (if (list? (vector-zipper-current new-imgs))
@@ -216,10 +187,8 @@
                                      (let [(cache (force (vector-zipper-current new-imgs)))]
                                        (if (list? cache)
                                            (apply above (map (lambda (img) ((force img))) cache))
-                                           (cache)))))
-                             #;((zipper-current new-imgs))]
-               [curr-pimgs-img (viz-state-curr-image a-vs)
-                               #;((zipper-current (viz-state-imgs a-vs)))]
+                                           (cache)))))]
+               [curr-pimgs-img (viz-state-curr-image a-vs)]
                [img-resize (resize-image new-curr-img
                                          (* E-SCENE-WIDTH PERCENT-BORDER-GAP)
                                          (* E-SCENE-HEIGHT PERCENT-BORDER-GAP))]
@@ -333,42 +302,12 @@
                  (viz-state-scale-factor a-vs))))))))
 
 (define (jump-next-inv E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR PERCENT-BORDER-GAP
-                       imsg-state-invs-zipper-func imsg-state-input-func imsg-state-accessor-func inv-zipper-accessor-func
-                       inv-zipper-next-accessor-func)
+                       imsg-state-invs-zipper-func)
      (lambda (a-vs)
        (if (zipper-empty? (imsg-state-invs-zipper-func (informative-messages-component-state
                                                             (viz-state-informative-messages a-vs))))
-           #;(or (zipper-empty? (imsg-state-invs-zipper-func (informative-messages-component-state
-                                                            (viz-state-informative-messages a-vs))))
-               ;(zipper-at-end? (imsg-state-invs-zipper-func (informative-messages-component-state
-                                                             (viz-state-informative-messages a-vs))
-               #;(and (zipper-at-end? (imsg-state-invs-zipper-func (informative-messages-component-state
-                                                                  (viz-state-informative-messages a-vs))))
-                    (not (zipper-at-begin? (imsg-state-invs-zipper-func (informative-messages-component-state
-                                                                         (viz-state-informative-messages a-vs))))))
-               #;(> (imsg-state-accessor-func (imsg-state-input-func (informative-messages-component-state
-                                                                      (viz-state-informative-messages a-vs))))
-                    (inv-zipper-accessor-func (imsg-state-invs-zipper-func
-                                               (informative-messages-component-state
-                                                (viz-state-informative-messages a-vs)))))
              a-vs
-             (let* (#;[idx (inv-zipper-accessor-func (imsg-state-invs-zipper-func
-                                                          (informative-messages-component-state
-                                                      (viz-state-informative-messages a-vs))))
-                         #;(if (and (not (zipper-at-end? (imsg-state-invs-zipper-func (informative-messages-component-state
-                                                                                (viz-state-informative-messages a-vs)))))
-                                  (> (imsg-state-accessor-func (imsg-state-input-func (informative-messages-component-state
-                                                                                           (viz-state-informative-messages a-vs))))
-                                     (inv-zipper-accessor-func (imsg-state-invs-zipper-func
-                                                                       (informative-messages-component-state
-                                                                        (viz-state-informative-messages a-vs))))))
-                             (inv-zipper-next-accessor-func (imsg-state-invs-zipper-func
-                                                          (informative-messages-component-state
-                                                      (viz-state-informative-messages a-vs))))
-                             (inv-zipper-accessor-func (imsg-state-invs-zipper-func
-                                                          (informative-messages-component-state
-                                                      (viz-state-informative-messages a-vs)))))]
-                    [new-imgs (viz-state-imgs a-vs) #;(vector-zipper-to-idx (viz-state-imgs a-vs) idx)]
+             (let* ([new-imgs (viz-state-imgs a-vs)]
                     [new-curr-img (if (image? (vector-zipper-current new-imgs))
                                       (vector-zipper-current new-imgs)
                                       (if (list? (vector-zipper-current new-imgs))
@@ -376,9 +315,8 @@
                                           (let [(cache (force (vector-zipper-current new-imgs)))]
                                             (if (list? cache)
                                                 (apply above (map (lambda (img) ((force img))) cache))
-                                                (cache)))))
-                                  #;((zipper-current new-imgs))]
-                    [curr-pimgs-img (viz-state-curr-image a-vs) #;((zipper-current (viz-state-imgs a-vs)))]
+                                                (cache)))))]
+                    [curr-pimgs-img (viz-state-curr-image a-vs)]
                     [img-resize (resize-image new-curr-img
                                               (* E-SCENE-WIDTH PERCENT-BORDER-GAP)
                                               (* E-SCENE-HEIGHT PERCENT-BORDER-GAP))]

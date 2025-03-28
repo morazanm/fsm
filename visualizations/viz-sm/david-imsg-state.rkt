@@ -4,7 +4,7 @@
 
 
 (struct imsg-state-ndfa (M                       ;;ndfa
-                         ci                      ;;(ci-struct (upci pci))
+                         ci                      ;;(zipperof ci)
                          shown-accepting-trace   ;;(zipperof trace)
                          farthest-consumed-input ;;(listof symbol)
                          invs-zipper             ;;(list->zipper inv-configs)
@@ -16,8 +16,7 @@
   #:transparent)
 
 (struct imsg-state-pda (M                       ;;PDA
-                        upci                    ;;(listof symbol)/word
-                        pci                     ;;(listof symbol)
+                        ci                      ;;(zipperof ci)
                         shown-accepting-trace   ;;(zipperof trace)
                         stack                   ;;(zipperof configuration)
                         farthest-consumed-input ;;(listof symbol)
@@ -36,7 +35,6 @@
                        rules-used            ;;(zipperof tm-rule)
                        shown-accepting-trace ;;(zipperof trace)
                        invs-zipper           ;;(zipperof inv-configs)
-                       inv-amount            ;;natnum
                        computation-lengths   ;;(zipperof natnum)
                        computations          ;;(listof computation)
                        max-cmps              ;;natnum

@@ -47,8 +47,6 @@ pair is the second of the pda rule
 (define DUMMY-RULE (rule (triple EMP EMP EMP) (pair EMP EMP)))
 #|
 ci                      | is a structure containing the unconsumed and consumed input => (zipperof ci)
-upci                    | is the unprocessed consumed input => (listof symbol)
-pci                     | is the proccessed consumed input => (listof symbol)
 computations            | is all of the computations that attempt to consume the ci => (listof computation)
 acc-comp                | is all of the accepting computations => (listof computation)
 stack                   | is the first accepting computation => (zipperof computation)
@@ -61,8 +59,7 @@ dead                    | is the dead state symbol  => symbol
 max-cmps                | is the cut off threshold for the machine => postive integer
 farthest-consumed-input | is the portion the ci that the machine consumed the most of => (listof symbol)
 |#
-(struct building-viz-state (upci 
-                            pci  
+(struct building-viz-state (CI
                             computations 
                             acc-comp 
                             stack 
@@ -77,7 +74,34 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
 
 (define get-index (compose1 pda-config-index zipper-current))
 
+
+;(define-struct pda-ci (upci pci stack))
 ;(struct config (state word stack index))
+
+;;word -> (zipperof ci)
+;;Purpose: Creates all valid combinations of the upci and pci
+(define (remake-ci a-word stack)
+  ;;natnum ;;Purpose: the length of the given word
+  (define word-length (length a-word))
+
+  ;;natnum (listof ci) -> (zipperof ci)
+  ;;Purpose: Creates all valid combinations of the upci and pci
+  ;;Acc = All valid combinations of unconsumed and consumed input after num-steps amount  of steps
+  (define (make-ci-helper num-steps stack acc)
+    (let [(stck (if (empty? stack)
+                     stack
+                     (first stack)))
+          (upci (if (< num-steps 0)
+                    '()
+                    (take-right a-word num-steps)))
+          (pci (if (< num-steps 0)
+                    a-word
+                    (drop-right a-word num-steps)))]
+    (if (and (<= num-steps 0)
+             (= (length stack) 1))
+        (list->zipper (reverse (cons (pda-ci upci pci stck) acc)))
+        (make-ci-helper (sub1 num-steps) (rest stack) (cons (pda-ci upci pci stck) acc)))))
+  (make-ci-helper word-length stack '()))
 
 ;;rule -> boolean
 ;;Purpose: Determines if the given rule is an empty rule (e.i. reads, pops, and pushes empty)
@@ -383,7 +407,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
 
          ;;(listof configuration)
          ;;Purpose: Extracts all the configs from both the accepting and rejecting configs
-         [current-configs (get-portion-configs (building-viz-state-upci a-vs)
+         [current-configs (get-portion-configs (pda-ci-upci (zipper-current (building-viz-state-CI a-vs)))
                                                (building-viz-state-acc-comp a-vs))]
 
          ;;(listof symbol)
@@ -422,7 +446,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
          [get-invs (for*/list ([invs (building-viz-state-inv a-vs)]
                                [curr current-configs]
                                #:when (eq? (first invs) (pda-config-state curr)))
-                     (list invs (building-viz-state-pci a-vs) (pda-config-stack curr)))]
+                     (list invs (pda-ci-pci (zipper-current (building-viz-state-CI a-vs))) (pda-config-stack curr)))]
 
          ;;(listof symbols)
          ;;Purpose: Returns all states whose invariants fail
@@ -451,16 +475,17 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
   ;;(listof trace) -> (listof trace)
   ;;Purpose: Extracts the empty trace from the (listof trace) and maps rest onto the non-empty trace
   (define (get-next-traces LoT)
-    (filter-map-acc empty? rest not id LoT))
+    (filter-map-acc empty? rest not identity LoT))
   ;;viz-state (listof graph-thunks) -> (listof graph-thunks)
   ;;Purpose: Creates all the graphs needed for the visualization
   (define (create-graph-thunks-helper a-vs acc)
     (cond [(for/or ([config (building-viz-state-computations a-vs)])
              (>= (pda-config-index (first config)) (building-viz-state-max-cmps a-vs)))
            (reverse (cons (create-graph-thunk a-vs #:cut-off #t) acc))]
-          [(or (and (equal? (building-viz-state-upci a-vs) (building-viz-state-farthest-consumed-input a-vs))
+          [(or (and (equal? (pda-ci-upci (zipper-current (building-viz-state-CI a-vs)))
+                             (building-viz-state-farthest-consumed-input a-vs))
                     (not (empty? (building-viz-state-farthest-consumed-input a-vs))))
-               (and (empty? (building-viz-state-upci a-vs))
+               (and (zipper-at-end? (building-viz-state-CI a-vs))
                     (or (list? (building-viz-state-stack a-vs))
                         (zipper-at-end? (building-viz-state-stack a-vs)))))
            (reverse (cons (create-graph-thunk a-vs) acc))]
@@ -468,13 +493,9 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                   (create-graph-thunks-helper (struct-copy
                                                building-viz-state
                                                a-vs
-                                               [upci (if (empty? (building-viz-state-upci a-vs))
-                                                         (building-viz-state-upci a-vs)
-                                                         (rest (building-viz-state-upci a-vs)))]
-                                               [pci (if (empty? (building-viz-state-upci a-vs))
-                                                        (building-viz-state-pci a-vs)
-                                                        (append (building-viz-state-pci a-vs)
-                                                                (list (first (building-viz-state-upci a-vs)))))]
+                                               [CI (if (zipper-at-end? (building-viz-state-CI a-vs))
+                                                       (building-viz-state-CI a-vs)
+                                                       (zipper-next (building-viz-state-CI a-vs)))]
                                                [stack (if (or (zipper-empty? (building-viz-state-stack a-vs))
                                                               (zipper-at-end? (building-viz-state-stack a-vs)))
                                                           (building-viz-state-stack a-vs)
@@ -494,24 +515,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization forward by one step
 (define (right-key-pressed a-vs)
-  (let* (;;boolean
-         ;;Purpose: Determines if the pci can be can be fully consumed
-         [pci (if (or (empty? (imsg-state-pda-upci (informative-messages-component-state
-                                                    (viz-state-informative-messages a-vs))))
-                      (equal? (imsg-state-pda-upci (informative-messages-component-state
-                                                    (viz-state-informative-messages a-vs)))
-                              (imsg-state-pda-farthest-consumed-input (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs)))))
-                  (imsg-state-pda-pci (informative-messages-component-state
-                                       (viz-state-informative-messages a-vs)))
-                  (append (imsg-state-pda-pci (informative-messages-component-state
-                                               (viz-state-informative-messages a-vs)))
-                          (list (first (imsg-state-pda-upci (informative-messages-component-state
-                                                             (viz-state-informative-messages a-vs)))))))]
-         ;;number
-         ;;the length of the pci
-         [pci-len (length pci)])
-    (struct-copy
+  (struct-copy
      viz-state
      a-vs
      [informative-messages
@@ -521,18 +525,17 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
        [component-state
         (struct-copy imsg-state-pda
                      (informative-messages-component-state (viz-state-informative-messages a-vs))
-                     [upci (if (or (empty? (imsg-state-pda-upci (informative-messages-component-state
-                                                                 (viz-state-informative-messages a-vs))))
-                                   (equal? (imsg-state-pda-upci (informative-messages-component-state
-                                                                 (viz-state-informative-messages a-vs)))
-                                           (imsg-state-pda-farthest-consumed-input (informative-messages-component-state
-                                                                                    (viz-state-informative-messages a-vs)))))
-
-                               (imsg-state-pda-upci (informative-messages-component-state
-                                                     (viz-state-informative-messages a-vs)))
-                               (rest (imsg-state-pda-upci (informative-messages-component-state
-                                                           (viz-state-informative-messages a-vs)))))]
-                     [pci pci]
+                     [ci (if (or (zipper-at-end? (imsg-state-pda-ci
+                                                  (informative-messages-component-state
+                                                   (viz-state-informative-messages a-vs))))
+                                 (equal? (pda-ci-upci (zipper-current (imsg-state-pda-ci (informative-messages-component-state
+                                                                                       (viz-state-informative-messages a-vs)))))
+                                           (pda-config-word (imsg-state-pda-farthest-consumed-input (informative-messages-component-state
+                                                                                     (viz-state-informative-messages a-vs))))))
+                             (imsg-state-pda-ci (informative-messages-component-state
+                                                                                       (viz-state-informative-messages a-vs)))
+                             (zipper-next (imsg-state-pda-ci (informative-messages-component-state
+                                                                                       (viz-state-informative-messages a-vs)))))]
                      [shown-accepting-trace (if (or (zipper-empty? (imsg-state-pda-shown-accepting-trace
                                                                     (informative-messages-component-state
                                                                      (viz-state-informative-messages a-vs))))
@@ -563,39 +566,19 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                                    (imsg-state-pda-shown-accepting-trace
                                                     (informative-messages-component-state
                                                      (viz-state-informative-messages a-vs))))
-                                                  #;pci-len (pda-config-index (first (first (zipper-unprocessed
+                                                   (pda-config-index (first (first (zipper-unprocessed
                                                                           (imsg-state-pda-invs-zipper
                                                                            (informative-messages-component-state
                                                                             (viz-state-informative-messages a-vs)))))))))
                                          (zipper-next (imsg-state-pda-invs-zipper (informative-messages-component-state
                                                                                    (viz-state-informative-messages a-vs))))]
                                         [else (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                                           (viz-state-informative-messages a-vs)))])])])])))
+                                                                           (viz-state-informative-messages a-vs)))])])])]))
 
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization to the end
 (define (down-key-pressed a-vs)
-  (let* (;;(listof symbol)
-         ;;Purpose: The entire given word
-         [full-word (append (imsg-state-pda-pci (informative-messages-component-state
-                                                 (viz-state-informative-messages a-vs)))
-                            (imsg-state-pda-upci (informative-messages-component-state
-                                                  (viz-state-informative-messages a-vs))))]
-         ;;(zipperof invariant)
-         ;;Purpose: The index of the last failed invariant
-         [zip (if (or (zipper-empty? (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                              (viz-state-informative-messages a-vs))))
-                      (zipper-at-end? (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                              (viz-state-informative-messages a-vs)))))
-                  (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                               (viz-state-informative-messages a-vs)))
-                  (zipper-to-end (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                              (viz-state-informative-messages a-vs))))
-                  #;(zipper-to-idx (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                              (viz-state-informative-messages a-vs)))
-                                 (imsg-state-pda-inv-amount (informative-messages-component-state
-                                                             (viz-state-informative-messages a-vs)))))])
-    (struct-copy
+  (struct-copy
      viz-state
      a-vs
      [informative-messages
@@ -607,27 +590,14 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
          imsg-state-pda
          (informative-messages-component-state
           (viz-state-informative-messages a-vs))
-         [upci (cond [(empty? (imsg-state-pda-upci (informative-messages-component-state
-                                                    (viz-state-informative-messages a-vs))))
-                      (imsg-state-pda-upci (informative-messages-component-state
-                                            (viz-state-informative-messages a-vs)))]
-                     [(not (empty? (imsg-state-pda-farthest-consumed-input (informative-messages-component-state
-                                                                            (viz-state-informative-messages a-vs)))))
-                      (drop full-word (- (length full-word) (length (imsg-state-pda-farthest-consumed-input
-                                                                     (informative-messages-component-state
-                                                                      (viz-state-informative-messages a-vs))))))]
-                     [else '()])]
-         [pci (cond [(empty? (imsg-state-pda-upci (informative-messages-component-state
-                                               (viz-state-informative-messages a-vs))))
-                 (imsg-state-pda-pci (informative-messages-component-state
-                                      (viz-state-informative-messages a-vs)))]
-                [(not (empty? (imsg-state-pda-farthest-consumed-input (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs)))))
-                 (take full-word (- (length full-word)
-                                    (length (imsg-state-pda-farthest-consumed-input
-                                                                (informative-messages-component-state
-                                                                 (viz-state-informative-messages a-vs))))))]
-                [else full-word])]
+         [ci (cond [(zipper-at-end? (imsg-state-pda-ci (informative-messages-component-state (viz-state-informative-messages a-vs))))
+                    (imsg-state-pda-ci (informative-messages-component-state (viz-state-informative-messages a-vs)))]
+                   [(not (empty? (pda-config-word (imsg-state-pda-farthest-consumed-input (informative-messages-component-state
+                                                                                           (viz-state-informative-messages a-vs))))))
+                    (zipper-to-idx (imsg-state-pda-ci (informative-messages-component-state (viz-state-informative-messages a-vs)))
+                                   (pda-config-index (imsg-state-pda-farthest-consumed-input (informative-messages-component-state
+                                                                                              (viz-state-informative-messages a-vs)))))]
+                   [else (zipper-to-end (imsg-state-pda-ci (informative-messages-component-state (viz-state-informative-messages a-vs))))])]
          [shown-accepting-trace (if (or (zipper-empty? (imsg-state-pda-shown-accepting-trace
                                                         (informative-messages-component-state
                                                          (viz-state-informative-messages a-vs))))
@@ -652,8 +622,16 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                               (viz-state-informative-messages a-vs)))]
                       [else (zipper-to-end (imsg-state-pda-stack (informative-messages-component-state
                                                                   (viz-state-informative-messages a-vs))))])]
-
-         [invs-zipper zip])])])))
+         ;;(zipperof invariant)
+         ;;Purpose: The index of the last failed invariant
+         [invs-zipper (if (or (zipper-empty? (imsg-state-pda-invs-zipper (informative-messages-component-state
+                                                                          (viz-state-informative-messages a-vs))))
+                              (= (zipper-length (imsg-state-pda-invs-zipper (informative-messages-component-state
+                                                                             (viz-state-informative-messages a-vs)))) 1))
+                          (imsg-state-pda-invs-zipper (informative-messages-component-state
+                                                       (viz-state-informative-messages a-vs)))
+                          (zipper-to-end (imsg-state-pda-invs-zipper (informative-messages-component-state
+                                                                      (viz-state-informative-messages a-vs)))))])])]))
 
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization backward by one step
@@ -669,17 +647,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
          [rule (if (zipper-empty? (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
                                                                          (viz-state-informative-messages a-vs))))
                    DUMMY-RULE
-                   next-rule)]
-         [pci (if (or (empty? (imsg-state-pda-pci (informative-messages-component-state
-                                                   (viz-state-informative-messages a-vs))))
-                      (and (eq? (triple-read (rule-triple rule)) EMP)
-                           (not (empty-rule? rule))))
-                  (imsg-state-pda-pci (informative-messages-component-state
-                                       (viz-state-informative-messages a-vs)))
-                  (take (imsg-state-pda-pci (informative-messages-component-state
-                                             (viz-state-informative-messages a-vs)))
-                        (sub1 (length (imsg-state-pda-pci (informative-messages-component-state
-                                                           (viz-state-informative-messages a-vs)))))))])
+                   next-rule)])
     (struct-copy
      viz-state
      a-vs
@@ -691,17 +659,12 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
         (struct-copy imsg-state-pda
                      (informative-messages-component-state
                       (viz-state-informative-messages a-vs))
-                     [upci (if (or (empty? (imsg-state-pda-pci (informative-messages-component-state
-                                                                (viz-state-informative-messages a-vs))))
-                                   (and (eq? (triple-read (rule-triple rule)) EMP)
-                                        (not (empty-rule? rule))))
-                               (imsg-state-pda-upci (informative-messages-component-state
-                                                     (viz-state-informative-messages a-vs)))
-                               (cons (last (imsg-state-pda-pci (informative-messages-component-state
-                                                                (viz-state-informative-messages a-vs))))
-                                     (imsg-state-pda-upci (informative-messages-component-state
-                                                           (viz-state-informative-messages a-vs)))))]
-                     [pci pci] 
+                     [ci (if (or (zipper-at-begin? (imsg-state-pda-ci (informative-messages-component-state
+                                                                          (viz-state-informative-messages a-vs))))
+                                    (and (eq? (triple-read (rule-triple rule)) EMP) (not (empty-rule? rule))))
+                             (imsg-state-pda-ci (informative-messages-component-state (viz-state-informative-messages a-vs)))
+                             (zipper-prev (imsg-state-pda-ci (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs)))))]
                      [shown-accepting-trace (if (or (zipper-empty? (imsg-state-pda-shown-accepting-trace
                                                         (informative-messages-component-state
                                                          (viz-state-informative-messages a-vs))))
@@ -730,8 +693,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                         [(and (not (zipper-at-begin? (imsg-state-pda-invs-zipper
                                                                       (informative-messages-component-state
                                                                        (viz-state-informative-messages a-vs)))))
-                                              (<= #;pci-len
-                                                  (pda-accessor-func
+                                              (<= (pda-accessor-func
                                                    (imsg-state-pda-shown-accepting-trace
                                                     (informative-messages-component-state
                                                      (viz-state-informative-messages a-vs))))
@@ -758,19 +720,12 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
       (struct-copy imsg-state-pda
                    (informative-messages-component-state
                     (viz-state-informative-messages a-vs))
-                   [upci (if (empty? (imsg-state-pda-pci (informative-messages-component-state
-                                                          (viz-state-informative-messages a-vs))))
-                             (imsg-state-pda-upci (informative-messages-component-state
-                                                   (viz-state-informative-messages a-vs)))
-                             (append (imsg-state-pda-pci (informative-messages-component-state
-                                                          (viz-state-informative-messages a-vs)))
-                                     (imsg-state-pda-upci (informative-messages-component-state
-                                                           (viz-state-informative-messages a-vs)))))]
-                   [pci (if (empty? (imsg-state-pda-pci (informative-messages-component-state
-                                                         (viz-state-informative-messages a-vs))))
-                            (imsg-state-pda-pci (informative-messages-component-state
-                                                 (viz-state-informative-messages a-vs)))
-                            '())]
+                   [ci (if (zipper-at-begin? (imsg-state-pda-ci (informative-messages-component-state
+                                                                          (viz-state-informative-messages a-vs))))
+                             (imsg-state-pda-ci (informative-messages-component-state (viz-state-informative-messages a-vs)))
+                             (zipper-to-begin (imsg-state-pda-ci (informative-messages-component-state
+                                                                        (viz-state-informative-messages a-vs)))))]
+                   
                    [shown-accepting-trace (if (or (zipper-empty? (imsg-state-pda-shown-accepting-trace
                                                                   (informative-messages-component-state
                                                                    (viz-state-informative-messages a-vs))))
@@ -838,7 +793,13 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
           (and (zipper-at-begin? (imsg-state-pda-invs-zipper (informative-messages-component-state
                                                               (viz-state-informative-messages a-vs))))
                (not (zipper-at-end? (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                                 (viz-state-informative-messages a-vs)))))))
+                                                                 (viz-state-informative-messages a-vs))))))
+          (< (pda-accessor-func
+              (imsg-state-pda-shown-accepting-trace
+               (informative-messages-component-state
+                (viz-state-informative-messages a-vs))))
+             (get-index-pda  (imsg-state-pda-invs-zipper (informative-messages-component-state
+                                                          (viz-state-informative-messages a-vs))))))
       a-vs
       (let* ([zip (if (and (not (zipper-at-begin? (imsg-state-pda-invs-zipper (informative-messages-component-state
                                                                                (viz-state-informative-messages a-vs)))))
@@ -846,22 +807,13 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                 (imsg-state-pda-shown-accepting-trace
                                  (informative-messages-component-state
                                   (viz-state-informative-messages a-vs))))
-                               #;(get-index (imsg-state-pda-stack (informative-messages-component-state
-                                                                 (viz-state-informative-messages a-vs))))
                                (get-index-pda (imsg-state-pda-invs-zipper
                                                (informative-messages-component-state
                                                 (viz-state-informative-messages a-vs))))))
                       (zipper-prev (imsg-state-pda-invs-zipper (informative-messages-component-state
                                                                 (viz-state-informative-messages a-vs))))
                       (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                   (viz-state-informative-messages a-vs))))]
-             [full-word (append (imsg-state-pda-pci (informative-messages-component-state
-                                                     (viz-state-informative-messages a-vs)))
-                                (imsg-state-pda-upci (informative-messages-component-state
-                                                      (viz-state-informative-messages a-vs))))]
-             [partial-word (if (equal? (pda-config-word (first (zipper-current zip))) full-word)
-                               '()
-                               (drop full-word (get-index-pda zip)))])
+                                                   (viz-state-informative-messages a-vs))))])
         (struct-copy
          viz-state
          a-vs
@@ -874,29 +826,17 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
             (struct-copy imsg-state-pda
                          (informative-messages-component-state
                           (viz-state-informative-messages a-vs))
-                         [upci (cond [(and (zipper-at-begin? (imsg-state-pda-invs-zipper
-                                                              (informative-messages-component-state
-                                                               (viz-state-informative-messages a-vs))))
-                                           (zipper-at-end? (imsg-state-pda-invs-zipper
-                                                            (informative-messages-component-state
-                                                             (viz-state-informative-messages a-vs))))
-                                           (< (get-index (imsg-state-pda-stack
-                                                          (informative-messages-component-state
-                                                           (viz-state-informative-messages a-vs))))
-                                              (get-index-pda (imsg-state-pda-invs-zipper
-                                                              (informative-messages-component-state
-                                                               (viz-state-informative-messages a-vs))))))
-                                      #;partial-word
-                                      (imsg-state-pda-upci (informative-messages-component-state
-                                                            (viz-state-informative-messages a-vs)))]
-                                     [(and (zipper-at-begin? (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                                                          (viz-state-informative-messages a-vs))))
-                                           (not (zipper-at-end? (imsg-state-pda-invs-zipper
-                                                                 (informative-messages-component-state
-                                                                  (viz-state-informative-messages a-vs))))))
-                                      (imsg-state-pda-upci (informative-messages-component-state
-                                                            (viz-state-informative-messages a-vs)))]
-                                     [else partial-word])]
+                         [ci (if (< (zipper-length (imsg-state-pda-ci
+                                             (informative-messages-component-state
+                                              (viz-state-informative-messages a-vs)))) (get-index-pda zip))
+                                 (zipper-to-end (imsg-state-pda-ci
+                                             (informative-messages-component-state
+                                              (viz-state-informative-messages a-vs))))
+                                 (zipper-to-idx (imsg-state-pda-ci
+                                             (informative-messages-component-state
+                                              (viz-state-informative-messages a-vs)))
+                                            (get-index-pda zip)))]
+                         
                          [shown-accepting-trace (if (zipper-empty? (imsg-state-pda-shown-accepting-trace
                                                                     (informative-messages-component-state
                                                                      (viz-state-informative-messages a-vs))))
@@ -919,29 +859,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                                              (viz-state-informative-messages a-vs)))
                                                            (get-index-pda zip)))]
                          
-                         [pci (cond [(and (zipper-at-begin? (imsg-state-pda-invs-zipper
-                                                             (informative-messages-component-state
-                                                              (viz-state-informative-messages a-vs))))
-                                          (zipper-at-end? (imsg-state-pda-invs-zipper
-                                                           (informative-messages-component-state
-                                                            (viz-state-informative-messages a-vs))))
-                                          (< (get-index (imsg-state-pda-stack
-                                                         (informative-messages-component-state
-                                                          (viz-state-informative-messages a-vs))))
-                                             (get-index-pda (imsg-state-pda-invs-zipper
-                                                             (informative-messages-component-state
-                                                              (viz-state-informative-messages a-vs))))))
-                                     #;(pda-config-word (first (zipper-current zip)))
-                                     (imsg-state-pda-pci (informative-messages-component-state
-                                                          (viz-state-informative-messages a-vs)))]
-                                    [(and (zipper-at-begin? (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                                                         (viz-state-informative-messages a-vs))))
-                                          (not (zipper-at-end? (imsg-state-pda-invs-zipper
-                                                                (informative-messages-component-state
-                                                                 (viz-state-informative-messages a-vs))))))
-                                     (imsg-state-pda-pci (informative-messages-component-state
-                                                          (viz-state-informative-messages a-vs)))]
-                                    [else (pda-config-word (first (zipper-current zip)))])]
+                         
                          [invs-zipper zip])])]))))
 
 ;;viz-state -> viz-state
@@ -952,17 +870,15 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
           (and (zipper-at-end? (imsg-state-pda-invs-zipper (informative-messages-component-state
                                                             (viz-state-informative-messages a-vs))))
                (not (zipper-at-begin? (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                                   (viz-state-informative-messages a-vs)))))
-               (> (get-index (imsg-state-pda-stack (informative-messages-component-state
-                                                    (viz-state-informative-messages a-vs))))
-                  (get-index-pda  (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                               (viz-state-informative-messages a-vs)))))))
+                                                                   (viz-state-informative-messages a-vs))))))
+          (> (get-index (imsg-state-pda-stack (informative-messages-component-state
+                                               (viz-state-informative-messages a-vs))))
+             (get-index-pda  (imsg-state-pda-invs-zipper (informative-messages-component-state
+                                                          (viz-state-informative-messages a-vs))))))
       a-vs
       (let* ([zip (if (and (not (zipper-at-end? (imsg-state-pda-invs-zipper (informative-messages-component-state
                                                                              (viz-state-informative-messages a-vs)))))
-                           (>= (get-index (imsg-state-pda-stack (informative-messages-component-state
-                                                           (viz-state-informative-messages a-vs))))
-                               #;(pda-accessor-func (imsg-state-pda-shown-accepting-trace
+                           (>= (pda-accessor-func (imsg-state-pda-shown-accepting-trace
                                                    (informative-messages-component-state
                                                     (viz-state-informative-messages a-vs))))                            
                                (get-index-pda (imsg-state-pda-invs-zipper
@@ -971,14 +887,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                       (zipper-next (imsg-state-pda-invs-zipper (informative-messages-component-state
                                                                 (viz-state-informative-messages a-vs))))
                       (imsg-state-pda-invs-zipper (informative-messages-component-state
-                                                   (viz-state-informative-messages a-vs))))]
-             [full-word (append (imsg-state-pda-pci (informative-messages-component-state
-                                                     (viz-state-informative-messages a-vs)))
-                                (imsg-state-pda-upci (informative-messages-component-state
-                                                      (viz-state-informative-messages a-vs))))]
-             [partial-word (if (equal? (pda-config-word (first (zipper-current zip))) full-word)
-                               '()
-                               (drop full-word (get-index-pda zip)))])
+                                                   (viz-state-informative-messages a-vs))))])
         (struct-copy
          viz-state
          a-vs
@@ -991,54 +900,11 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
             (struct-copy imsg-state-pda
                          (informative-messages-component-state
                           (viz-state-informative-messages a-vs))
-                         [upci (cond [(or (and (zipper-at-begin? (imsg-state-pda-invs-zipper
-                                                                  (informative-messages-component-state
-                                                                   (viz-state-informative-messages a-vs))))
-                                               (zipper-at-end? (imsg-state-pda-invs-zipper
-                                                                (informative-messages-component-state
-                                                                 (viz-state-informative-messages a-vs))))
-                                               (> (get-index (imsg-state-pda-stack
-                                                              (informative-messages-component-state
-                                                               (viz-state-informative-messages a-vs))))
-                                                  (get-index-pda (imsg-state-pda-invs-zipper
-                                                                  (informative-messages-component-state
-                                                                   (viz-state-informative-messages a-vs))))))
-                                          (and (zipper-at-end? (imsg-state-pda-invs-zipper
-                                                                (informative-messages-component-state
-                                                                 (viz-state-informative-messages a-vs))))
-                                               (not (zipper-at-begin? (imsg-state-pda-invs-zipper
-                                                                       (informative-messages-component-state
-                                                                        (viz-state-informative-messages a-vs)))))
-                                               (< (get-index (imsg-state-pda-stack
-                                                              (informative-messages-component-state
-                                                               (viz-state-informative-messages a-vs))))
-                                                  (get-index-pda  (imsg-state-pda-invs-zipper
-                                                                   (informative-messages-component-state
-                                                                    (viz-state-informative-messages a-vs))))))
-                                          #;(and (zipper-at-begin? (imsg-state-pda-invs-zipper
-                                                                  (informative-messages-component-state
-                                                                   (viz-state-informative-messages a-vs))))
-                                               (zipper-at-end? (imsg-state-pda-invs-zipper
-                                                                (informative-messages-component-state
-                                                                 (viz-state-informative-messages a-vs))))
-                                               (< (get-index (imsg-state-pda-stack
-                                                              (informative-messages-component-state
-                                                               (viz-state-informative-messages a-vs))))
-                                                  (get-index-pda (imsg-state-pda-invs-zipper
-                                                                  (informative-messages-component-state
-                                                                   (viz-state-informative-messages a-vs)))))))
-                                      partial-word
-                                      #;(imsg-state-pda-upci (informative-messages-component-state
-                                                            (viz-state-informative-messages a-vs)))]
-                                     [(and (zipper-at-end? (imsg-state-pda-invs-zipper
-                                                            (informative-messages-component-state
-                                                             (viz-state-informative-messages a-vs))))
-                                           (not (zipper-at-begin? (imsg-state-pda-invs-zipper
-                                                                   (informative-messages-component-state
-                                                                    (viz-state-informative-messages a-vs))))))
-                                      (imsg-state-pda-upci (informative-messages-component-state
-                                                            (viz-state-informative-messages a-vs)))]
-                                     [else partial-word])]
+                         [ci (zipper-to-idx (imsg-state-pda-ci
+                                             (informative-messages-component-state
+                                              (viz-state-informative-messages a-vs)))
+                                            (get-index-pda zip))]
+                             
                          [shown-accepting-trace (if (zipper-empty? (imsg-state-pda-shown-accepting-trace
                                                                     (informative-messages-component-state
                                                                      (viz-state-informative-messages a-vs))))
@@ -1060,42 +926,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                                             (informative-messages-component-state
                                                              (viz-state-informative-messages a-vs)))
                                                            (get-index-pda zip)))] 
-                         [pci (cond [(or (and (zipper-at-begin? (imsg-state-pda-invs-zipper
-                                                                 (informative-messages-component-state
-                                                                  (viz-state-informative-messages a-vs))))
-                                              (zipper-at-end? (imsg-state-pda-invs-zipper
-                                                               (informative-messages-component-state
-                                                                (viz-state-informative-messages a-vs))))
-                                              (> (get-index (imsg-state-pda-stack
-                                                             (informative-messages-component-state
-                                                              (viz-state-informative-messages a-vs))))
-                                                 (get-index-pda (imsg-state-pda-invs-zipper
-                                                                 (informative-messages-component-state
-                                                                  (viz-state-informative-messages a-vs))))))
-                                         (and (zipper-at-end? (imsg-state-pda-invs-zipper
-                                                                (informative-messages-component-state
-                                                                 (viz-state-informative-messages a-vs))))
-                                               (not (zipper-at-begin? (imsg-state-pda-invs-zipper
-                                                                       (informative-messages-component-state
-                                                                        (viz-state-informative-messages a-vs)))))
-                                               (< (get-index (imsg-state-pda-stack
-                                                              (informative-messages-component-state
-                                                               (viz-state-informative-messages a-vs))))
-                                                  (get-index-pda  (imsg-state-pda-invs-zipper
-                                                                   (informative-messages-component-state
-                                                                    (viz-state-informative-messages a-vs)))))))
-                                     (pda-config-word (first (zipper-current zip)))
-                                     #;(imsg-state-pda-pci (informative-messages-component-state
-                                                          (viz-state-informative-messages a-vs)))]
-                                    [(and (zipper-at-end? (imsg-state-pda-invs-zipper
-                                                           (informative-messages-component-state
-                                                            (viz-state-informative-messages a-vs))))
-                                          (not (zipper-at-begin? (imsg-state-pda-invs-zipper
-                                                                  (informative-messages-component-state
-                                                                   (viz-state-informative-messages a-vs))))))
-                                     (imsg-state-pda-pci (informative-messages-component-state
-                                                          (viz-state-informative-messages a-vs)))]
-                                    [else (pda-config-word (first (zipper-current zip)))])]
+                         
                          [invs-zipper zip])])]))))
 
 ;;machine -> machine
@@ -1235,8 +1066,8 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
   ;;acc = the word with smallest unconsumed input
   (define (get-farthest-consumed LoC acc)
     (cond [(empty? LoC) acc]
-          [(< (length (pda-config-word (treelist-last (first LoC)))) (length acc))
-           (get-farthest-consumed (rest LoC) (pda-config-word (treelist-last (first LoC))))]
+          [(< (length (pda-config-word (treelist-last (first LoC)))) (length (pda-config-word acc)))
+           (get-farthest-consumed (rest LoC) (treelist-last (first LoC)))]
           [else (get-farthest-consumed (rest LoC) acc)]))
 
   ;;computation -> computation 
@@ -1296,7 +1127,10 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                               '()))
                                 rejecting-computations)]
          ;;(zipperof computation) ;;Purpose: Gets the stack of the first accepting computation
-         [stack (list->zipper (remove-empty (if (empty? accepting-computations)
+         [stack (remove-empty (if (empty? accepting-computations)
+                                                '()
+                                                (treelist->list (computation-LoC (first accepting-computations)))))
+                #;(list->zipper (remove-empty (if (empty? accepting-computations)
                                                 '()
                                                 (treelist->list (computation-LoC (first accepting-computations))))))]
 
@@ -1311,12 +1145,15 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
          [accepting-trace (if (empty? accept-cmps) '() (first accept-cmps))]
          ;;(listof symbol) ;;Purpose: The portion of the ci that the machine can conusme the most 
          [most-consumed-word (let ([last-word (if (empty? accepting-trace)
-                                                  (get-farthest-consumed LoC a-word)
-                                                  '())])
-                               (if (empty? last-word)
+                                                  (get-farthest-consumed LoC (pda-config (pda-start new-M) a-word '() 0))
+                                                  (pda-config (pda-start new-M) '() '() 0))])
+                               (if (empty? (pda-config-word last-word))
                                    last-word
-                                   (rest last-word)))]
-
+                                   (struct-copy pda-config
+                                                last-word
+                                                [word (rest (pda-config-word last-word))]
+                                                [index (add1 (pda-config-index last-word))])))]
+         [CIs (remake-ci a-word (map pda-config-stack stack))]
          [computation-has-cut-off? (and (empty? accepting-trace)
                                         (for/or ([computation LoC])
                                           (>= (pda-config-index (treelist-last computation)) cut-off)))]
@@ -1334,11 +1171,10 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
 
          ;[LoC (map treelist->list LoC)]
          ;;building-state struct
-         [building-state (building-viz-state a-word
-                                             '()
+         [building-state (building-viz-state CIs
                                              (for/list ([computation LoC]) (treelist->list computation))
                                              accepting-computations
-                                             stack
+                                             (list->zipper stack)
                                              (list accepting-trace)
                                              (if (empty? accept-cmps) '() (rest accept-cmps))
                                              cut-off-traces
@@ -1352,7 +1188,79 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
          [graphs (create-graph-thunks building-state)]
          ;;(listof number) ;;Purpose: Gets the index of image where an invariant failed
          [inv-configs (return-brk-inv-configs (get-inv-config-results (make-inv-configs a-word accepting-computations) invs))])
-    (if testing?
+     ;(zipper->list CIs)
+   (run-viz graphs
+             (lambda () (graph->bitmap (first graphs)))
+             (posn (/ E-SCENE-WIDTH 2) (/ PDA-E-SCENE-HEIGHT 2))
+             DEFAULT-ZOOM
+             DEFAULT-ZOOM-CAP
+             DEFAULT-ZOOM-FLOOR
+             (informative-messages pda-create-draw-informative-message
+                                   (imsg-state-pda new-M
+                                                   CIs
+                                                   (list->zipper accepting-trace)
+                                                   (list->zipper stack) 
+                                                   most-consumed-word 
+                                                   (list->zipper inv-configs)
+                                                   computation-lens 
+                                                   LoC 
+                                                   cut-off
+                                                   0
+                                                   (let ([offset-cap (- (length a-word) TAPE-SIZE)])
+                                                     (if (> 0 offset-cap) 0 offset-cap))
+                                                   0)
+                                   pda-img-bounding-limit)
+             (instructions-graphic E-SCENE-TOOLS
+                                   (bounding-limits 0
+                                                    (image-width E-SCENE-TOOLS)
+                                                    (+ EXTRA-HEIGHT-FROM-CURSOR
+                                                       PDA-E-SCENE-HEIGHT
+                                                       (image-height pda-info-img)
+                                                       INS-TOOLS-BUFFER)
+                                                    (+ EXTRA-HEIGHT-FROM-CURSOR
+                                                       PDA-E-SCENE-HEIGHT
+                                                       (image-height pda-info-img)
+                                                       INS-TOOLS-BUFFER
+                                                       (image-height ARROW-UP-KEY))))
+             (create-viz-draw-world E-SCENE-WIDTH PDA-E-SCENE-HEIGHT INS-TOOLS-BUFFER)
+             (create-viz-process-key [ "right" viz-go-next right-key-pressed]
+                                     [ "left" viz-go-prev left-key-pressed]
+                                     [ "up" viz-go-to-begin up-key-pressed]
+                                     [ "down" viz-go-to-end down-key-pressed]
+                                     [ "w" viz-zoom-in identity]
+                                     [ "s" viz-zoom-out identity]
+                                     [ "r" viz-max-zoom-out identity]
+                                     [ "f" viz-max-zoom-in identity]
+                                     [ "e" viz-reset-zoom identity]
+                                     [ "a" identity a-key-pressed]
+                                     [ "d" identity d-key-pressed]
+                                     [ "wheel-down" viz-zoom-in identity]
+                                     [ "wheel-up" viz-zoom-out identity]
+                                     [ "j" pda-jump-prev j-key-pressed]
+                                     [ "l" pda-jump-next l-key-pressed]
+                                     )
+             (create-viz-process-tick PDA-E-SCENE-BOUNDING-LIMITS
+                                      NODE-SIZE
+                                      E-SCENE-WIDTH
+                                      PDA-E-SCENE-HEIGHT
+                                      CLICK-BUFFER-SECONDS
+                                      ( [pda-img-bounding-limit
+                                         (lambda (a-imsgs x-diff y-diff) a-imsgs)])
+                                      ( [ ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed]
+                                        [ ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed]
+                                        [ ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed]
+                                        [ ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed]
+                                        [ W-KEY-DIMS viz-zoom-in identity]
+                                        [ S-KEY-DIMS viz-zoom-out identity]
+                                        [ R-KEY-DIMS viz-max-zoom-out identity]
+                                        [ E-KEY-DIMS viz-reset-zoom identity]
+                                        [ F-KEY-DIMS viz-max-zoom-in identity]
+                                        [ A-KEY-DIMS identity a-key-pressed]
+                                        [ D-KEY-DIMS identity d-key-pressed]
+                                        [ J-KEY-DIMS pda-jump-prev j-key-pressed]
+                                        [ L-KEY-DIMS pda-jump-next l-key-pressed]))
+             'pda-viz)
+    #;(if testing?
         (void)
         (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
@@ -1361,7 +1269,8 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
              DEFAULT-ZOOM-CAP
              DEFAULT-ZOOM-FLOOR
              (informative-messages pda-create-draw-informative-message
-                                   (imsg-state-pda new-M  
+                                   (imsg-state-pda new-M
+                                                   CIs
                                                    a-word 
                                                    '() 
                                                    (list->zipper accepting-trace)
