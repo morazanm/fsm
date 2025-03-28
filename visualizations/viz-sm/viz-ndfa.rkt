@@ -464,7 +464,13 @@ rules -> the rules used by the ndfa     | (listof rule)
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization forward by one step
 (define (right-key-pressed a-vs)
-  (struct-copy
+  (let ([imsg-state-ci (imsg-state-ndfa-ci (informative-messages-component-state (viz-state-informative-messages a-vs)))]
+        [imsg-state-farthest-consumed-input (imsg-state-ndfa-farthest-consumed-input (informative-messages-component-state
+                                                                                      (viz-state-informative-messages a-vs)))]
+        [imsg-state-shown-accepting-trace (imsg-state-ndfa-shown-accepting-trace (informative-messages-component-state
+                                                          (viz-state-informative-messages a-vs)))]
+        [imsg-state-invs-zipper (imsg-state-ndfa-invs-zipper (informative-messages-component-state (viz-state-informative-messages a-vs)))])
+      (struct-copy
      viz-state
      a-vs
      [informative-messages
@@ -474,55 +480,33 @@ rules -> the rules used by the ndfa     | (listof rule)
        [component-state
         (struct-copy imsg-state-ndfa
                      (informative-messages-component-state (viz-state-informative-messages a-vs))
-                     [ci (if (or (zipper-at-end? (imsg-state-ndfa-ci
-                                                  (informative-messages-component-state
-                                                   (viz-state-informative-messages a-vs))))
-                                 (equal? (ci-upci (zipper-current (imsg-state-ndfa-ci (informative-messages-component-state
-                                                                                       (viz-state-informative-messages a-vs)))))
-                                           (ndfa-config-word (imsg-state-ndfa-farthest-consumed-input (informative-messages-component-state
-                                                                                     (viz-state-informative-messages a-vs))))))
-                             (imsg-state-ndfa-ci (informative-messages-component-state
-                                                                                       (viz-state-informative-messages a-vs)))
-                             (zipper-next (imsg-state-ndfa-ci (informative-messages-component-state
-                                                                                       (viz-state-informative-messages a-vs)))))]
+                     [ci (if (or (zipper-at-end? imsg-state-ci)
+                                 (equal? (ci-upci (zipper-current imsg-state-ci)) (ndfa-config-word imsg-state-farthest-consumed-input)))
+                             imsg-state-ci
+                             (zipper-next imsg-state-ci))]
                      
-                     [shown-accepting-trace (if (or (zipper-at-end? (imsg-state-ndfa-shown-accepting-trace
-                                                         (informative-messages-component-state
-                                                          (viz-state-informative-messages a-vs))))
-                                        (zipper-empty? (imsg-state-ndfa-shown-accepting-trace
-                                                        (informative-messages-component-state
-                                                         (viz-state-informative-messages a-vs)))))
-                                    (imsg-state-ndfa-shown-accepting-trace (informative-messages-component-state
-                                                                            (viz-state-informative-messages a-vs)))
-                                    (zipper-next (imsg-state-ndfa-shown-accepting-trace
-                                                  (informative-messages-component-state
-                                                   (viz-state-informative-messages a-vs)))))]
+                     [shown-accepting-trace (if (or (zipper-at-end? imsg-state-shown-accepting-trace)
+                                        (zipper-empty? imsg-state-shown-accepting-trace))
+                                    imsg-state-shown-accepting-trace
+                                    (zipper-next imsg-state-shown-accepting-trace))]
                      
-                     [invs-zipper (cond [(zipper-empty? (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                                                      (viz-state-informative-messages a-vs))))
-                                         (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs)))]
-                                        [(and (not (zipper-at-end? (imsg-state-ndfa-invs-zipper
-                                                                    (informative-messages-component-state
-                                                                     (viz-state-informative-messages a-vs)))))
-                                              (>= (ndfa-accessor-func
-                                                   (imsg-state-ndfa-shown-accepting-trace (informative-messages-component-state
-                                                                            (viz-state-informative-messages a-vs))))
-                                                  (ndfa-config-index
-                                                         (first (first
-                                                                 (zipper-unprocessed
-                                                                       (imsg-state-ndfa-invs-zipper
-                                                                        (informative-messages-component-state
-                                                                         (viz-state-informative-messages a-vs)))))))))
-                                         (zipper-next (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                                                    (viz-state-informative-messages a-vs))))]
-                                        [else (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                                            (viz-state-informative-messages a-vs)))])])])]))
+                     [invs-zipper (cond [(zipper-empty? imsg-state-invs-zipper) imsg-state-invs-zipper]
+                                        [(and (not (zipper-at-end? imsg-state-invs-zipper))
+                                              (>= (ndfa-accessor-func imsg-state-shown-accepting-trace)
+                                                  (ndfa-config-index (first (first (zipper-unprocessed imsg-state-invs-zipper))))))
+                                         (zipper-next imsg-state-invs-zipper)]
+                                        [else imsg-state-invs-zipper])])])])))
 
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization to the end
 (define (down-key-pressed a-vs)
-  (struct-copy
+  (let ([imsg-state-ci (imsg-state-ndfa-ci (informative-messages-component-state (viz-state-informative-messages a-vs)))]
+        [imsg-state-farthest-consumed-input (imsg-state-ndfa-farthest-consumed-input (informative-messages-component-state
+                                                                                      (viz-state-informative-messages a-vs)))]
+        [imsg-state-shown-accepting-trace (imsg-state-ndfa-shown-accepting-trace (informative-messages-component-state
+                                                          (viz-state-informative-messages a-vs)))]
+        [imsg-state-invs-zipper (imsg-state-ndfa-invs-zipper (informative-messages-component-state (viz-state-informative-messages a-vs)))])
+    (struct-copy
      viz-state
      a-vs
      [informative-messages
@@ -534,40 +518,26 @@ rules -> the rules used by the ndfa     | (listof rule)
          imsg-state-ndfa
          (informative-messages-component-state
           (viz-state-informative-messages a-vs))
-         [ci (cond [(zipper-at-end? (imsg-state-ndfa-ci (informative-messages-component-state (viz-state-informative-messages a-vs))))
-                   (imsg-state-ndfa-ci (informative-messages-component-state (viz-state-informative-messages a-vs)))]
-                   [(not (empty? (ndfa-config-word (imsg-state-ndfa-farthest-consumed-input (informative-messages-component-state
-                                                                                     (viz-state-informative-messages a-vs))))))
-                    (zipper-to-idx (imsg-state-ndfa-ci (informative-messages-component-state (viz-state-informative-messages a-vs)))
-                                   (ndfa-config-index (imsg-state-ndfa-farthest-consumed-input (informative-messages-component-state
-                                                                                     (viz-state-informative-messages a-vs)))))]
-                   [else (zipper-to-end (imsg-state-ndfa-ci (informative-messages-component-state
-                                                                                       (viz-state-informative-messages a-vs))))])]
-         
-         
-         [shown-accepting-trace (if (or (zipper-at-end? (imsg-state-ndfa-shown-accepting-trace
-                                                         (informative-messages-component-state
-                                                          (viz-state-informative-messages a-vs))))
-                                        (zipper-empty? (imsg-state-ndfa-shown-accepting-trace
-                                                        (informative-messages-component-state
-                                                         (viz-state-informative-messages a-vs)))))
-                                    (imsg-state-ndfa-shown-accepting-trace (informative-messages-component-state
-                                                                            (viz-state-informative-messages a-vs)))
-                                    (zipper-to-end (imsg-state-ndfa-shown-accepting-trace
-                                                    (informative-messages-component-state
-                                                     (viz-state-informative-messages a-vs)))))]
-         [invs-zipper (if (or (zipper-empty? (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs))))
-                              (= (zipper-length (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                               (viz-state-informative-messages a-vs)))) 1))
-                          (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                        (viz-state-informative-messages a-vs)))
-                          (zipper-to-end (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs)))))])])]))
+         [ci (cond [(zipper-at-end? imsg-state-ci) imsg-state-ci]
+                   [(not (empty? (ndfa-config-word imsg-state-farthest-consumed-input)))
+                    (zipper-to-idx imsg-state-ci (ndfa-config-index imsg-state-farthest-consumed-input))]
+                   [else (zipper-to-end imsg-state-ci)])]
+         [shown-accepting-trace (if (or (zipper-at-end? imsg-state-shown-accepting-trace)
+                                        (zipper-empty? imsg-state-shown-accepting-trace))
+                                    imsg-state-shown-accepting-trace
+                                    (zipper-to-end imsg-state-shown-accepting-trace))]
+         [invs-zipper (if (or (zipper-empty? imsg-state-invs-zipper)
+                              (= (zipper-length imsg-state-invs-zipper) 1))
+                          imsg-state-invs-zipper
+                          (zipper-to-end imsg-state-invs-zipper))])])])))
 
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization backward by one step
 (define (left-key-pressed a-vs)
+  (let ([imsg-state-ci (imsg-state-ndfa-ci (informative-messages-component-state (viz-state-informative-messages a-vs)))]
+        [imsg-state-shown-accepting-trace (imsg-state-ndfa-shown-accepting-trace (informative-messages-component-state
+                                                          (viz-state-informative-messages a-vs)))]
+        [imsg-state-invs-zipper (imsg-state-ndfa-invs-zipper (informative-messages-component-state (viz-state-informative-messages a-vs)))])
   (struct-copy
      viz-state
      a-vs
@@ -579,52 +549,29 @@ rules -> the rules used by the ndfa     | (listof rule)
         (struct-copy imsg-state-ndfa
                      (informative-messages-component-state
                       (viz-state-informative-messages a-vs))
-                     [ci (if (zipper-at-begin? (imsg-state-ndfa-ci
-                                                  (informative-messages-component-state
-                                                   (viz-state-informative-messages a-vs))))
-                             (imsg-state-ndfa-ci (informative-messages-component-state
-                                                  (viz-state-informative-messages a-vs)))
-                             (zipper-prev (imsg-state-ndfa-ci (informative-messages-component-state
-                                                               (viz-state-informative-messages a-vs)))))]
+                     [ci (if (zipper-at-begin? imsg-state-ci) imsg-state-ci (zipper-prev imsg-state-ci))]
                      
                      
-                     [shown-accepting-trace (if (or (zipper-at-begin? (imsg-state-ndfa-shown-accepting-trace
-                                                                       (informative-messages-component-state
-                                                                        (viz-state-informative-messages a-vs))))
-                                                    (zipper-empty? (imsg-state-ndfa-shown-accepting-trace
-                                                                    (informative-messages-component-state
-                                                                     (viz-state-informative-messages a-vs)))))
-                                                (imsg-state-ndfa-shown-accepting-trace (informative-messages-component-state
-                                                                                        (viz-state-informative-messages a-vs)))
-                                                (zipper-prev (imsg-state-ndfa-shown-accepting-trace
-                                                              (informative-messages-component-state
-                                                               (viz-state-informative-messages a-vs)))))]
+                     [shown-accepting-trace (if (or (zipper-at-begin? imsg-state-shown-accepting-trace)
+                                                    (zipper-empty? imsg-state-shown-accepting-trace))
+                                                imsg-state-shown-accepting-trace
+                                                (zipper-prev imsg-state-shown-accepting-trace))]
                      
                      
-                     [invs-zipper (cond [(zipper-empty? (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                                                      (viz-state-informative-messages a-vs))))
-                                         (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs)))]
-                                        [(and (not (zipper-at-begin? (imsg-state-ndfa-invs-zipper
-                                                                      (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs)))))
-                                              (<= (ndfa-accessor-func
-                                                   (imsg-state-ndfa-shown-accepting-trace
-                                                    (informative-messages-component-state
-                                                     (viz-state-informative-messages a-vs))))
-                                                (ndfa-config-index
-                                                         (first (first (zipper-processed
-                                                                       (imsg-state-ndfa-invs-zipper
-                                                                        (informative-messages-component-state
-                                                                         (viz-state-informative-messages a-vs)))))))))
-                                         (zipper-prev (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                                                    (viz-state-informative-messages a-vs))))]
-                                        [else (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                                            (viz-state-informative-messages a-vs)))])])])]))
+                     [invs-zipper (cond [(zipper-empty? imsg-state-invs-zipper) imsg-state-invs-zipper]
+                                        [(and (not (zipper-at-begin? imsg-state-invs-zipper))
+                                              (<= (ndfa-accessor-func imsg-state-shown-accepting-trace)
+                                                  (ndfa-config-index (first (first (zipper-processed imsg-state-invs-zipper))))))
+                                         (zipper-prev imsg-state-invs-zipper)]
+                                        [else imsg-state-invs-zipper])])])])))
 
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization to the beginning
 (define (up-key-pressed a-vs)
+  (let ([imsg-state-ci (imsg-state-ndfa-ci (informative-messages-component-state (viz-state-informative-messages a-vs)))]
+        [imsg-state-shown-accepting-trace (imsg-state-ndfa-shown-accepting-trace (informative-messages-component-state
+                                                          (viz-state-informative-messages a-vs)))]
+        [imsg-state-invs-zipper (imsg-state-ndfa-invs-zipper (informative-messages-component-state (viz-state-informative-messages a-vs)))])
   (struct-copy
    viz-state
    a-vs
@@ -636,29 +583,16 @@ rules -> the rules used by the ndfa     | (listof rule)
       (struct-copy imsg-state-ndfa
                    (informative-messages-component-state
                     (viz-state-informative-messages a-vs))
-                   [ci (if (zipper-at-begin? (imsg-state-ndfa-ci (informative-messages-component-state (viz-state-informative-messages a-vs))))
-                            (imsg-state-ndfa-ci (informative-messages-component-state (viz-state-informative-messages a-vs)))
-                            (zipper-to-begin (imsg-state-ndfa-ci (informative-messages-component-state
-                                                                  (viz-state-informative-messages a-vs)))))]
+                   [ci (if (zipper-at-begin? imsg-state-ci) imsg-state-ci (zipper-to-begin imsg-state-ci))]
                    
                   
-                   [invs-zipper (if (zipper-empty? (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                                                 (viz-state-informative-messages a-vs))))
-                                    (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                                  (viz-state-informative-messages a-vs)))
-                                    (zipper-to-idx (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                                                 (viz-state-informative-messages a-vs))) 0))]
-                   [shown-accepting-trace (if (or (zipper-at-begin? (imsg-state-ndfa-shown-accepting-trace
-                                                                     (informative-messages-component-state
-                                                                      (viz-state-informative-messages a-vs))))
-                                                  (zipper-empty? (imsg-state-ndfa-shown-accepting-trace
-                                                                  (informative-messages-component-state
-                                                                   (viz-state-informative-messages a-vs)))))
-                                              (imsg-state-ndfa-shown-accepting-trace (informative-messages-component-state
-                                                                                      (viz-state-informative-messages a-vs)))
-                                              (zipper-to-begin (imsg-state-ndfa-shown-accepting-trace
-                                                                (informative-messages-component-state
-                                                                 (viz-state-informative-messages a-vs)))))])])]))
+                   [invs-zipper (if (zipper-empty? imsg-state-invs-zipper)
+                                    imsg-state-invs-zipper
+                                    (zipper-to-idx imsg-state-invs-zipper 0))]
+                   [shown-accepting-trace (if (or (zipper-at-begin? imsg-state-shown-accepting-trace)
+                                                  (zipper-empty? imsg-state-shown-accepting-trace))
+                                              imsg-state-shown-accepting-trace
+                                              (zipper-to-begin imsg-state-shown-accepting-trace))])])])))
 
 ;; viz-state -> viz-state
 ;; Purpose: Moves the deriving and current yield to the beginning of their current words
@@ -692,86 +626,59 @@ rules -> the rules used by the ndfa     | (listof rule)
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the previous broken invariant
 (define (j-key-pressed a-vs)
-  (if (or (zipper-empty? (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                   (viz-state-informative-messages a-vs))))
-          (and (zipper-at-begin? (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                               (viz-state-informative-messages a-vs))))
-               (not (zipper-at-end? (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                                  (viz-state-informative-messages a-vs))))))
-          (< (ndfa-accessor-func (imsg-state-ndfa-shown-accepting-trace (informative-messages-component-state
-                                                                   (viz-state-informative-messages a-vs))))
-             (get-index-ndfa (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                    (viz-state-informative-messages a-vs))))))
-      a-vs
-      (let* ([zip (if (and (not (zipper-at-begin? (imsg-state-ndfa-invs-zipper
-                                                   (informative-messages-component-state
-                                                    (viz-state-informative-messages a-vs)))))
-                           (<= (ndfa-accessor-func (imsg-state-ndfa-shown-accepting-trace
-                                                    (informative-messages-component-state
-                                                     (viz-state-informative-messages a-vs))))
-                               (get-index-ndfa (imsg-state-ndfa-invs-zipper
-                                                (informative-messages-component-state
-                                                 (viz-state-informative-messages a-vs))))))
-                      (zipper-prev (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                                 (viz-state-informative-messages a-vs))))
-                      (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                    (viz-state-informative-messages a-vs))))]
-             )
-        (struct-copy
-         viz-state
-         a-vs
-         [imgs (vector-zipper-to-idx (viz-state-imgs a-vs) (get-index-ndfa zip))]
-         [informative-messages
+  (let ([imsg-state-invs-zipper (imsg-state-ndfa-invs-zipper (informative-messages-component-state (viz-state-informative-messages a-vs)))]
+        [imsg-state-ci (imsg-state-ndfa-ci (informative-messages-component-state (viz-state-informative-messages a-vs)))]
+        
+        [imsg-state-shown-accepting-trace (imsg-state-ndfa-shown-accepting-trace (informative-messages-component-state
+                                                                                  (viz-state-informative-messages a-vs)))])
+    (if (or (zipper-empty? imsg-state-invs-zipper)
+            (and (zipper-at-begin? imsg-state-invs-zipper)
+                 (not (zipper-at-end? imsg-state-invs-zipper)))
+            (< (ndfa-accessor-func imsg-state-shown-accepting-trace)
+               (get-index-ndfa imsg-state-invs-zipper)))
+        a-vs
+        (let ([zip (if (and (not (zipper-at-begin? imsg-state-invs-zipper))
+                            (<= (ndfa-accessor-func imsg-state-shown-accepting-trace) (get-index-ndfa imsg-state-invs-zipper)))
+                       (zipper-prev imsg-state-invs-zipper)
+                       imsg-state-invs-zipper)])
           (struct-copy
-           informative-messages
-           (viz-state-informative-messages a-vs)
-           [component-state
-            (struct-copy imsg-state-ndfa
-                         (informative-messages-component-state
-                          (viz-state-informative-messages a-vs))
-                         [ci (zipper-to-idx (imsg-state-ndfa-ci (informative-messages-component-state
-                                                                         (viz-state-informative-messages a-vs)))
-                                            (get-index-ndfa zip))
-                            ]
-                         
-                         
-                         [shown-accepting-trace (if (zipper-empty? (imsg-state-ndfa-shown-accepting-trace
-                                                                    (informative-messages-component-state
-                                                                     (viz-state-informative-messages a-vs))))
-                                                    (imsg-state-ndfa-shown-accepting-trace (informative-messages-component-state
-                                                                                            (viz-state-informative-messages a-vs)))
-                                                    (zipper-to-idx (imsg-state-ndfa-shown-accepting-trace
-                                                                    (informative-messages-component-state
-                                                                     (viz-state-informative-messages a-vs)))
-                                                                   (get-index-ndfa zip)))]
-                         [invs-zipper zip])])]))))
+           viz-state
+           a-vs
+           [imgs (vector-zipper-to-idx (viz-state-imgs a-vs) (get-index-ndfa zip))]
+           [informative-messages
+            (struct-copy
+             informative-messages
+             (viz-state-informative-messages a-vs)
+             [component-state
+              (struct-copy imsg-state-ndfa
+                           (informative-messages-component-state
+                            (viz-state-informative-messages a-vs))
+                           [ci (zipper-to-idx imsg-state-ci (get-index-ndfa zip))]
+                           
+                           [shown-accepting-trace (if (zipper-empty? imsg-state-shown-accepting-trace)
+                                                      imsg-state-shown-accepting-trace
+                                                      (zipper-to-idx imsg-state-shown-accepting-trace (get-index-ndfa zip)))]
+                           [invs-zipper zip])])])))))
 
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the next failed invariant
 (define (l-key-pressed a-vs)  
-  (if (or (zipper-empty? (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                       (viz-state-informative-messages a-vs))))
-          (and (not (zipper-at-begin? (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                                    (viz-state-informative-messages a-vs)))))
-               (zipper-at-end? (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                             (viz-state-informative-messages a-vs))))
-               (> (ndfa-accessor-func (imsg-state-ndfa-shown-accepting-trace (informative-messages-component-state
-                                                                              (viz-state-informative-messages a-vs))))
-                  (get-index-ndfa (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                                (viz-state-informative-messages a-vs)))))))
+  (let ([imsg-state-invs-zipper (imsg-state-ndfa-invs-zipper (informative-messages-component-state (viz-state-informative-messages a-vs)))]
+        [imsg-state-ci (imsg-state-ndfa-ci (informative-messages-component-state (viz-state-informative-messages a-vs)))]
+        
+        [imsg-state-shown-accepting-trace (imsg-state-ndfa-shown-accepting-trace (informative-messages-component-state
+                                                                                  (viz-state-informative-messages a-vs)))])
+    (if (or (zipper-empty? imsg-state-invs-zipper)
+          (and (not (zipper-at-begin? imsg-state-invs-zipper))
+               (zipper-at-end? imsg-state-invs-zipper)
+               (> (ndfa-accessor-func imsg-state-shown-accepting-trace)
+                  (get-index-ndfa imsg-state-invs-zipper))))
       a-vs
-      (let* ([zip (if (and (not (zipper-at-end? (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                                              (viz-state-informative-messages a-vs)))))
-                           (>= (ndfa-accessor-func (imsg-state-ndfa-shown-accepting-trace
-                                                    (informative-messages-component-state
-                                                     (viz-state-informative-messages a-vs))))
-                               (get-index-ndfa (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                                             (viz-state-informative-messages a-vs))))))
-                      (zipper-next (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                                 (viz-state-informative-messages a-vs))))
-                      (imsg-state-ndfa-invs-zipper (informative-messages-component-state
-                                                    (viz-state-informative-messages a-vs))))]
-             )
+      (let* ([zip (if (and (not (zipper-at-end? imsg-state-invs-zipper))
+                           (>= (ndfa-accessor-func imsg-state-shown-accepting-trace)
+                               (get-index-ndfa imsg-state-invs-zipper)))
+                      (zipper-next imsg-state-invs-zipper)
+                      imsg-state-invs-zipper)])
         (struct-copy
          viz-state
          a-vs
@@ -784,23 +691,13 @@ rules -> the rules used by the ndfa     | (listof rule)
             (struct-copy imsg-state-ndfa
                          (informative-messages-component-state
                           (viz-state-informative-messages a-vs))
-                         [ci (zipper-to-idx (imsg-state-ndfa-ci (informative-messages-component-state
-                                                                         (viz-state-informative-messages a-vs)))
-                                            (get-index-ndfa zip))
-                             ]
+                         [ci (zipper-to-idx imsg-state-ci (get-index-ndfa zip))]
                          
                          
-                         [shown-accepting-trace (if (zipper-empty? (imsg-state-ndfa-shown-accepting-trace
-                                                                    (informative-messages-component-state
-                                                                     (viz-state-informative-messages a-vs))))
-                                                    (imsg-state-ndfa-shown-accepting-trace
-                                                     (informative-messages-component-state
-                                                      (viz-state-informative-messages a-vs)))
-                                                    (zipper-to-idx (imsg-state-ndfa-shown-accepting-trace
-                                                                    (informative-messages-component-state
-                                                                     (viz-state-informative-messages a-vs)))
-                                                                   (get-index-ndfa zip)))]
-                         [invs-zipper zip])])]))))
+                         [shown-accepting-trace (if (zipper-empty? imsg-state-shown-accepting-trace)
+                                                    imsg-state-shown-accepting-trace
+                                                    (zipper-to-idx imsg-state-shown-accepting-trace (get-index-ndfa zip)))]
+                         [invs-zipper zip])])])))))
 
 ;;machine -> machine
 ;;Purpose: Produces an equivalent machine with the addition of the dead state and rules to the dead state
