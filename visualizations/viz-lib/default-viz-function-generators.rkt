@@ -174,8 +174,7 @@
       (force (delay/thread (lambda () (apply above (map (lambda (img) ((force img))) (force new-img))))))
       (force (delay/thread ((force new-img))))))
 
-(define (jump-prev-inv E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR PERCENT-BORDER-GAP
-                       imsg-state-invs-zipper-func)
+(define (jump-prev-inv E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR PERCENT-BORDER-GAP imsg-state-invs-zipper-func)
   (lambda ( a-vs)
     (if (zipper-empty? (imsg-state-invs-zipper-func (informative-messages-component-state (viz-state-informative-messages a-vs))))
         a-vs
@@ -301,8 +300,7 @@
                  new-curr-img
                  (viz-state-scale-factor a-vs))))))))
 
-(define (jump-next-inv E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR PERCENT-BORDER-GAP
-                       imsg-state-invs-zipper-func)
+(define (jump-next-inv E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR PERCENT-BORDER-GAP imsg-state-invs-zipper-func)
      (lambda (a-vs)
        (if (zipper-empty? (imsg-state-invs-zipper-func (informative-messages-component-state
                                                             (viz-state-informative-messages a-vs))))
