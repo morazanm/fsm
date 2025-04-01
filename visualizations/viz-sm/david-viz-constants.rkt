@@ -201,7 +201,6 @@ rules are a (listof rule)
                                         (ndfa-config 'S '() 0)
                                         (list->zipper '())
                                         (hash)
-                                        '()
                                         0
                                         (let ([offset-cap (- (length '(a b b)) TAPE-SIZE)])
                                           (if (> 0 offset-cap) 0 offset-cap))
@@ -215,7 +214,7 @@ rules are a (listof rule)
                                       '(1)
                                       (list->zipper '())
                                       (hash) 
-                                      '() 
+                                      #f 
                                       1
                                       0
                                       (let ([offset-cap (- (length '(a b b)) TAPE-SIZE)])
@@ -227,13 +226,9 @@ rules are a (listof rule)
                                                                        (list->zipper (list '(@ a a b)))
                                                                        (list->zipper '(1))
                                                                        (list->zipper '())
-                                                                       (list->zipper '() #;(list (trace `(S 1 (,LM ,BLANK a b c) 0)
-                                                                                                  (rule (list BLANK BLANK)
-                                                                                                        (list BLANK BLANK)))))
                                                                        (list->zipper '())
-                                                                       
+                                                                       (list->zipper '())
                                                                        (list->zipper '(1))
-                                                                       '()
                                                                        1
                                                                        'accept
                                                                        0

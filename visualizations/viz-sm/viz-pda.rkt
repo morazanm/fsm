@@ -1066,7 +1066,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                                    most-consumed-word 
                                                    (list->zipper inv-configs)
                                                    computation-lens 
-                                                   LoC 
+                                                   computation-has-cut-off? 
                                                    cut-off
                                                    0
                                                    (let ([offset-cap (- (length a-word) TAPE-SIZE)])

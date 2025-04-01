@@ -928,7 +928,6 @@
                                                   (list->zipper (if (empty? tracked-trace) tracked-trace (first tracked-trace)))
                                                   (list->zipper failed-inv-configs) 
                                                   (list->zipper cut-off-computations-lengths)
-                                                  LoC
                                                   cut-off
                                                   machine-decision
                                                   0

@@ -267,7 +267,8 @@ rules are a (listof rule-structs)
          [machine-decision (if (not (zipper-empty? (imsg-state-pda-shown-accepting-trace imsg-st)))
                                'accept
                                'reject)]
-         [computation-has-cut-off (let ([res (when (zipper-empty? (imsg-state-pda-shown-accepting-trace imsg-st))
+         [computation-has-cut-off? (imsg-state-pda-computation-has-cut-off? imsg-st)
+                                   #;(let ([res (when (zipper-empty? (imsg-state-pda-shown-accepting-trace imsg-st))
                                                (for/or ([config (map
                                                                  treelist-last
                                                                  (imsg-state-pda-computations imsg-st)
@@ -295,7 +296,7 @@ rules are a (listof rule-structs)
                           (text (format "~a" EMP) FONT-SIZE BLANK-COLOR))))]
             [(and (not (empty? upci))
                   (equal? upci (imsg-state-pda-farthest-consumed-input imsg-st))
-                  computation-has-cut-off)
+                  computation-has-cut-off?)
              (let* ([pci-length (length pci)]
                     [sub1-pci-length (sub1 pci-length)])
                (above/align 'left
@@ -374,7 +375,7 @@ rules are a (listof rule-structs)
             COMPUTATION-LENGTH-COLOR)
       (cond [(and (not (empty? upci))
                   (equal? upci (imsg-state-pda-farthest-consumed-input imsg-st))
-                  computation-has-cut-off)
+                  computation-has-cut-off?)
              (text (format "There are computations that exceed the cut-off limit (~a)."
                            (imsg-state-pda-max-cmps imsg-st)) FONT-SIZE DARKGOLDENROD2)]
             [(and (empty? upci)
@@ -409,10 +410,7 @@ rules are a (listof rule-structs)
           (draw-imsg imsg-st)
           (text "Tape is not shown when there are multiple rejecting computations." FONT-SIZE FONT-COLOR))
       (text (format "The current number of possible computations is: ~a (without repeated configurations)."
-                    (number->string #;(hash-ref ((imsg-state-tm-computation-lengths imsg-st) imsg-st)
-                                              (imsg-state-ndfa-upci imsg-st)
-                                              0)
-                                    (zipper-current (imsg-state-tm-computation-lengths imsg-st))))
+                    (number->string (zipper-current (imsg-state-tm-computation-lengths imsg-st))))
             FONT-SIZE
             COMPUTATION-LENGTH-COLOR)
       (cond [(and (not (zipper-empty? (imsg-state-tm-shown-accepting-trace imsg-st)))

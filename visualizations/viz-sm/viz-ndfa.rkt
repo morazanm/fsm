@@ -848,7 +848,7 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
                                                     most-consumed-word
                                                     (list->zipper inv-configs)
                                                     computation-lens
-                                                    (for/list ([computation LoC]) (treelist->list computation))
+                                                    #;(for/list ([computation LoC]) (treelist->list computation))
                                                     0
                                                     (let ([offset-cap (- (length a-word) TAPE-SIZE)])
                                                       (if (> 0 offset-cap) 0 offset-cap))
