@@ -208,10 +208,10 @@ rules are a (listof rule)
 
 (define pda-info-img (pda-create-draw-informative-message
                       (imsg-state-pda a*
-                                      (list->zipper (list (pda-ci '() '() '())))
+                                      (list->zipper (list (ci '() '())))
                                       (list->zipper '())
                                       (list->zipper '())
-                                      '(1)
+                                      (pda-config 'S '() '() 0)
                                       (list->zipper '())
                                       (hash) 
                                       #f 

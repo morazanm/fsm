@@ -254,8 +254,8 @@ rules are a (listof rule-structs)
 
 
 (define (pda-create-draw-informative-message imsg-st)
-  (let* ([upci (pda-ci-upci (zipper-current (imsg-state-pda-ci imsg-st)))]
-         [pci (pda-ci-pci (zipper-current (imsg-state-pda-ci imsg-st)))]
+  (let* ([upci (ci-upci (zipper-current (imsg-state-pda-ci imsg-st)))]
+         [pci (ci-pci (zipper-current (imsg-state-pda-ci imsg-st)))]
          ;;(listof symbols)
          ;;Purpose: The entire given word
          [entire-word (append pci upci)]
@@ -267,16 +267,8 @@ rules are a (listof rule-structs)
          [machine-decision (if (not (zipper-empty? (imsg-state-pda-shown-accepting-trace imsg-st)))
                                'accept
                                'reject)]
-         [computation-has-cut-off? (imsg-state-pda-computation-has-cut-off? imsg-st)
-                                   #;(let ([res (when (zipper-empty? (imsg-state-pda-shown-accepting-trace imsg-st))
-                                               (for/or ([config (map
-                                                                 treelist-last
-                                                                 (imsg-state-pda-computations imsg-st)
-                                                                 )])
-                                                  (>= (pda-config-index config) (imsg-state-pda-max-cmps imsg-st))))])
-                                    (if (void? res)
-                                        #f
-                                        res))]
+         [farthest-consumed-input (pda-config-word (imsg-state-pda-farthest-consumed-input imsg-st))]
+         [computation-has-cut-off? (imsg-state-pda-computation-has-cut-off? imsg-st)]
          
          [FONT-SIZE 20])
     (above/align
@@ -294,8 +286,8 @@ rules are a (listof rule-structs)
                       (if (equal? machine-decision 'accept)
                           (text (format "~a" EMP) FONT-SIZE FONT-COLOR)
                           (text (format "~a" EMP) FONT-SIZE BLANK-COLOR))))]
-            [(and (not (empty? upci))
-                  (equal? upci (imsg-state-pda-farthest-consumed-input imsg-st))
+            [(and (zipper-empty? (imsg-state-pda-shown-accepting-trace imsg-st)) #;(not (empty? upci))
+                  (equal? upci farthest-consumed-input)
                   computation-has-cut-off?)
              (let* ([pci-length (length pci)]
                     [sub1-pci-length (sub1 pci-length)])
@@ -317,7 +309,7 @@ rules are a (listof rule-structs)
                                                      (imsg-state-pda-word-img-offset imsg-st)
                                                      0)
                                                  '()))))]
-            [(and (equal? upci (imsg-state-pda-farthest-consumed-input imsg-st))
+            [(and (equal? upci farthest-consumed-input)
                   (eq? machine-decision 'reject))
              (let* ([pci-length (length pci)]
                     [sub1-pci-length (sub1 pci-length)])
@@ -373,8 +365,8 @@ rules are a (listof rule-structs)
                                               0)))
             FONT-SIZE
             COMPUTATION-LENGTH-COLOR)
-      (cond [(and (not (empty? upci))
-                  (equal? upci (imsg-state-pda-farthest-consumed-input imsg-st))
+      (cond [(and (zipper-empty? (imsg-state-pda-shown-accepting-trace imsg-st)) #;(not (empty? upci))
+                  (equal? upci farthest-consumed-input)
                   computation-has-cut-off?)
              (text (format "There are computations that exceed the cut-off limit (~a)."
                            (imsg-state-pda-max-cmps imsg-st)) FONT-SIZE DARKGOLDENROD2)]
@@ -383,7 +375,7 @@ rules are a (listof rule-structs)
                       (zipper-at-end? (imsg-state-pda-stack imsg-st)))
                   (equal? machine-decision 'accept))
              (text "There is a computation that accepts." FONT-SIZE ACCEPT-COLOR)]
-            [(and (equal? upci (imsg-state-pda-farthest-consumed-input imsg-st))
+            [(and (equal? upci farthest-consumed-input)
                   (or (zipper-empty? (imsg-state-pda-stack imsg-st))
                       (zipper-at-end? (imsg-state-pda-stack imsg-st)))
                   (equal? machine-decision 'reject))

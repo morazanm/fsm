@@ -75,7 +75,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
 (define get-index (compose1 pda-config-index zipper-current))
 
 
-;(define-struct pda-ci (upci pci stack))
+;(define-struct ci (upci pci stack))
 ;(struct config (state word stack index))
 
 ;;word -> (zipperof ci)
@@ -87,21 +87,17 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
   ;;natnum (listof ci) -> (zipperof ci)
   ;;Purpose: Creates all valid combinations of the upci and pci
   ;;Acc = All valid combinations of unconsumed and consumed input after num-steps amount  of steps
-  (define (make-ci-helper num-steps stack acc)
-    (let [(stck (if (empty? stack)
-                     stack
-                     (first stack)))
-          (upci (if (< num-steps 0)
+  (define (make-ci-helper num-steps acc)
+    (let [(upci (if (< num-steps 0)
                     '()
                     (take-right a-word num-steps)))
           (pci (if (< num-steps 0)
                     a-word
                     (drop-right a-word num-steps)))]
-    (if (and (<= num-steps 0)
-             (= (length stack) 1))
-        (list->zipper (reverse (cons (pda-ci upci pci stck) acc)))
-        (make-ci-helper (sub1 num-steps) (rest stack) (cons (pda-ci upci pci stck) acc)))))
-  (make-ci-helper word-length stack '()))
+    (if (<= num-steps 0)
+        (list->zipper (reverse (cons (ci upci pci) acc)))
+        (make-ci-helper (sub1 num-steps) (cons (ci upci pci) acc)))))
+  (make-ci-helper word-length '()))
 
 ;;rule -> boolean
 ;;Purpose: Determines if the given rule is an empty rule (e.i. reads, pops, and pushes empty)
@@ -407,7 +403,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
 
          ;;(listof configuration)
          ;;Purpose: Extracts all the configs from both the accepting and rejecting configs
-         [current-configs (get-portion-configs (pda-ci-upci (zipper-current (building-viz-state-CI a-vs))) (building-viz-state-acc-comp a-vs))]
+         [current-configs (get-portion-configs (ci-upci (zipper-current (building-viz-state-CI a-vs))) (building-viz-state-acc-comp a-vs))]
 
          ;;(listof symbol)
          ;;Purpose: Gets the states where it's computation has cutoff
@@ -445,7 +441,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
          [get-invs (for*/list ([invs (building-viz-state-inv a-vs)]
                                [curr current-configs]
                                #:when (eq? (first invs) (pda-config-state curr)))
-                     (list invs (pda-ci-pci (zipper-current (building-viz-state-CI a-vs))) (pda-config-stack curr)))]
+                     (list invs (ci-pci (zipper-current (building-viz-state-CI a-vs))) (pda-config-stack curr)))]
 
          ;;(listof symbols)
          ;;Purpose: Returns all states whose invariants fail
@@ -478,10 +474,13 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
   ;;viz-state (listof graph-thunks) -> (listof graph-thunks)
   ;;Purpose: Creates all the graphs needed for the visualization
   (define (create-graph-thunks-helper a-vs acc)
-    (cond [(for/or ([config (building-viz-state-computations a-vs)])
-             (>= (pda-config-index (first config)) (building-viz-state-max-cmps a-vs)))
+    (cond [(or (for/or ([config (building-viz-state-computations a-vs)])
+                 (>= (pda-config-index (first config)) (building-viz-state-max-cmps a-vs)))
+               (and (zipper-at-end? (building-viz-state-CI a-vs))
+                    (for/or ([config (building-viz-state-computations a-vs)])
+                      (>= (pda-config-index (last config)) (building-viz-state-max-cmps a-vs)))))
            (reverse (cons (create-graph-thunk a-vs #:cut-off #t) acc))]
-          [(or (and (equal? (pda-ci-upci (zipper-current (building-viz-state-CI a-vs)))
+          [(or (and (equal? (ci-upci (zipper-current (building-viz-state-CI a-vs)))
                              (building-viz-state-farthest-consumed-input a-vs))
                     (not (empty? (building-viz-state-farthest-consumed-input a-vs))))
                (and (zipper-at-end? (building-viz-state-CI a-vs))
@@ -844,7 +843,11 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
   ;;         tracks each transition
   ;; acc = the trace of processed configurations and corresponding rules
   (define (make-trace configs rules acc)
-    (cond [(empty? rules) (reverse acc)]
+    (cond [(and (= (length configs) 1) (empty? rules))
+           (let* ([rle (rule (triple EMP EMP EMP) (pair EMP EMP))]
+                  [res (trace (first configs) (list rle))])
+             (reverse (cons res acc)))]
+          [(empty? rules) (reverse acc)]
           [(and (empty? acc)
                 (not (empty-rule? (first rules))))
            (let* ([rle (rule (triple EMP EMP EMP) (pair EMP EMP))]
@@ -1052,6 +1055,9 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
          [inv-configs (get-failed-invariants a-word accepting-computations invs)])
     ;stack
     ;(zipper->list CIs)
+    (length graphs)
+    LoC
+    ;most-consumed-word
    (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ PDA-E-SCENE-HEIGHT 2))
