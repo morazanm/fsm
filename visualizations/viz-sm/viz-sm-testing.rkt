@@ -22,6 +22,14 @@
                        (H ,EMP D))))
 
 
+(define L (make-ndfa '(S A B C D E)
+                               '(a b)
+                               'S
+                               '(S B C E)
+                               `((S ,EMP A) (S ,EMP C) (A a B) (B b B)
+                                 (C a D) (C b E) (D b C) (E b E))))
+
+
 (define aa*Uab* (make-ndfa '(K B D)
                            '(a b)
                            'K

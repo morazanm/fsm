@@ -180,8 +180,7 @@ rules are a (listof rule-structs)
          
          [machine-decision (if (not (zipper-empty? (imsg-state-ndfa-shown-accepting-trace imsg-st)))
                                'accept
-                               'reject)]) 
-
+                               'reject)])
    (above/align
       'left
       (cond [(and (empty? pci)
@@ -195,7 +194,7 @@ rules are a (listof rule-structs)
                           (text (format "~a" EMP) FONT-SIZE REJECT-COLOR)))
               (beside (text "Consumed: " FONT-SIZE FONT-COLOR)
                       (if (equal? machine-decision 'accept)
-                          (text (format "~a" EMP) FONT-SIZE FONT-COLOR)
+                          (text (format "~a" EMP) FONT-SIZE ACCEPT-COLOR)
                           (text (format "~a" EMP) FONT-SIZE BLANK-COLOR))))]
             [(and (not (empty? upci))
                   (equal? upci (ndfa-config-word (imsg-state-ndfa-farthest-consumed-input imsg-st))))

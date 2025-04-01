@@ -183,8 +183,12 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
 ;;Purpose: Returns a propers trace for the given (listof configurations) that accurately
 ;;         tracks each transition
 (define (make-trace configs rules acc)
-  (cond [(or (empty? rules)
-             (empty? configs)) (reverse acc)]
+  (cond [(and (= (length configs) 1) (empty? rules))
+         (let* ([rle (rule (triple EMP EMP EMP))]
+                [res (trace (first configs) (list rle))])
+           (reverse (cons res acc)))]
+         [(or (empty? rules)
+              (empty? configs)) (reverse acc)]
         [(and (empty? acc)
               (not (equal? (triple-read (first rules)) EMP)))
          (let* ([rle (rule (triple EMP EMP EMP))]
