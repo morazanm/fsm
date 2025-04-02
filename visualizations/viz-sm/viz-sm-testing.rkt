@@ -21,7 +21,6 @@
                        (G b H)
                        (H ,EMP D))))
 
-
 (define L (make-ndfa '(S A B C D E)
                                '(a b)
                                'S

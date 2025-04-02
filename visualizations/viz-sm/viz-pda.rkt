@@ -80,7 +80,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
 
 ;;word -> (zipperof ci)
 ;;Purpose: Creates all valid combinations of the upci and pci
-(define (remake-ci a-word stack)
+(define (remake-ci a-word)
   ;;natnum ;;Purpose: the length of the given word
   (define word-length (length a-word))
 
@@ -477,6 +477,8 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
     (cond [(or (for/or ([config (building-viz-state-computations a-vs)])
                  (>= (pda-config-index (first config)) (building-viz-state-max-cmps a-vs)))
                (and (zipper-at-end? (building-viz-state-CI a-vs))
+                    (or (zipper-empty? (building-viz-state-stack a-vs))
+                        (zipper-at-end? (building-viz-state-stack a-vs)))
                     (for/or ([config (building-viz-state-computations a-vs)])
                       (>= (pda-config-index (last config)) (building-viz-state-max-cmps a-vs)))))
            (reverse (cons (create-graph-thunk a-vs #:cut-off #t) acc))]
@@ -484,7 +486,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                              (building-viz-state-farthest-consumed-input a-vs))
                     (not (empty? (building-viz-state-farthest-consumed-input a-vs))))
                (and (zipper-at-end? (building-viz-state-CI a-vs))
-                    (or (list? (building-viz-state-stack a-vs))
+                    (or (zipper-empty? (building-viz-state-stack a-vs))
                         (zipper-at-end? (building-viz-state-stack a-vs)))))
            (reverse (cons (create-graph-thunk a-vs) acc))]
           [else (let ([next-graph (create-graph-thunk a-vs)])
@@ -518,11 +520,15 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                                                                       (viz-state-informative-messages a-vs)))]
          [imsg-state-shown-accepting-trace (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
                                                                                   (viz-state-informative-messages a-vs)))]
+         [shown-accepting-trace (if (or (zipper-empty? imsg-state-shown-accepting-trace)
+                                                    (zipper-at-end? imsg-state-shown-accepting-trace))
+                                                imsg-state-shown-accepting-trace
+                                                (zipper-next imsg-state-shown-accepting-trace))]
          [imsg-state-stack (imsg-state-pda-stack (informative-messages-component-state (viz-state-informative-messages a-vs)))]
          [imsg-state-invs-zipper (imsg-state-pda-invs-zipper (informative-messages-component-state (viz-state-informative-messages a-vs)))]
-         [next-rule (if (zipper-empty? imsg-state-shown-accepting-trace)
-                        imsg-state-shown-accepting-trace
-                        (first (trace-rules (zipper-current imsg-state-shown-accepting-trace))))]
+         [next-rule (if (zipper-empty? shown-accepting-trace)
+                        shown-accepting-trace
+                        (first (trace-rules (zipper-current shown-accepting-trace))))]
          [rule (if (zipper-empty? imsg-state-shown-accepting-trace) DUMMY-RULE next-rule)])
   (struct-copy
      viz-state
@@ -534,13 +540,14 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
        [component-state
         (struct-copy imsg-state-pda
                      (informative-messages-component-state (viz-state-informative-messages a-vs))
-                     [ci (if (or (zipper-at-end? imsg-state-ci) (and (eq? (triple-read (rule-triple rule)) EMP) (not (empty-rule? rule))))
+                     [ci (if (or (zipper-at-end? imsg-state-ci)
+                                 (and (eq? (triple-read (rule-triple rule)) EMP)
+                                      (not (zipper-at-end? imsg-state-shown-accepting-trace))
+                                      (or (equal? DUMMY-RULE rule)
+                                          (not (empty-rule? rule)))))
                              imsg-state-ci
                              (zipper-next imsg-state-ci))]
-                     [shown-accepting-trace (if (or (zipper-empty? imsg-state-shown-accepting-trace)
-                                                    (zipper-at-end? imsg-state-shown-accepting-trace))
-                                                imsg-state-shown-accepting-trace
-                                                (zipper-next imsg-state-shown-accepting-trace))]
+                     [shown-accepting-trace shown-accepting-trace]
                      [stack (if (or (zipper-empty? imsg-state-stack)
                                     (zipper-at-end? imsg-state-stack))
                                 imsg-state-stack
@@ -616,7 +623,10 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
         (struct-copy imsg-state-pda
                      (informative-messages-component-state
                       (viz-state-informative-messages a-vs))
-                     [ci (if (or (zipper-at-begin? imsg-state-ci) (and (eq? (triple-read (rule-triple rule)) EMP) (not (empty-rule? rule))))
+                     [ci (if (or (zipper-at-begin? imsg-state-ci)
+                                 (and (eq? (triple-read (rule-triple rule)) EMP)
+                                      (or (equal? DUMMY-RULE rule)
+                                          (not (empty-rule? rule)))))
                              imsg-state-ci
                              (zipper-prev imsg-state-ci))]
                      [shown-accepting-trace (if (or (zipper-empty? imsg-state-shown-accepting-trace)
@@ -1020,7 +1030,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                                 last-word
                                                 [word (rest (pda-config-word last-word))]
                                                 [index (add1 (pda-config-index last-word))])))]
-         [CIs (remake-ci a-word (map pda-config-stack stack))]
+         [CIs (remake-ci a-word)]
          [computation-has-cut-off? (and (empty? accepting-trace)
                                         (for/or ([computation LoC])
                                           (>= (pda-config-index (treelist-last computation)) cut-off)))]
@@ -1054,9 +1064,11 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
          ;;(listof number) ;;Purpose: Gets the index of image where an invariant failed
          [inv-configs (get-failed-invariants a-word accepting-computations invs)])
     ;stack
-    ;(zipper->list CIs)
-    (length graphs)
-    LoC
+    (zipper->list CIs)
+    ;(length graphs)
+    ;LoC
+    accepting-trace
+    ;accepting-computations
     ;most-consumed-word
    (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
