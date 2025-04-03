@@ -19,8 +19,7 @@
          pda-config pda-config-state pda-config-word pda-config-stack pda-config-index
          tm-config tm-config-state tm-config-head-position tm-config-tape tm-config-index
          tm tm-states tm-sigma tm-rules tm-start tm-finals tm-accepting-final tm-type
-         ci ci-upci ci-pci
-         pda-ci pda-ci-upci pda-ci-pci pda-ci-stack)
+         ci ci-upci ci-pci)
 
 
 #|
@@ -196,7 +195,7 @@ rules are a (listof rule-structs)
                       (if (equal? machine-decision 'accept)
                           (text (format "~a" EMP) FONT-SIZE ACCEPT-COLOR)
                           (text (format "~a" EMP) FONT-SIZE BLANK-COLOR))))]
-            [(and (not (empty? upci))
+            [(and (eq? machine-decision 'reject) #;(not (empty? upci))
                   (equal? upci (ndfa-config-word (imsg-state-ndfa-farthest-consumed-input imsg-st))))
              (above/align
               'left
@@ -243,7 +242,7 @@ rules are a (listof rule-structs)
                                               0)))
              FONT-SIZE
              COMPUTATION-LENGTH-COLOR)
-      (cond [(and (not (empty? upci))
+      (cond [(and (eq? machine-decision 'reject) #;(not (empty? upci))
                   (equal? upci (ndfa-config-word (imsg-state-ndfa-farthest-consumed-input imsg-st))))
               (text "All computations do not consume the entire word and the machine rejects." FONT-SIZE REJECT-COLOR)]
              [(and (empty? upci) (equal? machine-decision 'accept))

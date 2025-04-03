@@ -24,4 +24,12 @@
 
 (struct tape-config (head-position tape))
 
-(struct mttm-config (lotc))
+(struct mttm-config (state lotc))
+
+(struct mttm-rule (source-rule destination-rule))
+
+#|
+state -> the state at which the actions are applied | symbol
+loa -> all the actions to applied to each tape      | (listof TM-actions)
+|#
+(struct rule (state loa))

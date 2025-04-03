@@ -367,20 +367,21 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
 ;; Purpose: To create a graph of edges from the given list of rules
 (define (edge-graph cgraph M current-shown-accept-rules other-current-accept-rules current-reject-rules dead)
   (foldl (λ (rule result)
-           (let ([other-current-accept-rule-find-rule? (find-rule? rule dead other-current-accept-rules)])
+           (let ([other-current-accept-rule-find-rule? (find-rule? rule dead other-current-accept-rules)]
+                 [current-shown-accept-rule-find-rule? (find-rule? rule dead current-shown-accept-rules)])
              (add-edge result
                        (triple-read rule)
                        (triple-source rule)
                        (triple-destination rule)
                        #:atb (hash 'color (cond [(and (member? rule current-shown-accept-rules eq?)
                                                       (member? rule other-current-accept-rules eq?)) SPLIT-ACCEPT-COLOR]
-                                                [(find-rule? rule dead current-shown-accept-rules) TRACKED-ACCEPT-COLOR]
+                                                [current-shown-accept-rule-find-rule? TRACKED-ACCEPT-COLOR]
                                                 [other-current-accept-rule-find-rule? ALL-ACCEPT-COLOR]
                                                 [(find-rule? rule dead current-reject-rules) REJECT-COLOR]
                                                 [else 'black])
                                    'fontsize FONT-SIZE
                                    'style (cond [(equal? (triple-destination rule) dead) 'dashed]
-                                                [other-current-accept-rule-find-rule? 'bold]
+                                                [current-shown-accept-rule-find-rule? 'bold]
                                                 [else 'solid])))))
          cgraph
          (treelist->list (ndfa-rules M))))
