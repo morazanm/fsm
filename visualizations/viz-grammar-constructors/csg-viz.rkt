@@ -53,7 +53,6 @@
 (define FONT-SIZE 12)
 (define HEXAGON-COLOR 'black)
 
-
 ;; csg word -> Derivation with rules
 ;; Creates a derivation with the rule applied besides each step
 (define (csg-derive-edited g w)
@@ -92,7 +91,6 @@
           [(< (length (car (first path))) (length (caar (first sortedpaths))))
            (cons path sortedpaths)]
           [else (cons (car sortedpaths) (insert path (cdr sortedpaths)))]))
-
       (cond
         [(null? paths) '()]
         [else (insert (car paths) (ins (cdr paths)))]))
@@ -109,7 +107,7 @@
                                        new-words)]
                    [new-queue-paths (map (lambda (s) (cons s firstpath)) newstrings)]
                    [newpaths (ins (append (cdr tovisit) new-queue-paths))])
-              (bfs-deriv (append newstrings generated-derivations) newpaths))]))]))
+              (bfs-deriv (append (map first newstrings) generated-derivations) newpaths))]))]))
 
   (let* ([res (bfs-deriv '() (list (list (list (list (csg-getstart g)) '() '()))))]
          [result (reverse res)])
