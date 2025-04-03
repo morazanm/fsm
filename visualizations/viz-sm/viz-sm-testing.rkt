@@ -4,6 +4,23 @@
          "testing-parameter.rkt"
          "../../fsm-core/interface.rkt")
 
+
+(define (ndfa->pda M)
+  (let [(states (sm-states M))
+        (sigma (sm-sigma M))
+        (start (sm-start M))
+        (finals (sm-finals M))
+        (rules (sm-rules M))]
+    (make-ndpda states
+                sigma
+                '()
+                start
+                finals
+                (map (λ (r) (list (list (first r) (second r) EMP)
+                                  (list (third r) EMP)))
+                     rules))))
+
+
 ;; L = ab* U (ab)*
 (define M (make-ndfa '(S A B C D E F G H I)
                      '(a b)

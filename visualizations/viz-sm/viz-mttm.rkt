@@ -13,8 +13,15 @@
                     INS-TOOLS-BUFFER)
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "../../fsm-core/private/constants.rkt"
-         "../../fsm-core/private/tm.rkt"
+         "../../fsm-core/private/tm.rkt" 
          "david-imsg-state.rkt"
          (except-in "david-viz-constants.rkt"
                     FONT-SIZE)
          "default-informative-messages.rkt")
+
+
+(struct mttm (states alphabet start finals transition number-tape accepting-final type) #:transparent)
+
+(struct tape-config (head-position tape))
+
+(struct mttm-config (lotc))

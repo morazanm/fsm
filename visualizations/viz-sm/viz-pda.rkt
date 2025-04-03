@@ -625,8 +625,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                       (viz-state-informative-messages a-vs))
                      [ci (if (or (zipper-at-begin? imsg-state-ci)
                                  (and (eq? (triple-read (rule-triple rule)) EMP)
-                                      (or (equal? DUMMY-RULE rule)
-                                          (not (empty-rule? rule)))))
+                                      (not (empty-rule? rule))))
                              imsg-state-ci
                              (zipper-prev imsg-state-ci))]
                      [shown-accepting-trace (if (or (zipper-empty? imsg-state-shown-accepting-trace)
