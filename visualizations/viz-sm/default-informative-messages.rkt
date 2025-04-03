@@ -242,13 +242,17 @@ rules are a (listof rule-structs)
                                               0)))
              FONT-SIZE
              COMPUTATION-LENGTH-COLOR)
-      (cond [(and (eq? machine-decision 'reject) #;(not (empty? upci))
+      (cond #;[(and (eq? machine-decision 'reject) #;(not (empty? upci))
                   (equal? upci (ndfa-config-word (imsg-state-ndfa-farthest-consumed-input imsg-st))))
               (text "All computations do not consume the entire word and the machine rejects." FONT-SIZE REJECT-COLOR)]
              [(and (empty? upci) (equal? machine-decision 'accept))
               (text "There is a computation that accepts." FONT-SIZE ACCEPT-COLOR)]
-             [(and (empty? upci) (equal? machine-decision 'reject))
+             [(and (empty? upci) (equal? machine-decision 'reject)
+                   (not (empty? (ndfa-config-word (imsg-state-ndfa-farthest-consumed-input imsg-st)))))
               (text "All computations end in a non-final state and the machine rejects." FONT-SIZE REJECT-COLOR)]
+             [(and (eq? machine-decision 'reject) #;(not (empty? upci))
+                  (equal? upci (ndfa-config-word (imsg-state-ndfa-farthest-consumed-input imsg-st))))
+              (text "All computations do not consume the entire word and the machine rejects." FONT-SIZE REJECT-COLOR)]
              [else (text "Word Status: accept " FONT-SIZE BLANK-COLOR)]))))
 
 

@@ -538,7 +538,7 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
          (informative-messages-component-state
           (viz-state-informative-messages a-vs))
          [ci (cond [(zipper-at-end? imsg-state-ci) imsg-state-ci]
-                   [(not (empty? (ndfa-config-word imsg-state-farthest-consumed-input)))
+                   [(list? (ndfa-config-word imsg-state-farthest-consumed-input))
                     (zipper-to-idx imsg-state-ci (ndfa-config-index imsg-state-farthest-consumed-input))]
                    [else (zipper-to-end imsg-state-ci)])]
          [shown-accepting-trace (if (or (zipper-at-end? imsg-state-shown-accepting-trace)
@@ -801,13 +801,15 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
                                               '()))
                                 rejecting-computations)]
          ;;(listof symbol) ;;Purpose: The portion of the ci that the machine can conusme the most 
-         [most-consumed-word (let ([last-word (if (empty? accepting-traces)
-                                                  (get-farthest-consumed LoC (ndfa-config (ndfa-start new-M) a-word 0))
-                                                  (ndfa-config (ndfa-start new-M) '() 0))])
-                               (if (empty? (ndfa-config-word last-word))
+         [most-consumed-word (let* ([farthest-consumed (get-farthest-consumed LoC (ndfa-config (ndfa-start new-M) a-word 0))]
+                                    [last-word (if (and (empty? accepting-traces) (not (empty? (ndfa-config-word farthest-consumed))))
+                                                  farthest-consumed
+                                                  (ndfa-config (ndfa-start new-M) 'none 0))])
+                               (if (eq? 'none (ndfa-config-word last-word))
                                    last-word
                                    (struct-copy ndfa-config
                                                 last-word
+                                                [state 'last-consumed]
                                                 [word (rest (ndfa-config-word last-word))]
                                                 [index (add1 (ndfa-config-index last-word))])))]
          ;;(zipperof ci) ;;Purpose: All valid combinations of unconsumed and consumed input
@@ -836,6 +838,7 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
                           '()
                           (let ([accepting-LoC (map (λ (comp) (treelist->list (computation-LoC comp))) accepting-computations)])
                             (get-failed-invariants a-word accepting-LoC invs)))])
+    ;most-consumed-word
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ NDFA-E-SCENE-HEIGHT 2))
