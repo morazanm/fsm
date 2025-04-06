@@ -382,6 +382,10 @@ rules are a (listof rule-structs)
                   (or (zipper-empty? (imsg-state-pda-stack imsg-st))
                       (zipper-at-end? (imsg-state-pda-stack imsg-st)))
                   (equal? machine-decision 'reject))
+             (text "All computations do not consume the entire word and the machine rejects." FONT-SIZE REJECT-COLOR)]
+            [(and (empty? upci)
+                  (zipper-empty? (imsg-state-pda-stack imsg-st))
+                  (equal? machine-decision 'reject))
              (text "All computations end in a non-final configuration and the machine rejects." FONT-SIZE REJECT-COLOR)]
             [else (text "Word Status: accept " FONT-SIZE BLANK-COLOR)]))))
 

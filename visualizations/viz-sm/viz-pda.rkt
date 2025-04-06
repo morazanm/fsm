@@ -483,8 +483,8 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                       (>= (pda-config-index (last config)) (building-viz-state-max-cmps a-vs)))))
            (reverse (cons (create-graph-thunk a-vs #:cut-off #t) acc))]
           [(or (and (equal? (ci-upci (zipper-current (building-viz-state-CI a-vs)))
-                             (building-viz-state-farthest-consumed-input a-vs))
-                    (not (empty? (building-viz-state-farthest-consumed-input a-vs))))
+                            (pda-config-word (building-viz-state-farthest-consumed-input a-vs)))
+                    (not (empty? (pda-config-word (building-viz-state-farthest-consumed-input a-vs)))))
                (and (zipper-at-end? (building-viz-state-CI a-vs))
                     (or (zipper-empty? (building-viz-state-stack a-vs))
                         (zipper-at-end? (building-viz-state-stack a-vs)))))
@@ -541,6 +541,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
         (struct-copy imsg-state-pda
                      (informative-messages-component-state (viz-state-informative-messages a-vs))
                      [ci (if (or (zipper-at-end? imsg-state-ci)
+                                 (equal? (ci-upci (zipper-current imsg-state-ci)) (pda-config-word imsg-state-farthest-consumed-input))
                                  (and (eq? (triple-read (rule-triple rule)) EMP)
                                       (not (zipper-at-end? imsg-state-shown-accepting-trace))
                                       (or (equal? DUMMY-RULE rule)
@@ -583,7 +584,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
          (informative-messages-component-state
           (viz-state-informative-messages a-vs))
          [ci (cond [(zipper-at-end? imsg-state-ci) imsg-state-ci]
-                   [(not (empty? (pda-config-word imsg-state-farthest-consumed-input)))
+                   [(list? (pda-config-word imsg-state-farthest-consumed-input))
                     (zipper-to-idx imsg-state-ci (pda-config-index imsg-state-farthest-consumed-input))]
                    [else (zipper-to-end imsg-state-ci)])]
          [shown-accepting-trace (if (or (zipper-empty? imsg-state-shown-accepting-trace) (zipper-at-end? imsg-state-shown-accepting-trace))
@@ -1020,13 +1021,15 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
          ;;(listof rules) ;;Purpose: Returns the first accepting computations (listof rules)
          [accepting-trace (if (empty? accept-cmps) '() (first accept-cmps))]
          ;;(listof symbol) ;;Purpose: The portion of the ci that the machine can conusme the most 
-         [most-consumed-word (let ([last-word (if (empty? accepting-trace)
-                                                  (get-farthest-consumed LoC (pda-config (pda-start new-M) a-word '() 0))
-                                                  (pda-config (pda-start new-M) '() '() 0))])
-                               (if (empty? (pda-config-word last-word))
+         [most-consumed-word (let* ([farthest-consumed (get-farthest-consumed LoC (pda-config (pda-start new-M) a-word '() 0))]
+                                    [last-word (if (and (empty? accepting-trace) (not (empty? (pda-config-word farthest-consumed))))
+                                                   farthest-consumed
+                                                   (pda-config (pda-start new-M) 'none '() 0))])
+                               (if (eq? (pda-config-word last-word) 'none)
                                    last-word
                                    (struct-copy pda-config
                                                 last-word
+                                                [state 'most-consumed]
                                                 [word (rest (pda-config-word last-word))]
                                                 [index (add1 (pda-config-index last-word))])))]
          [CIs (remake-ci a-word)]
