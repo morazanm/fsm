@@ -918,7 +918,7 @@
              DEFAULT-ZOOM-FLOOR
              (informative-messages tm-create-draw-informative-message
                                    (imsg-state-tm M
-                                                  all-displayed-tape
+                                                  (if (zipper-empty? all-displayed-tape) (list->zipper (list a-word)) all-displayed-tape)
                                                   all-head-pos
                                                   (list->zipper (map (λ (trace)
                                                                        (list (rule-read (trace-rules trace))
