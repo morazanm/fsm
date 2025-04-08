@@ -124,6 +124,13 @@
                        (A b B) (A a S)
                        (B b B) (B a S))))
 
+(define nd-a* (make-ndfa '(K H)
+                         '(a b)
+                         'K
+                         '(H)
+                         `((K ,EMP H)
+                           (H a H))))
+
 (define missing-exactly-one
   (make-ndfa '(S A B C D E F G H I J K L M N O P)
              '(a b c)
@@ -146,6 +153,55 @@
                           (M a M) (M c M) (M b P)
                           (O a O) (O c O) (O b P)
                           (P a P) (P b P) (P c P))))
+
+(define nd (make-ndfa '(S Z Y A B)
+                      '(a b)
+                      'S
+                      '(B)
+                      `((S b Z)
+                        (S b Y)
+                        (Y a A)
+                        (Z a A)
+                        (A a B))))
+
+(define n (make-ndfa '(K H F M I)
+                     '(a b)
+                     'K
+                     '(I)
+                     `((K b H)
+                       (H ,EMP F)
+                       (H ,EMP M)
+                       (F a I)
+                       (M a I))))
+
+(define nk (make-ndfa '(K H F M I)
+                      '(a b)
+                      'K
+                      '(I)
+                      `((K b H)
+                        (H ,EMP F)
+                        (F ,EMP M)
+                        (M ,EMP I)
+                        (I ,EMP H))))
+
+
+(define PROP-BI (make-dfa '(S M N)
+                          '(0 1)
+                          'S
+                          '(N M)
+                          '((S 1 M)
+                            (S 0 N)
+                            (M 0 M)
+                            (M 1 M))))
+
+(define DNA-SEQUENCE (make-dfa '(K H F M I D B S R) ;C)
+                               '(a t c g)
+                               'K
+                               '(K F I B R)
+                               `((K a H) (H t F) (F a H) (F t M) (F c D) (F g S)  
+                                         (K t M) (M a I) (I a H) (I t M) (I c D) (I g S)
+                                         (K c D) (D g B) (B a H) (B t M) (B c D) (B g S)
+                                         (K g S) (S c R) (R a H) (R t M) (R c D) (R g S))))
 
 ;; L = (aba)* U (ab)*
 (define ND
@@ -323,55 +379,6 @@
 (define (F-INV1 ci)
   (empty? ci))
 
-(define nd (make-ndfa '(S Z Y A B)
-                      '(a b)
-                      'S
-                      '(B)
-                      `((S b Z)
-                        (S b Y)
-                        (Y a A)
-                        (Z a A)
-                        (A a B))))
-
-(define n (make-ndfa '(K H F M I)
-                     '(a b)
-                     'K
-                     '(I)
-                     `((K b H)
-                       (H ,EMP F)
-                       (H ,EMP M)
-                       (F a I)
-                       (M a I))))
-
-(define nk (make-ndfa '(K H F M I)
-                      '(a b)
-                      'K
-                      '(I)
-                      `((K b H)
-                        (H ,EMP F)
-                        (F ,EMP M)
-                        (M ,EMP I)
-                        (I ,EMP H))))
-
-
-(define PROP-BI (make-dfa '(S M N)
-                          '(0 1)
-                          'S
-                          '(N M)
-                          '((S 1 M)
-                            (S 0 N)
-                            (M 0 M)
-                            (M 1 M))))
-
-(define DNA-SEQUENCE (make-dfa '(K H F M I D B S R) ;C)
-                               '(a t c g)
-                               'K
-                               '(K F I B R)
-                               `((K a H) (H t F) (F a H) (F t M) (F c D) (F g S)  
-                                         (K t M) (M a I) (I a H) (I t M) (I c D) (I g S)
-                                         (K c D) (D g B) (B a H) (B t M) (B c D) (B g S)
-                                         (K g S) (S c R) (R a H) (R t M) (R c D) (R g S))))
-
 ;;word -> boolean
 ;;Purpose: Determines if the given word is empty
 (define (DNA-K-INV a-word)
@@ -495,88 +502,6 @@
                           ((B ε ε)(A ε))
                           ((X b (b b))(X ε)) ((X b (b))(X ε)))))
 
-  
-;;word stack-> boolean
-;;purpose: Determine if the given word has an equal number of a's and b's
-;;         and that the stack is empty
-(define (K-INV a-word stck)
-  (and (empty? stck)
-       (= (length (filter (λ (w) (equal? w 'a)) a-word))
-          (length (filter (λ (w) (equal? w 'b)) a-word)))))
-
-;;word stack-> boolean
-;;purpose: Determine if the given word has >= a's than b's with an a 
-;;         and that the stack has only b's
-(define (H-INV a-word stck)
-  (and (andmap (λ (w) (not (equal? w 'a))) stck)
-       (> (length (filter (λ (s) (equal? s 'a)) a-word))
-          (length (filter (λ (s) (equal? s 'b)) a-word)))))
-
-;;word stack-> boolean
-;;purpose: Determine if the given word >= b's than a's than
-;;         and that the stack has only a's
-(define (F-INV a-word stck)
-  (and (andmap (λ (w) (not (equal? w 'b))) stck))   
-  (> (length (filter (λ (s) (equal? s 'b)) a-word))
-     (length (filter (λ (s) (equal? s 'a)) a-word))))
-
-;;word stack-> boolean
-;;purpose: Determine if the given word has a differing amount of b's and a's
-;;         and that the stack has the same amount of a's and b's 
-(define (M-INV a-word stck)
-  (not (and (= (length (filter (λ (w) (equal? w 'a)) stck))
-               (length (filter (λ (w) (equal? w 'b)) stck)))
-            (not (= (length (filter (λ (w) (equal? w 'b)) a-word))
-                    (length (filter (λ (w) (equal? w 'a)) a-word)))))))
-
-;;purpose: to determine if the number of a's in the word is less than or equal the number of 'b's
-#;(define (P-S-INV a-word stck)
-    (let ([num-as (length (filter (λ (w) (eq? w 'a)) a-word))]
-          [num-bs (length (filter (λ (w) (eq? w 'b)) stck))])
-      (and (or (<= num-as num-bs)
-               (<= num-as (/ num-bs 2)))
-           (andmap (λ (w) (eq? w 'b)) stck))))
-;;Purpose: to determine if the number of b's in the stack is greater than or equal to the number of b's in the ci
-(define (P-X-INV a-word stck)
-  (let ([word-num-bs (length (filter (λ (w) (eq? w 'b)) a-word))]
-        [stck-num-bs (length (filter (λ (w) (eq? w 'b)) stck))])
-    (>= stck-num-bs word-num-bs)))
-;;purpose: to determine if the number of a's in the word is less than or equal the number of 'b's
-(define (P-A-INV a-word stck)
-  (let ([num-as (length (filter (λ (w) (eq? w 'a)) a-word))]
-        [num-bs (length (filter (λ (w) (eq? w 'b)) stck))])
-    (and (or (<= num-as num-bs)
-             (<= num-as (/ num-bs 2)))
-         (andmap (λ (w) (eq? w 'b)) stck))))
-;;purpose: to determine if the number of a's in the word is less than or equal the number of 'b's
-(define (P-B-INV a-word stck)
-  (let ([num-as (length (filter (λ (w) (eq? w 'a)) a-word))]
-        [num-bs (length (filter (λ (w) (eq? w 'b)) stck))])
-    (and (or (<= num-as num-bs)
-             (<= num-as (/ num-bs 2)))
-         (andmap (λ (w) (eq? w 'b)) stck))))
-
-;;purpose: to determine if the number of a's in the word is less than or equal the number of 'b's
-(define (P-S-INV a-word stck)
-  (and (andmap (λ (w) (eq? w 'b)) stck)
-       (andmap (λ (w) (eq? w 'a)) a-word)
-       (= (* 2 (length a-word)) (length stck))))
-;;Purpose: to determine if the number of b's in the stack is greater than or equal to the number of b's in the ci
-(define (P-H-INV ci stck)
-  (let ([ci-as (filter (λ (w) (eq? w 'a)) ci)]
-        [ci-bs (filter (λ (w) (eq? w 'b)) ci)])
-    (and (equal? ci (append ci-as ci-bs))
-         (andmap (λ (w) (eq? w 'b)) stck)
-         (<= (length ci-as) (length (append ci-bs stck)) (* 2 (length ci-as))))))
-
-(define (P-H1-INV ci stck)
-  (let ([ci-as (filter (λ (w) (eq? w 'a)) ci)]
-        [ci-bs (filter (λ (w) (eq? w 'b)) ci)])
-    (and (equal? ci (append ci-as ci-bs))
-         (<= (length ci-as) (length ci-bs) (* 2 (length ci-as)))
-         (andmap (λ (w) (eq? w 'b)) stck)
-         (<= (length ci-as) (length (append ci-bs stck)) (* 2 (length ci-as))))))
-
 (define BUGGY-SAME-NUM-AB (make-ndpda '(K H F M)
                                       '(a b)
                                       '(a b)
@@ -659,12 +584,7 @@
                        `(((K ,EMP ,EMP)(H ,EMP))
                          ((H a ,EMP)(H ,EMP)))))
 
-(define nd-a* (make-ndfa '(K H)
-                         '(a b)
-                         'K
-                         '(H)
-                         `((K ,EMP H)
-                           (H a H))))
+
 
 (define aa* (make-ndpda '(K H)
                         '(a b)
@@ -691,9 +611,15 @@
                                     ((A b (a)) (A ,EMP))
                                     ((A ,EMP (a)) (A ,EMP)))))
 
-
-;;"note to self:"
-;;"edit A and D to scroll thru word, not jump to end"
+(define numb>numa (make-cfg '(S A)
+                            '(a b)
+                            `((S ,ARROW b)
+                              (S ,ARROW AbA)
+                              (A ,ARROW AaAbA)
+                              (A ,ARROW AbAaA)
+                              (A ,ARROW ,EMP)
+                              (A ,ARROW bA))
+                            'S))
 
 (define pd (make-ndpda '(S A)
                        '(a b)
@@ -702,6 +628,95 @@
                        '(A)
                        `(((S a ,EMP) (A (a)))
                          ((S a ,EMP) (A (b))))))
+
+(define pd-numb>numa (grammar->sm numb>numa))
+
+  
+;;word stack-> boolean
+;;purpose: Determine if the given word has an equal number of a's and b's
+;;         and that the stack is empty
+(define (K-INV a-word stck)
+  (and (empty? stck)
+       (= (length (filter (λ (w) (equal? w 'a)) a-word))
+          (length (filter (λ (w) (equal? w 'b)) a-word)))))
+
+;;word stack-> boolean
+;;purpose: Determine if the given word has >= a's than b's with an a 
+;;         and that the stack has only b's
+(define (H-INV a-word stck)
+  (and (andmap (λ (w) (not (equal? w 'a))) stck)
+       (> (length (filter (λ (s) (equal? s 'a)) a-word))
+          (length (filter (λ (s) (equal? s 'b)) a-word)))))
+
+;;word stack-> boolean
+;;purpose: Determine if the given word >= b's than a's than
+;;         and that the stack has only a's
+(define (F-INV a-word stck)
+  (and (andmap (λ (w) (not (equal? w 'b))) stck))   
+  (> (length (filter (λ (s) (equal? s 'b)) a-word))
+     (length (filter (λ (s) (equal? s 'a)) a-word))))
+
+;;word stack-> boolean
+;;purpose: Determine if the given word has a differing amount of b's and a's
+;;         and that the stack has the same amount of a's and b's 
+(define (M-INV a-word stck)
+  (not (and (= (length (filter (λ (w) (equal? w 'a)) stck))
+               (length (filter (λ (w) (equal? w 'b)) stck)))
+            (not (= (length (filter (λ (w) (equal? w 'b)) a-word))
+                    (length (filter (λ (w) (equal? w 'a)) a-word)))))))
+
+;;purpose: to determine if the number of a's in the word is less than or equal the number of 'b's
+#;(define (P-S-INV a-word stck)
+    (let ([num-as (length (filter (λ (w) (eq? w 'a)) a-word))]
+          [num-bs (length (filter (λ (w) (eq? w 'b)) stck))])
+      (and (or (<= num-as num-bs)
+               (<= num-as (/ num-bs 2)))
+           (andmap (λ (w) (eq? w 'b)) stck))))
+;;Purpose: to determine if the number of b's in the stack is greater than or equal to the number of b's in the ci
+(define (P-X-INV a-word stck)
+  (let ([word-num-bs (length (filter (λ (w) (eq? w 'b)) a-word))]
+        [stck-num-bs (length (filter (λ (w) (eq? w 'b)) stck))])
+    (>= stck-num-bs word-num-bs)))
+;;purpose: to determine if the number of a's in the word is less than or equal the number of 'b's
+(define (P-A-INV a-word stck)
+  (let ([num-as (length (filter (λ (w) (eq? w 'a)) a-word))]
+        [num-bs (length (filter (λ (w) (eq? w 'b)) stck))])
+    (and (or (<= num-as num-bs)
+             (<= num-as (/ num-bs 2)))
+         (andmap (λ (w) (eq? w 'b)) stck))))
+;;purpose: to determine if the number of a's in the word is less than or equal the number of 'b's
+(define (P-B-INV a-word stck)
+  (let ([num-as (length (filter (λ (w) (eq? w 'a)) a-word))]
+        [num-bs (length (filter (λ (w) (eq? w 'b)) stck))])
+    (and (or (<= num-as num-bs)
+             (<= num-as (/ num-bs 2)))
+         (andmap (λ (w) (eq? w 'b)) stck))))
+
+;;purpose: to determine if the number of a's in the word is less than or equal the number of 'b's
+(define (P-S-INV a-word stck)
+  (and (andmap (λ (w) (eq? w 'b)) stck)
+       (andmap (λ (w) (eq? w 'a)) a-word)
+       (= (* 2 (length a-word)) (length stck))))
+;;Purpose: to determine if the number of b's in the stack is greater than or equal to the number of b's in the ci
+(define (P-H-INV ci stck)
+  (let ([ci-as (filter (λ (w) (eq? w 'a)) ci)]
+        [ci-bs (filter (λ (w) (eq? w 'b)) ci)])
+    (and (equal? ci (append ci-as ci-bs))
+         (andmap (λ (w) (eq? w 'b)) stck)
+         (<= (length ci-as) (length (append ci-bs stck)) (* 2 (length ci-as))))))
+
+(define (P-H1-INV ci stck)
+  (let ([ci-as (filter (λ (w) (eq? w 'a)) ci)]
+        [ci-bs (filter (λ (w) (eq? w 'b)) ci)])
+    (and (equal? ci (append ci-as ci-bs))
+         (<= (length ci-as) (length ci-bs) (* 2 (length ci-as)))
+         (andmap (λ (w) (eq? w 'b)) stck)
+         (<= (length ci-as) (length (append ci-bs stck)) (* 2 (length ci-as))))))
+
+
+;;"note to self:"
+;;"edit A and D to scroll thru word, not jump to end"
+
 
 (define (pd-A-INV a-wrd a-stck)
   (andmap (λ (s) (eq? s 'a)) a-stck))
@@ -714,19 +729,6 @@
 (define (pd-a-inv wrd stck)
   (or (not (= (length (filter (λ (w) (equal? w 'a)) wrd)) 4))
       (not (= (length (filter (λ (w) (equal? w 'b)) wrd)) 2))))
-
-(define numb>numa (make-cfg '(S A)
-                            '(a b)
-                            `((S ,ARROW b)
-                              (S ,ARROW AbA)
-                              (A ,ARROW AaAbA)
-                              (A ,ARROW AbAaA)
-                              (A ,ARROW ,EMP)
-                              (A ,ARROW bA))
-                            'S))
-
-(define pd-numb>numa (grammar->sm numb>numa))
-
 
 #;(parameterize ([testing? #t])
   
