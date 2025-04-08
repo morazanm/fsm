@@ -814,6 +814,8 @@
          [computations (treelist->list (first computations+hash))]
          ;;(listof configurations) ;;Purpose: Extracts the configurations from the computation
          [LoC (map computation-LoC computations)]
+
+         [reached-final? (ormap (λ (computation) (member? (tm-config-state (treelist-last computation)) (tm-finals M) eq?)) LoC)]
          ;;(listof computation) ;;Purpose: Extracts all accepting computations
          [accepting-computations (if (eq? (tm-type M) 'tm-language-recognizer)
                                      (filter (λ (comp)
@@ -862,10 +864,13 @@
                                     [(and (not computation-has-cut-off?) (not (empty? accepting-trace))) accepting-trace]
                                     [else '()]))]
          [all-displayed-tape (list->zipper displayed-tape)]
-         [tracked-head-pos (map (λ (trace) (tm-config-head-position (trace-config trace)))
-                                (if (empty? accepting-trace)
-                                    rejecting-trace
-                                    accepting-trace))]
+         [tracked-head-pos (let ([head-pos (map (λ (trace) (tm-config-head-position (trace-config trace)))
+                                               (if (empty? accepting-trace)
+                                                   rejecting-trace
+                                                   accepting-trace))])
+                             (if reached-final? head-pos (append head-pos '(-1))))]
+                                 
+                             
          [all-head-pos (list->zipper tracked-head-pos)]
          [machine-decision (if (not (empty? accepting-computations))
                                'accept
@@ -901,8 +906,10 @@
          ;;(listof graph-thunk) ;;Purpose: Gets all the graphs needed to run the viz
          [graphs (create-graph-thunks building-state '())]
          ;;(listof number) ;;Purpose: Gets the number of computations for each step
-         [cut-off-computations-lengths (take (count-computations LoC '()) (length tracked-head-pos))]
-         )
+         [cut-off-computations-lengths (take (count-computations LoC '()) (length tracked-head-pos))])
+    ;(displayln reached-final?)
+    ;LoC
+    
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ TM-E-SCENE-HEIGHT 2))
