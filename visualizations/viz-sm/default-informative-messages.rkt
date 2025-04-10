@@ -114,53 +114,39 @@ rules are a (listof rule-structs)
 
 
 (define (draw-imsg imsg-st)
-  (let* [(tape (zipper-current (imsg-state-tm-tape imsg-st))
-               #;(if (zipper-empty? (imsg-state-tm-shown-accepting-trace imsg-st)) '(_)
-                   (zipper-current (imsg-state-tm-tape imsg-st))))
+  (let* [(tape (zipper-current (imsg-state-tm-tape imsg-st)))
          (start-index 0)
          (head-pos (if (or (zipper-empty? (imsg-state-tm-shown-accepting-trace imsg-st))
-                           (not (zipper-empty? (imsg-state-tm-tape imsg-st)))) 0
+                           (zipper-empty? (imsg-state-tm-rules-used imsg-st)))
+                       0
                        (zipper-current (imsg-state-tm-head-position imsg-st))))
          (TAPE-SIZE 24)]
     (define (make-tape-img loi start-index)
       (if (empty? (rest loi))
           (above (first loi)
                  (square 5 'solid BLANK-COLOR)
-                 (text (number->string start-index) 10 FONT-COLOR #;(if (zipper-empty? (imsg-state-tm-shown-accepting-trace imsg-st))
-                                                           BLANK-COLOR
-                                                           FONT-COLOR)))
+                 (text (number->string start-index) 10 FONT-COLOR))
           (beside (above (first loi)
                          (square 5 'solid BLANK-COLOR)
-                         (text (number->string start-index) 10 FONT-COLOR #;(if (zipper-empty? (imsg-state-tm-shown-accepting-trace imsg-st))
-                                                                   BLANK-COLOR
-                                                                   FONT-COLOR)))
+                         (text (number->string start-index) 10 FONT-COLOR))
                   (make-tape-img (rest loi) (add1 start-index)))))
     (let [(letter-imgs (build-list TAPE-SIZE
                                    (λ (i) (if (< (+ start-index i) (length tape))
                                               (overlay (text (symbol->string (list-ref tape (+ start-index i)))
                                                              24
-                                                             (cond #;[(zipper-empty? (imsg-state-tm-shown-accepting-trace imsg-st))
-                                                                    BLANK-COLOR]
-                                                                   [(= i (- head-pos start-index)) REJECT-COLOR]
+                                                             (cond [(= i (- head-pos start-index)) REJECT-COLOR]
                                                                    [else FONT-COLOR]))
                                                        (overlay (square 50 'solid BLANK-COLOR)
                                                                 (square (add1 50) 'solid
-                                                                        FONT-COLOR
-                                                                        #;(if (zipper-empty?
-                                                                             (imsg-state-tm-shown-accepting-trace imsg-st))
-                                                                            BLANK-COLOR
-                                                                            FONT-COLOR))))
+                                                                        FONT-COLOR)))
                                               (overlay (text (symbol->string BLANK)
                                                              24
                                                              (cond [(= i (- head-pos start-index)) REJECT-COLOR]
-                                                                   #;[(zipper-empty? (imsg-state-tm-shown-accepting-trace imsg-st))
-                                                                    BLANK-COLOR]
+                                                                   
                                                                    [else FONT-COLOR]))
                                                        (square 50 'solid BLANK-COLOR)
                                                        (square (add1 50) 'solid
-                                                               FONT-COLOR #;(if (zipper-empty? (imsg-state-tm-shown-accepting-trace imsg-st))
-                                                                 BLANK-COLOR
-                                                                 FONT-COLOR)))))))]
+                                                               FONT-COLOR))))))]
       (make-tape-img letter-imgs start-index))))
 
 
@@ -198,7 +184,7 @@ rules are a (listof rule-structs)
                       (if (equal? machine-decision 'accept)
                           (text (format "~a" EMP) FONT-SIZE ACCEPT-COLOR)
                           (text (format "~a" EMP) FONT-SIZE BLANK-COLOR))))]
-            [(and (eq? machine-decision 'reject) #;(not (empty? upci))
+            [(and (eq? machine-decision 'reject)
                   (equal? upci (ndfa-config-word (imsg-state-ndfa-farthest-consumed-input imsg-st))))
              (above/align
               'left
@@ -245,15 +231,12 @@ rules are a (listof rule-structs)
                                               0)))
              FONT-SIZE
              COMPUTATION-LENGTH-COLOR)
-      (cond #;[(and (eq? machine-decision 'reject) #;(not (empty? upci))
-                  (equal? upci (ndfa-config-word (imsg-state-ndfa-farthest-consumed-input imsg-st))))
-              (text "All computations do not consume the entire word and the machine rejects." FONT-SIZE REJECT-COLOR)]
-             [(and (empty? upci) (equal? machine-decision 'accept))
+      (cond [(and (empty? upci) (equal? machine-decision 'accept))
               (text "There is a computation that accepts." FONT-SIZE ACCEPT-COLOR)]
              [(and (empty? upci) (equal? machine-decision 'reject)
                    (not (empty? (ndfa-config-word (imsg-state-ndfa-farthest-consumed-input imsg-st)))))
               (text "All computations end in a non-final state and the machine rejects." FONT-SIZE REJECT-COLOR)]
-             [(and (eq? machine-decision 'reject) #;(not (empty? upci))
+             [(and (eq? machine-decision 'reject) 
                   (equal? upci (ndfa-config-word (imsg-state-ndfa-farthest-consumed-input imsg-st))))
               (text "All computations do not consume the entire word and the machine rejects." FONT-SIZE REJECT-COLOR)]
              [else (text "Word Status: accept " FONT-SIZE BLANK-COLOR)]))))
@@ -292,7 +275,7 @@ rules are a (listof rule-structs)
                       (if (equal? machine-decision 'accept)
                           (text (format "~a" EMP) FONT-SIZE FONT-COLOR)
                           (text (format "~a" EMP) FONT-SIZE BLANK-COLOR))))]
-            [(and (zipper-empty? (imsg-state-pda-shown-accepting-trace imsg-st)) #;(not (empty? upci))
+            [(and (zipper-empty? (imsg-state-pda-shown-accepting-trace imsg-st))
                   (equal? upci farthest-consumed-input)
                   computation-has-cut-off?)
              (let* ([pci-length (length pci)]
@@ -371,7 +354,7 @@ rules are a (listof rule-structs)
                                               0)))
             FONT-SIZE
             COMPUTATION-LENGTH-COLOR)
-      (cond [(and (zipper-empty? (imsg-state-pda-shown-accepting-trace imsg-st)) #;(not (empty? upci))
+      (cond [(and (zipper-empty? (imsg-state-pda-shown-accepting-trace imsg-st))
                   (equal? upci farthest-consumed-input)
                   computation-has-cut-off?)
              (text (format "There are computations that exceed the cut-off limit (~a)."
@@ -408,10 +391,7 @@ rules are a (listof rule-structs)
                             REJECT-COMPUTATION-COLOR))))
               
       (text "Tape: " 1 BLANK-COLOR)
-      (draw-imsg imsg-st)
-      #;(if (not (zipper-empty? (imsg-state-tm-tape imsg-st)))
-          (draw-imsg imsg-st)
-          (text "Tape is not shown when there are multiple rejecting computations." FONT-SIZE FONT-COLOR))
+      (draw-imsg imsg-st)  
       (text (format "The current number of possible computations is: ~a (without repeated configurations)."
                     (number->string (zipper-current (imsg-state-tm-computation-lengths imsg-st))))
             FONT-SIZE

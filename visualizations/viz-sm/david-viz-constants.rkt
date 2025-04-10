@@ -23,23 +23,20 @@
 
 
 #|
-A computation is a structure: (make-computation LoC LoR LoT visited)
+A computation is a structure: (computation LoC LoR LoT visited)
 LoC is a (listof configuration)
 LoR is a (listof rule)
 visited is a (hashof configuration)
 |#
 (struct computation (LoC LoR visited) #:transparent)
 
-;(struct config (state word stack index) #:transparent)
-
 #|
-A trace is a structure:
-(make-trace config rules)
-config is a single configuration
-rules are a (listof rule)
+A rule is a structure: (rule source read destination action)
+source is the source state                       | symbol
+read is the element to be read on the tape       | symbol
+destination is the destination state             | symbol
+action is the action to be performed on the tape | TM-ACTION
 |#
-;(struct trace (config rules) #:transparent)
-;(struct rule (read action) #:transparent)
 (struct rule (source read destination action) #:transparent)
 
 
@@ -61,30 +58,17 @@ rules are a (listof rule)
 
 ;; X (listof X) (X -> boolean) -> boolean
 ;;Purpose: Determine if X is in the given list
-(define (member? x lst eq-func)
-  (for/or ([L lst]) (eq-func x L))) 
-
-
+(define (member? x lst eq-func) (for/or ([L lst]) (eq-func x L))) 
 
 (define HELD-INV-COLOR 'chartreuse4)
 (define BRKN-INV-COLOR 'red2)
 (define TRACKED-ACCEPT-COLOR 'forestgreen)
 (define ALL-ACCEPT-COLOR 'green)
-(define SPLIT-ACCEPT-COLOR #;"forestgreen:green;0.33:forestgreen"
-  (string-append (symbol->string TRACKED-ACCEPT-COLOR)
-                                          ":"
-                                          (symbol->string ALL-ACCEPT-COLOR))
-  #;(string-append (symbol->string TRACKED-ACCEPT-COLOR)
-                                          ":"
-                                          (symbol->string ALL-ACCEPT-COLOR)
-                                          ":"
-                                          (symbol->string TRACKED-ACCEPT-COLOR)
-                                          ":"
-                                          (symbol->string ALL-ACCEPT-COLOR)
-                                          ":"
-                                          (symbol->string TRACKED-ACCEPT-COLOR)
-                                          ";.25"))
+(define SPLIT-ACCEPT-COLOR 
+  (string-append (symbol->string TRACKED-ACCEPT-COLOR) ":" (symbol->string ALL-ACCEPT-COLOR)))
 
+;;tm -> tm-struct
+;;Purpose: Converts the tm into a tm structure
 (define (remake-tm M)
   ;;(listof rules) -> (treelistof rule-struct)
   ;;Purpose: Converts the rules from the given tm to rule-structs
@@ -92,7 +76,6 @@ rules are a (listof rule)
     (for/treelist ([tm-rule a-lor])
       (rule (first (first tm-rule)) (second (first tm-rule))
             (first (second tm-rule)) (second (second tm-rule)))))
-  
   (tm (tm-getstates M)
       (tm-getalphabet M)
       (remake-rules (tm-getrules M))
@@ -106,19 +89,19 @@ rules are a (listof rule)
 (define SM-VIZ-FONT-SIZE 18)
 (define INS-TOOLS-BUFFER 30)
 
-(define accessor-func (compose1 fourth (compose1 trace-config zipper-current)))
-(define pda-accessor-func (compose1 pda-config-index (compose1 trace-config zipper-current)))
-(define ndfa-accessor-func (compose1 ndfa-config-index (compose1 trace-config zipper-current)))
+;;(X -> Y) :Purpose: A function to retrieve the index for a tm-config from a trace
+(define get-tm-config-index-frm-trace (compose1 tm-config-index trace-config zipper-current))
+;;(X -> Y) :Purpose: A function to retrieve the index for a pda-config from a trace
+(define get-pda-config-index-frm-trace (compose1 pda-config-index trace-config zipper-current))
+;;(X -> Y) :Purpose: A function to retrieve the index for a ndfa-config from a trace
+(define get-ndfa-config-index-frm-trace (compose1 ndfa-config-index trace-config zipper-current))
 
-(define get-index (compose1 tm-config-index (compose1 first zipper-current)))
-(define get-index-pda (compose1 pda-config-index (compose1 first zipper-current)))
-(define get-index-ndfa (compose1 ndfa-config-index (compose1 first zipper-current)))
-
-(define get-next-index (compose1 fourth (compose1 zipper-current zipper-next)))
-(define get-next-index-ndfa (compose1 third (compose1 zipper-current zipper-next)))
-
-(define get-prev-index (compose1 fourth (compose1 zipper-current zipper-prev)))
-(define get-prev-index-ndfa (compose1 third (compose1 zipper-current zipper-prev)))
+;;(X -> Y) :Purpose: A function to retrieve the index for a tm-config from the invs-zipper
+(define get-tm-config-index-frm-invs (compose1 tm-config-index first zipper-current))
+;;(X -> Y) :Purpose: A function to retrieve the index for a pda-config from the invs-zipper
+(define get-pda-config-index-frm-invs (compose1 pda-config-index first zipper-current))
+;;(X -> Y) :Purpose: A function to retrieve the index for a ndfa-config from the invs-zipper
+(define get-ndfa-config-index-frm-invs (compose1 ndfa-config-index first zipper-current))
 
 (define AB*B*UAB*
   (make-unchecked-ndfa '(S K B C H)
@@ -140,15 +123,13 @@ rules are a (listof rule)
                                    ((H a ,EMP)(H ,EMP)))))
 
 (define EVEN-AS-&-BS (remake-tm (make-unchecked-tm '(K H I B S)
-                          '(a b)
-                          `(((K ,BLANK) (S ,BLANK))
-                            ((K a) (H ,RIGHT)) ((H a) (K ,RIGHT)) ((H b) (B ,RIGHT)) ((B b) (H ,RIGHT))
-                            ((K b) (I ,RIGHT)) ((I b) (K ,RIGHT)) ((I a) (B ,RIGHT)) ((B a) (I ,RIGHT)))
-                          'K
-                          '(S)
-                          'S)))
-
-
+                                                   '(a b)
+                                                   `(((K ,BLANK) (S ,BLANK))
+                                                     ((K a) (H ,RIGHT)) ((H a) (K ,RIGHT)) ((H b) (B ,RIGHT)) ((B b) (H ,RIGHT))
+                                                     ((K b) (I ,RIGHT)) ((I b) (K ,RIGHT)) ((I a) (B ,RIGHT)) ((B a) (I ,RIGHT)))
+                                                   'K
+                                                   '(S)
+                                                   'S)))
 
 (define qempty? treelist-empty?)
 
@@ -162,10 +143,8 @@ rules are a (listof rule)
       (treelist-first a-qox)))
 
 ;; (listof X) (qof X) → (qof X)
-;; Purpose: Add the given list of X to the given
-;;          queue of X
-(define (enqueue a-lox a-qox)
-  (treelist-append a-qox a-lox #;(list->treelist a-lox)))
+;; Purpose: Add the given list of X to the given queue of X
+(define (enqueue a-lox a-qox) (treelist-append a-qox a-lox))
 
 ;; (qof X) → (qof X) throws error
 ;; Purpose: Return the rest of the given queue
@@ -278,20 +257,20 @@ rules are a (listof rule)
 
 (create-bounding-limits E-SCENE-WIDTH NDFA-E-SCENE-HEIGHT E-SCENE-TOOLS-WIDTH
                         ndfa-img-bounding-limit SM-VIZ-FONT-SIZE LETTER-KEY-WIDTH-BUFFER INS-TOOLS-BUFFER
-((ARROW-UP-KEY "Restart")
- (ARROW-RIGHT-KEY "Forward")
- (ARROW-LEFT-KEY "Backward")
- (ARROW-DOWN-KEY "Finish")
- (CURSOR "Hold to drag")
- (W-KEY "Zoom in")
- (S-KEY "Zoom out")
- (R-KEY "Min zoom")
- (E-KEY "Mid zoom")
- (F-KEY "Max zoom")
- (A-KEY "Word start")
- (D-KEY "Word end")
- (J-KEY "Prv not inv")
- (L-KEY "Nxt not inv")))
+                        ((ARROW-UP-KEY "Restart")
+                         (ARROW-RIGHT-KEY "Forward")
+                         (ARROW-LEFT-KEY "Backward")
+                         (ARROW-DOWN-KEY "Finish")
+                         (CURSOR "Hold to drag")
+                         (W-KEY "Zoom in")
+                         (S-KEY "Zoom out")
+                         (R-KEY "Min zoom")
+                         (E-KEY "Mid zoom")
+                         (F-KEY "Max zoom")
+                         (A-KEY "Word start")
+                         (D-KEY "Word end")
+                         (J-KEY "Prv not inv")
+                         (L-KEY "Nxt not inv")))
 
 #;(define pda-bounding-limits (create-bounding-limits E-SCENE-WIDTH PDA-E-SCENE-HEIGHT E-SCENE-TOOLS-WIDTH
                                                     pda-img-bounding-limit SM-VIZ-FONT-SIZE LETTER-KEY-WIDTH-BUFFER INS-TOOLS-BUFFER

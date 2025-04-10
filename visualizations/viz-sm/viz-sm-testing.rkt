@@ -1,9 +1,8 @@
 #lang racket
 
-(require "sm-viz.rkt"
-         "testing-parameter.rkt"
-         "../../fsm-core/interface.rkt")
-
+(require "testing-parameter.rkt"
+         "../../fsm-core/interface.rkt"
+         "sm-viz.rkt")
 
 (define (ndfa->pda M)
   (let [(states (sm-states M))
@@ -305,8 +304,8 @@
 ;;word -> boolean
 ;;Purpose: Determines if the last letter in the given word is an a
 (define (B-INV a-word)
-  (and (not (empty? a-word)) ;(not
-       (equal? (last a-word) 'a)))
+  (and (not (empty? a-word)) (not
+       (equal? (last a-word) 'a))))
 ;)
 
 ;;word -> boolean
@@ -729,6 +728,500 @@
 (define (pd-a-inv wrd stck)
   (or (not (= (length (filter (λ (w) (equal? w 'a)) wrd)) 4))
       (not (= (length (filter (λ (w) (equal? w 'b)) wrd)) 2))))
+
+;;States (i = head's position)
+;; K - tape[1..i-1] contains an even amount of a's and even bs
+;; H - tape[1..i-1] contains an odd amount of a's and even bs
+;; I - tape[1..i-1] contains an odd amount of b's and even as
+;; B - tape[1..i-1] contains an odd amount of a's and odd bs
+;; S - tape[i] = blank AND tape[1..i-1] contains an even amount of a's and even bs, final state
+
+;;Pre-condition = tape = LMw_ AND i = 0 
+(define EVEN-AS-&-BS (make-unchecked-tm '(K H I B S)
+                                        '(a b)
+                                        `(((K ,BLANK) (S ,BLANK))
+                                          ((K a) (H ,RIGHT)) ((H a) (K ,RIGHT)) ((H b) (B ,RIGHT)) ((B b) (H ,RIGHT))
+                                          ((K b) (I ,RIGHT)) ((I b) (K ,RIGHT)) ((I a) (B ,RIGHT)) ((B a) (I ,RIGHT)))
+                                        'K
+                                        '(S)
+                                        'S))
+
+;;tape headpos -> boolean
+;;Purpose: Determines if everything in the tape[1..i] is an even # of a's and b's
+(define (EVEN-K-INV tape headpos)
+  (or (= headpos 0)
+      (let [(num-as (length (filter (λ (w) (eq? w 'a)) (take (rest tape) (sub1 headpos)))))
+            (num-bs (length (filter (λ (w) (eq? w 'b)) (take (rest tape) (sub1 headpos)))))]
+        (and (even? num-as)
+             (even? num-bs)))))
+
+;;tape headpos -> boolean
+;;Purpose: Determines if everything in the tape[1..i] is an odd # of a's and even # of b's
+(define (EVEN-H-INV tape headpos)
+  (let [(num-as (length (filter (λ (w) (eq? w 'a)) (take (rest tape) (sub1 headpos)))))
+        (num-bs (length (filter (λ (w) (eq? w 'b)) (take (rest tape) (sub1 headpos)))))]
+    (and (odd? num-as)
+         (even? num-bs))))
+
+;;tape headpos -> boolean
+;;Purpose: Determines if everything in the tape[1..i] is an odd # of a's and even # of b's
+(define (BRK-EVEN-H-INV tape headpos)
+  (let [(num-as (length (filter (λ (w) (eq? w 'a)) (take (rest tape) (sub1 headpos)))))
+        (num-bs (length (filter (λ (w) (eq? w 'b)) (take (rest tape) (sub1 headpos)))))]
+    (and (even? num-as)
+         (even? num-bs))))
+
+;;tape headpos -> boolean
+;;Purpose: Determines if everything in the tape[1..i] is an even # of a's and odd # of b's
+(define (EVEN-I-INV tape headpos)
+  (let [(num-as (length (filter (λ (w) (eq? w 'a)) (take (rest tape) (sub1 headpos)))))
+        (num-bs (length (filter (λ (w) (eq? w 'b)) (take (rest tape) (sub1 headpos)))))]
+    (and (even? num-as)
+         (odd? num-bs))))
+
+(define (BRK-EVEN-I-INV tape headpos)
+  (let [(num-as (length (filter (λ (w) (eq? w 'a)) (take (rest tape) (sub1 headpos)))))
+        (num-bs (length (filter (λ (w) (eq? w 'b)) (take (rest tape) (sub1 headpos)))))]
+    (and (not (even? num-as))
+         (odd? num-bs))))
+
+;;tape headpos -> boolean
+;;Purpose: Determines if everything in the tape[1..i] is an odd # of a's and odd # of b's
+(define (EVEN-B-INV tape headpos)
+  (let [(num-as (length (filter (λ (w) (eq? w 'a)) (take (rest tape) (sub1 headpos)))))
+        (num-bs (length (filter (λ (w) (eq? w 'b)) (take (rest tape) (sub1 headpos)))))]
+    (and (odd? num-as)
+         (odd? num-bs))))
+
+
+(define (BRK-EVEN-B-INV tape headpos)
+  (let [(num-as (length (filter (λ (w) (eq? w 'a)) (take (rest tape) (sub1 headpos)))))
+        (num-bs (length (filter (λ (w) (eq? w 'b)) (take (rest tape) (sub1 headpos)))))]
+    (and (not (odd? num-as))
+         (odd? num-bs))))
+
+;;tape headpos -> boolean
+;;Purpose: Determines if everything in the tape[1..i] is an even # of a's and b's and tape[i] = BLANK
+(define (EVEN-S-INV tape headpos)
+  (let [(num-as (length (filter (λ (w) (eq? w 'a)) (take (rest tape) (sub1 headpos)))))
+        (num-bs (length (filter (λ (w) (eq? w 'b)) (take (rest tape) (sub1 headpos)))))]
+    (and (even? num-as)
+         (even? num-bs)
+         (eq? (list-ref tape headpos) BLANK))))
+
+(define tm-a* (make-unchecked-tm '(S Y N)
+                              '(a b)
+                              `(((S a) (S ,RIGHT))
+                                ((S b) (N b))
+                                ((S ,BLANK) (Y ,BLANK)))
+                              'S
+                              '(Y N)
+                              'Y))
+
+;; States (i is the position of the head)
+;; S: no tape elements read, starting sate
+;; A: tape[1..i-1] has only a
+;; B: tape[1..i-1] has only a
+;; C: tape[1..i-2] has only a and tape[i-1] = b
+;; Y: tape[i] = BLANK and tape[1..i-1] = a* or a*b,
+;; final accepting state
+;; N: tape[1..i-1] != a* or a*b, final state
+;; L = a* U a*b
+;; PRE: tape = LMw ANDi=1
+(define a*Ua*b (make-unchecked-tm '(S A B C Y N)
+                                  '(a b)
+                                  `(((S ,BLANK) (Y ,BLANK))
+                                    ((S a) (A ,RIGHT))
+                                    ((S a) (B ,RIGHT))
+                                    ((S b) (C ,RIGHT))
+                                    ((A a) (A ,RIGHT))
+                                    ((A ,BLANK) (Y ,BLANK))
+                                    ((B a) (B ,RIGHT))
+                                    ((B b) (C ,RIGHT))
+                                    ((C a) (N ,RIGHT))
+                                    ((C b) (N ,RIGHT))
+                                    ((C ,BLANK) (Y ,BLANK)))
+                                  'S
+                                  '(Y N)
+                                  'Y))
+
+;; tape natnum → Boolean
+;; Purpose: Determine that no tape elements read
+(define (tm-S-INV t i) (= i 1))
+
+;; tape natnum → Boolean
+;; Purpose: Determine that tape[1..i-1] only has a
+(define (A-INV t i)
+  (and (>= i 2)
+       (andmap (λ (s) (eq? s 'a)) (take (rest t) (sub1 i)))))
+
+;; tape natnum → Boolean
+;; Purpose: Determine that tape[1..i-1] only has a
+(define (tm-B-INV t i)
+  (and (>= i 2)
+       (andmap (λ (s) (eq? s 'a)) (take (rest t) (sub1 i)))))
+
+;; tape natnum → Boolean
+;; Purpose: Determine that tape[1..i-2] has only a and
+;; tape[i-1] = b
+(define (tm-C-INV t i)
+  (and (>= i 2)
+       (andmap (λ (s) (eq? s 'a)) (take (rest t) (- i 2)))
+       (eq? (list-ref t (sub1 i)) 'b)))
+
+;; tape natnum → Boolean
+;; Purpose: Determine that tape[i] = BLANK and
+;; tape[1..i-1] = a* or tape[1..i-1] = a*b
+(define (Y-INV t i)
+  (or (and (= i 2) (eq? (list-ref t (sub1 i)) BLANK))
+      (andmap (λ (s) (eq? s 'a)) (take (rest t) (sub1 i)))
+      (let* [(front (takef (rest t) (λ (s) (eq? s 'a))))
+             (back (takef (drop t (add1 (length front)))
+                          (λ (s) (not (eq? s BLANK)))))]
+        (equal? back '(b)))))
+
+;; tape natnum → Boolean
+;; Purpose: Determine that tape[1..i-1] != a* or a*b
+(define (N-INV t i)
+  (and (not (andmap (λ (s) (eq? s 'a))
+                    (take (rest t) (sub1 i))))
+       (let* [(front (takef (rest t) (λ (s) (eq? s 'a))))
+              (back (takef (drop t (add1 (length front)))
+                           (λ (s) (not (eq? s BLANK)))))]
+         (not (equal? back '(b))))))
+
+(define anbncn (make-tm
+                '(S A B C D E F G H I J K L Y)
+                '(a b c x)
+                `(((S ,BLANK) (J ,RIGHT))
+                  ((J ,BLANK) (Y ,BLANK))
+                  ((J a) (A ,RIGHT))
+                  ((A a) (A ,RIGHT))
+                  ((A b) (B ,RIGHT))
+                  ((B b) (B ,RIGHT))
+                  ((B c) (C ,RIGHT))
+                  ((C c) (C ,RIGHT))
+                  ((C ,BLANK) (D ,LEFT))
+                  ((D a) (D ,LEFT))
+                  ((D b) (D ,LEFT))
+                  ((D c) (D ,LEFT))
+                  ((D x) (D ,LEFT))
+                  ((D ,BLANK) (E ,RIGHT))
+                  ((E x) (E ,RIGHT))
+                  ((E a) (F x))
+                  ((E a) (H x))
+                  ((F a) (F ,RIGHT))
+                  ((F b) (G x))
+                  ((F x) (F ,RIGHT))
+                  ((G b) (G ,RIGHT))
+                  ((G x) (G ,RIGHT))
+                  ((G c) (D x))
+                  ((H x) (H ,RIGHT))
+                  ((H b) (I x))
+                  ((I x) (I ,RIGHT))
+                  ((I c) (K x))
+                  ((K x) (L ,RIGHT))
+                  ((L ,BLANK) (Y ,BLANK)))
+                'S
+                '(Y)
+                'Y))
+
+(define FBR (make-tm '(S A F)
+                     '(a b)
+                     `(((S a) (A ,RIGHT))
+                       ((S b) (A ,RIGHT))
+                       ((S ,BLANK) (A ,RIGHT))
+                       ((A a) (A ,RIGHT))
+                       ((A b) (A ,RIGHT))
+                       ((A ,BLANK) (F ,BLANK)))
+                     'S
+                     '(F)))
+
+(define ADD (make-tm '(S A B C D E F G)
+                     '(d)
+                     `(((S ,BLANK) (A ,RIGHT))
+                       ((A d) (A ,RIGHT))
+                       ((A ,BLANK) (B d))
+                       ((B d) (B ,RIGHT))
+                       ((B ,BLANK) (C ,LEFT))
+                       ((C d) (D ,BLANK))
+                       ((D ,BLANK) (E ,LEFT))
+                       ((E d) (F ,RIGHT))
+                       ((E ,BLANK) (G ,RIGHT))
+                       ((G ,BLANK) (F ,RIGHT)))
+                     'S
+                     '(F)))
+
+;; word symbol → word
+;; Purpose: Return the subword at the front of the
+;; given word that only contains the given
+;; symbol
+(define (front-symbs w s)
+  (takef w (λ (a) (eq? a s))))
+
+;; tape natnum → Boolean
+;; Purpose: Determine that head is in position 1 and
+;; tape[i] = BLANK
+(define (tm-S-INV1 t i) (and (= i 1) (eq? (list-ref t i) BLANK)))
+
+(define (tm-A-INV1 t i)
+  (and (> i 2)
+       (let* [(w (drop (take t i) 2))
+              (as (front-symbs w 'a))]
+         (equal? as w))))
+
+
+;; tape natnum → Boolean
+;; Purpose: Determine head in position > 2 and
+;; tape[2..i-1] = a+b+
+(define (tm-B-INV1 t i)
+  (and (> i 3)
+       (let* [(w (drop (take t i) 2))
+              (as (front-symbs w 'a))
+              (w-as (drop w (length as)))
+              (bs (front-symbs w-as 'b))]
+         (and (equal? w (append as bs))
+              (not (empty? as))
+              (not (empty? bs))))))
+
+;; tape natnum → Boolean
+;; Purpose: Determine head in position > 2 and
+;; tape[2..i-1] = a+b+
+(define (BRK-B-INV1 t i)
+  (not (and (> i 3)
+            (let* [(w (drop (take t i) 2))
+                   (as (front-symbs w 'a))
+                   (w-as (drop w (length as)))
+                   (bs (front-symbs w-as 'b))]
+              (and (equal? w (append as bs))
+                   (not (empty? as))
+                   (not (empty? bs)))))))
+
+;; tape natnum → Boolean
+;; Purpose: Determine head in position > 3 and
+;; tape[2..i-1]=a+b+c+
+(define (C-INV1 t i)
+  (and (> i 4)
+       (let* [(w (drop (take t i) 2))
+              (as (front-symbs w 'a))
+              (w-as (drop w (length as)))
+              (bs (front-symbs w-as 'b))
+              (w-asbs (drop w-as (length bs)))
+              (cs (front-symbs w-asbs 'c))]
+         (and (equal? w (append as bs cs))
+              (not (empty? as))
+              (not (empty? bs))
+              (not (empty? cs))))))
+
+
+;; tape natnum → Boolean
+;; Purpose: Determine that head position is >= 1 and that
+;; tape[i]=xna+xnb+xnc+
+(define (D-INV t i)
+  (and (>= i 1)
+       (let* [(w (takef (drop t 2)
+                        (λ (s) (not (eq? s BLANK)))))
+              (xs1 (front-symbs w 'x))
+              (w-xs1 (drop w (length xs1)))
+              (as (front-symbs w-xs1 'a))
+              (w-xs1as (drop w-xs1 (length as)))
+              (xs2 (front-symbs w-xs1as 'x))
+              (w-xs1asxs2 (drop w-xs1as (length xs2)))
+              (bs (front-symbs w-xs1asxs2 'b))
+              (w-xs1asxs2bs (drop w-xs1asxs2 (length bs)))
+              (xs3 (front-symbs w-xs1asxs2bs 'x))
+              (w-xs1asbsxs3 (drop w-xs1asxs2bs (length xs3)))
+              (cs (front-symbs w-xs1asbsxs3 'c))]
+         (and (equal? w (append xs1 as xs2 bs xs3 cs))
+              (> (length as) 0)
+              (> (length bs) 0)
+              (> (length cs) 0)
+              (= (length xs1) (length xs2) (length xs3))))))
+
+
+;; tape natnum → Boolean
+;; Purpose: Determine head in position > 1 and
+;; input word = xna+xnb+xnc+
+(define (E-INV t i)
+  (and (> i 1)
+       (let* [(w (takef (drop t 2)
+                        (λ (s) (not (eq? s BLANK)))))
+              (xs1 (front-symbs w 'x))
+              (w-xs1 (drop w (length xs1)))
+              (as (front-symbs w-xs1 'a))
+              (w-xs1as (drop w-xs1 (length as)))
+              (xs2 (front-symbs w-xs1as 'x))
+              (w-xs1asxs2 (drop w-xs1as (length xs2)))
+              (bs (front-symbs w-xs1asxs2 'b))
+              (w-xs1asxs2bs (drop w-xs1asxs2 (length bs)))
+              (xs3 (front-symbs w-xs1asxs2bs 'x))
+              (w-xs1asbsxs3 (drop w-xs1asxs2bs (length xs3)))
+              (cs (front-symbs w-xs1asbsxs3 'c))]
+         (and (equal? w (append xs1 as xs2 bs xs3 cs))
+              (> (length as) 0)
+              (> (length bs) 0)
+              (> (length cs) 0)
+              (= (length xs1) (length xs2) (length xs3))))))
+
+
+(define (BRK-E-INV t i)
+  (not (and (> i 1)
+            (let* [(w (takef (drop t 2)
+                             (λ (s) (not (eq? s BLANK)))))
+                   (xs1 (front-symbs w 'x))
+                   (w-xs1 (drop w (length xs1)))
+                   (as (front-symbs w-xs1 'a))
+                   (w-xs1as (drop w-xs1 (length as)))
+                   (xs2 (front-symbs w-xs1as 'x))
+                   (w-xs1asxs2 (drop w-xs1as (length xs2)))
+                   (bs (front-symbs w-xs1asxs2 'b))
+                   (w-xs1asxs2bs (drop w-xs1asxs2 (length bs)))
+                   (xs3 (front-symbs w-xs1asxs2bs 'x))
+                   (w-xs1asbsxs3 (drop w-xs1asxs2bs (length xs3)))
+                   (cs (front-symbs w-xs1asbsxs3 'c))]
+              (and (equal? w (append xs1 as xs2 bs xs3 cs))
+                   (> (length as) 0)
+                   (> (length bs) 0)
+                   (> (length cs) 0)
+                   (= (length xs1) (length xs2) (length xs3)))))))
+
+
+;; tape natnum → Boolean
+;; Purpose: Determine head in position > 1 and
+;; input word = xn+1a+xnbb+xncc+
+(define (sm-F-INV t i)
+  (and (> i 1)
+       (let* [(w (takef (drop t 2)
+                        (λ (s) (not (eq? s BLANK)))))
+              (xs1 (front-symbs w 'x))
+              (w-xs1 (drop w (length xs1)))
+              (as (front-symbs w-xs1 'a))
+              (w-xs1as (drop w-xs1 (length as)))
+              (xs2 (front-symbs w-xs1as 'x))
+              (w-xs1asxs2 (drop w-xs1as (length xs2)))
+              (bs (front-symbs w-xs1asxs2 'b))
+              (w-xs1asxs2bs (drop w-xs1asxs2 (length bs)))
+              (xs3 (front-symbs w-xs1asxs2bs 'x))
+              (w-xs1asbsxs3 (drop w-xs1asxs2bs (length xs3)))
+              (cs (front-symbs w-xs1asbsxs3 'c))]
+         (and (equal? w (append xs1 as xs2 bs xs3 cs))
+              (> (length as) 0)
+              (> (length bs) 1)
+              (> (length cs) 1)
+              (= (sub1 (length xs1))
+                 (length xs2)
+                 (length xs3))))))
+
+;; tape natnum → Boolean
+;; Purpose: Determine head in position > 2 and
+;; tape=xn+1a+xn+1b+xncc+
+(define (G-INV t i)
+  (and (> i 3)
+       (let* [(w (takef (drop t 2)
+                        (λ (s) (not (eq? s BLANK)))))
+              (xs1 (front-symbs w 'x))
+              (w-xs1 (drop w (length xs1)))
+              (as (front-symbs w-xs1 'a))
+              (w-xs1as (drop w-xs1 (length as)))
+              (xs2 (front-symbs w-xs1as 'x))
+              (w-xs1asxs2 (drop w-xs1as (length xs2)))
+              (bs (front-symbs w-xs1asxs2 'b))
+              (w-xs1asxs2bs (drop w-xs1asxs2 (length bs)))
+              (xs3 (front-symbs w-xs1asxs2bs 'x))
+              (w-xs1asbsxs3 (drop w-xs1asxs2bs (length xs3)))
+              (cs (front-symbs w-xs1asbsxs3 'c))]
+         (and (equal? w (append xs1 as xs2 bs xs3 cs))
+              (> (length as) 0)
+              (> (length bs) 0)
+              (> (length cs) 1)
+              (= (sub1 (length xs1))
+                 (sub1 (length xs2))
+                 (length xs3))))))
+
+
+;; tape natnum → Boolean
+;; Purpose: Determine tape[i]=x^+bx^+c and |xs|%3 = 1 and
+;; |x^+b| = 2*|x^+c|
+(define (tm-H-INV t i)
+  (and (> i 1)
+       (let* [(w (drop-right (drop t 2) 1))
+              (xs1 (front-symbs w 'x))
+              (w-xs1 (drop w (length xs1)))
+              (b (front-symbs w-xs1 'b))
+              (w-xs1b (drop w-xs1 (length b)))
+              (xs2 (front-symbs w-xs1b 'x))
+              (w-xs1bxs2 (drop w-xs1b (length xs2)))
+              (c (front-symbs w-xs1bxs2 'c))]
+         (and (equal? w (append xs1 b xs2 c))
+              (= (add1 (length xs1)) (* 2 (add1 (length xs2))))
+              (= (length b) 1)
+              (= (length c) 1)
+              (= (remainder (length (append xs1 xs2)) 3) 1)))))
+
+;; tape natnum → Boolean
+;; Purpose: Determine tape[i]=x*c and |xs|%3 = 2
+(define (I-INV t i)
+  (and (> i 2)
+       (let* [(w (drop-right (drop t 2) 1))
+              (xs1 (front-symbs w 'x))
+              (w-xs1 (drop w (length xs1)))
+              (c (front-symbs w-xs1 'c))]
+         (and (equal? w (append xs1 c))
+              (= (length c) 1)
+              (= (remainder (length xs1) 3) 2)))))
+
+;; tape natnum → Boolean
+;; Purpose: Determine that head’s position is 2 and
+;; tape[1] = BLANK
+(define (J-INV tape i)
+  (and (= i 2) (eq? (list-ref tape (sub1 i)) BLANK)))
+
+
+;; tape natnum → Boolean
+;; Purpose: Determine if w = xxxx* and |xs|%3 = 0
+;; and tape[i] = x
+(define (tm-K-INV t i)
+  (let [(w (drop-right (drop t 2) 1))]
+    (and (eq? (list-ref t i) 'x) ;;;
+         (andmap (λ (s) (eq? s 'x)) w)
+         (>= (length w) 3)
+         (= (remainder (length w) 3) 0)
+         (= i (add1 (length w))))))
+
+;; tape natnum → Boolean
+;; Purpose: Determine that w = xxxx* and |xs|%3 = 0 and
+;; i = |w| + 2
+(define (L-INV t i)
+  (let [(w (drop-right (drop t 2) 1))]
+    (and (andmap (λ (s) (eq? s 'x)) w)
+         (>= (length w) 3)
+         (= (remainder (length w) 3) 0)
+         (= i (+ (length w) 2)))))
+
+;; tape natnum → Boolean
+;; Purpose: Determine input word = x* and |xs|%3 = 0
+(define (Y-INV1 t i)
+  (let* [(w (drop-right (drop t 2) 1))]
+    (and (andmap (λ (s) (eq? s 'x)) w)
+         (= (remainder (length w) 3) 0))))
+
+
+
+;(tm-viz EVEN-AS-&-BS '(@ a b a b) 0)
+;(sm-viz anbncn `(,LM ,BLANK a b c) #:head-pos 1 #:cut-off 15)
+
+#;(tm-viz EVEN-AS-&-BS `(,LM b a b a) 0 (list 'K EVEN-K-INV)
+          (list 'H EVEN-H-INV)
+          (list 'I BRK-EVEN-I-INV)
+          (list 'B EVEN-B-INV)
+          (list 'S EVEN-S-INV))
+
+#;(tm-viz anbncn `(,LM ,BLANK a b c) 1 (list 'S S-INV)
+          (list 'A A-INV)
+          (list 'B B-INV)
+          (list 'C C-INV)
+          (list 'Y Y-INV)
+          (list 'N N-INV))
 
 #;(parameterize ([testing? #t])
   

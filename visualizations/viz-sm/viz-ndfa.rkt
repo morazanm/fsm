@@ -21,15 +21,6 @@
 
 (provide ndfa-viz)
 
-(define FONT-SIZE 18)
-(define EXTRA-HEIGHT-FROM-CURSOR 4)
-(define NODE-SIZE 50)
-
-(define DEFAULT-ZOOM-FLOOR .6)
-
-
-;(define INS-TOOLS-BUFFER 30)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 #|
@@ -511,7 +502,7 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
                      
                      [invs-zipper (cond [(zipper-empty? imsg-state-invs-zipper) imsg-state-invs-zipper]
                                         [(and (not (zipper-at-end? imsg-state-invs-zipper))
-                                              (>= (ndfa-accessor-func imsg-state-shown-accepting-trace)
+                                              (>= (get-ndfa-config-index-frm-trace imsg-state-shown-accepting-trace)
                                                   (ndfa-config-index (first (first (zipper-unprocessed imsg-state-invs-zipper))))))
                                          (zipper-next imsg-state-invs-zipper)]
                                         [else imsg-state-invs-zipper])])])])))
@@ -579,7 +570,7 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
                      
                      [invs-zipper (cond [(zipper-empty? imsg-state-invs-zipper) imsg-state-invs-zipper]
                                         [(and (not (zipper-at-begin? imsg-state-invs-zipper))
-                                              (<= (ndfa-accessor-func imsg-state-shown-accepting-trace)
+                                              (<= (get-ndfa-config-index-frm-trace imsg-state-shown-accepting-trace)
                                                   (ndfa-config-index (first (first (zipper-processed imsg-state-invs-zipper))))))
                                          (zipper-prev imsg-state-invs-zipper)]
                                         [else imsg-state-invs-zipper])])])])))
@@ -653,17 +644,18 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
     (if (or (zipper-empty? imsg-state-invs-zipper)
             (and (zipper-at-begin? imsg-state-invs-zipper)
                  (not (zipper-at-end? imsg-state-invs-zipper)))
-            (< (ndfa-accessor-func imsg-state-shown-accepting-trace)
-               (get-index-ndfa imsg-state-invs-zipper)))
+            (< (get-ndfa-config-index-frm-trace imsg-state-shown-accepting-trace)
+               (get-ndfa-config-index-frm-invs imsg-state-invs-zipper)))
         a-vs
         (let ([zip (if (and (not (zipper-at-begin? imsg-state-invs-zipper))
-                            (<= (ndfa-accessor-func imsg-state-shown-accepting-trace) (get-index-ndfa imsg-state-invs-zipper)))
+                            (<= (get-ndfa-config-index-frm-trace imsg-state-shown-accepting-trace)
+                                (get-ndfa-config-index-frm-invs imsg-state-invs-zipper)))
                        (zipper-prev imsg-state-invs-zipper)
                        imsg-state-invs-zipper)])
           (struct-copy
            viz-state
            a-vs
-           [imgs (vector-zipper-to-idx (viz-state-imgs a-vs) (get-index-ndfa zip))]
+           [imgs (vector-zipper-to-idx (viz-state-imgs a-vs) (get-ndfa-config-index-frm-invs zip))]
            [informative-messages
             (struct-copy
              informative-messages
@@ -672,11 +664,11 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
               (struct-copy imsg-state-ndfa
                            (informative-messages-component-state
                             (viz-state-informative-messages a-vs))
-                           [ci (zipper-to-idx imsg-state-ci (get-index-ndfa zip))]
+                           [ci (zipper-to-idx imsg-state-ci (get-ndfa-config-index-frm-invs zip))]
                            
                            [shown-accepting-trace (if (zipper-empty? imsg-state-shown-accepting-trace)
                                                       imsg-state-shown-accepting-trace
-                                                      (zipper-to-idx imsg-state-shown-accepting-trace (get-index-ndfa zip)))]
+                                                      (zipper-to-idx imsg-state-shown-accepting-trace (get-ndfa-config-index-frm-invs zip)))]
                            [invs-zipper zip])])])))))
 
 ;;viz-state -> viz-state
@@ -690,18 +682,18 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
     (if (or (zipper-empty? imsg-state-invs-zipper)
             (and (not (zipper-at-begin? imsg-state-invs-zipper))
                  (zipper-at-end? imsg-state-invs-zipper))
-            (> (ndfa-accessor-func imsg-state-shown-accepting-trace)
-               (get-index-ndfa imsg-state-invs-zipper)))
+            (> (get-ndfa-config-index-frm-trace imsg-state-shown-accepting-trace)
+               (get-ndfa-config-index-frm-invs imsg-state-invs-zipper)))
         a-vs
         (let* ([zip (if (and (not (zipper-at-end? imsg-state-invs-zipper))
-                             (>= (ndfa-accessor-func imsg-state-shown-accepting-trace)
-                                 (get-index-ndfa imsg-state-invs-zipper)))
+                             (>= (get-ndfa-config-index-frm-trace imsg-state-shown-accepting-trace)
+                                 (get-ndfa-config-index-frm-invs imsg-state-invs-zipper)))
                         (zipper-next imsg-state-invs-zipper)
                         imsg-state-invs-zipper)])
           (struct-copy
            viz-state
            a-vs
-           [imgs (vector-zipper-to-idx (viz-state-imgs a-vs) (get-index-ndfa zip))]
+           [imgs (vector-zipper-to-idx (viz-state-imgs a-vs) (get-ndfa-config-index-frm-invs zip))]
            [informative-messages
             (struct-copy
              informative-messages
@@ -710,12 +702,12 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
               (struct-copy imsg-state-ndfa
                            (informative-messages-component-state
                             (viz-state-informative-messages a-vs))
-                           [ci (zipper-to-idx imsg-state-ci (get-index-ndfa zip))]
+                           [ci (zipper-to-idx imsg-state-ci (get-ndfa-config-index-frm-invs zip))]
                          
                          
                            [shown-accepting-trace (if (zipper-empty? imsg-state-shown-accepting-trace)
                                                       imsg-state-shown-accepting-trace
-                                                      (zipper-to-idx imsg-state-shown-accepting-trace (get-index-ndfa zip)))]
+                                                      (zipper-to-idx imsg-state-shown-accepting-trace (get-ndfa-config-index-frm-invs zip)))]
                            [invs-zipper zip])])])))))
 
 ;;machine -> machine
@@ -838,7 +830,6 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
                           '()
                           (let ([accepting-LoC (map (λ (comp) (treelist->list (computation-LoC comp))) accepting-computations)])
                             (get-failed-invariants a-word accepting-LoC invs)))])
-    ;most-consumed-word
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ NDFA-E-SCENE-HEIGHT 2))
@@ -905,83 +896,4 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
                                         [ D-KEY-DIMS identity d-key-pressed]
                                         [ J-KEY-DIMS ndfa-jump-prev j-key-pressed]
                                         [ L-KEY-DIMS ndfa-jump-next l-key-pressed]))
-             (if (eq? (ndfa-type new-M) 'ndfa) 'ndfa-viz 'dfa-viz))
-    
-    #;(if testing?
-          (void)
-          (run-viz graphs
-                   (lambda () (graph->bitmap (first graphs)))
-                   (posn (/ E-SCENE-WIDTH 2) (/ NDFA-E-SCENE-HEIGHT 2))
-                   DEFAULT-ZOOM
-                   DEFAULT-ZOOM-CAP
-                   DEFAULT-ZOOM-FLOOR
-                   (informative-messages ndfa-create-draw-informative-message
-                                         (imsg-state-ndfa new-M
-                                                          CIs
-                                                          (list->zipper (if (empty? accepting-traces) '() (first accepting-traces)))
-                                                          most-consumed-word
-                                                          (list->zipper inv-configs)
-                                                          computation-lens
-                                                          (for/list ([computation LoC]) (treelist->list computation)) ;LoC
-                                                          0
-                                                          (let ([offset-cap (- (length a-word) TAPE-SIZE)])
-                                                            (if (> 0 offset-cap) 0 offset-cap))
-                                                          0)
-                                         ndfa-img-bounding-limit)
-                   (instructions-graphic E-SCENE-TOOLS
-                                         (bounding-limits 0
-                                                          (image-width E-SCENE-TOOLS)
-                                                          (+ EXTRA-HEIGHT-FROM-CURSOR
-                                                             NDFA-E-SCENE-HEIGHT
-                                                             (image-height ndfa-info-img)
-                                                             INS-TOOLS-BUFFER)
-                                                          (+ EXTRA-HEIGHT-FROM-CURSOR
-                                                             NDFA-E-SCENE-HEIGHT
-                                                             (image-height ndfa-info-img)
-                                                             INS-TOOLS-BUFFER
-                                                             (image-height ARROW-UP-KEY))))
-                   (create-viz-draw-world E-SCENE-WIDTH NDFA-E-SCENE-HEIGHT INS-TOOLS-BUFFER)
-                   (create-viz-process-key ["right" viz-go-next right-key-pressed]
-                                           ["left" viz-go-prev left-key-pressed]
-                                           ["up" viz-go-to-begin up-key-pressed]
-                                           ["down" viz-go-to-end down-key-pressed]
-                                           [ "w" viz-zoom-in identity]
-                                           [ "s" viz-zoom-out identity]
-                                           [ "r" viz-max-zoom-out identity]
-                                           [ "f" viz-max-zoom-in identity]
-                                           [ "e" viz-reset-zoom identity]
-                                           [ "a" identity a-key-pressed]
-                                           [ "d" identity d-key-pressed]
-                                           [ "wheel-down" viz-zoom-in identity]
-                                           [ "wheel-up" viz-zoom-out identity]
-                                           [ "j" ndfa-jump-prev j-key-pressed]
-                                           [ "l" ndfa-jump-next l-key-pressed]
-                                           )
-                   (create-viz-process-tick NDFA-E-SCENE-BOUNDING-LIMITS
-                                            NODE-SIZE
-                                            E-SCENE-WIDTH
-                                            NDFA-E-SCENE-HEIGHT
-                                            CLICK-BUFFER-SECONDS
-                                            ([ndfa-img-bounding-limit
-                                              (lambda (a-imsgs x-diff y-diff) a-imsgs)])
-                                            ( [ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed]
-                                              [ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed]
-                                              [ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed]
-                                              [ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed]
-                                              [W-KEY-DIMS viz-zoom-in identity]
-                                              [S-KEY-DIMS viz-zoom-out identity]
-                                              [R-KEY-DIMS viz-max-zoom-out identity]
-                                              [E-KEY-DIMS viz-reset-zoom identity]
-                                              [ F-KEY-DIMS viz-max-zoom-in identity]
-                                              [ A-KEY-DIMS identity a-key-pressed]
-                                              [ D-KEY-DIMS identity d-key-pressed]
-                                              [ J-KEY-DIMS ndfa-jump-prev j-key-pressed]
-                                              [ L-KEY-DIMS ndfa-jump-next l-key-pressed]))
-                   (if (eq? (M 'whatami) 'ndfa)
-                       'ndfa-viz
-                       'dfa-viz)))))
-
-
-;"notes to self:"
-;"scroll thru word instead of jumping to end"
-;"highlight which rule is being used when there are multiple rules on an edge"
+             (if (eq? (ndfa-type new-M) 'ndfa) 'ndfa-viz 'dfa-viz))))
