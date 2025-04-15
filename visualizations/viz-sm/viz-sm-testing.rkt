@@ -18,7 +18,9 @@
                 (map (λ (r) (list (list (first r) (second r) EMP)
                                   (list (third r) EMP)))
                      rules))))
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; L = ab* U (ab)*
 (define M (make-ndfa '(S A B C D E F G H I)
@@ -439,6 +441,11 @@
         [num-c (length (filter (λ (w) (equal? w 'c)) a-word))])
     (= num-g num-c)))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
  
 (define SCHIZO-SAME-NUM-AB (make-ndpda '(K H I)
                                        '(a b)
@@ -729,6 +736,13 @@
   (or (not (= (length (filter (λ (w) (equal? w 'a)) wrd)) 4))
       (not (= (length (filter (λ (w) (equal? w 'b)) wrd)) 2))))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+
 ;;States (i = head's position)
 ;; K - tape[1..i-1] contains an even amount of a's and even bs
 ;; H - tape[1..i-1] contains an odd amount of a's and even bs
@@ -951,6 +965,37 @@
                        ((G ,BLANK) (F ,RIGHT)))
                      'S
                      '(F)))
+
+(define PR^N (make-tm '(S A B D E F G H I J K M N Q Y)
+                      '(a b h i r)
+                      `(((S ,BLANK) (A ,RIGHT)) ;; start the simulation
+                        ((A i) (Q ,RIGHT)) ;; move to next instruction if any
+                        ((Q ,BLANK) (Y ,BLANK)) ;; check if done
+                        ((Q r) (M i)) ;; Otherwise swap i and r in previous position
+                        ((M i) (N ,LEFT)) 
+                        ((N i) (B r))
+                        ((B r) (B ,RIGHT)) ;; find h
+                        ((B i) (B ,RIGHT))
+                        ((B ,BLANK) (B ,RIGHT))
+                        ((B a) (B ,RIGHT))
+                        ((B b) (B ,RIGHT))
+                        ((B h) (D ,RIGHT))
+                        ((D a) (E h)) ;; read a and move simultaed head right
+                        ((D b) (G h)) ;; read b and move simultaed head right
+                        ((D ,BLANK) (I h)) ;; read blank and move simultaed head right
+                        ((E h) (F ,LEFT)) ;; move simulated head left after a read
+                        ((F h) (K a))     ;; substitute h with a
+                        ((G h) (H ,LEFT)) ;; move simulated head left after b read
+                        ((H h) (K b))     ;; substitute h with b
+                        ((I h) (J ,LEFT)) ;; move simulated head left after blank read
+                        ((J h) (K ,BLANK)) ;; substitute h with blank
+                        ((K a) (K ,LEFT)) ;; find i
+                        ((K b) (K ,LEFT))
+                        ((K ,BLANK) (K ,LEFT))
+                        ((K r) (K ,LEFT))
+                        ((K i) (Q ,RIGHT))) 
+                      'S
+                      '(Y)))
 
 ;; word symbol → word
 ;; Purpose: Return the subword at the front of the
@@ -1207,16 +1252,16 @@
 
 
 
-;(tm-viz EVEN-AS-&-BS '(@ a b a b) 0)
+;(sm-viz EVEN-AS-&-BS '(@ a b a b) 0)
 ;(sm-viz anbncn `(,LM ,BLANK a b c) #:head-pos 1 #:cut-off 15)
 
-#;(tm-viz EVEN-AS-&-BS `(,LM b a b a) 0 (list 'K EVEN-K-INV)
+#;(sm-viz EVEN-AS-&-BS `(,LM b a b a) 0 (list 'K EVEN-K-INV)
           (list 'H EVEN-H-INV)
           (list 'I BRK-EVEN-I-INV)
           (list 'B EVEN-B-INV)
           (list 'S EVEN-S-INV))
-
-#;(tm-viz anbncn `(,LM ,BLANK a b c) 1 (list 'S S-INV)
+;(sm-viz ADD `(,LM ,BLANK d d ,BLANK d d d) 1)
+#;(sm-viz anbncn `(,LM ,BLANK a b c) 1 (list 'S S-INV)
           (list 'A A-INV)
           (list 'B B-INV)
           (list 'C C-INV)

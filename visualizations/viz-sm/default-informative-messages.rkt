@@ -52,6 +52,8 @@ rules are a (listof rule-structs)
 
 (define COMPUTATION-LENGTH-COLOR 'brown)
 
+(define DUMMY-TM-RULE '(@ @))
+
 (define accessor-func (compose tm-config-index (compose trace-config zipper-current)))
 (define pda-accessor-func (compose pda-config-index (compose trace-config zipper-current)))
 (define ndfa-accessor-func (compose third (compose trace-config zipper-current)))
@@ -381,7 +383,7 @@ rules are a (listof rule-structs)
       (if (zipper-empty? (imsg-state-tm-rules-used imsg-st))
           (text "Head position is not updated when there are multiple rejecting computations." FONT-SIZE FONT-COLOR)
           (beside (text "Last rule used: " FONT-SIZE FONT-COLOR)
-                  (text (format "~a" (if (or (equal? (zipper-current (imsg-state-tm-rules-used imsg-st)) '(_ _))
+                  (text (format "~a" (if (or (equal? (zipper-current (imsg-state-tm-rules-used imsg-st)) DUMMY-TM-RULE)
                                              (zipper-empty? (imsg-state-tm-rules-used imsg-st)))
                                          ""
                                          (zipper-current (imsg-state-tm-rules-used imsg-st))))
