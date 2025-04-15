@@ -13,6 +13,8 @@
                                  (empty? (zipper-processed zip))
                                  (empty? (zipper-unprocessed zip))))
 
+(define (zipper-length zip) (if (zipper-empty? zip) 0 (+ (length (zipper-processed zip)) 1 (length (zipper-unprocessed zip)))))
+
 ;; zipper -> zipper
 ;; Moves the cursor to the next item within the original input list
 (define (zipper-next zip) (if (zipper-empty? zip)

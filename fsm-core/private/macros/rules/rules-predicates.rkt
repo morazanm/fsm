@@ -13,7 +13,6 @@
          incorrect-tm-rules
          incorrect-mttm-rules
          incorrect-dfa-rule-structures
-         incorrect-ndfa-rule-structures
          incorrect-ndpda-rule-structures
          incorrect-tm-rule-structures
          incorrect-mttm-rule-structures
@@ -293,31 +292,6 @@
                   '())))
     (if (empty? all-errors) '() (list (make-invalid-rule rule all-errors))))
   (flatten (map rule-with-errors rules)))
-
-;incorrect-ndfa-rule-structures: (listof any) --> (listof invalid-rule)
-;purpose: filters the input list of elements, such that any element that is not structured
-; as a valid dfa-rule is returned as an invalid-rule struct containing all the offenses.
-(define (incorrect-ndfa-rule-structures elems)
-  (define (rule-with-errors elem)
-    (define all-errors
-      (cond [(or (not (list? elem)) (not (= (length elem) 3)))
-             (list (format "The given rule, ~a, does not have the correct structure. An NDFA rule must be a list with three elements." elem))]
-            [else
-             (append (if (valid-state? (first elem))
-                         '()
-                         (list (format "The first element in the rule, ~a, is not a valid state." (first elem))))
-                     (if (valid-dfa-symbol? (second elem))
-                         '()
-                         (list (format "The second element in the rule, ~a, is not a valid alphabet element." (second elem))))
-                     (if (valid-state? (third elem))
-                         '()
-                         (list (format "The third element in the rule, ~a, is not a valid state." (third elem)))))]
-            )
-      )
-    (if (empty? all-errors) '() (list (make-invalid-rule elem all-errors)))
-    )
-  (flatten (map rule-with-errors elems))
-  )
 
 ;with-indices: (listof x) --> (listof (list x natnum))
 ;Purpose: Returns the input list, but each element is paired with its index

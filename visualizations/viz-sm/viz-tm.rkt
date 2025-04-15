@@ -2,44 +2,28 @@
 
 (require "../../fsm-gviz/private/lib.rkt"
          "../2htdp/image.rkt"
-         math/matrix
          "../viz-lib/viz.rkt"
          "../viz-lib/zipper.rkt"
+         racket/treelist
          "../viz-lib/bounding-limits.rkt"
          "../viz-lib/viz-state.rkt"
          "../viz-lib/viz-macros.rkt"
+         "../viz-lib/vector-zipper.rkt"
          (except-in "../viz-lib/viz-constants.rkt"
                     INS-TOOLS-BUFFER)
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
-         "../viz-lib/default-viz-function-generators.rkt"
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/tm.rkt"
-         "../../fsm-core/private/misc.rkt"
-          "../../fsm-core/interface.rkt"
          "david-imsg-state.rkt"
          (except-in "david-viz-constants.rkt"
                     FONT-SIZE)
          "default-informative-messages.rkt")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(provide tm-viz)
 
 
-#|
-A trace is a structure:
-(make-trace config rules)
-config is a single configuration
-rules are a (listof rule)
-|#
-(struct trace (config rules) #:transparent)
-
-#|
-A rule is a structure:
-(make-rule read action)
-read is the first pair in a tm rule
-action is the second pair in a tm rule
-|#
-(struct rule (read action) #:transparent)
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;tape is the input the tape
 ;;computations is a (listof computation) that attempt to consume the ci
@@ -50,237 +34,207 @@ action is the second pair in a tm rule
 ;;inv is a the (listof (state (listof symbol -> boolean)))
 ;;max-cmps is the max amount of transitions the machine can make
 ;;head-pos is the beginning head position of the tape=
-(struct building-viz-state (tape computations acc-comp accept-traces reject-traces M inv max-cmps head-pos) #:transparent)
-
-
-
-#|
-A computation is a structure: (make-computation LoC LoR LoT visited)
-LoC is a (listof configuration)
-LoR is a (listof rule)
-visited is a (listof configuration)
-|#
-(struct computation (LoC LoR visited) #:transparent)
+(struct building-viz-state (tape
+                            computations
+                            tracked-accept-trace
+                            all-accept-traces
+                            all-reject-traces
+                            M
+                            inv
+                            max-cmps
+                            head-pos
+                            machine-decision)
+  #:transparent)
 
 (define DUMMY-RULE (list (list BLANK BLANK) (list BLANK BLANK)))
 
-(define qempty? empty?)
-
-(define E-QUEUE '())
-
-(define (tm-getalphabet m) (m '() 0 'get-alphabet)) 
-  
-(define (tm-getstates m) (m '() 0 'get-states))
-  
-(define (tm-getfinals m) (m '() 0 'get-finals))
-
-(define (tm-getdelta m) (m '() 0 'get-delta)) ;;; parsed rules
-
-(define (tm-getrules m) (m '() 0 'get-rules))  ;;; unparsed rules
-
-(define (tm-getstart m) (m '() 0 'get-start))
-  
-(define (tm-getaccept m) (m '() 0 'get-accept))
-
-;; (qof X) → X throws error
-;; Purpose: Return first X of the given queue
-(define (qfirst a-qox)
-  (if (qempty? a-qox)
-      (error "qfirst applied to an empty queue")
-      (first a-qox)))
-
-;; (listof X) (qof X) → (qof X)
-;; Purpose: Add the given list of X to the given
-;;          queue of X
-(define (enqueue a-lox a-qox)
-  (append a-qox a-lox))
-
-;; (qof X) → (qof X) throws error
-;; Purpose: Return the rest of the given queue
-(define (dequeue a-qox)
-  (if (qempty? a-qox)
-      (error "dequeue applied to an empty queue")
-      (rest a-qox)))
-
-;; X (listof X) -> boolean
-;;Purpose: Determine if X is in the given list
-(define (member? x lst eq-func)
-  (ormap (λ (L) (eq-func x L)) lst))
-
-
-;;config rule -> config
-;;Purpose: Applys the given rule to the given config and returns the updated config
-;;ASSUMPTION: The given rule can be applied to the config
-(define (apply-rule a-comp a-rule)
-  ;;config -> config
-  ;;Purpose: Applies the action portion of given rule to the given config
-  (define (apply-action a-config)
-    (list (first (second a-rule))
-          (cond [(eq? (second (second a-rule)) RIGHT) (add1 (second a-config))]
-                [(eq? (second (second a-rule)) LEFT)  (sub1 (second a-config))]
-                [else (second a-config)])
-          (mutate-tape a-config)))
-  ;;config -> tape
-  ;;Purpose: "Mutates" the tape if possible 
-  (define (mutate-tape a-config)
-    (if (or (eq? (second (second a-rule)) BLANK)
-            (eq? (second (second a-rule)) RIGHT)
-            (eq? (second (second a-rule)) LEFT))
-        (third a-config)
-        (append (take (third a-config) (second a-config))
-                (list (second (second a-rule)))
-                (rest (drop (third a-config) (second a-config))))))
-   
-  ;;config -> config
-  ;;Purpose: Adds a blank to the end of the tape
-  (define (add-blank a-config)
-    (if (not (= (second a-config) (length (third a-config))))
-        a-config
-        (list (first a-config)
-              (second a-config)
-              (append (third a-config) (list BLANK)))))
-  
-  (struct-copy computation a-comp
-               [LoC (cons (add-blank (apply-action (first (computation-LoC a-comp)))) (computation-LoC a-comp))]
-               [LoR (cons a-rule (computation-LoR a-comp))]
-               [visited (cons (first (computation-LoC a-comp)) (computation-visited a-comp))]))
 
 ;;word (listof rule) symbol number -> (listof computation)
 ;;Purpose: Returns all possible computations using the given word, (listof rule) and start symbol
 ;;   that are within the bounds of the max computation limit
 (define (get-computations a-word lor start finals max-cmps head-pos)
-  (let (;;computation
-        ;;Purpose: The starting computation
-        [starting-computation (computation (list (append (list start) (list head-pos) (list a-word)))
-                                           '()
-                                           '())])
-    (make-computations lor
-                       finals
-                       (enqueue (list starting-computation) E-QUEUE)
-                       '()
-                       max-cmps)))
 
+;;computation rule -> computation
+;;Purpose: Applys the given rule to the given config and returns the updated computation
+;;ASSUMPTION: The given rule can be applied to the config
+(define (apply-rule a-comp a-rule)
 
-;;(listof rules) (queueof computation) (listof computation) number -> (listof computation)
-;;Purpose: Makes all the computations based around the (queueof computation) and (listof rule)
-;;     that are within the bounds of the max computation limit
-(define (make-computations lor finals QoC path max-cmps)
-  (cond [(qempty? QoC) path]
-        [(or (> (length (computation-LoC (qfirst QoC))) max-cmps)
-             (member? (first (first (computation-LoC (qfirst QoC)))) finals equal?))
-         (make-computations lor finals (dequeue QoC) (cons (qfirst QoC) path) max-cmps)]
-        [else (let* (;;(listof rules)
+  ;;configuration -> configuration
+  ;;Purpose: AppApplys the given rule to the given config and returns the updated configuraton 
+  (define (apply-rule-helper a-config)
+    ;;number -> number
+    ;;Purpose: Applies the action portion of given rule to the given config to update the head position
+    (define (apply-action head-pos)
+      (cond [(eq? (rule-action a-rule) RIGHT) (add1 head-pos)]
+            [(eq? (rule-action a-rule) LEFT)  (sub1 head-pos)]
+            [else head-pos]))
+    ;;tape -> tape
+    ;;Purpose: "Mutates" the tape if possible 
+    (define (update-tape tape head-position)
+    
+
+     (define (mutate-tape tape)
+      (if (or (eq? (rule-action a-rule) RIGHT)
+              (eq? (rule-action a-rule) LEFT))
+          tape
+          (append (take tape head-position)
+                  (list (rule-action a-rule))
+                  (rest (drop tape head-position)))))
+   
+    ;;tape -> tape
+    ;;Purpose: Adds a blank to the end of the tape
+    (define (add-blank tape)
+      (if (not (= head-position (length tape)))
+          tape
+          (append tape (list BLANK))))
+      
+      (add-blank (mutate-tape tape)))
+    
+    (let ([new-head-position (apply-action (tm-config-head-position a-config))])
+      (struct-copy tm-config a-config
+                 [state (rule-destination a-rule)]
+                 [head-position new-head-position]
+                 [tape (update-tape (tm-config-tape a-config) new-head-position)]
+                 [index (add1 (tm-config-index a-config))])))
+    
+  
+  
+  (struct-copy computation a-comp
+               [LoC (treelist-add (computation-LoC a-comp) (apply-rule-helper (treelist-last (computation-LoC a-comp))))]
+               [LoR (treelist-add (computation-LoR a-comp) a-rule)]))
+  
+  ;;mutable set
+  ;;Purpose: holds all of the visited configurations
+  (define visited-configuration-set (mutable-set))
+
+  ;;configuration -> void
+  ;;Purpose: updates the set of visited configurations
+  (define (update-visited a-config)
+    (set-add! visited-configuration-set a-config))
+
+  ;;hash-set
+  ;;Purpose: accumulates the number of computations in a hashset
+  (define computation-number-hash (make-hash))
+  
+  ;;set
+  ;;an empty set
+  (define EMPTY-SET (set))
+
+  ;;configuration word -> void
+  ;;Purpose: updates the number of configurations using the given word as a key
+  (define (update-hash a-config a-word)
+    (hash-set! computation-number-hash
+               a-word
+               (set-add (hash-ref computation-number-hash
+                                  a-word
+                                  EMPTY-SET)
+                        a-config)))
+
+  ;;set
+  ;;the set of final states
+  (define finals-set (list->seteq finals))
+
+  
+  ;;(queueof computation) (treelistof computation) -> (list (listof computation) hashtable)
+  ;;Purpose: Makes all the computations based around the (queueof computation) and (listof rule)
+  ;;     that are within the bounds of the max computation limit
+  (define (make-computations QoC path)
+    (if (qempty? QoC)
+        (list path computation-number-hash)
+        (let* ([current-config (treelist-last (computation-LoC (qfirst QoC)))]
+               [current-state (tm-config-state current-config)]
+               [current-tape (tm-config-tape current-config)]
+               [current-head-position (tm-config-head-position current-config)])
+          (if (or (> (treelist-length (computation-LoC (qfirst QoC))) max-cmps)
+                  (member? current-state finals eq?))
+              (begin
+                (update-hash current-config current-tape)
+                (make-computations (dequeue QoC) (treelist-add path (qfirst QoC))))
+              (let* (;;(listof rules)
                      ;;Purpose: Filters all the rules that can be applied to the configuration by reading the element in the rule
-                     [connected-read-rules (filter (λ (rule)
-                                                     (and (< (second (first (computation-LoC (qfirst QoC))))
-                                                             (length (third (first (computation-LoC (qfirst QoC))))))
-                                                          (equal? (first (first rule)) (first (first (computation-LoC (qfirst QoC)))))
-                                                          (equal? (second (first rule))
-                                                                  (list-ref (third (first (computation-LoC (qfirst QoC))))
-                                                                            (second (first (computation-LoC (qfirst QoC))))))))
+                     [connected-read-rules (treelist-filter (λ (rule)
+                                                     (and (< current-head-position (length current-tape))
+                                                          (eq? (rule-source rule) current-state)
+                                                          (eq? (rule-read rule) (list-ref current-tape current-head-position))))
                                                    lor)]
                      ;;(listof computation)
-                     [new-configs (filter (λ (new-c) 
-                                            (not (member? (first (computation-LoC new-c)) (computation-visited new-c) equal?)))
-                                          (map (λ (rule) (apply-rule (qfirst QoC) rule))
-                                               connected-read-rules))])
-                (if (empty? new-configs)
-                    (make-computations lor finals (dequeue QoC) (cons (qfirst QoC) path) max-cmps)
-                    (make-computations lor finals (enqueue new-configs (dequeue QoC)) path max-cmps)))]))
+                     [new-configs (treelist-filter (λ (new-c) 
+                                            (not (set-member? visited-configuration-set (treelist-last (computation-LoC new-c)))))
+                                          (treelist-map connected-read-rules (λ (rule) (apply-rule (qfirst QoC) rule))))])
+                (begin
+                  (update-hash current-config current-tape)
+                  (update-visited current-config)
+                  (if (treelist-empty? new-configs)
+                      (make-computations (dequeue QoC) (treelist-add path (qfirst QoC)))
+                      (make-computations (enqueue new-configs (dequeue QoC)) path))))))))
+  (let (;;computation
+        ;;Purpose: The starting computation
+        [starting-computation (computation (treelist (tm-config start head-pos a-word 0))
+                                           empty-treelist
+                                           '())])
+    (make-computations (enqueue (treelist starting-computation) E-QUEUE) empty-treelist)))
 
 
 ;;(listof configurations) (listof rules) (listof configurations) -> (listof configurations)
 ;;Purpose: Returns a propers trace for the given (listof configurations) that accurately
 ;;         tracks each transition
 (define (make-trace configs rules acc)
-  (cond [(empty? rules) (reverse acc)]
+  (cond [(treelist-empty? rules) (reverse acc)]
         [(and (empty? acc)
-              (not (equal? (second (first (first rules))) EMP)))
-         (let* ([rle (rule (first DUMMY-RULE) (second DUMMY-RULE))]
-                [res (trace (first configs) (list rle))])
-           (make-trace(rest configs) rules (cons res acc)))]
-        [else (let* ([rle (rule (first (first rules)) (second (first rules)))]
-                     [res (trace (first configs) (list rle))])
-                (make-trace (rest configs) (rest rules) (cons res acc)))]))
-
-
-;(listof symbols) (lisof configurations) -> (listof configurations)
-;;Purpose: Makes configurations usable for invariant predicates
-(define (make-inv-configs a-word configs)
-  (append-map (λ (comp)
-                (make-inv-configs-helper a-word (reverse (computation-LoC comp)) (length a-word)))
-              configs))
-
-;;(listof symbols) (lisof configurations) natnum -> (listof configurations)
-;;Purpose: Makes configurations usable for invariant predicates
-(define (make-inv-configs-helper a-word configs word-len)
-  (let* ([config (filter (λ (config) (= (length (second config)) word-len)) configs)]
-         [inv-config (map (λ (config)
-                            (append (list (first config))
-                                    (list (take a-word (- (length a-word) word-len)))
-                                    (list (third config))
-                                    (list (fourth config))))
-                          config)])
-    (if (empty? configs)
-        '()
-        (append inv-config
-                (make-inv-configs-helper a-word (rest configs) (sub1 word-len))))))
+              (or (not (eq? (rule-read (treelist-first rules)) BLANK))
+                  (not (eq? (rule-read (treelist-first rules)) LM))))
+         (let ([res (trace (treelist-first configs) (rule BLANK LM BLANK LM))])
+           (make-trace (treelist-rest configs) rules (cons res acc)))]
+        [else (let ([res (trace (treelist-first configs) (treelist-first rules))])
+                (make-trace (treelist-rest configs) (treelist-rest rules) (cons res acc)))]))
 
 ;;(listof configurations) (listof (listof symbol ((listof sybmols) -> boolean))) -> (listof configurations)
 ;;Purpose: Adds the results of each invariant oredicate to its corresponding invariant configuration 
-(define (get-inv-config-results inv-configs invs)
+(define (get-inv-config-results computations invs)
   (append-map (λ (comp)
-                (get-inv-config-results-helper comp invs))
-              inv-configs))
+                (get-inv-config-results-helper (computation-LoC comp) invs))
+              computations))
 
 ;;(listof configurations) (listof (listof symbol ((listof sybmols) -> boolean))) -> (listof configurations)
 ;;Purpose: Adds the results of each invariant oredicate to its corresponding invariant configuration
-(define (get-inv-config-results-helper inv-configs invs)
-  (if (empty? inv-configs)
+(define (get-inv-config-results-helper computations invs)
+  (if (or (empty? invs) (treelist-empty? computations))
       '()
       (let* ([get-inv-for-inv-config (filter (λ (inv)
-                                               (equal? (first inv) (first inv-configs)))
+                                               (equal? (first inv) (tm-config-state (treelist-first computations))))
                                              invs)]
              [inv-for-inv-config (if (empty? get-inv-for-inv-config)
                                      '()
                                      (second (first get-inv-for-inv-config)))]
              [inv-config-result (if (empty? inv-for-inv-config)
                                     '()
-                                    (list (append inv-configs
-                                                  (list (inv-for-inv-config (second inv-configs)
-                                                                            (third inv-configs))))))])
-        (append inv-config-result
-                (get-inv-config-results-helper (rest inv-configs) invs)))))
+                                    (list (treelist-first computations)
+                                          (inv-for-inv-config (tm-config-tape (treelist-first computations))
+                                                                            (tm-config-head-position (treelist-first computations)))))])
+        (if (empty? inv-config-result)
+            (get-inv-config-results-helper (treelist-rest computations) invs)
+            (cons inv-config-result
+                (get-inv-config-results-helper (treelist-rest computations) invs))))))
 
 ;;(listof configurations) (listof sybmols) -> (listof configurations)
 ;;Purpose: Extracts all the invariant configurations that failed
-(define (return-brk-inv-configs inv-config-results a-word)
-  (remove-duplicates (filter (λ (config) (not (fifth config))) inv-config-results)))
+(define (return-brk-inv-configs inv-config-results)
+  (remove-duplicates (filter (λ (config) (not (second config))) inv-config-results)))
 
-
-;;(listof rule-struct) -> (listof rule)
-;;Purpose: Remakes the rules extracted from the rule-struct
-(define (remake-rules trace-rules)
-  (append-map (λ (lor)
-                (map (λ (rule)
-                       (list (rule-read rule)
-                             (rule-action rule)))
-                     lor))
-              trace-rules))
 
 
 ;(listof symbols) -> string
 ;;Purpose: Converts the given los into a string
 (define (make-edge-label rule)
-  (format "\n[~a ~a]" (second (first rule)) (second (second rule))))
+  (format "\n[~a ~a]" (rule-read rule) (rule-action rule)))
 
 ;;(listof rules)
 ;;Purpose: Transforms the pda rules into triples similiar to an ndfa 
 (define (make-rule-triples rules)
   (map (λ (rule)
-         (append (list (first (first rule)))
-                 (list (string->symbol (make-edge-label rule)))
-                 (list (first (second rule)))))
+         (list (rule-source rule)
+               (string->symbol (make-edge-label rule))
+               (rule-destination rule)))
        rules))
 
 
@@ -293,10 +247,6 @@ visited is a (listof configuration)
                (and (equal? (first rule) (first r))
                     (equal? (third rule) (third r))))
              lor)))
-
-;;X -> X
-;;Purpose: Returns X
-(define (id x) x)
 
 ;;(X -> Y) (X -> Y) (X -> Y) (X -> Y) (listof (listof X)) -> (listof (listof X))
 ;;Purpose: filtermaps the given f-on-x on the given (listof (listof X))
@@ -311,10 +261,13 @@ visited is a (listof configuration)
 (define (get-trace-X LoT map-func)
   (filter-map-acc empty? map-func not first LoT))
 
-;(listof symbol ((listof symbol) (listof symbol) -> boolean))) (X -> Y) -> (listof symbol ((listof symbol) (listof symbol) -> boolean)))
+;(listof symbol ((listof symbol) (listof symbol) -> boolean))) (X -> Y) ->
+;(listof symbol ((listof symbol) (listof symbol) -> boolean)))
 ;;Purpose: Extracts the invariants from the (listof symbol ((listof symbols) (listof symbols) -> boolean)))
-(define (get-invariants LoI func)
-  (filter-map-acc (λ (x) ((second (first x)) (second x) (third x))) first func first LoI))
+(define (get-invariants inv func)
+  (if (func (second inv))
+      (tm-config-state (first inv))
+      '()))
 
 ;;(listof trace) -> (listof trace)
 ;;Purpose: Extracts the empty trace from the (listof trace) and maps rest onto the non-empty trace
@@ -331,53 +284,90 @@ visited is a (listof configuration)
 
 ;;(listof rules) -> (listof rules)
 ;;Purpose: Converts the given (listof configurations)s to rules
-(define (configs->rules curr-config)
-  (make-rule-triples (remove-duplicates curr-config)))
+(define (configs->rules a-config)
+  (make-rule-triples
+   (remove-duplicates (filter (λ (rule)
+                                (not (equal? rule DUMMY-RULE)))
+                              a-config))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;(listof configurations) (listof configurations) -> (listof configurations)
+;;Purpose: Counts the number of unique configurations for each stage of the word
+(define (count-computations a-LoC acc)
+  (if (empty? a-LoC)
+      (reverse acc)
+      (let [(new-LoC (filter-map (λ (comp) (and (not (treelist-empty? comp))
+                                                (treelist-rest comp)))
+                                 a-LoC))
+            (comp-len (length (remove-duplicates (filter-map (λ (comp) (and (not (treelist-empty? comp))
+                                                                            (treelist-first comp)))
+                                                             a-LoC))))]
+        (count-computations new-LoC (cons comp-len acc)))))
+
+;;(listof trace) (listof trace) -> (listof trace)
+;;Purpose: Finds the longest computation for rejecting traces
+(define (find-longest-computation a-LoRT acc)
+  (cond [(empty? a-LoRT) acc]
+        [(> (length (first a-LoRT)) (length acc))
+         (find-longest-computation (rest a-LoRT) (first a-LoRT))]
+        [(find-longest-computation (rest a-LoRT) acc)]))
+
+;;configuration configuration -> boolean
+;;Purpose: Determines if the given invariant is the same as the given current config
+(define (same-config? inv-config current-config)
+  (and (equal? (tm-config-state         (first inv-config)) (tm-config-state current-config))
+       (equal? (tm-config-head-position (first inv-config)) (tm-config-head-position current-config))
+       (equal? (tm-config-tape          (first inv-config)) (tm-config-tape current-config))
+       (equal? (tm-config-index         (first inv-config)) (tm-config-index current-config))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 ;;graph machine -> graph
 ;;Purpose: Creates the nodes for the given graph
 (define (make-node-graph dgraph M held-inv fail-inv cut-off)
   (foldl (λ (state graph)
-           (add-node graph
-                     state
-                     #:atb (hash 'color (if (eq? (sm-start M) state) 'green 'black)
-                                 'style (cond [(and (member? state held-inv equal?) (member? state fail-inv equal?)) 'wedged]
-                                              [(or (member? state held-inv equal?)
-                                                   (member? state fail-inv equal?)
-                                                   (member? state cut-off equal?)) 'filled]
-                                              [else 'solid])
-                                 'shape (cond [(equal? state (sm-accept M)) 'doubleoctagon]
-                                              [(member? state (sm-finals M) equal?) 'doublecircle]
-                                              [else 'circle])
-                                 'fillcolor (cond [(member? state cut-off equal?) GRAPHVIZ-CUTOFF-GOLD]
-                                                  [(and (member? state held-inv equal?) (member? state fail-inv equal?))
-                                                   "red:chartreuse4"]
-                                                  [(member? state held-inv equal?) HELD-INV-COLOR ]
-                                                  [(member? state fail-inv equal?) BRKN-INV-COLOR]
-                                                  [else 'white])
-                                 'label state
-                                 'fontcolor 'black
-                                 'fontname (if (and (member? state held-inv equal?) (member? state fail-inv equal?))
-                                               "times-bold"
-                                               "Times-Roman"))))
+           (let ([member-of-held-inv? (member? state held-inv eq?)]
+                 [member-of-fail-inv? (member? state fail-inv eq?)])
+             (add-node graph
+                       state
+                       #:atb (hash 'color (if (eq? (tm-start M) state) 'green 'black)
+                                   'style (cond [(and member-of-held-inv? member-of-fail-inv?) 'wedged]
+                                                [(or member-of-held-inv? member-of-fail-inv?
+                                                     (member? state cut-off equal?)) 'filled]
+                                                [else 'solid])
+                                   'shape (cond [(eq? state (tm-accepting-final M)) 'doubleoctagon]
+                                                [(member? state (tm-finals M) equal?) 'doublecircle]
+                                                [else 'circle])
+                                   'fillcolor (cond [(member? state cut-off equal?) GRAPHVIZ-CUTOFF-GOLD]
+                                                    [(and member-of-held-inv? member-of-fail-inv?)
+                                                     "red:chartreuse4"]
+                                                    [member-of-held-inv? HELD-INV-COLOR ]
+                                                    [member-of-fail-inv? BRKN-INV-COLOR]
+                                                    [else 'white])
+                                   'label state
+                                   'fontcolor 'black
+                                   'fontname (if (and (member? state held-inv equal?) (member? state fail-inv equal?))
+                                                 "times-bold"
+                                                 "Times-Roman")))))
          dgraph
-         (sm-states M)))
+         (tm-states M)))
 
 ;;graph machine -> graph
 ;;Purpose: Creates the edges for the given graph
-(define (make-edge-graph dgraph rules current-a-rules current-rules)
+(define (make-edge-graph dgraph rules current-shown-accept-rules current-accept-rules current-reject-rules)
   (foldl (λ (rule graph)
            (add-edge graph
                      (second rule)
                      (first rule)
                      (third rule)
-                     #:atb (hash 'color (cond [(find-rule? rule current-a-rules) 'green]
-                                              [(find-rule? rule current-rules) 'violetred]
+                     #:atb (hash 'color (cond [(and (member? rule current-shown-accept-rules equal?)
+                                                    (member? rule current-accept-rules equal?))
+                                               SPLIT-ACCEPT-COLOR]
+                                              [(find-rule? rule current-shown-accept-rules) TRACKED-ACCEPT-COLOR]
+                                              [(find-rule? rule current-accept-rules) ALL-ACCEPT-COLOR]
+                                              [(find-rule? rule current-reject-rules) REJECT-COLOR]
                                               [else 'black])
-                                 'style (if (member? rule current-a-rules equal?)
+                                 'style (if (member? rule current-accept-rules equal?)
                                             'bold
                                             'solid)
                                  ;'labelfloat 'true
@@ -385,58 +375,69 @@ visited is a (listof configuration)
          dgraph
          rules))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 ;;viz-state -> graph-thunk
 ;;Purpose: Creates a graph thunk for a given viz-state
 (define (create-graph-thunk a-vs #:cut-off [cut-off #f])
-  (let* (;;(listof rule-struct)
-         ;;Purpose: Extracts the rules from the first of all configurations
-         [rejecting-rules (get-trace-X (building-viz-state-reject-traces a-vs) trace-rules)]
-
-         ;;(listof configuration)
+  (let* (;;(listof configuration)
          ;;Purpose: Extracts all the configs from both the accepting and rejecting configs
-         [current-configs '()#;(get-portion-configs (building-viz-state-upci a-vs)
-                                               (building-viz-state-acc-comp a-vs))]
+         [current-configs (remove-duplicates (map treelist-first (building-viz-state-computations a-vs)))]
 
          ;;(listof symbol)
          ;;Purpose: Gets the states where it's computation has cutoff
          [cut-off-states (if cut-off
-                             (remove-duplicates (map first (get-cut-off (building-viz-state-computations a-vs)
-                                                                        (building-viz-state-max-cmps a-vs))))
+                             (remove-duplicates (filter (λ (state)
+                                                          (not (equal? state (tm-accepting-final (building-viz-state-M a-vs)))))
+                                                        (map (λ (comp) (tm-config-state (treelist-first comp)))
+                                                             (building-viz-state-computations a-vs))))
                              '())]
+
+         ;;(listof rule-struct)
+         ;;Purpose: Extracts the rules from of shown accepting computation
+         [tracked-accepting-rules (get-trace-X (building-viz-state-tracked-accept-trace a-vs) trace-rules)]
          
          ;;(listof rule-struct)
-         ;;Purpose: Extracts the rules from the first of the accepting computations
-         [accepting-rules (get-trace-X (building-viz-state-accept-traces a-vs) trace-rules)]         
+         ;;Purpose: Extracts the rules from all of the accepting computations
+         [all-accepting-rules (get-trace-X (building-viz-state-all-accept-traces a-vs) trace-rules)]
+
+         ;;(listof rule-struct)
+         ;;Purpose: Extracts the rules from all of the rejecting computations
+         [all-rejecting-rules (get-trace-X (building-viz-state-all-reject-traces a-vs) trace-rules)]
          
          ;;(listof rule)
          ;;Purpose: Converts the current rules from the rejecting computations and makes them usable for graphviz
-         [current-r-rules (configs->rules (filter (λ (rule) (not (equal? rule DUMMY-RULE))) (remake-rules rejecting-rules)))]
+         [current-reject-rules (configs->rules all-rejecting-rules)]
                   
          ;;(listof rules)
          ;;Purpose: Converts the current rules from the accepting computations and makes them usable for graphviz
-         [current-a-rules (configs->rules (filter (λ (rule) (not (equal? rule DUMMY-RULE))) (remake-rules accepting-rules)))]
+         [all-current-accept-rules (configs->rules all-accepting-rules)]
+
+         ;;(listof rules)
+         ;;Purpose: Converts the current rules from the accepting computations and makes them usable for graphviz
+         [current-shown-accept-rules (configs->rules tracked-accepting-rules)]
          
          ;;(listof rules)
          ;;Purpose: All of the pda rules converted to triples
-         [all-rules (make-rule-triples (filter (λ (rule) (not (equal? (second (first rule)) LM))) (sm-rules (building-viz-state-M a-vs))))]
+         [all-rules (make-rule-triples (filter (λ (rule)
+                                                 (not (equal? (rule-read rule) LM)))
+                                               (treelist->list (tm-rules (building-viz-state-M a-vs)))))]
          
          ;;(listof (listof symbol ((listof symbols) (listof symbols) -> boolean))) (listof symbols))
          ;;Purpose: Extracts all invariants for the states that the machine can be in
          [get-invs (for*/list ([invs (building-viz-state-inv a-vs)]
                                [curr current-configs]
-                               #:when (equal? (first invs) (first curr)))
-                     (list invs '() #;(building-viz-state-pci a-vs) (third curr)))]
+                               #:when (same-config? invs curr))
+                     invs)]
 
          ;;(listof symbols)
          ;;Purpose: Returns all states whose invariants fail
-         [brkn-invs (get-invariants get-invs not)]
+         [brkn-invs (map (λ (inv) (get-invariants inv not)) get-invs)]
          
          ;;(listof symbols)
          ;;Purpose: Returns all states whose invariants holds
-         [held-invs (get-invariants get-invs id)])
+         [held-invs (map (λ (inv) (get-invariants inv id)) get-invs)])
     (make-edge-graph
      (make-node-graph
       (create-graph 'tmgraph #:atb (hash 'rankdir "LR"))
@@ -445,26 +446,38 @@ visited is a (listof configuration)
       brkn-invs
       cut-off-states)
      all-rules
-     current-a-rules
-     current-r-rules)))
+     (if (equal? (building-viz-state-machine-decision a-vs) 'accept)
+         current-shown-accept-rules
+         '())
+     all-current-accept-rules
+     (if (equal? (building-viz-state-machine-decision a-vs) 'accept)
+         current-reject-rules
+         (append current-reject-rules current-shown-accept-rules)))))
 
 ;;viz-state (listof graph-thunks) -> (listof graph-thunks)
 ;;Purpose: Creates all the graphs needed for the visualization
 (define (create-graph-thunks a-vs acc)
-  (cond [(and (empty? (building-viz-state-accept-traces a-vs))
-              (empty? (building-viz-state-reject-traces a-vs)))
-         (reverse acc)]
-        [(ormap (λ (comp-len) (>= comp-len (building-viz-state-max-cmps a-vs)))
-                     (map length (building-viz-state-computations a-vs)))
+  (cond [(ormap (λ (comp-len) (>= (tm-config-index comp-len) (building-viz-state-max-cmps a-vs)))
+                (map treelist-first (building-viz-state-computations a-vs)))
          (reverse (cons (create-graph-thunk a-vs #:cut-off #t) acc))]
+        [(and (zipper-at-end? (building-viz-state-tape a-vs))
+              (zipper-at-end? (building-viz-state-head-pos a-vs)))
+         (reverse (cons (create-graph-thunk a-vs) acc))]
         [else (let ([next-graph (create-graph-thunk a-vs)])
-                (create-graph-thunks (struct-copy building-viz-state
-                                                  a-vs
-                                                  #;[computations (filter (λ (comp)
-                                                                          (not (eq? (second (first comp)) (building-viz-state-upci a-vs))))
-                                                                        (building-viz-state-computations a-vs))]
-                                                  [accept-traces (get-next-traces (building-viz-state-accept-traces a-vs))]
-                                                  [reject-traces (get-next-traces (building-viz-state-reject-traces a-vs))])
+                (create-graph-thunks (struct-copy
+                                      building-viz-state
+                                      a-vs
+                                      [computations (filter (λ (comp) (not (treelist-empty? comp)))
+                                                            (map treelist-rest (building-viz-state-computations a-vs)))]
+                                      [tape (if (zipper-at-end? (building-viz-state-tape a-vs))
+                                                (building-viz-state-tape a-vs)
+                                                (zipper-next (building-viz-state-tape a-vs)))]
+                                      [head-pos (if (zipper-at-end? (building-viz-state-head-pos a-vs))
+                                                    (building-viz-state-head-pos a-vs)
+                                                    (zipper-next (building-viz-state-head-pos a-vs)))]
+                                      [tracked-accept-trace (get-next-traces (building-viz-state-tracked-accept-trace a-vs))]
+                                      [all-accept-traces (get-next-traces (building-viz-state-all-accept-traces a-vs))]
+                                      [all-reject-traces (get-next-traces (building-viz-state-all-reject-traces a-vs))])
                                      (cons next-graph acc)))]))
 
 
@@ -472,249 +485,70 @@ visited is a (listof configuration)
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization forward by one step
 (define (right-key-pressed a-vs)
-  (let* (#;[completed-config? (ormap (λ (config) (empty? (second (first (computation-LoC config)))))
-                                   (get-computations (imsg-state-pci (informative-messages-component-state
-                                                                      (viz-state-informative-messages a-vs)))
-                                                     (pda-getrules (imsg-state-M (informative-messages-component-state
-                                                                                  (viz-state-informative-messages a-vs))))
-                                                     (pda-getstart (imsg-state-M (informative-messages-component-state
-                                                                                  (viz-state-informative-messages a-vs))))
-                                                     (imsg-state-max-cmps (informative-messages-component-state
-                                                                           (viz-state-informative-messages a-vs)))))]
-         ;;boolean
-         ;;Purpose: Determines if the pci can be can be fully consumed
-         #;[pci (if (or (not completed-config?)
-                      (empty? (imsg-state-upci (informative-messages-component-state
-                                                (viz-state-informative-messages a-vs))))
-                      (eq? (imsg-state-upci (informative-messages-component-state
-                                             (viz-state-informative-messages a-vs)))
-                           (imsg-state-farthest-consumed (informative-messages-component-state
-                                                          (viz-state-informative-messages a-vs)))))
-                  (imsg-state-pci (informative-messages-component-state
-                                   (viz-state-informative-messages a-vs)))
-                  (append (imsg-state-pci (informative-messages-component-state
-                                           (viz-state-informative-messages a-vs)))
-                          (list (first (imsg-state-upci (informative-messages-component-state
-                                                         (viz-state-informative-messages a-vs)))))))]
-         [pci-len 0])
+  (let ([imsg-state-rules-used (imsg-state-tm-rules-used (informative-messages-component-state
+                                                          (viz-state-informative-messages a-vs)))]
+        [imsg-state-tape (imsg-state-tm-tape (informative-messages-component-state (viz-state-informative-messages a-vs)))]
+        [imsg-state-head-position (imsg-state-tm-head-position (informative-messages-component-state
+                                                                (viz-state-informative-messages a-vs)))]
+        [imsg-state-computation-lengths (imsg-state-tm-computation-lengths (informative-messages-component-state
+                                                                            (viz-state-informative-messages a-vs)))]
+        [imsg-state-shown-accepting-trace (imsg-state-tm-shown-accepting-trace (informative-messages-component-state
+                                                                                   (viz-state-informative-messages a-vs)))]
+        [imsg-state-invs-zipper (imsg-state-tm-invs-zipper (informative-messages-component-state
+                                                            (viz-state-informative-messages a-vs)))])
     (struct-copy
-     viz-state
-     a-vs
-     [informative-messages
+   viz-state
+   a-vs
+   [informative-messages
+    (struct-copy
+     informative-messages
+     (viz-state-informative-messages a-vs)
+     [component-state
       (struct-copy
-       informative-messages
-       (viz-state-informative-messages a-vs)
-       [component-state
-        (struct-copy imsg-state
-                     (informative-messages-component-state (viz-state-informative-messages a-vs))
-                     #;[upci (if (or (not completed-config?)
-                                   (empty? (imsg-state-upci (informative-messages-component-state
-                                                             (viz-state-informative-messages a-vs))))
-                                   (eq? (imsg-state-upci (informative-messages-component-state
-                                                          (viz-state-informative-messages a-vs)))
-                                        (imsg-state-farthest-consumed (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs)))))
-                               
-                               (imsg-state-upci (informative-messages-component-state
-                                                 (viz-state-informative-messages a-vs)))
-                               (rest (imsg-state-upci (informative-messages-component-state
-                                                       (viz-state-informative-messages a-vs)))))]
-                     #;[pci pci]
-                     [acpt-trace (if (or (zipper-empty? (imsg-state-acpt-trace (informative-messages-component-state
-                                                                                (viz-state-informative-messages a-vs))))
-                                         (zipper-at-end? (imsg-state-acpt-trace (informative-messages-component-state
-                                                                                 (viz-state-informative-messages a-vs)))))
-                                     (imsg-state-acpt-trace (informative-messages-component-state
-                                                             (viz-state-informative-messages a-vs)))
-                                     (zipper-next (imsg-state-acpt-trace (informative-messages-component-state
-                                                                          (viz-state-informative-messages a-vs)))))]
-                     #;[stack (if (or (zipper-empty? (imsg-state-stack (informative-messages-component-state
-                                                                      (viz-state-informative-messages a-vs))))
-                                    (zipper-at-end? (imsg-state-stack (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs)))))
-                                (imsg-state-stack (informative-messages-component-state
-                                                   (viz-state-informative-messages a-vs)))
-                                (zipper-next (imsg-state-stack (informative-messages-component-state
-                                                                (viz-state-informative-messages a-vs)))))]
-                     [invs-zipper (cond [(zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                                 (viz-state-informative-messages a-vs))))
-                                         (imsg-state-invs-zipper (informative-messages-component-state
-                                                                  (viz-state-informative-messages a-vs)))]
-                                        [(and (not (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                                            (viz-state-informative-messages a-vs)))))
-                                              (>= pci-len (first (zipper-unprocessed
-                                                                  (imsg-state-invs-zipper (informative-messages-component-state
-                                                                                           (viz-state-informative-messages a-vs)))))))
-                                         (zipper-next (imsg-state-invs-zipper (informative-messages-component-state
-                                                                               (viz-state-informative-messages a-vs))))]
-                                        [else (imsg-state-invs-zipper (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs)))])])])])))
+       imsg-state-tm 
+       (informative-messages-component-state (viz-state-informative-messages a-vs))
+       [rules-used (if (or (zipper-empty? imsg-state-rules-used) (zipper-at-end? imsg-state-rules-used))
+                       imsg-state-rules-used 
+                       (zipper-next imsg-state-rules-used))]
+                     
+       [tape (if (or (zipper-empty? imsg-state-tape) (zipper-at-end? imsg-state-tape))
+                 imsg-state-tape 
+                 (zipper-next imsg-state-tape))]
+                     
+       [head-position (if (or (zipper-empty? imsg-state-head-position) (zipper-at-end? imsg-state-head-position))
+                          imsg-state-head-position
+                          (zipper-next imsg-state-head-position))]
+                     
+       [computation-lengths (if (or (zipper-empty? imsg-state-computation-lengths) (zipper-at-end? imsg-state-computation-lengths))
+                                imsg-state-computation-lengths 
+                                (zipper-next imsg-state-computation-lengths))]
+                     
+       [shown-accepting-trace (if (or (zipper-empty? imsg-state-shown-accepting-trace)
+                                      (zipper-at-end? imsg-state-shown-accepting-trace))
+                                  imsg-state-shown-accepting-trace
+                                  (zipper-next imsg-state-shown-accepting-trace))]
+                     
+       [invs-zipper (cond [(zipper-empty? imsg-state-invs-zipper) imsg-state-invs-zipper]
+                          [(and (not (zipper-at-end? imsg-state-invs-zipper))
+                                (>= (get-tm-config-index-frm-trace imsg-state-shown-accepting-trace)
+                                    (fourth (first (zipper-unprocessed imsg-state-invs-zipper)))))
+                           (zipper-next imsg-state-invs-zipper)]
+                          [else imsg-state-invs-zipper])])])])))
 
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization to the end
 (define (down-key-pressed a-vs)
-  (let* (;;(listof symbol)
-         ;;Purpose: The entire given word
-         #;[full-word (append (imsg-state-pci (informative-messages-component-state
-                                             (viz-state-informative-messages a-vs)))
-                            (imsg-state-upci (informative-messages-component-state
-                                              (viz-state-informative-messages a-vs))))]
-         ;;(listof symbol)
-         ;;Purpose: The last word that could be fully consumed by the ndfa
-         #;[last-consumed-word (last-fully-consumed
-                              full-word
-                              (imsg-state-M (informative-messages-component-state
-                                             (viz-state-informative-messages a-vs)))
-                              (imsg-state-max-cmps (informative-messages-component-state
-                                                    (viz-state-informative-messages a-vs))))]
-         ;;(listof symbol)
-         ;;Purpose: The portion of the word that cannont be consumed
-         #;[unconsumed-word (remove-similarities last-consumed-word full-word '())]
-         ;;(zipperof invariant)
-         ;;Purpose: The index of the last failed invariant
-         [zip (if (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
-                                                          (viz-state-informative-messages a-vs))))
-                  (imsg-state-invs-zipper (informative-messages-component-state
-                                           (viz-state-informative-messages a-vs)))
-                  (zipper-to-idx (imsg-state-invs-zipper (informative-messages-component-state
-                                                          (viz-state-informative-messages a-vs)))
-                                 (imsg-state-inv-amt (informative-messages-component-state
-                                                      (viz-state-informative-messages a-vs)))))])
-    (struct-copy
-     viz-state
-     a-vs
-     [informative-messages
-      (struct-copy
-       informative-messages
-       (viz-state-informative-messages a-vs)
-       [component-state
-        (struct-copy
-         imsg-state
-         (informative-messages-component-state
-          (viz-state-informative-messages a-vs))
-         #;[upci (cond [(empty? (imsg-state-upci (informative-messages-component-state
-                                                (viz-state-informative-messages a-vs))))
-                      (imsg-state-upci (informative-messages-component-state
-                                        (viz-state-informative-messages a-vs)))]
-                     [(not (empty? (imsg-state-farthest-consumed (informative-messages-component-state
-                                                                  (viz-state-informative-messages a-vs)))))
-                      (drop full-word (- (length full-word) (length (imsg-state-farthest-consumed (informative-messages-component-state
-                                                                                                   (viz-state-informative-messages a-vs))))))]
-                     [else '()])]
-         #;[pci 
-          (cond [(empty? (imsg-state-upci (informative-messages-component-state
-                                           (viz-state-informative-messages a-vs))))
-                 (imsg-state-pci (informative-messages-component-state
-                                  (viz-state-informative-messages a-vs)))]
-                [(not (empty? (imsg-state-farthest-consumed (informative-messages-component-state
-                                                             (viz-state-informative-messages a-vs)))))
-                 (take full-word (- (length full-word) (length (imsg-state-farthest-consumed (informative-messages-component-state
-                                                                                              (viz-state-informative-messages a-vs))))))]
-                [else full-word])]
-         [acpt-trace (if (or (zipper-empty? (imsg-state-acpt-trace (informative-messages-component-state
-                                                                    (viz-state-informative-messages a-vs))))
-                             (zipper-at-end? (imsg-state-acpt-trace (informative-messages-component-state
-                                                                     (viz-state-informative-messages a-vs)))))
-                         (imsg-state-acpt-trace (informative-messages-component-state
-                                                 (viz-state-informative-messages a-vs)))
-                         (zipper-to-end (imsg-state-acpt-trace (informative-messages-component-state
-                                                                (viz-state-informative-messages a-vs)))))]
-         #;[stack (cond [(zipper-empty? (imsg-state-stack (informative-messages-component-state
-                                                         (viz-state-informative-messages a-vs))))
-                       (imsg-state-stack (informative-messages-component-state
-                                          (viz-state-informative-messages a-vs)))]
-                      [(or (zipper-empty? (imsg-state-stack (informative-messages-component-state
-                                                             (viz-state-informative-messages a-vs))))
-                           (zipper-at-end? (imsg-state-stack (informative-messages-component-state
-                                                              (viz-state-informative-messages a-vs)))))
-                       (imsg-state-stack (informative-messages-component-state
-                                          (viz-state-informative-messages a-vs)))]
-                      [else (zipper-to-end (imsg-state-stack (informative-messages-component-state
-                                                              (viz-state-informative-messages a-vs))))])]
-         
-         [invs-zipper zip])])])))
-
-;;viz-state -> viz-state
-;;Purpose: Progresses the visualization backward by one step
-(define (left-key-pressed a-vs)
-  (let* ([acpt-trace (if (or (zipper-empty? (imsg-state-acpt-trace (informative-messages-component-state
-                                                                    (viz-state-informative-messages a-vs))))
-                             (zipper-at-begin? (imsg-state-acpt-trace (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs)))))
-                         (imsg-state-acpt-trace (informative-messages-component-state
-                                                 (viz-state-informative-messages a-vs)))
-                         (zipper-prev (imsg-state-acpt-trace (informative-messages-component-state
-                                                              (viz-state-informative-messages a-vs)))))]
-         #;[next-rule (if (zipper-empty? (imsg-state-acpt-trace (informative-messages-component-state
-                                                               (viz-state-informative-messages a-vs))))
-                        (imsg-state-acpt-trace (informative-messages-component-state
-                                                (viz-state-informative-messages a-vs)))
-                        (first (trace-rules (zipper-current (imsg-state-acpt-trace (informative-messages-component-state
-                                                                                   (viz-state-informative-messages a-vs)))))))]
-         #;[rule (if (zipper-empty? (imsg-state-acpt-trace (informative-messages-component-state
-                                                          (viz-state-informative-messages a-vs))))
-                   DUMMY-RULE
-                   (list (rule-triple next-rule) (rule-pair next-rule)))]
-         #;[pci (if (or (empty? (imsg-state-pci (informative-messages-component-state
-                                               (viz-state-informative-messages a-vs))))
-                      (and (equal? (second (first rule)) EMP)
-                           (not (empty-rule? rule))))
-                  (imsg-state-pci (informative-messages-component-state
-                                   (viz-state-informative-messages a-vs)))
-                  (take (imsg-state-pci (informative-messages-component-state
-                                         (viz-state-informative-messages a-vs)))
-                        (sub1 (length (imsg-state-pci (informative-messages-component-state
-                                                       (viz-state-informative-messages a-vs)))))))]
-         [pci-len 0 #;(length pci)])
-    (struct-copy
-     viz-state
-     a-vs
-     [informative-messages
-      (struct-copy
-       informative-messages
-       (viz-state-informative-messages a-vs)
-       [component-state
-        (struct-copy imsg-state
-                     (informative-messages-component-state
-                      (viz-state-informative-messages a-vs))
-                     #;[upci (if (or (empty? (imsg-state-pci (informative-messages-component-state
-                                                            (viz-state-informative-messages a-vs))))
-                                   (and (equal? (second (first rule)) EMP)
-                                        (not (empty-rule? rule))))
-                               (imsg-state-upci (informative-messages-component-state
-                                                 (viz-state-informative-messages a-vs)))
-                               (cons (last (imsg-state-pci (informative-messages-component-state
-                                                            (viz-state-informative-messages a-vs))))
-                                     (imsg-state-upci (informative-messages-component-state
-                                                       (viz-state-informative-messages a-vs)))))]
-                     #;[pci pci]
-                     [acpt-trace acpt-trace]
-                     #;[stack (if (or (zipper-empty? (imsg-state-stack (informative-messages-component-state
-                                                                      (viz-state-informative-messages a-vs))))
-                                    (zipper-at-begin? (imsg-state-stack (informative-messages-component-state
-                                                                         (viz-state-informative-messages a-vs)))))
-                                (imsg-state-stack (informative-messages-component-state
-                                                   (viz-state-informative-messages a-vs)))
-                                (zipper-prev (imsg-state-stack (informative-messages-component-state
-                                                                (viz-state-informative-messages a-vs)))))]
-                     
-                     [invs-zipper (cond [(zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                                 (viz-state-informative-messages a-vs))))
-                                         (imsg-state-invs-zipper (informative-messages-component-state
-                                                                  (viz-state-informative-messages a-vs)))]
-                                        [(and (not (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                                              (viz-state-informative-messages a-vs)))))
-                                              (<= pci-len (first (zipper-processed
-                                                                  (imsg-state-invs-zipper (informative-messages-component-state
-                                                                                           (viz-state-informative-messages a-vs)))))))
-                                         (zipper-prev (imsg-state-invs-zipper (informative-messages-component-state
-                                                                               (viz-state-informative-messages a-vs))))]
-                                        [else (imsg-state-invs-zipper (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs)))])])])])))
-
-;;viz-state -> viz-state
-;;Purpose: Progresses the visualization to the beginning
-(define (up-key-pressed a-vs)
+  (let ([imsg-state-rules-used (imsg-state-tm-rules-used (informative-messages-component-state
+                                                          (viz-state-informative-messages a-vs)))]
+        [imsg-state-tape (imsg-state-tm-tape (informative-messages-component-state (viz-state-informative-messages a-vs)))]
+        [imsg-state-head-position (imsg-state-tm-head-position (informative-messages-component-state
+                                                                (viz-state-informative-messages a-vs)))]
+        [imsg-state-computation-lengths (imsg-state-tm-computation-lengths (informative-messages-component-state
+                                                                            (viz-state-informative-messages a-vs)))]
+        [imsg-state-shown-accepting-trace (imsg-state-tm-shown-accepting-trace (informative-messages-component-state
+                                                                                   (viz-state-informative-messages a-vs)))]
+        [imsg-state-invs-zipper (imsg-state-tm-invs-zipper (informative-messages-component-state
+                                                            (viz-state-informative-messages a-vs)))])
   (struct-copy
    viz-state
    a-vs
@@ -723,46 +557,146 @@ visited is a (listof configuration)
      informative-messages
      (viz-state-informative-messages a-vs)
      [component-state
-      (struct-copy imsg-state
-                   (informative-messages-component-state
-                    (viz-state-informative-messages a-vs))
-                   #;[upci (if (empty? (imsg-state-pci (informative-messages-component-state
-                                                      (viz-state-informative-messages a-vs))))
-                             (imsg-state-upci (informative-messages-component-state
-                                               (viz-state-informative-messages a-vs)))
-                             (append (imsg-state-pci (informative-messages-component-state
-                                                      (viz-state-informative-messages a-vs)))
-                                     (imsg-state-upci (informative-messages-component-state
-                                                       (viz-state-informative-messages a-vs)))))]
-                   #;[pci (if (empty? (imsg-state-pci (informative-messages-component-state
-                                                     (viz-state-informative-messages a-vs))))
-                            (imsg-state-pci (informative-messages-component-state
-                                             (viz-state-informative-messages a-vs)))
-                            '())]
-                   [acpt-trace (if (or (zipper-empty? (imsg-state-acpt-trace (informative-messages-component-state
-                                                                              (viz-state-informative-messages a-vs))))
-                                       (zipper-at-begin? (imsg-state-acpt-trace (informative-messages-component-state
-                                                                                 (viz-state-informative-messages a-vs)))))
-                                   (imsg-state-acpt-trace (informative-messages-component-state
-                                                           (viz-state-informative-messages a-vs)))
-                                   (zipper-to-begin (imsg-state-acpt-trace (informative-messages-component-state
-                                                                            (viz-state-informative-messages a-vs)))))]
-                   #;[stack (if (or (zipper-empty? (imsg-state-stack (informative-messages-component-state
-                                                                    (viz-state-informative-messages a-vs))))
-                                  (zipper-at-begin? (imsg-state-stack (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs)))))
-                              (imsg-state-stack (informative-messages-component-state
-                                                 (viz-state-informative-messages a-vs)))
-                              (zipper-to-begin (imsg-state-stack (informative-messages-component-state
-                                                                  (viz-state-informative-messages a-vs)))))]
-                   [invs-zipper (if (or (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                                (viz-state-informative-messages a-vs))))
-                                        (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                                   (viz-state-informative-messages a-vs)))))
-                                    (imsg-state-invs-zipper (informative-messages-component-state
-                                                             (viz-state-informative-messages a-vs)))
-                                    (zipper-to-idx (imsg-state-invs-zipper (informative-messages-component-state
-                                                                            (viz-state-informative-messages a-vs))) 0))])])]))
+      (struct-copy
+       imsg-state-tm
+       (informative-messages-component-state
+        (viz-state-informative-messages a-vs))
+       [rules-used (if (or (zipper-empty? imsg-state-rules-used) (zipper-at-end? imsg-state-rules-used))
+                       imsg-state-rules-used 
+                       (zipper-to-end imsg-state-rules-used))]
+       [tape (if (or (zipper-empty? imsg-state-tape) (zipper-at-end? imsg-state-tape))
+                 imsg-state-tape
+                 (zipper-to-end imsg-state-tape))]
+       [head-position (if (or (zipper-empty? imsg-state-head-position) (zipper-at-end? imsg-state-head-position))
+                          imsg-state-head-position
+                          (zipper-to-end imsg-state-head-position))]
+         
+       [computation-lengths (if (or (zipper-empty? imsg-state-computation-lengths) (zipper-at-end? imsg-state-computation-lengths))
+                                imsg-state-computation-lengths 
+                                (zipper-to-end imsg-state-computation-lengths))]
+       [shown-accepting-trace (if (or (zipper-empty? imsg-state-shown-accepting-trace)
+                                      (zipper-at-end? imsg-state-shown-accepting-trace))
+                                  imsg-state-shown-accepting-trace
+                                  (zipper-to-end imsg-state-shown-accepting-trace))]
+         
+       ;;(zipperof invariant)
+       ;;Purpose: The index of the last failed invariant
+       [invs-zipper (if (or (zipper-empty? imsg-state-invs-zipper) (zipper-at-end? imsg-state-invs-zipper))
+                        imsg-state-invs-zipper
+                        (zipper-to-end imsg-state-invs-zipper))])])])))
+
+;;viz-state -> viz-state
+;;Purpose: Progresses the visualization backward by one step
+(define (left-key-pressed a-vs)
+  (let ([imsg-state-rules-used (imsg-state-tm-rules-used (informative-messages-component-state
+                                                          (viz-state-informative-messages a-vs)))]
+        [imsg-state-tape (imsg-state-tm-tape (informative-messages-component-state
+                                              (viz-state-informative-messages a-vs)))]
+        [imsg-state-head-position (imsg-state-tm-head-position (informative-messages-component-state
+                                                                (viz-state-informative-messages a-vs)))]
+        [imsg-state-computation-lengths (imsg-state-tm-computation-lengths (informative-messages-component-state
+                                                                            (viz-state-informative-messages a-vs)))]
+        [imsg-state-shown-accepting-trace (imsg-state-tm-shown-accepting-trace (informative-messages-component-state
+                                                                                   (viz-state-informative-messages a-vs)))]
+        [imsg-state-invs-zipper (imsg-state-tm-invs-zipper (informative-messages-component-state
+                                                            (viz-state-informative-messages a-vs)))])
+  (struct-copy
+   viz-state
+   a-vs
+   [informative-messages
+    (struct-copy
+     informative-messages
+     (viz-state-informative-messages a-vs)
+     [component-state
+      (struct-copy
+       imsg-state-tm
+       (informative-messages-component-state
+        (viz-state-informative-messages a-vs))
+       [rules-used (if (or (zipper-empty? imsg-state-rules-used)
+                           (zipper-at-begin? imsg-state-rules-used))
+                       imsg-state-rules-used 
+                       (zipper-prev imsg-state-rules-used))]
+       [tape (if (or (zipper-empty? imsg-state-tape)
+                     (zipper-at-begin? imsg-state-tape))
+                 imsg-state-tape
+                 (zipper-prev imsg-state-tape))]
+                     
+       [head-position (if (or (zipper-empty? imsg-state-head-position)
+                              (zipper-at-begin? imsg-state-head-position))
+                          imsg-state-head-position
+                          (zipper-prev imsg-state-head-position))]
+                     
+       [computation-lengths (if (or (zipper-empty? imsg-state-computation-lengths)
+                                    (zipper-at-begin? imsg-state-computation-lengths))
+                                imsg-state-computation-lengths 
+                                (zipper-prev imsg-state-computation-lengths))]
+       [shown-accepting-trace (if (or (zipper-empty? imsg-state-shown-accepting-trace)
+                                      (zipper-at-begin? imsg-state-shown-accepting-trace))
+                                  imsg-state-shown-accepting-trace
+                                  (zipper-prev imsg-state-shown-accepting-trace))]
+       [invs-zipper (cond [(zipper-empty? imsg-state-invs-zipper) imsg-state-invs-zipper]
+                          [(and (not (zipper-at-begin? imsg-state-invs-zipper))
+                                (<= (get-tm-config-index-frm-trace imsg-state-shown-accepting-trace)
+                                    (fourth (first (zipper-processed imsg-state-invs-zipper)))))
+                           (zipper-prev imsg-state-invs-zipper)]
+                          [else imsg-state-invs-zipper])])])])))
+
+;;viz-state -> viz-state
+;;Purpose: Progresses the visualization to the beginning
+(define (up-key-pressed a-vs)
+  (let ([imsg-state-rules-used (imsg-state-tm-rules-used (informative-messages-component-state
+                                                          (viz-state-informative-messages a-vs)))]
+        [imsg-state-tape (imsg-state-tm-tape (informative-messages-component-state (viz-state-informative-messages a-vs)))]
+        [imsg-state-head-position (imsg-state-tm-head-position (informative-messages-component-state
+                                                                (viz-state-informative-messages a-vs)))]
+        [imsg-state-computation-lengths (imsg-state-tm-computation-lengths (informative-messages-component-state
+                                                                            (viz-state-informative-messages a-vs)))]
+        [imsg-state-shown-accepting-trace (imsg-state-tm-shown-accepting-trace (informative-messages-component-state
+                                                                                   (viz-state-informative-messages a-vs)))]
+        [imsg-state-invs-zipper (imsg-state-tm-invs-zipper (informative-messages-component-state
+                                                            (viz-state-informative-messages a-vs)))])
+  (struct-copy
+   viz-state
+   a-vs
+   [informative-messages
+    (struct-copy
+     informative-messages
+     (viz-state-informative-messages a-vs)
+     [component-state
+      (struct-copy
+       imsg-state-tm
+       (informative-messages-component-state
+        (viz-state-informative-messages a-vs))
+       ;;rules
+       [rules-used (if (or (zipper-empty? imsg-state-rules-used)
+                           (zipper-at-begin? imsg-state-rules-used))
+                       imsg-state-rules-used 
+                       (zipper-to-begin imsg-state-rules-used))]
+       ;;tape
+       [tape (if (or (zipper-empty? imsg-state-tape)
+                     (zipper-at-begin? imsg-state-tape))
+                 imsg-state-tape
+                 (zipper-to-begin imsg-state-tape))]
+       ;;head-position
+       [head-position (if (or (zipper-empty? imsg-state-head-position)
+                              (zipper-at-begin? imsg-state-head-position))
+                          imsg-state-head-position
+                          (zipper-to-begin imsg-state-head-position))]
+       ;;computation-lengths
+       [computation-lengths (if (or (zipper-empty? imsg-state-computation-lengths)
+                                    (zipper-at-begin? imsg-state-computation-lengths))
+                                imsg-state-computation-lengths 
+                                (zipper-to-begin imsg-state-computation-lengths))]
+       ;;shown-accepting-trace
+       [shown-accepting-trace (if (or (zipper-empty? imsg-state-shown-accepting-trace)
+                                      (zipper-at-begin? imsg-state-shown-accepting-trace))
+                                  imsg-state-shown-accepting-trace
+                                  (zipper-to-begin imsg-state-shown-accepting-trace))]
+       ;;invariant-zipper
+       [invs-zipper (if (or (zipper-empty? imsg-state-invs-zipper)
+                            (zipper-at-begin? imsg-state-invs-zipper))
+                        imsg-state-invs-zipper
+                        (zipper-to-begin imsg-state-invs-zipper))])])])))
 
 ;; viz-state -> viz-state
 ;; Purpose: Moves the deriving and current yield to the beginning of their current words
@@ -775,7 +709,7 @@ visited is a (listof configuration)
       (struct-copy informative-messages
                    (viz-state-informative-messages a-vs)
                    [component-state
-                    (struct-copy imsg-state
+                    (struct-copy imsg-state-tm
                                  a-imsgs
                                  [word-img-offset 0]
                                  [scroll-accum 0])])])))
@@ -790,157 +724,151 @@ visited is a (listof configuration)
                   (struct-copy informative-messages
                                (viz-state-informative-messages a-vs)
                                [component-state
-                                (struct-copy imsg-state
+                                (struct-copy imsg-state-tm
                                              a-imsgs
                                              [scroll-accum 0]
-                                             [word-img-offset (imsg-state-word-img-offset-cap a-imsgs)])])])))
+                                             [word-img-offset (imsg-state-tm-word-img-offset-cap a-imsgs)])])])))
 
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the previous broken invariant
 (define (j-key-pressed a-vs)
-  (if (or (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
-                                                  (viz-state-informative-messages a-vs))))
-          (and (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
-                                                          (viz-state-informative-messages a-vs))))
-               (not (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
-                                                             (viz-state-informative-messages a-vs))))))
-          (< (length (imsg-state-pci (informative-messages-component-state
-                                      (viz-state-informative-messages a-vs))))
-             (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
-                                                      (viz-state-informative-messages a-vs))))))
+  (let ([imsg-state-rules-used (imsg-state-tm-rules-used (informative-messages-component-state
+                                                          (viz-state-informative-messages a-vs)))]
+        [imsg-state-tape (imsg-state-tm-tape (informative-messages-component-state (viz-state-informative-messages a-vs)))]
+        [imsg-state-head-position (imsg-state-tm-head-position (informative-messages-component-state
+                                                                (viz-state-informative-messages a-vs)))]
+        [imsg-state-computation-lengths (imsg-state-tm-computation-lengths (informative-messages-component-state
+                                                                            (viz-state-informative-messages a-vs)))]
+        [imsg-state-shown-accepting-trace (imsg-state-tm-shown-accepting-trace (informative-messages-component-state
+                                                                                   (viz-state-informative-messages a-vs)))]
+        [imsg-state-invs-zipper (imsg-state-tm-invs-zipper (informative-messages-component-state
+                                                            (viz-state-informative-messages a-vs)))])
+  (if (or (zipper-empty? imsg-state-invs-zipper)
+          (and (zipper-at-begin? imsg-state-invs-zipper)
+               (not (zipper-at-end? imsg-state-invs-zipper)))
+          (< (get-tm-config-index-frm-trace imsg-state-shown-accepting-trace)
+             (get-tm-config-index-frm-invs imsg-state-invs-zipper)))
       a-vs
-      (let* ([zip (if (and (not (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                           (viz-state-informative-messages a-vs)))))
-                           (<= (length (imsg-state-pci (informative-messages-component-state
-                                                        (viz-state-informative-messages a-vs))))
-                               (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
-                                                                        (viz-state-informative-messages a-vs))))))
-                      (zipper-prev (imsg-state-invs-zipper (informative-messages-component-state
-                                                            (viz-state-informative-messages a-vs))))
-                      (imsg-state-invs-zipper (informative-messages-component-state
-                                               (viz-state-informative-messages a-vs))))]
-             #;[full-word (append (imsg-state-pci (informative-messages-component-state
-                                                 (viz-state-informative-messages a-vs)))
-                                (imsg-state-upci (informative-messages-component-state
-                                                  (viz-state-informative-messages a-vs))))]
-             #;[partial-word (if (> (zipper-current zip) (length full-word))
-                               full-word
-                               (take full-word (zipper-current zip)))])
+      (let ([zip (if (and (not (zipper-at-begin? imsg-state-invs-zipper))
+                          (<= (get-tm-config-index-frm-trace imsg-state-shown-accepting-trace)
+                              (get-tm-config-index-frm-invs imsg-state-invs-zipper)))
+                     (zipper-prev imsg-state-invs-zipper)
+                     imsg-state-invs-zipper)])
         (struct-copy
          viz-state
          a-vs
+         [imgs (vector-zipper-to-idx (viz-state-imgs a-vs) (get-tm-config-index-frm-invs zip))]
          [informative-messages
           (struct-copy
            informative-messages
            (viz-state-informative-messages a-vs)
            [component-state
-            (struct-copy imsg-state
-                         (informative-messages-component-state
-                          (viz-state-informative-messages a-vs))
-                         #;[upci (remove-similarities full-word partial-word '())]
-                         [acpt-trace (if (zipper-empty? (imsg-state-acpt-trace (informative-messages-component-state
-                                                                                (viz-state-informative-messages a-vs))))
-                                         (imsg-state-acpt-trace (informative-messages-component-state
-                                                                 (viz-state-informative-messages a-vs)))
-                                         (zipper-to-idx (imsg-state-acpt-trace (informative-messages-component-state
-                                                                                (viz-state-informative-messages a-vs)))
-                                                        (zipper-current zip)))]
-                         #;[stack (if (zipper-empty? (imsg-state-stack (informative-messages-component-state
-                                                                      (viz-state-informative-messages a-vs))))
-                                    (imsg-state-stack (informative-messages-component-state
-                                                       (viz-state-informative-messages a-vs)))
-                                    (zipper-to-idx (imsg-state-stack (informative-messages-component-state
-                                                                      (viz-state-informative-messages a-vs)))
-                                                   (zipper-current zip)))]
-                         #;[pci partial-word]
-                         [invs-zipper zip])])]))))
+            (struct-copy
+             imsg-state-tm
+             (informative-messages-component-state
+              (viz-state-informative-messages a-vs))
+             ;;rules
+             [rules-used (zipper-to-idx imsg-state-rules-used (get-tm-config-index-frm-invs zip))]
+             ;;tape
+             [tape (zipper-to-idx imsg-state-tape (get-tm-config-index-frm-invs zip))]
+             ;;head-position
+             [head-position (zipper-to-idx imsg-state-head-position (get-tm-config-index-frm-invs zip))]
+             ;;computation-lengths
+             [computation-lengths (zipper-to-idx imsg-state-computation-lengths (get-tm-config-index-frm-invs zip))]
+             ;;Shown accepting trace
+             [shown-accepting-trace (if (zipper-empty? imsg-state-shown-accepting-trace)
+                                        imsg-state-shown-accepting-trace
+                                        (zipper-to-idx imsg-state-shown-accepting-trace (get-tm-config-index-frm-invs zip)))]
+             ;;invariant-zipper
+             [invs-zipper zip])])])))))
+
 
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the next failed invariant
 (define (l-key-pressed a-vs)
-  (if (or (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
-                                                  (viz-state-informative-messages a-vs))))
-          (and (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
-                                                        (viz-state-informative-messages a-vs))))
-               (not (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
-                                                               (viz-state-informative-messages a-vs))))))
-          (> (length (imsg-state-pci (informative-messages-component-state
-                                      (viz-state-informative-messages a-vs))))
-             (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
-                                                      (viz-state-informative-messages a-vs))))))
+  (let ([imsg-state-rules-used (imsg-state-tm-rules-used (informative-messages-component-state
+                                                          (viz-state-informative-messages a-vs)))]
+        [imsg-state-tape (imsg-state-tm-tape (informative-messages-component-state (viz-state-informative-messages a-vs)))]
+        [imsg-state-head-position (imsg-state-tm-head-position (informative-messages-component-state
+                                                                (viz-state-informative-messages a-vs)))]
+        [imsg-state-computation-lengths (imsg-state-tm-computation-lengths (informative-messages-component-state
+                                                                            (viz-state-informative-messages a-vs)))]
+        [imsg-state-shown-accepting-trace (imsg-state-tm-shown-accepting-trace (informative-messages-component-state
+                                                                                   (viz-state-informative-messages a-vs)))]
+        [imsg-state-invs-zipper (imsg-state-tm-invs-zipper (informative-messages-component-state
+                                                            (viz-state-informative-messages a-vs)))])
+  (if (or (zipper-empty? imsg-state-invs-zipper)
+          (and (zipper-at-end? imsg-state-invs-zipper)
+               (not (zipper-at-begin? imsg-state-invs-zipper)))
+          (> (get-tm-config-index-frm-trace imsg-state-shown-accepting-trace)
+                              (get-tm-config-index-frm-invs imsg-state-invs-zipper)))
       a-vs
-      (let* ([zip (if (and (not (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                         (viz-state-informative-messages a-vs)))))
-                           (or (>= (length (imsg-state-pci (informative-messages-component-state
-                                                            (viz-state-informative-messages a-vs))))
-                                   (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
-                                                                            (viz-state-informative-messages a-vs)))))))
-                      (zipper-next (imsg-state-invs-zipper (informative-messages-component-state
-                                                            (viz-state-informative-messages a-vs))))
-                      (imsg-state-invs-zipper (informative-messages-component-state
-                                               (viz-state-informative-messages a-vs))))]
-             #;[full-word (append (imsg-state-pci (informative-messages-component-state
-                                                 (viz-state-informative-messages a-vs)))
-                                (imsg-state-upci (informative-messages-component-state
-                                                  (viz-state-informative-messages a-vs))))]
-             #;[partial-word (if (> (zipper-current zip) (length full-word))
-                               full-word
-                               (take full-word (zipper-current zip)))])
+      (let ([zip (if (and (not (zipper-at-end? imsg-state-invs-zipper))
+                          (>= (get-tm-config-index-frm-trace imsg-state-shown-accepting-trace)
+                              (get-tm-config-index-frm-invs imsg-state-invs-zipper)))
+                     (zipper-next imsg-state-invs-zipper)
+                     imsg-state-invs-zipper)])
         (struct-copy
          viz-state
          a-vs
+         [imgs (vector-zipper-to-idx (viz-state-imgs a-vs) (get-tm-config-index-frm-invs zip))]
          [informative-messages
           (struct-copy
            informative-messages
            (viz-state-informative-messages a-vs)
            [component-state
-            (struct-copy imsg-state
-                         (informative-messages-component-state
-                          (viz-state-informative-messages a-vs))
-                         #;[upci (remove-similarities full-word partial-word '())]
-                         [acpt-trace (if (zipper-empty? (imsg-state-acpt-trace (informative-messages-component-state
-                                                                                (viz-state-informative-messages a-vs))))
-                                         (imsg-state-acpt-trace (informative-messages-component-state
-                                                                 (viz-state-informative-messages a-vs)))
-                                         (zipper-to-idx (imsg-state-acpt-trace (informative-messages-component-state
-                                                                                (viz-state-informative-messages a-vs)))
-                                                        (zipper-current zip)))]
-                         #;[stack (if (zipper-empty? (imsg-state-stack (informative-messages-component-state
-                                                                      (viz-state-informative-messages a-vs))))
-                                    (imsg-state-stack (informative-messages-component-state
-                                                       (viz-state-informative-messages a-vs)))
-                                    (zipper-to-idx (imsg-state-stack (informative-messages-component-state
-                                                                      (viz-state-informative-messages a-vs)))
-                                                   (zipper-current zip)))]
-                         #;[pci partial-word]
-                         [invs-zipper zip])])]))))
+            (struct-copy
+             imsg-state-tm
+             (informative-messages-component-state (viz-state-informative-messages a-vs))
+             ;;rules
+             [rules-used (zipper-to-idx imsg-state-rules-used (get-tm-config-index-frm-invs zip))]
+             ;;tape
+             [tape (zipper-to-idx imsg-state-tape (get-tm-config-index-frm-invs zip))]
+             ;;head-position
+             [head-position (zipper-to-idx imsg-state-head-position (get-tm-config-index-frm-invs zip))]
+             ;;computation-lengths
+             [computation-lengths (zipper-to-idx imsg-state-computation-lengths (get-tm-config-index-frm-invs zip))]
+             ;;Shown accepting trace
+             [shown-accepting-trace (if (zipper-empty? imsg-state-shown-accepting-trace)
+                                        imsg-state-shown-accepting-trace
+                                        (zipper-to-idx imsg-state-shown-accepting-trace (get-tm-config-index-frm-invs zip)))]
+             ;;invariant-zipper
+             [invs-zipper zip])])])))))
 
 
 ;;tm tape [natnum] [natnum] . -> (void) Throws error
 ;;Purpose: Visualizes the given ndfa processing the given word
 ;;Assumption: The given machine is a ndfa or dfa
-(define (tm-viz M a-word head-pos #:cut-off [cut-off 100] . invs) ;;GET RID OF . FOR TESTING
-  (let* (;;(listof computations) ;;Purpose: All computations that the machine can have
-         [computations (get-computations a-word (sm-rules M) (sm-start M) (sm-finals M) cut-off head-pos)]
+(define (tm-viz M a-word head-pos #:cut-off [cut-off 100] invs) ;;GET RID OF . FOR TESTING
+  (let* (;;tm-struct
+         [M (remake-tm M)]
+         ;;(listof computations) ;;Purpose: All computations that the machine can have
+         [computations+hash (get-computations a-word (tm-rules M) (tm-start M) (tm-finals M) cut-off head-pos)]
+
+         [computations (treelist->list (first computations+hash))]
          ;;(listof configurations) ;;Purpose: Extracts the configurations from the computation
          [LoC (map computation-LoC computations)]
-         ;;number ;;Purpose: The length of the word
-         [word-len (length a-word)]
+
+         [reached-final? (ormap (λ (computation) (member? (tm-config-state (treelist-last computation)) (tm-finals M) eq?)) LoC)]
          ;;(listof computation) ;;Purpose: Extracts all accepting computations
-         [accepting-computations (filter (λ (comp)
-                                           (equal? (first (first (computation-LoC comp))) (sm-accept M)))
-                                         computations)]
+         [accepting-computations (if (eq? (tm-type M) 'tm-language-recognizer)
+                                     (filter (λ (comp)
+                                           (eq? (tm-config-state (treelist-last (computation-LoC comp))) (tm-accepting-final M)))
+                                         computations)
+                                     '())]
          ;;(listof trace) ;;Purpose: Makes traces from the accepting computations
          [accepting-traces (map (λ (acc-comp)
-                                  (make-trace (reverse (computation-LoC acc-comp))
-                                              (reverse (computation-LoR acc-comp))
+                                  (make-trace (computation-LoC acc-comp)
+                                              (computation-LoR acc-comp)
                                               '()))
                                 accepting-computations)]
+         [computation-has-cut-off? (ormap (λ (comp-length)
+                                            (>= comp-length cut-off))
+                                          (if (empty? accepting-traces)
+                                              (map treelist-length LoC)
+                                              '()))]
          ;;(listof trace) ;;Purpose: Gets the cut off trace if the the word length is greater than the cut
-         [cut-accept-traces '()
-                            #;(if (> word-len max-cmps)
-                                (map last accepting-traces)
-                                '())]
+         [cut-accept-traces '()]
          ;;(listof trace) ;;Purpose: Gets the cut off trace if the the word length is greater than the cut
          [accept-cmps (if (empty? cut-accept-traces)
                           accepting-traces
@@ -953,48 +881,66 @@ visited is a (listof configuration)
                                            (not (member? config accepting-computations equal?)))
                                          computations)]
          ;;(listof trace) ;;Purpose: Makes traces from the rejecting computations
-         [rejecting-traces (map (λ (c)
-                                  (make-trace (reverse (computation-LoC c))
-                                              (reverse (computation-LoR c))
+         [rejecting-traces (map (λ (comp)
+                                  (make-trace (computation-LoC comp)
+                                              (computation-LoR comp)
                                               '()))
                                 rejecting-computations)]
+         
          ;;(listof rules) ;;Purpose: Returns the first accepting computations (listof rules)
          [accepting-trace (if (empty? accept-cmps) '() (first accept-cmps))]
+         [rejecting-trace (if (empty? accept-cmps) (find-longest-computation rejecting-traces '()) '())]
+         [displayed-tape (map (λ (trace) (tm-config-tape (trace-config trace)))
+                              (cond [(and (empty? accepting-trace)
+                                          (not computation-has-cut-off?)
+                                          (= (length rejecting-computations) 1))
+                                     rejecting-trace]
+                                    [(and (not computation-has-cut-off?) (not (empty? accepting-trace))) accepting-trace]
+                                    [else '()]))]
+         [all-displayed-tape (list->zipper displayed-tape)]
+         [tracked-head-pos (let ([head-pos (map (λ (trace) (tm-config-head-position (trace-config trace)))
+                                               (if (empty? accepting-trace)
+                                                   rejecting-trace
+                                                   accepting-trace))])
+                             (if reached-final? head-pos (append head-pos '(-1))))]
+                                 
+                             
+         [all-head-pos (list->zipper tracked-head-pos)]
+         [machine-decision (if (not (empty? accepting-computations))
+                               'accept
+                               'reject)]
+         
+         [tracked-trace (cond [(and (empty? accepting-trace)
+                                    (not computation-has-cut-off?)
+                                    (= (length rejecting-computations) 1))
+                               (list rejecting-trace)]
+                              [(and (not computation-has-cut-off?) (not (empty? accepting-trace))) (list accepting-trace)]
+                              [computation-has-cut-off? (if (empty? accepting-trace)
+                                                            (list rejecting-trace)
+                                                            (list accepting-trace))]
+                              [else '()])]
+         ;;(listof number) ;;Purpose: Gets all the invariant configurations
+         [all-inv-configs (reverse (get-inv-config-results accepting-computations invs))]
+         [failed-inv-configs (return-brk-inv-configs all-inv-configs)]
+         
+         
+         
          ;;building-state struct
-         [building-state (building-viz-state a-word
+         [building-state (building-viz-state all-displayed-tape
                                              LoC
-                                             accepting-computations
-                                             accept-cmps
+                                             tracked-trace
+                                             (if (empty? accept-cmps) '() (rest accept-cmps))
                                              rejecting-traces
                                              M
-                                             invs
+                                             all-inv-configs
                                              cut-off
-                                             head-pos)]
+                                             all-head-pos
+                                             machine-decision)]
                      
          ;;(listof graph-thunk) ;;Purpose: Gets all the graphs needed to run the viz
          [graphs (create-graph-thunks building-state '())]
-         ;;(listof computation) ;;Purpose: Gets all the cut off computations if the length of the word is greater than max computations
-         [get-cut-off-comp (if (> word-len cut-off)
-                               (map first LoC)
-                               '())]
-         ;;(listof computation) ;;Purpose: Makes the cut off computations if the length of the word is greater than max computations
-         [cut-off-comp (if (empty? get-cut-off-comp)
-                           LoC
-                           (map (λ (cut-off-comp comp)
-                                  (append comp (list cut-off-comp)))
-                                get-cut-off-comp
-                                LoC))]
          ;;(listof number) ;;Purpose: Gets the number of computations for each step
-         [computation-lens 0 #;(count-computations a-word cut-off-comp '())]
-         ;;(listof number) ;;Purpose: Gets the index of image where an invariant failed
-         #;[inv-configs (map (λ (con)
-                             (fourth con))
-                           (return-brk-inv-configs
-                            (get-inv-config-results
-                             (make-inv-configs a-word accepting-computations)
-                             invs)
-                            a-word))])
-    ;(displayln computations)
+         [cut-off-computations-lengths (take (count-computations LoC '()) (length tracked-head-pos))])
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ TM-E-SCENE-HEIGHT 2))
@@ -1003,18 +949,28 @@ visited is a (listof configuration)
              DEFAULT-ZOOM-FLOOR
              (informative-messages tm-create-draw-informative-message
                                    (imsg-state-tm M
-                                               a-word
-                                               (list->zipper accepting-trace)
-                                               (list->zipper '() #;inv-configs) 
-                                               0 ;(sub1 (length inv-configs))
-                                               computation-lens
-                                               LoC
-                                               cut-off
-                                               head-pos
-                                               0
-                                               (let ([offset-cap (- (length a-word) TAPE-SIZE)])
-                                                 (if (> 0 offset-cap) 0 offset-cap))
-                                               0)
+                                                  (if (zipper-empty? all-displayed-tape) (list->zipper (list a-word)) all-displayed-tape)
+                                                  all-head-pos
+                                                  (list->zipper (map (λ (trace)
+                                                                       (list (rule-read (trace-rules trace))
+                                                                             (rule-action (trace-rules trace))))
+                                                                     (cond [(empty? tracked-trace) tracked-trace]
+                                                                           [(or (and (not computation-has-cut-off?)
+                                                                                     (not (empty? accepting-trace)))
+                                                                                (and (empty? accepting-trace)
+                                                                                     (not computation-has-cut-off?)
+                                                                                     (= (length rejecting-computations) 1)))
+                                                                            (first tracked-trace)]
+                                                                           [else '()])))
+                                                  (list->zipper (if (empty? tracked-trace) tracked-trace (first tracked-trace)))
+                                                  (list->zipper failed-inv-configs) 
+                                                  (list->zipper cut-off-computations-lengths)
+                                                  cut-off
+                                                  machine-decision
+                                                  0
+                                                  (let ([offset-cap (- (length a-word) TAPE-SIZE)])
+                                                    (if (> 0 offset-cap) 0 offset-cap))
+                                                  0)
                                    tm-img-bounding-limit)
              (instructions-graphic E-SCENE-TOOLS
                                    (bounding-limits 0
@@ -1042,8 +998,8 @@ visited is a (listof configuration)
                                      [ "d" identity d-key-pressed]
                                      [ "wheel-down" viz-zoom-in identity]
                                      [ "wheel-up" viz-zoom-out identity]
-                                     [ "j" jump-prev j-key-pressed]
-                                     [ "l" jump-next l-key-pressed]
+                                     [ "j" tm-jump-prev j-key-pressed]
+                                     [ "l" tm-jump-next l-key-pressed]
                                      )
              (create-viz-process-tick TM-E-SCENE-BOUNDING-LIMITS
                                       NODE-SIZE
@@ -1063,127 +1019,6 @@ visited is a (listof configuration)
                                         [ F-KEY-DIMS viz-max-zoom-in identity]
                                         [ A-KEY-DIMS identity a-key-pressed]
                                         [ D-KEY-DIMS identity d-key-pressed]
-                                        [ J-KEY-DIMS jump-prev j-key-pressed]
-                                        [ L-KEY-DIMS jump-next l-key-pressed]))
+                                        [ J-KEY-DIMS tm-jump-prev j-key-pressed]
+                                        [ L-KEY-DIMS tm-jump-next l-key-pressed]))
              'tm-viz)))
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-;;States (i = head's position)
-;; K - tape[1..i-1] contains an even amount of a's and even bs
-;; H - tape[1..i-1] contains an odd amount of a's and even bs
-;; I - tape[1..i-1] contains an odd amount of b's and even as
-;; B - tape[1..i-1] contains an odd amount of a's and odd bs
-;; S - tape[i] = blank AND tape[1..i-1] contains an even amount of a's and even bs, final state
-
-;;Pre-condition = tape = LMw_ AND i = 0
-(define EVEN-AS-&-BS (make-tm '(K H I B S)
-                          '(a b)
-                          `(((K ,BLANK) (S ,BLANK))
-                            ((K a) (H ,RIGHT)) ((H a) (K ,RIGHT)) ((H b) (B ,RIGHT)) ((B b) (H ,RIGHT))
-                            ((K b) (I ,RIGHT)) ((I b) (K ,RIGHT)) ((I a) (B ,RIGHT)) ((B a) (I ,RIGHT)))
-                          'K
-                          '(S)
-                          'S))
-
-(define a* (make-tm '(S Y N)
-                    '(a b)
-                    `(((S a) (S ,RIGHT))
-                     ((S b) (N b))
-                     ((S ,BLANK) (Y ,BLANK)))
-                    'S
-                    '(Y N)
-                    'Y))
-
-;; States (i is the position of the head)
-;; S: no tape elements read, starting sate
-;; A: tape[1..i-1] has only a
-;; B: tape[1..i-1] has only a
-;; C: tape[1..i-2] has only a and tape[i-1] = b
-;; Y: tape[i] = BLANK and tape[1..i-1] = a* or a*b,
-;; final accepting state
-;; N: tape[1..i-1] != a* or a*b, final state
-;; L = a* U a*b
-;; PRE: tape = LMw ANDi=1
-(define a*Ua*b (make-tm '(S A B C Y N)
-                        '(a b)
-                        `(((S ,BLANK) (Y ,BLANK))
-                          ((S a) (A ,RIGHT))
-                          ((S a) (B ,RIGHT))
-                          ((S b) (C ,RIGHT))
-                          ((A a) (A ,RIGHT))
-                          ((A ,BLANK) (Y ,BLANK))
-                          ((B a) (B ,RIGHT))
-                          ((B b) (C ,RIGHT))
-                          ((C a) (N ,RIGHT))
-                          ((C b) (N ,RIGHT))
-                          ((C ,BLANK) (Y ,BLANK)))
-                        'S
-                        '(Y N)
-                        'Y))
-
-(define anbncn (make-tm '(S A B C D E F G H I J K L Y)
-                        '(a b c x)
-                        `(((S ,BLANK) (J ,RIGHT))
-                         ((J ,BLANK) (Y ,BLANK))
-                         ((J a) (A ,RIGHT))
-                         ((A a) (A ,RIGHT))
-                         ((A b) (B ,RIGHT))
-                         ((B b) (B ,RIGHT))
-                         ((B c) (C ,RIGHT))
-                         ((C c) (C ,RIGHT))
-                         ((C ,BLANK) (D ,LEFT))
-                         ((D a) (D ,LEFT))
-                         ((D b) (D ,LEFT))
-                         ((D c) (D ,LEFT))
-                         ((D x) (D ,LEFT))
-                         ((D ,BLANK) (E ,RIGHT))
-                         ((E x) (E ,RIGHT))
-                         ((E a) (F x))
-                         ((E a) (H x))
-                         ((F a) (F ,RIGHT))
-                         ((F b) (G x))
-                         ((F x) (F ,RIGHT))
-                         ((G b) (G ,RIGHT))
-                         ((G x) (G ,RIGHT))
-                         ((G c) (D x))
-                         ((H x) (H ,RIGHT))
-                         ((H b) (I x))
-                         ((I x) (I ,RIGHT))
-                         ((I c) (K x))
-                         ((K x) (L ,RIGHT))
-                         ((L ,BLANK) (Y ,BLANK)))
-                        'S
-                        '(Y)
-                        'Y))
-
-
-
-#|
-(reverse (computation-LoC (first (get-computations '(@ a a b)
-                                                   (sm-rules a*Ua*b)
-                                                   (sm-start a*Ua*b)
-                                                   (sm-finals a*Ua*b)
-                                                   100
-                                                   #:head-pos 1))))
-(sm-showtransitions a*Ua*b '(@ a a b) 1)
-""
-(reverse (computation-LoC (first (get-computations '(@ a b a b)
-                                                   (sm-rules EVEN-AS-&-BS)
-                                                   (sm-start EVEN-AS-&-BS)
-                                                   (sm-finals EVEN-AS-&-BS)
-                                                   100))))
-(sm-showtransitions EVEN-AS-&-BS '(@ a b a b))
-""
-(reverse (computation-LoC (first (get-computations '(@ _ a b c)
-                                                   (sm-rules anbncn)
-                                                   (sm-start anbncn)
-                                                   (sm-finals anbncn)
-                                                   100
-                                                   #:head-pos 1))))
-(sm-showtransitions anbncn `(,LM ,BLANK a b c) 1)
-|#
-;(tm-viz EVEN-AS-&-BS '(@ a b a b) 0)
-"fix informative messages"

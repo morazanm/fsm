@@ -4,15 +4,16 @@
          "../2htdp/image.rkt"
          "../viz-lib/viz.rkt"
          "../viz-lib/zipper.rkt"
+         "../viz-lib/vector-zipper.rkt"
          "../viz-lib/bounding-limits.rkt"
          "../viz-lib/viz-state.rkt"
          "../viz-lib/viz-macros.rkt"
-         (except-in "../viz-lib/viz-constants.rkt"
-                    INS-TOOLS-BUFFER)
+         (except-in "../viz-lib/viz-constants.rkt" INS-TOOLS-BUFFER)
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "david-imsg-state.rkt"
-         (except-in "david-viz-constants.rkt"
-                    FONT-SIZE)
+         "testing-parameter.rkt"
+         racket/treelist
+         (except-in "david-viz-constants.rkt" FONT-SIZE)
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/fsa.rkt"
          "../../fsm-core/private/misc.rkt"
@@ -20,140 +21,172 @@
 
 (provide ndfa-viz)
 
-(define FONT-SIZE 18)
-(define EXTRA-HEIGHT-FROM-CURSOR 4)
-(define NODE-SIZE 50)
-
-(define DEFAULT-ZOOM-FLOOR .6)
-
-
-;(define INS-TOOLS-BUFFER 30)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-#|
-A trace is a structure:
-(make-trace config rules)
-config is a single configuration
-rules are a (listof rule-structs)
-|#
-(struct trace (config rules) #:transparent)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 #|
 A rule is a structure:
-(make-rule triple)
-triple is the entire of the ndfa rule
+triple is a structure that contains the entire of the ndfa rule
 |#
 (struct rule (triple) #:transparent)
 
-;; X (listof X) -> boolean
-;;Purpose: Determine if X is in the given list
-(define (member? x lst)
-  (ormap (λ (L) (equal? x L)) lst))
+#|
+A triple is a structure:
+source -> the source state of the ndfa rule           | symbol
+read -> the element to be read by the ndfa rule       | symbol
+destination -> the destination state of the ndfa rule | symbol
+|#
+(struct triple (source read destination) #:transparent)
 
-(define qempty? empty?)
+#|
+An ndfa is structure:
+states -> the states for the ndfa       | (listof symbol)
+alphabet -> the alphabet for the ndfa   | (listof symbol)
+start -> the start state for the ndfa   | symbol
+finals -> the final states for the ndfa | (setof symbol)
+rules -> the rules used by the ndfa     | (listof rule)
+type -> the type of the ndfa (ndfa/dfa) | symbol
 
-(define E-QUEUE '())
+|#
+(struct ndfa (states alphabet start finals rules type) #:transparent)
 
-;; (qof X) → X throws error
-;; Purpose: Return first X of the given queue
-(define (qfirst a-qox)
-  (if (qempty? a-qox)
-      (error "qfirst applied to an empty queue")
-      (first a-qox)))
+;;word -> (zipperof ci)
+;;Purpose: Creates all valid combinations of the upci and pci
+(define (remake-ci a-word)
+  ;;natnum ;;Purpose: the length of the given word
+  (define word-length (length a-word))
 
-;; (listof X) (qof X) → (qof X)
-;; Purpose: Add the given list of X to the given
-;;          queue of X
-(define (enqueue a-lox a-qox)
-  (append a-qox a-lox))
-
-;; (qof X) → (qof X) throws error
-;; Purpose: Return the rest of the given queue
-(define (dequeue a-qox)
-  (if (qempty? a-qox)
-      (error "dequeue applied to an empty queue")
-      (rest a-qox)))
-
-
-(struct computation (LoC LoR visited) #:transparent)
-
-
-;;config rule -> config
-;;Purpose: Applies the given rule to the given config
-;;ASSUMPTION: the given rule is applicable to the given config
-(define (apply-rule config rule)
-  (let* ([new-config (list (third rule)
-                           (if (eq? (second rule) EMP)
-                               (second (first (computation-LoC config)))
-                               (rest (second (first (computation-LoC config))))))])
-    (struct-copy computation config
-                 [LoC (cons new-config (computation-LoC config))]
-                 [LoR (cons rule (computation-LoR config))]
-                 [visited (cons (first (computation-LoC config)) (computation-visited config))])))
+  ;;natnum (listof ci) -> (zipperof ci)
+  ;;Purpose: Creates all valid combinations of the upci and pci
+  ;;Acc = All valid combinations of unconsumed and consumed input after num-steps amount  of steps
+  (define (make-ci-helper num-steps acc)
+    (if (= num-steps word-length)
+        (list->zipper (cons (ci (take-right a-word num-steps) (drop-right a-word num-steps)) acc))
+        (make-ci-helper (add1 num-steps) (cons (ci (take-right a-word num-steps) (drop-right a-word num-steps)) acc))))
+  (make-ci-helper 0 '()))
 
 
-
-;;(listof symbol) (listof rule) symbol -> (listof computation)
+;;(listof symbol) (listof rule) symbol (setof symbol) -> (listof (treelistof computation) hashtable)
 ;;Purpose: Traces all computations that the machine can make based on the starting state, word, and given rules
 (define (trace-computations word lor start finals)
+
+  ;;config rule -> config
+  ;;Purpose: Applies the given rule to the given config
+  ;;ASSUMPTION: the given rule is applicable to the given config
+  (define (apply-rule a-computation rule)
+
+    ;;config -> config
+    ;;Purpose: Makes a new config from the given config using its applicable rule 
+    (define (make-new-config a-config)
+      (struct-copy ndfa-config a-config
+                   [state (triple-destination rule)]
+                   [word (if (equal? (triple-read rule) EMP)
+                             (ndfa-config-word a-config)
+                             (rest (ndfa-config-word a-config)))]
+                   [index (if (equal? (triple-read rule) EMP)
+                              (ndfa-config-index a-config)
+                              (add1 (ndfa-config-index a-config)))]))
+    
+    (struct-copy computation a-computation
+                 [LoC (treelist-add (computation-LoC a-computation)
+                                    (make-new-config (treelist-last (computation-LoC a-computation))))]
+                 [LoR (treelist-add (computation-LoR a-computation) rule)]
+                 [visited (treelist-add (computation-visited a-computation) (treelist-last (computation-LoC a-computation)))]))
+  
+  ;;mutable set
+  ;;Purpose: holds all of the visited configurations
+  (define visited-configuration-set (mutable-set))
+
+  ;;configuration -> void
+  ;;Purpose: updates the set of visited configurations
+  (define (update-visited a-config)
+    (set-add! visited-configuration-set a-config))
+
+  ;;hash-set
+  ;;Purpose: accumulates the number of computations in a hashset
+  (define computation-number-hash (make-hash))
+  
+  ;;set
+  ;;an empty set
+  (define EMPTY-SET (set))
+
+  ;;configuration word -> void
+  ;;Purpose: updates the number of configurations using the given word as a key
+  (define (update-hash a-config a-word)
+    (hash-set! computation-number-hash
+               a-word
+               (set-add (hash-ref computation-number-hash
+                                  a-word
+                                  EMPTY-SET)
+                        a-config)))
+
+  
+  ;;(queueof computation) (treelistof computation) -> (listof (treelistof computation) hashtable)
+  ;;Purpose: Traces all computations that the machine can make based on the starting state, word, and given rules
+  (define (make-computations QoC path)
+    (if (qempty? QoC)
+        (list path computation-number-hash)
+        (let* ([current-config (treelist-last (computation-LoC (qfirst QoC)))]
+               [current-state (ndfa-config-state current-config)]
+               [current-word (ndfa-config-word current-config)])
+          (if (and (set-member? finals current-state) (empty? current-word))
+              (begin
+                (update-hash current-config current-word)
+                (make-computations (dequeue QoC) (treelist-add path (qfirst QoC))))
+              (let* (;;(treelistof rules)
+                     ;;Purpose: Filters the rules that match the current state 
+                     [curr-rules (treelist-filter (λ (rule) (eq? (triple-source rule) current-state)) lor)]
+                     ;;(treelistof rules)
+                     ;;Purpose: Returns all rules that consume a letter using the given configurations
+                     [connected-read-rules (treelist-filter (λ (rule)
+                                                              (and (not (empty? current-word))
+                                                                   (eq? (triple-read rule) (first current-word))))
+                                                            curr-rules)]
+                     
+                     ;;(treelistof rules)
+                     ;;Purpose: Returns all rules that have an empty transition using the given configurations
+                     [connected-emp-rules (treelist-filter (λ (rule)
+                                                             (eq? (triple-read rule) EMP))
+                                                           curr-rules)]
+                     ;;(trreelistof configurations)
+                     ;;Purpose: Makes new configurations using given word and connected-rules
+                     [new-configs (treelist-filter (λ (new-c)
+                                                     (not (set-member? visited-configuration-set
+                                                                       (treelist-last (computation-LoC new-c)))))
+                                                   
+                                                   (treelist-map (treelist-append connected-emp-rules connected-read-rules)
+                                                                 (λ (rule) (apply-rule (qfirst QoC) rule))))])
+                (begin
+                  (update-hash current-config current-word)
+                  (update-visited current-config)
+                  (if (treelist-empty? new-configs)
+                      (make-computations (dequeue QoC) (treelist-add path (qfirst QoC)))
+                      (make-computations (enqueue new-configs (dequeue QoC)) path))))))))
+
   (let (;;configuration
         ;;Purpose: The starting configuration
-        [starting-config (computation (list (append (list start) (list word)))
-                                      '()
-                                      '())])
-    (make-computations lor
-                       finals
-                       (enqueue (list starting-config) E-QUEUE)
-                       '())))
+        [starting-config (computation (treelist (ndfa-config start word 0))
+                                      empty-treelist
+                                      empty-treelist)])
+    (make-computations (enqueue (treelist starting-config) E-QUEUE) empty-treelist)))
 
-
-;;(listof rule) -> (listof computation)
-;;Purpose: Traces all computations that the machine can make based on the starting state, word, and given rules
-(define (make-computations lor finals QoC path)
-  (cond [(qempty? QoC) path]
-        [(and (member? (first (first (computation-LoC (qfirst QoC)))) finals)
-              (empty? (second (first (computation-LoC (qfirst QoC))))))
-         (make-computations lor finals (dequeue QoC) (cons (qfirst QoC) path))]
-        [else (let* ([first-computation (first (computation-LoC (qfirst QoC)))]
-                     ;;(listof rules)
-                     ;;Purpose: Returns all rules that consume a letter using the given configurations
-                     [connected-read-rules (if (empty? (second first-computation))
-                                               '()
-                                               (filter (λ (rule)
-                                                         (and (equal? (first rule) (first first-computation))
-                                                              (equal? (second rule) (first (second first-computation)))))
-                                                       lor))]
-                     ;;(listof rules)
-                     ;;Purpose: Returns all rules that have an empty transition using the given configurations
-                     [connected-emp-rules
-                      (filter (λ (rule)
-                                (and (equal? (first rule) (first first-computation))
-                                     (equal? (second rule) EMP)))
-                              lor)]
-                     ;;(listof configurations)
-                     ;;Purpose: Makes new configurations using given word and connected-rules
-                     [new-configs (filter (λ (new-c)
-                                            (not (member? (first (computation-LoC new-c)) (computation-visited new-c))))
-                                          (map (λ (rule) (apply-rule (qfirst QoC) rule)) (append connected-read-rules connected-emp-rules)))])
-                (if (empty? new-configs)
-                    (make-computations lor finals (dequeue QoC) (cons (qfirst QoC) path))
-                    (make-computations lor finals (enqueue new-configs (dequeue QoC)) path)))]))
   
-
 ;;(listof configurations) (listof rules) (listof configurations) -> (listof configurations)
 ;;Purpose: Returns a propers trace for the given (listof configurations) that accurately
 ;;         tracks each transition
 (define (make-trace configs rules acc)
-  (cond [(or (empty? rules)
-             (empty? configs)) (reverse acc)]
+  (cond [(and (= (length configs) 1) (empty? rules))
+         (let* ([rle (rule (triple EMP EMP EMP))]
+                [res (trace (first configs) (list rle))])
+           (reverse (cons res acc)))]
+         [(or (empty? rules)
+              (empty? configs)) (reverse acc)]
         [(and (empty? acc)
-              (not (equal? (second (first rules)) EMP)))
-         (let* ([rle (rule (list EMP EMP EMP))]
+              (not (equal? (triple-read (first rules)) EMP)))
+         (let* ([rle (rule (triple EMP EMP EMP))]
                 [res (trace (first configs) (list rle))])
            (make-trace (rest configs) rules (cons res acc)))]
         [(and (not (empty? acc))
-              (equal? (second (first rules)) EMP))
+              (equal? (triple-read (first rules)) EMP))
          (let* ([rle (rule (first rules))]
                 [res (struct-copy trace (first acc)
                                   [rules (cons rle (trace-rules (first acc)))])])
@@ -163,129 +196,88 @@ triple is the entire of the ndfa rule
                                  (list rle))])
                 (make-trace (rest configs) (rest rules) (cons res acc)))]))
 
-;;(listof symbols) machine -> (listof symbols)
-;;Purpose: Returns the last fully consumed word for the given machine
-(define (last-fully-consumed a-word M)
-  (cond [(empty? a-word) '()]
-        [(not (ormap (λ (config) (empty? (second (first (computation-LoC config)))))
-                     (trace-computations a-word (fsa-getrules M) (fsa-getstart M) (fsa-getfinals M))))
-         (last-fully-consumed (take a-word (sub1 (length a-word))) M)]
-        [a-word]))
+;;word (listof computation) (listof (list symbol (word -> boolean)) -> (list (listof computation) boolean)
+;;Purpoes: Extracts all the computations where its corresponding invariant doesn't hold
+(define (get-failed-invariants a-word LoC invariants)
+  ;;(lisof computations) -> (listof computations)
+  ;;Purpose: Makes configurations usable for invariant predicates
+  (define (make-inv-configs LoC)
 
-;;(listof symbols) (lisof configurations) -> (listof configurations)
-;;Purpose: Makes configurations usable for invariant predicates
-(define (make-inv-configs a-word configs)
-  (map (λ (config) (make-inv-configs-helper a-word config (length a-word))) configs))
+    ;;configuration natnum ->  computation
+    ;;Purpose: Makes configurations usable for invariant predicates
+    (define (make-inv-configs-helper computation word-len)
+      (let* ([config (filter (λ (config) (= (length (ndfa-config-word config)) word-len)) computation)]
+             [inv-config (map (λ (config)
+                                (struct-copy ndfa-config config [word (drop-right a-word word-len)]))
+                              config)])
+        (if (empty? computation)
+            '()
+            (append inv-config
+                    (make-inv-configs-helper (rest computation) (sub1 word-len))))))
+  
+    (map (λ (computation) (make-inv-configs-helper computation (length a-word))) LoC))
 
-;;(listof symbols) (lisof configurations) natnum -> (listof configurations)
-;;Purpose: Makes configurations usable for invariant predicates
-(define (make-inv-configs-helper a-word configs word-len)
-  (let* ([config (filter (λ (config) (= (length (second config)) word-len)) configs)]
-         [inv-config (map (λ (config)
-                            (append (list (first config))
-                                    (list (take a-word (- (length a-word) word-len)))))
-                          config)])
-    (if (empty? configs)
-        '()
-        (append inv-config
-                (make-inv-configs-helper a-word (rest configs) (sub1 word-len))))))
+  ;;configuration -> configuration
+  ;;Purpose: Adds the results of each invariant predicate to its corresponding invariant configuration 
+  (define (get-inv-config-results inv-configs)
 
-;;(listof configurations) (listof (listof symbol ((listof sybmols) -> boolean))) -> (listof configurations)
-;;Purpose: Adds the results of each invariant oredicate to its corresponding invariant configuration 
-(define (get-inv-config-results inv-configs invs)
-  (if (or (empty? inv-configs)
-          (empty? invs))
-      '()
-      (append (list (get-inv-config-results-helper (first inv-configs) invs))
-              (get-inv-config-results (rest inv-configs) invs))))
+    ;;(listof configurations) (listof (listof symbol ((listof sybmols) -> boolean))) -> (listof configurations)
+    ;;Purpose: Adds the results of each invariant oredicate to its corresponding invariant configuration
+    (define (get-inv-config-results-helper inv-configs)
+      (if (or (empty? invariants) (empty? inv-configs))
+          '()
+          (let* ([get-inv-for-inv-config (filter (λ (inv)
+                                                   (eq? (first inv) (ndfa-config-state (first inv-configs))))
+                                                 invariants)]
+                 [extract-inv-for-inv-config (if (empty? get-inv-for-inv-config)
+                                                 '()
+                                                 (second (first get-inv-for-inv-config)))]
+                 [inv-config-result (if (empty? extract-inv-for-inv-config)
+                                        '()
+                                        (list (first inv-configs) (extract-inv-for-inv-config (ndfa-config-word (first inv-configs)))))])
+            (if (empty? inv-config-result)
+                (get-inv-config-results-helper (rest inv-configs))
+                (cons inv-config-result
+                      (get-inv-config-results-helper (rest inv-configs)))))))
 
-;;(listof configurations) (listof (listof symbol ((listof sybmols) -> boolean))) -> (listof configurations)
-;;Purpose: Adds the results of each invariant oredicate to its corresponding invariant configuration
-(define (get-inv-config-results-helper inv-configs invs)
-  (if (empty? inv-configs)
-      '()
-      (let* ([get-inv-for-inv-config (filter (λ (inv)
-                                               (equal? (first inv) (first (first inv-configs))))
-                                             invs)]
-             [inv-for-inv-config (if (empty? get-inv-for-inv-config)
-                                     '()
-                                     (second (first get-inv-for-inv-config)))]
-             [inv-config-result (if (empty? inv-for-inv-config)
-                                    '()
-                                    (list (append (first inv-configs)
-                                                  (list (inv-for-inv-config (second (first inv-configs)))))))])
-        (append inv-config-result
-                (get-inv-config-results-helper (rest inv-configs) invs)))))
+    (append-map (λ (comp)
+                  (get-inv-config-results-helper comp))
+                inv-configs))
 
-;;(listof configurations) (listof sybmols) -> (listof configurations)
-;;Purpose: Extracts all the invariant configurations that failed
-(define (return-brk-inv-configs inv-config-results a-word)
-  (if (empty? inv-config-results)
-      '()
-      (return-brk-inv-configs-helper inv-config-results a-word (length a-word) '())))
-
-;;(listof configurations) (listof sybmols) natnum (listof configurations) -> (listof configurations)
-;;Purpose: Extracts all the invariant configurations that failed
-;;Acc = all invariants that fail when a given portion of the word has been consumed
-(define (return-brk-inv-configs-helper inv-config-results a-word word-len acc)
-  (if (< word-len 0)
-      (filter (λ (res) (not (empty? res))) (reverse acc)) ;;might remove if not can index using the length of the wht was processed
-      (let* ([new-acc (append-map (λ (inv-configs)
-                                    (filter (λ (config)
-                                              (and (equal? (second config) (take a-word (- (length a-word) word-len)))
-                                                   (not (third config))))
-                                            inv-configs))
-                                  inv-config-results)])
-        (return-brk-inv-configs-helper inv-config-results a-word (sub1 word-len) (cons new-acc acc)))))
+  ;;(listof configurations) -> (listof configurations)
+  ;;Purpose: Extracts all the invariant configurations that failed
+  (define (return-brk-inv-configs inv-config-results)
+    (filter (λ (config) (not (second config))) inv-config-results))
+  
+  (return-brk-inv-configs (get-inv-config-results (make-inv-configs LoC))))
 
 ;;rule symbol (listof rules) -> boolean
 ;;Purpose: Determines if the given rule is a member of the given (listof rules)
 ;;         or similiar to one of the rules in the given (listof rules) 
 (define (find-rule? rule dead lor)
-  (or (member? rule lor)
-      (ormap (λ (r)
-               (and (equal? (first rule) (first r))
-                    (or (equal? (third rule) (third r))
-                        (and (equal? (third rule) (third r))
-                             (equal? (third rule) dead)))))
-             lor)))
+  (or (member? rule lor equal?)
+      (for/or ([r lor])
+        (and (eq? (triple-source rule) (triple-source r))
+             (or (eq? (triple-destination rule) (triple-destination r))
+                 (and (eq? (triple-destination rule) (triple-destination r))
+                      (eq? (triple-destination rule) dead)))))))
 
 ;;(listof symbols) (listof configurations) -> (listof configurations)
 ;;Purpose: Returns the configurations have the given word as unconsumed input
 (define (get-portion-configs word full-configs)
   (append-map (λ (config)
                 (filter (λ (configs)
-                          (equal? (second configs) word))
+                          (equal? (ndfa-config-word configs) word))
                         config))
               full-configs))
 
 
-;;word (listof configurations) (listof configurations) -> (listof configurations)
-;;Purpose: Counts the number of unique configurations for each stage of the word
-(define (count-computations a-word a-LoC acc)
-  ;;word -> number
-  ;;Purpose: Counts the number of unique configurations based on the given word
-  (define (get-config a-word)
-    (length (remove-duplicates
-             (append-map (λ (configs)
-                           (filter (λ (config)
-                                     (equal? a-word (second config)))
-                                   configs))
-                         a-LoC))))
-  (if (empty? a-word)
-      (reverse (cons (get-config a-word) acc))
-      (count-computations (rest a-word) a-LoC (cons (get-config a-word) acc))))
-
-;;(listof trace-rule) -> (listof rules)
+;;(listof trace-rule) -> (listof triple)
 ;;Purpose: Remakes the rule extracted from the rule-struct
 (define (extract-rules trace-rules)
   (map (λ (rule)
          (rule-triple rule))
        trace-rules))
-
-;;X -> X
-;;Purpose: Returns X
-(define (id x) x)
 
 ;;(X -> Y) (X -> Y) (X -> Y) (X -> Y) (listof (listof X)) -> (listof (listof X))
 ;;Purpose: filtermaps the given f-on-x on the given (listof (listof X))
@@ -314,66 +306,102 @@ triple is the entire of the ndfa rule
 ;; Purpose: Returns the most consumed input
 (define (get-farthest-consumed LoC acc)
   (cond [(empty? LoC) acc]
-        [(< (length (second (first (first LoC)))) (length acc))
-         (get-farthest-consumed (rest LoC) (second (first (first LoC))))]
+        [(< (length (ndfa-config-word (treelist-last (first LoC)))) (length (ndfa-config-word acc)))
+         (get-farthest-consumed (rest LoC) (treelist-last (first LoC)))]
         [else (get-farthest-consumed (rest LoC) acc)]))
+
+
+;;fsa -> ndfa(structure)
+;;Purpose: Converts the fsa into an ndfa
+(define (remake-machine M)
+
+  ;;(listof rule) -> (treelistof rule)
+  ;;Purpose: Converts the ndfa rules into an ndfa rule (structure)
+  (define (remake-rules lor)
+    (for/treelist ([ndfa-rule lor])
+      (triple (first ndfa-rule)
+              (second ndfa-rule)
+              (third ndfa-rule))))
+  
+  (ndfa (fsa-getstates M)
+        (fsa-getalphabet M)
+        (fsa-getstart M)
+        (list->seteq (fsa-getfinals M))
+        (remake-rules (fsa-getrules M))
+        (M 'whatami)))
+  
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; graph machine (listof symbols) symbol (listof symbols) (listof symbols) -> graph
 ;; Purpose: To create a graph of nodes from the given list of rules
-(define (node-graph cgraph M dead held-inv brkn-inv)
+(define (node-graph cgraph M dead held-inv fail-inv)
   (foldl (λ (state result)
-           (add-node result
-                     state
-                     #:atb (hash 'color (if (eq? state (fsa-getstart M)) 'green 'black)
-                                 'style (cond [(or (member? state held-inv) (member? state brkn-inv)) 'filled]
-                                              [(eq? state dead) 'dashed]
-                                              [else 'solid])
-                                 'shape (if (member? state (fsa-getfinals M)) 'doublecircle 'circle)
-                                 'fillcolor (cond [(member? state held-inv) HELD-INV-COLOR]
-                                                  [(member? state brkn-inv) BRKN-INV-COLOR]
-                                                  [else 'white])
-                                 'label state
-                                 'fontcolor 'black)))
+           (let ([member-of-held-inv? (member? state held-inv eq?)]
+                 [member-of-fail-inv? (member? state fail-inv eq?)])
+             (add-node result
+                       state
+                       #:atb (hash 'color (if (eq? state (ndfa-start M)) 'green 'black)
+                                   'style (cond [(or member-of-held-inv? member-of-fail-inv?) 'filled]
+                                                [(eq? state dead) 'dashed]
+                                                [else 'solid])
+                                   'shape (if (set-member? (ndfa-finals M) state) 'doublecircle 'circle)
+                                   'fillcolor (cond [member-of-held-inv? HELD-INV-COLOR]
+                                                    [member-of-fail-inv? BRKN-INV-COLOR]
+                                                    [else 'white])
+                                   'label state
+                                   'fontcolor 'black))))
          cgraph
-         (fsa-getstates M)))
+         (ndfa-states M)))
 
 ;; graph machine word (listof rules) (listof rules) symbol -> graph
 ;; Purpose: To create a graph of edges from the given list of rules
-(define (edge-graph cgraph M current-a-rules current-rules dead)
+(define (edge-graph cgraph M current-shown-accept-rules other-current-accept-rules current-reject-rules dead)
   (foldl (λ (rule result)
-           (add-edge result
-                     (second rule)
-                     (first rule)
-                     (third rule)
-                     #:atb (hash 'color (cond [(find-rule? rule dead current-a-rules) 'green]
-                                              [(find-rule? rule dead current-rules) 'violetred]
-                                              [else 'black])
-                                 'fontsize FONT-SIZE
-                                 'style (cond [(equal? (third rule) dead) 'dashed]
-                                              [(find-rule? rule dead current-a-rules) 'bold]
-                                              [else 'solid]))))
+           (let ([other-current-accept-rule-find-rule? (find-rule? rule dead other-current-accept-rules)]
+                 [current-shown-accept-rule-find-rule? (find-rule? rule dead current-shown-accept-rules)])
+             (add-edge result
+                       (triple-read rule)
+                       (triple-source rule)
+                       (triple-destination rule)
+                       #:atb (hash 'color (cond [(and (member? rule current-shown-accept-rules eq?)
+                                                      (member? rule other-current-accept-rules eq?)) SPLIT-ACCEPT-COLOR]
+                                                [current-shown-accept-rule-find-rule? TRACKED-ACCEPT-COLOR]
+                                                [other-current-accept-rule-find-rule? ALL-ACCEPT-COLOR]
+                                                [(find-rule? rule dead current-reject-rules) REJECT-COLOR]
+                                                [else 'black])
+                                   'fontsize FONT-SIZE
+                                   'style (cond [(equal? (triple-destination rule) dead) 'dashed]
+                                                [current-shown-accept-rule-find-rule? 'bold]
+                                                [else 'solid])))))
          cgraph
-         (fsa-getrules M)))
+         (treelist->list (ndfa-rules M))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;upci is the unprocessed consumed input (listof symbols)
-;;pci is the proccessed consumed input (listof symbols)
-;;M is a machine
-;;inv is a the (listof (state (listof symbols -> boolean)))
-;;dead is the sybmol of dead state
-(struct building-viz-state (upci pci M inv dead computations acc-comps accept-traces reject-traces farthest-consumed) #:transparent)
-
+;;CI -> is zipper of ci-structure containing unconsumed and consumed input                                 | (zipperof ci)
+;;M  -> is an ndfa                                                                                         | (ndfa-struct)
+;;inv -> a list of the invariants provided for verfiying their machine                                     | (listof state (word -> boolean))
+;;dead is the sybmol of dead state                                                                         | symbol
+;;tracked-accept-trace -> the accepting computation to be showned in the informative messages/main graphic | (listof trace)
+;;accepting-computations -> a list of all the computations that lead to accept                             | (listof computation)
+;;accept-traces -> The OTHER accepting computations that are showned but not explictly followed            | (listof trace)
+;;reject-traces -> All of the computations that machine rejects                                            | (listof trace) 
+;;farthest-consumed -> the portion of the word that machine can consume the most of                        | word
+(struct building-viz-state (CI M inv dead tracked-accept-trace accepting-computations accept-traces reject-traces farthest-consumed) #:transparent)
 
 ;;viz-state -> (list graph-thunk computation-length)
 ;;Purpose: Creates a graph thunk and finds the associated computation's length for a given viz-state
 (define (create-graph-thunk a-vs)
   (let* (;;(listof configurations)
          ;;Purpose: Returns all configurations using the given word
-         [all-configs (get-portion-configs (building-viz-state-upci a-vs)
-                                           (map computation-LoC (building-viz-state-acc-comps a-vs)))]
+         [all-configs (get-portion-configs (ci-upci (zipper-current (building-viz-state-CI a-vs)))
+                                           (map (λ (comp) (treelist->list (computation-LoC comp)))
+                                                (building-viz-state-accepting-computations a-vs)))]
+
+         ;;(listof rule-struct)
+         ;;Purpose: Extracts the rules from of shown accepting computation
+         [tracked-accepting-rules (get-trace-rule (building-viz-state-tracked-accept-trace a-vs))]
 
          ;;(listof rule-structs)
          ;;Purpose: Extracts the rules from the first of all configurations
@@ -388,19 +416,24 @@ triple is the entire of the ndfa rule
          [a-configs (get-trace-rule (building-viz-state-accept-traces a-vs))]
 
          ;;A dummy dfa/ndfa rule
-         [dummy-rule (list EMP EMP EMP)]
-         
+         [dummy-rule (triple EMP EMP EMP)]
+
+         ;;(listof rules)
+         ;;Purpose: Converts the current rules from the accepting computations and makes them usable for graphviz
+         [current-shown-accept-rules (filter (λ (rule) (not (equal? rule dummy-rule)))
+                                             (append-map extract-rules tracked-accepting-rules))]
+
          ;;(listof rules)
          ;;Purpose: Reconstructs the rules from rule-structs
-         [current-a-rules (filter (λ (rule) (and (not (equal? rule dummy-rule)) rule))
+         [current-a-rules (filter (λ (rule) (not (equal? rule dummy-rule)))
                                   (append-map extract-rules a-configs))]
      
          ;;(listof (listof symbol ((listof symbols) -> boolean))) (listof symbols))
          ;;Purpose: Extracts all invariants for the states that the machine can be in
          [get-invs (for*/list ([invs (building-viz-state-inv a-vs)]
                                [curr all-configs]
-                               #:when (equal? (first invs) (first curr)))
-                     (list invs (building-viz-state-pci a-vs)))]
+                               #:when (equal? (first invs) (ndfa-config-state curr)))
+                     (list invs (ci-pci (zipper-current (building-viz-state-CI a-vs)))))]
 
          ;;(listof symbols)
          ;;Purpose: Returns all states whose invariants holds
@@ -417,6 +450,7 @@ triple is the entire of the ndfa rule
       held-invs
       brkn-invs)
      (building-viz-state-M a-vs)
+     current-shown-accept-rules
      current-a-rules
      current-rules
      (building-viz-state-dead a-vs))))
@@ -424,15 +458,15 @@ triple is the entire of the ndfa rule
 ;;viz-state (listof graph-thunks) -> (listof graph-thunks)
 ;;Purpose: Creates all the graphs needed for the visualization
 (define (create-graph-thunks a-vs acc)
-  (cond [(empty? (building-viz-state-upci a-vs)) (reverse (cons (create-graph-thunk a-vs) acc))]
-        [(eq? (building-viz-state-upci a-vs) (building-viz-state-farthest-consumed a-vs))
+  (cond [(zipper-at-end? (building-viz-state-CI a-vs)) (reverse (cons (create-graph-thunk a-vs) acc))]
+        [(equal? (ci-upci (zipper-current (building-viz-state-CI a-vs))) 
+                 (ndfa-config-word (building-viz-state-farthest-consumed a-vs)))
          (reverse (cons (create-graph-thunk a-vs) acc))]
         [else (let ([next-graph (create-graph-thunk a-vs)])
                 (create-graph-thunks (struct-copy building-viz-state
                                                   a-vs
-                                                  [upci (rest (building-viz-state-upci a-vs))]
-                                                  [pci (append (building-viz-state-pci a-vs)
-                                                               (list (first (building-viz-state-upci a-vs))))]
+                                                  [CI (zipper-next (building-viz-state-CI a-vs))]
+                                                  [tracked-accept-trace (get-next-traces (building-viz-state-tracked-accept-trace a-vs))]
                                                   [accept-traces (get-next-traces (building-viz-state-accept-traces a-vs))]
                                                   [reject-traces (get-next-traces (building-viz-state-reject-traces a-vs))])
                                      (cons next-graph acc)))]))
@@ -440,29 +474,12 @@ triple is the entire of the ndfa rule
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization forward by one step
 (define (right-key-pressed a-vs)
-  (let* (;;boolean
-         ;;Purpose: Determines if the pci can be can be fully consumed
-         [completed-config? (ormap (λ (config)
-                                     (empty? (second (first (computation-LoC config)))))
-                                   (trace-computations (imsg-state-pci (informative-messages-component-state
-                                                                        (viz-state-informative-messages a-vs))) 
-                                                       (fsa-getrules (imsg-state-M (informative-messages-component-state
-                                                                                    (viz-state-informative-messages a-vs))))
-                                                       (fsa-getstart (imsg-state-M (informative-messages-component-state
-                                                                                    (viz-state-informative-messages a-vs))))
-                                                       (fsa-getfinals (imsg-state-M (informative-messages-component-state
-                                                                                     (viz-state-informative-messages a-vs))))))]
-         [pci (if (or (empty? (imsg-state-upci (informative-messages-component-state
-                                                (viz-state-informative-messages a-vs))))
-                      (not completed-config?))
-                  (imsg-state-pci (informative-messages-component-state
-                                   (viz-state-informative-messages a-vs)))
-                  (append (imsg-state-pci (informative-messages-component-state
-                                           (viz-state-informative-messages a-vs)))
-                          (list (first (imsg-state-upci (informative-messages-component-state
-                                                         (viz-state-informative-messages
-                                                          a-vs)))))))]
-         [pci-len (length pci)])
+  (let ([imsg-state-ci (imsg-state-ndfa-ci (informative-messages-component-state (viz-state-informative-messages a-vs)))]
+        [imsg-state-farthest-consumed-input (imsg-state-ndfa-farthest-consumed-input (informative-messages-component-state
+                                                                                      (viz-state-informative-messages a-vs)))]
+        [imsg-state-shown-accepting-trace (imsg-state-ndfa-shown-accepting-trace (informative-messages-component-state
+                                                                                  (viz-state-informative-messages a-vs)))]
+        [imsg-state-invs-zipper (imsg-state-ndfa-invs-zipper (informative-messages-component-state (viz-state-informative-messages a-vs)))])
     (struct-copy
      viz-state
      a-vs
@@ -471,56 +488,34 @@ triple is the entire of the ndfa rule
        informative-messages
        (viz-state-informative-messages a-vs)
        [component-state
-        (struct-copy imsg-state
+        (struct-copy imsg-state-ndfa
                      (informative-messages-component-state (viz-state-informative-messages a-vs))
-                     [upci (if (or (empty? (imsg-state-upci (informative-messages-component-state
-                                                             (viz-state-informative-messages a-vs))))
-                                   (not completed-config?))
-                               (imsg-state-upci (informative-messages-component-state
-                                                 (viz-state-informative-messages a-vs)))
-                               (rest (imsg-state-upci (informative-messages-component-state
-                                                       (viz-state-informative-messages a-vs)))))]
-                     [pci pci]
-                     [invs-zipper (cond [(zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                                 (viz-state-informative-messages a-vs))))
-                                         (imsg-state-invs-zipper (informative-messages-component-state
-                                                                  (viz-state-informative-messages a-vs)))]
-                                        [(and (not (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                                            (viz-state-informative-messages a-vs)))))
-                                              (>= pci-len (first (zipper-unprocessed
-                                                                  (imsg-state-invs-zipper (informative-messages-component-state
-                                                                                           (viz-state-informative-messages a-vs)))))))
-                                         (zipper-next (imsg-state-invs-zipper (informative-messages-component-state
-                                                                               (viz-state-informative-messages a-vs))))]
-                                        [else (imsg-state-invs-zipper (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs)))])])])])))
+                     [ci (if (or (zipper-at-end? imsg-state-ci)
+                                 (equal? (ci-upci (zipper-current imsg-state-ci)) (ndfa-config-word imsg-state-farthest-consumed-input)))
+                             imsg-state-ci
+                             (zipper-next imsg-state-ci))]
+                     
+                     [shown-accepting-trace (if (or (zipper-at-end? imsg-state-shown-accepting-trace)
+                                                    (zipper-empty? imsg-state-shown-accepting-trace))
+                                                imsg-state-shown-accepting-trace
+                                                (zipper-next imsg-state-shown-accepting-trace))]
+                     
+                     [invs-zipper (cond [(zipper-empty? imsg-state-invs-zipper) imsg-state-invs-zipper]
+                                        [(and (not (zipper-at-end? imsg-state-invs-zipper))
+                                              (>= (get-ndfa-config-index-frm-trace imsg-state-shown-accepting-trace)
+                                                  (ndfa-config-index (first (first (zipper-unprocessed imsg-state-invs-zipper))))))
+                                         (zipper-next imsg-state-invs-zipper)]
+                                        [else imsg-state-invs-zipper])])])])))
 
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization to the end
 (define (down-key-pressed a-vs)
-  (let* (;;(listof symbols)
-         ;;Purpose: The entire given word
-         [full-word (append (imsg-state-pci (informative-messages-component-state
-                                             (viz-state-informative-messages a-vs)))
-                            (imsg-state-upci (informative-messages-component-state
-                                              (viz-state-informative-messages a-vs))))]
-         ;;(listof symbols)
-         ;;Purpose: The last word that could be fully consumed by the ndfa
-         [last-consumed-word (last-fully-consumed
-                              full-word
-                              (imsg-state-M (informative-messages-component-state
-                                             (viz-state-informative-messages a-vs))))]
-         ;;(listof symbols)
-         ;;Purpose: The portion of the word that cannont be consumed
-         [unconsumed-word (drop full-word (length last-consumed-word))]
-         [zip (if (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
-                                                          (viz-state-informative-messages a-vs))))
-                  (imsg-state-invs-zipper (informative-messages-component-state
-                                           (viz-state-informative-messages a-vs)))
-                  (zipper-to-idx (imsg-state-invs-zipper (informative-messages-component-state
-                                                          (viz-state-informative-messages a-vs)))
-                                 (imsg-state-inv-amt (informative-messages-component-state
-                                                      (viz-state-informative-messages a-vs)))))])
+  (let ([imsg-state-ci (imsg-state-ndfa-ci (informative-messages-component-state (viz-state-informative-messages a-vs)))]
+        [imsg-state-farthest-consumed-input (imsg-state-ndfa-farthest-consumed-input (informative-messages-component-state
+                                                                                      (viz-state-informative-messages a-vs)))]
+        [imsg-state-shown-accepting-trace (imsg-state-ndfa-shown-accepting-trace (informative-messages-component-state
+                                                                                  (viz-state-informative-messages a-vs)))]
+        [imsg-state-invs-zipper (imsg-state-ndfa-invs-zipper (informative-messages-component-state (viz-state-informative-messages a-vs)))])
     (struct-copy
      viz-state
      a-vs
@@ -530,37 +525,29 @@ triple is the entire of the ndfa rule
        (viz-state-informative-messages a-vs)
        [component-state
         (struct-copy
-         imsg-state
+         imsg-state-ndfa
          (informative-messages-component-state
           (viz-state-informative-messages a-vs))
-         [upci (cond [(empty? (imsg-state-upci (informative-messages-component-state
-                                                (viz-state-informative-messages a-vs))))
-                      (imsg-state-upci (informative-messages-component-state
-                                        (viz-state-informative-messages a-vs)))]
-                     [(not (equal? last-consumed-word full-word))
-                      (rest unconsumed-word)]
-                     [else '()])]
-         [pci (cond [(empty? (imsg-state-upci (informative-messages-component-state
-                                               (viz-state-informative-messages a-vs))))
-                     (imsg-state-pci (informative-messages-component-state
-                                      (viz-state-informative-messages a-vs)))]
-                    [(not (equal? last-consumed-word full-word))
-                     (append last-consumed-word (take unconsumed-word 1))]
-                    [else full-word])]
-         [invs-zipper zip])])])))
+         [ci (cond [(zipper-at-end? imsg-state-ci) imsg-state-ci]
+                   [(list? (ndfa-config-word imsg-state-farthest-consumed-input))
+                    (zipper-to-idx imsg-state-ci (ndfa-config-index imsg-state-farthest-consumed-input))]
+                   [else (zipper-to-end imsg-state-ci)])]
+         [shown-accepting-trace (if (or (zipper-at-end? imsg-state-shown-accepting-trace)
+                                        (zipper-empty? imsg-state-shown-accepting-trace))
+                                    imsg-state-shown-accepting-trace
+                                    (zipper-to-end imsg-state-shown-accepting-trace))]
+         [invs-zipper (if (or (zipper-empty? imsg-state-invs-zipper)
+                              (= (zipper-length imsg-state-invs-zipper) 1))
+                          imsg-state-invs-zipper
+                          (zipper-to-end imsg-state-invs-zipper))])])])))
 
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization backward by one step
 (define (left-key-pressed a-vs)
-  (let* ([pci (if (empty? (imsg-state-pci (informative-messages-component-state
-                                           (viz-state-informative-messages a-vs))))
-                  (imsg-state-pci (informative-messages-component-state
-                                   (viz-state-informative-messages a-vs)))
-                  (take (imsg-state-pci (informative-messages-component-state
-                                         (viz-state-informative-messages a-vs)))
-                        (sub1 (length (imsg-state-pci (informative-messages-component-state
-                                                       (viz-state-informative-messages a-vs)))))))]
-         [pci-len (length pci)])
+  (let ([imsg-state-ci (imsg-state-ndfa-ci (informative-messages-component-state (viz-state-informative-messages a-vs)))]
+        [imsg-state-shown-accepting-trace (imsg-state-ndfa-shown-accepting-trace (informative-messages-component-state
+                                                                                  (viz-state-informative-messages a-vs)))]
+        [imsg-state-invs-zipper (imsg-state-ndfa-invs-zipper (informative-messages-component-state (viz-state-informative-messages a-vs)))])
     (struct-copy
      viz-state
      a-vs
@@ -569,65 +556,53 @@ triple is the entire of the ndfa rule
        informative-messages
        (viz-state-informative-messages a-vs)
        [component-state
-        (struct-copy imsg-state
+        (struct-copy imsg-state-ndfa
                      (informative-messages-component-state
                       (viz-state-informative-messages a-vs))
-                     [upci (if (empty? (imsg-state-pci (informative-messages-component-state
-                                                        (viz-state-informative-messages a-vs))))
-                               (imsg-state-upci (informative-messages-component-state
-                                                 (viz-state-informative-messages a-vs)))
-                               (cons (last (imsg-state-pci (informative-messages-component-state
-                                                            (viz-state-informative-messages a-vs))))
-                                     (imsg-state-upci (informative-messages-component-state
-                                                       (viz-state-informative-messages a-vs)))))]
-                     [pci pci]
-                     [invs-zipper (cond [(zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                                 (viz-state-informative-messages a-vs))))
-                                         (imsg-state-invs-zipper (informative-messages-component-state
-                                                                  (viz-state-informative-messages a-vs)))]
-                                        [(and (not (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                                              (viz-state-informative-messages a-vs)))))
-                                              (<= pci-len (first (zipper-processed
-                                                                  (imsg-state-invs-zipper (informative-messages-component-state
-                                                                                           (viz-state-informative-messages a-vs)))))))
-                                         (zipper-prev (imsg-state-invs-zipper (informative-messages-component-state
-                                                                               (viz-state-informative-messages a-vs))))]
-                                        [else (imsg-state-invs-zipper (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs)))])])])])))
+                     [ci (if (zipper-at-begin? imsg-state-ci) imsg-state-ci (zipper-prev imsg-state-ci))]
+                     
+                     
+                     [shown-accepting-trace (if (or (zipper-at-begin? imsg-state-shown-accepting-trace)
+                                                    (zipper-empty? imsg-state-shown-accepting-trace))
+                                                imsg-state-shown-accepting-trace
+                                                (zipper-prev imsg-state-shown-accepting-trace))]
+                     
+                     
+                     [invs-zipper (cond [(zipper-empty? imsg-state-invs-zipper) imsg-state-invs-zipper]
+                                        [(and (not (zipper-at-begin? imsg-state-invs-zipper))
+                                              (<= (get-ndfa-config-index-frm-trace imsg-state-shown-accepting-trace)
+                                                  (ndfa-config-index (first (first (zipper-processed imsg-state-invs-zipper))))))
+                                         (zipper-prev imsg-state-invs-zipper)]
+                                        [else imsg-state-invs-zipper])])])])))
 
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization to the beginning
 (define (up-key-pressed a-vs)
-  (struct-copy
-   viz-state
-   a-vs
-   [informative-messages
+  (let ([imsg-state-ci (imsg-state-ndfa-ci (informative-messages-component-state (viz-state-informative-messages a-vs)))]
+        [imsg-state-shown-accepting-trace (imsg-state-ndfa-shown-accepting-trace (informative-messages-component-state
+                                                                                  (viz-state-informative-messages a-vs)))]
+        [imsg-state-invs-zipper (imsg-state-ndfa-invs-zipper (informative-messages-component-state (viz-state-informative-messages a-vs)))])
     (struct-copy
-     informative-messages
-     (viz-state-informative-messages a-vs)
-     [component-state
-      (struct-copy imsg-state
-                   (informative-messages-component-state
-                    (viz-state-informative-messages a-vs))
-                   [upci (if (empty? (imsg-state-pci (informative-messages-component-state
-                                                      (viz-state-informative-messages a-vs))))
-                             (imsg-state-upci (informative-messages-component-state
-                                               (viz-state-informative-messages a-vs)))
-                             (append (imsg-state-pci (informative-messages-component-state
-                                                      (viz-state-informative-messages a-vs)))
-                                     (imsg-state-upci (informative-messages-component-state
-                                                       (viz-state-informative-messages a-vs)))))]
-                   [pci (if (empty? (imsg-state-pci (informative-messages-component-state
-                                                     (viz-state-informative-messages a-vs))))
-                            (imsg-state-pci (informative-messages-component-state
-                                             (viz-state-informative-messages a-vs)))
-                            '())]
-                   [invs-zipper (if (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                            (viz-state-informative-messages a-vs))))
-                                    (imsg-state-invs-zipper (informative-messages-component-state
-                                                             (viz-state-informative-messages a-vs)))
-                                    (zipper-to-idx (imsg-state-invs-zipper (informative-messages-component-state
-                                                                            (viz-state-informative-messages a-vs))) 0))])])]))
+     viz-state
+     a-vs
+     [informative-messages
+      (struct-copy
+       informative-messages
+       (viz-state-informative-messages a-vs)
+       [component-state
+        (struct-copy imsg-state-ndfa
+                     (informative-messages-component-state
+                      (viz-state-informative-messages a-vs))
+                     [ci (if (zipper-at-begin? imsg-state-ci) imsg-state-ci (zipper-to-begin imsg-state-ci))]
+                   
+                  
+                     [invs-zipper (if (zipper-empty? imsg-state-invs-zipper)
+                                      imsg-state-invs-zipper
+                                      (zipper-to-idx imsg-state-invs-zipper 0))]
+                     [shown-accepting-trace (if (or (zipper-at-begin? imsg-state-shown-accepting-trace)
+                                                    (zipper-empty? imsg-state-shown-accepting-trace))
+                                                imsg-state-shown-accepting-trace
+                                                (zipper-to-begin imsg-state-shown-accepting-trace))])])])))
 
 ;; viz-state -> viz-state
 ;; Purpose: Moves the deriving and current yield to the beginning of their current words
@@ -640,7 +615,7 @@ triple is the entire of the ndfa rule
       (struct-copy informative-messages
                    (viz-state-informative-messages a-vs)
                    [component-state
-                    (struct-copy imsg-state a-imsgs [word-img-offset 0] [scroll-accum 0])])])))
+                    (struct-copy imsg-state-ndfa a-imsgs [word-img-offset 0] [scroll-accum 0])])])))
 
 ;; viz-state -> viz-state
 ;; Purpose: Moves the deriving and current yield to the end of their current words
@@ -652,174 +627,128 @@ triple is the entire of the ndfa rule
                   (struct-copy informative-messages
                                (viz-state-informative-messages a-vs)
                                [component-state
-                                (struct-copy imsg-state
+                                (struct-copy imsg-state-ndfa
                                              a-imsgs
                                              [scroll-accum 0]
                                              [word-img-offset
-                                              (imsg-state-word-img-offset-cap a-imsgs)])])])))
+                                              (imsg-state-ndfa-word-img-offset-cap a-imsgs)])])])))
 
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the previous broken invariant
 (define (j-key-pressed a-vs)
-  (if (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
-                                              (viz-state-informative-messages a-vs))))
-      a-vs
-      (let* ([zip (if (and (not (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                           (viz-state-informative-messages a-vs)))))
-                           (<= (length (imsg-state-pci (informative-messages-component-state
-                                                        (viz-state-informative-messages a-vs))))
-                               (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
-                                                                        (viz-state-informative-messages a-vs))))))
-                      (zipper-prev (imsg-state-invs-zipper (informative-messages-component-state
-                                                            (viz-state-informative-messages a-vs))))
-                      (imsg-state-invs-zipper (informative-messages-component-state
-                                               (viz-state-informative-messages a-vs))))]
-             [full-word (append (imsg-state-pci (informative-messages-component-state
-                                                 (viz-state-informative-messages a-vs)))
-                                (imsg-state-upci (informative-messages-component-state
-                                                  (viz-state-informative-messages a-vs))))])
-        (struct-copy
-         viz-state
-         a-vs
-         [informative-messages
+  (let ([imsg-state-invs-zipper (imsg-state-ndfa-invs-zipper (informative-messages-component-state (viz-state-informative-messages a-vs)))]
+        [imsg-state-ci (imsg-state-ndfa-ci (informative-messages-component-state (viz-state-informative-messages a-vs)))]
+        
+        [imsg-state-shown-accepting-trace (imsg-state-ndfa-shown-accepting-trace (informative-messages-component-state
+                                                                                  (viz-state-informative-messages a-vs)))])
+    (if (or (zipper-empty? imsg-state-invs-zipper)
+            (and (zipper-at-begin? imsg-state-invs-zipper)
+                 (not (zipper-at-end? imsg-state-invs-zipper)))
+            (< (get-ndfa-config-index-frm-trace imsg-state-shown-accepting-trace)
+               (get-ndfa-config-index-frm-invs imsg-state-invs-zipper)))
+        a-vs
+        (let ([zip (if (and (not (zipper-at-begin? imsg-state-invs-zipper))
+                            (<= (get-ndfa-config-index-frm-trace imsg-state-shown-accepting-trace)
+                                (get-ndfa-config-index-frm-invs imsg-state-invs-zipper)))
+                       (zipper-prev imsg-state-invs-zipper)
+                       imsg-state-invs-zipper)])
           (struct-copy
-           informative-messages
-           (viz-state-informative-messages a-vs)
-           [component-state
-            (struct-copy imsg-state
-                         (informative-messages-component-state
-                          (viz-state-informative-messages a-vs))
-                         [upci (cond [(and (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                                      (viz-state-informative-messages a-vs))))
-                                           (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                                    (viz-state-informative-messages a-vs))))
-                                           (>= (length (imsg-state-pci (informative-messages-component-state
-                                                                        (viz-state-informative-messages a-vs))))
-                                               (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
-                                                                                        (viz-state-informative-messages a-vs))))))
-                                      (drop full-word (zipper-current zip))]
-                                     [(zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                                 (viz-state-informative-messages a-vs))))
-                                      (imsg-state-upci (informative-messages-component-state
-                                                        (viz-state-informative-messages a-vs)))]
-                                     [else (drop full-word (zipper-current zip))])]
-                         [pci (cond [(and (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                                     (viz-state-informative-messages a-vs))))
-                                          (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                                   (viz-state-informative-messages a-vs))))
-                                          (>= (length (imsg-state-pci (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs))))
-                                              (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
-                                                                                       (viz-state-informative-messages a-vs))))))
-                                     (take full-word (zipper-current zip))]
-                                    [(zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                                (viz-state-informative-messages a-vs))))
-                                     (imsg-state-pci (informative-messages-component-state
-                                                      (viz-state-informative-messages a-vs)))]
-                                    [else (take full-word (zipper-current zip))])]
-                         [invs-zipper zip])])]))))
+           viz-state
+           a-vs
+           [imgs (vector-zipper-to-idx (viz-state-imgs a-vs) (get-ndfa-config-index-frm-invs zip))]
+           [informative-messages
+            (struct-copy
+             informative-messages
+             (viz-state-informative-messages a-vs)
+             [component-state
+              (struct-copy imsg-state-ndfa
+                           (informative-messages-component-state
+                            (viz-state-informative-messages a-vs))
+                           [ci (zipper-to-idx imsg-state-ci (get-ndfa-config-index-frm-invs zip))]
+                           
+                           [shown-accepting-trace (if (zipper-empty? imsg-state-shown-accepting-trace)
+                                                      imsg-state-shown-accepting-trace
+                                                      (zipper-to-idx imsg-state-shown-accepting-trace (get-ndfa-config-index-frm-invs zip)))]
+                           [invs-zipper zip])])])))))
 
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the next failed invariant
-(define (l-key-pressed a-vs)
-  (if (zipper-empty? (imsg-state-invs-zipper (informative-messages-component-state
-                                              (viz-state-informative-messages a-vs))))
-      a-vs
-      (let* ([zip (if (and (not (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                         (viz-state-informative-messages a-vs)))))
-                           (>= (length (imsg-state-pci (informative-messages-component-state
-                                                        (viz-state-informative-messages a-vs))))
-                               (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
-                                                                        (viz-state-informative-messages a-vs))))))
-                      (zipper-next (imsg-state-invs-zipper (informative-messages-component-state
-                                                            (viz-state-informative-messages a-vs))))
-                      (imsg-state-invs-zipper (informative-messages-component-state
-                                               (viz-state-informative-messages a-vs))))]
-             [full-word (append (imsg-state-pci (informative-messages-component-state
-                                                 (viz-state-informative-messages a-vs)))
-                                (imsg-state-upci (informative-messages-component-state
-                                                  (viz-state-informative-messages a-vs))))])
-        (struct-copy
-         viz-state
-         a-vs
-         [informative-messages
+(define (l-key-pressed a-vs)  
+  (let ([imsg-state-invs-zipper (imsg-state-ndfa-invs-zipper (informative-messages-component-state (viz-state-informative-messages a-vs)))]
+        [imsg-state-ci (imsg-state-ndfa-ci (informative-messages-component-state (viz-state-informative-messages a-vs)))]
+        
+        [imsg-state-shown-accepting-trace (imsg-state-ndfa-shown-accepting-trace (informative-messages-component-state
+                                                                                  (viz-state-informative-messages a-vs)))])
+    (if (or (zipper-empty? imsg-state-invs-zipper)
+            (and (not (zipper-at-begin? imsg-state-invs-zipper))
+                 (zipper-at-end? imsg-state-invs-zipper))
+            (> (get-ndfa-config-index-frm-trace imsg-state-shown-accepting-trace)
+               (get-ndfa-config-index-frm-invs imsg-state-invs-zipper)))
+        a-vs
+        (let* ([zip (if (and (not (zipper-at-end? imsg-state-invs-zipper))
+                             (>= (get-ndfa-config-index-frm-trace imsg-state-shown-accepting-trace)
+                                 (get-ndfa-config-index-frm-invs imsg-state-invs-zipper)))
+                        (zipper-next imsg-state-invs-zipper)
+                        imsg-state-invs-zipper)])
           (struct-copy
-           informative-messages
-           (viz-state-informative-messages a-vs)
-           [component-state
-            (struct-copy imsg-state
-                         (informative-messages-component-state
-                          (viz-state-informative-messages a-vs))
-                         [upci (cond [(and (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                                      (viz-state-informative-messages a-vs))))
-                                           (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                                    (viz-state-informative-messages a-vs))))
-                                           (<= (length (imsg-state-pci (informative-messages-component-state
-                                                                        (viz-state-informative-messages a-vs))))
-                                               (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
-                                                                                        (viz-state-informative-messages a-vs))))))
-                                      (drop full-word (zipper-current zip))]
-                                     [(zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                               (viz-state-informative-messages a-vs))))
-                                      (imsg-state-upci (informative-messages-component-state
-                                                        (viz-state-informative-messages a-vs)))]
-                                     [else (drop full-word (zipper-current zip))])]
-                         [pci (cond [(and (zipper-at-begin? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                                     (viz-state-informative-messages a-vs))))
-                                          (zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                                   (viz-state-informative-messages a-vs))))
-                                          (<= (length (imsg-state-pci (informative-messages-component-state
-                                                                       (viz-state-informative-messages a-vs))))
-                                              (zipper-current (imsg-state-invs-zipper (informative-messages-component-state
-                                                                                       (viz-state-informative-messages a-vs))))))
-                                     (take full-word (zipper-current zip))]
-                                    [(zipper-at-end? (imsg-state-invs-zipper (informative-messages-component-state
-                                                                              (viz-state-informative-messages a-vs))))
-                                     (imsg-state-pci (informative-messages-component-state
-                                                      (viz-state-informative-messages a-vs)))]
-                                    [else (take full-word (zipper-current zip))])]
-                         [invs-zipper zip])])]))))
+           viz-state
+           a-vs
+           [imgs (vector-zipper-to-idx (viz-state-imgs a-vs) (get-ndfa-config-index-frm-invs zip))]
+           [informative-messages
+            (struct-copy
+             informative-messages
+             (viz-state-informative-messages a-vs)
+             [component-state
+              (struct-copy imsg-state-ndfa
+                           (informative-messages-component-state
+                            (viz-state-informative-messages a-vs))
+                           [ci (zipper-to-idx imsg-state-ci (get-ndfa-config-index-frm-invs zip))]
+                         
+                         
+                           [shown-accepting-trace (if (zipper-empty? imsg-state-shown-accepting-trace)
+                                                      imsg-state-shown-accepting-trace
+                                                      (zipper-to-idx imsg-state-shown-accepting-trace (get-ndfa-config-index-frm-invs zip)))]
+                           [invs-zipper zip])])])))))
 
 ;;machine -> machine
 ;;Purpose: Produces an equivalent machine with the addition of the dead state and rules to the dead state
 (define (make-new-M M)
   (cond [(eq? (M 'whatami) 'ndfa)
-         (local
-           [;;symbol
-            ;;Purpose: If ds is already used as a state in M, then generates a random seed symbol,
-            ;;         otherwise uses DEAD
-            (define dead (if (member? DEAD (fsa-getstates M)) (gen-state (fsa-getstates M)) DEAD))
-            ;;(listof symbols)
-            ;;Purpose: Makes partial rules for every combination of states in M and symbols in sigma of M
-            (define new-rules
-              (for*/list ([states (fsa-getstates M)]
-                          [sigma (fsa-getalphabet M)])
-                (list states sigma)))
-            ;;(listof rules)
-            ;;Purpose: Makes rules for every dead state transition to itself using the symbols in sigma of M
-            (define dead-rules
-              (for*/list ([ds (list dead)]
-                          [sigma (fsa-getalphabet M)])
-                (list ds sigma ds)))
-            ;;(listof rules)
-            ;;Purpose: Gets rules that are not currently in the original rules of M
-            (define get-rules-not-in-M  (local [(define partial-rules (map (λ (rule)
-                                                                             (append (list (first rule)) (list (second rule))))
-                                                                           (fsa-getrules M)))]
-                                          (filter (λ (rule)
-                                                    (not (member? rule partial-rules)))
-                                                  new-rules)))
-            ;;(listof rules)
-            ;;Purpose: Maps the dead state as a destination for all rules that are not currently in the original rules of M
-            (define rules-to-dead
-              (map (λ (rule) (append rule (list dead)))
-                   get-rules-not-in-M))]
-           (make-unchecked-ndfa (append (fsa-getstates M) (list dead))
+         (local [;;symbol
+                 ;;Purpose: If ds is already used as a state in M, then generates a random seed symbol,
+                 ;;         otherwise uses DEAD
+                 (define dead (if (member? DEAD (fsa-getstates M) eq?) (gen-state (fsa-getstates M)) DEAD))
+                 ;;(listof symbols)
+                 ;;Purpose: Makes partial rules for every combination of states in M and symbols in sigma of M
+                 (define new-rules
+                   (for*/list ([states (fsa-getstates M)]
+                               [sigma (fsa-getalphabet M)])
+                     (list states sigma)))
+                 ;;(listof rules)
+                 ;;Purpose: Makes rules for every dead state transition to itself using the symbols in sigma of M
+                 (define dead-rules
+                   (for*/list ([ds (list dead)]
+                               [sigma (fsa-getalphabet M)])
+                     (list ds sigma ds)))
+                 ;;(listof rules)
+                 ;;Purpose: Gets rules that are not currently in the original rules of M
+                 (define get-rules-not-in-M  (local [(define partial-rules (map (λ (rule)
+                                                                                  (append (list (first rule)) (list (second rule))))
+                                                                                (fsa-getrules M)))]
+                                               (filter (λ (rule)
+                                                         (not (member? rule partial-rules equal?)))
+                                                       new-rules)))
+                 ;;(listof rules)
+                 ;;Purpose: Maps the dead state as a destination for all rules that are not currently in the original rules of M
+                 (define rules-to-dead
+                   (map (λ (rule) (append rule (list dead)))
+                        get-rules-not-in-M))]
+           (make-unchecked-ndfa (cons dead (fsa-getstates M))
                                 (fsa-getalphabet M)
                                 (fsa-getstart M)
                                 (fsa-getfinals M)
                                 (append (fsa-getrules M) rules-to-dead dead-rules)))]
-        [(and (eq? (M 'whatami) 'dfa) (not (member? DEAD (fsa-getstates M))))
+        [(and (eq? (M 'whatami) 'dfa) (not (member? DEAD (fsa-getstates M) equal?)))
          (make-unchecked-dfa (fsa-getstates M) (fsa-getalphabet M) (fsa-getstart M) (fsa-getfinals M) (fsa-getrules M))]
         [else M]))
 
@@ -830,64 +759,77 @@ triple is the entire of the ndfa rule
 ;;Assumption: The given machine is a ndfa or dfa
 (define (ndfa-viz M a-word #:add-dead [add-dead #f] invs)
   (let* (;;M ;;Purpose: A new machine with the dead state if add-dead is true
-         [new-M (if add-dead (make-new-M M) M)]
+         [new-M (remake-machine (if add-dead (make-new-M M) M))]
          ;;symbol ;;Purpose: The name of the dead state
-         [dead-state (cond [(and add-dead (eq? (M 'whatami) 'ndfa)) (last (fsa-getstates new-M))]
-                           [(and add-dead (eq? (M 'whatami) 'dfa)) DEAD]
+         [dead-state (cond [(and add-dead (eq? (ndfa-type new-M) 'ndfa)) (first (ndfa-states new-M))]
+                           [(and add-dead (eq? (ndfa-type new-M) 'dfa)) DEAD]
                            [else 'no-dead])]
+         ;;(list (listof computations) hash) ;;Purpose: All computations that the machine can have and the length of computations
+         [computations+hash (trace-computations a-word (ndfa-rules new-M) (ndfa-start new-M) (ndfa-finals new-M))]
          ;;(listof computations) ;;Purpose: All computations that the machine can have
-         [computations (trace-computations a-word (fsa-getrules new-M) (fsa-getstart new-M) (fsa-getfinals new-M))]
+         [computations (treelist->list (first computations+hash))]
          ;;(listof configurations) ;;Purpose: Extracts the configurations from the computation
          [LoC (map computation-LoC computations)]
          ;;(listof computation) ;;Purpose: Extracts all accepting computations
          [accepting-computations (filter (λ (comp)
-                                           (and (member? (first (first (computation-LoC comp))) (fsa-getfinals new-M))
-                                                (empty? (second (first (computation-LoC comp))))))
+                                           (and (set-member? (ndfa-finals new-M)
+                                                             (ndfa-config-state (treelist-last (computation-LoC comp))))
+                                                (empty? (ndfa-config-word (treelist-last (computation-LoC comp))))))
                                          computations)]
          ;;(listof trace) ;;Purpose: Makes traces from the accepting computations
-         [accepting-traces (map (λ (acc-comp)
-                                  (make-trace (reverse (computation-LoC acc-comp))
-                                              (reverse (computation-LoR acc-comp))
+         [accepting-traces (map (λ (accept-comp)
+                                  (make-trace (treelist->list (computation-LoC accept-comp))
+                                              (treelist->list (computation-LoR accept-comp))
                                               '()))
                                 accepting-computations)]
          ;;(listof computation) ;;Purpose: Extracts all rejecting computations
          [rejecting-computations (filter (λ (config)
-                                           (not (member? config accepting-computations)))
+                                           (not (member? config accepting-computations equal?)))
                                          computations)]
          ;;(listof trace) ;;Purpose: Makes traces from the rejecting computations
-         [rejecting-traces (map (λ (rej-comp)
-                                  (make-trace (reverse (computation-LoC rej-comp))
-                                              (reverse (computation-LoR rej-comp))
+         [rejecting-traces (map (λ (reject-comp)
+                                  (make-trace (treelist->list (computation-LoC reject-comp))
+                                              (treelist->list (computation-LoR reject-comp))
                                               '()))
                                 rejecting-computations)]
          ;;(listof symbol) ;;Purpose: The portion of the ci that the machine can conusme the most 
-         [most-consumed-word (get-farthest-consumed LoC a-word)]
+         [most-consumed-word (let* ([farthest-consumed (get-farthest-consumed LoC (ndfa-config (ndfa-start new-M) a-word 0))]
+                                    [last-word (if (and (empty? accepting-traces) (not (empty? (ndfa-config-word farthest-consumed))))
+                                                  farthest-consumed
+                                                  (ndfa-config (ndfa-start new-M) 'none 0))])
+                               (if (eq? 'none (ndfa-config-word last-word))
+                                   last-word
+                                   (struct-copy ndfa-config
+                                                last-word
+                                                [state 'last-consumed]
+                                                [word (rest (ndfa-config-word last-word))]
+                                                [index (add1 (ndfa-config-index last-word))])))]
+         ;;(zipperof ci) ;;Purpose: All valid combinations of unconsumed and consumed input
+         [CIs (remake-ci a-word)]
          ;;building-state struct
-         [building-state (building-viz-state a-word
-                                             '()
+         [building-state (building-viz-state CIs
                                              new-M
                                              (if (and add-dead (not (empty? invs))) (cons (list dead-state (λ (w) #t)) invs) invs) 
                                              dead-state
-                                             (map reverse LoC)
+                                             (if (empty? accepting-traces) accepting-traces (list (first accepting-traces)))
                                              accepting-computations
-                                             accepting-traces
+                                             (if (empty? accepting-traces) accepting-traces (rest accepting-traces))
                                              rejecting-traces
                                              most-consumed-word)]
          ;;(listof graph-thunk) ;;Purpose: Gets all the graphs needed to run the viz
          [graphs (create-graph-thunks building-state '())]
          ;;(listof number) ;;Purpose: Gets the number of computations for each step
-         [computation-lens (count-computations a-word (map computation-LoC computations) '())]
+         [computation-lens (begin
+                             (for ([key (in-list (hash-keys (second computations+hash)))])
+                               (hash-set! (second computations+hash)
+                                          key
+                                          (set-count (hash-ref (second computations+hash) key))))
+                             (second computations+hash))]
          ;;(listof number) ;;Purpose: Gets the index of image where an invariant failed
-         [inv-configs (remove-duplicates (sort (map (λ (con)
-                                                      (length (second (first con))))
-                                                    (return-brk-inv-configs
-                                                     (get-inv-config-results
-                                                      (make-inv-configs a-word
-                                                                        (map (λ (comp)
-                                                                               (reverse (computation-LoC comp)))
-                                                                             accepting-computations))
-                                                      invs)
-                                                     a-word)) <))])
+         [inv-configs (if (empty? invs)
+                          '()
+                          (let ([accepting-LoC (map (λ (comp) (treelist->list (computation-LoC comp))) accepting-computations)])
+                            (get-failed-invariants a-word accepting-LoC invs)))])
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ NDFA-E-SCENE-HEIGHT 2))
@@ -895,21 +837,16 @@ triple is the entire of the ndfa rule
              DEFAULT-ZOOM-CAP
              DEFAULT-ZOOM-FLOOR
              (informative-messages ndfa-create-draw-informative-message
-                                   (imsg-state new-M
-                                               a-word
-                                               '()
-                                               (list->zipper accepting-traces)
-                                               'no-stck
-                                               most-consumed-word
-                                               (list->zipper inv-configs)
-                                               (sub1 (length inv-configs))
-                                               computation-lens
-                                               LoC
-                                               'no-max-cmps
-                                               0
-                                               (let ([offset-cap (- (length a-word) TAPE-SIZE)])
-                                                 (if (> 0 offset-cap) 0 offset-cap))
-                                               0)
+                                   (imsg-state-ndfa new-M
+                                                    CIs
+                                                    (list->zipper (if (empty? accepting-traces) '() (first accepting-traces)))
+                                                    most-consumed-word
+                                                    (list->zipper inv-configs)
+                                                    computation-lens
+                                                    0
+                                                    (let ([offset-cap (- (length a-word) TAPE-SIZE)])
+                                                      (if (> 0 offset-cap) 0 offset-cap))
+                                                    0)
                                    ndfa-img-bounding-limit)
              (instructions-graphic E-SCENE-TOOLS
                                    (bounding-limits 0
@@ -937,16 +874,15 @@ triple is the entire of the ndfa rule
                                      [ "d" identity d-key-pressed]
                                      [ "wheel-down" viz-zoom-in identity]
                                      [ "wheel-up" viz-zoom-out identity]
-                                     [ "j" jump-prev j-key-pressed]
-                                     [ "l" jump-next l-key-pressed]
+                                     [ "j" ndfa-jump-prev j-key-pressed]
+                                     [ "l" ndfa-jump-next l-key-pressed]
                                      )
              (create-viz-process-tick NDFA-E-SCENE-BOUNDING-LIMITS
                                       NODE-SIZE
                                       E-SCENE-WIDTH
                                       NDFA-E-SCENE-HEIGHT
                                       CLICK-BUFFER-SECONDS
-                                      ([ndfa-img-bounding-limit
-                                        (lambda (a-imsgs x-diff y-diff) a-imsgs)])
+                                      ([ndfa-img-bounding-limit (lambda (a-imsgs x-diff y-diff) a-imsgs)])
                                       ( [ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed]
                                         [ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed]
                                         [ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed]
@@ -958,14 +894,6 @@ triple is the entire of the ndfa rule
                                         [ F-KEY-DIMS viz-max-zoom-in identity]
                                         [ A-KEY-DIMS identity a-key-pressed]
                                         [ D-KEY-DIMS identity d-key-pressed]
-                                        [ J-KEY-DIMS jump-prev j-key-pressed]
-                                        [ L-KEY-DIMS jump-next l-key-pressed])
-                                      )
-             (if (eq? (M 'whatami) 'ndfa)
-                 'ndfa-viz
-                 'dfa-viz))))
-
-
-;"notes to self:"
-;"scroll thru word instead of jumping to end"
-;"highlight which rule is being used when there are multiple rules on an edge"
+                                        [ J-KEY-DIMS ndfa-jump-prev j-key-pressed]
+                                        [ L-KEY-DIMS ndfa-jump-next l-key-pressed]))
+             (if (eq? (ndfa-type new-M) 'ndfa) 'ndfa-viz 'dfa-viz))))
