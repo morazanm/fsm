@@ -1051,12 +1051,13 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                              (if (and add-dead (not (empty? invs))) (cons (list dead-state (λ (w s) #t)) invs) invs)
                                              dead-state
                                              cut-off
-                                             (if computation-has-cut-off? '() most-consumed-word))]
+                                             most-consumed-word #;(if computation-has-cut-off? '() most-consumed-word))]
 
          ;;(listof graph-thunk) ;;Purpose: Gets all the graphs needed to run the viz
          [graphs (create-graph-thunks building-state)]
          ;;(listof number) ;;Purpose: Gets the index of image where an invariant failed
          [inv-configs (get-failed-invariants a-word accepting-computations invs)])
+    
    (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ PDA-E-SCENE-HEIGHT 2))
