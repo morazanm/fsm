@@ -185,6 +185,14 @@
                         (M ,EMP I)
                         (I ,EMP H))))
 
+(define ab*-U-ab*b*-ndfa 
+       (make-ndfa '(S A B C D E)
+                  '(a b)
+                  'S
+                  '(C E)
+                  `((S ,EMP A) (S ,EMP D) (A a B) (A ,EMP C)
+                               (B b A) (C b C) (D a E) (E b E))))
+
 
 (define PROP-BI (make-dfa '(S M N)
                           '(0 1)
