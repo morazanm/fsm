@@ -375,7 +375,14 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                  #:unless (equal? rule DUMMY-RULE))
         rule))))
 
-
+  ;;pda-config -> boolean
+  ;;Purpose: Determines if the config is in an accpeting configration
+  (define (accepting-configuration? a-config)
+    (and (member? (pda-config-state a-config) (pda-finals (building-viz-state-M a-vs)))
+         (empty? (pda-config-word a-config))
+         (empty? (pda-config-stack a-config))))
+        
+  
   ;;(listof trace) (X -> Y) -> (listof rule)
   ;;Purpose: Extracts the rule from the first trace in a (listof trace)
   (define (get-trace-X LoT map-func)
@@ -393,6 +400,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
          ;;Purpose: Gets the states where it's computation has cutoff
          [cut-off-states (if cut-off
                              (remove-duplicates (for/list ([computation (building-viz-state-computations a-vs)])
+                                                  #|#:unless (accepting-configuration? (first computation))|#
                                                   (pda-config-state (first computation))))
                              '())]
 
@@ -458,13 +466,9 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
   ;;viz-state (listof graph-thunks) -> (listof graph-thunks)
   ;;Purpose: Creates all the graphs needed for the visualization
   (define (create-graph-thunks-helper a-vs acc)
-    (cond [(or (for/or ([config (building-viz-state-computations a-vs)])
-                 (>= (pda-config-index (first config)) (building-viz-state-max-cmps a-vs)))
-               (and (zipper-at-end? (building-viz-state-CI a-vs))
-                    (or (zipper-empty? (building-viz-state-stack a-vs))
-                        (zipper-at-end? (building-viz-state-stack a-vs)))
-                    (for/or ([config (building-viz-state-computations a-vs)])
-                      (>= (pda-config-index (last config)) (building-viz-state-max-cmps a-vs)))))
+    (cond [(or (and (equal? (ci-upci (zipper-current (building-viz-state-CI a-vs)))
+                            (pda-config-word (building-viz-state-farthest-consumed-input a-vs)))
+                    (building-viz-state-max-cmps a-vs)))
            (reverse (cons (create-graph-thunk a-vs #:cut-off #t) acc))]
           [(or (and (equal? (ci-upci (zipper-current (building-viz-state-CI a-vs)))
                             (pda-config-word (building-viz-state-farthest-consumed-input a-vs)))
@@ -705,11 +709,11 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
   (if (or (zipper-empty? imsg-state-invs-zipper)
           (and (zipper-at-begin? imsg-state-invs-zipper)
                (not (zipper-at-end? imsg-state-invs-zipper)))
-          (< (get-index imsg-state-stack) #;(get-pda-config-index-frm-trace imsg-state-shown-accepting-trace)
+          (< (get-index imsg-state-stack)
              (get-pda-config-index-frm-invs imsg-state-invs-zipper)))
       a-vs
       (let* ([zip (if (and (not (zipper-at-begin? imsg-state-invs-zipper))
-                           (<= (get-index imsg-state-stack) #;(get-pda-config-index-frm-trace imsg-state-shown-accepting-trace)
+                           (<= (get-index imsg-state-stack)
                                (get-pda-config-index-frm-invs imsg-state-invs-zipper)))
                       (zipper-prev imsg-state-invs-zipper)
                       imsg-state-invs-zipper)])
@@ -1017,7 +1021,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
          [CIs (remake-ci a-word)]
          [computation-has-cut-off? (and (empty? accepting-trace)
                                         (for/or ([computation LoC])
-                                          (>= (pda-config-index (treelist-last computation)) cut-off)))]
+                                          (>= (treelist-length computation) cut-off)))]
          ;;(listof computation)
          ;;Purpose: Gets all the cut off computations if the length of the word is greater than max computations
          [get-cut-off-trace (if computation-has-cut-off? (map last rejecting-traces) '())]
@@ -1040,15 +1044,14 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                              new-M
                                              (if (and add-dead (not (empty? invs))) (cons (list dead-state (λ (w s) #t)) invs) invs)
                                              dead-state
-                                             cut-off
-                                             most-consumed-word #;(if computation-has-cut-off? '() most-consumed-word))]
+                                             computation-has-cut-off? 
+                                             most-consumed-word)]
 
          ;;(listof graph-thunk) ;;Purpose: Gets all the graphs needed to run the viz
          [graphs (create-graph-thunks building-state)]
          ;;(listof number) ;;Purpose: Gets the index of image where an invariant failed
          [inv-configs (get-failed-invariants a-word accepting-computations invs)])
-    
-   (run-viz graphs
+    (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ PDA-E-SCENE-HEIGHT 2))
              DEFAULT-ZOOM
